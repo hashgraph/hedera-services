@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -28,6 +29,7 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -70,6 +72,9 @@ class MerkleAccountStateTest {
 	private static final int alreadyUsedAutoAssociations = 123;
 	private static final int autoAssociationMetadata =
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private static final Key aliasKey = Key.newBuilder()
+			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
+	private static final ByteString alias = aliasKey.getECDSASecp256K1();
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -95,7 +100,8 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata);
+				autoAssociationMetadata,
+				alias);
 		serdes = mock(DomainSerdes.class);
 		MerkleAccountState.serdes = serdes;
 	}
@@ -118,7 +124,8 @@ class MerkleAccountStateTest {
 						"receiverSigRequired=" + receiverSigRequired + ", " +
 						"proxy=" + proxy + ", nftsOwned=0, " +
 						"alreadyUsedAutoAssociations=" + alreadyUsedAutoAssociations + ", " +
-						"maxAutoAssociations=" + maxAutoAssociations + "}",
+						"maxAutoAssociations=" + maxAutoAssociations +  ", " +
+						"alias=" + alias.toStringUtf8() + "}",
 				subject.toString());
 	}
 
@@ -166,10 +173,14 @@ class MerkleAccountStateTest {
 		assertNotEquals(subject, newSubject);
 		newSubject.setNumber(number);
 		// and then:
-		assertEquals(subject, newSubject);
+		assertNotEquals(subject, newSubject);
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		verify(in, never()).readInt();
 		verify(in, times(3)).readLong();
+		verify(in, never()).readByteArray(Integer.MAX_VALUE);
+		// and then:
+		newSubject.setAlias(alias);
+		assertEquals(subject, newSubject);
 	}
 
 	@Test
@@ -198,9 +209,13 @@ class MerkleAccountStateTest {
 		assertNotEquals(subject, newSubject);
 		newSubject.setNumber(number);
 		// then:
-		assertEquals(subject, newSubject);
+		assertNotEquals(subject, newSubject);
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		verify(in, times(4)).readLong();
+		verify(in, never()).readByteArray(Integer.MAX_VALUE);
+		// and then:
+		newSubject.setAlias(alias);
+		assertEquals(subject, newSubject);
 	}
 
 	@Test
@@ -229,6 +244,9 @@ class MerkleAccountStateTest {
 		// and when:
 		newSubject.setNumber(number);
 		// then:
+		assertNotEquals(subject, newSubject);
+		// and then:
+		newSubject.setAlias(alias);
 		assertEquals(subject, newSubject);
 	}
 
@@ -254,6 +272,35 @@ class MerkleAccountStateTest {
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_0180_VERSION);
 
 		// then:
+		assertNotEquals(subject, newSubject);
+		// and then:
+		newSubject.setAlias(alias);
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void deserializeV0210Works() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		subject.setNftsOwned(nftsOwned);
+		final var newSubject = new MerkleAccountState();
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs)
+				.willReturn(nftsOwned);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(in.readInt()).willReturn(autoAssociationMetadata).willReturn(number);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
+
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0210_VERSION);
+
+		// then:
 		assertEquals(subject, newSubject);
 	}
 
@@ -273,6 +320,7 @@ class MerkleAccountStateTest {
 		inOrder.verify(serdes).writeNullableSerializable(proxy, out);
 		verify(out, never()).writeLongArray(any());
 		inOrder.verify(out).writeInt(number);
+		inOrder.verify(out).writeByteArray(alias.toByteArray());
 	}
 
 	@Test
@@ -302,7 +350,8 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata);
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -315,8 +364,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -329,8 +379,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -343,8 +394,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -357,8 +409,9 @@ class MerkleAccountStateTest {
 				otherMemo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -372,7 +425,8 @@ class MerkleAccountStateTest {
 				otherDeleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata);
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -385,8 +439,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, otherSmartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -399,8 +454,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, otherReceiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -413,8 +469,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				otherNumber, 
-                                autoAssociationMetadata);
+				otherNumber,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -427,14 +484,15 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				otherProxy,
-				number, autoAssociationMetadata);
+				number, autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0180_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0210_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -448,8 +506,9 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+                                autoAssociationMetadata,
+				alias);
 
 		final var otherSubject = new MerkleAccountState(
 				otherKey,
@@ -457,8 +516,9 @@ class MerkleAccountStateTest {
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy,
-				otherNumber, 
-                                autoAssociationMetadata);
+				otherNumber,
+                                autoAssociationMetadata,
+				alias);
 
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());

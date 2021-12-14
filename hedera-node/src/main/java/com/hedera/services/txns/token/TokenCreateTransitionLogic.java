@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -69,15 +70,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public TokenCreateTransitionLogic(
-			OptionValidator validator,
-			TypedTokenStore tokenStore,
-			AccountStore accountStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			EntityIdSource ids
+			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final EntityIdSource ids,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.validator = validator;
 		this.txnCtx = txnCtx;
@@ -85,6 +88,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		this.ids = ids;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -104,7 +108,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		creation.persist();
 
 		/* --- Record activity in the transaction context --- */
-		txnCtx.setNewTokenAssociations(creation.newAssociations());
+		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
 	}
 
 	@Override
@@ -115,16 +119,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SEMANTIC_CHECK;
-	}
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

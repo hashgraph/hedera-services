@@ -20,6 +20,7 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
@@ -65,6 +66,18 @@ public class IdUtils {
 				.setRealmNum(nativeParts[1])
 				.setAccountNum(nativeParts[2])
 				.build();
+	}
+
+	public static AccountID asAliasAccount(ByteString alias) {
+		return AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAlias(alias)
+				.build();
+	}
+
+	public static AccountID asAccountWithAlias(String alias) {
+		return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
 	}
 
 	public static AccountID fromKey(EntityNum mk) {

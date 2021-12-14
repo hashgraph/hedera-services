@@ -21,6 +21,7 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.stats.MiscRunningAvgs;
@@ -31,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
@@ -58,10 +60,11 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 			final int maxRetries,
 			final int retryWaitIncrementMs,
 			final Pause pause,
+			final AliasManager aliasManager,
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {
-		super(accounts);
+		super(aliasManager, accounts);
 		this.pause = pause;
 		this.properties = Optional.empty();
 		this.runningAvgs = runningAvgs;
@@ -72,12 +75,13 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 
 	public RetryingAccountLookup(
 			final Pause pause,
+			final AliasManager aliasManager,
 			final NodeLocalProperties properties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final MiscRunningAvgs runningAvgs,
 			final MiscSpeedometers speedometers
 	) {
-		super(accounts);
+		super(aliasManager, accounts);
 		this.pause = pause;
 		this.properties = Optional.of(properties);
 		this.runningAvgs = runningAvgs;
@@ -88,6 +92,18 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+		return retryingLookup(id, this::superLookup);
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(final AccountID idOrAlias) {
+		return retryingLookup(idOrAlias, this::superAliasableLookup);
+	}
+
+	private SafeLookupResult<AccountSigningMetadata> retryingLookup(
+			final AccountID idOrAlias,
+			final Function<AccountID, AccountSigningMetadata> delegate
+	) {
 		maxRetries = properties
 				.map(NodeLocalProperties::precheckLookupRetries)
 				.orElse(maxRetries);
@@ -98,7 +114,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 		final long lookupStart = System.nanoTime();
 		int retriesRemaining = maxRetries;
 
-		var meta = superLookup(id);
+		var meta = delegate.apply(idOrAlias);
 		if (meta != null) {
 			return new SafeLookupResult<>(meta);
 		}
@@ -108,7 +124,7 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 			if (!pause.forMs((long) retryNo * retryWaitIncrementMs)) {
 				return SafeLookupResult.failure(MISSING_ACCOUNT);
 			}
-			meta = superLookup(id);
+			meta = delegate.apply(idOrAlias);
 			if (meta != null) {
 				if (isInstrumented()) {
 					updateStats(retryNo, msElapsedSince(lookupStart));
@@ -140,6 +156,11 @@ public class RetryingAccountLookup extends DefaultAccountLookup {
 
 	private AccountSigningMetadata superLookup(final AccountID id) {
 		final var result = super.safeLookup(id);
+		return result.succeeded() ? result.metadata() : null;
+	}
+
+	private AccountSigningMetadata superAliasableLookup(final AccountID id) {
+		final var result = super.aliasableSafeLookup(id);
 		return result.succeeded() ? result.metadata() : null;
 	}
 }

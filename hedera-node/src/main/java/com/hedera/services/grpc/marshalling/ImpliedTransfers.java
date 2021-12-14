@@ -21,14 +21,17 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -40,6 +43,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * list of changes will always be empty.
  */
 public class ImpliedTransfers {
+	public static final Map<ByteString, EntityNum> NO_ALIASES = Collections.emptyMap();
+	public static final List<CustomFeeMeta> NO_CUSTOM_FEE_META = Collections.emptyList();
+	public static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
 	private final List<FcAssessedCustomFee> assessedCustomFees;
@@ -55,20 +62,51 @@ public class ImpliedTransfers {
 	}
 
 	public static ImpliedTransfers valid(
-			ImpliedTransfersMeta.ValidationProps validationProps,
-			List<BalanceChange> changes,
-			List<CustomFeeMeta> customFeeMeta,
-			List<FcAssessedCustomFee> assessedCustomFees
+			final ImpliedTransfersMeta.ValidationProps validationProps,
+			final List<BalanceChange> changes,
+			final List<CustomFeeMeta> customFeeMeta,
+			final List<FcAssessedCustomFee> assessedCustomFees
 	) {
-		final var meta = new ImpliedTransfersMeta(validationProps, OK, customFeeMeta);
+		return valid(validationProps, changes, customFeeMeta, assessedCustomFees, NO_ALIASES);
+	}
+
+	public static ImpliedTransfers valid(
+			final ImpliedTransfersMeta.ValidationProps validationProps,
+			final List<BalanceChange> changes,
+			final List<CustomFeeMeta> customFeeMeta,
+			final List<FcAssessedCustomFee> assessedCustomFees,
+			final Map<ByteString, EntityNum> aliases
+	) {
+		final var meta = new ImpliedTransfersMeta(validationProps, OK, customFeeMeta, aliases);
+		return new ImpliedTransfers(meta, changes, assessedCustomFees);
+	}
+
+	public static ImpliedTransfers valid(
+			final ImpliedTransfersMeta.ValidationProps validationProps,
+			final List<BalanceChange> changes,
+			final List<CustomFeeMeta> customFeeMeta,
+			final List<FcAssessedCustomFee> assessedCustomFees,
+			final Map<ByteString, EntityNum> aliases,
+			final int numAutoCreations
+	) {
+		final var meta = new ImpliedTransfersMeta(validationProps, OK, customFeeMeta, aliases, numAutoCreations);
 		return new ImpliedTransfers(meta, changes, assessedCustomFees);
 	}
 
 	public static ImpliedTransfers invalid(
-			ImpliedTransfersMeta.ValidationProps validationProps,
-			ResponseCodeEnum code
+			final ImpliedTransfersMeta.ValidationProps validationProps,
+			final ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(validationProps, code, Collections.emptyList());
+		final var meta = new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, NO_ALIASES);
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
+	}
+
+	public static ImpliedTransfers invalid(
+			final ImpliedTransfersMeta.ValidationProps validationProps,
+			final Map<ByteString, EntityNum> suspectAliases,
+			final ResponseCodeEnum code
+	) {
+		final var meta = new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, suspectAliases);
 		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
@@ -77,7 +115,7 @@ public class ImpliedTransfers {
 			List<CustomFeeMeta> customFeeMetaTilFailure,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(validationProps, code, customFeeMetaTilFailure);
+		final var meta = new ImpliedTransfersMeta(validationProps, code, customFeeMetaTilFailure, NO_ALIASES);
 		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
@@ -110,6 +148,8 @@ public class ImpliedTransfers {
 				.add("changes", changes)
 				.add("tokenFeeSchedules", meta.getCustomFeeMeta())
 				.add("assessedCustomFees", assessedCustomFees)
+				.add("resolvedAliases", meta.getResolutions())
+				.add("numAutoCreations", meta.getNumAutoCreations())
 				.toString();
 	}
 }

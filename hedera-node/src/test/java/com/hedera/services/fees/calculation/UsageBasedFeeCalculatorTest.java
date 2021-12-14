@@ -26,6 +26,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
@@ -169,6 +170,7 @@ class UsageBasedFeeCalculatorTest {
 		subject = new UsageBasedFeeCalculator(
 				autoRenewCalcs,
 				exchange,
+				mock(AutoCreationLogic.class),
 				usagePrices,
 				new NestedMultiplierSource(),
 				pricedUsageCalculator,

@@ -23,6 +23,7 @@
 		<mainClass.name>ServicesMain</mainClass.name>
 
 		<asm.version>9.2</asm.version>
+                <caffeine.version>3.0.4</caffeine.version>
 		<git-commit-id.version>4.9.10</git-commit-id.version>
 		<ant-contrib.version>1.0b3</ant-contrib.version>
 		<ant-nodeps.version>1.8.1</ant-nodeps.version>
@@ -240,6 +241,11 @@
 	</build>
 
 	<dependencies>
+                <dependency>
+                  <groupId>com.github.ben-manes.caffeine</groupId>
+                  <artifactId>caffeine</artifactId>
+                  <version>${caffeine.version}</version>
+                </dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hapi-fees</artifactId>

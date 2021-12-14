@@ -21,6 +21,7 @@ package com.hedera.services.legacy;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -35,8 +36,9 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
@@ -51,13 +53,20 @@ import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class RepoNewCacheTest {
+	@Mock
+	private AutoCreationLogic autoAccountCreator;
+
 	@Disabled
 	public void test() {
 		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
@@ -74,9 +83,11 @@ class RepoNewCacheTest {
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
+				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				autoAccountCreator);
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -170,9 +181,11 @@ class RepoNewCacheTest {
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				TestContextValidator.TEST_VALIDATOR,
+				new SideEffectsTracker(),
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate);
+				delegate,
+				autoAccountCreator);
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 

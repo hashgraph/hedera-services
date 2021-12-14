@@ -21,12 +21,8 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +33,6 @@ import java.util.List;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
-import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -107,19 +102,16 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		assertEquals(0, subject.numTouches);
 	}
 
 	@Test
 	void adjustsIfValid() {
-		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
+		givenOkTokenXfers(any(), any(), anyLong());
 
 		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
 
+		verify(tokenStore).adjustBalance(misc, tokenId, 555);
 		assertEquals(OK, status);
-		assertEquals(
-				AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
-				subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
 	}
 
 	@Test
@@ -152,9 +144,6 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	void delegatesKnowingOps() {
 		subject.grantKyc(misc, frozenId);
 		verify(tokenStore).grantKyc(misc, frozenId);
-
-		subject.revokeKyc(misc, frozenId);
-		verify(tokenStore).revokeKyc(misc, frozenId);
 	}
 
 	@Test
@@ -162,26 +151,6 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var manager = mock(UniqTokenViewsManager.class);
 		subject.setTokenViewsManager(manager);
 
-		subject.addNewAssociationToList(new FcTokenAssociation(1L, 2L));
-
-		subject.numTouches = 2;
-		subject.tokensTouched[0] = tokenWith(111);
-		subject.tokensTouched[1] = tokenWith(222);
-		subject.netTokenTransfers.put(
-				tokenWith(111),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.2"))));
-		subject.netTokenTransfers.put(
-				tokenWith(222),
-				TransferList.newBuilder()
-						.addAccountAmounts(
-								AccountAmount.newBuilder()
-										.setAccountID(IdUtils.asAccount("0.0.3"))));
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 
@@ -191,13 +160,7 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
 		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
-
-		assertEquals(0, subject.numTouches);
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
-		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
-
-		assertTrue(subject.getNewTokenAssociations().isEmpty(),
-				"Dropping token changes should also clear new token associations");
+		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 
 	@Test
@@ -218,6 +181,7 @@ class HederLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 		subject.setTokenViewsManager(manager);
+		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
 
 		subject.begin();
 		subject.commit();

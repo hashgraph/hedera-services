@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,17 +40,27 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	static final Logger log = LogManager.getLogger(HapiCryptoDelete.class);
 
 	private String account;
+	private String alias = "";
 	private boolean shouldPurge = false;
 	private Optional<String> transferAccount = Optional.empty();
+	private boolean lookUpAccountWithKey = false;
 
 	public HapiCryptoDelete(String account) {
 		this.account = account;
+	}
+
+	public HapiCryptoDelete(String aliasKey, boolean lookUpAccount) {
+		this.account = "";
+		this.alias = aliasKey;
+		this.lookUpAccountWithKey = lookUpAccount;
 	}
 
 	@Override
@@ -83,13 +93,20 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID target = TxnUtils.asId(account, spec);
+		AccountID target;
+		if (lookUpAccountWithKey) {
+			account = lookUpAccountWithAlias(spec, alias);
+			target = asAccount(account);
+		} else {
+			target = TxnUtils.asId(account, spec);
+		}
+
 		CryptoDeleteTransactionBody opBody = spec
 				.txns()
 				.<CryptoDeleteTransactionBody, CryptoDeleteTransactionBody.Builder>
 						body(CryptoDeleteTransactionBody.class, b -> {
-							transferAccount.ifPresent(a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
-							b.setDeleteAccountID(target);
+					transferAccount.ifPresent(a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
+					b.setDeleteAccountID(target);
 				});
 		return b -> b.setCryptoDelete(opBody);
 	}
@@ -106,6 +123,11 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 			}
 			if (spec.registry().hasSigRequirement(account)) {
 				spec.registry().removeSigRequirement(account);
+			}
+			if (spec.registry().hasKey(alias)) {
+				final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
+				spec.registry().removeAccount(lookedUpKey);
+				spec.registry().removeKey(lookedUpKey);
 			}
 		}
 	}

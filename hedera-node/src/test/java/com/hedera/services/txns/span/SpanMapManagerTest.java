@@ -25,6 +25,7 @@ import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -39,16 +40,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEES;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -69,6 +75,8 @@ class SpanMapManagerTest {
 			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
 			otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+	private final ImpliedTransfers someValidImpliedXfers = ImpliedTransfers.valid(
+			validationProps, Collections.emptyList(), NO_CUSTOM_FEE_META, NO_CUSTOM_FEES, NO_ALIASES, 2);
 
 	private final Id treasury = new Id(0 , 0, 2);
 	private final Id customFeeToken = new Id(0, 0, 123);
@@ -107,12 +115,14 @@ class SpanMapManagerTest {
 	private ImpliedTransfers mockImpliedTransfers;
 	@Mock
 	private CustomFeeSchedules customFeeSchedules;
+	@Mock
+	private AliasManager aliasManager;
 
 	private SpanMapManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules);
+		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules, aliasManager);
 	}
 
 	@Test
@@ -132,6 +142,20 @@ class SpanMapManagerTest {
 	}
 
 	@Test
+	void setsNumAutoCreationsOnExpanding() {
+		given(accessor.getTxn()).willReturn(pretendXferTxn);
+		given(accessor.getSpanMap()).willReturn(span);
+		given(accessor.getFunction()).willReturn(CryptoTransfer);
+		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+				.willReturn(someValidImpliedXfers);
+
+		subject.expandSpan(accessor);
+
+		verify(accessor).setNumAutoCreations(2);
+	}
+
+	@Test
 	void expandsImpliedTransfersWithDetails() {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(accessor.getSpanMap()).willReturn(span);
@@ -140,6 +164,8 @@ class SpanMapManagerTest {
 		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(mockImpliedTransfers);
 		given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
+		final var mockMeta = mock(ImpliedTransfersMeta.class);
+		given(mockImpliedTransfers.getMeta()).willReturn(mockMeta);
 
 		// when:
 		subject.expandSpan(accessor);

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -32,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import dagger.Binds;
@@ -49,15 +51,17 @@ public abstract class LedgerModule {
 	@Provides
 	@Singleton
 	public static HederaLedger provideHederaLedger(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			EntityCreator creator,
-			EntityIdSource ids,
-			OptionValidator validator,
-			UniqTokenViewsManager uniqTokenViewsManager,
-			AccountRecordsHistorian recordsHistorian,
-			GlobalDynamicProperties dynamicProperties,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			final TokenStore tokenStore,
+			final ScheduleStore scheduleStore,
+			final EntityCreator creator,
+			final EntityIdSource ids,
+			final OptionValidator validator,
+			final SideEffectsTracker sideEffectsTracker,
+			final UniqTokenViewsManager uniqTokenViewsManager,
+			final AccountRecordsHistorian recordsHistorian,
+			final GlobalDynamicProperties dynamicProperties,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AutoCreationLogic autoAccountCreator
 	) {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 				new TransactionalLedger<>(
@@ -70,9 +74,11 @@ public abstract class LedgerModule {
 				ids,
 				creator,
 				validator,
+				sideEffectsTracker,
 				recordsHistorian,
 				dynamicProperties,
-				accountsLedger);
+				accountsLedger,
+				autoAccountCreator);
 		ledger.setTokenViewsManager(uniqTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

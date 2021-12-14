@@ -57,6 +57,8 @@ public class GetTxnRecordAnswer implements AnswerService {
 			GetTxnRecordAnswer.class.getSimpleName() + "_priorityRecord";
 	public static final String DUPLICATE_RECORDS_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_duplicateRecords";
+	public static final String CHILD_RECORDS_CTX_KEY =
+			GetTxnRecordAnswer.class.getSimpleName() + "_childRecords";
 
 	@Inject
 	public GetTxnRecordAnswer(
@@ -149,6 +151,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 					response.addAllDuplicateTransactionRecords(
 							(List<TransactionRecord>) ctx.get(DUPLICATE_RECORDS_CTX_KEY));
 				}
+				if (op.getIncludeChildRecords()) {
+					response.addAllChildTransactionRecords(
+							(List<TransactionRecord>) ctx.get(CHILD_RECORDS_CTX_KEY));
+				}
 			}
 		} else {
 			final var txnRecord = answerFunctions.txnRecord(recordCache, view, op);
@@ -160,6 +166,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 				if (op.getIncludeDuplicates()) {
 					response.addAllDuplicateTransactionRecords(
 							recordCache.getDuplicateRecords(op.getTransactionID()));
+				}
+				if (op.getIncludeChildRecords()) {
+					response.addAllChildTransactionRecords(
+							recordCache.getChildRecords(op.getTransactionID()));
 				}
 			}
 		}
