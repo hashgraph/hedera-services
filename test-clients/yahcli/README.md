@@ -62,7 +62,8 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.8 -p 2 -n p
 > -i 35.231.208.148
 ```
 
-But to use a different IP, we need to give the node account,
+...since the ip `35.231.208.148` is in the _config.yml_. But to use an IP not
+in the _config.yml_, we must also specify the node account, 
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.1.8 -p 2 -n previewnet \
 > -i 35.199.15.177 -a 4
