@@ -83,6 +83,7 @@ public class ContractResources {
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -605,6 +606,11 @@ public class ContractResources {
 			"\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNum" +
 			"\",\"type\":\"int64\"}],\"name\":\"transferNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
+
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}, {\"internalType\": \"int64\",\"name\": \"serialNum2\",\"type\": \"int64\"}]," +
+			"\"name\": \"transferToAddress\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +

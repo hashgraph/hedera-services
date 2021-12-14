@@ -58,6 +58,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +66,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
@@ -231,6 +233,8 @@ class DissociatePrecompilesTest {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
 	}
 
