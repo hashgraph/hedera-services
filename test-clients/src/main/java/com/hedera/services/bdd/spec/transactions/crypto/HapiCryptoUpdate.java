@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -69,7 +70,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
 	private String account;
-	private String alias = "";
+	private String aliasKeySource = null;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -80,16 +81,19 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
-	private boolean lookUpAccountWithKey = false;
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
 	}
 
-	public HapiCryptoUpdate(String alias, boolean lookUpAccount) {
-		this.account = "";
-		this.alias = alias;
-		this.lookUpAccountWithKey = lookUpAccount;
+	public HapiCryptoUpdate(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+		} else {
+			account = reference;
+		}
 	}
 
 	public HapiCryptoUpdate notUpdatingRegistryWithNewKey() {
@@ -167,12 +171,14 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		} catch (Exception ignore) {
 		}
 		AccountID id;
-		if (lookUpAccountWithKey) {
-			id = asIdForKeyLookUp(alias, spec);
-			account = asAccountString(id);
-		} else {
+
+		if (referenceType == ReferenceType.REGISTRY_NAME) {
 			id = TxnUtils.asId(account, spec);
+		} else {
+			id = asIdForKeyLookUp(aliasKeySource, spec);
+			account = asAccountString(id);
 		}
+
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()
 				.<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
