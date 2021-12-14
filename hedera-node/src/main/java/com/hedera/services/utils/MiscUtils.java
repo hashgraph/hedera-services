@@ -98,6 +98,8 @@ import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTI
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -438,6 +440,13 @@ public final class MiscUtils {
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}
+	}
+
+	public static Timestamp asTimestamp(final long packedTime) {
+		return Timestamp.newBuilder()
+				.setSeconds(unsignedHighOrder32From(packedTime))
+				.setNanos(signedLowOrder32From(packedTime))
+				.build();
 	}
 
 	public static Timestamp asTimestamp(final Instant when) {

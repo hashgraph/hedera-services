@@ -113,6 +113,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.via(autoCreation)
 				).then(
+						getTxnRecord(autoCreation).andAllChildRecords().logged(),
 						getAliasedAccountBalance(ed25519SourceKey),
 						getAliasedAccountBalance(secp256k1SourceKey),
 						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey(),
