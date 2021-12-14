@@ -370,6 +370,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						/* get transaction record and validate the child record has alias bytes as expected */
 						getReceipt("transferTxn")
 								.andAnyChildReceipts()
+								.hasChildAutoAccountCreations(1)
 								.logged(),
 						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
 								1).hasAliasInChildRecord("validAlias", 0).logged(),
