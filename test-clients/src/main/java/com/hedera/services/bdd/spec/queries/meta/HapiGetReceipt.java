@@ -46,6 +46,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	boolean forgetOp = false;
 	boolean requestDuplicates = false;
 	boolean useDefaultTxnId = false;
+	boolean getChildReceipts = false;
 	TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 	Optional<String> expectedSchedule = Optional.empty();
 	Optional<String> expectedScheduledTxnId = Optional.empty();
@@ -81,6 +82,11 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		return this;
 	}
 
+	public HapiGetReceipt andAnyChildReceipts() {
+		getChildReceipts = true;
+		return this;
+	}
+
 	public HapiGetReceipt useDefaultTxnId() {
 		useDefaultTxnId = true;
 		return this;
@@ -112,10 +118,15 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 				useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
 		Query query = forgetOp
 				? Query.newBuilder().build()
-				: txnReceiptQueryFor(txnId, requestDuplicates);
+				: txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
+		childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
 		if (verboseLoggingOn) {
 			log.info("Receipt: " + response.getTransactionGetReceipt().getReceipt());
+			log.info(spec.logPrefix() + "  And {} child receipts{}: {}",
+					childReceipts.size(),
+					childReceipts.size() > 1 ? "s" : "",
+					childReceipts);
 		}
 	}
 

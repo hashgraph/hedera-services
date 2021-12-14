@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfoWithAlias;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -367,6 +368,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								"transferTxn")
 				).then(
 						/* get transaction record and validate the child record has alias bytes as expected */
+						getReceipt("transferTxn")
+								.andAnyChildReceipts()
+								.logged(),
 						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
 								1).hasAliasInChildRecord("validAlias", 0).logged(),
 						getAccountInfo("payer").has(
