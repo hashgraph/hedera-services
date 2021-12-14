@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountB
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -196,7 +196,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								"txn"),
 						getTxnRecord("txn").hasChildRecordCount(1).logged()
 				).then(
-						cryptoDelete("alias", true)
+						cryptoDeleteAliased("alias")
 								.transfer("payer")
 								.hasKnownStatus(SUCCESS)
 								.signedBy("alias", "payer", DEFAULT_PAYER)

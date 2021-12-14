@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateWithAlias;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -90,7 +90,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0.05, 0.5))
 				).then(
 						/* change receiverSigRequired to false and validate */
-						cryptoUpdateWithAlias("testAlias").receiverSigRequired(true).signedBy(
+						cryptoUpdateAliased("testAlias").receiverSigRequired(true).signedBy(
 								"testAlias", "payer", DEFAULT_PAYER),
 						getAliasedAccountInfo("testAlias").has(accountWith()
 								.autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -132,7 +132,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 1, 10))
 				).then(
 						/* update auto renew period */
-						cryptoUpdateWithAlias("alias").autoRenewPeriod(briefAutoRenew).signedBy(
+						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer", DEFAULT_PAYER),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
 						getAliasedAccountBalance("alias"),
@@ -173,7 +173,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 								.alias("alias"))
 				).then(
 						/* validate the key on account can be updated to complex key, and has no relation to alias*/
-						cryptoUpdateWithAlias("alias")
+						cryptoUpdateAliased("alias")
 								.key("complexKey")
 								.payingWith("payer")
 								.signedBy("alias", "complexKey", "payer", DEFAULT_PAYER),
@@ -199,7 +199,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 						getAliasedAccountInfo("alias").has(accountWith().autoRenew(THREE_MONTHS_IN_SECONDS))
 				).then(
 						/* update auto renew period */
-						cryptoUpdateWithAlias("alias").autoRenewPeriod(briefAutoRenew).signedBy(
+						cryptoUpdateAliased("alias").autoRenewPeriod(briefAutoRenew).signedBy(
 								"alias", "randomPayer"),
 						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
 						getAliasedAccountBalance("alias").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
