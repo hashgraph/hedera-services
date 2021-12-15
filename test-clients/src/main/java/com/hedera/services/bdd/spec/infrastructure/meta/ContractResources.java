@@ -81,6 +81,8 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String MINT_CONTRACT = bytecodePath("mintContract");
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
@@ -90,6 +92,17 @@ public class ContractResources {
 			"\"type\":\"uint64\"}],\"name\":\"brrr\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
 	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String MINT_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
+			"\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"mintFungibleToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"metadata\"," +
+			"\"type\":\"bytes\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -588,6 +601,11 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}, {\"internalType\": \"int64\",\"name\": \"serialNum2\",\"type\": \"int64\"}]," +
+			"\"name\": \"transferToAddress\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String MUSICAL_CHAIRS_CONSTRUCTOR = "{" +
 			"\"inputs\": [{\"internalType\": \"address\",\"name\": \"_dj\",\"type\": \"address\"}]," +
