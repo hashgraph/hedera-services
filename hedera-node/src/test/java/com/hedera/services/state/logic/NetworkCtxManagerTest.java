@@ -30,14 +30,10 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,10 +62,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
-	private int issResetPeriod = 5;
-	private Instant sometime = Instant.ofEpochSecond(1_234_567L);
-	private Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
-	private Instant sometimeNextDay = sometime.plusSeconds(86_400L);
+	private final int issResetPeriod = 5;
+	private final long someGasUsage = 8910L;
+	private final Instant sometime = Instant.ofEpochSecond(1_234_567L);
+	private final Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
+	private final Instant sometimeNextDay = sometime.plusSeconds(86_400L);
 	private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
 	@Mock
@@ -95,15 +92,7 @@ class NetworkCtxManagerTest {
 	@Mock
 	private TxnAccessor txnAccessor;
 	@Mock
-	private ExpirableTxnRecord expirableTxnRecord;
-	@Mock
-	private SolidityFnResult solidityFnResult;
-	@Mock
-	private TransactionBody transactionBody;
-	@Mock
-	private ContractCallTransactionBody callTransactionBody;
-	@Mock
-	private ContractCreateTransactionBody createTransactionBody;
+	private MiscRunningAvgs runningAvgs;
 
 	private NetworkCtxManager subject;
 
@@ -121,7 +110,29 @@ class NetworkCtxManagerTest {
 				mockDynamicProps,
 				handleThrottling,
 				() -> networkCtx,
-				txnCtx);
+				txnCtx,
+				runningAvgs);
+	}
+
+	@Test
+	void recordsGasUsedWhenFirstTxnFinishedInConsSecond() {
+		subject.setGasUsedThisConsSec(someGasUsage);
+		subject.setConsensusSecondJustChanged(true);
+
+		subject.finishIncorporating(TokenMint);
+
+		verify(runningAvgs).recordGasPerConsSec(someGasUsage);
+		assertEquals(0, subject.getGasUsedThisConsSec());
+	}
+
+	@Test
+	void updatesGasUsedForContractOperations() {
+		given(txnCtx.getGasUsedForContractTxn()).willReturn(someGasUsage);
+		given(txnCtx.hasContractResult()).willReturn(true);
+
+		subject.finishIncorporating(ContractCall);
+
+		assertEquals(someGasUsage, subject.getGasUsedThisConsSec());
 	}
 
 	@Test

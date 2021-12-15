@@ -29,6 +29,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.TxnAccessor;
@@ -57,9 +58,11 @@ public class NetworkCtxManager {
 
 	private final int issResetPeriod;
 
+	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
 	private final IssEventInfo issInfo;
+	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
 	private final HbarCentExchange exchange;
 	private final SystemFilesManager systemFilesManager;
@@ -73,16 +76,17 @@ public class NetworkCtxManager {
 
 	@Inject
 	public NetworkCtxManager(
-			IssEventInfo issInfo,
-			NodeLocalProperties nodeLocalProperties,
-			HapiOpCounters opCounters,
-			HbarCentExchange exchange,
-			SystemFilesManager systemFilesManager,
-			FeeMultiplierSource feeMultiplierSource,
-			GlobalDynamicProperties dynamicProperties,
-			@HandleThrottle FunctionalityThrottling handleThrottling,
-			Supplier<MerkleNetworkContext> networkCtx,
-			TransactionContext txnCtx
+			final IssEventInfo issInfo,
+			final NodeLocalProperties nodeLocalProperties,
+			final HapiOpCounters opCounters,
+			final HbarCentExchange exchange,
+			final SystemFilesManager systemFilesManager,
+			final FeeMultiplierSource feeMultiplierSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final TransactionContext txnCtx,
+			final MiscRunningAvgs runningAvgs
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -94,6 +98,7 @@ public class NetworkCtxManager {
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 		this.dynamicProperties = dynamicProperties;
+		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
 	}
 
@@ -176,12 +181,34 @@ public class NetworkCtxManager {
 		return handleThrottling.wasLastTxnGasThrottled() ? CONSENSUS_GAS_EXHAUSTED : OK;
 	}
 
+	/**
+	 * Callback used by the processing flow to notify the context manager it should update any network
+	 * context that derives from the side effects of handled transactions.
+	 *
+	 * At present, this context includes:
+	 * <ol>
+	 *     <li>The {@code *Handled} counts.</li>
+	 *     <li>The {@code gasPerConsSec} running average.</li>
+	 *     <li>The "in-handle" throttles.</li>
+	 *     <li>The congestion pricing multiplier.</li>
+	 * </ol>
+	 *
+	 * @param op the type of transaction just handled
+	 */
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
+		if (consensusSecondJustChanged) {
+			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
+			gasUsedThisConsSec = 0L;
+		}
 
-		if (isGasThrottled(op) && dynamicProperties.shouldThrottleByGas() && txnCtx.hasContractResult()) {
-			handleThrottling.leakUnusedGasPreviouslyReserved(
-					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
+		if (isGasThrottled(op) && txnCtx.hasContractResult()) {
+			final var gasUsed = txnCtx.getGasUsedForContractTxn();
+			gasUsedThisConsSec += gasUsed;
+			if (dynamicProperties.shouldThrottleByGas()) {
+				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
+				handleThrottling.leakUnusedGasPreviouslyReserved(excessAmount);
+			}
 		}
 
 		var networkCtxNow = networkCtx.get();
@@ -193,8 +220,21 @@ public class NetworkCtxManager {
 		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
 	}
 
+	/* --- Only used in unit tests --- */
 	int getIssResetPeriod() {
 		return issResetPeriod;
+	}
+
+	void setConsensusSecondJustChanged(boolean consensusSecondJustChanged) {
+		this.consensusSecondJustChanged = consensusSecondJustChanged;
+	}
+
+	long getGasUsedThisConsSec() {
+		return gasUsedThisConsSec;
+	}
+
+	void setGasUsedThisConsSec(long gasUsedThisConsSec) {
+		this.gasUsedThisConsSec = gasUsedThisConsSec;
 	}
 
 	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {
