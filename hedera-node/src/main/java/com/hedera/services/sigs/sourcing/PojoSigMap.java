@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,29 +23,53 @@ package com.hedera.services.sigs.sourcing;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 
 public class PojoSigMap {
+	private static final int PUB_KEY_PREFIX_INDEX = 0;
+	private static final int SIG_BYTES_INDEX = 1;
+	private static final int DATA_PER_SIG_PAIR = 2;
+
+	private final KeyType[] keyTypes;
 	private final byte[][][] rawMap;
 
-	private PojoSigMap(byte[][][] rawMap) {
+	private PojoSigMap(final byte[][][] rawMap, final KeyType[] keyTypes) {
 		this.rawMap = rawMap;
+		this.keyTypes = keyTypes;
 	}
 
-	public static PojoSigMap fromGrpc(SignatureMap sigMap) {
+	public static PojoSigMap fromGrpc(final SignatureMap sigMap) {
 		final var n = sigMap.getSigPairCount();
-		final var rawMap = new byte[n][2][];
+		final var rawMap = new byte[n][DATA_PER_SIG_PAIR][];
+		final var keyTypes = new KeyType[n];
 		for (var i = 0; i < n; i++) {
 			final var sigPair = sigMap.getSigPair(i);
-			rawMap[i][0] = sigPair.getPubKeyPrefix().toByteArray();
-			rawMap[i][1] = sigPair.getEd25519().toByteArray();
+			rawMap[i][PUB_KEY_PREFIX_INDEX] = sigPair.getPubKeyPrefix().toByteArray();
+			if (!sigPair.getECDSASecp256K1().isEmpty()) {
+				rawMap[i][SIG_BYTES_INDEX] = sigPair.getECDSASecp256K1().toByteArray();
+				keyTypes[i] = KeyType.ECDSA_SECP256K1;
+			} else {
+				rawMap[i][SIG_BYTES_INDEX] = sigPair.getEd25519().toByteArray();
+				keyTypes[i] = KeyType.ED25519;
+			}
 		}
-		return new PojoSigMap(rawMap);
+		return new PojoSigMap(rawMap, keyTypes);
+	}
+
+	public boolean isFullPrefixAt(final int i) {
+		if (i < 0 || i >= rawMap.length) {
+			throw new IllegalArgumentException("Requested prefix at index " + i + ", not in [0, " + rawMap.length + ")");
+		}
+		return keyTypes[i].getLength() == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
+	}
+
+	public KeyType keyType(int i) {
+		return keyTypes[i];
 	}
 
 	public byte[] pubKeyPrefix(int i) {
-		return rawMap[i][0];
+		return rawMap[i][PUB_KEY_PREFIX_INDEX];
 	}
 
-	public byte[] ed25519Signature(int i) {
-		return rawMap[i][1];
+	public byte[] primitiveSignature(int i) {
+		return rawMap[i][SIG_BYTES_INDEX];
 	}
 
 	public int numSigsPairs() {

@@ -22,8 +22,7 @@ package com.hedera.services.sigs.verification;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
@@ -35,7 +34,7 @@ import java.util.function.Function;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 
 /**
  * Encapsulates logic to validate a transaction has the necessary
@@ -72,7 +71,6 @@ public class PrecheckVerifier {
 			List<TransactionSignature> availSigs = getAvailSigs(reqKeys, accessor);
 			syncVerifier.verifySync(availSigs);
 			Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(availSigs);
-
 			return reqKeys.stream().allMatch(key -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID));
 		} catch (InvalidPayerAccountException ignore) {
 			return false;
@@ -81,8 +79,8 @@ public class PrecheckVerifier {
 
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
 		final var pkToSigFn = accessor.getPkToSigsFn();
-		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
-		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, pkToSigFn, sigFactory);
+		final var sigFactory = new ReusableBodySigningFactory(accessor);
+		PlatformSigsCreationResult creationResult = createCryptoSigsFrom(reqKeys, pkToSigFn, sigFactory);
 		if (creationResult.hasFailed()) {
 			throw creationResult.getTerminatingEx();
 		} else {

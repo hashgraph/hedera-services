@@ -201,6 +201,22 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
+	void getsChildRecordsFromCtxWhenAvailable() {
+		final var q = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, false, true));
+		final Map<String, Object> ctx = new HashMap<>();
+		ctx.put(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY, cachedTargetRecord);
+		ctx.put(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY, List.of(cachedTargetRecord));
+
+		final var response = subject.responseGiven(q, view, OK, 0L, ctx);
+
+		final var opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		assertEquals(List.of(cachedTargetRecord), opResponse.getChildTransactionRecordsList());
+	}
+
+	@Test
 	void recognizesMissingRecordWhenCtxGiven() {
 		final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L));
 
@@ -227,6 +243,23 @@ class GetTxnRecordAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
 		assertEquals(List.of(cachedTargetRecord), opResponse.getDuplicateTransactionRecordsList());
+	}
+
+	@Test
+	void getsChildRecordsWhenRequested() {
+		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, false, true);
+		final var sensibleQuery = queryOf(op);
+		given(answerFunctions.txnRecord(recordCache, view, op))
+				.willReturn(Optional.of(cachedTargetRecord));
+		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
+
+		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		final var opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		assertEquals(List.of(cachedTargetRecord), opResponse.getChildTransactionRecordsList());
 	}
 
 	@Test

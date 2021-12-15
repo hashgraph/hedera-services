@@ -22,6 +22,7 @@ package com.hedera.services.sigs.factories;
 
 
 import com.swirlds.common.CommonUtils;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.Arrays;
@@ -49,16 +50,39 @@ public final class PlatformSigFactory {
 	 * 		bytes of the data claimed to have been signed.
 	 * @return the platform signature representing the collective input parameters.
 	 */
-	public static TransactionSignature createEd25519(final byte[] pk, final byte[] sig, final byte[] data) {
+	public static TransactionSignature ed25519Sig(final byte[] pk, final byte[] sig, final byte[] data) {
+		return sig(pk, sig, data, SignatureType.ED25519);
+	}
+
+	/**
+	 * Combine raw bytes into a syntactically valid ECDSA(secp256k1) {@link com.swirlds.common.crypto.Signature}.
+	 *
+	 * @param pk
+	 * 		uncompressed bytes of the ECDSA(secp256k1) public key
+	 * @param sig
+	 * 		bytes of the cryptographic signature.
+	 * @param data
+	 * 		bytes of the data claimed to have been signed.
+	 * @return the platform signature representing the collective input parameters.
+	 */
+	public static TransactionSignature ecdsaSecp256k1Sig(final byte[] pk, final byte[] sig, final byte[] data) {
+		return sig(pk, sig, data, SignatureType.ECDSA_SECP256K1);
+	}
+
+	private static TransactionSignature sig(
+			final byte[] pk,
+			final byte[] sig,
+			final byte[] data,
+			final SignatureType type
+	) {
 		final var contents = new byte[sig.length + data.length];
 		System.arraycopy(sig, 0, contents, 0, sig.length);
 		System.arraycopy(data, 0, contents, sig.length, data.length);
-
 		return new TransactionSignature(
 				contents,
 				0, sig.length,
 				pk, 0, pk.length,
-				sig.length, data.length);
+				sig.length, data.length, type);
 	}
 
 	public static boolean varyingMaterialEquals(final TransactionSignature a, final TransactionSignature b) {

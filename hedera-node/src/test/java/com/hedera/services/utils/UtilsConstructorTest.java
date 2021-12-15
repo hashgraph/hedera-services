@@ -40,12 +40,12 @@ import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.keys.RevocationServiceCharacteristics;
-import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
@@ -84,6 +84,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			MiscCryptoUtils.class,
 			NewRels.class,
 			PermissionFileUtils.class,
 			PropUtils.class,
@@ -95,7 +96,6 @@ class UtilsConstructorTest {
 			HederaKeyActivation.class,
 			HederaKeyTraversal.class,
 			RevocationServiceCharacteristics.class,
-			StandardSyncActivationCheck.class,
 			HederaToPlatformSigOps.class,
 			PlatformSigOps.class,
 			PlatformSigFactory.class,

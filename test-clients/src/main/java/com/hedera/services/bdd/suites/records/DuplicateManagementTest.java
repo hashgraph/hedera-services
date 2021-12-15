@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -70,9 +71,16 @@ public class DuplicateManagementTest extends HapiApiSuite {
 	private HapiApiSpec hasExpectedDuplicates() {
 		return defaultHapiSpec("HasExpectedDuplicates")
 				.given(
-						cryptoCreate("civilian").balance(100 * 100_000_000L),
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
 						usableTxnIdNamed("txnId").payerId("civilian")
 				).when(
+						uncheckedSubmit(
+								cryptoCreate("repeated")
+										.payingWith("civilian")
+										.txnId("txnId"))
+								.payingWith("civilian")
+								.fee(ONE_HBAR)
+								.hasPrecheck(NOT_SUPPORTED),
 						uncheckedSubmit(
 								cryptoCreate("repeated")
 										.payingWith("civilian")

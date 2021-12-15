@@ -21,23 +21,8 @@ package com.hedera.services.contracts;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
-import com.hedera.services.contracts.persistence.BlobStoragePersistence;
-import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.keys.StandardSyncActivationCheck;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.PureBackingAccounts;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
@@ -50,9 +35,16 @@ import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.contracts.persistence.BlobStoragePersistence;
+import com.hedera.services.contracts.sources.BlobStorageSource;
+import com.hedera.services.contracts.sources.LedgerAccountsSource;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.keys.StandardSyncActivationCheck;
+import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
@@ -73,10 +65,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
-import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 
 @Module
 public abstract class ContractsModule {
@@ -116,36 +104,6 @@ public abstract class ContractsModule {
 		final var repository = new ServicesRepositoryRoot(accountSource, bytecodeSource);
 		repository.setStoragePersistence(storagePersistence);
 		return repository;
-	}
-
-	@Provides
-	@Singleton
-	public static Supplier<ServicesRepositoryRoot> providePureServicesRepositoryRoots(
-			OptionValidator validator,
-			StoragePersistence storagePersistence,
-			Source<byte[], byte[]> bytecodeSource,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
-		final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
-				AccountProperty.class,
-				MerkleAccount::new,
-				new PureBackingAccounts(accounts),
-				new ChangeSummaryManager<>());
-		final var pureLedger = new HederaLedger(
-				NOOP_TOKEN_STORE,
-				NOOP_ID_SOURCE,
-				NOOP_EXPIRING_CREATIONS,
-				validator,
-				NOOP_RECORDS_HISTORIAN,
-				dynamicProperties,
-				pureDelegate);
-		final var pureAccountSource = new LedgerAccountsSource(pureLedger);
-		return () -> {
-			var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeSource);
-			pureRepository.setStoragePersistence(storagePersistence);
-			return pureRepository;
-		};
 	}
 
 	@Provides

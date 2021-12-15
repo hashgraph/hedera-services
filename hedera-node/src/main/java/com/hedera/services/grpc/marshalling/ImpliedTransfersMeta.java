@@ -21,8 +21,11 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
@@ -31,6 +34,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Encapsulates the validity of a CryptoTransfer transaction, given a choice of two parameters: the maximum
@@ -46,25 +50,63 @@ import java.util.List;
  * validation result.
  */
 public class ImpliedTransfersMeta {
+	private static final int NO_AUTO_CREATIONS = 0;
+
+	private final int numAutoCreations;
 	private final ResponseCodeEnum code;
 	private final ValidationProps validationProps;
 	private final List<CustomFeeMeta> customFeeMeta;
+	private final Map<ByteString, EntityNum> resolutions;
 
 	public ImpliedTransfersMeta(
-			ValidationProps validationProps,
-			ResponseCodeEnum code,
-			List<CustomFeeMeta> customFeeMeta
+			final ValidationProps validationProps,
+			final ResponseCodeEnum code,
+			final List<CustomFeeMeta> customFeeMeta,
+			final Map<ByteString, EntityNum> resolutions
+	) {
+		this(validationProps, code, customFeeMeta, resolutions, NO_AUTO_CREATIONS);
+	}
+
+	public ImpliedTransfersMeta(
+			final ValidationProps validationProps,
+			final ResponseCodeEnum code,
+			final List<CustomFeeMeta> customFeeMeta,
+			final Map<ByteString, EntityNum> resolutions,
+			final int numAutoCreations
 	) {
 		this.code = code;
-		this.validationProps = validationProps;
+		this.resolutions = resolutions;
 		this.customFeeMeta = customFeeMeta;
+		this.validationProps = validationProps;
+		this.numAutoCreations = numAutoCreations;
+	}
+
+	public Map<ByteString, EntityNum> getResolutions() {
+		return resolutions;
+	}
+
+	public int getNumAutoCreations() {
+		return numAutoCreations;
 	}
 
 	public List<CustomFeeMeta> getCustomFeeMeta() {
 		return customFeeMeta;
 	}
 
-	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
+	public boolean wasDerivedFrom(
+			final GlobalDynamicProperties dynamicProperties,
+			final CustomFeeSchedules customFeeSchedules,
+			final AliasManager aliasManager
+	) {
+		if (!resolutions.isEmpty()) {
+			for (final var entry : resolutions.entrySet()) {
+				final var past = entry.getValue();
+				final var present = aliasManager.lookupIdBy(entry.getKey());
+				if (!past.equals(present)) {
+					return false;
+				}
+			}
+		}
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&

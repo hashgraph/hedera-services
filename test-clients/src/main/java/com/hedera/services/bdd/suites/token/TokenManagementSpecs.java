@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -93,6 +94,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						revokedKYCTreasuryCannotBeMintedOrBurned(),
 						fungibleCommonMaxSupplyReachWork(),
 						mintingMaxLongValueWorks(),
+						nftMintProvidesMintedNftsAndNewTotalSupply(),
 				}
 		);
 	}
@@ -466,6 +468,33 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						mintToken("fungibleToken", Long.MAX_VALUE).via("mintTxn")
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", Long.MAX_VALUE)
+				);
+	}
+
+	private HapiApiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
+		final var multiKey = "multi";
+		final var token = "non-fungible";
+		final var txn = "mint";
+		return defaultHapiSpec("NftMintProvidesMintedNftsAndNewTotalSupply")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(token)
+								.initialSupply(0)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(multiKey)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken(token, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via(txn)
+				).then(
+						getTxnRecord(txn).hasPriority(recordWith()
+								.newTotalSupply(3L)
+								.serialNos(List.of(1L, 2L, 3L))).logged()
 				);
 	}
 

@@ -28,7 +28,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.TransactionRecordService;
@@ -106,8 +105,6 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private EntityIdSource entityIdSource;
-	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private TransactionRecordService recordServices;
@@ -128,7 +125,7 @@ class ContractCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCreateTransitionLogic(
-				hfs, entityIdSource,
+				hfs,
 				txnCtx, accountStore, validator,
 				worldState, recordServices, evmTxProcessor, hederaLedger);
 	}
@@ -495,19 +492,6 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		assertEquals("SERIALIZATION_FAILED", exception.getMessage());
-	}
-
-
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-		verify(entityIdSource).reclaimProvisionalIds();
-	}
-
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-		verify(entityIdSource).resetProvisionalIds();
 	}
 
 	@Test

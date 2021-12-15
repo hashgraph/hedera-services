@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.CommonUtils;
@@ -29,9 +31,12 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -40,10 +45,16 @@ import static java.util.stream.Collectors.toList;
 public class TrieSigMapGenerator implements SigMapGenerator {
 	private static final Logger log = LogManager.getLogger(TrieSigMapGenerator.class);
 
+	private String[] fullPrefixKeys;
 	private final Nature nature;
 
 	private TrieSigMapGenerator(Nature nature) {
 		this.nature = nature;
+	}
+
+	private TrieSigMapGenerator(final Nature nature, final String[] fullPrefixKeys) {
+		this.nature = nature;
+		this.fullPrefixKeys = fullPrefixKeys;
 	}
 
 	private static final TrieSigMapGenerator uniqueInstance;
@@ -51,49 +62,93 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 	private static final TrieSigMapGenerator confusedInstance;
 
 	static {
-		uniqueInstance = new TrieSigMapGenerator(Nature.UNIQUE);
-		ambiguousInstance = new TrieSigMapGenerator(Nature.AMBIGUOUS);
-		confusedInstance = new TrieSigMapGenerator(Nature.CONFUSED);
+		uniqueInstance = new TrieSigMapGenerator(Nature.UNIQUE_PREFIXES);
+		ambiguousInstance = new TrieSigMapGenerator(Nature.AMBIGUOUS_PREFIXES);
+		confusedInstance = new TrieSigMapGenerator(Nature.CONFUSED_PREFIXES);
 	}
 
 	public static SigMapGenerator withNature(Nature nature) {
 		switch (nature) {
 			default:
 				return uniqueInstance;
-			case AMBIGUOUS:
+			case AMBIGUOUS_PREFIXES:
 				return ambiguousInstance;
-			case CONFUSED:
+			case CONFUSED_PREFIXES:
 				return confusedInstance;
 		}
 	}
 
+	public static SigMapGenerator uniqueWithFullPrefixesFor(String... fullPrefixKeys) {
+		return new TrieSigMapGenerator(Nature.UNIQUE_PREFIXES, fullPrefixKeys);
+	}
+
 	@Override
-	public SignatureMap forEd25519Sigs(List<Map.Entry<byte[], byte[]>> keySigs) {
+	public SignatureMap forPrimitiveSigs(final HapiApiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
 		List<byte[]> keys = keySigs.stream().map(Map.Entry::getKey).collect(toList());
 		ByteTrie trie = new ByteTrie(keys);
-		Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
 
-		log.debug("---- Beginning SigMap Construction ----");
+		final Set<ByteString> alwaysFullPrefixes = (fullPrefixKeys == null)
+				? Collections.emptySet()
+				: fullPrefixSetFor(spec);
+
+		final Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
 		return keySigs.stream()
-				.map(keySig ->
-						SignaturePair.newBuilder()
-								.setPubKeyPrefix(ByteString.copyFrom(prefixCalc.apply(keySig.getKey())))
-								.setEd25519(ByteString.copyFrom(keySig.getValue()))
-								.build()
+				.map(keySig -> {
+							final var key = keySig.getKey();
+							final var wrappedKey = ByteString.copyFrom(key);
+							final var effPrefix = alwaysFullPrefixes.contains(wrappedKey)
+									? wrappedKey
+									: ByteString.copyFrom(prefixCalc.apply(key));
+							if (key.length == 32) {
+								return SignaturePair.newBuilder()
+										.setPubKeyPrefix(effPrefix)
+										.setEd25519(ByteString.copyFrom(keySig.getValue()))
+										.build();
+							} else {
+								return SignaturePair.newBuilder()
+										.setPubKeyPrefix(effPrefix)
+										.setECDSASecp256K1(ByteString.copyFrom(keySig.getValue()))
+										.build();
+							}
+						}
 				).collect(collectingAndThen(toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
+	}
+
+	private Set<ByteString> fullPrefixSetFor(final HapiApiSpec spec) {
+		final var registry = spec.registry();
+		final var fullPrefixSet = new HashSet<ByteString>();
+		for (final var key : fullPrefixKeys) {
+			final var explicitKey = registry.getKey(key);
+			accumulateFullPrefixes(explicitKey, fullPrefixSet);
+		}
+		return fullPrefixSet;
+	}
+
+	private void accumulateFullPrefixes(final Key explicit, final Set<ByteString> fullPrefixSet) {
+		if (!explicit.getEd25519().isEmpty()) {
+			fullPrefixSet.add(explicit.getEd25519());
+		} else if (explicit.hasKeyList()) {
+			for (final var innerKey : explicit.getKeyList().getKeysList()) {
+				accumulateFullPrefixes(innerKey, fullPrefixSet);
+			}
+		} else if (explicit.hasThresholdKey()) {
+			for (final var innerKey : explicit.getThresholdKey().getKeys().getKeysList()) {
+				accumulateFullPrefixes(innerKey, fullPrefixSet);
+			}
+		}
 	}
 
 	private Function<byte[], byte[]> getPrefixCalcFor(ByteTrie trie) {
 		return key -> {
 			byte[] prefix = { };
 			switch (nature) {
-				case UNIQUE:
+				case UNIQUE_PREFIXES:
 					prefix = trie.shortestPrefix(key, 1);
 					break;
-				case AMBIGUOUS:
+				case AMBIGUOUS_PREFIXES:
 					prefix = trie.shortestPrefix(key, Integer.MAX_VALUE);
 					break;
-				case CONFUSED:
+				case CONFUSED_PREFIXES:
 					prefix = trie.randomPrefix(key.length);
 					break;
 			}

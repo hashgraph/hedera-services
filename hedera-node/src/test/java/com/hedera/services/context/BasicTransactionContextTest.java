@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
@@ -97,8 +98,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -158,6 +160,10 @@ class BasicTransactionContextTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private EntityIdSource ids;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -166,7 +172,8 @@ class BasicTransactionContextTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new BasicTransactionContext(narratedCharging, () -> accounts, nodeInfo, exchange, creator);
+		subject = new BasicTransactionContext(
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids);
 
 		subject.resetFor(accessor, now, memberId);
 
@@ -237,7 +244,7 @@ class BasicTransactionContextTest {
 		subject.resetFor(accessor, now, anotherMemberId);
 
 		// then:
-		verify(subject.getRecordSoFar()).clear();
+		verify(subject.getRecordSoFar()).reset();
 	}
 
 	@Test
@@ -253,9 +260,7 @@ class BasicTransactionContextTest {
 		subject.setStatus(SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
-		subject.setHasComputedRecordSoFar(true);
 		subject.setAssessedCustomFees(Collections.emptyList());
-		subject.setNewTokenAssociations(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
@@ -263,10 +268,9 @@ class BasicTransactionContextTest {
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertNull(subject.getAssessedCustomFees());
-		assertFalse(subject.hasComputedRecordSoFar());
 		// and:
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ResponseCodeEnum.UNKNOWN, ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
@@ -274,12 +278,13 @@ class BasicTransactionContextTest {
 		assertEquals(0, record.asGrpc().getTransactionFee());
 		assertFalse(record.asGrpc().hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
-		assertTrue(subject.hasComputedRecordSoFar());
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
 		// and:
 		verify(narratedCharging).resetForTxn(accessor, memberId);
+		verify(sideEffectsTracker, times(2)).reset();
+		verify(ids, times(2)).resetProvisionalIds();
 	}
 
 	@Test
@@ -316,7 +321,7 @@ class BasicTransactionContextTest {
 		subject.addNonThresholdFeeChargedToPayer(other);
 
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(std + other, record.asGrpc().getTransactionFee());
@@ -330,7 +335,7 @@ class BasicTransactionContextTest {
 
 		// when:
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(tokenTransfers, record.asGrpc().getTokenTransferLists(0));
@@ -345,7 +350,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCallResult(result);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
@@ -360,7 +365,7 @@ class BasicTransactionContextTest {
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		subject.setCreateResult(result);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
@@ -374,7 +379,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// expect:
-		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
+		assertEquals(transfers, subject.recordSoFar().build().asGrpc().getTransferList());
 	}
 
 	@Test
@@ -387,7 +392,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// when:
-		ExpirableTxnRecord record = subject.recordSoFar();
+		ExpirableTxnRecord record = subject.recordSoFar().build();
 
 		// expect:
 		assertEquals(memo, record.getMemo());
@@ -424,7 +429,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE,
@@ -440,48 +445,12 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(created);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
 		assertEquals(created, record.getReceipt().toGrpc().getAccountID());
 	}
-
-	@Test
-	void getsExpectedReceiptForTokenCreation() {
-		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(txn);
-
-		// when:
-		subject.setCreated(tokenCreated);
-		setUpBuildingExpirableTxnRecord();
-
-		record = subject.recordSoFar();
-
-		// then:
-		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
-		assertEquals(tokenCreated, record.getReceipt().toGrpc().getTokenID());
-	}
-
-	@Test
-	void getsExpectedReceiptForTokenMintBurnWipe() {
-		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
-		given(accessor.getTxnId()).willReturn(txnId);
-		given(accessor.getTxn()).willReturn(txn);
-
-		// when:
-		final var newTotalSupply = 1000L;
-		subject.setNewTotalSupply(newTotalSupply);
-		setUpBuildingExpirableTxnRecord();
-
-		record = subject.recordSoFar();
-
-		// then:
-		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
-		assertEquals(newTotalSupply, record.getReceipt().getNewTotalSupply());
-	}
-
 
 	@Test
 	void getsExpectedReceiptForFileCreation() {
@@ -493,7 +462,7 @@ class BasicTransactionContextTest {
 		subject.setCreated(fileCreated);
 		setUpBuildingExpirableTxnRecord();
 
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, TxnReceipt.convert(record.getReceipt()).getExchangeRate());
@@ -509,7 +478,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(contractCreated);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -525,7 +494,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setCreated(topicCreated);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -544,7 +513,7 @@ class BasicTransactionContextTest {
 		// when:
 		subject.setTopicRunningHash(runningHash, sequenceNumber);
 		setUpBuildingExpirableTxnRecord();
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -564,7 +533,7 @@ class BasicTransactionContextTest {
 		subject.setScheduledTxnId(scheduledTxnId);
 		setUpBuildingExpirableTxnRecord();
 		// and:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(scheduleCreated, record.getReceipt().toGrpc().getScheduleID());
@@ -607,7 +576,7 @@ class BasicTransactionContextTest {
 		setUpBuildingExpirableTxnRecord();
 
 		// when:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar().build();
 
 		// then:
 		assertEquals(fromGrpcScheduleId(scheduleCreated), record.getScheduleRef());
@@ -626,19 +595,6 @@ class BasicTransactionContextTest {
 	}
 
 	@Test
-	void setsCreatedSerialNumbersInReceipt() {
-		// given:
-		List<Long> expected = List.of(1L, 2L, 3L, 4L, 5L, 6L);
-		var expectedArray = new long[] { 1L, 2L, 3L, 4L, 5L, 6L };
-
-		// when:
-		subject.setCreated(expected);
-
-		// then:
-		assertArrayEquals(subject.receiptSoFar().build().getSerialNumbers(), expectedArray);
-	}
-
-	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 
@@ -646,7 +602,7 @@ class BasicTransactionContextTest {
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
 	}
 
-	private ExpirableTxnRecord.Builder buildRecord(
+	private ExpirableTxnRecord.Builder buildExpectedRecord(
 			long otherNonThresholdFees,
 			byte[] hash,
 			TxnAccessor accessor,
@@ -671,26 +627,23 @@ class BasicTransactionContextTest {
 
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
-		if (tokenTransferList.size() > 0) {
-			for (TokenTransferList tokenTransfers : tokenTransferList) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			}
+		for (TokenTransferList tokenTransfers : tokenTransferList) {
+			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 		}
 
-		builder.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments);
+		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);
 		return builder;
 	}
 
 	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
-		var expirableRecordBuilder = buildRecord(
+		var expirableRecordBuilder = buildExpectedRecord(
 				subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor,
 				now,
 				subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any()))
+		when(creator.createTopLevelRecord(anyLong(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

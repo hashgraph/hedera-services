@@ -68,10 +68,13 @@ class GetTxnRecordResourceUsageTest {
 	private static final TransactionGetRecordQuery satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
 	private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithDups =
 			txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
+	private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithChildrenNoDups =
+			txnRecordQuery(targetTxnId, ANSWER_ONLY, false, true);
 	private static final TransactionGetRecordQuery satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
 	private static final TransactionGetRecordQuery unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
 	private static final Query satisfiableAnswerOnlyQuery = queryOf(satisfiableAnswerOnly);
 	private static final Query satisfiableAnswerOnlyWithDupsQuery = queryOf(satisfiableAnswerOnlyWithDups);
+	private static final Query satisfiableAnswerOnlyWithChildrenQuery = queryOf(satisfiableAnswerOnlyWithChildrenNoDups);
 	private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
 
 	private NodeLocalProperties nodeProps;
@@ -109,6 +112,24 @@ class GetTxnRecordResourceUsageTest {
 		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(desiredRecord));
 
 		subject = new GetTxnRecordResourceUsage(recordCache, answerFunctions, usageEstimator);
+	}
+
+	@Test
+	void setsChildRecordsInQueryCtxIfAppropos() {
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
+		final var mockedStatic = mockStatic(FeeCalcUtils.class);
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(desiredRecord));
+		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithChildrenNoDups))
+				.willReturn(Optional.of(desiredRecord));
+
+		subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
+
+		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
+
+		mockedStatic.close();
 	}
 
 	@Test
