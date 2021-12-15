@@ -49,6 +49,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -59,6 +60,8 @@ import static org.ethereum.crypto.HashUtil.sha3;
 
 public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private static final String FALLBACK_ABI = "<empty>";
+	private static final String ADDRESS_ABI_TYPE = "address";
+	private static final String ADDRESS_ENCODE_TYPE = "bytes32";
 	private final static ObjectMapper DEFAULT_MAPPER = new ObjectMapper()
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
@@ -152,10 +155,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		}
 
 		byte[] callData;
-		if(params[0] instanceof Tuple) {
-			var abiFunction = DEFAULT_MAPPER.readValue(abi, AbiFunction.class);
-			final var signature = abiFunction.getName() + getParametersForSignature(abi);
-			callData = encode((Tuple)params[0], signature, getParametersForSignature(abi).replace("address", "bytes32"));
+		final var paramsList = Arrays.asList(params);
+		final var tupleExist =
+				paramsList.stream().filter(p -> p instanceof Tuple || p instanceof Tuple[]).collect(Collectors.toList()).size() > 0;
+		if(tupleExist) {
+			callData = encodeParametersWithTuple(paramsList);
 		} else {
 			callData = (abi != FALLBACK_ABI)
 					? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[]{};
@@ -175,30 +179,84 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		return b -> b.setContractCall(opBody);
 	}
 
+	private byte[] encodeParametersWithTuple(final List<Object> params) throws Throwable {
+		byte[] callData = new byte[]{};
+		var abiFunction = DEFAULT_MAPPER.readValue(abi, AbiFunction.class);
+		final var signatureParameters = getParametersForSignature(abi);
+		final var signature = abiFunction.getName() + signatureParameters;
+		final var argumentTypes = signatureParameters.replace(
+				ADDRESS_ABI_TYPE,
+				ADDRESS_ENCODE_TYPE);
+		final var paramsAsTuple = Tuple.of(params.toArray());
+
+		final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
+				argumentTypes);
+		callData = ByteUtil.merge(callData, tupleEncoded);
+
+		return ByteUtil.merge(encodeSignature(signature), callData);
+	}
+
 	private String getParametersForSignature(final String jsonABI) throws Throwable {
 		final var abiFunction = DEFAULT_MAPPER.readValue(jsonABI, AbiFunction.class);
 		final var parametersBuilder = new StringBuilder();
 		parametersBuilder.append("(");
-		for (final Component component: abiFunction.getInputs().get(0).getComponents()) {
-			if(component.getComponents()!=null && !component.getComponents().isEmpty()) {
-				parametersBuilder.append("(");
-				for(final Component nestedComponent: component.getComponents()) {
-					parametersBuilder.append(nestedComponent.getType() + ",");
-				}
-				parametersBuilder.append(")[],");
-			} else {
-				parametersBuilder.append("(" + component.getType() + ",");
-			}
+		for (final InputOutput input : abiFunction.getInputs()) {
+			parametersBuilder.append(getArgumentTypesForInput(input));
 		}
-		parametersBuilder.append(")[])");
 
+		parametersBuilder.append(")");
 		return parametersBuilder.toString().replace(",)", ")");
 	}
-	
-	private byte[] encode(final Tuple argumentValues, final String functionSignature,
-						  final String argumentTypes) {
-		return ByteUtil.merge(encodeSignature(functionSignature), getTupleAsBytes(argumentValues,
-				argumentTypes));
+
+	private String getArgumentTypesForInput(final InputOutput input) {
+		final var argumentTypeBuilder = new StringBuilder();
+		if(input.getComponents()!=null) {
+			argumentTypeBuilder.append(getOpenCharacterForInput(input));
+			argumentTypeBuilder.append(getArgumentTypesForComponents(input.getComponents()));
+			argumentTypeBuilder.append(getClosingCharacterForInput(input));
+		} else {
+			argumentTypeBuilder.append(input.getType()).append(",");
+		}
+
+		return argumentTypeBuilder.toString();
+	}
+
+	private String getOpenCharacterForInput(final InputOutput input) {
+		switch(input.getType()) {
+			case "tuple[]":
+			case "tuple":
+				return "(";
+			default:
+				return "";
+		}
+	}
+
+	private String getClosingCharacterForInput(final InputOutput input) {
+		switch(input.getType()) {
+			case "tuple[]":
+				return ")[],";
+			case "tuple":
+				return "),";
+			default:
+				return "";
+		}
+	}
+
+	private String getArgumentTypesForComponents(final List<Component> components) {
+		final var componentsTypeBuilder = new StringBuilder();
+		for (final Component component : components) {
+			if (component.getComponents() != null && !component.getComponents().isEmpty()) {
+				componentsTypeBuilder.append("(");
+				for (final Component nestedComponent : component.getComponents()) {
+					componentsTypeBuilder.append(nestedComponent.getType()).append(",");
+				}
+				componentsTypeBuilder.append("tuple[]".equals(component.getType()) ? ")[]," : "),");
+			} else {
+				componentsTypeBuilder.append(component.getType()).append(",");
+			}
+		}
+
+		return componentsTypeBuilder.toString();
 	}
 
 	public byte[] encodeSignature(final String functionSignature) {
@@ -206,15 +264,12 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	}
 
 	public byte[] encodeSignatureLong(final String functionSignature) {
-		final String signature = functionSignature;
-		byte[] sha3Fingerprint = sha3(signature.getBytes());
-		return sha3Fingerprint;
+		return sha3(functionSignature.getBytes());
 	}
 
 	private static byte[] getTupleAsBytes(final Tuple argumentValues, final String argumentTypes) {
 		final TupleType tupleType = TupleType.parse(argumentTypes);
-		final var encoded = tupleType.encode(argumentValues).array();
-		return encoded;
+		return tupleType.encode((Tuple)argumentValues.get(0)).array();
 	}
 
 	@Override
