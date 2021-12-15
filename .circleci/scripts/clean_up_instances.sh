@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 projectName="$1"
-timestamp=`date +"%Y-%m-%dT%T"`
+timestamp=`TZ=UTC date -v-6H "+%Y-%m-%dT%H:%M:%S"`
 echo "$projectName"
 echo "$timestamp"
-list=`gcloud compute instance-groups managed list --filter="(name~.*gcp-daily.* OR name~.*gcp-ondemand.* OR name~.*gcp-weekly.* OR name~.*gcp-commit.*) AND creationTimestamp<2021-12-01T04:26:22" --format="value(name,zone.scope())" --project=$projectName`
-echo "$list"
+list=`gcloud compute instance-groups managed list --filter="(name~.*gcp-daily.* OR name~.*gcp-ondemand.* OR name~.*gcp-weekly.* OR name~.*gcp-commit-.*) AND creationTimestamp<$timestamp" --format="value(name,zone.scope())" --project=$projectName`
+echo "Deleting $list"
 while IFS= read -r line
 do
     values=( $line )
