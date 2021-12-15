@@ -1435,7 +1435,6 @@ workflows:
             requires:
               - javadoc-generation
             pre-steps:
-              - install-tools
               - attach_workspace:
                   at: /
 jobs:
