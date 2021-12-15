@@ -89,6 +89,21 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts newTotalSupply(long expectedNewTotalSupply) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				Assertions.assertEquals(
+						expectedNewTotalSupply,
+						receipt.getNewTotalSupply(),
+						"Bad newTotalSupply!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {

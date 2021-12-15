@@ -297,8 +297,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (childRecordsExpectations.isPresent()) {
 			final var expectedChildRecords = childRecordsExpectations.get();
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(), "Expected and actual child records should" +
-					" be the same size.");
+			assertEquals(expectedChildRecords.size(), actualRecords.size(), String.format("Expected %d child records, got %d", expectedChildRecords.size(), actualRecords.size()));
 			for (int i = 0; i < actualRecords.size(); i++) {
 				final var expectedChildRecord = expectedChildRecords.get(i);
 				final var actualChildRecord = actualRecords.get(i);
@@ -360,10 +359,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				}
 			}
 		}
-	}
-
-	private void assertTransferLists(HapiApiSpec spec, TransactionRecord childRecord) {
-
 	}
 
 	@Override
