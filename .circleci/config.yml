@@ -13,37 +13,22 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt-get install sudo;
+            apt install sudo;
             sudo apt update -y;
             sudo apt install -y net-tools;
-            sudo apt-get install -y apt-utils;
-            sudo apt install -y curl;
-            sudo apt install -y python3.7;
+            sudo apt install -y apt-utils;
+            sudo rm -f /usr/bin/python3;
             sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install -y python3-pip;
-            pip3 install --upgrade pip;
-            pip3 -q install matplotlib;
-            sudo apt-get install -y python3-setuptools;
-            pip3 install awscli;
-      - run:
-          name: Install gcloud cli
-          command: |
-            apt-get update || apt-get update;
-            curl https://sdk.cloud.google.com > install.sh;
-            bash install.sh --disable-prompts;
+            python3 -m pip install --upgrade pip;
+            python3 -m pip -q install matplotlib;
+            python3 -m pip install awscli;
       - run:
           name: Authenticate gcloud cli
           command: |
-            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
-            source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
-            sudo apt-get install gcc python3-dev python3-setuptools -y;
-            sudo pip3 uninstall crcmod;
-            sudo pip3 install --no-cache-dir -U crcmod;
 
   ######################################################################################################################
   # Command Name:                     shell_extract_file_into_variable
@@ -257,7 +242,6 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
@@ -299,9 +283,7 @@ commands:
           name: Import the Google Cloud Service  Account
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
-            set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
 
   ######################################################################################################################
@@ -439,7 +421,6 @@ commands:
           command: |
             set -x
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
 
             if [[ ! -d "<< parameters.result_path >>" ]]; then exit 13; fi
 
@@ -535,7 +516,6 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             cd /swirlds-platform
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
@@ -612,7 +592,6 @@ commands:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
@@ -653,7 +632,7 @@ executors:
         type: string
         default: ""
     docker:
-      - image: gcr.io/swirlds-registry/cci-openjdk-infer:17-b20211206
+      - image: gcr.io/swirlds-registry/cci-openjdk-regression:17-b20211206
     environment:
       TF_DIR: << parameters.tf_dir >>
       IN_CIRCLE_CI: true
@@ -695,7 +674,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -718,7 +696,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/20N_20C/
@@ -742,7 +719,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -766,7 +742,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -1707,10 +1682,6 @@ jobs:
       - when:
           condition: << parameters.automated_run >>
           steps:
-            - run:
-                name: setup env
-                command: |
-                  source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             - jrs_history_retrieve:
                 bucket_name: << parameters.summary_bucket >>
                 summary_path: << parameters.summary_path >>
