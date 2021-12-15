@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.legacy.core.CommonUtils;
@@ -42,7 +43,11 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.STATIC_ASSOCIATE_CALL_ABI;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -50,6 +55,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -103,8 +109,73 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				associatePrecompileWithContractIdSignatureWorksForNFT(),
 				nestedAssociateWorksAsExpected(),
 				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				delegateCallForAssociatePrecompileWorks()
+				delegateCallForAssociatePrecompileWorks(),
+				delegateCallForAssociatePrecompileSignedWithContractKey()
 		);
+	}
+
+	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithContractKey() {
+		final var theAccount = "anybody";
+		final var outerContract = "AssociateDissociateContract";
+		final var nestedContract = "NestedAssociateDissociateContract";
+		final var multiKey = "purpose";
+		final var newKey = "delegateContractKey";
+		final var origKey = KeyShape.threshOf(1, SIMPLE, CONTRACT);
+		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
+
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithContractKey")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(outerContract)
+								.bytecode(outerContract)
+								.gas(100_000),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.receiverSigRequired(true)
+								.keyShape(origKey.signedWith(sigs(ON, outerContract)))
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getOuterContractAddress(outerContract, spec))
+														.bytecode(nestedContract)
+														.gas(100_000),
+												contractCall(nestedContract, DELEGATE_ASSOCIATE_CALL_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(GENESIS)
+														.via("delegateAssociateCallWithoutDelegateContractKeyTxn")
+														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+														.gas(5_000_000),
+												getTxnRecord("delegateAssociateCallWithoutDelegateContractKeyTxn").andAllChildRecords().logged(),
+												newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, nestedContract))),
+												cryptoUpdate(theAccount).key(newKey),
+												contractCall(nestedContract, DELEGATE_ASSOCIATE_CALL_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(GENESIS)
+														.via("delegateAssociateCallWithDelegateContractKeyTxn")
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+														.gas(5_000_000),
+												getTxnRecord("delegateAssociateCallWithDelegateContractKeyTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						getAccountInfo(theAccount).hasToken(relationshipWith(VANILLA_TOKEN))
+				);
 	}
 
 	private HapiApiSpec delegateCallForAssociatePrecompileWorks() {
