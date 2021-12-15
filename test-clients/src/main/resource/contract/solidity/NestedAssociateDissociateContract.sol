@@ -6,6 +6,8 @@ import "./HederaTokenService.sol";
 contract NestedAssociateDissociateContract is HederaTokenService {
 
     AssociateDissociateContract associateDissociateContract;
+    bool public success;
+    bytes public result;
 
     constructor(address associateDissociateContractAddress) public {
         associateDissociateContract = AssociateDissociateContract(associateDissociateContractAddress);
@@ -25,6 +27,22 @@ contract NestedAssociateDissociateContract is HederaTokenService {
             revert ("Dissociate Failed");
         }
         associateDissociateContract.tokenAssociate(sender, tokenAddress);
+    }
+
+    function associateStaticCall(address sender, address tokenAddress) external {
+        (success, result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenAssociate(address, address)", sender, tokenAddress));
+    }
+
+    function dissociateStaticCall(address sender, address tokenAddress) external {
+        (success, result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenDissociate(address, address)", sender, tokenAddress));
+    }
+
+    function associateDelegateCall(address sender, address tokenAddress) external {
+        (success, result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenAssociate(address, address)", sender, tokenAddress));
+    }
+
+    function dissociateDelegateCall(address sender, address tokenAddress) external {
+        (success, result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenDissociate(address, address)", sender, tokenAddress));
     }
 }
 

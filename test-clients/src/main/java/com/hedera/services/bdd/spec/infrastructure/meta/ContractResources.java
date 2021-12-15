@@ -641,6 +641,23 @@ public class ContractResources {
 			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateAssociateContractCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
+	public static final String STATIC_ASSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateStaticCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String STATIC_DISSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateStaticCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String DELEGATE_ASSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDelegateCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String DELEGATE_DISSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateDelegateCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
