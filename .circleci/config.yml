@@ -1760,11 +1760,6 @@ jobs:
           username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
           keyfile_variable: GCLOUD_SERVICE_KEY
           project_variable: GOOGLE_PROJECT_ID
-      - add_ssh_keys:
-          fingerprints:
-            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
-            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
       - checkout
       - run:
           name: Cleanup GCP Instance Groups
