@@ -286,7 +286,6 @@ commands:
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
 
-
   ######################################################################################################################
   # Command Name:                     jrs_history_retrieve
   # Command Version:                  1.0
@@ -645,6 +644,24 @@ executors:
     working_directory: /repo
 
 workflows:
+  GCP_Machine_Cleanup:
+    triggers:
+      - schedule:
+          cron: "0 2,8,14,20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - jrs_gcp_machine_cleanup:
+          name: GCP-Machine-Cleanup
+          context: Slack
+          project_name: "hedera-regression"
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -1698,3 +1715,26 @@ jobs:
             else
               exit 0
             fi
+
+  jrs_gcp_machine_cleanup:
+    parameters:
+      runtime:
+        type: string
+        default: ci-test-executor
+      project_name:
+        type: string
+        default: "hedera-regression"
+    executor: << parameters.runtime >>
+    steps:
+      - gcp_import_credentials:
+          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+          keyfile_variable: GCLOUD_SERVICE_KEY
+          project_variable: GOOGLE_PROJECT_ID
+      - checkout
+      - run:
+          name: Cleanup GCP Instance Groups
+          command: |
+            set -x
+            cd /repo;
+            chmod 755 /repo/.circleci/scripts/clean_up_instances.sh;
+            .circleci/scripts/clean_up_instances.sh << parameters.project_name >>;
