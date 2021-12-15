@@ -25,9 +25,6 @@ commands:
       - run:
           name: Authenticate gcloud cli
           command: |
-            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
-            source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
@@ -245,7 +242,6 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
@@ -287,9 +283,7 @@ commands:
           name: Import the Google Cloud Service  Account
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
-            set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
 
 
@@ -428,7 +422,6 @@ commands:
           command: |
             set -x
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
 
             if [[ ! -d "<< parameters.result_path >>" ]]; then exit 13; fi
 
@@ -524,7 +517,6 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             cd /swirlds-platform
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
@@ -601,7 +593,6 @@ commands:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
@@ -1673,10 +1664,6 @@ jobs:
       - when:
           condition: << parameters.automated_run >>
           steps:
-            - run:
-                name: setup env
-                command: |
-                  source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             - jrs_history_retrieve:
                 bucket_name: << parameters.summary_bucket >>
                 summary_path: << parameters.summary_path >>
