@@ -157,9 +157,9 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		byte[] callData;
 		final var paramsList = Arrays.asList(params);
 		final var tupleExist =
-				paramsList.stream().filter(p -> p instanceof Tuple || p instanceof Tuple[]).collect(Collectors.toList()).size() > 0;
+				paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
 		if(tupleExist) {
-			callData = encodeParametersWithTuple(paramsList);
+			callData = encodeParametersWithTuple(params);
 		} else {
 			callData = (abi != FALLBACK_ABI)
 					? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[]{};
@@ -179,7 +179,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		return b -> b.setContractCall(opBody);
 	}
 
-	private byte[] encodeParametersWithTuple(final List<Object> params) throws Throwable {
+	private byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
 		byte[] callData = new byte[]{};
 		var abiFunction = DEFAULT_MAPPER.readValue(abi, AbiFunction.class);
 		final var signatureParameters = getParametersForSignature(abi);
@@ -187,7 +187,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		final var argumentTypes = signatureParameters.replace(
 				ADDRESS_ABI_TYPE,
 				ADDRESS_ENCODE_TYPE);
-		final var paramsAsTuple = Tuple.of(params.toArray());
+		final var paramsAsTuple = Tuple.of(params);
 
 		final var tupleEncoded = getTupleAsBytes(paramsAsTuple,
 				argumentTypes);
