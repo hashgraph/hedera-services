@@ -37,9 +37,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_ASSOCIATE_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_ASSOCIATE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.STATIC_ASSOCIATE_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -91,22 +92,22 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of();
+		return List.of(staticCallForAssociatePrecompileFails());
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				associatePrecompileWithSignatureWorksForFungible(),
-//				associatePrecompileWithContractIdSignatureWorksForFungible(),
-//				associatePrecompileWithSignatureWorksForNFT(),
-//				associatePrecompileWithContractIdSignatureWorksForNFT(),
-//				nestedAssociateWorksAsExpected(),
-//				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				staticAssociatePrecompileWithSignatureWorks()
+				associatePrecompileWithSignatureWorksForFungible(),
+				associatePrecompileWithContractIdSignatureWorksForFungible(),
+				associatePrecompileWithSignatureWorksForNFT(),
+				associatePrecompileWithContractIdSignatureWorksForNFT(),
+				nestedAssociateWorksAsExpected(),
+				multipleAssociatePrecompileWithSignatureWorksForFungible(),
+				delegateCallForAssociatePrecompileWorks()
 		);
 	}
 
-	private HapiApiSpec staticAssociatePrecompileWithSignatureWorks() {
+	private HapiApiSpec delegateCallForAssociatePrecompileWorks() {
 		final var theAccount = "anybody";
 		final var outerContract = "AssociateDissociateContract";
 		final var nestedContract = "NestedAssociateDissociateContract";
@@ -115,7 +116,58 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		AtomicReference<AccountID> accountID = new AtomicReference<>();
 		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-		return defaultHapiSpec("StaticAssociatePrecompileWithSignatureWorks")
+		return defaultHapiSpec("DelegateCallForAssociatePrecompileWorks")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(outerContract)
+								.bytecode(outerContract)
+								.gas(100_000),
+						cryptoCreate(theAccount)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getOuterContractAddress(outerContract, spec))
+														.bytecode(nestedContract)
+														.gas(100_000),
+												contractCall(nestedContract, DELEGATE_ASSOCIATE_CALL_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
+														.payingWith(theAccount)
+														.via("delegateAssociateCallTxn")
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+														.gas(5_000_000),
+												getTxnRecord("delegateAssociateCallTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						getAccountInfo(theAccount).hasToken(relationshipWith(VANILLA_TOKEN))
+				);
+	}
+
+	private HapiApiSpec staticCallForAssociatePrecompileFails() {
+		final var theAccount = "anybody";
+		final var outerContract = "AssociateDissociateContract";
+		final var nestedContract = "NestedAssociateDissociateContract";
+		final var multiKey = "purpose";
+
+		AtomicReference<AccountID> accountID = new AtomicReference<>();
+		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("StaticCallForAssociatePrecompileFails")
 				.given(
 						newKeyNamed(multiKey),
 						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
@@ -147,7 +199,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.via("staticAssociateCallTxn")
 //														.alsoSigningWithFullPrefix(multiKey)
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 														.gas(5_000_000),
 												getTxnRecord("staticAssociateCallTxn").andAllChildRecords().logged()
 										)

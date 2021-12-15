@@ -6,8 +6,6 @@ import "./HederaTokenService.sol";
 contract NestedAssociateDissociateContract is HederaTokenService {
 
     AssociateDissociateContract associateDissociateContract;
-    bool public success;
-    bytes public result;
 
     constructor(address associateDissociateContractAddress) public {
         associateDissociateContract = AssociateDissociateContract(associateDissociateContractAddress);
@@ -29,20 +27,32 @@ contract NestedAssociateDissociateContract is HederaTokenService {
         associateDissociateContract.tokenAssociate(sender, tokenAddress);
     }
 
-    function associateStaticCall(address sender, address tokenAddress) external {
-        (success, result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenAssociate(address, address)", sender, tokenAddress));
+    function associateStaticCall(address sender, address tokenAddress) external view {
+        (bool success, bytes memory result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenAssociate(address,address)", sender, tokenAddress));
+        if (!success) {
+            revert("Static associate call failed!");
+        }
     }
 
-    function dissociateStaticCall(address sender, address tokenAddress) external {
-        (success, result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenDissociate(address, address)", sender, tokenAddress));
+    function dissociateStaticCall(address sender, address tokenAddress) external view{
+        (bool success, bytes memory result) = address(associateDissociateContract).staticcall(abi.encodeWithSignature("tokenDissociate(address,address)", sender, tokenAddress));
+        if (!success) {
+            revert("Static dissociate call failed!");
+        }
     }
 
     function associateDelegateCall(address sender, address tokenAddress) external {
-        (success, result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenAssociate(address, address)", sender, tokenAddress));
+        (bool success, bytes memory result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenAssociate(address,address)", sender, tokenAddress));
+        if (!success) {
+            revert("Delegate associate call failed!");
+        }
     }
 
     function dissociateDelegateCall(address sender, address tokenAddress) external {
-        (success, result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenDissociate(address, address)", sender, tokenAddress));
+        (bool success, bytes memory result) = address(associateDissociateContract).delegatecall(abi.encodeWithSignature("tokenDissociate(address,address)", sender, tokenAddress));
+        if (!success) {
+            revert("Delegate dissociate call failed!");
+        }
     }
 }
 
