@@ -654,7 +654,7 @@ executors:
         type: string
         default: ""
     docker:
-      - image: gcr.io/swirlds-registry/cci-openjdk-infer:17-b20211206
+      - image: gcr.io/swirlds-registry/cci-openjdk-regression:17-b20211206
     environment:
       TF_DIR: << parameters.tf_dir >>
       IN_CIRCLE_CI: true
@@ -677,7 +677,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -700,7 +699,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/20N_20C/
@@ -724,7 +722,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -748,7 +745,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
