@@ -305,59 +305,6 @@ commands:
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
 
   ######################################################################################################################
-  # Command Name:                     gcp_cleanup_instance_groups
-  # Command Version:                  1.0
-  #
-  # Parameters:                       None
-  #
-  #
-  # Description:
-  #
-  #   Displays the Facebook Infer version info.
-  #
-  # Command Requirements:
-  #   - infer (>= 0.17.0)
-  #   - xz-utils (>= 5.2.2)
-  #   - python (>= 2.7.17)
-  #   - sqlite3 (>= 3.22.0)
-  #   - libsqlite3-dev (>= 3.22.0)
-  #
-  ######################################################################################################################
-  gcp_cleanup_instance_groups:
-    parameters:
-      regression_path:
-        type: string
-        default: "/swirlds-platform/regression"
-      project_name:
-        type: string
-        default: "hedera-regression"
-    steps:
-      - run:
-          name: Cleanup GCP Instance Groups
-          command: |
-            set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
-            cd /swirlds-platform
-            REGRESSION_PATH="<< parameters.regression_path >>"
-            [[ -d "${REGRESSION_PATH}" ]] || exit 15
-
-            pushd "${REGRESSION_PATH}" > /dev/null 2>&1
-              PROJECT_NAME="<< parameters.project_name >>"
-              JAVA_OPTS="-Xmx2g"
-              if [[ -z "${PROJECT_NAME}" ]]; then
-                echo
-                echo "Project Name '${PROJECT_NAME}' was not provided......"
-                echo
-                exit 20
-              fi
-
-              java ${JAVA_OPTS} \
-              -cp "lib/*:regression.jar" \
-              -Dlog4j2.configurationFile="log4j2-jrs-enhanced.xml" \
-              com.swirlds.jrs.job.GCPInstanceGroupTerminator "${PROJECT_NAME}"
-            popd > /dev/null 2>&1
-
-  ######################################################################################################################
   # Command Name:                     jrs_history_retrieve
   # Command Version:                  1.0
   #
@@ -718,18 +665,6 @@ executors:
     working_directory: /repo
 
 workflows:
-  ######################################################################################################################
-  # Workflow Name:        GCP-Machine-Cleanup
-  # Workflow Version:     1.0
-  # Workflow Type:        Scheduled                 (Cron)
-  #
-  #
-  # Description:
-  #
-  #   Continuous integration workflow that cleans up lingering GCP instance groups. This job runs every 6 hours starting
-  #   at 02:00 UTC.
-  #
-  ######################################################################################################################
   GCP_Machine_Cleanup:
     triggers:
       - schedule:
@@ -737,15 +672,13 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 02515-M-clean-up-gcp-instances
     jobs:
-      - build-platform-and-services
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
           context: Slack
           runtime: build-executor
-          requires:
-            - build-platform-and-services
+          project_name: "hedera-regression"
           pre-steps:
             - install-tools
             - attach_workspace:
@@ -1813,15 +1746,14 @@ jobs:
               exit 0
             fi
 
-  # com.swirlds.jrs.job.GCPInstanceGroupTerminator
   jrs_gcp_machine_cleanup:
     parameters:
       runtime:
         type: string
         default: ci-test-executor
-      regression_path:
+      project_name:
         type: string
-        default: "/swirlds-platform/regression"
+        default: "hedera-regression"
     executor: << parameters.runtime >>
     steps:
       - gcp_import_credentials:
@@ -1833,6 +1765,12 @@ jobs:
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
             - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
             - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
-      - gcp_cleanup_instance_groups:
-          regression_path: << parameters.regression_path >>
-          project_name: "hedera-regression"
+      - checkout
+      - run:
+          name: Cleanup GCP Instance Groups
+          command: |
+            set -x
+            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            cd /repo;
+            chmod 777 /repo/.circleci/scripts/clean_up_instances.sh;
+            ./.circleci/scripts/clean_up_instances.sh << parameters.project_name >>;
