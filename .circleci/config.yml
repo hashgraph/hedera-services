@@ -656,7 +656,6 @@ workflows:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
           context: Slack
-          runtime: build-executor
           project_name: "hedera-regression"
           pre-steps:
             - install-tools
@@ -1736,7 +1735,6 @@ jobs:
           name: Cleanup GCP Instance Groups
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             cd /repo;
-            chmod 777 /repo/.circleci/scripts/clean_up_instances.sh;
+            chmod 755 /repo/.circleci/scripts/clean_up_instances.sh;
             .circleci/scripts/clean_up_instances.sh << parameters.project_name >>;
