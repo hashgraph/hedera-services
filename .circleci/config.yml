@@ -1768,4 +1768,4 @@ jobs:
             source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             cd /repo;
             chmod 777 /repo/.circleci/scripts/clean_up_instances.sh;
-            ./.circleci/scripts/clean_up_instances.sh << parameters.project_name >>;
+            .circleci/scripts/clean_up_instances.sh << parameters.project_name >>;
