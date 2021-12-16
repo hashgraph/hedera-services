@@ -373,7 +373,7 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
 													  ResponseCodeEnum parentalStatus,
-													  TransactionRecordAsserts ...childRecordAsserts) {
+													  TransactionRecordAsserts... childRecordAsserts) {
 		return withOpContext(
 				(spec, opLog) -> {
 					var distributeTx = getTxnRecord(parentTxnId);
@@ -392,6 +392,10 @@ public class UtilVerbs {
 				});
 	}
 
+	public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
+		return childRecordsCheck(parentTxnId, parentalStatus);
+	}
+
 	public static Setting from(String name, String value) {
 		return Setting.newBuilder()
 				.setName(name)
@@ -404,7 +408,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-			AtomicLong count) {
+											   AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -511,7 +515,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
-			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
+												 long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
 			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 				opLog.info("Sleeping to wait for fee reduction...");
@@ -544,7 +548,7 @@ public class UtilVerbs {
 	}
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
-			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+											   long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
 		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
