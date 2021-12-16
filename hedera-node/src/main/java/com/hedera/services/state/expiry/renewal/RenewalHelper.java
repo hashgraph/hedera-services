@@ -146,13 +146,13 @@ public class RenewalHelper {
 			}
 		}
 
+		/* Remove the entry from auto created accounts map if there is an entry in the map */
+		aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
+
 		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
-
-		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
 
 		return displacements;
 	}
