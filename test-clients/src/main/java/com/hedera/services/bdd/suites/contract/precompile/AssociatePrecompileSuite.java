@@ -216,8 +216,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-
-
 	private HapiApiSpec staticCallForAssociatePrecompileFails() {
 		final var theAccount = "anybody";
 		final var outerContract = "AssociateDissociateContract";

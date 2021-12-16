@@ -123,7 +123,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
 				nestedDissociateWorksAsExpected(),
 				multiplePrecompileDissociationsWithSigsForFungibleWorks(),
-				delegateCallForDissociatePrecompileWorks(),
 				delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks()
 		);
 	}
@@ -223,58 +222,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
 														.gas(5_000_000),
 												getTxnRecord("delegateDissociateCallWithDelegateContractKeyTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						getAccountInfo(theAccount).hasNoTokenRelationship(VANILLA_TOKEN)
-				);
-	}
-
-	private HapiApiSpec delegateCallForDissociatePrecompileWorks() {
-		final var theAccount = "anybody";
-		final var outerContract = "AssociateDissociateContract";
-		final var nestedContract = "NestedAssociateDissociateContract";
-		final var multiKey = "purpose";
-
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("DelegateCallForDissociatePrecompileWorks")
-				.given(
-						newKeyNamed(multiKey),
-						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(outerContract)
-								.bytecode(outerContract)
-								.gas(100_000),
-						cryptoCreate(theAccount)
-								.balance(10 * ONE_HUNDRED_HBARS)
-								.exposingCreatedIdTo(accountID::set),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												tokenAssociate(theAccount, VANILLA_TOKEN),
-												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(outerContract, spec))
-														.bytecode(nestedContract)
-														.gas(100_000),
-												contractCall(nestedContract, DELEGATE_DISSOCIATE_CALL_ABI,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
-														.via("delegateDissociateCallTxn")
-														.alsoSigningWithFullPrefix(multiKey)
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-														.gas(5_000_000),
-												getTxnRecord("delegateDissociateCallTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
