@@ -25,6 +25,7 @@ import com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottlesJsonToGrpcB
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.config.domain.GlobalConfig;
 import com.hedera.services.yahcli.config.domain.NetConfig;
+import com.hedera.services.yahcli.config.domain.NodeConfig;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import picocli.CommandLine;
@@ -34,9 +35,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.yahcli.config.ConfigUtils.asId;
 import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
 import static com.hedera.services.yahcli.config.ConfigUtils.promptForPassphrase;
@@ -44,6 +47,8 @@ import static com.hedera.services.yahcli.config.ConfigUtils.unlocks;
 import static java.util.stream.Collectors.toList;
 
 public class ConfigManager {
+	private static final long MISSING_NODE_ACCOUNT = -1;
+
 	private final Yahcli yahcli;
 	private final GlobalConfig global;
 
@@ -193,6 +198,30 @@ public class ConfigManager {
 							.collect(toList())));
 		}
 		targetNet = global.getNetworks().get(targetName);
+		if (yahcli.getNodeIpv4Addr() != null) {
+			final var ip = yahcli.getNodeIpv4Addr();
+			var nodeAccount = (yahcli.getNodeAccount() == null)
+					? MISSING_NODE_ACCOUNT
+					: asDotDelimitedLongArray(yahcli.getNodeAccount())[2];
+			final var nodes = targetNet.getNodes();
+			if (nodeAccount == MISSING_NODE_ACCOUNT) {
+				for (final var node : nodes) {
+					if (ip.equals(node.getIpv4Addr())) {
+						nodeAccount = node.getAccount();
+						break;
+					}
+				}
+			}
+
+			if (nodeAccount == MISSING_NODE_ACCOUNT) {
+				fail(String.format("Account of node with ip '%s' was not specified, and not in config.yml", ip));
+			}
+
+			final var overrideConfig = new NodeConfig();
+			overrideConfig.setIpv4Addr(ip);
+			overrideConfig.setAccount(nodeAccount);
+			targetNet.setNodes(List.of(overrideConfig));
+		}
 	}
 
 	private void fail(String msg) {
