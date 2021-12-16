@@ -57,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
 	private Random r = new Random();
-	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
 	private static final int AUTO_ACCOUNTS = 20;
 
 	public static void main(String... args) {
@@ -79,18 +78,15 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
 
 		Supplier<HapiSpecOperation[]> transferBurst = () -> {
 			String sender = "sender";
-			String receiver = "receiver";
-			if (settings.getTotalAccounts() > 2) {
-				int s = r.nextInt(settings.getTotalAccounts());
-				int re = 0;
-				do {
-					re = r.nextInt(settings.getTotalAccounts());
-				} while (re == s);
-				sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
+			String receiver;
+
+			if (r.nextInt(10) < 5) {
 				receiver = "alias" + r.nextInt(AUTO_ACCOUNTS);
+			} else {
+				receiver = "receiver";
 			}
 
-			if(receiver.startsWith("alias")){
+			if (receiver.startsWith("alias")) {
 				return new HapiSpecOperation[] {
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(sender, receiver, 1L))
@@ -102,7 +98,7 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
 								.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
 										, UNKNOWN, TRANSACTION_EXPIRED,
 										INSUFFICIENT_ACCOUNT_BALANCE)
-								.hasRetryPrecheckFrom(BUSY)
+								.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 								.deferStatusResolution()
 				};
 			}
@@ -118,13 +114,12 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
 							.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
 									, UNKNOWN, TRANSACTION_EXPIRED,
 									INSUFFICIENT_ACCOUNT_BALANCE)
-							.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
-									INVALID_SIGNATURE, PAYER_ACCOUNT_NOT_FOUND)
+							.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 							.deferStatusResolution()
 			};
 		};
 
-		return defaultHapiSpec("RunCryptoTransfers")
+		return defaultHapiSpec("RunCryptoTransfersWithAutoAccounts")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
