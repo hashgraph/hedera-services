@@ -136,7 +136,7 @@ class TxnAwareRecordsHistorianTest {
 
 		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), followingRecordFrom1);
 		subject.trackFollowingChildRecord(2, TransactionBody.newBuilder(), followingRecordFrom2);
-		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom2);
+		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom1);
 		subject.trackPrecedingChildRecord(2, TransactionBody.newBuilder(), precedingRecordFrom2);
 		subject.revertChildRecordsFromSource(2);
 
