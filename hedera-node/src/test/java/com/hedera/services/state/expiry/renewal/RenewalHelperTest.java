@@ -318,6 +318,7 @@ class RenewalHelperTest {
 
 		AliasManager aliasManager = new AliasManager();
 		aliasManager.setAliases(autoAccountsMap);
+		BackingAccounts backingAccounts = new BackingAccounts(() -> accountsMap);
 
 		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
 				backingAccounts, aliasManager);
@@ -336,7 +337,6 @@ class RenewalHelperTest {
 		subject.classify(brokeExpiredAccountNum, now);
 		subject.removeLastClassifiedAccount();
 
-		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
 		assertFalse(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 	}
 
