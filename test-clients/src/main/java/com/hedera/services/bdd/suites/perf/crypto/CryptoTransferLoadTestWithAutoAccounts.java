@@ -27,6 +27,7 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -36,7 +37,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -50,20 +54,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-public class CryptoTransferLoadTest extends LoadTest {
-	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
+public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
+	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
 	private Random r = new Random();
 	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
+	private static final int AUTO_ACCOUNTS = 20;
+
 	public static void main(String... args) {
 		parseArgs(args);
 
-		CryptoTransferLoadTest suite = new CryptoTransferLoadTest();
+		CryptoTransferLoadTestWithAutoAccounts suite = new CryptoTransferLoadTestWithAutoAccounts();
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return	List.of(
+		return List.of(
 				runCryptoTransfers()
 		);
 	}
@@ -74,28 +80,47 @@ public class CryptoTransferLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> transferBurst = () -> {
 			String sender = "sender";
 			String receiver = "receiver";
-			if(settings.getTotalAccounts() > 2) {
-				int s =  r.nextInt(settings.getTotalAccounts());
+			if (settings.getTotalAccounts() > 2) {
+				int s = r.nextInt(settings.getTotalAccounts());
 				int re = 0;
 				do {
-					re =  r.nextInt(settings.getTotalAccounts());
+					re = r.nextInt(settings.getTotalAccounts());
 				} while (re == s);
 				sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
-				receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
+				receiver = "alias" + r.nextInt(AUTO_ACCOUNTS);
 			}
 
-			return new HapiSpecOperation[] { cryptoTransfer(
-					tinyBarsFromTo(sender, receiver , 1L))
-					.noLogging()
-					.payingWith(sender)
-					.signedBy(GENESIS)
-					.suppressStats(true)
-					.fee(100_000_000L)
-					.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
-							,UNKNOWN,TRANSACTION_EXPIRED,
-							INSUFFICIENT_ACCOUNT_BALANCE)
-					.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-					.deferStatusResolution()
+			if(receiver.startsWith("alias")){
+				return new HapiSpecOperation[] {
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(sender, receiver, 1L))
+								.logging()
+								.payingWith(sender)
+								.signedBy(GENESIS)
+								.suppressStats(true)
+								.fee(100_000_000L)
+								.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
+										, UNKNOWN, TRANSACTION_EXPIRED,
+										INSUFFICIENT_ACCOUNT_BALANCE)
+								.hasRetryPrecheckFrom(BUSY)
+								.deferStatusResolution()
+				};
+			}
+
+			return new HapiSpecOperation[] {
+					cryptoTransfer(
+							tinyBarsFromTo(sender, receiver, 1L))
+							.noLogging()
+							.payingWith(sender)
+							.signedBy(GENESIS)
+							.suppressStats(true)
+							.fee(100_000_000L)
+							.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
+									, UNKNOWN, TRANSACTION_EXPIRED,
+									INSUFFICIENT_ACCOUNT_BALANCE)
+							.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+									INVALID_SIGNATURE, PAYER_ACCOUNT_NOT_FOUND)
+							.deferStatusResolution()
 			};
 		};
 
@@ -114,7 +139,17 @@ public class CryptoTransferLoadTest extends LoadTest {
 						cryptoCreate("receiver")
 								.payingWith(GENESIS)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						        .key(GENESIS).logging()
+								.key(GENESIS).logging(),
+
+						withOpContext((spec, opLog) -> {
+							List<HapiSpecOperation> ops = new ArrayList<>();
+							for (int i = 0; i < AUTO_ACCOUNTS; i++) {
+								var alias = "alias" + i;
+								ops.add(newKeyNamed(alias));
+								ops.add(cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HBAR)));
+							}
+							allRunFor(spec, ops);
+						})
 				).then(
 						defaultLoadTest(transferBurst, settings),
 						getAccountBalance("sender").logged()
