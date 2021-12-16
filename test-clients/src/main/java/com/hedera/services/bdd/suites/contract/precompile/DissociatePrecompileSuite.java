@@ -89,6 +89,10 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
+	private static final String OUTER_CONTRACT = "AssociateDissociateContract";
+	private static final String INNER_CONTRACT = "NestedAssociateDissociateContract";
+	private static final String THE_ACCOUNT = "anybody";
+
 
 	public static void main(String... args) {
 		new DissociatePrecompileSuite().runSuiteAsync();
@@ -128,43 +132,39 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
-		final var theAccount = "anybody";
-		final var outerContract = "NestedAssociateDissociateContract";
-		final var innerContract = "AssociateDissociateContract";
 		final var contractKey = "Contract key";
 		final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, CONTRACT);
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("DelegateCallForDissociatePrecompileSignedWithContractKeyFails")
 				.given(
-						fileCreate(innerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(outerContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(innerContract)
-								.bytecode(innerContract)
+						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(INNER_CONTRACT)
+								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(theAccount)
-								.balance(10 * ONE_HUNDRED_HBARS)
+						cryptoCreate(THE_ACCOUNT)
 								.exposingCreatedIdTo(accountID::set)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(outerContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(innerContract, spec))
-														.bytecode(outerContract)
+												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getNestedContractAddress(INNER_CONTRACT, spec))
+														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												newKeyNamed(contractKey).shape(contractKeyShape.signedWith(sigs(ON, outerContract))),
-												cryptoUpdate(theAccount).key(contractKey),
-												tokenAssociate(theAccount, VANILLA_TOKEN),
-												contractCall(outerContract, DELEGATE_DISSOCIATE_CALL_ABI,
+												newKeyNamed(contractKey).shape(contractKeyShape.signedWith(sigs(ON, OUTER_CONTRACT))),
+												cryptoUpdate(THE_ACCOUNT).key(contractKey),
+												tokenAssociate(THE_ACCOUNT, VANILLA_TOKEN),
+												contractCall(OUTER_CONTRACT, DELEGATE_DISSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(GENESIS)
 														.via("delegateDissociateCallWithContractKeyTxn")
@@ -174,48 +174,44 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getAccountInfo(theAccount).hasToken(relationshipWith(VANILLA_TOKEN))
+						getAccountInfo(THE_ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
 
 	private HapiApiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
-		final var theAccount = "anybody";
-		final var outerContract = "NestedAssociateDissociateContract";
-		final var innerContract = "AssociateDissociateContract";
 		final var delegateKey = "Delegate contract key";
 		final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks")
 				.given(
-						fileCreate(innerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(outerContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(innerContract)
-								.bytecode(innerContract)
+						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(INNER_CONTRACT)
+								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(theAccount)
-								.balance(10 * ONE_HUNDRED_HBARS)
+						cryptoCreate(THE_ACCOUNT)
 								.exposingCreatedIdTo(accountID::set)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(outerContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(innerContract, spec))
-														.bytecode(outerContract)
+												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getNestedContractAddress(INNER_CONTRACT, spec))
+														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												tokenAssociate(theAccount, VANILLA_TOKEN),
-												newKeyNamed(delegateKey).shape(delegateContractKeyShape.signedWith(sigs(ON, outerContract))),
-												cryptoUpdate(theAccount).key(delegateKey),
-												contractCall(outerContract, DELEGATE_DISSOCIATE_CALL_ABI,
+												tokenAssociate(THE_ACCOUNT, VANILLA_TOKEN),
+												newKeyNamed(delegateKey).shape(delegateContractKeyShape.signedWith(sigs(ON, OUTER_CONTRACT))),
+												cryptoUpdate(THE_ACCOUNT).key(delegateKey),
+												contractCall(OUTER_CONTRACT, DELEGATE_DISSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(GENESIS)
 														.via("delegateDissociateCallWithDelegateContractKeyTxn")
@@ -225,59 +221,49 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getAccountInfo(theAccount).hasNoTokenRelationship(VANILLA_TOKEN)
+						getAccountInfo(THE_ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
 
 	private HapiApiSpec staticCallForDissociatePrecompileFails() {
-		final var theAccount = "anybody";
-		final var outerContract = "AssociateDissociateContract";
-		final var nestedContract = "NestedAssociateDissociateContract";
-		final var multiKey = "purpose";
-
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("StaticCallForDissociatePrecompileFails")
 				.given(
-						newKeyNamed(multiKey),
-						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(outerContract)
-								.bytecode(outerContract)
+						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(INNER_CONTRACT)
+								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(theAccount)
-								.balance(10 * ONE_HUNDRED_HBARS)
+						cryptoCreate(THE_ACCOUNT)
 								.exposingCreatedIdTo(accountID::set),
-						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												tokenAssociate(theAccount, VANILLA_TOKEN),
-												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(outerContract, spec))
-														.bytecode(nestedContract)
+												tokenAssociate(THE_ACCOUNT, VANILLA_TOKEN),
+												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getNestedContractAddress(INNER_CONTRACT, spec))
+														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												contractCall(nestedContract, STATIC_DISSOCIATE_CALL_ABI,
+												contractCall(OUTER_CONTRACT, STATIC_DISSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
+														.payingWith(GENESIS)
 														.via("staticDissociateCallTxn")
-//														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 														.gas(5_000_000),
 												getTxnRecord("staticDissociateCallTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount).hasToken(relationshipWith(VANILLA_TOKEN))
+						getAccountInfo(THE_ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
 
@@ -286,10 +272,10 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("multiplePrecompileDissociationsWithSigsForFungibleWorks")
 				.given(
@@ -358,8 +344,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var nestedContract = "NestedAssociateDissociateContract";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("nestedDissociateWorksAsExpected")
 				.given(
@@ -408,11 +394,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 
-		AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 		return defaultHapiSpec("DissociatePrecompileWithSigsForFungibleWorks")
 				.given(
 						newKeyNamed(multiKey),
@@ -515,11 +501,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var contractKey = "meaning";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 
-		AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 		return defaultHapiSpec("DissociatePrecompileWitContractIdSigForFungibleWorks")
 				.given(
 						newKeyNamed("kycKey"),
@@ -621,11 +607,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var theContract = "associateDissociateContract";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 
-		AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 		return defaultHapiSpec("DissociatePrecompileWithSigsForNFTWorks")
 				.given(
 						newKeyNamed(multiKey),
@@ -729,11 +715,11 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var contractKey = "meaning";
 		final var multiKey = "purpose";
 
-		AtomicReference<AccountID> accountID = new AtomicReference<>();
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 
-		AtomicReference<TokenID> tk1TokenID = new AtomicReference<>();
 		return defaultHapiSpec("DissociatePrecompileWitContractIdSigForNFTWorks")
 				.given(
 						newKeyNamed("kycKey"),
@@ -844,13 +830,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
 		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
-		AtomicReference<AccountID> treasuryID = new AtomicReference<>();
-		AtomicReference<AccountID> zeroBalanceFrozenID = new AtomicReference<>();
-		AtomicReference<AccountID> zeroBalanceUnfrozenID = new AtomicReference<>();
-		AtomicReference<AccountID> nonZeroBalanceFrozenID = new AtomicReference<>();
-		AtomicReference<AccountID> nonZeroBalanceUnfrozenID = new AtomicReference<>();
-		AtomicReference<TokenID> tbdTokenID = new AtomicReference<>();
-		AtomicReference<TokenID> tbdUniqueTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+		final AtomicReference<AccountID> zeroBalanceFrozenID = new AtomicReference<>();
+		final AtomicReference<AccountID> zeroBalanceUnfrozenID = new AtomicReference<>();
+		final AtomicReference<AccountID> nonZeroBalanceFrozenID = new AtomicReference<>();
+		final AtomicReference<AccountID> nonZeroBalanceUnfrozenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tbdTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> tbdUniqueTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("DissociatePrecompileHasExpectedSemanticsForDeletedTokens")
 				.given(
@@ -888,7 +874,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set)
 				).when(
-
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
