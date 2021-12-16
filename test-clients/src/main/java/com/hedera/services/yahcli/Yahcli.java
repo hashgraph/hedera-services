@@ -77,6 +77,10 @@ public class Yahcli implements Callable<Integer> {
 			paramLabel = "node account")
 	String nodeAccount;
 
+	@Option(names = { "-i", "--node-ip" },
+			paramLabel = "node IPv4 address")
+	String nodeIpv4Addr;
+
 	@Option(names = { "-p", "--payer" },
 			paramLabel = "payer")
 	String payer;
@@ -129,5 +133,9 @@ public class Yahcli implements Callable<Integer> {
 	public Level getLogLevel() {
 		Level level = Level.getLevel(loglevel);
 		return level == null ? Level.WARN : level;
+	}
+
+	public String getNodeIpv4Addr() {
+		return nodeIpv4Addr;
 	}
 }
