@@ -6,13 +6,10 @@ import "./HederaTokenService.sol";
 
 contract CryptoTransfer is HederaTokenService {
 
-    address tokenAddress;
-
-    constructor(address _tokenAddress) public {
-        tokenAddress = _tokenAddress;
+    constructor() public {
     }
 
-    function transferFungibleTokensList(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
+    function transferMultipleTokens(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
         int response = HederaTokenService.cryptoTransfer(tokenTransfers);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Crypto Transfer Failed");

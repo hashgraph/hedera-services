@@ -938,6 +938,9 @@ public class UtilVerbs {
 	public static TokenTransferListBuilder tokenTransferList() {
 		return new TokenTransferListBuilder();
 	}
+	public static TokenTransferListsBuilder tokenTransferLists() {
+		return new TokenTransferListsBuilder();
+	}
 
 	public static class TokenTransferListBuilder {
 		private Tuple tokenTransferList;
@@ -962,6 +965,19 @@ public class UtilVerbs {
 
 		public Tuple build() {
 			return tokenTransferList;
+		}
+	}
+
+	public static class TokenTransferListsBuilder {
+		private Tuple[] tokenTransferLists;
+
+		public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
+			this.tokenTransferLists = tokenTransferLists;
+			return this;
+		}
+
+		public Tuple[] build() {
+			return tokenTransferLists;
 		}
 	}
 

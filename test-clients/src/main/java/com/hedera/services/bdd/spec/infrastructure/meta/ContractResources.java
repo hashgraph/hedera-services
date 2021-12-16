@@ -104,8 +104,7 @@ public class ContractResources {
 			"\"name\":\"metadata\"," +
 			"\"type\":\"bytes\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
+	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
 	public static final String CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST = "{\"inputs\": [{\"components\": [{\"internalType\": \"address\"," +
 			"\"name\": \"token\",\"type\": \"address\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"accountID\"," +
@@ -114,7 +113,7 @@ public class ContractResources {
 			"{" + "\"internalType\": \"address\",\"name\": \"receiverAccountID\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNumber\"," +
 			"\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.NftTransfer[]\",\"name\": \"nftTransfers\",\"type\": \"tuple[]\"}]," +
 			"\"internalType\": \"struct IHederaTokenService.TokenTransferList[]\",\"name\": \"tokenTransfers\"," + "\"type\": \"tuple[]\"" + "}]," +
-			"\"name\": \"transferFungibleTokensList\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+			"\"name\": \"transferMultipleTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
