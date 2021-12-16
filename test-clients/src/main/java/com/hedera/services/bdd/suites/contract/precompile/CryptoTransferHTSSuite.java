@@ -1,9 +1,9 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -30,14 +30,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static java.lang.System.arraycopy;
 
 public class CryptoTransferHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
@@ -111,16 +112,15 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						withOpContext(
 								(spec, opLog) ->
 								{
-									final var token = asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN));
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+									final var sender = spec.registry().getAccountID(ACCOUNT);
+									final var receiver = spec.registry().getAccountID(RECEIVER);
 									final var amountToBeSent = 50L;
 									allRunFor(
 											spec,
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
-													getTokenTransferListWithFungibleTokensAsTuple(token,
-															sender,
-															receiver, amountToBeSent)).payingWith(ACCOUNT)
+													tokenTransferList().forToken(token).withAccountAmounts(accountAmount(sender, -amountToBeSent),
+															accountAmount(receiver, amountToBeSent)).build()).payingWith(ACCOUNT)
 													.via(firstCryptoTransferTxn)
 													.alsoSigningWithFullPrefix(multiKey));
 								}),
@@ -167,15 +167,14 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						withOpContext(
 								(spec, opLog) ->
 								{
-									final var token = asAddress(spec.registry().getTokenID(NFT_TOKEN));
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var token = spec.registry().getTokenID(NFT_TOKEN);
+									final var sender = spec.registry().getAccountID(ACCOUNT);
+									final var receiver = spec.registry().getAccountID(RECEIVER);
 									allRunFor(
 											spec,
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
-													getTokenTransferListWithNonFungibleTokensAsTuple(token,
-															sender,
-															receiver, 1L)).payingWith(ACCOUNT)
+													tokenTransferList().forToken(token).
+															withNftTransfers(nftTransfer(sender, receiver, 1L)).build()).payingWith(ACCOUNT)
 													.via(firstCryptoTransferTxn)
 													.alsoSigningWithFullPrefix(multiKey));
 								}),
@@ -187,44 +186,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT_TOKEN, 0),
 						getTokenInfo(NFT_TOKEN).logged()
 				);
-	}
-
-	private Tuple getTokenTransferListWithFungibleTokensAsTuple(final byte[] tokenAddress,
-																final byte[] accountAddress,
-																final byte[] receiverAddress,
-																final long amountToBeSent) {
-		final var token32 = getAddressWithFilledEmptyBytes(tokenAddress);
-		final var  accountAmounts = new Tuple[] {getAccountAmountTuple(accountAddress, -amountToBeSent),
-				getAccountAmountTuple(receiverAddress, amountToBeSent)} ;
-
-		return Tuple.singleton(new Tuple[]{Tuple.of(token32, accountAmounts,
-				new Tuple[]{})});
-	}
-
-	private Tuple getTokenTransferListWithNonFungibleTokensAsTuple(final byte[] tokenAddress,
-																   final byte[] accountAddress,
-																   final byte[] receiverAddress,
-																   final long serialNumber) {
-		final var token32 = getAddressWithFilledEmptyBytes(tokenAddress);
-		final var nftTransfers = new Tuple[]{getNftTransferTuple(accountAddress, receiverAddress, serialNumber)};
-
-		return Tuple.singleton(new Tuple[]{Tuple.of(token32, new Tuple[]{},
-				nftTransfers)});
-	}
-
-	private Tuple getAccountAmountTuple(final byte[] account, final long amount) {
-		return new Tuple(getAddressWithFilledEmptyBytes(account), amount);
-	}
-
-	private Tuple getNftTransferTuple(final byte[] sender, final byte[] receiver, final long serialNumber) {
-		return new Tuple(getAddressWithFilledEmptyBytes(sender), getAddressWithFilledEmptyBytes(receiver),
-				serialNumber);
-	}
-
-	private byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
-		final var address32 = new byte[32];
-		arraycopy(address20, 0, address32, 12, 20);
-		return address32;
 	}
 
 	@Override
