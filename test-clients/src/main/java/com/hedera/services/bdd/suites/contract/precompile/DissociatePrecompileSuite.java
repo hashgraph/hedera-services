@@ -111,7 +111,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		return List.of(
 				staticCallForDissociatePrecompileFails(),
 				delegateCallForDissociatePrecompileSignedWithContractKeyFails()
-				);
+		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
