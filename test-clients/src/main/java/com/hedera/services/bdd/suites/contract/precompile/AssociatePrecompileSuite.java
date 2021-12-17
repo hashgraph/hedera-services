@@ -63,9 +63,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
@@ -78,10 +75,21 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
 	private static final long TOTAL_SUPPLY = 1_000;
+	private static final KeyShape CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, CONTRACT);
+	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 	private static final String TOKEN_TREASURY = "treasury";
-	private static final String OUTER_CONTRACT = "AssociateDissociateContract";
-	private static final String INNER_CONTRACT = "NestedAssociateDissociateContract";
-	private static final String THE_ACCOUNT = "anybody";
+	private static final String OUTER_CONTRACT = "Nested Associate/Dissociate Contract";
+	private static final String INNER_CONTRACT = "Associate/Dissociate Contract";
+	private static final String THE_CONTRACT = "Associate/Dissociate Contract";
+	private static final String ACCOUNT = "anybody";
+	private static final String FROZEN_TOKEN = "Frozen token";
+	private static final String UNFROZEN_TOKEN = "Unfrozen token";
+	private static final String KYC_TOKEN = "KYC token";
+	private static final String CONTRACT_KEY = "Contract key";
+	private static final String DELEGATE_KEY = "Delegate key";
+	private static final String FREEZE_KEY = "Freeze key";
+	private static final String KYC_KEY = "KYC key";
+	private static final String MULTI_KEY = "Multi key";
 
 	public static void main(String... args) {
 		new AssociatePrecompileSuite().runSuiteAsync();
@@ -120,9 +128,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
-		final var contractKey = "Contract key";
-		final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, CONTRACT);
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -138,7 +143,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(THE_ACCOUNT)
+						cryptoCreate(ACCOUNT)
 								.exposingCreatedIdTo(accountID::set)
 				).when(
 						withOpContext(
@@ -149,8 +154,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														getNestedContractAddress(INNER_CONTRACT, spec))
 														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												newKeyNamed(contractKey).shape(contractKeyShape.signedWith(sigs(ON, OUTER_CONTRACT))),
-												cryptoUpdate(THE_ACCOUNT).key(contractKey),
+												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
 												contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(GENESIS)
@@ -161,14 +166,11 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getAccountInfo(THE_ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
 
 	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
-		final var delegateKey = "Delegate contract key";
-		final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -184,7 +186,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(THE_ACCOUNT)
+						cryptoCreate(ACCOUNT)
 								.exposingCreatedIdTo(accountID::set)
 				).when(
 						withOpContext(
@@ -195,8 +197,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														getNestedContractAddress(INNER_CONTRACT, spec))
 														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												newKeyNamed(delegateKey).shape(delegateContractKeyShape.signedWith(sigs(ON, OUTER_CONTRACT))),
-												cryptoUpdate(THE_ACCOUNT).key(delegateKey),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
 														.payingWith(GENESIS)
@@ -207,7 +209,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getAccountInfo(THE_ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
 	}
 
@@ -222,7 +224,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						contractCreate(INNER_CONTRACT)
 								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(THE_ACCOUNT)
+						cryptoCreate(ACCOUNT)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
@@ -240,7 +242,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.gas(100_000),
 												contractCall(OUTER_CONTRACT, STATIC_ASSOCIATE_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(THE_ACCOUNT)
+														.payingWith(ACCOUNT)
 														.via("staticAssociateCallTxn")
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 														.gas(5_000_000),
@@ -248,633 +250,502 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getAccountInfo(THE_ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
 
 	private HapiApiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var multiKey = "purpose";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
 				.given(
-						newKeyNamed(multiKey),
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey"),
-						fileCreate(theContract)
+						fileCreate(THE_CONTRACT)
 								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount)
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
 								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+						tokenCreate(UNFROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
 								.freezeDefault(false)
-								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
-						tokenCreate(KNOWABLE_TOKEN)
+								.exposingCreatedIdTo(id -> unfrozenTokenID.set(asToken(id))),
+						tokenCreate(KYC_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.kycKey("kycKey")
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+								.kycKey(KYC_KEY)
+								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract)
-														.bytecode(theContract)
+												contractCreate(THE_CONTRACT)
+														.bytecode(THE_CONTRACT)
 														.gas(100_000),
-												contractCall(theContract, MULTIPLE_TOKENS_ASSOCIATE,
+												contractCall(THE_CONTRACT, MULTIPLE_TOKENS_ASSOCIATE,
 														asAddress(accountID.get()),
 														List.of(
-																asAddress(freezeKeyOnTokenID.get()),
-																asAddress(freezeKeyOffTokenID.get()),
-																asAddress(knowableTokenTokenID.get()),
-																asAddress(vanillaTokenTokenID.get()))
+																asAddress(frozenTokenID.get()),
+																asAddress(unfrozenTokenID.get()),
+																asAddress(kycTokenID.get()),
+																asAddress(vanillaTokenID.get()))
 												)
-														.payingWith(theAccount)
+														.payingWith(ACCOUNT)
 														.via("MultipleTokensAssociationsTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("MultipleTokensAssociationsTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
+						getAccountInfo(ACCOUNT)
+								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
+								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
+								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
 	private HapiApiSpec nestedAssociateWorksAsExpected() {
-		final var theAccount = "anybody";
-		final var outerContract = "AssociateDissociateContract";
-		final var nestedContract = "NestedAssociateDissociateContract";
-		final var multiKey = "purpose";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("nestedAssociateWorksAsExpected")
 				.given(
-						newKeyNamed(multiKey),
-						fileCreate(outerContract).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(nestedContract).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(outerContract)
-								.bytecode(outerContract)
+						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						contractCreate(INNER_CONTRACT)
+								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(theAccount)
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				)
 				.when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(nestedContract, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(outerContract, spec))
-														.bytecode(nestedContract)
+												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getNestedContractAddress(INNER_CONTRACT, spec))
+														.bytecode(OUTER_CONTRACT)
 														.gas(100_000),
-												contractCall(nestedContract, NESTED_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("nestedDissociateAfterAssociateTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("nestedDissociateAfterAssociateTxn").andAllChildRecords().logged()
 										)
 						)
-
 				).then(
-						getAccountInfo(theAccount)
-								.hasNoTokenRelationship(VANILLA_TOKEN)
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
 
 	private HapiApiSpec associatePrecompileWithSignatureWorksForFungible() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var multiKey = "purpose";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("associatePrecompileWithSignatureWorksForFungible")
 				.given(
-						newKeyNamed(multiKey),
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey"),
-						fileCreate(theContract)
+						newKeyNamed(KYC_KEY),
+						newKeyNamed(FREEZE_KEY),
+						newKeyNamed(MULTI_KEY),
+						fileCreate(THE_CONTRACT)
 								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount)
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+						tokenCreate(UNFROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(false)
-								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
-						tokenCreate(KNOWABLE_TOKEN)
+								.exposingCreatedIdTo(id -> unfrozenTokenID.set(asToken(id))),
+						tokenCreate(KYC_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.kycKey("kycKey")
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+								.kycKey(KYC_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate("AssociateDissociate")
-														.bytecode(theContract)
+												contractCreate(THE_CONTRACT)
+														.bytecode(THE_CONTRACT)
 														.gas(100_000),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
-														.payingWith(theAccount)
-														.via("freezeKeyOnTxn")
-														.alsoSigningWithFullPrefix(multiKey)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
+														.payingWith(ACCOUNT)
+														.via("frozenTokenAssociateTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
-														.payingWith(theAccount)
-														.via("freezeKeyOffTxn")
-														.alsoSigningWithFullPrefix(multiKey)
+												getTxnRecord("frozenTokenAssociateTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(unfrozenTokenID.get()))
+														.payingWith(ACCOUNT)
+														.via("unfrozenTokenAssociateTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
-														.payingWith(theAccount)
-														.via("knowableTokenTxn")
-														.alsoSigningWithFullPrefix(multiKey)
+												getTxnRecord("unfrozenTokenAssociateTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(kycTokenID.get()))
+														.payingWith(ACCOUNT)
+														.via("kycTokenAssociateTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
-														.via("vanillaTokenTxn")
-														.alsoSigningWithFullPrefix(multiKey)
+												getTxnRecord("kycTokenAssociateTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
+														.via("vanillaTokenAssociateTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
+												getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
+						getAccountInfo(ACCOUNT)
+								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
+								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
+								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
 	private HapiApiSpec associatePrecompileWithContractIdSignatureWorksForFungible() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var multiKey = "purpose";
-		final var contractKey = "meaning";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("associatePrecompileWithContractIdSignatureWorksForFungible")
 				.given(
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey"),
-						newKeyNamed(multiKey),
-						fileCreate(theContract)
+						newKeyNamed(KYC_KEY),
+						newKeyNamed(FREEZE_KEY),
+						newKeyNamed(MULTI_KEY),
+						fileCreate(THE_CONTRACT)
 								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount)
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.freezeKey(FREEZE_KEY)
 								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+						tokenCreate(UNFROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(false)
-								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
-						tokenCreate(KNOWABLE_TOKEN)
+								.exposingCreatedIdTo(id -> unfrozenTokenID.set(asToken(id))),
+						tokenCreate(KYC_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.kycKey("kycKey")
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.kycKey(KYC_KEY)
+								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate("AssociateDissociate")
-														.bytecode(theContract)
+												contractCreate(THE_CONTRACT)
+														.bytecode(THE_CONTRACT)
 														.gas(100_000),
-												newKeyNamed(contractKey)
-														.shape(DELEGATE_CONTRACT.signedWith("AssociateDissociate")),
-												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-														.supplyKey(contractKey),
-												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
-														.payingWith(theAccount)
+												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
+												tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(FROZEN_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOnTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												tokenUpdate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-														.supplyKey(contractKey),
-												getTokenInfo(FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
-														.payingWith(theAccount)
+												tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(UNFROZEN_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(unfrozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOffTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												tokenUpdate(KNOWABLE_TOKEN)
-														.supplyKey(contractKey),
-												getTokenInfo(KNOWABLE_TOKEN).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
-														.payingWith(theAccount)
+												tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(KYC_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(kycTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("knowableTokenTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												tokenUpdate(VANILLA_TOKEN)
-														.supplyKey(contractKey),
+												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												getTokenInfo(VANILLA_TOKEN).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("vanillaTokenTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
+						getAccountInfo(ACCOUNT)
+								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
+								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
+								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
 	private HapiApiSpec associatePrecompileWithSignatureWorksForNFT() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var multiKey = "purpose";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("associatePrecompileWithSignatureWorksForNFT")
 				.given(
-						newKeyNamed(multiKey),
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey"),
-						fileCreate(theContract)
-								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount)
+						newKeyNamed(KYC_KEY),
+						newKeyNamed(FREEZE_KEY),
+						newKeyNamed(MULTI_KEY),
+						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						tokenCreate(FROZEN_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+						tokenCreate(UNFROZEN_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(false)
-								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
-						tokenCreate(KNOWABLE_TOKEN)
+								.exposingCreatedIdTo(id -> unfrozenTokenID.set(asToken(id))),
+						tokenCreate(KYC_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.kycKey("kycKey")
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+								.kycKey(KYC_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate("AssociateDissociate")
-														.bytecode(theContract)
+												contractCreate(THE_CONTRACT)
+														.bytecode(THE_CONTRACT)
 														.gas(100_000),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOnTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(unfrozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOffTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(kycTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("knowableTokenTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("vanillaTokenTxn")
-														.alsoSigningWithFullPrefix(multiKey)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
+						getAccountInfo(ACCOUNT)
+								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
+								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
+								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
 	private HapiApiSpec associatePrecompileWithContractIdSignatureWorksForNFT() {
-		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var multiKey = "purpose";
-		final var contractKey = "meaning";
-
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOnTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> freezeKeyOffTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
 		return defaultHapiSpec("associatePrecompileWithContractIdSignatureWorksForNFT")
 				.given(
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey"),
-						newKeyNamed(multiKey),
-						fileCreate(theContract)
-								.path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						cryptoCreate(theAccount)
+						newKeyNamed(KYC_KEY),
+						newKeyNamed(FREEZE_KEY),
+						newKeyNamed(MULTI_KEY),
+						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						tokenCreate(FROZEN_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> freezeKeyOnTokenID.set(asToken(id))),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+						tokenCreate(UNFROZEN_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.freezeKey("freezeKey")
+								.freezeKey(FREEZE_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
 								.freezeDefault(false)
-								.exposingCreatedIdTo(id -> freezeKeyOffTokenID.set(asToken(id))),
-						tokenCreate(KNOWABLE_TOKEN)
+								.exposingCreatedIdTo(id -> unfrozenTokenID.set(asToken(id))),
+						tokenCreate(KYC_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.kycKey("kycKey")
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+								.kycKey(KYC_KEY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(0)
-								.adminKey(multiKey)
-								.supplyKey(multiKey)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate("AssociateDissociate")
-														.bytecode(theContract)
+												contractCreate(THE_CONTRACT)
+														.bytecode(THE_CONTRACT)
 														.gas(100_000),
-												newKeyNamed(contractKey)
-														.shape(DELEGATE_CONTRACT.signedWith("AssociateDissociate")),
-												tokenUpdate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-														.supplyKey(contractKey),
-												getTokenInfo(FREEZABLE_TOKEN_ON_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOnTokenID.get()))
-														.payingWith(theAccount)
+												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
+												tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(FROZEN_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOnTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOnTxn").andAllChildRecords().logged(),
-												tokenUpdate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-														.supplyKey(contractKey),
-												getTokenInfo(FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(freezeKeyOffTokenID.get()))
-														.payingWith(theAccount)
+												tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(UNFROZEN_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("freezeKeyOffTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("freezeKeyOffTxn").andAllChildRecords().logged(),
-												tokenUpdate(KNOWABLE_TOKEN)
-														.supplyKey(contractKey),
-												getTokenInfo(KNOWABLE_TOKEN).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(knowableTokenTokenID.get()))
-														.payingWith(theAccount)
+												tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY),
+												getTokenInfo(KYC_TOKEN).logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(kycTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("knowableTokenTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("knowableTokenTxn").andAllChildRecords().logged(),
-												tokenUpdate(VANILLA_TOKEN)
-														.supplyKey(contractKey),
+												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												getTokenInfo(VANILLA_TOKEN).logged(),
-												contractCall("AssociateDissociate", SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(theAccount)
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
 														.via("vanillaTokenTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("vanillaTokenTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountInfo(theAccount)
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
+						getAccountInfo(ACCOUNT)
+								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
+								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
+								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
