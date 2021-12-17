@@ -148,12 +148,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		);
 	}
 
-	// TODO: This test aims to prove, that an account, provided with a key, shaped from a contract, will happily execute
-	//       dissociate precompile operation.
-	//       The problem here is, that we use the DELEGATE_CONTRACT shape but applied to a contract, which is not using delegateCall()
-	//		 syntax.
-	//		 If we apply CONTRACT shape (as we think - the proper one), the test will fail with "Invalid signature".
-	// 		 When the problem with the shape type is solved - change the name of the test and remove "delegate"
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForFungibleVanilla() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -175,9 +169,9 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
-												cryptoUpdate(TOKEN_TREASURY).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
@@ -247,8 +241,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												tokenAssociate(ACCOUNT, FROZEN_TOKEN),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
@@ -296,8 +290,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(kycTokenID.get()))
 														.payingWith(GENESIS)
@@ -348,9 +342,9 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
-												cryptoUpdate(TOKEN_TREASURY).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
@@ -419,8 +413,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												tokenAssociate(ACCOUNT, FROZEN_TOKEN),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
@@ -469,8 +463,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(kycTokenID.get()))
 														.payingWith(GENESIS)
@@ -656,13 +650,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												contractCall(OUTER_CONTRACT, NESTED_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
-														.via("nestedDissociateAfterAssociateTxn")
+														.via("nestedDissociateTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												getTxnRecord("nestedDissociateAfterAssociateTxn").andAllChildRecords().logged()
+												getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						childRecordsCheck("nestedDissociateAfterAssociateTxn", SUCCESS,
+						childRecordsCheck("nestedDissociateTxn", SUCCESS,
 								recordWith().status(SUCCESS),
 								recordWith().status(SUCCESS)),
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
