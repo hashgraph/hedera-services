@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.core.CommonUtils;
@@ -36,21 +37,27 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_AFTER_NESTED_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 
 public class ContractBurnHTSSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
@@ -73,7 +80,9 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     List<HapiApiSpec> negativeSpecs() {
-        return List.of();
+        return List.of(
+                HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer()
+        );
     }
 
     List<HapiApiSpec> positiveSpecs() {
@@ -247,6 +256,77 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                         getAccountBalance(treasuryForToken).hasTokenBalance(token, 50)
                 );
     }
+
+    private HapiApiSpec HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer() {
+        final var alice = "alice";
+        final var bob = "bob";
+        final var treasuryForToken = "treasuryForToken";
+        final var feeCollector = "feeCollector";
+        final var supplyKey = "supplyKey";
+        final var tokenWithHbarFee = "tokenWithHbarFee";
+        final var theContract = "theContract";
+
+        return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
+                .given(
+                        newKeyNamed(supplyKey),
+                        cryptoCreate(alice).balance(ONE_HBAR),
+                        cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).balance(0L),
+                        tokenCreate(tokenWithHbarFee)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(supplyKey)
+                                .initialSupply(0L)
+                                .treasury(treasuryForToken)
+                                .withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
+                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
+                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
+                        fileCreate("bytecode").payingWith(bob),
+                        updateLargeFile(bob, "bytecode",
+                                extractByteCode(ContractResources.TRANSFER_AND_BURN)),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCreate(theContract, ContractResources.TRANSFER_AND_BURN_CONSTRUCTOR_ABI,
+                                                        asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+                                                        .payingWith(bob)
+                                                        .bytecode("bytecode")
+                                                        .gas(28_000))),
+                        tokenAssociate(alice, tokenWithHbarFee),
+                        tokenAssociate(bob, tokenWithHbarFee),
+                        tokenAssociate(theContract, tokenWithHbarFee),
+                        cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
+                                .payingWith(GENESIS),
+                        getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
+                )
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var serialNumbers = new ArrayList<>();
+                                    serialNumbers.add(1L);
+                                    allRunFor(
+                                            spec,
+                                            contractCall(theContract, TRANSFER_BURN_ABI,
+                                                    asAddress(spec.registry().getAccountID(alice)),
+                                                    asAddress(spec.registry().getAccountID(bob)), 0,
+                                                    2L, serialNumbers)
+                                                    .payingWith(alice)
+                                                    .alsoSigningWithFullPrefix(alice)
+                                                    .alsoSigningWithFullPrefix(supplyKey)
+                                                    .gas(70_000)
+                                                    .via("contractCallTxn")
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                                }),
+                        getTxnRecord("contractCallTxn").andAllChildRecords().logged()
+                )
+                .then(
+                        getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
+                        getAccountBalance(treasuryForToken).hasTokenBalance(tokenWithHbarFee, 1),
+                        getAccountBalance(alice).hasTokenBalance(tokenWithHbarFee, 1)
+                );
+    }
+
 
     @NotNull
     private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {

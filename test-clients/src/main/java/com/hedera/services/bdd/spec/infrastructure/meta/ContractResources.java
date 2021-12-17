@@ -86,6 +86,7 @@ public class ContractResources {
 	public static final String BURN_TOKEN = bytecodePath("BurnToken");
 	public static final String BURN_TOKEN_CONTRACT = bytecodePath("BurnTokenContract");
 	public static final String NESTED_BURN = bytecodePath("NestedBurn");
+	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -120,6 +121,16 @@ public class ContractResources {
 	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
 			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"} ]," +
 		"\"name\": \"BurnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String TRANSFER_AND_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String TRANSFER_BURN_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
