@@ -169,11 +169,11 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferList.getNftExchanges(),
-				tokensTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(tokensTransferList.getNftExchanges(),
+				tokensTransferList.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferList);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -210,10 +210,10 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListSenderOnly.getNftExchanges(),
-				tokensTransferListSenderOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(tokensTransferListSenderOnly.getNftExchanges(),
+				tokensTransferListSenderOnly.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
-		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListSenderOnly);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListSenderOnly));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -250,10 +250,10 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListReceiverOnly.getNftExchanges(),
-				tokensTransferListReceiverOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(tokensTransferListReceiverOnly.getNftExchanges(),
+				tokensTransferListReceiverOnly.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListReceiverOnly);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -290,10 +290,10 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftsTransferList.getNftExchanges(),
-				nftsTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(nftsTransferList.getNftExchanges(),
+				nftsTransferList.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(nftsTransferList);
+		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -330,10 +330,10 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.getNftExchanges(),
-				nftTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(nftTransferList.getNftExchanges(),
+				nftTransferList.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(nftTransferList);
+		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -370,10 +370,10 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.getNftExchanges(),
-				nftTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(nftTransferList.getNftExchanges(),
+				nftTransferList.getFungibleTransfers())))).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
-		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(nftTransferList);
+		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
@@ -426,7 +426,7 @@ class TransferPrecompilesTest {
 				dynamicProperties,
 				validator
 		)).willReturn(transferLogic);
-		given(decoder.decodeTransferToken(pretendArguments)).willReturn(tokenTransferList);
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(Collections.singletonList(tokenTransferList));
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -498,37 +498,37 @@ class TransferPrecompilesTest {
 					null,
 					receiver
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokenTransferList = new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList tokenTransferList = new SyntheticTxnFactory.TokenTransferList(
 			new ArrayList<>() {
 			},
 			List.of(transfer)
 	);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList tokensTransferList =
+			new SyntheticTxnFactory.TokenTransferList(
 					new ArrayList<>() {
 					},
 					List.of(transfer, transfer)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListSenderOnly =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList tokensTransferListSenderOnly =
+			new SyntheticTxnFactory.TokenTransferList(
 					new ArrayList<>() {
 					},
 					List.of(transferSenderOnly, transferSenderOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListReceiverOnly =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList tokensTransferListReceiverOnly =
+			new SyntheticTxnFactory.TokenTransferList(
 					new ArrayList<>() {
 					},
 					List.of(transferReceiverOnly, transferReceiverOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists nftTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList nftTransferList =
+			new SyntheticTxnFactory.TokenTransferList(
 					List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
 					new ArrayList<>() {
 					}
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists nftsTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final SyntheticTxnFactory.TokenTransferList nftsTransferList =
+			new SyntheticTxnFactory.TokenTransferList(
 					List.of(
 							new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
 							new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)

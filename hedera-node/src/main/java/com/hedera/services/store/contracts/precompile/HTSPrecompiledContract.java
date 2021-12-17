@@ -520,7 +520,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	private class TransferPrecompile implements Precompile {
-		private SyntheticTxnFactory.TokenTransferLists transferOp;
+		private List<SyntheticTxnFactory.TokenTransferList> transferOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -543,58 +543,63 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				default:
 					throw new InvalidTransactionException(FAIL_INVALID);
 			}
-			return syntheticTxnFactory.createCryptoTransfer(transferOp.getNftExchanges(),
-					transferOp.getFungibleTransfers());
+			return syntheticTxnFactory.createCryptoTransfer(transferOp);
 		}
 
-		private List<BalanceChange> constructBalanceChanges(SyntheticTxnFactory.TokenTransferLists transferOp) {
-			List<BalanceChange> changes = new ArrayList<>();
-			for (SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer : transferOp.getFungibleTransfers()) {
-				if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
-					changes.addAll(List.of(
-							BalanceChange.changingFtUnits(
-									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
-							),
-							BalanceChange.changingFtUnits(
-									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
-							))
-					);
-				} else if (fungibleTransfer.sender == null) {
-					changes.add(
-							BalanceChange.changingFtUnits(
-									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
-							)
-					);
-				} else {
-					changes.add(
-							BalanceChange.changingFtUnits(
-									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
-							)
-					);
-				}
-			}
+		private List<BalanceChange> constructBalanceChanges(final List<SyntheticTxnFactory.TokenTransferList> transferOp) {
+			final List<BalanceChange> allChanges = new ArrayList<>();
+			for(final SyntheticTxnFactory.TokenTransferList tokenTransferList: transferOp) {
+				final List<BalanceChange> changes = new ArrayList<>();
 
-			if (changes.isEmpty()) {
-				for (SyntheticTxnFactory.NftExchange nftExchange : transferOp.getNftExchanges()) {
-					changes.add(
-							BalanceChange.changingNftOwnership(
-									Id.fromGrpcToken(nftExchange.getTokenType()),
-									nftExchange.getTokenType(),
-									nftExchange.nftTransfer()
-							)
-					);
+				for (final SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer :
+						tokenTransferList.getFungibleTransfers()) {
+					if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
+						changes.addAll(List.of(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+								),
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+								))
+						);
+					} else if (fungibleTransfer.sender == null) {
+						changes.add(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+								)
+						);
+					} else {
+						changes.add(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+								)
+						);
+					}
 				}
-			}
 
-			return changes;
+				if (changes.isEmpty()) {
+					for (SyntheticTxnFactory.NftExchange nftExchange : tokenTransferList.getNftExchanges()) {
+						changes.add(
+								BalanceChange.changingNftOwnership(
+										Id.fromGrpcToken(nftExchange.getTokenType()),
+										nftExchange.getTokenType(),
+										nftExchange.nftTransfer()
+								)
+						);
+					}
+				}
+
+				allChanges.addAll(changes);
+			}
+			return allChanges;
 		}
 
 		@Override

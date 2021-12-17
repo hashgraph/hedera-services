@@ -10,7 +10,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CRYPTO_TRANSFER_CONS_ABI;
@@ -74,10 +73,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				nonNestedCryptoTransferFungibleToken(),
-				nonNestedCryptoTransferMultipleFungibleTokens(),
-				nonNestedCryptoTransferNonFungibleToken(),
-				nonNestedCryptoTransferMultipleNonFungibleTokens(),
+//				nonNestedCryptoTransferFungibleToken(),
+//				nonNestedCryptoTransferMultipleFungibleTokens(),
+//				nonNestedCryptoTransferNonFungibleToken(),
+//				nonNestedCryptoTransferMultipleNonFungibleTokens(),
 				nonNestedCryptoTransferFungibleAndNonFungibleTokens()
 		);
 	}
@@ -148,7 +147,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
-						cryptoCreate(RECEIVER2).balance(1 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECEIVER2).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
@@ -381,13 +380,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											spec,
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
 													tokenTransferLists().withTokenTransferList(
-															tokenTransferList().forToken(fungibleToken).
+															tokenTransferList().isSingleList(false).forToken(fungibleToken).
 																	withAccountAmounts(
 																			accountAmount(fungibleTokenSender, -45L),
 																			accountAmount(fungibleTokenReceiver, 45L)).build(),
-															tokenTransferList().forToken(nonFungibleToken).
-																	withNftTransfers(nftTransfer(
-																			nonFungibleTokenSender, nonFungibleTokenReceiver, 2L)).build())
+															tokenTransferList().isSingleList(false).forToken(nonFungibleToken).
+																	withNftTransfers(
+																			nftTransfer(nonFungibleTokenSender, nonFungibleTokenReceiver, 2L)).build())
 															.build()).payingWith(SENDER2)
 													.via(firstCryptoTransferTxn)
 													.alsoSigningWithFullPrefix(multiKey));

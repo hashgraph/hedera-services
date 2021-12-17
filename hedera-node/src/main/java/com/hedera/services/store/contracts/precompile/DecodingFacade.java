@@ -105,13 +105,14 @@ public class DecodingFacade {
 	public DecodingFacade() {
 	}
 
-	public SyntheticTxnFactory.TokenTransferLists decodeCryptoTransfer(final Bytes input) {
+	public List<SyntheticTxnFactory.TokenTransferList> decodeCryptoTransfer(final Bytes input) {
 		final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
+		final List<SyntheticTxnFactory.TokenTransferList> tokenTransferLists = new ArrayList<>();
 
-		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
-		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 		for (final var tuple : decodedTuples) {
 			for (final var tupleNested : (Tuple[]) tuple) {
+				final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
+				final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 				final var tokenType = convertAddressBytesToTokenID((byte[]) tupleNested.get(0));
 
 				final var transfers = (Tuple[]) tupleNested.get(1);
@@ -128,10 +129,14 @@ public class DecodingFacade {
 							tokenType, convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(0)),
 							convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(1))));
 				}
+
+				final SyntheticTxnFactory.TokenTransferList tokenTransferList =
+						new SyntheticTxnFactory.TokenTransferList(nftExchanges, fungibleTransfers);
+				tokenTransferLists.add(tokenTransferList);
 			}
 		}
 
-		return new SyntheticTxnFactory.TokenTransferLists(nftExchanges, fungibleTransfers);
+		return tokenTransferLists;
 	}
 
 	public SyntheticTxnFactory.BurnWrapper decodeBurn(final Bytes input) {
@@ -174,7 +179,7 @@ public class DecodingFacade {
 		}
 	}
 
-	public SyntheticTxnFactory.TokenTransferLists decodeTransferToken(final Bytes input) {
+	public List<SyntheticTxnFactory.TokenTransferList> decodeTransferToken(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
@@ -182,12 +187,13 @@ public class DecodingFacade {
 		final var receiver = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
 		final var amount = (long) decodedArguments.get(3);
 
-		return new SyntheticTxnFactory.TokenTransferLists(new ArrayList<>(), List.of(new SyntheticTxnFactory.FungibleTokenTransfer(
+		return Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(new ArrayList<>(),
+				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(
 				amount, tokenID,
-				sender, receiver)));
+				sender, receiver))));
 	}
 
-	public SyntheticTxnFactory.TokenTransferLists decodeTransferTokens(final Bytes input) {
+	public List<SyntheticTxnFactory.TokenTransferList> decodeTransferTokens(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
 
 		final var tokenType = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
@@ -202,10 +208,11 @@ public class DecodingFacade {
 			fillFungibleTokenTransfers(fungibleTransfers, tokenType, accountID, amount);
 		}
 
-		return new SyntheticTxnFactory.TokenTransferLists(new ArrayList<>(), fungibleTransfers);
+		return Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(new ArrayList<>(),
+				fungibleTransfers));
 	}
 
-	public SyntheticTxnFactory.TokenTransferLists decodeTransferNFT(final Bytes input) {
+	public List<SyntheticTxnFactory.TokenTransferList> decodeTransferNFT(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
@@ -213,12 +220,12 @@ public class DecodingFacade {
 		final var receiver = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
 		final var serialNumber = (long) decodedArguments.get(3);
 
-		return new SyntheticTxnFactory.TokenTransferLists(List.of(new SyntheticTxnFactory.NftExchange(
+		return Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(List.of(new SyntheticTxnFactory.NftExchange(
 				serialNumber, tokenID,
-				sender, receiver)), new ArrayList<>());
+				sender, receiver)), new ArrayList<>()));
 	}
 
-	public SyntheticTxnFactory.TokenTransferLists decodeTransferNFTs(final Bytes input) {
+	public List<SyntheticTxnFactory.TokenTransferList> decodeTransferNFTs(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
@@ -234,7 +241,7 @@ public class DecodingFacade {
 			nftExchanges.add(nftExchange);
 		}
 
-		return new SyntheticTxnFactory.TokenTransferLists(nftExchanges, new ArrayList<>());
+		return Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(nftExchanges, new ArrayList<>()));
 	}
 
 	public SyntheticTxnFactory.Association decodeAssociation(final Bytes input) {
@@ -319,7 +326,7 @@ public class DecodingFacade {
 			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, null,
 					accountID));
 		} else {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, accountID,
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(-amount, tokenType, accountID,
 					null));
 		}
 	}

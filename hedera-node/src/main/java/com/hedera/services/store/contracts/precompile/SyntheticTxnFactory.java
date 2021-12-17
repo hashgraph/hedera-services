@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -74,30 +73,56 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
+//	public TransactionBody.Builder createCryptoTransfer(
+//			final List<NftExchange> nftExchanges,
+//			final List<FungibleTokenTransfer> fungibleTransfers
+//	) {
+//		final var builder = CryptoTransferTransactionBody.newBuilder();
+//
+//		for (final var nftExchange : nftExchanges) {
+//			builder.addTokenTransfers(TokenTransferList.newBuilder()
+//					.setToken(nftExchange.getTokenType())
+//					.addNftTransfers(nftExchange.nftTransfer()));
+//		}
+//		for (final var fungibleTransfer : fungibleTransfers) {
+//			final var tokenTransferList = TokenTransferList.newBuilder()
+//					.setToken(fungibleTransfer.getDenomination());
+//
+//			if (fungibleTransfer.sender != null) {
+//				tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
+//			}
+//			if (fungibleTransfer.receiver != null) {
+//				tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
+//			}
+//			builder.addTokenTransfers(tokenTransferList);
+//		}
+//		return TransactionBody.newBuilder().setCryptoTransfer(builder);
+//	}
+
 	public TransactionBody.Builder createCryptoTransfer(
-			final List<NftExchange> nftExchanges,
-			final List<FungibleTokenTransfer> fungibleTransfers
+			final List<TokenTransferList> tokenTransferLists
 	) {
 		final var builder = CryptoTransferTransactionBody.newBuilder();
 
-		for (final var nftExchange : nftExchanges) {
-			builder.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(nftExchange.getTokenType())
-					.addNftTransfers(nftExchange.nftTransfer()));
-		}
-		for (final var fungibleTransfer : fungibleTransfers) {
-			final var tokenTransferList = TokenTransferList.newBuilder()
-					.setToken(fungibleTransfer.getDenomination());
-
-			if (fungibleTransfer.sender != null) {
-				tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
+		for(final TokenTransferList transferLists: tokenTransferLists) {
+			for (final var nftExchange : transferLists.getNftExchanges()) {
+				builder.addTokenTransfers(com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
+						.setToken(nftExchange.getTokenType())
+						.addNftTransfers(nftExchange.nftTransfer()));
 			}
-			if (fungibleTransfer.receiver != null) {
-				tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
-			}
-			builder.addTokenTransfers(tokenTransferList);
-		}
+			for (final var fungibleTransfer : transferLists.getFungibleTransfers()) {
+				final var tokenTransferList = com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
+						.setToken(fungibleTransfer.getDenomination());
 
+				if (fungibleTransfer.sender != null) {
+					tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
+				}
+				if (fungibleTransfer.receiver != null) {
+					tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
+				}
+				builder.addTokenTransfers(tokenTransferList);
+			}
+		}
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
@@ -301,12 +326,12 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	public static class TokenTransferLists {
+	public static class TokenTransferList {
 		private final List<NftExchange> nftExchanges;
 		private final List<FungibleTokenTransfer> fungibleTransfers;
 
-		public TokenTransferLists(final List<NftExchange> nftExchanges,
-								  final List<FungibleTokenTransfer> fungibleTransfers) {
+		public TokenTransferList(final List<NftExchange> nftExchanges,
+								 final List<FungibleTokenTransfer> fungibleTransfers) {
 			this.nftExchanges = nftExchanges;
 			this.fungibleTransfers = fungibleTransfers;
 		}

@@ -42,8 +42,8 @@ class DecodingFacadeTest {
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
 				subject.decodeCryptoTransfer(POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT);
-		final var fungibleTransfers = decodedInput.getFungibleTransfers();
-		final var nftExchanges = decodedInput.getNftExchanges();
+		final var fungibleTransfers = decodedInput.get(0).getFungibleTransfers();
+		final var nftExchanges = decodedInput.get(0).getNftExchanges();
 
 		assertNotNull(fungibleTransfers);
 		assertNotNull(nftExchanges);
@@ -61,7 +61,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeCryptoTransferNegativeFungibleAmount() {
 		final var decodedInput = subject.decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT);
-		final var fungibleTransfers = decodedInput.getFungibleTransfers();
+		final var fungibleTransfers = decodedInput.get(0).getFungibleTransfers();
 
 		assertNotNull(fungibleTransfers);
 		assertEquals(1, fungibleTransfers.size());
@@ -111,7 +111,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTransferToken() {
 		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT);
-		final var fungibleTransfer = decodedInput.getFungibleTransfers().get(0);
+		final var fungibleTransfer = decodedInput.get(0).getFungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.sender.getAccountNum() > 0);
 		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
@@ -122,7 +122,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTransferTokensPositiveAmounts() {
 		final var decodedInput = subject.decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT);
-		final var fungibleTransfers = decodedInput.getFungibleTransfers();
+		final var fungibleTransfers = decodedInput.get(0).getFungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
@@ -138,7 +138,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTransferTokensPositiveNegativeAmount() {
 		final var decodedInput = subject.decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT);
-		final var fungibleTransfers = decodedInput.getFungibleTransfers();
+		final var fungibleTransfers = decodedInput.get(0).getFungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
@@ -154,7 +154,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTransferNFT() {
 		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT);
-		final var nonFungibleTransfer = decodedInput.getNftExchanges().get(0);
+		final var nonFungibleTransfer = decodedInput.get(0).getNftExchanges().get(0);
 
 		assertTrue(nonFungibleTransfer.nftTransfer().getSenderAccountID().getAccountNum() > 0);
 		assertTrue(nonFungibleTransfer.nftTransfer().getReceiverAccountID().getAccountNum() > 0);
@@ -165,7 +165,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeTransferNFTs() {
 		final var decodedInput = subject.decodeTransferNFTs(TRANSFER_NFTS_INPUT);
-		final var nonFungibleTransfers = decodedInput.getNftExchanges();
+		final var nonFungibleTransfers = decodedInput.get(0).getNftExchanges();
 
 		assertEquals(2, nonFungibleTransfers.size());
 		assertTrue(nonFungibleTransfers.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);

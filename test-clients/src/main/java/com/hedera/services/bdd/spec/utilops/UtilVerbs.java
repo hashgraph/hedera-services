@@ -83,6 +83,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -945,6 +946,12 @@ public class UtilVerbs {
 	public static class TokenTransferListBuilder {
 		private Tuple tokenTransferList;
 		private byte[] token;
+		private boolean isSingleList = true;
+
+		public TokenTransferListBuilder isSingleList(final boolean isSingleList) {
+			this.isSingleList = isSingleList;
+			return this;
+		}
 
 		public TokenTransferListBuilder forToken(final TokenID token) {
 			this.token = getAddressWithFilledEmptyBytes(asAddress(token));
@@ -952,14 +959,24 @@ public class UtilVerbs {
 		}
 
 		public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
-			this.tokenTransferList = Tuple.singleton(new Tuple[]{Tuple.of(token, accountAmounts,
-					new Tuple[]{})});
+			if(isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[]{Tuple.of(token, accountAmounts,
+						new Tuple[]{})});
+			} else {
+				this.tokenTransferList = Tuple.of(token, accountAmounts,
+						new Tuple[]{});
+			}
 			return this;
 		}
 
 		public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+			if(isSingleList) {
 			this.tokenTransferList = Tuple.singleton(new Tuple[]{Tuple.of(token, new Tuple[]{},
 					nftTransfers)});
+			} else {
+				this.tokenTransferList = Tuple.of(token, new Tuple[]{},
+						nftTransfers);
+			}
 			return this;
 		}
 
@@ -969,14 +986,15 @@ public class UtilVerbs {
 	}
 
 	public static class TokenTransferListsBuilder {
-		private Tuple[] tokenTransferLists;
+		private Tuple tokenTransferLists;
 
 		public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
-			this.tokenTransferLists = tokenTransferLists;
+			this.tokenTransferLists =
+					Tuple.singleton(tokenTransferLists);
 			return this;
 		}
 
-		public Tuple[] build() {
+		public Tuple build() {
 			return tokenTransferLists;
 		}
 	}
