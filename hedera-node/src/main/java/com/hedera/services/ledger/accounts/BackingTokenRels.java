@@ -29,7 +29,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -44,8 +43,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  */
 @Singleton
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
-
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate;
 
 	@Inject
@@ -55,16 +52,8 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	@Override
-	public void rebuildFromSources() {
-		existingRels.clear();
-		delegate.get().keySet().stream()
-				.map(EntityNumPair::asAccountTokenRel)
-				.forEach(existingRels::add);
-	}
-
-	@Override
 	public boolean contains(Pair<AccountID, TokenID> key) {
-		return existingRels.contains(key);
+		return delegate.get().containsKey(fromAccountTokenRel(key));
 	}
 
 	@Override
@@ -74,15 +63,15 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void put(Pair<AccountID, TokenID> key, MerkleTokenRelStatus status) {
-		if (!existingRels.contains(key)) {
-			delegate.get().put(fromAccountTokenRel(key), status);
-			existingRels.add(key);
+		final var curTokenRels = delegate.get();
+		final var merkleKey = fromAccountTokenRel(key);
+		if (!curTokenRels.containsKey(merkleKey)) {
+			curTokenRels.put(merkleKey, status);
 		}
 	}
 
 	@Override
 	public void remove(Pair<AccountID, TokenID> id) {
-		existingRels.remove(id);
 		delegate.get().remove(fromAccountTokenRel(id));
 	}
 
@@ -94,14 +83,6 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	@Override
 	public Set<Pair<AccountID, TokenID>> idSet() {
 		throw new UnsupportedOperationException();
-	}
-
-	public void addToExistingRels(Pair<AccountID, TokenID> key)	{
-		existingRels.add(key);
-	}
-
-	public void removeFromExistingRels(Pair<AccountID, TokenID> key)	{
-		existingRels.remove(key);
 	}
 
 	public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
