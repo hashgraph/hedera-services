@@ -28,6 +28,7 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -73,6 +74,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -144,12 +147,10 @@ class ServicesStateTest {
 	@Mock
 	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
-	private Consumer<Boolean> blobMigrationFlag;
-	@Mock
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private CodeCache codeCache;
-        @Mock
+	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	@LoggingTarget

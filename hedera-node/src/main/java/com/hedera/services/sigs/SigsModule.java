@@ -27,7 +27,7 @@ import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.HandleSigReqs;
 import com.hedera.services.sigs.annotations.PayerSigReqs;

@@ -21,7 +21,7 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -45,7 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-
 
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {

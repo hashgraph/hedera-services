@@ -22,6 +22,7 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

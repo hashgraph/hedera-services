@@ -127,7 +127,6 @@ public class BasicTransactionContext implements TransactionContext {
 		this.exchange = exchange;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.creator = creator;
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override

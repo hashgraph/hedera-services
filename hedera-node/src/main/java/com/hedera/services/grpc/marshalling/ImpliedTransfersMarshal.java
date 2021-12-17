@@ -117,10 +117,16 @@ public class ImpliedTransfersMarshal {
 		final var hbarOnly = changes.size();
 		appendToken(op, changes);
 
-		return assessCustomFeesAndValidate(changes, hbarOnly, props);
+		return assessCustomFeesAndValidate(numAutoCreations, hbarOnly, changes, resolvedAliases, props);
 	}
 
-	public ImpliedTransfers assessCustomFeesAndValidate(List<BalanceChange> changes, int hbarOnly, ImpliedTransfersMeta.ValidationProps props) {
+	public ImpliedTransfers assessCustomFeesAndValidate(
+			final int hbarOnly,
+			final int numAutoCreations,
+			final List<BalanceChange> changes,
+			final Map<ByteString, EntityNum> resolvedAliases,
+			final ImpliedTransfersMeta.ValidationProps props
+	) {
 		/* Construct the process objects for custom fee charging */
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);

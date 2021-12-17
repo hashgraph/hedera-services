@@ -33,6 +33,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 
+import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -44,16 +45,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
  */
 @Singleton
 public class CallLocalExecutor {
-	private final AccountStore accountStore;
-	private final CallLocalEvmTxProcessor evmTxProcessor;
-
-	@Inject
-	public CallLocalExecutor(
-			AccountStore accountStore,
-			CallLocalEvmTxProcessor evmTxProcessor
-	) {
-		this.accountStore = accountStore;
-		this.evmTxProcessor = evmTxProcessor;
+	private CallLocalExecutor() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 
 	/**

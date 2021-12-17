@@ -22,7 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;

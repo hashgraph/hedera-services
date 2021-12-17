@@ -20,12 +20,15 @@ package com.hedera.services.files;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JKeySerializer.StreamConsumer;
+import com.hedera.services.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

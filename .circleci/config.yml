@@ -1398,7 +1398,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - NONE
+                  - hts-merge-work
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

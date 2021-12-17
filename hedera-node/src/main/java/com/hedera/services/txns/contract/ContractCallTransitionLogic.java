@@ -23,16 +23,14 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
@@ -69,7 +67,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			final HederaWorldState worldState,
 			final TransactionRecordService recordService,
 			final CallEvmTxProcessor evmTxProcessor,
-			final ServicesRepositoryRoot repositoryRoot
 			final GlobalDynamicProperties properties,
 			final CodeCache codeCache
 	) {

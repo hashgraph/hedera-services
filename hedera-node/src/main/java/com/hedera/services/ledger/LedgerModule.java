@@ -33,7 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -81,7 +81,7 @@ public abstract class LedgerModule {
 				accountsLedger,
 				transferLogic,
 				autoCreationLogic);
-		ledger.setTokenViewsManager(uniqTokenViewsManager);
+		ledger.setTokenViewsManager(uniqueTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);
 		return ledger;

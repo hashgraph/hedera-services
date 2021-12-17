@@ -103,11 +103,8 @@ import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
-	public static final AccountID EMPTY_ACCOUNT = AccountID.newBuilder().setAccountNum(0).build();
 
-	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
-			.setAccountNum(0L)
-			.build();
+	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
 	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
@@ -121,8 +118,7 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-			null, null, null, null,
-			EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;

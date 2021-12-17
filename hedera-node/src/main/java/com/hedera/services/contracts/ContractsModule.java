@@ -52,17 +52,6 @@ import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
-import com.hedera.services.contracts.persistence.BlobStoragePersistence;
-import com.hedera.services.contracts.sources.BlobStorageSource;
-import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
-import com.hedera.services.keys.StandardSyncActivationCheck;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -94,44 +83,6 @@ public abstract class ContractsModule {
 	@Binds
 	@Singleton
 	public abstract HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
-
-	@Binds
-	@Singleton
-	public abstract Source<byte[], byte[]> bindByteCodeSource(BlobStorageSource blobStorageSource);
-
-	@Binds
-	@Singleton
-	public abstract Source<byte[], AccountState> bindAccountsSource(LedgerAccountsSource ledgerAccountsSource);
-
-	@Binds
-	@Singleton
-	public abstract StoragePersistence bindStoragePersistence(BlobStoragePersistence blobStoragePersistence);
-
-	@Provides
-	@Singleton
-	public static SoliditySigsVerifier provideSoliditySigsVerifier(
-			SyncVerifier syncVerifier,
-			TransactionContext txnCtx,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
-	) {
-		return new TxnAwareSoliditySigsVerifier(
-				syncVerifier,
-				txnCtx,
-				StandardSyncActivationCheck::allKeysAreActive,
-				accounts);
-	}
-
-	@Provides
-	@Singleton
-	public static ServicesRepositoryRoot provideServicesRepositoryRoot(
-			StoragePersistence storagePersistence,
-			Source<byte[], byte[]> bytecodeSource,
-			Source<byte[], AccountState> accountSource
-	) {
-		final var repository = new ServicesRepositoryRoot(accountSource, bytecodeSource);
-		repository.setStoragePersistence(storagePersistence);
-		return repository;
-	}
 
 	@Provides
 	@Singleton

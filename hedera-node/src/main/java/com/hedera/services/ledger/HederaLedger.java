@@ -145,7 +145,7 @@ public class HederaLedger {
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransferLogic transferLogic
+			final TransferLogic transferLogic,
 			final AutoCreationLogic autoCreationLogic
 	) {
 		this.ids = ids;
@@ -162,6 +162,8 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+
+		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setMutableEntityAccess(final MutableEntityAccess mutableEntityAccess) {

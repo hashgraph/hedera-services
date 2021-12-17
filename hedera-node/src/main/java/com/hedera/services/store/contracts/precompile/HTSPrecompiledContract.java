@@ -28,6 +28,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -85,7 +86,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -414,7 +417,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var associateLogic = associateLogicFactory.newAssociateLogic(
 					tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.getTokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 	}
 
@@ -459,7 +462,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
 					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.getTokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 	}
 
@@ -515,7 +518,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				mintLogic.mint(tokenId, 0, mintOp.getAmount(), NO_METADATA, Instant.EPOCH);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 	}
 
@@ -605,10 +608,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		) {
 			final List<BalanceChange> changes = constructBalanceChanges(transferOp);
 			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
-					changes,
 					0,
-					impliedTransfersMarshal.currentProps()
-			);
+					0,
+					changes,
+					NO_ALIASES,
+					impliedTransfersMarshal.currentProps());
 
 			final var assessmentStatus = validated.getMeta().code();
 			validateTrue(assessmentStatus == OK, assessmentStatus);
@@ -647,8 +651,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			transferLogic.transfer(validated.getAllBalanceChanges());
 
-			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(),
-					sideEffects);
+			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
 		}
 	}
 
@@ -687,7 +690,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				burnLogic.burn(tokenId, burnOp.getAmount(), NO_SERIAL_NOS);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 	}
 

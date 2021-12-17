@@ -246,6 +246,10 @@
                   <artifactId>caffeine</artifactId>
                   <version>${caffeine.version}</version>
                 </dependency>
+                <dependency>
+	          <groupId>com.esaulpaugh</groupId>
+		  <artifactId>headlong</artifactId>
+	        </dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hapi-fees</artifactId>

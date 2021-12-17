@@ -535,7 +535,6 @@ class StateViewTest {
 	@Test
 	void getsContractInfo() throws Exception {
 		final var target = EntityNum.fromContractId(cid);
-		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 
@@ -767,14 +766,6 @@ class StateViewTest {
 		final var actual = subject.bytecodeOf(cid);
 
 		assertArrayEquals(expectedBytecode, actual.get());
-	}
-
-	@Test
-	void getsStorage() {
-		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
-		final var actual = subject.storageOf(cid);
-
-		assertArrayEquals(expectedStorage, actual.get());
 	}
 
 	@Test

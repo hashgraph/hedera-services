@@ -238,10 +238,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		log.info(sb.toString().trim());
 	}
 
-	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
-		this.functionReqs = functionReqs;
-	}
-
 	private boolean shouldThrottleScheduleCreate(
 			final ThrottleReqsManager manager,
 			final SchedulableTransactionBody scheduled,

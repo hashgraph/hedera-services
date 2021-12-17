@@ -259,6 +259,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.esaulpaugh</groupId>
+      <artifactId>headlong</artifactId>
+    </dependency>
+    <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
       <version>${picocli.version}</version>
