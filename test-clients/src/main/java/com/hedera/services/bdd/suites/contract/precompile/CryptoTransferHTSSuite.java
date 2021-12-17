@@ -86,21 +86,21 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				nonNestedCryptoTransferFungibleToken(),
-				nonNestedCryptoTransferMultipleFungibleTokens(),
-				nonNestedCryptoTransferNonFungibleToken(),
-				nonNestedCryptoTransferMultipleNonFungibleTokens(),
-				nonNestedCryptoTransferFungibleAndNonFungibleToken(),
-				nonNestedCryptoTransferFungibleAndNonFungibleTokens()
+				nonNestedCryptoTransferForFungibleToken(),
+				nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+				nonNestedCryptoTransferForNonFungibleToken(),
+				nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+				nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+				nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens()
 		);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferFungibleToken() {
+	private HapiApiSpec nonNestedCryptoTransferForFungibleToken() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferFungibleToken")
+		return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
 				.given(
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -156,12 +156,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferMultipleFungibleTokens() {
+	private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferFungibleTokens")
+		return defaultHapiSpec("NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers")
 				.given(
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -227,13 +227,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferNonFungibleToken() {
+	private HapiApiSpec nonNestedCryptoTransferForNonFungibleToken() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var multiKey = "purpose";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferNonFungibleToken")
+		return defaultHapiSpec("NonNestedCryptoTransferForNonFungibleToken")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -293,13 +293,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferMultipleNonFungibleTokens() {
+	private HapiApiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var multiKey = "purpose";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferNonFungibleTokens")
+		return defaultHapiSpec("NonNestedCryptoTransferForMultipleNonFungibleTokens")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -376,13 +376,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferFungibleAndNonFungibleToken() {
+	private HapiApiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var multiKey = "purpose";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferFungibleAndNonFungibleToken")
+		return defaultHapiSpec("NonNestedCryptoTransferForFungibleAndNonFungibleToken")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -472,13 +472,14 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonNestedCryptoTransferFungibleAndNonFungibleTokens() {
+	private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
 		final var cryptoTransferFileByteCode = "cryptoTransferFileByteCode";
 		final var multiKey = "purpose";
 		final var theContract = "cryptoTransferContract";
 		final var cryptoTransferTxn = "cryptoTransferTxn";
 
-		return defaultHapiSpec("CryptoTransferFungibleAndNonFungibleTokens")
+		return defaultHapiSpec(
+				"NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
