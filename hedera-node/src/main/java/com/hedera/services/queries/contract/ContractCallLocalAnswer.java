@@ -22,11 +22,13 @@ package com.hedera.services.queries.contract;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.StaticEntityAccess;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -58,6 +60,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final NodeLocalProperties nodeProperties;
 	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
 	@Inject
@@ -66,6 +69,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			final AccountStore accountStore,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
+			final NodeLocalProperties nodeProperties,
 			final CallLocalEvmTxProcessor callLocalEvmTxProcessor
 	) {
 		super(
@@ -88,6 +92,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 		this.validator = validator;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.nodeProperties = nodeProperties;
 		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
 	}
 
@@ -154,7 +159,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			usage estimator won't have cached the result it got from the local call. */
 			try {
 				final var entityAccess = new StaticEntityAccess(view, validator, dynamicProperties);
-				final var worldState = new HederaWorldState(ids, entityAccess);
+				final var codeCache = new CodeCache(nodeProperties, entityAccess);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
 				final var callLocalResponse = CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op);
