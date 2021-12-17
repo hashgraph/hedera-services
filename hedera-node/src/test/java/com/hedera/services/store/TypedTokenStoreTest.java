@@ -82,6 +82,10 @@ class TypedTokenStoreTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
+	private UniqTokenViewsManager uniqTokenViewsManager;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
 	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	@Mock
 	private BackingStore<TokenID, MerkleToken> tokens;

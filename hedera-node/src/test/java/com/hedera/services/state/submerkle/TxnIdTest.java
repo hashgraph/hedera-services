@@ -176,6 +176,7 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(2)).readBoolean();
+		verify(din).readInt();
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -192,7 +193,9 @@ class TxnIdTest {
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
 		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
-		given(din.readBoolean()).willReturn(true);
+		given(din.readBoolean())
+				.willReturn(true)
+				.willReturn(false);
 		// and:
 		var deserializedId = new TxnId();
 
@@ -203,6 +206,7 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(2)).readBoolean();
+		verify(din, never()).readInt();
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
@@ -212,9 +216,11 @@ class TxnIdTest {
 	void equalsWorks() {
 		// given:
 		subject = scheduledSubject();
+		var subjectUserNonce = scheduledSubjectUserNonce();
 
 		// expect:
 		assertNotEquals(subject, unscheduledSubject());
+		assertNotEquals(subject, subjectUserNonce);
 	}
 
 	@Test

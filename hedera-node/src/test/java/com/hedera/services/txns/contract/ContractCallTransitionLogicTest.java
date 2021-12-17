@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -72,8 +73,6 @@ class ContractCallTransitionLogicTest {
 
 	@Mock
 	private TransactionContext txnCtx;
-	@Mock
-	private EntityIdSource entityIdSource;
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
@@ -245,10 +244,25 @@ class ContractCallTransitionLogicTest {
 		verify(entityIdSource).reclaimProvisionalIds();
 	}
 
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-		verify(entityIdSource).resetProvisionalIds();
+        @Test
+	void throwsWhenBytecodeIsEmpty() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+				.willReturn(contractAccount);
+		// and:
+		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(Bytes.EMPTY.toArray());
+
+		// when:
+		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+
+		// then:
+		assertEquals(CONTRACT_BYTECODE_EMPTY, exception.getResponseCode());
 	}
 
 	private void givenValidTxnCtx() {

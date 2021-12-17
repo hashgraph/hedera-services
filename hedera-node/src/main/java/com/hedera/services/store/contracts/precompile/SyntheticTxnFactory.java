@@ -32,6 +32,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -41,6 +44,9 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 @Singleton
 public class SyntheticTxnFactory {
@@ -318,5 +324,16 @@ public class SyntheticTxnFactory {
 		public List<FungibleTokenTransfer> getFungibleTransfers() {
 			return fungibleTransfers;
 		}
+	}
+
+	public TransactionBody.Builder cryptoCreate(Key alias, long balance) {
+		final var txnBody = CryptoCreateTransactionBody.newBuilder()
+				.setKey(alias)
+				.setMemo(AUTO_MEMO)
+				.setInitialBalance(balance)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+				.build();
+
+		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
 	}
 }

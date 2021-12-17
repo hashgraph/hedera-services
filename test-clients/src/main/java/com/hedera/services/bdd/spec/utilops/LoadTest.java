@@ -177,7 +177,7 @@ public class LoadTest extends HapiApiSuite {
 
 	@Override
 	protected Logger getResultsLogger() {
-		return null;
+		return log;
 	}
 
 	@Override

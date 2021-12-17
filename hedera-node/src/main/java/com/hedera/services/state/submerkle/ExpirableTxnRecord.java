@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -73,6 +74,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_INVOLVED_TOKENS = 10;
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
+	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
 
 	static DomainSerdes serdes = new DomainSerdes();
 
@@ -103,6 +105,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
 	private List<FcAssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
 	private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
+	private ByteString alias = MISSING_ALIAS;
 
 	@Override
 	public void release() {
@@ -131,6 +134,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.newTokenAssociations = new ArrayList<>(builder.newTokenAssociations);
 		this.packedParentConsensusTime = builder.packedParentConsensusTime;
 		this.numChildRecords = builder.numChildRecords;
+		this.alias = builder.alias;
 	}
 
 	/* --- Object --- */
@@ -150,7 +154,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("contractCreation", contractCreateResult)
 				.add("contractCall", contractCallResult)
 				.add("hbarAdjustments", hbarAdjustments)
-				.add("scheduleRef", scheduleRef);
+				.add("scheduleRef", scheduleRef)
+				.add("alias", alias.toStringUtf8());
+
+		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
+			helper.add("parentConsensusTime", Instant.ofEpochSecond(
+					BitPackUtils.unsignedHighOrder32From(packedParentConsensusTime),
+					BitPackUtils.signedLowOrder32From(packedParentConsensusTime)));
+		}
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -171,14 +182,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
 			var readable = assessedCustomFees.stream().map(
-					assessedCustomFee -> String.format("(%s)", assessedCustomFee))
+							assessedCustomFee -> String.format("(%s)", assessedCustomFee))
 					.collect(joining(", "));
 			helper.add("assessedCustomFees", readable);
 		}
 
 		if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
 			var readable = newTokenAssociations.stream().map(
-					newTokenAssociation -> String.format("(%s)", newTokenAssociation))
+							newTokenAssociation -> String.format("(%s)", newTokenAssociation))
 					.collect(joining(", "));
 			helper.add("newTokenAssociations", readable);
 		}
@@ -220,7 +231,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
 				Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees) &&
-				Objects.equals(this.newTokenAssociations, that.newTokenAssociations);
+				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
+				Objects.equals(this.alias, that.alias);
 	}
 
 	@Override
@@ -243,7 +255,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				assessedCustomFees,
 				newTokenAssociations,
 				numChildRecords,
-				packedParentConsensusTime);
+				packedParentConsensusTime,
+				alias);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -298,6 +311,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		} else {
 			out.writeBoolean(false);
 		}
+		out.writeByteArray(alias.toByteArray());
 	}
 
 	@Override
@@ -338,6 +352,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			if (hasParentConsensusTime) {
 				packedParentConsensusTime = in.readLong();
 			}
+			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
 		}
 	}
 
@@ -464,6 +479,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.packedParentConsensusTime = packedParentConsensusTime;
 	}
 
+	public ByteString getAlias() {
+		return alias;
+	}
+
+	public void setAlias(final ByteString alias) {
+		this.alias = alias;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public boolean isImmutable() {
@@ -485,7 +508,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		var grpc = TransactionRecord.newBuilder();
 
 		grpc.setTransactionFee(fee);
-
 		if (receipt != null) {
 			grpc.setReceipt(TxnReceipt.convert(receipt));
 		}
@@ -513,19 +535,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (tokens != NO_TOKENS) {
 			setGrpcTokens(grpc, tokens, tokenAdjustments, nftTokenAdjustments);
 		}
-
 		if (scheduleRef != NO_SCHEDULE_REF) {
 			grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
 		}
-
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
 			grpc.addAllAssessedCustomFees(
 					assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).collect(toList()));
 		}
-
 		if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
 			grpc.addAllAutomaticTokenAssociations(
 					newTokenAssociations.stream().map(FcTokenAssociation::toGrpc).collect(toList()));
+		}
+		if (alias != MISSING_ALIAS) {
+			grpc.setAlias(alias);
+		}
+		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
+			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
 
 		return grpc.build();
@@ -572,6 +597,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private EntityId scheduleRef;
 		private List<FcAssessedCustomFee> assessedCustomFees;
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
+		private ByteString alias = MISSING_ALIAS;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;
@@ -663,6 +689,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
+		public Builder setAlias(ByteString alias) {
+			this.alias = alias;
+			return this;
+		}
+
 		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
 		}
@@ -724,7 +755,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				}
 			}
 			/* Note that at most one of these loops can iterate a non-zero number of times,
-			* since if both did we could not have exited the prior loop. */
+			 * since if both did we could not have exited the prior loop. */
 			while (i < adjustsHere) {
 				final var iId = changedHere.get(i);
 				netAdjustsHere[k++] = this.transferList.hbars[i++];
@@ -755,6 +786,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			scheduleRef = NO_SCHEDULE_REF;
 			assessedCustomFees = NO_CUSTOM_FEES;
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
+			alias = MISSING_ALIAS;
 		}
 
 		public CurrencyAdjustments getTransferList() {
@@ -803,6 +835,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		public TxnId getTxnId() {
 			return txnId;
+		}
+
+		public ByteString getAlias() {
+			return alias;
 		}
 	}
 

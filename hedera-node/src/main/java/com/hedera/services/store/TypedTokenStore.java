@@ -277,8 +277,9 @@ public class TypedTokenStore {
 	 * This is only to be used when pausing/unpausing token as this method ignores the pause status
 	 * of the token.
 	 *
-	 * @param id the token to load
-	 * @return a usable model of the token which is possibly paused.
+	 * @param id
+	 * 		the token to load
+	 * @return a usable model of the token which is possibly paused
 	 */
 	public Token loadPossiblyPausedToken(Id id) {
 		final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
@@ -374,8 +375,8 @@ public class TypedTokenStore {
 			destroyRemoved(token.removedUniqueTokens(), treasury);
 		}
 
-		/* Only needed during HTS refactor. Will be removed once all operations that refer to the knownTreasuries
-		in-memory structure are refactored */
+		/* Only needed during HTS refactor. Will be removed once all operations that
+		 * refer to the knownTreasuries in-memory structure are refactored */
 		if (token.isDeleted()) {
 			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
 			final TokenID mutatedToken = token.getId().asGrpcToken();

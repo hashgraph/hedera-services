@@ -20,29 +20,53 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 public class BackedAccountLookup implements AccountSigMetaLookup {
+	private final AliasManager aliasManager;
 	private final BackingStore<AccountID, MerkleAccount> accounts;
 
-	public BackedAccountLookup(BackingStore<AccountID, MerkleAccount> accounts) {
+	public BackedAccountLookup(
+			final BackingStore<AccountID, MerkleAccount> accounts,
+			final AliasManager aliasManager
+	) {
 		this.accounts = accounts;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+		return lookupById(id);
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var explicitId = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			return (explicitId == EntityNum.MISSING_NUM)
+					? SafeLookupResult.failure(MISSING_ACCOUNT)
+					: lookupById(explicitId.toGrpcAccountId());
+		} else {
+			return lookupById(idOrAlias);
+		}
+	}
+
+	private SafeLookupResult<AccountSigningMetadata> lookupById(final AccountID id) {
 		if (!accounts.contains(id)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
+		} else {
+			final var account = accounts.getImmutableRef(id);
+			return new SafeLookupResult<>(
+					new AccountSigningMetadata(
+							account.getAccountKey(), account.isReceiverSigRequired()));
 		}
-		var account = accounts.getImmutableRef(id);
-		return new SafeLookupResult<>(
-				new AccountSigningMetadata(
-						account.getAccountKey(),
-						account.isReceiverSigRequired()));
 	}
 }

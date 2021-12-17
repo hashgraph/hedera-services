@@ -34,6 +34,23 @@ class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
 	@Test
+	void createsExpectedCryptoCreate() {
+		final var balance = 10L;
+		final var alias = KeyFactory.getDefaultInstance().newEd25519();
+		final var result = subject.cryptoCreate(alias, balance);
+		final var txnBody = result.build();
+
+		assertTrue(txnBody.hasCryptoCreateAccount());
+		assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+		assertEquals(THREE_MONTHS_IN_SECONDS,
+				txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+		assertEquals(10L,
+				txnBody.getCryptoCreateAccount().getInitialBalance());
+		assertEquals(alias.toByteString(),
+				txnBody.getCryptoCreateAccount().getKey().toByteString());
+	}
+
+	@Test
 	void createsExpectedAssociations() {
 		final var tokens = List.of(fungible, nonFungible);
 		final var associations = SyntheticTxnFactory.Association.multiAssociation(a, tokens);

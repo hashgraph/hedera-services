@@ -155,7 +155,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 	}
 
-	public void rollback() {
+	void undoCreations() {
+		if (!isInTransaction) {
+			throw new IllegalStateException("Cannot undo created keys, no transaction is active");
+		}
+		createdKeys.clear();
+	}
+
+	void rollback() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
@@ -433,6 +440,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	Map<K, EnumMap<P, Object>> getChanges() {
 		return changes;
+	}
+
+	List<K> getCreations() {
+		return createdKeys;
 	}
 
 	private void flushListed(final List<K> l) {

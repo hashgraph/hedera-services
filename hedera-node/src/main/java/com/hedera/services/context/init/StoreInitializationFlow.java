@@ -20,7 +20,8 @@ package com.hedera.services.context.init;
  * ‍
  */
 
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -47,7 +48,8 @@ public class StoreInitializationFlow {
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
-	private final UniqueTokenViewsManager uniqueTokenViewsManager;
+	private final AliasManager aliasManager;
+	private final UniqTokenViewsManager uniqTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -55,14 +57,14 @@ public class StoreInitializationFlow {
 
 	@Inject
 	public StoreInitializationFlow(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			@WorkingState StateAccessor stateAccessor,
-			UniqueTokenViewsManager uniqueTokenViewsManager,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			BackingStore<TokenID, MerkleToken> backingTokens,
-			BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
+			final TokenStore tokenStore,
+			final ScheduleStore scheduleStore,
+			final AliasManager aliasManager,
+			final @WorkingState StateAccessor stateAccessor,
+			final UniqTokenViewsManager uniqTokenViewsManager,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
@@ -71,7 +73,8 @@ public class StoreInitializationFlow {
 		this.stateAccessor = stateAccessor;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
-		this.uniqueTokenViewsManager = uniqueTokenViewsManager;
+		this.aliasManager = aliasManager;
+		this.uniqTokenViewsManager = uniqTokenViewsManager;
 	}
 
 	public void run() {
@@ -87,5 +90,8 @@ public class StoreInitializationFlow {
 
 		uniqueTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
 		log.info("Unique token views rebuilt");
+
+		aliasManager.rebuildAliasesMap(stateAccessor.accounts());
+		log.info("Account aliases map rebuilt");
 	}
 }

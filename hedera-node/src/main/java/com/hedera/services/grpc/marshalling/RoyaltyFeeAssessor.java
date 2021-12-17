@@ -32,6 +32,7 @@ import java.util.List;
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.safeFractionMultiply;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.ROYALTY_FEE;
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -39,17 +40,23 @@ public class RoyaltyFeeAssessor {
 	private final FixedFeeAssessor fixedFeeAssessor;
 	private final FungibleAdjuster fungibleAdjuster;
 
-	public RoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor, FungibleAdjuster fungibleAdjuster) {
+	public RoyaltyFeeAssessor(final FixedFeeAssessor fixedFeeAssessor, final FungibleAdjuster fungibleAdjuster) {
 		this.fixedFeeAssessor = fixedFeeAssessor;
 		this.fungibleAdjuster = fungibleAdjuster;
 	}
 
 	public ResponseCodeEnum assessAllRoyalties(
-			BalanceChange change,
-			List<FcCustomFee> feesWithRoyalties,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator
+			final BalanceChange change,
+			final List<FcCustomFee> feesWithRoyalties,
+			final BalanceChangeManager changeManager,
+			final List<FcAssessedCustomFee> accumulator
 	) {
+		if (!change.isForNft()) {
+			/* This change was denominated in a non-fungible token type---but appeared
+			 * in the fungible transfer list. Fail now with the appropriate status. */
+			return ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+		}
+
 		final var payer = change.getAccount();
 		final var token = change.getToken();
 
@@ -95,12 +102,12 @@ public class RoyaltyFeeAssessor {
 	}
 
 	private ResponseCodeEnum chargeRoyalty(
-			Id collector,
-			RoyaltyFeeSpec spec,
-			List<BalanceChange> exchangedValue,
-			FungibleAdjuster fungibleAdjuster,
-			BalanceChangeManager changeManager,
-			List<FcAssessedCustomFee> accumulator
+			final Id collector,
+			final RoyaltyFeeSpec spec,
+			final List<BalanceChange> exchangedValue,
+			final FungibleAdjuster fungibleAdjuster,
+			final BalanceChangeManager changeManager,
+			final List<FcAssessedCustomFee> accumulator
 	) {
 		for (var exchange : exchangedValue) {
 			long value = exchange.originalUnits();

@@ -9,9 +9,9 @@ package com.hedera.services.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -46,25 +48,29 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 @Singleton
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
+	private final AliasManager aliasManager;
 
 	@Inject
-	public GetAccountInfoAnswer(OptionValidator optionValidator) {
+	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
 		this.optionValidator = optionValidator;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
+	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		AccountID id = query.getCryptoGetInfo().getAccountID();
-
-		return optionValidator.queryableAccountStatus(id, view.accounts());
+		var entityNum = id.getAlias().isEmpty() ?
+				EntityNum.fromAccountId(id) :
+				aliasManager.lookupIdBy(id.getAlias());
+		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 
 	@Override
-	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		CryptoGetInfoQuery op = query.getCryptoGetInfo();
+	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
 		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
-		ResponseType type = op.getHeader().getResponseType();
+		final ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
@@ -72,7 +78,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id);
+				var optionalInfo = view.infoForAccount(id, aliasManager);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
@@ -87,17 +93,17 @@ public class GetAccountInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public boolean needsAnswerOnlyCost(Query query) {
+	public boolean needsAnswerOnlyCost(final Query query) {
 		return COST_ANSWER == query.getCryptoGetInfo().getHeader().getResponseType();
 	}
 
 	@Override
-	public boolean requiresNodePayment(Query query) {
+	public boolean requiresNodePayment(final Query query) {
 		return typicallyRequiresNodePayment(query.getCryptoGetInfo().getHeader().getResponseType());
 	}
 
 	@Override
-	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
 		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}

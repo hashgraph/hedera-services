@@ -21,12 +21,16 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -41,15 +45,22 @@ import java.util.List;
 import java.util.function.IntSupplier;
 
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
+import static com.hedera.services.utils.MiscUtils.scheduledFunctionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final ThrottleReqOpsScaleFactor ONE_TO_ONE_SCALE = ThrottleReqOpsScaleFactor.from("1:1");
 
 	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
 			"{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
+	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
@@ -61,12 +72,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	public DeterministicThrottling(
 			final IntSupplier capacitySplitSource,
+			final AliasManager aliasManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final boolean consensusThrottled
 	) {
 		this.capacitySplitSource = capacitySplitSource;
 		this.dynamicProperties = dynamicProperties;
 		this.consensusThrottled = consensusThrottled;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -95,6 +108,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			return true;
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
+		} else if (function == CryptoTransfer) {
+			if (!accessor.areAutoCreationsCounted()) {
+				accessor.countAutoCreationsWith(aliasManager);
+			}
+			return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
+		} else if (function == ScheduleCreate) {
+			final var scheduled = accessor.getTxn().getScheduleCreate().getScheduledTransactionBody();
+			return shouldThrottleScheduleCreate(manager, scheduled, now);
 		} else {
 			return !manager.allReqsMetAt(now);
 		}
@@ -216,6 +237,46 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 				});
 		log.info(sb.toString().trim());
 	}
+
+	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
+		this.functionReqs = functionReqs;
+	}
+
+	private boolean shouldThrottleScheduleCreate(
+			final ThrottleReqsManager manager,
+			final SchedulableTransactionBody scheduled,
+			final Instant now
+	) {
+		final var scheduledFunction = scheduledFunctionOf(scheduled);
+		if (scheduledFunction == CryptoTransfer) {
+			final var txn = scheduled.getCryptoTransfer();
+			if (usesAliases(txn)) {
+				final var resolver = new AliasResolver();
+				resolver.resolve(txn, aliasManager);
+				final var numAutoCreations = resolver.perceivedAutoCreations();
+				if (numAutoCreations > 0) {
+					return shouldThrottleAutoCreations(numAutoCreations, now);
+				}
+			}
+		}
+		return !manager.allReqsMetAt(now);
+	}
+
+	private boolean shouldThrottleTransfer(
+			final ThrottleReqsManager manager,
+			final int numAutoCreations,
+			final Instant now
+	) {
+		return (numAutoCreations == 0)
+				? !manager.allReqsMetAt(now)
+				: shouldThrottleAutoCreations(numAutoCreations, now);
+	}
+
+	private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
+		final var manager = functionReqs.get(CryptoCreate);
+		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
+	}
+
 
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
 		final var numNfts = op.getMetadataCount();

@@ -29,6 +29,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -104,7 +105,11 @@ public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 	public static final AccountID EMPTY_ACCOUNT = AccountID.newBuilder().setAccountNum(0).build();
 
-	static BiFunction<StateView, AccountID, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
+	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
+			.setAccountNum(0L)
+			.build();
+
+	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
@@ -116,8 +121,8 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-					null, null, null,
-					EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, null,
+			EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
@@ -300,7 +305,7 @@ public class StateView {
 		final var targetNft = currentNfts.get(targetKey);
 		var accountId = targetNft.getOwner().toGrpcAccountId();
 
-		if (accountId.equals(EMPTY_ACCOUNT)) {
+		if (WILDCARD_OWNER.equals(accountId)) {
 			var merkleToken = tokens().get(tokenId);
 			if (merkleToken == null) {
 				return Optional.empty();
@@ -377,8 +382,9 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id) {
-		var account = accounts().get(fromAccountId(id));
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager aliasManager) {
+		final var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
+		final var account = accounts().get(accountId);
 		if (account == null) {
 			return Optional.empty();
 		}
@@ -386,6 +392,7 @@ public class StateView {
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(id)
+				.setAlias(account.getAlias())
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
 				.setMemo(account.getMemo())
@@ -398,7 +405,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		var tokenRels = tokenRelsFn.apply(this, id);
+		final var tokenRels = tokenRelsFn.apply(this, accountId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -431,7 +438,8 @@ public class StateView {
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {
-		var contract = contracts().get(fromContractId(id));
+		final var contractId = fromContractId(id);
+		var contract = contracts().get(contractId);
 		if (contract == null) {
 			return Optional.empty();
 		}
@@ -448,7 +456,7 @@ public class StateView {
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(mirrorId));
-		var tokenRels = tokenRelsFn.apply(this, mirrorId);
+		var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -522,14 +530,14 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
-		var account = view.accounts().get(fromAccountId(id));
+	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
+		var account = view.accounts().get(id);
 		List<TokenRelationship> relationships = new ArrayList<>();
 		var tokenIds = account.tokens().asTokenIds();
 		for (TokenID tId : tokenIds) {
 			var optionalToken = view.tokenWith(tId);
 			var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
-			var relKey = fromAccountTokenRel(id, tId);
+			var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);
 			var relationship = view.tokenAssociations().get(relKey);
 			relationships.add(new RawTokenRelationship(
 					relationship.getBalance(),

@@ -45,6 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -54,7 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-	private static final String EMPTY_MEMO = "";
+	public static final String EMPTY_MEMO = "";
 
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
@@ -100,10 +101,11 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
 			final List<FcAssessedCustomFee> assessedCustomFees,
-			final SideEffectsTracker sideEffectsTracker
+			final SideEffectsTracker sideEffectsTracker,
+			final String memo
 	) {
 		final var receiptBuilder = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL);
-		return createBaseRecord(EMPTY_MEMO, receiptBuilder, assessedCustomFees, sideEffectsTracker);
+		return createBaseRecord(memo, receiptBuilder, assessedCustomFees, sideEffectsTracker);
 	}
 
 	@Override
@@ -152,20 +154,30 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}
+		if (sideEffectsTracker.hasTrackedNftMints()) {
+			final var serialNoList = sideEffectsTracker.getTrackedNftMints();
+			final var rawSerials = new long[serialNoList.size()];
+			Arrays.setAll(rawSerials, serialNoList::get);
+			receiptBuilder.setSerialNumbers(rawSerials);
+		}
 
-		final var expiringRecord = ExpirableTxnRecord.newBuilder()
+		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+		if (sideEffectsTracker.hasTrackedAutoCreation()) {
+			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+			baseRecord.setAlias(sideEffectsTracker.getNewAccountAlias());
+		}
 
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		if (!tokenChanges.isEmpty()) {
-			setTokensAndTokenAdjustments(expiringRecord, tokenChanges);
+			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 
-		return expiringRecord;
+		return baseRecord;
 	}
 
 	@Override

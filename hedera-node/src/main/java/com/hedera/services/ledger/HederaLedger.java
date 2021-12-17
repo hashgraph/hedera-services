@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -132,6 +133,8 @@ public class HederaLedger {
 			null;
 
 	private TransferLogic transferLogic;
+	private final MerkleAccountScopedCheck scopedCheck;
+	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -143,6 +146,7 @@ public class HederaLedger {
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic
+			final AutoCreationLogic autoCreationLogic
 	) {
 		this.ids = ids;
 		this.validator = validator;
@@ -152,6 +156,7 @@ public class HederaLedger {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.transferLogic = transferLogic;
+		this.autoCreationLogic = autoCreationLogic;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
@@ -177,8 +182,21 @@ public class HederaLedger {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
 
+	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
+		return accountsLedger;
+	}
+
+	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
+		return nftsLedger;
+	}
+
+	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
+		return tokenRelsLedger;
+	}
+
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
+		autoCreationLogic.reset();
 		accountsLedger.begin();
 		mutableEntityAccess.begin();
 		if (tokenRelsLedger != null) {
@@ -245,7 +263,7 @@ public class HederaLedger {
 	}
 
 	/* -- CURRENCY MANIPULATION -- */
-	public long getBalance(AccountID id) {
+	public long getBalance(final AccountID id) {
 		return (long) accountsLedger.get(id, BALANCE);
 	}
 
@@ -364,7 +382,6 @@ public class HederaLedger {
 		spawn(id, balance, customizer);
 
 		sideEffectsTracker.trackHbarChange(sponsor, -balance);
-
 		return id;
 	}
 
@@ -506,17 +523,5 @@ public class HederaLedger {
 
 	List<TokenTransferList> netTokenTransfersInTxn() {
 		return sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
-	}
-
-	public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> getAccountsLedger() {
-		return accountsLedger;
-	}
-
-	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> getNftsLedger() {
-		return nftsLedger;
-	}
-
-	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
-		return tokenRelsLedger;
 	}
 }

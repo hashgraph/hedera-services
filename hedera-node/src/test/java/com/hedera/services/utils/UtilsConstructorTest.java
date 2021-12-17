@@ -46,6 +46,7 @@ import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
@@ -85,6 +86,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			MiscCryptoUtils.class,
 			NewRels.class,
 			PermissionFileUtils.class,
 			PropUtils.class,

@@ -26,7 +26,9 @@ import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.SigObserver;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -98,8 +100,8 @@ class HederaToPlatformSigOpsTest {
 				.willReturn("3".getBytes());
 		given(allSigBytes.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
 		willAnswer(inv -> {
-			final var obs = (BiConsumer<byte[], byte[]>) inv.getArgument(0);
-			obs.accept(fullPrefixKeys.get(0).getEd25519(), "4".getBytes());
+			final var obs = (SigObserver) inv.getArgument(0);
+			obs.accept(KeyType.ED25519, fullPrefixKeys.get(0).getEd25519(), "4".getBytes());
 			return null;
 		}).given(allSigBytes).forEachUnusedSigWithFullPrefix(any());
 	}
@@ -273,7 +275,7 @@ class HederaToPlatformSigOpsTest {
 	}
 
 	private TransactionSignature dummyFor(final JKey key, final String sig) {
-		return PlatformSigFactory.createEd25519(
+		return PlatformSigFactory.ed25519Sig(
 				key.getEd25519(),
 				sig.getBytes(),
 				platformTxn.getTxnBytes());

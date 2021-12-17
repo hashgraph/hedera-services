@@ -23,6 +23,9 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.PlatformSigOps;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
@@ -104,7 +107,16 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		if (requiredKey.isPresent()) {
 			return isActiveInFrame(requiredKey.get(), recipient, contract);
 		} else {
-			return true;
+			final var accessor = txnCtx.accessor();
+			return check.allKeysAreActive(
+					requiredKeys,
+					syncVerifier,
+					accessor,
+					PlatformSigOps::createCryptoSigsFrom,
+					accessor.getPkToSigsFn(),
+					ReusableBodySigningFactory::new,
+					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
+					HederaKeyActivation::pkToSigMapFrom);
 		}
 	}
 

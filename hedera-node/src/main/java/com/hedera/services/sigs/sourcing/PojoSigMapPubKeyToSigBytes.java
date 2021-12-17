@@ -73,10 +73,10 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	@Override
-	public void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+	public void forEachUnusedSigWithFullPrefix(final SigObserver observer) {
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
+				observer.accept(pojoSigMap.keyType(i), pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
 			}
 		}
 	}
@@ -99,6 +99,9 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
+		if (pubKey.length < prefix.length) {
+			return false;
+		}
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);
 	}

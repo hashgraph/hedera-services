@@ -73,7 +73,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -88,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -151,6 +149,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private CodeCache codeCache;
+        @Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -356,23 +356,22 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0130() {
+	void minimumVersionIsRelease0190() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0180_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0190_AND_020_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
 		// expect:
 		assertEquals(
-				StateChildIndices.NUM_PRE_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
+				StateChildIndices.NUM_PRE_0220_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_PRE_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0180_VERSION));
-		assertEquals(
-				StateChildIndices.NUM_0210_CHILDREN,
+				StateChildIndices.NUM_0220_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -382,14 +381,6 @@ class ServicesStateTest {
 		// expect:
 		assertEquals(0x8e300b0dfdafbb1aL, subject.getClassId());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.getVersion());
-	}
-
-	@Test
-	void doesntMigrateWhenInitializingFromRelease0170() {
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0170_VERSION);
-
-		assertDoesNotThrow(subject::initialize);
-		assertNotNull(subject.specialFiles());
 	}
 
 	@Test
@@ -407,6 +398,7 @@ class ServicesStateTest {
 	void doesntThrowWhenDualStateIsNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -428,7 +420,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromRelease0190() {
+	void migratesWhenInitializingFromRelease0200() {
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
@@ -500,6 +492,7 @@ class ServicesStateTest {
 	void nonGenesisInitReusesContextIfPresent() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
@@ -526,6 +519,7 @@ class ServicesStateTest {
 
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
 
 		given(platform.getSelfId()).willReturn(selfId);
@@ -544,6 +538,7 @@ class ServicesStateTest {
 	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		final var when = Instant.ofEpochSecond(1_234_567L, 890);
 		given(dualState.getFreezeTime()).willReturn(when);
@@ -568,6 +563,7 @@ class ServicesStateTest {
 	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 

@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;
 import com.swirlds.common.AddressBook;
@@ -37,10 +38,12 @@ public final class ThrottlingModule {
 	@Singleton
 	@HapiThrottle
 	public static FunctionalityThrottling provideHapiThrottling(
+			final AliasManager aliasManager,
 			final Supplier<AddressBook> addressBook,
 			final GlobalDynamicProperties dynamicProperties
 	) {
-		final var delegate = new DeterministicThrottling(() -> addressBook.get().getSize(), dynamicProperties, false);
+		final var delegate = new DeterministicThrottling(
+				() -> addressBook.get().getSize(), aliasManager, dynamicPropertie, false);
 		return new HapiThrottling(delegate);
 	}
 
@@ -48,10 +51,12 @@ public final class ThrottlingModule {
 	@Singleton
 	@HandleThrottle
 	public static FunctionalityThrottling provideHandleThrottling(
+			final AliasManager aliasManager,
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties
 	) {
-		final var delegate = new DeterministicThrottling(() -> 1, dynamicProperties, true);
+		final var delegate = new DeterministicThrottling(
+				() -> 1, aliasManager, dynamicProperties, true);
 		return new TxnAwareHandleThrottling(txnCtx, delegate);
 	}
 

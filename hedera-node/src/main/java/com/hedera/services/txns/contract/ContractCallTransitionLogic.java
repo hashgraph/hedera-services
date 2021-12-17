@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -31,6 +32,7 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
@@ -51,7 +53,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
 	private final AccountStore accountStore;
-	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
@@ -63,17 +64,16 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 	@Inject
 	public ContractCallTransitionLogic(
-			TransactionContext txnCtx,
-			EntityIdSource ids,
-			AccountStore accountStore,
-			HederaMutableWorldState worldState,
-			TransactionRecordService recordService,
-			CallEvmTxProcessor evmTxProcessor,
-			GlobalDynamicProperties properties,
-			CodeCache codeCache
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final HederaWorldState worldState,
+			final TransactionRecordService recordService,
+			final CallEvmTxProcessor evmTxProcessor,
+			final ServicesRepositoryRoot repositoryRoot
+			final GlobalDynamicProperties properties,
+			final CodeCache codeCache
 	) {
 		this.txnCtx = txnCtx;
-		this.ids = ids;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
@@ -113,16 +113,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		/* --- Externalise result --- */
 		recordService.externaliseEvmCallTransaction(result);
-	}
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
 	}
 
 	@Override
