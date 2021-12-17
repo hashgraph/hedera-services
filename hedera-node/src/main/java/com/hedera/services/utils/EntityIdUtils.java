@@ -54,7 +54,7 @@ public final class EntityIdUtils {
 
 	public static String readableId(final Object o) {
 		if (o instanceof Id id) {
-			return String.format(ENTITY_ID_FORMAT, id.getShard(), id.getRealm(), id.getNum());
+			return String.format(ENTITY_ID_FORMAT, id.shard(), id.realm(), id.num());
 		}
 		if (o instanceof AccountID id) {
 			return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
@@ -192,7 +192,7 @@ public final class EntityIdUtils {
 	}
 
 	public static String asSolidityAddressHex(Id id) {
-		return CommonUtils.hex(asSolidityAddress((int) id.getShard(), id.getRealm(), id.getNum()));
+		return CommonUtils.hex(asSolidityAddress((int) id.shard(), id.realm(), id.num()));
 	}
 
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {

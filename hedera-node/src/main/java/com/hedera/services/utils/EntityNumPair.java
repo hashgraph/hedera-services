@@ -65,7 +65,7 @@ public record EntityNumPair(long value) {
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
 		final var token = tokenRelationship.getToken();
 		final var account = tokenRelationship.getAccount();
-		return fromLongs(account.getId().getNum(), token.getId().getNum());
+		return fromLongs(account.getId().num(), token.getId().num());
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {

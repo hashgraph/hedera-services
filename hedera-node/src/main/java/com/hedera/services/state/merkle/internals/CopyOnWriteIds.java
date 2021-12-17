@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle.internals;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -160,7 +160,8 @@ public class CopyOnWriteIds {
 	/**
 	 * Overwrite the managed multiset with the given sequence of {@code (num, realm, shard)} ids.
 	 *
-	 * @param ids the sequence of {@code (num, realm, shard)} ids to overwrite
+	 * @param ids
+	 * 		the sequence of {@code (num, realm, shard)} ids to overwrite
 	 */
 	public void setNativeIds(long[] ids) {
 		this.ids = ids;
@@ -276,7 +277,7 @@ public class CopyOnWriteIds {
 	}
 
 	private long[] asNativeId(Id id) {
-		return new long[] { id.getNum(), id.getRealm(), id.getShard() };
+		return new long[] { id.num(), id.realm(), id.shard() };
 	}
 
 	private List<long[]> asNativeIds(Set<TokenID> grpcIds) {

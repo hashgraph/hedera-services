@@ -631,9 +631,9 @@ class LedgerBalanceChangesTest {
 
 	private TokenID asGprcToken(Id id) {
 		return TokenID.newBuilder()
-				.setShardNum(id.getShard())
-				.setRealmNum(id.getRealm())
-				.setTokenNum(id.getNum())
+				.setShardNum(id.shard())
+				.setRealmNum(id.realm())
+				.setTokenNum(id.num())
 				.build();
 	}
 
@@ -666,9 +666,9 @@ class LedgerBalanceChangesTest {
 	private final Id yetAnotherToken = new Id(0, 0, 75233);
 	private final Id aNft = new Id(0, 0, 9999);
 	private final Id bNft = new Id(0, 0, 10000);
-	private final NftId aaNft = new NftId(aNft.getShard(), aNft.getRealm(), aNft.getNum(), aSerialNo);
-	private final NftId baNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), aSerialNo);
-	private final NftId bbNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), bSerialNo);
+	private final NftId aaNft = new NftId(aNft.shard(), aNft.realm(), aNft.num(), aSerialNo);
+	private final NftId baNft = new NftId(bNft.shard(), bNft.realm(), bNft.num(), aSerialNo);
+	private final NftId bbNft = new NftId(bNft.shard(), bNft.realm(), bNft.num(), bSerialNo);
 	private final EntityNum aNftKey = EntityNum.fromLong(9999);
 	private final EntityNum bNftKey = EntityNum.fromLong(10000);
 	private final EntityNum tokenKey = EntityNum.fromLong(75231);

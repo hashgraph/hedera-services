@@ -460,9 +460,6 @@ public class UniqTokenViewsManager {
 		});
 	}
 
-	static record PendingChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
-	}
-
 	/* --- Only used by unit tests --- */
 	List<PendingChange> getChangesInTxn() {
 		return changesInTxn;

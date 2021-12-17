@@ -25,6 +25,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,10 +36,12 @@ import java.util.function.Supplier;
  * Active CustomFeeSchedules for an entity in the tokens FCMap
  */
 @Singleton
-public record FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) implements CustomFeeSchedules {
+public class FcmCustomFeeSchedules implements CustomFeeSchedules {
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 
 	@Inject
-	public FcmCustomFeeSchedules {
+	public FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
+		this.tokens = tokens;
 	}
 
 	@Override
@@ -49,5 +53,19 @@ public record FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> 
 		}
 		final var merkleToken = currentTokens.get(key);
 		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
+	}
+
+	public Supplier<MerkleMap<EntityNum, MerkleToken>> getTokens() {
+		return tokens;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 }

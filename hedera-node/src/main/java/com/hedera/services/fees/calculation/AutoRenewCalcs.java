@@ -143,7 +143,4 @@ public class AutoRenewCalcs {
 				+ prices.getNetworkdata().getConstant()
 				+ prices.getServicedata().getConstant();
 	}
-
-	public static record RenewAssessment(long fee, long renewalPeriod) {
-	}
 }

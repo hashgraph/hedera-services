@@ -402,7 +402,7 @@ public class TypedTokenStore {
 	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
-		final var key = EntityNum.fromLong(token.getId().getNum());
+		final var key = EntityNum.fromLong(token.getId().num());
 		final var mutableToken = tokens.get().getForModify(key);
 		mapModelChangesToMutable(token, mutableToken);
 
@@ -434,7 +434,7 @@ public class TypedTokenStore {
 	 */
 	public void persistNew(Token token) {
 		/* create new merkle token */
-		final var newMerkleTokenId = EntityNum.fromLong(token.getId().getNum());
+		final var newMerkleTokenId = EntityNum.fromLong(token.getId().num());
 		final var newMerkleToken = new MerkleToken(
 				token.getExpiry(),
 				token.getTotalSupply(),
@@ -457,7 +457,7 @@ public class TypedTokenStore {
 	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
 			curNfts.remove(merkleNftId);
 			if (treasury.matches(nft.getOwner())) {
 				uniqTokenViewsManager.burnNotice(merkleNftId, treasury);
@@ -470,7 +470,7 @@ public class TypedTokenStore {
 	private void persistMinted(List<UniqueToken> nfts, EntityId treasury) {
 		final var curNfts = uniqueTokens.get();
 		for (var nft : nfts) {
-			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().getNum(), nft.getSerialNumber());
+			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			curNfts.put(merkleNftId, merkleNft);
 			uniqTokenViewsManager.mintNotice(merkleNftId, treasury);

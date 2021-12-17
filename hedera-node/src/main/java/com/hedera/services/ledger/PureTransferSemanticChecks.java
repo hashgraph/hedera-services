@@ -68,9 +68,9 @@ public class PureTransferSemanticChecks {
 			List<TokenTransferList> tokenAdjustsList,
 			ImpliedTransfersMeta.ValidationProps validationProps
 	) {
-		final var maxHbarAdjusts = validationProps.getMaxHbarAdjusts();
-		final var maxTokenAdjusts = validationProps.getMaxTokenAdjusts();
-		final var maxOwnershipChanges = validationProps.getMaxOwnershipChanges();
+		final var maxHbarAdjusts = validationProps.maxHbarAdjusts();
+		final var maxTokenAdjusts = validationProps.maxTokenAdjusts();
+		final var maxOwnershipChanges = validationProps.maxOwnershipChanges();
 		final var areNftsEnabled = validationProps.areNftsEnabled();
 
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();

@@ -1,4 +1,4 @@
-package com.hedera.services.queries.schedule;
+package com.hedera.services.fees.calculation;
 
 /*-
  * ‌
@@ -6,7 +6,8 @@ package com.hedera.services.queries.schedule;
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2com.hedera.services.store.tokens.views.UniqTokenViewsManager
+ * .PendingChange.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -20,19 +21,6 @@ package com.hedera.services.queries.schedule;
  * ‍
  */
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
-public class ScheduleAnswers {
-	private final GetScheduleInfoAnswer scheduleInfo;
-
-	@Inject
-	public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
-		this.scheduleInfo = scheduleInfo;
-	}
-
-	public GetScheduleInfoAnswer getScheduleInfo() {
-		return scheduleInfo;
-	}
+public record RenewAssessment(long fee, long renewalPeriod) {
 }

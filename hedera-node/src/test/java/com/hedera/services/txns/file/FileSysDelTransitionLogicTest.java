@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -48,9 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -60,8 +60,9 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class FileSysDelTransitionLogicTest {
-	enum TargetType { VALID, MISSING, DELETED }
-	enum NewExpiryType { NONE, FUTURE, PAST }
+	enum TargetType {VALID, MISSING, DELETED}
+
+	enum NewExpiryType {NONE, FUTURE, PAST}
 
 	long now = Instant.now().getEpochSecond();
 	long lifetime = 1_000_000L;
@@ -72,7 +73,7 @@ class FileSysDelTransitionLogicTest {
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
 
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
+	HederaFs.UpdateResult success = new SimpleUpdateResult(
 			true,
 			false,
 			SUCCESS);
@@ -135,7 +136,8 @@ class FileSysDelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertTrue(attr.isDeleted());;
+		assertTrue(attr.isDeleted());
+		;
 		assertEquals(oldExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));
@@ -167,7 +169,8 @@ class FileSysDelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertTrue(attr.isDeleted());;
+		assertTrue(attr.isDeleted());
+		;
 		assertEquals(newExpiry, attr.getExpiry());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), Long.valueOf(oldExpiry));

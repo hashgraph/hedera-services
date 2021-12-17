@@ -233,10 +233,6 @@ public final class TieredHederaFs implements HederaFs {
 		data.remove(id);
 	}
 
-	public static final record SimpleUpdateResult(boolean attrChanged, boolean fileReplaced,
-												  ResponseCodeEnum outcome) implements UpdateResult {
-	}
-
 	private boolean isSpecialFile(FileID fid) {
 		return specialFiles.get().contains(fid);
 	}

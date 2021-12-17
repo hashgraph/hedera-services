@@ -117,9 +117,9 @@ class RoyaltyFeeSpecTest {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
 
-		assertEquals(1, a.getNumerator());
-		assertEquals(10, a.getDenominator());
-		assertSame(fallback, a.getFallbackFee());
+		assertEquals(1, a.numerator());
+		assertEquals(10, a.denominator());
+		assertSame(fallback, a.fallbackFee());
 		assertTrue(a.hasFallbackFee());
 	}
 

@@ -102,16 +102,16 @@ class OpUsageCtxHelperTest {
 		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(then - now, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(then - now, opMeta.lifetime());
 	}
 
 	@Test
 	void shortCircuitsFileAppendMetaForSpecialFile() {
 		final var opMeta = subject.metaForFileAppend(specialAppendTxn);
 
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(7776000L, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(7776000L, opMeta.lifetime());
 	}
 
 	@Test
@@ -120,8 +120,8 @@ class OpUsageCtxHelperTest {
 		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(0, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(0, opMeta.lifetime());
 	}
 
 	@Test
@@ -306,6 +306,7 @@ class OpUsageCtxHelperTest {
 				.setTokenBurn(op)
 				.build();
 	}
+
 	private TransactionBody getTxnBody(final TokenWipeAccountTransactionBody op) {
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()

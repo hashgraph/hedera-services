@@ -143,7 +143,7 @@ class BalanceChangeTest {
 		assertEquals(serialNo, nftChange.serialNo());
 		// and:
 		assertTrue(nftChange.isForNft());
-		assertEquals(new NftId(t.getShard(), t.getRealm(), t.getNum(), serialNo), nftChange.nftId());
+		assertEquals(new NftId(t.shard(), t.realm(), t.num(), serialNo), nftChange.nftId());
 	}
 
 	@Test

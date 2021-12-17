@@ -24,13 +24,45 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public record CryptoAnswers(GetLiveHashAnswer liveHash,
-							GetStakersAnswer stakers,
-							GetAccountInfoAnswer accountInfo,
-							GetAccountBalanceAnswer accountBalance,
-							GetAccountRecordsAnswer accountRecords) {
+public class CryptoAnswers {
+	private final GetLiveHashAnswer liveHash;
+	private final GetStakersAnswer stakers;
+	private final GetAccountInfoAnswer accountInfo;
+	private final GetAccountBalanceAnswer accountBalance;
+	private final GetAccountRecordsAnswer accountRecords;
 
 	@Inject
-	public CryptoAnswers {
+	public CryptoAnswers(
+			final GetLiveHashAnswer liveHash,
+			final GetStakersAnswer stakers,
+			final GetAccountInfoAnswer accountInfo,
+			final GetAccountBalanceAnswer accountBalance,
+			final GetAccountRecordsAnswer accountRecords
+	) {
+		this.liveHash = liveHash;
+		this.stakers = stakers;
+		this.accountInfo = accountInfo;
+		this.accountBalance = accountBalance;
+		this.accountRecords = accountRecords;
+	}
+
+	public GetLiveHashAnswer getLiveHash() {
+		return liveHash;
+	}
+
+	public GetStakersAnswer getStakers() {
+		return stakers;
+	}
+
+	public GetAccountBalanceAnswer getAccountBalance() {
+		return accountBalance;
+	}
+
+	public GetAccountInfoAnswer getAccountInfo() {
+		return accountInfo;
+	}
+
+	public GetAccountRecordsAnswer getAccountRecords() {
+		return accountRecords;
 	}
 }
