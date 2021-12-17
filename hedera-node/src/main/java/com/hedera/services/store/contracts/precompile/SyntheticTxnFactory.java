@@ -73,54 +73,28 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
-//	public TransactionBody.Builder createCryptoTransfer(
-//			final List<NftExchange> nftExchanges,
-//			final List<FungibleTokenTransfer> fungibleTransfers
-//	) {
-//		final var builder = CryptoTransferTransactionBody.newBuilder();
-//
-//		for (final var nftExchange : nftExchanges) {
-//			builder.addTokenTransfers(TokenTransferList.newBuilder()
-//					.setToken(nftExchange.getTokenType())
-//					.addNftTransfers(nftExchange.nftTransfer()));
-//		}
-//		for (final var fungibleTransfer : fungibleTransfers) {
-//			final var tokenTransferList = TokenTransferList.newBuilder()
-//					.setToken(fungibleTransfer.getDenomination());
-//
-//			if (fungibleTransfer.sender != null) {
-//				tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
-//			}
-//			if (fungibleTransfer.receiver != null) {
-//				tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
-//			}
-//			builder.addTokenTransfers(tokenTransferList);
-//		}
-//		return TransactionBody.newBuilder().setCryptoTransfer(builder);
-//	}
-
 	public TransactionBody.Builder createCryptoTransfer(
 			final List<TokenTransferList> tokenTransferLists
 	) {
 		final var builder = CryptoTransferTransactionBody.newBuilder();
 
-		for(final TokenTransferList transferLists: tokenTransferLists) {
-			for (final var nftExchange : transferLists.getNftExchanges()) {
+		for(final TokenTransferList tokenTransferList: tokenTransferLists) {
+			for (final var nftExchange : tokenTransferList.getNftExchanges()) {
 				builder.addTokenTransfers(com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
 						.setToken(nftExchange.getTokenType())
 						.addNftTransfers(nftExchange.nftTransfer()));
 			}
-			for (final var fungibleTransfer : transferLists.getFungibleTransfers()) {
-				final var tokenTransferList = com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
+			for (final var fungibleTransfer : tokenTransferList.getFungibleTransfers()) {
+				final var tokenTransferListBuilder = com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
 						.setToken(fungibleTransfer.getDenomination());
 
 				if (fungibleTransfer.sender != null) {
-					tokenTransferList.addTransfers(fungibleTransfer.senderAdjustment());
+					tokenTransferListBuilder.addTransfers(fungibleTransfer.senderAdjustment());
 				}
 				if (fungibleTransfer.receiver != null) {
-					tokenTransferList.addTransfers(fungibleTransfer.receiverAdjustment());
+					tokenTransferListBuilder.addTransfers(fungibleTransfer.receiverAdjustment());
 				}
-				builder.addTokenTransfers(tokenTransferList);
+				builder.addTokenTransfers(tokenTransferListBuilder);
 			}
 		}
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
