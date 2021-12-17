@@ -67,7 +67,7 @@ class DecodingFacadeTest {
 		assertEquals(1, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
 		assertTrue(fungibleTransfers.get(0).sender.getAccountNum() > 0);
-		assertEquals(-50, fungibleTransfers.get(0).amount);
+		assertEquals(50, fungibleTransfers.get(0).amount);
 	}
 
 	@Test
@@ -148,7 +148,7 @@ class DecodingFacadeTest {
 		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
 		assertTrue(fungibleTransfers.get(1).sender.getAccountNum() > 0);
 		assertEquals(20, fungibleTransfers.get(0).amount);
-		assertEquals(-20, fungibleTransfers.get(1).amount);
+		assertEquals(20, fungibleTransfers.get(1).amount);
 	}
 
 	@Test
