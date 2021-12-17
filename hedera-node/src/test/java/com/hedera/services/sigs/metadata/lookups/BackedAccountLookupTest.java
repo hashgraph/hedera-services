@@ -81,8 +81,9 @@ class BackedAccountLookupTest {
 		given(accounts.getImmutableRef(id)).willReturn(account);
 
 		final var result = subject.safeLookup(id);
+		System.out.println(result.toString());
 
-		assertTrue(result.toString().startsWith("SafeLookupResult{failure=NONE, metadata=AccountSigningMetadata{"));
+		assertTrue(result.toString().startsWith("SafeLookupResult{failure=NONE, metadata=AccountSigningMetadata["));
 	}
 
 	@Test

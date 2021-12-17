@@ -449,7 +449,7 @@ class UniqTokenViewsManagerTest {
 	@Test
 	void toStringAsExpected() {
 		// setup:
-		final var desired = "PendingChange{targetFcotmr=NFTS_BY_TYPE, keyCode=1, valueCode=2, associate=true}";
+		final var desired = "PendingChange[targetFcotmr=NFTS_BY_TYPE, keyCode=1, valueCode=2, associate=true]";
 
 		// given:
 		final var c = change(NFTS_BY_TYPE, 1, 2L, true);

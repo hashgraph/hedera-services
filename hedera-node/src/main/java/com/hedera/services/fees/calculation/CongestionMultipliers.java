@@ -21,7 +21,9 @@ package com.hedera.services.fees.calculation;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public final record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
 	public static CongestionMultipliers from(final String csv) {
@@ -102,6 +104,25 @@ public final record CongestionMultipliers(int[] usagePercentTriggers, long[] mul
 			return s;
 		}
 		return s.substring(0, i);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(Arrays.hashCode(usagePercentTriggers), Arrays.hashCode(multipliers));
+	}
+
+
+	@Override
+	public boolean equals(final Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o == null || !o.getClass().equals(CongestionMultipliers.class)) {
+			return false;
+		}
+		final var that = (CongestionMultipliers) o;
+		return Arrays.equals(this.multipliers, that.multipliers) &&
+				Arrays.equals(this.usagePercentTriggers, that.usagePercentTriggers);
 	}
 
 	@Override

@@ -127,8 +127,8 @@ class RoyaltyFeeSpecTest {
 	void toStringWorks() {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
-		final var desired = "RoyaltyFeeSpec{numerator=1, denominator=10, " +
-				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}}";
+		final var desired = "RoyaltyFeeSpec[numerator=1, denominator=10, " +
+				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}]";
 
 		assertEquals(desired, a.toString());
 	}

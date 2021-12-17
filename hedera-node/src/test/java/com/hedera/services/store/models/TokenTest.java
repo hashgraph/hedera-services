@@ -106,7 +106,7 @@ class TokenTest {
 		assertFalse(subject.hasFeeScheduleKey());
 
 		subject.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
-		
+
 		assertTrue(subject.hasFeeScheduleKey());
 	}
 
@@ -161,7 +161,7 @@ class TokenTest {
 						.setFeeScheduleKey(feeScheduleKey)
 						.setPauseKey(pauseKey)
 						.addAllCustomFees(List.of(CustomFee.newBuilder().setFixedFee(
-								FixedFee.newBuilder().setAmount(10).build())
+										FixedFee.newBuilder().setAmount(10).build())
 								.setFeeCollectorAccountId(IdUtils.asAccount("1.2.3")).build()))
 						.setAutoRenewAccount(nonTreasuryAccount.getId().asGrpcAccount())
 						.setExpiry(Timestamp.newBuilder().setSeconds(1000L).build())
@@ -602,11 +602,12 @@ class TokenTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id{shard=0, realm=0, num=0}, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
-				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=" + treasuryAccount.getAlias() +
-				"}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
-				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
+		final var desired = "Token{id=Id[shard=1, realm=2, num=3], type=null, deleted=false, autoRemoved=false, " +
+				"treasury=Account{id=Id[shard=0, realm=0, num=0], expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=<ByteString@11d8ae8b size=0" +
+				" " +
+				"contents=\"\">}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, " +
+				"supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());
 	}
