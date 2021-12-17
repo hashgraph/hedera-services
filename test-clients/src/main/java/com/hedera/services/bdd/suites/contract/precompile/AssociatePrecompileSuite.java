@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.legacy.core.CommonUtils;
@@ -68,6 +69,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
@@ -90,18 +92,19 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final String FROZEN_TOKEN = "Frozen token";
 	private static final String UNFROZEN_TOKEN = "Unfrozen token";
 	private static final String KYC_TOKEN = "KYC token";
+	private static final String TOKEN = "Token";
 	private static final String CONTRACT_KEY = "Contract key";
 	private static final String DELEGATE_KEY = "Delegate key";
 	private static final String FREEZE_KEY = "Freeze key";
 	private static final String KYC_KEY = "KYC key";
 
 	public static void main(String... args) {
-		new AssociatePrecompileSuite().runSuiteAsync();
+		new AssociatePrecompileSuite().runSuiteSync();
 	}
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -129,7 +132,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				associatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
 				associatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
 				associatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC()
+				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
+				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
 
@@ -696,6 +700,57 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						childRecordsCheck("kycNFTSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
 								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked))
+				);
+	}
+
+	private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+		final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
+				.given(
+						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+						tokenCreate(TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
+												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("vanillaTokenAssociateTxn")
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(secondVanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("secondVanillaTokenAssociateFailsTxn")
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												getTxnRecord("secondVanillaTokenAssociateFailsTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+						childRecordsCheck("secondVanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
+								.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)),
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
