@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.domain.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,8 +22,6 @@ package com.hedera.services.sysfiles.domain.throttling;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 public class ThrottleDefinitions {
 	List<ThrottleBucket> buckets = new ArrayList<>();
@@ -40,13 +38,13 @@ public class ThrottleDefinitions {
 		var pojo = new ThrottleDefinitions();
 		pojo.buckets.addAll(defs.getThrottleBucketsList().stream()
 				.map(ThrottleBucket::fromProto)
-				.collect(toList()));
+				.toList());
 		return pojo;
 	}
 
 	public com.hederahashgraph.api.proto.java.ThrottleDefinitions toProto() {
 		return com.hederahashgraph.api.proto.java.ThrottleDefinitions.newBuilder()
-				.addAllThrottleBuckets(buckets.stream().map(ThrottleBucket::toProto).collect(toList()))
+				.addAllThrottleBuckets(buckets.stream().map(ThrottleBucket::toProto).toList())
 				.build();
 	}
 }

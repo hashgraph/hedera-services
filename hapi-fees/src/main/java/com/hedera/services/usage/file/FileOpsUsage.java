@@ -77,9 +77,9 @@ public class FileOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		final var bytesAdded = appendMeta.getBytesAdded();
+		final var bytesAdded = appendMeta.bytesAdded();
 		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + bytesAdded);
-		accumulator.addSbs(bytesAdded * appendMeta.getLifetime());
+		accumulator.addSbs(bytesAdded * appendMeta.lifetime());
 	}
 
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {

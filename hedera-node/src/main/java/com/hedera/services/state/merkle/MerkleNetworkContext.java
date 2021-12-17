@@ -44,7 +44,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static java.util.stream.Collectors.toList;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
@@ -369,7 +368,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private String congestionStartsDesc() {
-		if (congestionLevelStarts.length == 0)	 {
+		if (congestionLevelStarts.length == 0) {
 			return NOT_AVAILABLE_SUFFIX;
 		} else {
 			final var sb = new StringBuilder();
@@ -464,7 +463,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private void reset(List<DeterministicThrottle> throttles) {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
-				.collect(toList());
+				.toList();
 		for (int i = 0, n = usageSnapshots.length; i < n; i++) {
 			var savedUsageSnapshot = usageSnapshots[i];
 			var throttle = throttles.get(i);

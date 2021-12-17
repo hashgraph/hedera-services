@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
@@ -66,7 +65,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		var requiredKeys = touched.stream()
 				.filter(id -> !payer.equals(id))
 				.flatMap(this::keyRequirement)
-				.collect(toList());
+				.toList();
 		if (requiredKeys.isEmpty()) {
 			return true;
 		} else {

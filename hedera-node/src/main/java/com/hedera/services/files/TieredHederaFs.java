@@ -51,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link HederaFs} that stores the contents and metadata of its files in
@@ -234,35 +233,8 @@ public final class TieredHederaFs implements HederaFs {
 		data.remove(id);
 	}
 
-	public static final class SimpleUpdateResult implements UpdateResult {
-		private final boolean attrChanged;
-		private final boolean fileReplaced;
-		private final ResponseCodeEnum outcome;
-
-		public SimpleUpdateResult(
-				final boolean attrChanged,
-				final boolean fileReplaced,
-				final ResponseCodeEnum outcome
-		) {
-			this.attrChanged = attrChanged;
-			this.fileReplaced = fileReplaced;
-			this.outcome = outcome;
-		}
-
-		@Override
-		public boolean fileReplaced() {
-			return fileReplaced;
-		}
-
-		@Override
-		public ResponseCodeEnum outcome() {
-			return outcome;
-		}
-
-		@Override
-		public boolean attrChanged() {
-			return attrChanged;
-		}
+	public static final record SimpleUpdateResult(boolean attrChanged, boolean fileReplaced,
+												  ResponseCodeEnum outcome) implements UpdateResult {
 	}
 
 	private boolean isSpecialFile(FileID fid) {
@@ -313,7 +285,7 @@ public final class TieredHederaFs implements HederaFs {
 				.stream()
 				.filter(interceptor -> interceptor.priorityForCandidate(id).isPresent())
 				.sorted(comparingInt(interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
-				.collect(toList());
+				.toList();
 	}
 
 	public static ResponseCodeEnum firstUnsuccessful(final ResponseCodeEnum... outcomes) {

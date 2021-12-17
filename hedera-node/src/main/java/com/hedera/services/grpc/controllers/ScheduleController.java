@@ -72,6 +72,6 @@ public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplB
 
 	@Override
 	public void getScheduleInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.answer(query, observer, scheduleAnswers.getScheduleInfo(), ScheduleGetInfo);
+		queryHelper.answer(query, observer, scheduleAnswers.scheduleInfo(), ScheduleGetInfo);
 	}
 }

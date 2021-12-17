@@ -27,11 +27,11 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -60,8 +60,8 @@ import java.util.function.UnaryOperator;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 
 @Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
@@ -143,13 +143,13 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var watch = StopWatch.createStarted();
 		summary = summarized(signedState);
 		final var expected = BigInteger.valueOf(expectedFloat);
-		if (expected.equals(summary.getTotalFloat())) {
+		if (expected.equals(summary.totalFloat())) {
 			log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
 			toProtoFile(consensusTime);
 		} else {
 			log.error(
 					"Signed state @ {} had total balance {} not {}; exiting",
-					consensusTime, summary.getTotalFloat(), expectedFloat);
+					consensusTime, summary.totalFloat(), expectedFloat);
 			systemExits.fail(1);
 		}
 	}
@@ -187,7 +187,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		builder.setConsensusTimestamp(Timestamp.newBuilder()
 				.setSeconds(exportTimeStamp.getEpochSecond())
 				.setNanos(exportTimeStamp.getNano()));
-		builder.addAllAllAccounts(summary.getOrderedBalances());
+		builder.addAllAllAccounts(summary.orderedBalances());
 	}
 
 	private boolean exportBalancesProtoFile(AllAccountBalances.Builder allAccountsBuilder, String protoLoc) {
@@ -272,27 +272,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			}
 		}
 		return true;
-	}
-
-	static class BalancesSummary {
-		private final BigInteger totalFloat;
-		private final List<SingleAccountBalances> orderedBalances;
-
-		BalancesSummary(
-				BigInteger totalFloat,
-				List<SingleAccountBalances> orderedBalances
-		) {
-			this.totalFloat = totalFloat;
-			this.orderedBalances = orderedBalances;
-		}
-
-		public BigInteger getTotalFloat() {
-			return totalFloat;
-		}
-
-		public List<SingleAccountBalances> getOrderedBalances() {
-			return orderedBalances;
-		}
 	}
 }
 

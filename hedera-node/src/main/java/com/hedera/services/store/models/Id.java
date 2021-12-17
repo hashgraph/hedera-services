@@ -20,7 +20,6 @@ package com.hedera.services.store.models;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -35,23 +34,13 @@ import java.util.Comparator;
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
-public class Id {
+public record Id(long shard, long realm, long num) {
 	public static final Id DEFAULT = new Id(0, 0, 0);
 	public static final Comparator<Id> ID_COMPARATOR = Comparator
-			.comparingLong(Id::getNum)
-			.thenComparingLong(Id::getShard)
-			.thenComparingLong(Id::getRealm);
+			.comparingLong(Id::num)
+			.thenComparingLong(Id::shard)
+			.thenComparingLong(Id::realm);
 	public static final Id MISSING_ID = new Id(0, 0, 0);
-
-	private final long shard;
-	private final long realm;
-	private final long num;
-
-	public Id(long shard, long realm, long num) {
-		this.shard = shard;
-		this.realm = realm;
-		this.num = num;
-	}
 
 	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
@@ -105,45 +94,11 @@ public class Id {
 				.build();
 	}
 
-	public long getShard() {
-		return shard;
-	}
-
-	public long getRealm() {
-		return realm;
-	}
-
-	public long getNum() {
-		return num;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this) {
-			return true;
-		}
-		if (obj == null || !Id.class.equals(obj.getClass())) {
-			return false;
-		}
-		final Id that = (Id) obj;
-
-		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
-	}
-
 	@Override
 	public int hashCode() {
 		int result = Long.hashCode(shard);
 		result = 31 * result + Long.hashCode(realm);
 		return 31 * result + Long.hashCode(num);
-	}
-
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(Id.class)
-				.add("shard", shard)
-				.add("realm", realm)
-				.add("num", num)
-				.toString();
 	}
 
 	public EntityId asEntityId() {
@@ -152,6 +107,7 @@ public class Id {
 
 	/**
 	 * Returns the EVM representation of the Account
+	 *
 	 * @return {@link Address} evm representation
 	 */
 	public Address asEvmAddress() {

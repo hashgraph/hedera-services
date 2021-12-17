@@ -350,7 +350,7 @@ public final class MiscUtils {
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
-		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
+		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
 	}
 
 	private static AccountAmount negationOf(final AccountAmount adjustment) {

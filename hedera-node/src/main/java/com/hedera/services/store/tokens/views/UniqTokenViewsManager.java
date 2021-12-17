@@ -139,11 +139,11 @@ public class UniqTokenViewsManager {
 		}
 
 		final var tokenId = nftId.getHiPhi();
-		nftsByType.get().associate(tokenId, nftId.getValue());
+		nftsByType.get().associate(tokenId, nftId.value());
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().associate(tokenId, nftId.getValue());
+			curTreasuryNftsByType().associate(tokenId, nftId.value());
 		} else {
-			nftsByOwner.get().associate(EntityNum.fromInt(treasury.identityCode()), nftId.getValue());
+			nftsByOwner.get().associate(EntityNum.fromInt(treasury.identityCode()), nftId.value());
 		}
 	}
 
@@ -162,8 +162,8 @@ public class UniqTokenViewsManager {
 		}
 
 		/* The treasury account cannot be wiped, so both cases are the same */
-		nftsByType.get().disassociate(nftId.getHiPhi(), nftId.getValue());
-		nftsByOwner.get().disassociate(fromInt(fromAccount.identityCode()), nftId.getValue());
+		nftsByType.get().disassociate(nftId.getHiPhi(), nftId.value());
+		nftsByOwner.get().disassociate(fromInt(fromAccount.identityCode()), nftId.value());
 	}
 
 	/**
@@ -181,11 +181,11 @@ public class UniqTokenViewsManager {
 		}
 
 		final var tokenId = nftId.getHiPhi();
-		nftsByType.get().disassociate(tokenId, nftId.getValue());
+		nftsByType.get().disassociate(tokenId, nftId.value());
 		if (isUsingTreasuryWildcards()) {
-			curTreasuryNftsByType().disassociate(tokenId, nftId.getValue());
+			curTreasuryNftsByType().disassociate(tokenId, nftId.value());
 		} else {
-			nftsByOwner.get().disassociate(EntityNum.fromInt(treasury.identityCode()), nftId.getValue());
+			nftsByOwner.get().disassociate(EntityNum.fromInt(treasury.identityCode()), nftId.value());
 		}
 	}
 
@@ -205,8 +205,8 @@ public class UniqTokenViewsManager {
 			return;
 		}
 
-		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.getValue(), false);
-		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.getValue(), true);
+		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.value(), false);
+		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.value(), true);
 	}
 
 	/**
@@ -227,11 +227,11 @@ public class UniqTokenViewsManager {
 		}
 
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.getValue(), false);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.value(), false);
 		} else {
-			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), false);
+			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.value(), false);
 		}
-		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.getValue(), true);
+		changeOrStage(NFTS_BY_OWNER, newOwner.identityCode(), nftId.value(), true);
 	}
 
 	/**
@@ -251,11 +251,11 @@ public class UniqTokenViewsManager {
 			return;
 		}
 
-		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.getValue(), false);
+		changeOrStage(NFTS_BY_OWNER, prevOwner.identityCode(), nftId.value(), false);
 		if (isUsingTreasuryWildcards()) {
-			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.getValue(), true);
+			changeOrStage(TREASURY_NFTS_BY_TYPE, nftId.getHiPhi().intValue(), nftId.value(), true);
 		} else {
-			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.getValue(), true);
+			changeOrStage(NFTS_BY_OWNER, treasury.identityCode(), nftId.value(), true);
 		}
 	}
 
@@ -313,7 +313,7 @@ public class UniqTokenViewsManager {
 		}
 		if (!changesInTxn.isEmpty()) {
 			for (var change : changesInTxn) {
-				doChange(change.targetFcotmr(), change.keyCode(), change.valueCode(), change.isAssociate());
+				doChange(change.targetFcotmr(), change.keyCode(), change.valueCode(), change.associate());
 			}
 			changesInTxn.clear();
 		}
@@ -407,7 +407,7 @@ public class UniqTokenViewsManager {
 				if (!tokens.containsKey(tokenId)) {
 					return;
 				}
-				curTreasuryNftsByType.associate(tokenId, nftId.getValue());
+				curTreasuryNftsByType.associate(tokenId, nftId.value());
 			}
 		});
 	}
@@ -422,7 +422,7 @@ public class UniqTokenViewsManager {
 				return;
 			}
 			if (!nft.isTreasuryOwned()) {
-				curNftsByOwner.associate(fromInt(nft.getOwner().identityCode()), nftId.getValue());
+				curNftsByOwner.associate(fromInt(nft.getOwner().identityCode()), nftId.value());
 			}
 		});
 	}
@@ -439,9 +439,9 @@ public class UniqTokenViewsManager {
 			}
 			if (nft.isTreasuryOwned()) {
 				final var token = tokens.get(tokenId);
-				curNftsByOwner.associate(fromInt(token.treasury().identityCode()), nftId.getValue());
+				curNftsByOwner.associate(fromInt(token.treasury().identityCode()), nftId.value());
 			} else {
-				curNftsByOwner.associate(fromInt(nft.getOwner().identityCode()), nftId.getValue());
+				curNftsByOwner.associate(fromInt(nft.getOwner().identityCode()), nftId.value());
 			}
 		});
 	}
@@ -456,48 +456,11 @@ public class UniqTokenViewsManager {
 			if (!tokens.containsKey(tokenId)) {
 				return;
 			}
-			curNftsByType.associate(tokenId, nftId.getValue());
+			curNftsByType.associate(tokenId, nftId.value());
 		});
 	}
 
-	static class PendingChange {
-		private final TargetFcotmr targetFcotmr;
-		private final int keyCode;
-		private final long valueCode;
-		private final boolean associate;
-
-		public PendingChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
-			this.targetFcotmr = targetFcotmr;
-			this.keyCode = keyCode;
-			this.valueCode = valueCode;
-			this.associate = associate;
-		}
-
-		public TargetFcotmr targetFcotmr() {
-			return targetFcotmr;
-		}
-
-		public int keyCode() {
-			return keyCode;
-		}
-
-		public long valueCode() {
-			return valueCode;
-		}
-
-		public boolean isAssociate() {
-			return associate;
-		}
-
-		@Override
-		public String toString() {
-			return "PendingChange{" +
-					"targetFcotmr=" + targetFcotmr +
-					", keyCode=" + keyCode +
-					", valueCode=" + valueCode +
-					", associate=" + associate +
-					'}';
-		}
+	static record PendingChange(TargetFcotmr targetFcotmr, int keyCode, long valueCode, boolean associate) {
 	}
 
 	/* --- Only used by unit tests --- */

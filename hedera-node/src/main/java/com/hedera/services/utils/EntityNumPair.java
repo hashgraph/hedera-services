@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Objects;
+
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
@@ -34,13 +36,11 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHi
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static com.hedera.services.utils.EntityNum.areValidNums;
 
-public class EntityNumPair {
+public record EntityNumPair(long value) {
 	static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
 
-	private final long value;
-
-	public EntityNumPair(long value) {
-		this.value = value;
+	public EntityNumPair {
+		Objects.requireNonNull(value);
 	}
 
 	public static EntityNumPair fromLongs(long hi, long lo) {
@@ -72,29 +72,6 @@ public class EntityNumPair {
 		return Pair.of(
 				STATIC_PROPERTIES.scopedAccountWith(unsignedHighOrder32From(value)),
 				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
-	}
-
-	@Override
-	public int hashCode() {
-		return (int) MiscUtils.perm64(value);
-	}
-
-	public long getValue() {
-		return value;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || EntityNumPair.class != o.getClass()) {
-			return false;
-		}
-
-		var that = (EntityNumPair) o;
-
-		return this.value == that.value;
 	}
 
 	@Override

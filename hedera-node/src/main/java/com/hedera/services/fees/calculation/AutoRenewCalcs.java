@@ -144,21 +144,6 @@ public class AutoRenewCalcs {
 				+ prices.getServicedata().getConstant();
 	}
 
-	public static class RenewAssessment {
-		private final long fee;
-		private final long renewalPeriod;
-
-		public RenewAssessment(long fee, long renewalPeriod) {
-			this.fee = fee;
-			this.renewalPeriod = renewalPeriod;
-		}
-
-		public long fee() {
-			return fee;
-		}
-
-		public long renewalPeriod() {
-			return renewalPeriod;
-		}
+	public static record RenewAssessment(long fee, long renewalPeriod) {
 	}
 }
