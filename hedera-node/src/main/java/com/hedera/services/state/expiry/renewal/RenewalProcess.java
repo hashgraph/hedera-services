@@ -81,6 +81,8 @@ public class RenewalProcess {
 			case EXPIRED_ACCOUNT_READY_TO_RENEW:
 				processExpiredAccountReadyToRenew(EntityNum.fromLong(entityNum));
 				return true;
+			default:
+				return false;
 		}
 		return false;
 	}

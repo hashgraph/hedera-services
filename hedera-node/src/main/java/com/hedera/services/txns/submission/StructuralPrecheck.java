@@ -111,7 +111,7 @@ public final class StructuralPrecheck {
 		for (final var field : msg.getAllFields().values()) {
 			if (isProtoMsg(field)) {
 				depth = Math.max(depth, 1 + protoDepthOf((GeneratedMessageV3) field));
-			} else if (field instanceof List list) {
+			} else if (field instanceof List<? extends Object> list) {
 				for (final var item : list) {
 					depth = Math.max(depth, isProtoMsg(item) ? 1 + protoDepthOf((GeneratedMessageV3) item) : 0);
 				}

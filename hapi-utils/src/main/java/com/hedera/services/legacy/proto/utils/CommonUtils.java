@@ -293,8 +293,8 @@ public final class CommonUtils {
 		try {
 			return extractSignatureMap(transaction);
 		} catch (InvalidProtocolBufferException ignoreToReturnDefault) {
+			return SignatureMap.getDefaultInstance();
 		}
-		return SignatureMap.getDefaultInstance();
 	}
 
 	public static Transaction.Builder toTransactionBuilder(TransactionOrBuilder transactionOrBuilder) {
@@ -313,8 +313,8 @@ public final class CommonUtils {
 		try {
 			return getSha384Hash().digest(byteArray);
 		} catch (NoSuchAlgorithmException ignoreToReturnEmptyByteArray) {
+			return new byte[0];
 		}
-		return new byte[0];
 	}
 
 	public static ByteString sha384HashOf(byte[] byteArray) {
