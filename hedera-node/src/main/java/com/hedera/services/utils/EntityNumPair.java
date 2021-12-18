@@ -75,6 +75,11 @@ public record EntityNumPair(long value) {
 	}
 
 	@Override
+	public int hashCode() {
+		return (int) MiscUtils.perm64(value);
+	}
+
+	@Override
 	public String toString() {
 		return "PermHashLong("
 				+ BitPackUtils.unsignedHighOrder32From(value)
