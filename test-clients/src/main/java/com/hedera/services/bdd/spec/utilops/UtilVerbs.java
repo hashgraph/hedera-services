@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.SequentialID;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
@@ -66,6 +68,7 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Assertions;
@@ -103,6 +106,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -365,6 +369,27 @@ public class UtilVerbs {
 				CustomSpecAssert.allRunFor(spec, subOp);
 			}
 		});
+	}
+
+	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
+													  ResponseCodeEnum parentalStatus,
+													  TransactionRecordAsserts ...childRecordAsserts) {
+		return withOpContext(
+				(spec, opLog) -> {
+					var distributeTx = getTxnRecord(parentTxnId);
+					allRunFor(spec, distributeTx);
+
+					var distributeTxId = distributeTx.getResponseRecord().getTransactionID();
+					SequentialID sequentialID = new SequentialID(distributeTxId);
+
+					for (TransactionRecordAsserts childRecordAssert : childRecordAsserts) {
+						childRecordAssert.txnId(sequentialID.nextChild());
+					}
+
+					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
+							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
+							.hasChildRecords(childRecordAsserts).logged());
+				});
 	}
 
 	public static Setting from(String name, String value) {

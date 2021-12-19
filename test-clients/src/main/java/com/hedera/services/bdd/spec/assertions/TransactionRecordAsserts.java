@@ -65,10 +65,37 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts txnId(TransactionID expectedTxn) {
+		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
+			try {
+				Assertions.assertEquals(expectedTxn, txnId, "Wrong txnId!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {
 				Assertions.assertEquals(expectedStatus, receipt.getStatus(), "Bad status!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts newTotalSupply(long expectedNewTotalSupply) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				Assertions.assertEquals(
+						expectedNewTotalSupply,
+						receipt.getNewTotalSupply(),
+						"Bad newTotalSupply!");
 			} catch (Throwable t) {
 				return List.of(t);
 			}
@@ -142,7 +169,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
-	private <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
+	protected <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
 		try {
 			Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
 			registerProvider((spec, o) -> {

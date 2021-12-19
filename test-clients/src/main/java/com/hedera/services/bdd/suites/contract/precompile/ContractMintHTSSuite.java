@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_BRRR_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
@@ -34,8 +36,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
@@ -114,7 +118,16 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
 								.via(secondMintTxn),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount)
+						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount),
+						childRecordsCheck(secondMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.newTotalSupply(2469134L)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, GENESIS, amount)
+										)
+						)
 				);
 	}
 
