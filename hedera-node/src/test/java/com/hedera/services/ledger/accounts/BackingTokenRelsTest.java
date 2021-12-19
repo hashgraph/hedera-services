@@ -24,13 +24,17 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.accounts.BackingTokenRels.readableTokenRel;
@@ -81,30 +85,6 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	void manualAddToExistingWorks() {
-		// given:
-		final var aNewPair = Pair.of(c, ct);
-
-		// when:
-		subject.addToExistingRels(aNewPair);
-
-		// then:
-		assertTrue(subject.contains(aNewPair));
-	}
-
-	@Test
-	void manualRemoveFromExistingWorks() {
-		// given:
-		final var destroyedPair = Pair.of(a, at);
-
-		// when:
-		subject.removeFromExistingRels(destroyedPair);
-
-		// then:
-		assertFalse(subject.contains(destroyedPair));
-	}
-
-	@Test
 	void relToStringWorks() {
 		// expect:
 		assertEquals("0.0.3 <-> 0.0.7", readableTokenRel(asTokenRel(a, at)));
@@ -118,7 +98,7 @@ class BackingTokenRelsTest {
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
 		// and:
-		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
+		assertTrue(subject.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
@@ -138,7 +118,7 @@ class BackingTokenRelsTest {
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
 		// and:
-		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
+		assertFalse(subject.contains(asTokenRel(a, at)));
 	}
 
 	@Test
@@ -150,10 +130,10 @@ class BackingTokenRelsTest {
 		subject.rebuildFromSources();
 
 		// then:
-		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-		assertFalse(subject.existingRels.contains(asTokenRel(b, bt)));
+		assertFalse(subject.contains(asTokenRel(a, at)));
+		assertFalse(subject.contains(asTokenRel(b, bt)));
 		// and:
-		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
+		assertTrue(subject.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
