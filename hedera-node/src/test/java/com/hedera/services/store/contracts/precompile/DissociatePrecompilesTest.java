@@ -225,7 +225,7 @@ class DissociatePrecompilesTest {
 
 		// then:
 		assertEquals(successResult, result);
-		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.getTokenIds());
+		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -249,10 +249,10 @@ class DissociatePrecompilesTest {
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
 	private static final AccountID account = IdUtils.asAccount("0.0.3");
 	private static final Id accountId = Id.fromGrpcAccount(account);
-	private static final SyntheticTxnFactory.Dissociation dissociateToken =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
-	private static final SyntheticTxnFactory.Dissociation multiDissociateOp =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
+	private static final Dissociation dissociateToken =
+			Dissociation.singleDissociation(account, nonFungible);
+	private static final Dissociation multiDissociateOp =
+			Dissociation.singleDissociation(account, nonFungible);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

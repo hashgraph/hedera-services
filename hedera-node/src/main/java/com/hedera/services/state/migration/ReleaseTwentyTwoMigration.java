@@ -96,12 +96,14 @@ public class ReleaseTwentyTwoMigration {
 		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorage);
 
 		final var defaultZero = new AtomicInteger();
-		log.info("Migration complete for:"
-						+ "\n  ↪ {} file metadata blobs"
-						+ "\n  ↪ {} file data blobs"
-						+ "\n  ↪ {} contract bytecode blobs"
-						+ "\n  ↪ {} contract storage blobs"
-						+ "\n  ↪ {} system-deleted entity expiry blobs",
+		final var summaryTpl = """
+				Migration complete for:
+					↪ {} file metadata blobs
+					↪ {} file data blobs
+					↪ {} contract bytecode blobs
+					↪ {} contract storage blobs
+					↪ {} system-deleted entity expiry blobs""";
+		log.info(summaryTpl,
 				counts.getOrDefault('k', defaultZero).get(),
 				counts.getOrDefault('f', defaultZero).get(),
 				counts.getOrDefault('s', defaultZero).get(),

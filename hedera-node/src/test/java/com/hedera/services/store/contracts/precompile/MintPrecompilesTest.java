@@ -272,10 +272,10 @@ class MintPrecompilesTest {
 	private static final Id fungibleId = Id.fromGrpcToken(fungible);
 	private static final List<ByteString> newMetadata = List.of(
 			ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-	private static final SyntheticTxnFactory.MintWrapper nftMint =
-			SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
-	private static final SyntheticTxnFactory.MintWrapper fungibleMint =
-			SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
+	private static final MintWrapper nftMint =
+			MintWrapper.forNonFungible(nonFungible, newMetadata);
+	private static final MintWrapper fungibleMint =
+			MintWrapper.forFungible(fungible, amount);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

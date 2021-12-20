@@ -57,7 +57,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedAssociations() {
 		final var tokens = List.of(fungible, nonFungible);
-		final var associations = SyntheticTxnFactory.Association.multiAssociation(a, tokens);
+		final var associations = Association.multiAssociation(a, tokens);
 
 		final var result = subject.createAssociate(associations);
 		final var txnBody = result.build();
@@ -69,7 +69,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedDissociations() {
 		final var tokens = List.of(fungible, nonFungible);
-		final var associations = SyntheticTxnFactory.Dissociation.multiDissociation(a, tokens);
+		final var associations = Dissociation.multiDissociation(a, tokens);
 
 		final var result = subject.createDissociate(associations);
 		final var txnBody = result.build();
@@ -80,7 +80,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftMint() {
-		final var nftMints = SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
+		final var nftMints = MintWrapper.forNonFungible(nonFungible, newMetadata);
 
 		final var result = subject.createMint(nftMints);
 		final var txnBody = result.build();
@@ -91,7 +91,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftBurn() {
-		final var nftBurns = SyntheticTxnFactory.BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+		final var nftBurns = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 
 		final var result = subject.createBurn(nftBurns);
 		final var txnBody = result.build();
@@ -103,7 +103,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedFungibleMint() {
 		final var amount = 1234L;
-		final var funMints = SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
+		final var funMints = MintWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createMint(funMints);
 		final var txnBody = result.build();
@@ -115,7 +115,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedFungibleBurn() {
 		final var amount = 1234L;
-		final var funBurns = SyntheticTxnFactory.BurnWrapper.forFungible(fungible, amount);
+		final var funBurns = BurnWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createBurn(funBurns);
 		final var txnBody = result.build();

@@ -1,4 +1,4 @@
-package com.hedera.services.txns.crypto;
+package com.hedera.services.store.contracts.precompile;
 
 /*-
  * ‌
@@ -20,19 +20,17 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
 
-class UnusableAutoCreationTest {
-	@Test
-	void methodsAsExpected() {
-		final var subject = UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
+public record Dissociation(AccountID accountId, List<TokenID> tokenIds) {
+	public static Dissociation singleDissociation(final AccountID accountId, final TokenID tokenId) {
+		return new Dissociation(accountId, List.of(tokenId));
+	}
 
-		assertDoesNotThrow(subject::reset);
-		assertDoesNotThrow(() -> subject.setFeeCalculator(null));
-		assertFalse(subject.reclaimPendingAliases());
-		assertThrows(UnsupportedOperationException.class, () -> subject.submitRecordsTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.createFromTrigger(null));
+	public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
+		return new Dissociation(accountId, tokenIds);
 	}
 }

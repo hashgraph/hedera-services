@@ -116,8 +116,10 @@ public class HederaLedger {
 			.thenComparingLong(ContractID::getRealmNum);
 
 	private final TokenStore tokenStore;
+	private final TransferLogic transferLogic;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
+	private final AutoCreationLogic autoCreationLogic;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final AccountRecordsHistorian historian;
@@ -126,12 +128,7 @@ public class HederaLedger {
 	private MutableEntityAccess mutableEntityAccess;
 	private UniqueTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
-			null;
-
-	private TransferLogic transferLogic;
-	private final MerkleAccountScopedCheck scopedCheck;
-	private final AutoCreationLogic autoCreationLogic;
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -159,8 +156,6 @@ public class HederaLedger {
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
-
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
 	public void setMutableEntityAccess(final MutableEntityAccess mutableEntityAccess) {

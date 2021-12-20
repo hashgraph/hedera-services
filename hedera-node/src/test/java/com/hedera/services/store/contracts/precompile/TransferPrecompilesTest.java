@@ -171,8 +171,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferList.getNftExchanges(),
-				tokensTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferList.nftExchanges(),
+				tokensTransferList.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferList);
@@ -216,8 +216,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListSenderOnly.getNftExchanges(),
-				tokensTransferListSenderOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListSenderOnly.nftExchanges(),
+				tokensTransferListSenderOnly.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListSenderOnly);
 
@@ -260,8 +260,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListReceiverOnly.getNftExchanges(),
-				tokensTransferListReceiverOnly.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(tokensTransferListReceiverOnly.nftExchanges(),
+				tokensTransferListReceiverOnly.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(tokensTransferListReceiverOnly);
 
@@ -304,8 +304,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftsTransferList.getNftExchanges(),
-				nftsTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(nftsTransferList.nftExchanges(),
+				nftsTransferList.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(nftsTransferList);
 
@@ -348,8 +348,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.getNftExchanges(),
-				nftTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.nftExchanges(),
+				nftTransferList.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(nftTransferList);
 
@@ -392,8 +392,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.getNftExchanges(),
-				nftTransferList.getFungibleTransfers())).willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createCryptoTransfer(nftTransferList.nftExchanges(),
+				nftTransferList.fungibleTransfers())).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(nftTransferList);
 
@@ -527,37 +527,37 @@ class TransferPrecompilesTest {
 					null,
 					receiver
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokenTransferList = new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists tokenTransferList = new TokenTransferLists(
 			new ArrayList<>() {
 			},
 			List.of(transfer)
 	);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists tokensTransferList =
+			new TokenTransferLists(
 					new ArrayList<>() {
 					},
 					List.of(transfer, transfer)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListSenderOnly =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists tokensTransferListSenderOnly =
+			new TokenTransferLists(
 					new ArrayList<>() {
 					},
 					List.of(transferSenderOnly, transferSenderOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists tokensTransferListReceiverOnly =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists tokensTransferListReceiverOnly =
+			new TokenTransferLists(
 					new ArrayList<>() {
 					},
 					List.of(transferReceiverOnly, transferReceiverOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists nftTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists nftTransferList =
+			new TokenTransferLists(
 					List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
 					new ArrayList<>() {
 					}
 			);
-	private static final SyntheticTxnFactory.TokenTransferLists nftsTransferList =
-			new SyntheticTxnFactory.TokenTransferLists(
+	private static final TokenTransferLists nftsTransferList =
+			new TokenTransferLists(
 					List.of(
 							new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
 							new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)

@@ -65,7 +65,7 @@ public class HFileMetaSerde {
 	public static HFileMeta deserialize(DataInputStream in) throws IOException {
 		long version = in.readLong();
 		if (version == PRE_MEMO_VERSION) {
-			throw new IllegalArgumentException("No usable state can include file metadata without a memo field");
+			return readPreMemoMeta(in);
 		} else {
 			return readMemoMeta(in);
 		}

@@ -220,7 +220,7 @@ class AssociatePrecompileTest {
 
 		// then:
 		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.getTokenIds());
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -244,10 +244,10 @@ class AssociatePrecompileTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
 	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	private static final SyntheticTxnFactory.Association associateOp =
-			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
-	private static final SyntheticTxnFactory.Association multiAssociateOp =
-			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final Association associateOp =
+			Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final Association multiAssociateOp =
+			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	private static final Address recipientAddress = Address.ALTBN128_ADD;
 	private static final Address contractAddress = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

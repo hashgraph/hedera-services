@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
-import java.util.function.BiConsumer;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.

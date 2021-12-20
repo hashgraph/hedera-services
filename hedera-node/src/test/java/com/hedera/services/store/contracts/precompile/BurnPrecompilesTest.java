@@ -245,10 +245,10 @@ class BurnPrecompilesTest {
 	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
 	private static final Id fungibleId = Id.fromGrpcToken(fungible);
 	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-	private static final SyntheticTxnFactory.BurnWrapper fungibleBurn =
-			SyntheticTxnFactory.BurnWrapper.forFungible(fungible, amount);
-	private static final SyntheticTxnFactory.BurnWrapper nonFungibleBurn =
-			SyntheticTxnFactory.BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+	private static final BurnWrapper fungibleBurn =
+			BurnWrapper.forFungible(fungible, amount);
+	private static final BurnWrapper nonFungibleBurn =
+			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
