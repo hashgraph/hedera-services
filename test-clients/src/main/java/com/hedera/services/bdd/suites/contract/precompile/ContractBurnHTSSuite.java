@@ -35,6 +35,8 @@ import java.util.List;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_AFTER_NESTED_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
@@ -54,12 +56,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractBurnHTSSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
@@ -137,7 +143,15 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 .gas(48_000)
                                 .via("burn"),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
-                        getTxnRecord("burn").andAllChildRecords().logged(),
+
+                        childRecordsCheck("burn", SUCCESS, recordWith()
+                                .status(SUCCESS)
+                                .tokenTransfers(
+                                        changingFungibleBalances()
+                                                .including(TOKEN, TOKEN_TREASURY, -1)
+                                )
+                                .newTotalSupply(49)
+                        ),
 
                         newKeyNamed("contractKey")
                                 .shape(DELEGATE_CONTRACT.signedWith(theContract)),
@@ -147,8 +161,14 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 .via("burn with contract key")
                                 .gas(48_000),
 
-
-                        getTxnRecord("burn with contract key").andAllChildRecords().logged()
+                        childRecordsCheck("burn with contract key", SUCCESS, recordWith()
+                                .status(SUCCESS)
+                                .tokenTransfers(
+                                        changingFungibleBalances()
+                                                .including(TOKEN, TOKEN_TREASURY, -1)
+                                )
+                                .newTotalSupply(48)
+                        )
 
                 )
                 .then(
@@ -204,7 +224,10 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 }
                                 ),
 
-                        getTxnRecord("burn").andAllChildRecords().logged()
+                        childRecordsCheck("burn", SUCCESS, recordWith()
+                                .status(SUCCESS)
+                                .newTotalSupply(1)
+                        )
 
                 )
                 .then(
@@ -258,7 +281,22 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .via("burnAfterNestedMint")
                                                         .alsoSigningWithFullPrefix(multiKey))),
-                        getTxnRecord("burnAfterNestedMint").andAllChildRecords().logged()
+
+                        childRecordsCheck("burnAfterNestedMint", SUCCESS, recordWith()
+                                .status(SUCCESS)
+                                .tokenTransfers(
+                                        changingFungibleBalances()
+                                                .including(TOKEN, TOKEN_TREASURY, 1)
+                                )
+                                .newTotalSupply(51),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .tokenTransfers(
+                                                changingFungibleBalances()
+                                                        .including(TOKEN, TOKEN_TREASURY, -1)
+                                        )
+                                        .newTotalSupply(50)
+                        )
 
                 )
                 .then(
@@ -325,7 +363,12 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                     .via("contractCallTxn")
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                                 }),
-                        getTxnRecord("contractCallTxn").andAllChildRecords().logged()
+
+                        childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED, recordWith()
+                                        .status(REVERTED_SUCCESS),
+                                recordWith()
+                                        .status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                        )
                 )
                 .then(
                         getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
