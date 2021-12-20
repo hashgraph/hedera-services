@@ -34,7 +34,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.ReleaseTwentyMigration;
+import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -68,13 +68,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -364,13 +362,12 @@ class ServicesStateTest {
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		// expect:
 		assertEquals(
 				StateChildIndices.NUM_PRE_0220_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_0220_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
+				subject.getMinimumChildCount(StateVersions.RELEASE_0220_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
@@ -412,21 +409,21 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0200() {
+	void doesntMigrateWhenInitializingFromRelease0220() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0210_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
 	}
 
 	@Test
-	void migratesWhenInitializingFromRelease0200() {
+	void migratesWhenInitializingFromRelease0210() {
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
 		willCallRealMethod().given(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0190_AND_020_VERSION);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
 		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
@@ -434,13 +431,13 @@ class ServicesStateTest {
 		subject.migrate();
 
 		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, StateVersions.RELEASE_0190_AND_020_VERSION);
+				subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
-		ServicesState.setBlobMigrator(ReleaseTwentyMigration::migrateFromBinaryObjectStore);
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test
-	void genesisInitCreatesChildren() throws IOException {
+	void genesisInitCreatesChildren() {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 

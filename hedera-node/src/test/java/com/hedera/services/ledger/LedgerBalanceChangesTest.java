@@ -77,7 +77,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -86,8 +85,8 @@ import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.TopLevelAutoCreation.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
@@ -136,19 +135,18 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
-	private AutoCreationLogic autoCreationLogic;
-	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private EntityIdSource entityIdSource;
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
+	@Mock
+	private AutoCreationLogic autoCreationLogic;
 
 	private HederaLedger subject;
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
-		MockitoAnnotations.initMocks(this);
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -179,8 +177,10 @@ class LedgerBalanceChangesTest {
 				tokenRelsLedger,
 				nftsLedger,
 				backingTokens);
-		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger,
-				tokenStore, sideEffectsTracker, tokenViewsManager, dynamicProperties, validator);
+		transferLogic = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, validator,
+				autoCreationLogic, historian);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
@@ -234,10 +234,10 @@ class LedgerBalanceChangesTest {
 		givenInitialBalancesAndOwnership();
 		backingAccounts.remove(aModel);
 		given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
-		// when:
+
 		subject.begin();
 		accountsLedger.create(AccountID.newBuilder().setAccountNum(1).build());
-		// and:
+
 		assertFailsWith(
 				() -> subject.doZeroSum(fixtureChanges()),
 				ResponseCodeEnum.INVALID_ACCOUNT_ID);
@@ -303,8 +303,9 @@ class LedgerBalanceChangesTest {
 				nftsLedger,
 				backingTokens);
 
-		transferLogic = new TransferLogic(accountsLedger, nftsLedger, tokenRelsLedger, tokenStore, sideEffectsTracker
-				, viewManager, dynamicProperties, validator);
+		transferLogic = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, viewManager, dynamicProperties, validator, autoCreationLogic, historian);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
 				dynamicProperties, accountsLedger, transferLogic, autoCreationLogic);
@@ -419,7 +420,7 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(validAliasAccountWithId, validAliasAccount);
 		backingAccounts.put(funding, fundingAccount);
 
-		given(autoCreationLogic.create(any(), any())).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.createFromTrigger(any())).willAnswer(invocationOnMock -> {
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(validAliasEntityNum.toGrpcAccountId());
 			return Pair.of(OK, 100L);

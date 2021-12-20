@@ -163,12 +163,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 					BitPackUtils.signedLowOrder32From(packedParentConsensusTime)));
 		}
 
-		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
-			helper.add("parentConsensusTime", Instant.ofEpochSecond(
-					BitPackUtils.unsignedHighOrder32From(packedParentConsensusTime),
-					BitPackUtils.signedLowOrder32From(packedParentConsensusTime)));
-		}
-
 		if (tokens != NO_TOKENS) {
 			int n = tokens.size();
 			var readable = IntStream.range(0, n)

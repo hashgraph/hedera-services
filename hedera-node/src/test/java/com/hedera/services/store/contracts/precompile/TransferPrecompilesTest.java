@@ -82,6 +82,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -186,7 +187,9 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
@@ -203,7 +206,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(tokensTransferChanges);
+		verify(transferLogic).doZeroSum(tokensTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -228,10 +231,14 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
@@ -243,7 +250,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(tokensTransferChangesSenderOnly);
+		verify(transferLogic).doZeroSum(tokensTransferChangesSenderOnly);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -268,10 +275,14 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
@@ -283,7 +294,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(tokensTransferChangesSenderOnly);
+		verify(transferLogic).doZeroSum(tokensTransferChangesSenderOnly);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -308,10 +319,14 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
@@ -323,7 +338,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(nftsTransferChanges);
+		verify(transferLogic).doZeroSum(nftsTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -348,10 +363,14 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
@@ -363,7 +382,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(nftTransferChanges);
+		verify(transferLogic).doZeroSum(nftTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -388,10 +407,14 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
@@ -403,7 +426,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(nftTransferChanges);
+		verify(transferLogic).doZeroSum(nftTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -427,16 +450,19 @@ class TransferPrecompilesTest {
 				sideEffects,
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
-				validator
+				validator,
+				UNUSABLE_AUTO_CREATION,
+				recordsHistorian
 		)).willReturn(transferLogic);
 		given(decoder.decodeTransferToken(pretendArguments)).willReturn(tokenTransferList);
-		given(impliedTransfersMarshal.assessCustomFeesAndValidate(any(), anyInt(), any())).willReturn(impliedTransfers);
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
-		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).transfer(tokenTransferChanges);
+		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID)).when(transferLogic).doZeroSum(tokenTransferChanges);
 
 		// when:
 		final var result = subject.computeTransfer(pretendArguments, frame);
@@ -444,7 +470,7 @@ class TransferPrecompilesTest {
 		// then:
 		assertNotEquals(successResult, result);
 		// and:
-		verify(transferLogic).transfer(tokenTransferChanges);
+		verify(transferLogic).doZeroSum(tokenTransferChanges);
 		verify(wrappedLedgers, never()).commit();
 		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}

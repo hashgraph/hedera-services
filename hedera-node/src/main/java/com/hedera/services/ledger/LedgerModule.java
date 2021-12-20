@@ -35,6 +35,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.TopLevelAutoCreation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +47,10 @@ import javax.inject.Singleton;
 
 @Module
 public abstract class LedgerModule {
+	@Binds
+	@Singleton
+	public abstract AutoCreationLogic bindAutoCreationLogic(TopLevelAutoCreation topLevelAutoCreation);
+
 	@Binds
 	@Singleton
 	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);

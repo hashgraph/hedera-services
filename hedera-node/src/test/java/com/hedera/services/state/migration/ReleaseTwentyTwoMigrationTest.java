@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.migration.ReleaseTwentyMigration.migrateFromBinaryObjectStore;
+import static com.hedera.services.state.migration.ReleaseTwentyTwoMigration.migrateFromBinaryObjectStore;
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.services.state.migration.StateChildIndices.STORAGE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -51,7 +51,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ReleaseTwentyMigrationTest {
+class ReleaseTwentyTwoMigrationTest {
 	private static final String TEST_JDB_LOC = "ReleaseTwentyMigration-test-jdb";
 
 	@Mock

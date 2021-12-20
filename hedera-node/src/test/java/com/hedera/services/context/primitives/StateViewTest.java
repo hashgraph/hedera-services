@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -139,7 +138,6 @@ class StateViewTest {
 	private final long expiry = 2_000_000L;
 	private final byte[] data = "SOMETHING".getBytes();
 	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
-	private byte[] expectedStorage = "The Ecstasy".getBytes();
 	private final String tokenMemo = "Goodbye and keep cold";
 	private HFileMeta metadata;
 	private HFileMeta immutableMetadata;
@@ -156,7 +154,6 @@ class StateViewTest {
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
 	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	private final ContractID notCid = asContract("0.0.3");
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
 	private final long autoRenewPeriod = 1_234_567;
@@ -186,11 +183,8 @@ class StateViewTest {
 
 	private MerkleToken token;
 	private MerkleSchedule schedule;
-	private MerkleAccount nftOwner;
 	private MerkleAccount contract;
-	private MerkleAccount notContract;
 	private MerkleAccount tokenAccount;
-	private NodeLocalProperties nodeProps;
 	private MerkleSpecialFiles specialFiles;
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
@@ -200,7 +194,6 @@ class StateViewTest {
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
-
 	@LoggingSubject
 	private StateView subject;
 
@@ -227,9 +220,6 @@ class StateViewTest {
 				.setMemo(fileMemo)
 				.build();
 
-		notContract = MerkleAccountFactory.newAccount()
-				.isSmartContract(false)
-				.get();
 		tokenAccount = MerkleAccountFactory.newAccount()
 				.isSmartContract(false)
 				.tokens(tokenId)
@@ -249,8 +239,6 @@ class StateViewTest {
 				.autoRenewPeriod(1_000_000L)
 				.deleted(true)
 				.expirationTime(9_999_999L)
-				.get();
-		nftOwner = MerkleAccountFactory.newAccount()
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 
@@ -300,8 +288,6 @@ class StateViewTest {
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 		bytecode = mock(Map.class);
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
-		nodeProps = mock(NodeLocalProperties.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
 		mockTokenRelsFn = (BiFunction<StateView, EntityNum, List<TokenRelationship>>) mock(BiFunction.class);

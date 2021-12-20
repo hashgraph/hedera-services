@@ -57,6 +57,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
@@ -68,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -96,9 +96,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * order to match transfer semantics the EVM expects.
  */
 public class HederaLedger {
-	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
-			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
-
 	public static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -340,17 +337,7 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		if (tokenRelsLedger.isInTransaction()) {
-			tokenRelsLedger.rollback();
-		}
-		if (nftsLedger.isInTransaction()) {
-			nftsLedger.rollback();
-		}
-		if (tokenViewsManager.isInTransaction()) {
-			tokenViewsManager.rollback();
-		}
-		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
-		sideEffectsTracker.resetTrackedTokenChanges();
+		dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
 	}
 
 	public ResponseCodeEnum doTokenTransfer(
@@ -372,7 +359,7 @@ public class HederaLedger {
 	}
 
 	public void doZeroSum(List<BalanceChange> changes) {
-		transferLogic.transfer(changes);
+		transferLogic.doZeroSum(changes);
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

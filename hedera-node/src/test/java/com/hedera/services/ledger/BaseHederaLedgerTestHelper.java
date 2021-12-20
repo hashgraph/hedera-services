@@ -43,7 +43,7 @@ import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.TopLevelAutoCreation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -252,12 +252,12 @@ public class BaseHederaLedgerTestHelper {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 		sideEffectsTracker = mock(SideEffectsTracker.class);
-		AutoCreationLogic autoCreationLogic = mock(AutoCreationLogic.class);
+		TopLevelAutoCreation autoCreationLogic = mock(TopLevelAutoCreation.class);
 
 		mutableEntityAccess = mock(MutableEntityAccess.class);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, 
-                                accountsLedger, autoCreationLogic, transferLogic);
+                                accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setNftsLedger(nftsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);

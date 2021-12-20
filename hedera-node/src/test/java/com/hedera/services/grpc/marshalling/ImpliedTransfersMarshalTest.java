@@ -252,29 +252,22 @@ class ImpliedTransfersMarshalTest {
 
 	@Test
 	void getsUnhappyPath() {
-		// setup:
 		setupFullFixture();
 		setupProps();
-		// and:
 		final var nonFeeChanges = expNonFeeChanges(true);
-		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(
 				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta, NO_ALIASES);
 
 		givenValidity(OK);
-		// and:
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
 		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
 				.willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
-		// and:
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
-		// when:
 		final var result = subject.unmarshalFromGrpc(op);
 
-		// then:
 		assertEquals(expectedMeta, result.getMeta());
 	}
 

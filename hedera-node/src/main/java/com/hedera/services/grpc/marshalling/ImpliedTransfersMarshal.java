@@ -117,7 +117,7 @@ public class ImpliedTransfersMarshal {
 		final var hbarOnly = changes.size();
 		appendToken(op, changes);
 
-		return assessCustomFeesAndValidate(numAutoCreations, hbarOnly, changes, resolvedAliases, props);
+		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
 	}
 
 	public ImpliedTransfers assessCustomFeesAndValidate(

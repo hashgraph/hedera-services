@@ -49,12 +49,12 @@ public class AliasManager {
 		this.aliases = new HashMap<>();
 	}
 
-	public Map<ByteString, EntityNum> getAliases() {
-		return aliases;
+	public void link(final ByteString alias, final EntityNum num) {
+		aliases.put(alias, num);
 	}
 
-	public void createAlias(final ByteString alias, final EntityNum num) {
-		aliases.put(alias, num);
+	public void unlink(final ByteString alias) {
+		aliases.remove(alias);
 	}
 
 	/**
@@ -89,6 +89,16 @@ public class AliasManager {
 	}
 
 	/**
+	 * Returns if there is an account linked the given alias.
+	 *
+	 * @param alias the alias of interest
+	 * @return whether there is a linked account
+	 */
+	public boolean contains(final ByteString alias) {
+		return aliases.containsKey(alias);
+	}
+
+	/**
 	 * Returns the entityNum for the given alias
 	 *
 	 * @param alias
@@ -99,12 +109,12 @@ public class AliasManager {
 		return aliases.getOrDefault(alias, MISSING_NUM);
 	}
 
-	/* Only for unit tests */
-	public void setAliases(final Map<ByteString, EntityNum> map) {
-		this.aliases = map;
+	/* --- Only used by unit tests --- */
+	void setAliases(final Map<ByteString, EntityNum> aliases) {
+		this.aliases = aliases;
 	}
 
-	public boolean contains(final ByteString alias) {
-		return aliases.containsKey(alias);
+	Map<ByteString, EntityNum> getAliases() {
+		return aliases;
 	}
 }

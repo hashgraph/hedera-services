@@ -25,7 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.TopLevelAutoCreation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -68,7 +68,7 @@ import static org.mockito.BDDMockito.verify;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Mock
-	private AutoCreationLogic autoCreationLogic;
+	private TopLevelAutoCreation autoCreationLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -175,7 +175,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoCreationLogic, transferLogic);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -187,7 +187,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		subject = new HederaLedger(tokenStore, ids, creator, validator, new SideEffectsTracker(), historian,
-				dynamicProps, accountsLedger, autoCreationLogic, transferLogic);
+				dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertFalse(subject.isDetached(genesis));
 	}
@@ -198,7 +198,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoCreationLogic, transferLogic);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 		dynamicProps.disableAutoRenew();
 
 		assertFalse(subject.isDetached(genesis));

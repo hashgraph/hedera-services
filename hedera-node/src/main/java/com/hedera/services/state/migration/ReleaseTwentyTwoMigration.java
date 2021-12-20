@@ -44,8 +44,8 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
 import static org.apache.tuweni.units.bigints.UInt256.SIZE;
 
-public class ReleaseTwentyMigration {
-	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
+public class ReleaseTwentyTwoMigration {
+	private static final Logger log = LogManager.getLogger(ReleaseTwentyTwoMigration.class);
 
 	/**
 	 * Migrates all non-contract storage data in the {@link com.swirlds.blob.BinaryObjectStore} into a
@@ -131,7 +131,7 @@ public class ReleaseTwentyMigration {
 		}
 	}
 
-	private ReleaseTwentyMigration() {
+	private ReleaseTwentyTwoMigration() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 }

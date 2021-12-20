@@ -25,8 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -97,7 +95,8 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, properties, codeCache);
+		subject = new ContractCallTransitionLogic(
+				txnCtx, accountStore, worldState, recordService, evmTxProcessor, properties, codeCache);
 	}
 
 	@Test
@@ -122,8 +121,9 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
@@ -156,15 +156,17 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
 	}
 
 	@Test
@@ -236,33 +238,6 @@ class ContractCallTransitionLogicTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
-	}
-
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-		verify(entityIdSource).reclaimProvisionalIds();
-	}
-
-        @Test
-	void throwsWhenBytecodeIsEmpty() {
-		// setup:
-		givenValidTxnCtx();
-		// and:
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		// and:
-		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-				.willReturn(contractAccount);
-		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(Bytes.EMPTY.toArray());
-
-		// when:
-		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-
-		// then:
-		assertEquals(CONTRACT_BYTECODE_EMPTY, exception.getResponseCode());
 	}
 
 	private void givenValidTxnCtx() {

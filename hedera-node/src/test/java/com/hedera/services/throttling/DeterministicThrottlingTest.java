@@ -27,8 +27,8 @@ import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -37,15 +37,14 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SerdeUtils;
-import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -74,8 +73,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -88,7 +87,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class DeterministicThrottlingTest {
 	private final int n = 2;
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
@@ -106,7 +105,7 @@ class DeterministicThrottlingTest {
 	private Query query;
 	@Mock
 	private ContractCallLocalQuery callLocalQuery;
-        @Mock
+	@Mock
 	private AliasManager aliasManager;
 
 	@LoggingTarget
@@ -535,7 +534,7 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void logsActiveFrontendGasThrottlesAsExpected() {
-		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+		subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, false);
 
 		var capacity = 1000L;
 		// setup:
@@ -554,7 +553,7 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void logsInertFrontendGasThrottlesAsExpected() {
-		subject = new DeterministicThrottling(() -> 4, dynamicProperties, false);
+		subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, false);
 
 		var capacity = 1000L;
 		// setup:

@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.ReleaseTwentyMigration;
+import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -79,8 +79,6 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
  */
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
-
-	public static final String CANONICAL_JDB_LOC = "data/jdb";
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
@@ -143,7 +141,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-          /* TODO */
+          /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
 	}
 
 	@Override
@@ -463,7 +461,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
 	}
 
-	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
+	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -471,19 +469,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return metadata;
 	}
 
-	void setMetadata(StateMetadata metadata) {
+	void setMetadata(final StateMetadata metadata) {
 		this.metadata = metadata;
 	}
 
-	void setDeserializedVersion(int deserializedVersion) {
+	void setDeserializedVersion(final int deserializedVersion) {
 		this.deserializedVersion = deserializedVersion;
 	}
 
-	static void setAppBuilder(Supplier<ServicesApp.Builder> appBuilder) {
+	static void setAppBuilder(final Supplier<ServicesApp.Builder> appBuilder) {
 		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setBlobMigrator(BinaryObjectStoreMigrator blobMigrator) {
+	static void setBlobMigrator(final BinaryObjectStoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
 	}
 }

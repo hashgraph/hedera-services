@@ -21,12 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -50,9 +44,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSampleComplexKey;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSingleECDSASecp256k1Key;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.getSpecificJKeysMade;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -248,7 +239,7 @@ class JKeySerializerTest {
 
 			//verify the size
 			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-			assertEquals(1 + numKeys * 2, size);
+			assertEquals(2 + numKeys * 2, size);
 		} else {
 			throw new NotImplementedException("Not implemented yet.");
 		}
@@ -442,19 +433,15 @@ class JKeySerializerTest {
 
 
 	@Test
-	void jKeyProtoSerDes() throws IOException {
+	void jKeyProtoSerDes() throws IOException, DecoderException {
 		final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
 		Key protoKey;
 		JKey jkey = null;
 		List<JKey> jListBefore = null;
 		//Jkey will have JEd25519Key,JECDSASecp256K1Key,JThresholdKey,JKeyList
-		try {
-			protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
-			jkey = JKey.mapKey(protoKey);
-			jListBefore = jkey.getKeyList().getKeysList();
-
-		} catch (DecoderException ignore) {
-		}
+		protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
+		jkey = JKey.mapKey(protoKey);
+		jListBefore = jkey.getKeyList().getKeysList();
 
 		byte[] serializedJKey = jkey.serialize();
 
@@ -467,16 +454,13 @@ class JKeySerializerTest {
 					() -> assertNotNull(jKeyReborn),
 					() -> assertTrue(jKeyReborn instanceof JKeyList),
 					() -> assertTrue(jKeyReborn.hasKeyList()),
-					() -> assertFalse(jKeyReborn.hasThresholdKey())
-			);
+					() -> assertFalse(jKeyReborn.hasThresholdKey()));
 
 			final var jListAfter = jKeyReborn.getKeyList().getKeysList();
 			assertEquals(jListBefore.size(), jListAfter.size());
 			for (int i = 0; i < jListBefore.size(); i++) {
 				assertTrue(equalUpToDecodability(jListBefore.get(i), jListAfter.get(i)));
 			}
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 

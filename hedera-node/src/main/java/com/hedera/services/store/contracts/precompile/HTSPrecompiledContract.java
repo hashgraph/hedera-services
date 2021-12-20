@@ -28,7 +28,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -55,6 +54,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.DissociateLogic;
@@ -67,6 +67,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -82,7 +84,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -90,6 +91,7 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -98,6 +100,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
+	private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
+
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
@@ -295,18 +299,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = resultFrom(status);
 		} catch (Exception e) {
-			final var status = ResponseCodeEnum.FAIL_INVALID;
-			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
-			result = resultFrom(status);
+			log.warn("Internal precompile failure", e);
+			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
+			result = resultFrom(FAIL_INVALID);
 		}
 
 		/*-- The updater here should always have a parent updater --*/
-		Optional parentUpdater = updater.parentUpdater();
-		if(parentUpdater.isPresent()) {
+		final var parentUpdater = updater.parentUpdater();
+		if (parentUpdater.isPresent()) {
 			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
 			parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
 		} else {
-			throw new InvalidTransactionException(FAIL_INVALID);
+			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
 		return result;
 	}
@@ -341,14 +345,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@FunctionalInterface
 	interface TransferLogicFactory {
-		TransferLogic newLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-							   TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-							   TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-							   HederaTokenStore tokenStore,
-							   SideEffectsTracker sideEffectsTracker,
-							   UniqueTokenViewsManager tokenViewsManager,
-							   GlobalDynamicProperties dynamicProperties,
-							   OptionValidator validator);
+		TransferLogic newLogic(
+				TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+				HederaTokenStore tokenStore,
+				SideEffectsTracker sideEffectsTracker,
+				UniqueTokenViewsManager tokenViewsManager,
+				GlobalDynamicProperties dynamicProperties,
+				OptionValidator validator,
+				AutoCreationLogic autoCreationLogic,
+				AccountRecordsHistorian recordsHistorian);
 	}
 
 	@FunctionalInterface
@@ -550,50 +557,56 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					transferOp.getFungibleTransfers());
 		}
 
-		private List<BalanceChange> constructBalanceChanges(SyntheticTxnFactory.TokenTransferLists transferOp) {
-			List<BalanceChange> changes = new ArrayList<>();
-			for (SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer : transferOp.getFungibleTransfers()) {
+		private List<BalanceChange> constructBalanceChanges(final SyntheticTxnFactory.TokenTransferLists transferOp) {
+			final List<BalanceChange> changes = new ArrayList<>();
+			for (final var fungibleTransfer : transferOp.getFungibleTransfers()) {
 				if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
 					changes.addAll(List.of(
 							BalanceChange.changingFtUnits(
 									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
-							),
+									AccountAmount.newBuilder()
+											.setAccountID(fungibleTransfer.receiver)
+											.setAmount(fungibleTransfer.amount)
+											.build()),
 							BalanceChange.changingFtUnits(
 									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
-							))
+									AccountAmount.newBuilder()
+											.setAccountID(fungibleTransfer.sender)
+											.setAmount(-fungibleTransfer.amount)
+											.build()))
 					);
 				} else if (fungibleTransfer.sender == null) {
 					changes.add(
 							BalanceChange.changingFtUnits(
 									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
-							)
+									AccountAmount.newBuilder()
+											.setAccountID(fungibleTransfer.receiver)
+											.setAmount(fungibleTransfer.amount)
+											.build())
 					);
 				} else {
 					changes.add(
 							BalanceChange.changingFtUnits(
 									Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 									fungibleTransfer.getDenomination(),
-									AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
-							)
+									AccountAmount.newBuilder()
+											.setAccountID(fungibleTransfer.sender)
+											.setAmount(-fungibleTransfer.amount)
+											.build())
 					);
 				}
 			}
 
 			if (changes.isEmpty()) {
-				for (SyntheticTxnFactory.NftExchange nftExchange : transferOp.getNftExchanges()) {
+				for (final var nftExchange : transferOp.getNftExchanges()) {
 					changes.add(
 							BalanceChange.changingNftOwnership(
 									Id.fromGrpcToken(nftExchange.getTokenType()),
 									nftExchange.getTokenType(),
-									nftExchange.nftTransfer()
-							)
-					);
+									nftExchange.nftTransfer()));
 				}
 			}
 
@@ -627,29 +640,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 			hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
-
 			final var transferLogic = transferLogicFactory.newLogic(
 					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
 					sideEffects,
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
-					validator);
-
+					validator,
+					UNUSABLE_AUTO_CREATION,
+					recordsHistorian);
 			for (final var change : changes) {
 				final var units = change.units();
 				if (units < 0) {
 					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				} else if (units > 0) {
-					/* Need to add the Id.asSolidityAddress() method. */
 					final var hasReceiverSigIfReq =
-							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(change.getAccount().asEvmAddress(),
-									recipient, contract);
+							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+									change.getAccount().asEvmAddress(), recipient, contract);
 					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 				}
 			}
 
-			transferLogic.transfer(validated.getAllBalanceChanges());
+			transferLogic.doZeroSum(validated.getAllBalanceChanges());
 
 			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
 		}

@@ -9,6 +9,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -31,7 +32,8 @@ import java.time.Instant;
 import java.util.Collections;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,7 +42,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class AutoCreationLogicTest {
+class TopLevelAutoCreationTest {
 	@Mock
 	private StateView currentView;
 	@Mock
@@ -56,13 +58,16 @@ class AutoCreationLogicTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	private AutoCreationLogic subject;
+	private TopLevelAutoCreation subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AutoCreationLogic(syntheticTxnFactory, creator, ids, aliasManager, currentView, txnCtx);
+		subject = new TopLevelAutoCreation(
+				syntheticTxnFactory, creator, ids, aliasManager, currentView, txnCtx, accountsLedger);
 		subject.setFeeCalculator(feeCalculator);
 	}
 
@@ -72,12 +77,17 @@ class AutoCreationLogicTest {
 
 		final var input = wellKnownChange();
 
-		final var result = subject.create(input, accountsLedger);
+		final var result = subject.createFromTrigger(input);
+		subject.submitRecordsTo(recordsHistorian);
 
 		assertEquals(initialTransfer - totalFee, input.units());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
-		verify(aliasManager).createAlias(alias, createdNum);
+		verify(aliasManager).link(alias, createdNum);
 		assertEquals(Pair.of(OK, totalFee), result);
+		verify(recordsHistorian).trackPrecedingChildRecord(
+				eq(DEFAULT_SOURCE_ID),
+				eq(mockSyntheticCreation),
+				any(ExpirableTxnRecord.Builder.class));
 	}
 
 	private void givenCollaborators() {
