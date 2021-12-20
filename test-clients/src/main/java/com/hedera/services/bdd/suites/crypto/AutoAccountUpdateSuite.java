@@ -183,7 +183,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 										.key("complexKey")));
 	}
 
-	// Can't be done without property change. Need review
+	// Can't be done without property change, since auto-renew period can't be reduced from 3 months after create.
 	private HapiApiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
 		final var briefAutoRenew = 3L;
 		return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
