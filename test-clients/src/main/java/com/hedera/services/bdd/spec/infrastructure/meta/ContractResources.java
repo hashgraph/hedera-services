@@ -80,6 +80,7 @@ public class ContractResources {
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
+	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
@@ -591,6 +592,9 @@ public class ContractResources {
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
+
+	public static final String VERSATILE_TRANSFERS_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"feeDistributorContractAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 	public static final String VERSATILE_TRANSFERS_TOKENS = "{" +
 			"\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenAddress\",\"type\":\"address\"}," +
 			"{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"}," +
@@ -605,6 +609,12 @@ public class ContractResources {
 			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
 			"\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNum" +
 			"\",\"type\":\"int64\"}],\"name\":\"transferNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
+			"tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"feeTokenAddress\",\"type\":\"" +
+			"address\"},{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"},{\"internalType\":\"" +
+			"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"},{\"internalType\":\"address\",\"name\":\"feeCollector" +
+			"\",\"type\":\"address\"}],\"name\":\"feeDistributionAfterTransfer\",\"outputs\":[],\"stateMutability\":\"" +
+			"nonpayable\",\"type\":\"function\"}";
 
 
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";

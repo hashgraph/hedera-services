@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -40,6 +41,8 @@ import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.chan
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFTS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
@@ -58,6 +61,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -78,6 +82,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
 
 	private static final String CONTRACT = "theContract";
+	private static final String NESTED = "theNestedContract";
 
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
@@ -102,8 +107,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
+				positiveSpecs()
+//				negativeSpecs()
 		);
 	}
 
@@ -115,12 +120,13 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				distributeMultipleTokens(),
-				depositAndWithdrawFungibleTokens(),
-				associateToken(),
-				dissociateToken(),
-				transferNft(),
-				transferMultipleNfts()
+//				distributeMultipleTokens(),
+//				depositAndWithdrawFungibleTokens(),
+//				associateToken(),
+//				dissociateToken(),
+//				transferNft(),
+//				transferMultipleNfts(),
+				tokenTransferFromFeeCollector()
 		);
 	}
 
@@ -295,7 +301,112 @@ public class ContractHTSSuite extends HapiApiSuite {
 												.including(A_TOKEN, RECEIVER, 5L)
 												.including(A_TOKEN, theSecondReceiver, 5L)
 								))
-						);
+				);
+	}
+
+	private HapiApiSpec tokenTransferFromFeeCollector() {
+		final var theSecondReceiver = "somebody2";
+
+		final var feeCollector = "tokenFeeCollector";
+
+		return defaultHapiSpec("TokenTransferFromFeeCollector")
+				.given(
+						newKeyNamed(UNIVERSAL_KEY),
+						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+						cryptoCreate(feeCollector),
+						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
+						cryptoCreate(theSecondReceiver),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("feeToken")
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(feeCollector, List.of("feeToken")),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(1L, "feeToken", feeCollector)),
+						fileCreate("bytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
+						withOpContext(
+								(spec, opLog) -> {
+										allRunFor(spec, contractCreate(NESTED)
+														.payingWith(ACCOUNT)
+														.bytecode("nestedBytecode")
+														.via("distributorContractTx")
+														.gas(28_000));
+										allRunFor(
+												spec,
+												contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+														spec))
+														.payingWith(ACCOUNT)
+														.bytecode("bytecode")
+														.via("creationTx")
+														.gas(28_000));
+								}),
+						getTxnRecord("distributorContractTx").logged(),
+						getTxnRecord("creationTx").logged(),
+						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
+						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
+						tokenAssociate(RECEIVER, List.of(A_TOKEN, "feeToken")),
+						tokenAssociate(feeCollector, List.of(A_TOKEN)),
+						tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
+						cryptoTransfer(moving(300, "feeToken")
+								.between(TOKEN_TREASURY, ACCOUNT)),
+						cryptoTransfer(moving(200, A_TOKEN)
+								.between(TOKEN_TREASURY, ACCOUNT)),
+						cryptoTransfer(moving(200, "feeToken")
+								.between(TOKEN_TREASURY, RECEIVER)),
+						cryptoTransfer(moving(1, A_TOKEN)
+								.between(ACCOUNT, RECEIVER)).payingWith(ACCOUNT).fee(ONE_HBAR).via("mocktx")
+				).when(
+						getTxnRecord("mocktx").logged(),
+						withOpContext(
+								(spec, opLog) -> {
+									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+
+									final var accounts = List.of(sender, receiver1, receiver2);
+									final var amounts = List.of(-10L, 5L, 5L);
+
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID("feeToken")),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(feeCollector))
+											)
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+													.alsoSigningWithFullPrefix(feeCollector)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("distributeTx"));
+								})
+
+				).then(
+						childRecordsCheck("distributeTx", CONTRACT_REVERT_EXECUTED, recordWith()
+								.status(CONTRACT_REVERT_EXECUTED)
+								.tokenTransfers(
+										changingFungibleBalances()
+												.including(A_TOKEN, ACCOUNT, 10L)
+												.including(A_TOKEN, RECEIVER, 5L)
+												.including(A_TOKEN, theSecondReceiver, 5L)
+								))
+				);
+	}
+
+	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
 	}
 
 	private HapiApiSpec transferNft() {
