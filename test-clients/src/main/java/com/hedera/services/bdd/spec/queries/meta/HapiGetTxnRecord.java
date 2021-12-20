@@ -91,7 +91,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean requestDuplicates = false;
 	private boolean requestChildRecords = false;
 	private boolean shouldBeTransferFree = false;
-	private boolean requestChildRecords = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
 	private boolean lookupScheduledFromRegistryId = false;
@@ -118,6 +117,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Integer> childRecordsCount = Optional.empty();
 	private Optional<Integer> childRecordNumber = Optional.empty();
 	private Optional<String> aliasKey = Optional.empty();
+	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -176,11 +176,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingNothingAboutHashes() {
 		assertNothingAboutHashes = true;
-		return this;
-	}
-
-	public HapiGetTxnRecord andAllChildRecords() {
-		requestChildRecords = true;
 		return this;
 	}
 
@@ -559,6 +554,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
 		for (var rec : childRecords) {

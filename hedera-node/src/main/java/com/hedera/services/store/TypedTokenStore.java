@@ -112,7 +112,6 @@ public class TypedTokenStore {
 		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.addKnownTreasury = legacyStoreDelegate;
-
 	}
 
 	/**
@@ -195,8 +194,9 @@ public class TypedTokenStore {
 		for (var tokenRelationship : tokenRelationships) {
 			final var key = EntityNumPair.fromModelRel(tokenRelationship);
 			if (tokenRelationship.isDestroyed()) {
-				tokenRels.remove(Pair.of(tokenRelationship.getAccount().getId().asGrpcAccount(),
-						tokenRelationship.getToken().getId().asGrpcToken()));
+				tokenRels.remove(Pair.of(
+                                      tokenRelationship.getAccount().getId().asGrpcAccount(), 
+                                      tokenRelationship.getToken().getId().asGrpcToken()));
 			} else {
 				persistNonDestroyed(tokenRelationship, key);
 			}

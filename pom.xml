@@ -148,8 +148,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<!-- Plugin property overrides -->
-		<maven.compiler.source>12</maven.compiler.source>
-		<maven.compiler.target>12</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- Plugin custom properties -->
 		<maven-jar.version>3.2.0</maven-jar.version>
@@ -250,7 +250,7 @@
 				<version>${maven-javadoc.version}</version>
 				<configuration>
 					<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-<!--					<failOnWarnings>true</failOnWarnings>-->
+					<!--					<failOnWarnings>true</failOnWarnings>-->
 				</configuration>
 				<executions>
 					<execution>
@@ -630,7 +630,7 @@
 						<version>${maven-javadoc.version}</version>
 						<configuration>
 							<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
-<!--							<failOnWarnings>true</failOnWarnings>-->
+							<!--							<failOnWarnings>true</failOnWarnings>-->
 						</configuration>
 						<executions>
 							<execution>

@@ -179,8 +179,9 @@ class TypedTokenStoreTest {
 		subject.commitTokenRelationships(List.of(destroyedRel));
 
 		// then:
-		verify(tokenRels).remove(Pair.of(STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
-				STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
+		verify(tokenRels).remove(Pair.of(
+                      STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
+		      STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
 		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 

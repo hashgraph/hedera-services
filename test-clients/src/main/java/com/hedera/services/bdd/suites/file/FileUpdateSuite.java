@@ -164,8 +164,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-
->>>>>>> origin/master
 	public HapiApiSpec numAccountsAllowedIsDynamic() {
 		final int MONOGAMOUS_NETWORK = 1;
 
@@ -343,53 +341,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 						fileUpdate("test")
 								.lifetime(defaultMaxLifetime + 12_345L)
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
-				);
-	}
-
-	private HapiApiSpec associateHasExpectedSemantics() {
-		return defaultHapiSpec("AssociateHasExpectedSemantics")
-				.given(flattened(
-						TokenAssociationSpecs.basicKeysAndTokens()
-				)).when(
-						cryptoCreate("misc").balance(0L),
-						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT),
-						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
-						tokenAssociate("misc", "1.2.3")
-								.hasKnownStatus(INVALID_TOKEN_ID),
-						tokenAssociate("misc", "1.2.3", "1.2.3")
-								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-						tokenDissociate("misc", "1.2.3", "1.2.3")
-								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
-						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + 1000
-						)).payingWith(ADDRESS_BOOK_CONTROL),
-						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN)
-				).then(
-						getAccountInfo("misc")
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Frozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.kyc(KycNotApplicable)
-												.freeze(Unfrozen))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.KNOWABLE_TOKEN)
-												.kyc(Revoked)
-												.freeze(FreezeNotApplicable))
-								.hasToken(
-										relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-												.kyc(KycNotApplicable)
-												.freeze(FreezeNotApplicable))
-								.logged()
 				);
 	}
 
