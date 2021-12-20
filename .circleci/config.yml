@@ -647,11 +647,11 @@ workflows:
   GCP_Machine_Cleanup:
     triggers:
       - schedule:
-          cron: "0 2,8,14,20 * * *"
+          cron: "55 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - fix-gcp-cleanup-script
     jobs:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
