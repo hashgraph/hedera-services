@@ -264,7 +264,7 @@ class ContractCreateTransitionLogicTest {
 		final var accountKey = standin.getAccountKey();
 		assertThat(accountKey, instanceOf(JContractIDKey.class));
 		assertEquals(
-				contractAccount.getId().getNum(),
+				contractAccount.getId().num(),
 				((JContractIDKey) accountKey).getContractID().getContractNum());
 	}
 

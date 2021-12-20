@@ -9,9 +9,9 @@ package com.hedera.services.state.forensics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,20 +36,22 @@ public class HashLogger {
 	}
 
 	public void logHashesFor(ServicesState state) {
-		log.info("[SwirldState Hashes]\n" +
-						"  Overall                :: {}\n" +
-						"  Accounts               :: {}\n" +
-						"  Storage                :: {}\n" +
-						"  Topics                 :: {}\n" +
-						"  Tokens                 :: {}\n" +
-						"  TokenAssociations      :: {}\n" +
-						"  SpecialFiles           :: {}\n" +
-						"  ScheduledTxs           :: {}\n" +
-						"  NetworkContext         :: {}\n" +
-						"  AddressBook            :: {}\n" +
-						"  RecordsRunningHashLeaf :: {}\n" +
-						"    ↪ Running hash       :: {}\n" +
-						"  UniqueTokens           :: {}\n",
+		String textBlock = """
+				[SwirldState Hashes] 
+				Overall                :: {}
+				Accounts               :: {}
+				Storage                :: {}
+				Topics                 :: {}
+				Tokens                 :: {}
+				TokenAssociations      :: {}
+				SpecialFiles           :: {}
+				ScheduledTxs           :: {}
+				NetworkContext         :: {}
+				AddressBook            :: {}
+				RecordsRunningHashLeaf :: {}
+				  ↪ Running hash       :: {}
+				UniqueTokens           :: {}""";
+		log.info(textBlock,
 				state.getHash(),
 				state.accounts().getHash(),
 				state.storage().getHash(),

@@ -21,7 +21,7 @@ package com.hedera.services.fees;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.fees.calculation.AutoRenewCalcs;
+import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.TxnAccessor;
@@ -78,7 +78,7 @@ public interface FeeCalculator {
 	 * 		the consensus time of expiration
 	 * @return the corresponding RenewAssessment
 	 */
-	AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+	RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,
 			long requestedRenewal,
 			Instant now);

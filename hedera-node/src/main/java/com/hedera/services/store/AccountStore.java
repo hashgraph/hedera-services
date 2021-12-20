@@ -169,7 +169,7 @@ public class AccountStore {
 	 */
 	public void persistAccount(Account account) {
 		final var id = account.getId();
-		final var key = EntityNum.fromLong(id.getNum());
+		final var key = EntityNum.fromLong(id.num());
 
 		final var mutableAccount = accounts.get().getForModify(key);
 		mapModelToMutable(account, mutableAccount);

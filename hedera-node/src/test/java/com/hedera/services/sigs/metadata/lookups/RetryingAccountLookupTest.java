@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -98,8 +98,8 @@ class RetryingAccountLookupTest {
 
 		// then:
 		verifyZeroInteractions(pause);
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test
@@ -122,15 +122,16 @@ class RetryingAccountLookupTest {
 		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
 		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(2, captor.getValue().intValue());
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test
 	void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingAccountLookup(defaultPause, aliases, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(defaultPause, aliases, properties, () -> accounts, runningAvgs,
+				speedometers);
 		// and:
 		InOrder inOrder = inOrder(runningAvgs, speedometers);
 
@@ -143,8 +144,8 @@ class RetryingAccountLookupTest {
 		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
 		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(1, captor.getValue().intValue());
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test

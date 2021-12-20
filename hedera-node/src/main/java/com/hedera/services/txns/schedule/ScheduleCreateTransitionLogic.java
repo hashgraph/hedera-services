@@ -107,9 +107,9 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 
 		final var result = store.createProvisionally(schedule, fromJava(txnCtx.consensusTime()));
-		final var scheduleId = result.getCreated();
+		final var scheduleId = result.created();
 		if (null == scheduleId) {
-			abortWith(result.getStatus());
+			abortWith(result.status());
 			return;
 		}
 

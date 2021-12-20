@@ -116,7 +116,7 @@ public class AutoCreationLogic {
 	public boolean reclaimPendingAliases() {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
-				final var alias = pendingCreation.getRecordBuilder().getAlias();
+				final var alias = pendingCreation.recordBuilder().getAlias();
 				aliasManager.getAliases().remove(alias);
 			}
 			return true;
@@ -129,12 +129,13 @@ public class AutoCreationLogic {
 	 * Notifies the given {@link AccountRecordsHistorian} of the child records for any
 	 * provisionally created accounts since the last call to {@link AutoCreationLogic#reset()}.
 	 *
-	 * @param recordsHistorian the records historian that should track the child records
+	 * @param recordsHistorian
+	 * 		the records historian that should track the child records
 	 */
 	public void submitRecordsTo(final AccountRecordsHistorian recordsHistorian) {
 		for (final var pendingCreation : pendingCreations) {
-			final var syntheticCreation = pendingCreation.getSyntheticBody();
-			final var childRecord = pendingCreation.getRecordBuilder();
+			final var syntheticCreation = pendingCreation.syntheticBody();
+			final var childRecord = pendingCreation.recordBuilder();
 			recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		}
 	}

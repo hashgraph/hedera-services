@@ -264,8 +264,8 @@ class HederaScheduleStoreTest {
 
 		final var outcome = subject.createProvisionally(expected, consensusTime);
 
-		assertEquals(OK, outcome.getStatus());
-		assertEquals(created, outcome.getCreated());
+		assertEquals(OK, outcome.status());
+		assertEquals(created, outcome.created());
 		assertEquals(created, subject.pendingId);
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(expectedExpiry, expected.expiry());
@@ -283,8 +283,8 @@ class HederaScheduleStoreTest {
 		final var outcome = subject.createProvisionally(
 				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
 
-		assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.getStatus());
-		assertNull(outcome.getCreated());
+		assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.status());
+		assertNull(outcome.created());
 	}
 
 	@Test
@@ -479,8 +479,8 @@ class HederaScheduleStoreTest {
 		final var outcome = subject.createProvisionally(
 				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
 
-		assertEquals(expectedCode, outcome.getStatus());
-		assertNull(outcome.getCreated());
+		assertEquals(expectedCode, outcome.status());
+		assertNull(outcome.created());
 		assertNull(subject.pendingCreation);
 		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
 	}

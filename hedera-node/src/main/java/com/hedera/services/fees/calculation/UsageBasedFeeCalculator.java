@@ -110,7 +110,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+	public RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,
 			long requestedRenewal,
 			Instant now

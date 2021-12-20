@@ -75,7 +75,7 @@ public class RoyaltyFeeAssessor {
 			final var spec = fee.getRoyaltyFeeSpec();
 
 			if (exchangedValue.isEmpty()) {
-				final var fallback = spec.getFallbackFee();
+				final var fallback = spec.fallbackFee();
 				if (fallback != null) {
 					final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
 					final var fallbackFee = FcCustomFee.fixedFee(
@@ -111,7 +111,7 @@ public class RoyaltyFeeAssessor {
 	) {
 		for (var exchange : exchangedValue) {
 			long value = exchange.originalUnits();
-			long royaltyFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), value);
+			long royaltyFee = safeFractionMultiply(spec.numerator(), spec.denominator(), value);
 			if (exchange.units() < royaltyFee) {
 				return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 			}
@@ -121,7 +121,7 @@ public class RoyaltyFeeAssessor {
 			 on fees charged in the units of their denominating token; but this is a credit,
 			 hence the id is irrelevant and we can use MISSING_ID. */
 			fungibleAdjuster.adjustedChange(collector, MISSING_ID, denom, royaltyFee, changeManager);
-			final var effPayerAccountNum = new long[] { exchange.getAccount().getNum() };
+			final var effPayerAccountNum = new long[] { exchange.getAccount().num() };
 			final var collectorId = collector.asEntityId();
 			final var assessed =
 					exchange.isForHbar()
