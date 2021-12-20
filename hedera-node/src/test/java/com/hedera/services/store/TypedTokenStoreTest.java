@@ -107,7 +107,6 @@ class TypedTokenStoreTest {
 				() -> tokens,
 				() -> uniqueTokens,
 				() -> tokenRels,
-				backingTokenRels,
 				uniqTokenViewsManager,
 				tokenStore::addKnownTreasury,
 				legacyStore::removeKnownTreasuryForToken,
@@ -182,7 +181,6 @@ class TypedTokenStoreTest {
 
 		// then:
 		verify(tokenRels).remove(miscTokenRelId);
-		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
 		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 

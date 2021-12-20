@@ -22,7 +22,6 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -91,7 +90,6 @@ public class TypedTokenStore {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
-	private final BackingTokenRels backingTokenRels;
 	private final LegacyTreasuryRemover delegate;
 	private final LegacyTreasuryAdder addKnownTreasury;
 
@@ -101,7 +99,6 @@ public class TypedTokenStore {
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
 			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			final BackingTokenRels backingTokenRels,
 			final UniqTokenViewsManager uniqTokenViewsManager,
 			final LegacyTreasuryAdder legacyStoreDelegate,
 			final LegacyTreasuryRemover delegate,
@@ -114,7 +111,6 @@ public class TypedTokenStore {
 		this.accountStore = accountStore;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.delegate = delegate;
-		this.backingTokenRels = backingTokenRels;
 		this.addKnownTreasury = legacyStoreDelegate;
 	}
 
@@ -213,7 +209,6 @@ public class TypedTokenStore {
 			final var key = EntityNumPair.fromModelRel(tokenRelationship);
 			if (tokenRelationship.isDestroyed()) {
 				currentTokenRels.remove(key);
-				backingTokenRels.removeFromExistingRels(legacyReprOf(tokenRelationship));
 			} else {
 				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
 			}
@@ -257,7 +252,6 @@ public class TypedTokenStore {
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
 		if (isNewRel) {
 			currentTokenRels.put(key, mutableTokenRel);
-			alertTokenBackingStoreOfNew(modelRel);
 		}
 	}
 
@@ -567,10 +561,6 @@ public class TypedTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
-	}
-
-	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
-		backingTokenRels.addToExistingRels(legacyReprOf(newRel));
 	}
 
 	@FunctionalInterface
