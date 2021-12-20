@@ -20,7 +20,6 @@ package com.hedera.services.store.models;
  * ‍
  */
 
-import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;

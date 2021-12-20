@@ -30,8 +30,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
-
 @Singleton
 public class AssociateLogic {
 	private final TypedTokenStore tokenStore;
@@ -48,14 +46,11 @@ public class AssociateLogic {
 	}
 
 	public void associate(final Id accountId, final List<TokenID> tokensList) {
-		final var tokenIds = tokensList
-				.stream()
-				.map(id -> new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum()))
-				.collect(toList());
+		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */
 		final var account = accountStore.loadAccount(accountId);
-		final var tokens = tokenIds.stream().map(tokenStore::loadToken).collect(toList());
+		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
 		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);

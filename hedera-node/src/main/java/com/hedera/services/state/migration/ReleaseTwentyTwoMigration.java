@@ -98,11 +98,11 @@ public class ReleaseTwentyTwoMigration {
 		final var defaultZero = new AtomicInteger();
 		final var summaryTpl = """
 				Migration complete for:
-					↪ {} file metadata blobs
-					↪ {} file data blobs
-					↪ {} contract bytecode blobs
-					↪ {} contract storage blobs
-					↪ {} system-deleted entity expiry blobs""";
+					\u21AA {} file metadata blobs
+					\u21AA {} file data blobs
+					\u21AA {} contract bytecode blobs
+					\u21AA {} contract storage blobs
+					\u21AA {} system-deleted entity expiry blobs""";
 		log.info(summaryTpl,
 				counts.getOrDefault('k', defaultZero).get(),
 				counts.getOrDefault('f', defaultZero).get(),

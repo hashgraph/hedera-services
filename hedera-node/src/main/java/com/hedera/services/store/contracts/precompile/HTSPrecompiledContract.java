@@ -527,14 +527,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			final var functionId = input.getInt(0);
-			switch (functionId) {
-				case ABI_ID_CRYPTO_TRANSFER -> transferOp = decoder.decodeCryptoTransfer(input);
-				case ABI_ID_TRANSFER_TOKENS -> transferOp = decoder.decodeTransferTokens(input);
-				case ABI_ID_TRANSFER_TOKEN -> transferOp = decoder.decodeTransferToken(input);
-				case ABI_ID_TRANSFER_NFTS -> transferOp = decoder.decodeTransferNFTs(input);
-				case ABI_ID_TRANSFER_NFT -> transferOp = decoder.decodeTransferNFT(input);
+			transferOp = switch (functionId) {
+				case ABI_ID_CRYPTO_TRANSFER -> decoder.decodeCryptoTransfer(input);
+				case ABI_ID_TRANSFER_TOKENS -> decoder.decodeTransferTokens(input);
+				case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input);
+				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input);
+				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input);
 				default -> throw new InvalidTransactionException(FAIL_INVALID);
-			}
+			};
 			return syntheticTxnFactory.createCryptoTransfer(
 					transferOp.nftExchanges(), transferOp.fungibleTransfers());
 		}
