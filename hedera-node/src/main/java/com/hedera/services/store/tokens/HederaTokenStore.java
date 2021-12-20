@@ -272,7 +272,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			}
-			accountsLedger.set(aId, TOKENS, tokens);
+			accountsLedger.set(aId, TOKENS, accountTokens);
 			return validity;
 		});
 	}

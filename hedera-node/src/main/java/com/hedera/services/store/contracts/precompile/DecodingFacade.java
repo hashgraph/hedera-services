@@ -319,7 +319,7 @@ public class DecodingFacade {
 			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, null,
 					accountID));
 		} else {
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenType, accountID,
+			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(-amount, tokenType, accountID,
 					null));
 		}
 	}

@@ -91,7 +91,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 	private static final String NFT = "nft";
 
 	private static final String ACCOUNT = "sender";
+	private static final String FEE_COLLECTOR = "feeCollector";
 	private static final String RECEIVER = "receiver";
+	private static final String SECOND_RECEIVER = "receiver2";
+
+	private static final String FEE_TOKEN = "feeToken";
 
 	private static final String UNIVERSAL_KEY = "multipurpose";
 
@@ -305,28 +309,36 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec tokenTransferFromFeeCollector() {
-		final var theSecondReceiver = "somebody2";
-
-		final var feeCollector = "tokenFeeCollector";
-
 		return defaultHapiSpec("TokenTransferFromFeeCollector")
 				.given(
-						newKeyNamed(UNIVERSAL_KEY),
 						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-						cryptoCreate(feeCollector),
+						cryptoCreate(FEE_COLLECTOR),
 						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
-						cryptoCreate(theSecondReceiver),
+						cryptoCreate(SECOND_RECEIVER),
 						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate("feeToken")
+
+						tokenCreate(FEE_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						tokenAssociate(feeCollector, List.of("feeToken")),
+
+						tokenAssociate(FEE_COLLECTOR, FEE_TOKEN),
+
 						tokenCreate(A_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY)
-								.withCustom(fixedHtsFee(1L, "feeToken", feeCollector)),
+								.withCustom(fixedHtsFee(100L, FEE_TOKEN, FEE_COLLECTOR)),
+
+						tokenAssociate(ACCOUNT, A_TOKEN),
+						tokenAssociate(RECEIVER, A_TOKEN),
+						tokenAssociate(SECOND_RECEIVER, A_TOKEN),
+
+						cryptoTransfer(moving(TOTAL_SUPPLY, FEE_TOKEN)
+								.between(TOKEN_TREASURY, ACCOUNT)),
+						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
+								.between(TOKEN_TREASURY, ACCOUNT)),
+
 						fileCreate("bytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
@@ -334,42 +346,24 @@ public class ContractHTSSuite extends HapiApiSuite {
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
 						withOpContext(
 								(spec, opLog) -> {
-										allRunFor(spec, contractCreate(NESTED)
-														.payingWith(ACCOUNT)
-														.bytecode("nestedBytecode")
-														.via("distributorContractTx")
-														.gas(28_000));
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
-														spec))
-														.payingWith(ACCOUNT)
-														.bytecode("bytecode")
-														.via("creationTx")
-														.gas(28_000));
-								}),
-						getTxnRecord("distributorContractTx").logged(),
-						getTxnRecord("creationTx").logged(),
-						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
-						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
-						tokenAssociate(RECEIVER, List.of(A_TOKEN, "feeToken")),
-						tokenAssociate(feeCollector, List.of(A_TOKEN)),
-						tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
-						cryptoTransfer(moving(300, "feeToken")
-								.between(TOKEN_TREASURY, ACCOUNT)),
-						cryptoTransfer(moving(200, A_TOKEN)
-								.between(TOKEN_TREASURY, ACCOUNT)),
-						cryptoTransfer(moving(200, "feeToken")
-								.between(TOKEN_TREASURY, RECEIVER)),
-						cryptoTransfer(moving(1, A_TOKEN)
-								.between(ACCOUNT, RECEIVER)).payingWith(ACCOUNT).fee(ONE_HBAR).via("mocktx")
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+								})
 				).when(
-						getTxnRecord("mocktx").logged(),
 						withOpContext(
 								(spec, opLog) -> {
 									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
 									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
 
 									final var accounts = List.of(sender, receiver1, receiver2);
 									final var amounts = List.of(-10L, 5L, 5L);
@@ -378,27 +372,35 @@ public class ContractHTSSuite extends HapiApiSuite {
 											spec,
 											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE,
 													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													asAddress(spec.registry().getTokenID("feeToken")),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
 													accounts.toArray(),
 													amounts.toArray(),
-													asAddress(spec.registry().getAccountID(feeCollector))
+													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-													.alsoSigningWithFullPrefix(feeCollector)
 													.payingWith(ACCOUNT)
 													.gas(48_000)
-													.via("distributeTx"));
+													.via("distributeTx")
+													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
+													.hasKnownStatus(SUCCESS));
 								})
 
 				).then(
-						childRecordsCheck("distributeTx", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(CONTRACT_REVERT_EXECUTED)
-								.tokenTransfers(
-										changingFungibleBalances()
-												.including(A_TOKEN, ACCOUNT, 10L)
-												.including(A_TOKEN, RECEIVER, 5L)
-												.including(A_TOKEN, theSecondReceiver, 5L)
-								))
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -10L)
+														.including(A_TOKEN, RECEIVER, 5L)
+														.including(A_TOKEN, SECOND_RECEIVER, 5L)
+										),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+														.including(FEE_TOKEN, ACCOUNT, 100L)
+										))
 				);
 	}
 
