@@ -85,7 +85,7 @@ public class ContractResources {
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 	public static final String BURN_TOKEN = bytecodePath("BurnToken");
-	public static final String BURN_TOKEN_CONTRACT = bytecodePath("BurnTokenContract");
+	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
 	public static final String NESTED_BURN = bytecodePath("NestedBurn");
 	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 
@@ -116,7 +116,7 @@ public class ContractResources {
 			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
 			"\"name\": \"burnToken\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
-	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"burnTokenContractAddress\",\"type\": \"address\"}]," +
+	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"mintTokenContractAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
 	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +

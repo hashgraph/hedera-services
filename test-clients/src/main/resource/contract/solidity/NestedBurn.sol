@@ -5,14 +5,14 @@ import "./HederaResponseCodes.sol";
 
 contract NestedBurn is HederaTokenService {
 
-    BurnTokenContract burnTokenContract;
+    MintTokenContract mintTokenContract;
 
-    constructor(address burnTokenContractAddress) public {
-        burnTokenContract = BurnTokenContract(burnTokenContractAddress);
+    constructor(address mintTokenContractAddress) public {
+        mintTokenContract = MintTokenContract(mintTokenContractAddress);
     }
 
    function BurnAfterNestedMint(uint64 amount, address tokenAddress, int64[] memory serialNumbers) public {
-       burnTokenContract.mintToken(amount, tokenAddress);
+       mintTokenContract.mintToken(amount, tokenAddress);
 
         int response = HederaTokenService.burnToken(tokenAddress, amount, serialNumbers);
 
@@ -24,7 +24,7 @@ contract NestedBurn is HederaTokenService {
 
 }
 
-contract BurnTokenContract is HederaTokenService {
+contract MintTokenContract is HederaTokenService {
 
    function mintToken(uint64 amount, address tokenAddress) public {
        int response = HederaTokenService.mintToken(tokenAddress, amount, new bytes(0));

@@ -253,7 +253,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 .supplyKey(multiKey)
                                 .adminKey(multiKey)
                                 .treasury(TOKEN_TREASURY),
-                        fileCreate(innerContract).path(ContractResources.BURN_TOKEN_CONTRACT),
+                        fileCreate(innerContract).path(ContractResources.MINT_TOKEN_CONTRACT),
                         fileCreate(outerContract).path(ContractResources.NESTED_BURN),
                         contractCreate(innerContract)
                                 .bytecode(innerContract)
