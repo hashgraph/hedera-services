@@ -73,6 +73,9 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -111,8 +114,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs()
-//				negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
@@ -124,12 +127,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				distributeMultipleTokens(),
-//				depositAndWithdrawFungibleTokens(),
-//				associateToken(),
-//				dissociateToken(),
-//				transferNft(),
-//				transferMultipleNfts(),
+				distributeMultipleTokens(),
+				depositAndWithdrawFungibleTokens(),
+				associateToken(),
+				dissociateToken(),
+				transferNft(),
+				transferMultipleNfts(),
 				tokenTransferFromFeeCollector()
 		);
 	}
@@ -368,6 +371,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 									final var accounts = List.of(sender, receiver1, receiver2);
 									final var amounts = List.of(-10L, 5L, 5L);
 
+									/* --- HSCS-PREC-009 --- */
 									allRunFor(
 											spec,
 											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE,
@@ -382,6 +386,37 @@ public class ContractHTSSuite extends HapiApiSuite {
 													.via("distributeTx")
 													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
+
+									/* --- HSCS-PREC-018 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("missingSignatureTx")
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+
+									/* --- HSCS-PREC-023 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(RECEIVER))
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("failingChildFrameTx")
+													.alsoSigningWithFullPrefix(RECEIVER)
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								})
 
 				).then(
@@ -400,7 +435,22 @@ public class ContractHTSSuite extends HapiApiSuite {
 												changingFungibleBalances()
 														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
 														.including(FEE_TOKEN, ACCOUNT, 100L)
-										))
+										)),
+
+						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INVALID_SIGNATURE)),
+
+						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INSUFFICIENT_TOKEN_BALANCE)),
+
+						getAccountBalance(ACCOUNT).logged().hasTokenBalance(FEE_TOKEN, 1000),
+						getAccountBalance(FEE_COLLECTOR).logged().hasTokenBalance(FEE_TOKEN, 0)
 				);
 	}
 
