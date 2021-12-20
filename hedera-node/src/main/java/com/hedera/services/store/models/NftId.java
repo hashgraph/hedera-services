@@ -20,45 +20,12 @@ package com.hedera.services.store.models;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-public class NftId {
-	private final long shard;
-	private final long realm;
-	private final long num;
-	private final long serialNo;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-	public NftId(long shard, long realm, long num, long serialNo) {
-		this.shard = shard;
-		this.realm = realm;
-		this.num = num;
-		this.serialNo = serialNo;
-	}
-
-	public NftId(long num, long serialNo) {
-		this.shard = 0L;
-		this.realm = 0L;
-		this.num = num;
-		this.serialNo = serialNo;
-	}
-
-	public long shard() {
-		return shard;
-	}
-
-	public long realm() {
-		return realm;
-	}
-
-	public long num() {
-		return num;
-	}
-
-	public long serialNo() {
-		return serialNo;
-	}
-
+public record NftId(long shard, long realm, long num, long serialNo) {
 	public TokenID tokenId() {
 		return TokenID.newBuilder()
 				.setShardNum(shard)
@@ -67,14 +34,8 @@ public class NftId {
 				.build();
 	}
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(NftId.class)
-				.add("shard", shard)
-				.add("realm", realm)
-				.add("num", num)
-				.add("serialNo", serialNo)
-				.toString();
+	public static NftId withDefaultShardRealm(final long num, final long serialNo) {
+		return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
 	}
 
 	@Override
@@ -83,21 +44,5 @@ public class NftId {
 		result = 31 * result + Long.hashCode(realm);
 		result = 31 * result + Long.hashCode(num);
 		return 31 * result + Long.hashCode(serialNo);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || NftId.class != o.getClass()) {
-			return false;
-		}
-
-		var that = (NftId) o;
-		return this.shard == that.shard &&
-				this.realm == that.realm &&
-				this.num == that.num &&
-				this.serialNo == that.serialNo;
 	}
 }

@@ -177,8 +177,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	private void revert(final int sourceId, final List<InProgressChildRecord> childRecords) {
 		for (final var inProgress : childRecords) {
-			if (inProgress.getSourceId() == sourceId) {
-				inProgress.getRecordBuilder().revert();
+			if (inProgress.sourceId() == sourceId) {
+				inProgress.recordBuilder().revert();
 			}
 		}
 	}
@@ -198,7 +198,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		final var parentId = topLevel.getTxnId();
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
-			final var child = inProgress.getRecordBuilder();
+			final var child = inProgress.recordBuilder();
 			topLevel.excludeHbarChangesFrom(child);
 
 			child.setTxnId(parentId.withNonce(nextNonce++));
@@ -210,7 +210,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				child.setParentConsensusTime(consensusNow);
 			}
 
-			final var synthTxn = synthFrom(inProgress.getSyntheticBody(), child);
+			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
 			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));

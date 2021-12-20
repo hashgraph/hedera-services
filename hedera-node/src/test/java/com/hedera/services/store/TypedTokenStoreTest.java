@@ -402,11 +402,11 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
-		final var expectedNewUniqTokenId = new NftId(tokenEntityId.num(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = new NftId(tokenEntityId.num(), mintedSerialNo2);
+		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
+		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = new NftId(tokenEntityId.num(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = new NftId(tokenEntityId.num(), burnedSerialNo);
+		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
+		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
 		givenModifiableToken(merkleTokenId, merkleToken);
 		givenToken(merkleTokenId, merkleToken);
@@ -434,7 +434,7 @@ class TypedTokenStoreTest {
 		// and:
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(uniqueTokens).put(new NftId(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
+		verify(uniqueTokens).put(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
 		verify(uniqueTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);

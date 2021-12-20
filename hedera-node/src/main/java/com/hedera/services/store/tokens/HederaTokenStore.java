@@ -109,7 +109,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -203,7 +202,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		} else {
 			return knownTreasuries.get(treasury).stream()
 					.sorted(HederaLedger.TOKEN_ID_COMPARATOR)
-					.collect(toList());
+					.toList();
 		}
 	}
 

@@ -190,7 +190,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -357,7 +356,7 @@ public final class MiscUtils {
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
-		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
+		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
 	}
 
 	private static AccountAmount negationOf(final AccountAmount adjustment) {
@@ -371,7 +370,7 @@ public final class MiscUtils {
 				.filter(e -> e.getValue() != 0)
 				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
 				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
-				.collect(toList());
+				.toList();
 	}
 
 	public static String readableTransferList(final TransferList accountAmounts) {
@@ -383,7 +382,7 @@ public final class MiscUtils {
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 
@@ -395,7 +394,7 @@ public final class MiscUtils {
 						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
 						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 

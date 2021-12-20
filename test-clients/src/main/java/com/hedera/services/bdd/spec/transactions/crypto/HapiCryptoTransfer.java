@@ -164,11 +164,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		return this;
 	}
 
-	public HapiCryptoTransfer isTransferToKey() {
-		transferToKey = true;
-		return this;
-	}
-
 	public HapiCryptoTransfer withEmptyTokenTransfers(String token) {
 		tokenWithEmptyTransferAmounts = Optional.of(token);
 		return this;

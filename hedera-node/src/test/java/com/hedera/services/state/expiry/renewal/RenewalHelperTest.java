@@ -35,6 +35,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -311,6 +312,10 @@ class RenewalHelperTest {
 		AliasManager liveAliasManager = new AliasManager();
 		linkWellKnownEntities(liveAliasManager);
 
+		final var backingAccounts = new BackingAccounts(() -> accountsMap);
+		backingAccounts.put(IdUtils.asAccount("0.0." + nonExpiredAccountNum), nonExpiredAccount);
+		backingAccounts.put(IdUtils.asAccount("0.0." + brokeExpiredAccountNum), expiredAccountZeroBalance);
+
 		subject = new RenewalHelper(
 				tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
 				backingAccounts, liveAliasManager);
@@ -325,11 +330,12 @@ class RenewalHelperTest {
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 
 		assertTrue(liveAliasManager.contains(expiredAccountZeroBalance.getAlias()));
+		assertTrue(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
 
 		subject.classify(brokeExpiredAccountNum, now);
 		subject.removeLastClassifiedAccount();
 
-		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
+		assertFalse(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
 		assertFalse(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 	}
 

@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Singleton
@@ -97,7 +96,7 @@ public final class BootstrapProperties implements PropertySource {
 		final var missingProps = BOOTSTRAP_PROP_NAMES.stream()
 				.filter(name -> !resourceProps.containsKey(name))
 				.sorted()
-				.collect(toList());
+				.toList();
 		if (!missingProps.isEmpty()) {
 			final var msg = String.format(
 					"'%s' is missing properties: %s!",
@@ -110,8 +109,8 @@ public final class BootstrapProperties implements PropertySource {
 	private void resolveBootstrapProps(final Properties resourceProps) {
 		bootstrapProps = new HashMap<>();
 		BOOTSTRAP_PROP_NAMES.forEach(prop -> bootstrapProps.put(
-						prop,
-						transformFor(prop).apply(resourceProps.getProperty(prop))));
+				prop,
+				transformFor(prop).apply(resourceProps.getProperty(prop))));
 
 		final var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
@@ -130,7 +129,7 @@ public final class BootstrapProperties implements PropertySource {
 		}
 	}
 
-	void ensureProps() throws IllegalStateException{
+	void ensureProps() throws IllegalStateException {
 		if (bootstrapProps == MISSING_PROPS) {
 			initPropsFromResource();
 		}

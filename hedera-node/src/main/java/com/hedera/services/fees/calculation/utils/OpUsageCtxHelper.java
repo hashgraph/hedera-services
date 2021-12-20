@@ -30,12 +30,12 @@ import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -173,7 +173,7 @@ public class OpUsageCtxHelper {
 				numFractionalFees++;
 			} else {
 				final var royaltyFee = fee.getRoyaltyFeeSpec();
-				final var fallbackFee = royaltyFee.getFallbackFee();
+				final var fallbackFee = royaltyFee.fallbackFee();
 				if (fallbackFee != null) {
 					if (fallbackFee.getTokenDenomination() != null) {
 						numRoyaltyHtsFallbackFees++;

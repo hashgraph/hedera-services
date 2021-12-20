@@ -189,7 +189,7 @@ class SignedTxnAccessorTest {
 				Duration.getDefaultInstance(),
 				false,
 				zeroByteMemo,
-				5678l, 5555l,-70000l,
+				5678l, 5555l, -70000l,
 				ByteString.copyFromUtf8("aaaa"), 70000l);
 		xferWithAliasesNoAutoCreation = xferWithAliasesNoAutoCreation.toBuilder()
 				.setSigMap(expectedMap)
@@ -219,7 +219,7 @@ class SignedTxnAccessorTest {
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
 		assertEquals(0, accessor.getNumAutoCreations());
-		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+		assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
 
 		accessor = SignedTxnAccessor.uncheckedFrom(xferWithAutoCreation);
 		accessor.countAutoCreationsWith(aliasManager);
@@ -404,7 +404,7 @@ class SignedTxnAccessorTest {
 
 		final var submitMeta = subject.availSubmitUsageMeta();
 
-		assertEquals(message.length(), submitMeta.getNumMsgBytes());
+		assertEquals(message.length(), submitMeta.numMsgBytes());
 	}
 
 	@Test

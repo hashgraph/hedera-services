@@ -1,12 +1,13 @@
-package com.hedera.services.usage;
+package com.hedera.services.fees.calculation;
 
 /*-
  * ‌
- * Hedera Services API Fees
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2com.hedera.services.store.tokens.views.UniqTokenViewsManager
+ * .PendingChange.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -20,5 +21,6 @@ package com.hedera.services.usage;
  * ‍
  */
 
-public record SigUsage(int numSigs, int sigsSize, int numPayerKeys) {
+
+public record RenewAssessment(long fee, long renewalPeriod) {
 }

@@ -86,7 +86,7 @@ public class BalanceChange {
 				nftTransfer.getReceiverAccountID(),
 				serialNo,
 				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-		nftChange.nftId = new NftId(token.getShard(), token.getRealm(), token.getNum(), serialNo);
+		nftChange.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
 		nftChange.tokenId = tokenId;
 		return nftChange;
 	}

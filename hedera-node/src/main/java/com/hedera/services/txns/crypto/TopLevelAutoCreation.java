@@ -123,7 +123,7 @@ public class TopLevelAutoCreation implements AutoCreationLogic {
 	public boolean reclaimPendingAliases() {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
-				final var alias = pendingCreation.getRecordBuilder().getAlias();
+				final var alias = pendingCreation.recordBuilder().getAlias();
 				aliasManager.unlink(alias);
 			}
 			return true;
@@ -138,8 +138,8 @@ public class TopLevelAutoCreation implements AutoCreationLogic {
 	@Override
 	public void submitRecordsTo(final AccountRecordsHistorian recordsHistorian) {
 		for (final var pendingCreation : pendingCreations) {
-			final var syntheticCreation = pendingCreation.getSyntheticBody();
-			final var childRecord = pendingCreation.getRecordBuilder();
+			final var syntheticCreation = pendingCreation.syntheticBody();
+			final var childRecord = pendingCreation.recordBuilder();
 			recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		}
 	}
