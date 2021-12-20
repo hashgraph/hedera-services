@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -41,6 +42,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -132,9 +136,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
                                                         .gas(28_000))),
-                        getTxnRecord("creationTx").logged(),
-                        tokenAssociate(ALICE, TOKEN),
-                        tokenAssociate(theContract, TOKEN)
+                        getTxnRecord("creationTx").logged()
                 )
                 .when(
                         contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
@@ -205,9 +207,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
                                                         .gas(28_000))),
-                        getTxnRecord("creationTx").logged(),
-                        tokenAssociate(ALICE, TOKEN),
-                        tokenAssociate(theContract, TOKEN)
+                        getTxnRecord("creationTx").logged()
                 )
                 .when(
                         withOpContext(
@@ -237,9 +237,10 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec HSCS_PREC_011_burn_after_nested_mint() {
-        final var outerContract = "BurnTokenContract";
-        final var nestedContract = "NestedBurnContract";
+        final var innerContract = "BurnTokenContract";
+        final var outerContract = "NestedBurnContract";
         final var multiKey = "purpose";
+        final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
         return defaultHapiSpec("HSCS_PREC_011_burn_after_nested_mint")
                 .given(
@@ -250,25 +251,24 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(50L)
                                 .supplyKey(multiKey)
+                                .adminKey(multiKey)
                                 .treasury(TOKEN_TREASURY),
-                        fileCreate(outerContract).path(ContractResources.BURN_TOKEN_CONTRACT),
-                        fileCreate(nestedContract).path(ContractResources.NESTED_BURN),
-                        contractCreate(outerContract)
-                                .bytecode(outerContract)
+                        fileCreate(innerContract).path(ContractResources.BURN_TOKEN_CONTRACT),
+                        fileCreate(outerContract).path(ContractResources.NESTED_BURN),
+                        contractCreate(innerContract)
+                                .bytecode(innerContract)
                                 .gas(100_000),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(nestedContract, ContractResources.NESTED_BURN_CONSTRUCTOR_ABI,
-                                                        getNestedContractAddress(outerContract, spec))
+                                                contractCreate(outerContract, ContractResources.NESTED_BURN_CONSTRUCTOR_ABI,
+                                                        getNestedContractAddress(innerContract, spec))
                                                         .payingWith(ALICE)
-                                                        .bytecode(nestedContract)
+                                                        .bytecode(outerContract)
                                                         .via("creationTx")
                                                         .gas(28_000))),
-                        getTxnRecord("creationTx").logged(),
-                        tokenAssociate(nestedContract, TOKEN),
-                        tokenAssociate(outerContract, TOKEN)
+                        getTxnRecord("creationTx").logged()
 
                 )
                 .when(
@@ -276,11 +276,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCall(nestedContract, BURN_AFTER_NESTED_MINT_ABI,
+                                                newKeyNamed("contractKey").shape(revisedKey.signedWith(sigs(ON, outerContract, innerContract))),
+                                                tokenUpdate(TOKEN)
+                                                        .supplyKey("contractKey"),
+                                                contractCall(outerContract, BURN_AFTER_NESTED_MINT_ABI,
                                                         1, asAddress(spec.registry().getTokenID(TOKEN)), new ArrayList<>())
                                                         .payingWith(ALICE)
-                                                        .via("burnAfterNestedMint")
-                                                        .alsoSigningWithFullPrefix(multiKey))),
+                                                        .via("burnAfterNestedMint"))),
 
                         childRecordsCheck("burnAfterNestedMint", SUCCESS, recordWith()
                                 .status(SUCCESS)
