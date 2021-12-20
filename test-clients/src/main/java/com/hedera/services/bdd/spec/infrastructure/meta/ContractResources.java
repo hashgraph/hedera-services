@@ -83,6 +83,8 @@ public class ContractResources {
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
+	public static final String ASSOCIATE_TRY_CATCH = bytecodePath("AssociateTryCatch");
+	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -616,9 +618,16 @@ public class ContractResources {
 			"\"name\": \"_tokenAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", " +
 			"\"type\": \"constructor\" }";
 
+	public static final String ASSOCIATE_TRY_CATCH_CONSTRUCTOR = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"_tokenAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", " +
+			"\"type\": \"constructor\" }";
+
 	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 
