@@ -537,7 +537,7 @@ public final class MiscUtils {
 		} else {
 			return Instant.ofEpochSecond(oldSecs, newNanos);
 		}
-        }
+	}
 
 	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
 		if (txn.hasCryptoTransfer()) {
@@ -784,7 +784,8 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x the value to permute
+	 * @param x
+	 * 		the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -822,14 +823,15 @@ public final class MiscUtils {
 	/**
 	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
 	 *
-	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @param hederaFunctionality
+	 * 		- the {@link HederaFunctionality} to verify
 	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
 	 */
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
-        }
+	}
 
-        /**
+	/**
 	 * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type Ed25519 or
 	 * ECDSA(secp256k1), returns true and false otherwise.
 	 *

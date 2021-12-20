@@ -257,6 +257,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -836,6 +837,16 @@ class MiscUtilsTest {
 		assertEquals(onBoundary, nonNegativeNanosOffset(beforeBoundary, +1));
 		assertEquals(inTheMiddle.minusNanos(1), nonNegativeNanosOffset(inTheMiddle, -1));
 		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
+	}
+
+	@Test
+	void rejectsNonPrimitiveProtoKeys() {
+		assertFalse(MiscUtils.isSerializedProtoKey(Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))))
+				.build()
+				.toByteString()));
 	}
 
 	@Test

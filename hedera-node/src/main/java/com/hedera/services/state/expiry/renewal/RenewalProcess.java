@@ -73,6 +73,7 @@ public class RenewalProcess {
 			log.debug("Terminal classification entity num {} ({})", entityNum, classification);
 		}
 		switch (classification) {
+			default:
 			case OTHER, DETACHED_ACCOUNT, DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN:
 				break;
 			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER:
@@ -81,8 +82,6 @@ public class RenewalProcess {
 			case EXPIRED_ACCOUNT_READY_TO_RENEW:
 				processExpiredAccountReadyToRenew(EntityNum.fromLong(entityNum));
 				return true;
-			default:
-				return false;
 		}
 		return false;
 	}

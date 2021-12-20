@@ -203,4 +203,9 @@ public class TopLevelAutoCreation implements AutoCreationLogic {
 			throw new IllegalStateException(internal);
 		}
 	}
+
+	/* --- Only used by unit tests -- */
+	List<InProgressChildRecord> getPendingCreations() {
+		return pendingCreations;
+	}
 }

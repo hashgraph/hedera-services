@@ -74,6 +74,8 @@ import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -214,17 +216,7 @@ class MintPrecompilesTest {
 	void fungibleMintHappyPathWorks() {
 		givenFungibleFrameContext();
 		givenLedgers();
-
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
-		)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
-		)).willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
+		givenFungibleCollaborators();
 
 		// when:
 		final var result = subject.computeMintToken(pretendArguments, frame);
@@ -235,6 +227,16 @@ class MintPrecompilesTest {
 		verify(mintLogic).mint(fungibleId, 0, amount, Collections.emptyList(), Instant.EPOCH);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void mintFailsWithMissingParentUpdater() {
+		givenFungibleFrameContext();
+		givenLedgers();
+		givenFungibleCollaborators();
+		given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
+
+		assertFailsWith(() -> subject.computeMintToken(pretendArguments, frame), FAIL_INVALID);
 	}
 
 	private void givenNonFungibleFrameContext() {
@@ -263,6 +265,19 @@ class MintPrecompilesTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+
+	private void givenFungibleCollaborators() {
+		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(accountStoreFactory.newAccountStore(
+				validator, dynamicProperties, accounts
+		)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(
+				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+		)).willReturn(tokenStore);
+		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
 	}
 
 	private static final long amount = 1_234_567;

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -128,7 +129,25 @@ class AliasResolverTest {
 
 	@Test
 	void noAliasesCanBeReturned() {
-		assertFalse(AliasResolver.usesAliases(CryptoTransferTransactionBody.getDefaultInstance()));
+		final var noAliasBody=  CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(aaId(1_234L, 4_321L))
+						.build())
+				.addAllTokenTransfers(List.of(
+						TokenTransferList.newBuilder()
+								.setToken(someToken)
+								.addTransfers(aaId(2_345L, 5_432L))
+								.build(),
+						TokenTransferList.newBuilder()
+								.setToken(otherToken)
+								.addNftTransfers(NftTransfer.newBuilder()
+										.setSenderAccountID(aNum.toGrpcAccountId())
+										.setReceiverAccountID(bNum.toGrpcAccountId())
+										.setSerialNumber(1L)
+										.build())
+								.build()))
+				.build();
+		assertFalse(AliasResolver.usesAliases(noAliasBody));
 	}
 
 	private AccountAmount aaAlias(final ByteString alias, final long amount) {
@@ -158,4 +177,5 @@ class AliasResolverTest {
 	private static final ByteString someAlias = ByteString.copyFromUtf8("third");
 	private static final ByteString otherAlias = ByteString.copyFromUtf8("fourth");
 	private static final TokenID someToken = IdUtils.asToken("0.0.666");
+	private static final TokenID otherToken = IdUtils.asToken("0.0.777");
 }

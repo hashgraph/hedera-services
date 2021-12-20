@@ -56,6 +56,9 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -110,6 +113,48 @@ class TopLevelAutoCreationTest {
 				any(ExpirableTxnRecord.Builder.class));
 	}
 
+	@Test
+	void translatesPresumablyImpossibleDecodingErrorUnchecked() {
+		final var invalidAlias = ByteString.copyFromUtf8("not-a-primitive-key");
+		final var invalidInput = BalanceChange.changingHbar(AccountAmount.newBuilder()
+				.setAmount(initialTransfer)
+				.setAccountID(AccountID.newBuilder().setAlias(invalidAlias).build())
+				.build());
+
+		assertThrows(IllegalStateException.class, () -> subject.createFromTrigger(invalidInput));
+	}
+
+	@Test
+	void shortCircuitsWhenFeeExceedsChangeBalance() {
+		given(txnCtx.consensusTime())
+				.willReturn(consensusNow);
+		given(syntheticTxnFactory.cryptoCreate(aPrimitiveKey, 0L))
+				.willReturn(mockSyntheticCreation);
+		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
+				.willReturn(fees);
+
+		final var input = wellKnownChange();
+		input.adjustUnits(-initialTransfer - totalFee - 1);
+
+		final var result = subject.createFromTrigger(input);
+		assertEquals(input.codeForInsufficientBalance(), result.getKey());
+	}
+
+	@Test
+	void resetAndReclaimWork() {
+		givenCollaborators();
+		final var input = wellKnownChange();
+
+		subject.createFromTrigger(input);
+		assertFalse(subject.getPendingCreations().isEmpty());
+
+		assertTrue(subject.reclaimPendingAliases());
+		subject.reset();
+		assertTrue(subject.getPendingCreations().isEmpty());
+		verify(aliasManager).unlink(alias);
+		assertFalse(subject.reclaimPendingAliases());
+	}
+
 	private void givenCollaborators() {
 		given(txnCtx.consensusTime())
 				.willReturn(consensusNow);
@@ -120,7 +165,7 @@ class TopLevelAutoCreationTest {
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);
 		given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
-				.willReturn(ExpirableTxnRecord.newBuilder());
+				.willReturn(ExpirableTxnRecord.newBuilder().setAlias(alias));
 	}
 
 	private BalanceChange wellKnownChange() {

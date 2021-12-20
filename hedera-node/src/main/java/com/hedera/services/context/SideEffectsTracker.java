@@ -183,15 +183,15 @@ public class SideEffectsTracker {
 		return newTokenId;
 	}
 
-	public boolean hasTrackedAutoCreation() {
+	public boolean hasAutoCreation() {
 		return newAccountId != null;
 	}
 
-	public ByteString getNewAccountAlias() {
+	public ByteString getAutoCreatedAccountAlias() {
 		return newAccountAlias;
 	}
 
-	public AccountID getTrackedAutoCreatedAccountId() {
+	public AccountID getAutoCreatedAccountId() {
 		return newAccountId;
 	}
 
