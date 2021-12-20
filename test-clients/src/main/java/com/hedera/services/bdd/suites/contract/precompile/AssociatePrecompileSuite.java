@@ -41,8 +41,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_ASSOCIATE_CALL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_NON_EXISTING_FUNCTION_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.STATIC_ASSOCIATE_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -68,6 +71,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -88,6 +92,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final String OUTER_CONTRACT = "Nested Associate/Dissociate Contract";
 	private static final String INNER_CONTRACT = "Associate/Dissociate Contract";
 	private static final String THE_CONTRACT = "Associate/Dissociate Contract";
+	private static final String THE_GRACEFULLY_FAILING_CONTRACT = "Epically and gracefully failing contract";
 	private static final String ACCOUNT = "anybody";
 	private static final String FROZEN_TOKEN = "Frozen token";
 	private static final String UNFROZEN_TOKEN = "Unfrozen token";
@@ -117,24 +122,151 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
-				staticCallForAssociatePrecompileFails()
+//				delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
+//				staticCallForAssociatePrecompileFails(),
+//				nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+//				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
+				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
-				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				nestedAssociateWorksAsExpected(),
-				associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
-				associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
-				associatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
-				associatePrecompileTokensPerAccountLimitExceeded()
+//				delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
+//				multipleAssociatePrecompileWithSignatureWorksForFungible(),
+//				nestedAssociateWorksAsExpected(),
+//				associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
+//				associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
+//				associatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
+//				associatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
+//				associatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
+//				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
+//				associatePrecompileTokensPerAccountLimitExceeded()
 		);
+	}
+
+	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
+				.given(
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT).path(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN),
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_GRACEFULLY_FAILING_CONTRACT).bytecode(THE_GRACEFULLY_FAILING_CONTRACT).gas(5_000_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_GRACEFULLY_FAILING_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT, PERFORM_NON_EXISTING_FUNCTION_CALL_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("Non existing function call txn")
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("Non existing function call txn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						childRecordsCheck("Non existing function call txn", SUCCESS,
+								recordWith().status(SUCCESS),
+								recordWith().status(SUCCESS),
+								recordWith().status(SUCCESS)),
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
+				);
+	}
+
+
+	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("NonSupportedAbiCallGracefullyFails")
+				.given(
+						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_CONTRACT, NON_SUPPORTED_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("notSupportedFunctionCallTxn")
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												getTxnRecord("notSupportedFunctionCallTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("vanillaTokenAssociateTxn")
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						emptyChildRecordsCheck("notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
+				);
+	}
+
+	private HapiApiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+		final var invalidAbiArgument = 123;
+
+		return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
+				.given(
+						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), invalidAbiArgument)
+														.payingWith(GENESIS)
+														.via("functionCallWithInvalidArgumentTxn")
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												getTxnRecord("functionCallWithInvalidArgumentTxn").andAllChildRecords().logged(),
+												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("vanillaTokenAssociateTxn")
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)),
+						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
+				);
 	}
 
 	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
