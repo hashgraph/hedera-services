@@ -21,7 +21,6 @@ package com.hedera.services.legacy.client.util;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -39,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -344,7 +344,7 @@ public class KeyExpansion {
 		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
 		final var prefixBytes = prefixLen == -1
 				? pubKeyBytes
-				: CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
+				: Arrays.copyOfRange(pubKeyBytes, 0, prefixLen);
 
 		final var privKey = pubKey2privKeyMap.get(pubKeyHex);
 		final var sig = SignatureGenerator.signBytes(msgBytes, privKey);

@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -44,16 +45,19 @@ import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class GetAccountBalanceAnswer implements AnswerService {
+	private final AliasManager aliasManager;
 	private final OptionValidator optionValidator;
 
 	@Inject
-	public GetAccountBalanceAnswer(OptionValidator optionValidator) {
+	public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
+		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
 	}
 
@@ -79,7 +83,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
 		CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
-		AccountID id = targetOf(op);
+		final var id = targetOf(op);
 		CryptoGetAccountBalanceResponse.Builder opAnswer = CryptoGetAccountBalanceResponse.newBuilder()
 				.setHeader(answerOnlyHeader(validity))
 				.setAccountID(id);
@@ -108,22 +112,34 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		return Optional.empty();
 	}
 
-	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
-		return op.hasAccountID()
-				? op.getAccountID()
-				: (op.hasContractID() ? asAccount(op.getContractID()) : AccountID.getDefaultInstance());
-	}
-
 	private ResponseCodeEnum validityOf(
-			CryptoGetAccountBalanceQuery op,
-			MerkleMap<EntityNum, MerkleAccount> accounts
+			final CryptoGetAccountBalanceQuery op,
+			final MerkleMap<EntityNum, MerkleAccount> accounts
 	) {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
 		} else if (op.hasAccountID()) {
-			return optionValidator.queryableAccountStatus(op.getAccountID(), accounts);
+			final var effId = resolvedNonContract(op.getAccountID());
+			return optionValidator.queryableAccountStatus(effId, accounts);
 		} else {
 			return INVALID_ACCOUNT_ID;
+		}
+	}
+
+	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
+		if (op.hasContractID()) {
+			return asAccount(op.getContractID());
+		} else {
+			return resolvedNonContract(op.getAccountID());
+		}
+	}
+
+	private AccountID resolvedNonContract(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			return id.toGrpcAccountId();
+		} else {
+			return idOrAlias;
 		}
 	}
 

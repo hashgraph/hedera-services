@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.security.PrivateKey;
 import java.util.Map;
 
-@FunctionalInterface
 public interface KeyGenerator {
 	Key genEd25519AndUpdateMap(Map<String, PrivateKey> publicToPrivateKey);
+	Key genEcdsaSecp256k1AndUpdateMap(Map<String, PrivateKey> publicToPrivateKey);
 }

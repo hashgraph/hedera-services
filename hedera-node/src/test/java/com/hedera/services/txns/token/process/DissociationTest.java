@@ -273,9 +273,9 @@ class DissociationTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Dissociation{dissociatingAccountId=Id{shard=1, realm=2, num=3}, " +
-				"dissociatedTokenId=Id{shard=2, realm=3, num=4}, dissociatedTokenTreasuryId=Id{shard=3, realm=4, " +
-				"num=5}, expiredTokenTreasuryReceivedBalance=false}";
+		final var desired = "Dissociation{dissociatingAccountId=Id[shard=1, realm=2, num=3], " +
+				"dissociatedTokenId=Id[shard=2, realm=3, num=4], dissociatedTokenTreasuryId=Id[shard=3, realm=4, " +
+				"num=5], expiredTokenTreasuryReceivedBalance=false}";
 
 		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 

@@ -67,7 +67,7 @@ public class TokenRelationship {
 	}
 
 	public FcTokenAssociation asAutoAssociation() {
-		return new FcTokenAssociation(token.getId().getNum(), account.getId().getNum());
+		return new FcTokenAssociation(token.getId().num(), account.getId().num());
 	}
 
 	public long getBalance() {

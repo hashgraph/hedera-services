@@ -37,6 +37,7 @@ import com.hedera.services.fees.calculation.meta.queries.GetExecTimeResourceUsag
 import com.hedera.services.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
+import com.hedera.services.fees.calculation.system.txns.UncheckedSubmitResourceUsage;
 import com.hedera.services.fees.calculation.token.TokenFeesModule;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
@@ -53,6 +54,7 @@ import java.util.Set;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 @Module(includes = {
 		FileFeesModule.class,
@@ -104,6 +106,15 @@ public abstract class FeesModule {
 			FreezeResourceUsage freezeResourceUsage
 	) {
 		return List.of(freezeResourceUsage);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(UncheckedSubmit)
+	public static List<TxnResourceUsageEstimator> provideUncheckedSubmitEstimator(
+			UncheckedSubmitResourceUsage uncheckedResourceUsage
+	) {
+		return List.of(uncheckedResourceUsage);
 	}
 
 	@Provides

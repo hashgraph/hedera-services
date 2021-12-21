@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -157,6 +158,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		return this;
 	}
 
+	public HapiCryptoCreate key(Key key) {
+		this.key = key;
+		return this;
+	}
+
 	public HapiCryptoCreate keyType(KeyType type) {
 		keyType = Optional.of(type);
 		return this;
@@ -203,7 +209,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		key = netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
+		key = key != null ? key : netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
 		long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
 		initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
 		CryptoCreateTransactionBody opBody = spec

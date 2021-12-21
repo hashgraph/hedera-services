@@ -25,6 +25,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -85,10 +86,12 @@ class OpUsageCtxHelperTest {
 	private SignedTxnAccessor accessor;
 
 	private OpUsageCtxHelper subject;
+	@Mock
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
 	}
 
 	@Test
@@ -99,16 +102,16 @@ class OpUsageCtxHelperTest {
 		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(then - now, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(then - now, opMeta.lifetime());
 	}
 
 	@Test
 	void shortCircuitsFileAppendMetaForSpecialFile() {
 		final var opMeta = subject.metaForFileAppend(specialAppendTxn);
 
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(7776000L, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(7776000L, opMeta.lifetime());
 	}
 
 	@Test
@@ -117,8 +120,8 @@ class OpUsageCtxHelperTest {
 		final var opMeta = subject.metaForFileAppend(stdAppendTxn);
 
 		// then:
-		assertEquals(newFileBytes, opMeta.getBytesAdded());
-		assertEquals(0, opMeta.getLifetime());
+		assertEquals(newFileBytes, opMeta.bytesAdded());
+		assertEquals(0, opMeta.lifetime());
 	}
 
 	@Test
@@ -154,7 +157,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForAccount() {
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -173,7 +176,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
-		given(workingView.infoForAccount(any())).willReturn(Optional.empty());
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
@@ -303,6 +306,7 @@ class OpUsageCtxHelperTest {
 				.setTokenBurn(op)
 				.build();
 	}
+
 	private TransactionBody getTxnBody(final TokenWipeAccountTransactionBody op) {
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
