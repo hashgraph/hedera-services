@@ -94,8 +94,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 					.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
 							,UNKNOWN,TRANSACTION_EXPIRED,
 							INSUFFICIENT_ACCOUNT_BALANCE)
-					.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
-							INVALID_SIGNATURE,PAYER_ACCOUNT_NOT_FOUND)
+					.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 					.deferStatusResolution()
 			};
 		};

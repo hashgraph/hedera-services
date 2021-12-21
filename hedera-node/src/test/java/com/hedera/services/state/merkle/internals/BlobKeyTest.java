@@ -43,16 +43,8 @@ class BlobKeyTest {
 
 	@Test
 	void gettersWork() {
-		assertEquals(FILE_DATA, subject.getType());
-		assertEquals(2, subject.getEntityNum());
-	}
-
-
-	@Test
-	void toStringWorks() {
-		assertEquals(
-				"BlobKey{type=FILE_DATA, entityNum=2}",
-				subject.toString());
+		assertEquals(FILE_DATA, subject.type());
+		assertEquals(2, subject.entityNum());
 	}
 
 	@Test

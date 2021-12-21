@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiFunction;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -82,8 +82,8 @@ class Expansion {
 		}
 
 		if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
-			pkToSigFn.forEachUnusedSigWithFullPrefix((pubKey, sig) ->
-					txnAccessor.getPlatformTxn().add(sigFactory.create(pubKey, sig)));
+			pkToSigFn.forEachUnusedSigWithFullPrefix((type, pubKey, sig) ->
+					txnAccessor.getPlatformTxn().add(sigFactory.signAppropriately(type, pubKey, sig)));
 		}
 
 		return OK;
@@ -98,7 +98,7 @@ class Expansion {
 			return orderResult.getErrorReport();
 		}
 
-		var creationResult = createEd25519PlatformSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+		var creationResult = createCryptoSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (!creationResult.hasFailed()) {
 			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 		}

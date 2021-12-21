@@ -39,8 +39,8 @@ class PriorityQueueExpiriesTest {
 	private PriorityQueueExpiries<String> subject;
 	private Comparator<ExpiryEvent<String>> testCmp = (aEvent, bEvent) -> {
 		int order;
-		return (order = Long.compare(aEvent.getExpiry(), bEvent.getExpiry())) != 0
-				? order : aEvent.getId().compareTo(bEvent.getId());
+		return (order = Long.compare(aEvent.expiry(), bEvent.expiry())) != 0
+				? order : aEvent.id().compareTo(bEvent.id());
 	};
 
 	@BeforeEach
@@ -59,8 +59,8 @@ class PriorityQueueExpiriesTest {
 		//expect:
 		assertTrue(subject.hasExpiringAt(expiry1 - 1));
 		assertEquals(expiry1 - 1, subject.getNow());
-		assertEquals(expiry1-1, subject.getAllExpiries().peek().getExpiry());
-		assertEquals(k2, subject.expireNextAt(expiry1 -1));
+		assertEquals(expiry1 - 1, subject.getAllExpiries().peek().expiry());
+		assertEquals(k2, subject.expireNextAt(expiry1 - 1));
 	}
 
 	@Test
@@ -142,7 +142,7 @@ class PriorityQueueExpiriesTest {
 
 		// when:
 		for (int i = 0; i < entitiesToRemoveBeforeRebuild; i++) {
-			long now = events.get(i).getExpiry();
+			long now = events.get(i).expiry();
 			fullPq.expireNextAt(now);
 		}
 		// and:
@@ -150,7 +150,7 @@ class PriorityQueueExpiriesTest {
 
 		// then:
 		for (int i = entitiesToRemoveBeforeRebuild; i < entitiesToTrack; i++) {
-			long now = events.get(i).getExpiry();
+			long now = events.get(i).expiry();
 			var fromFull = fullPq.expireNextAt(now);
 			var fromPartial = partialPq.expireNextAt(now);
 			assertEquals(fromFull, fromPartial,
@@ -161,7 +161,7 @@ class PriorityQueueExpiriesTest {
 	private PriorityQueueExpiries<String> pqFrom(List<ExpiryEvent<String>> events) {
 		var pq = new PriorityQueueExpiries<>(testCmp);
 		for (var event : events) {
-			pq.track(event.getId(), event.getExpiry());
+			pq.track(event.id(), event.expiry());
 		}
 		return pq;
 	}

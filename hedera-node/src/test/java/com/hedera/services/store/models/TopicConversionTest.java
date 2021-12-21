@@ -69,7 +69,7 @@ class TopicConversionTest {
 		model.setAutoRenewAccountId(EntityId.MISSING_ENTITY_ID.asId());
 
 		final var mappedMerkle = TopicConversion.fromModel(model);
-		assertEquals(Id.DEFAULT.getNum(), mappedMerkle.getKey().longValue());
+		assertEquals(Id.DEFAULT.num(), mappedMerkle.getKey().longValue());
 		assertEquals(10, mappedMerkle.getSequenceNumber());
 		assertEquals("memo", mappedMerkle.getMemo());
 		assertEquals(SUBMIT_KEY, mappedMerkle.getSubmitKey());

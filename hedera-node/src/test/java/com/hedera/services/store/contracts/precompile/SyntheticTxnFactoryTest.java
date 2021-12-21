@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -28,15 +29,35 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.TopLevelAutoCreation.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
 	@Test
+	void createsExpectedCryptoCreate() {
+		final var balance = 10L;
+		final var alias = KeyFactory.getDefaultInstance().newEd25519();
+		final var result = subject.cryptoCreate(alias, balance);
+		final var txnBody = result.build();
+
+		assertTrue(txnBody.hasCryptoCreateAccount());
+		assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
+		assertEquals(THREE_MONTHS_IN_SECONDS,
+				txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+		assertEquals(10L,
+				txnBody.getCryptoCreateAccount().getInitialBalance());
+		assertEquals(alias.toByteString(),
+				txnBody.getCryptoCreateAccount().getKey().toByteString());
+	}
+
+	@Test
 	void createsExpectedAssociations() {
 		final var tokens = List.of(fungible, nonFungible);
-		final var associations = SyntheticTxnFactory.Association.multiAssociation(a, tokens);
+		final var associations = Association.multiAssociation(a, tokens);
 
 		final var result = subject.createAssociate(associations);
 		final var txnBody = result.build();
@@ -48,7 +69,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedDissociations() {
 		final var tokens = List.of(fungible, nonFungible);
-		final var associations = SyntheticTxnFactory.Dissociation.multiDissociation(a, tokens);
+		final var associations = Dissociation.multiDissociation(a, tokens);
 
 		final var result = subject.createDissociate(associations);
 		final var txnBody = result.build();
@@ -59,7 +80,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftMint() {
-		final var nftMints = SyntheticTxnFactory.MintWrapper.forNonFungible(nonFungible, newMetadata);
+		final var nftMints = MintWrapper.forNonFungible(nonFungible, newMetadata);
 
 		final var result = subject.createMint(nftMints);
 		final var txnBody = result.build();
@@ -70,7 +91,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedNftBurn() {
-		final var nftBurns = SyntheticTxnFactory.BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+		final var nftBurns = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 
 		final var result = subject.createBurn(nftBurns);
 		final var txnBody = result.build();
@@ -82,7 +103,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedFungibleMint() {
 		final var amount = 1234L;
-		final var funMints = SyntheticTxnFactory.MintWrapper.forFungible(fungible, amount);
+		final var funMints = MintWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createMint(funMints);
 		final var txnBody = result.build();
@@ -94,7 +115,7 @@ class SyntheticTxnFactoryTest {
 	@Test
 	void createsExpectedFungibleBurn() {
 		final var amount = 1234L;
-		final var funBurns = SyntheticTxnFactory.BurnWrapper.forFungible(fungible, amount);
+		final var funBurns = BurnWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createBurn(funBurns);
 		final var txnBody = result.build();
