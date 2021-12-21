@@ -522,7 +522,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						TokenTransferList::getNftTransfersList,
 						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList()),
 						LinkedHashMap::new));
-		System.out.println(aggregated);
 		if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
 			throw new RuntimeException("Aggregation seems to have failed (expected " + uniqueCount
 					+ " distinct unique token types, got " + aggregated.size() + ")");
