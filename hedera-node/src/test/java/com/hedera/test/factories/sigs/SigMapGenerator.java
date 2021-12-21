@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SigMapGenerator {
 	private static final byte[] NONSENSE_SIG = "'Twas brillig, and the slithy toves...".getBytes();
@@ -96,7 +95,7 @@ public class SigMapGenerator {
 			if (sigType == SignatureType.RSA) {
 				sp.setRSA3072(ByteString.copyFrom(sig));
 			} else if (sigType == SignatureType.ECDSA_SECP256K1) {
-				sp.setECDSA384(ByteString.copyFrom(sig));
+				sp.setECDSASecp256K1(ByteString.copyFrom(sig));
 			} else if (sigType == SignatureType.ED25519) {
 				sp.setEd25519(ByteString.copyFrom(sig));
 			}
@@ -155,7 +154,9 @@ public class SigMapGenerator {
 		}
 
 		private byte[] shortestPrefix(byte[] a, Node n, int maxPrefixCard, int lenUsed) {
-			assertTrue(lenUsed <= a.length, "No unique prefix exists!");
+			if (lenUsed > a.length) {
+				throw new IllegalStateException("No unique prefix exists");
+			}
 			int v = vAt(a, lenUsed - 1);
 			if (n.children[v].count <= maxPrefixCard) {
 				return Arrays.copyOfRange(a, 0, lenUsed);

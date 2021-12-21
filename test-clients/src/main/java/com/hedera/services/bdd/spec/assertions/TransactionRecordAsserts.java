@@ -65,18 +65,6 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
-	public TransactionRecordAsserts txnId(TransactionID expectedTxn) {
-		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
-			try {
-				Assertions.assertEquals(expectedTxn, txnId, "Wrong txnId!");
-			} catch (Throwable t) {
-				return List.of(t);
-			}
-			return EMPTY_LIST;
-		});
-		return this;
-	}
-
 	public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {
@@ -89,13 +77,22 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
-	public TransactionRecordAsserts newTotalSupply(long expectedNewTotalSupply) {
+	public TransactionRecordAsserts serialNos(List<Long> minted) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {
-				Assertions.assertEquals(
-						expectedNewTotalSupply,
-						receipt.getNewTotalSupply(),
-						"Bad newTotalSupply!");
+				Assertions.assertEquals(minted, receipt.getSerialNumbersList(), "Wrong serial nos");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts newTotalSupply(long expected) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				Assertions.assertEquals(expected, receipt.getNewTotalSupply(), "Wrong new total supply");
 			} catch (Throwable t) {
 				return List.of(t);
 			}
@@ -169,7 +166,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
-	protected <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
+	private <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
 		try {
 			Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
 			registerProvider((spec, o) -> {

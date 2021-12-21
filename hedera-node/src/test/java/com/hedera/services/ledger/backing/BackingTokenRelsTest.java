@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.backing.BackingTokenRels.readableTokenRel;
@@ -98,6 +99,8 @@ class BackingTokenRelsTest {
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
+		// and:
+		assertTrue(subject.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
@@ -116,14 +119,24 @@ class BackingTokenRelsTest {
 
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
+		// and:
+		assertFalse(subject.contains(asTokenRel(a, at)));
+	}
+
+	@Test
+	void rebuildsFromChangedSources() {
+		rels.clear();
+		rels.put(cKey, cValue);
+
+		// then:
+		assertFalse(subject.contains(asTokenRel(a, at)));
+		assertFalse(subject.contains(asTokenRel(b, bt)));
+		// and:
+		assertTrue(subject.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
 	void containsWorks() {
-		// given:
-		subject.rebuildFromSources();
-
-		// expect:
 		assertTrue(subject.contains(asTokenRel(a, at)));
 		assertTrue(subject.contains(asTokenRel(b, bt)));
 	}

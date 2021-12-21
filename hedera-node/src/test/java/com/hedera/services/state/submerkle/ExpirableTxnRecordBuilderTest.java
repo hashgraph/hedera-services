@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,13 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +71,20 @@ class ExpirableTxnRecordBuilderTest {
 		final var result = subject.build();
 		assertEquals(12, result.getNumChildRecords());
 		assertEquals(packedParentConsTime, result.getPackedParentConsensusTime());
+	}
+
+	@Test
+	void parentConsensusTimeMappedToAndFromGrpc() {
+		final var grpcRecord = TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder().setAccountID(IdUtils.asAccount("0.0.3")))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+				.setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
+				.build();
+
+		final var subject = ExpirableTxnRecordTestHelper.fromGprc(grpcRecord);
+
+		assertEquals(grpcRecord, subject.asGrpc());
 	}
 
 	@Test
@@ -181,6 +201,7 @@ class ExpirableTxnRecordBuilderTest {
 		subject.setContractCreateResult(new SolidityFnResult());
 		subject.setNewTokenAssociations(List.of(new FcTokenAssociation(1, 2)));
 		subject.setAssessedCustomFees(List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] { 1L })));
+		subject.setAlias(ByteString.copyFromUtf8("aaa"));
 
 		subject.revert();
 
@@ -195,6 +216,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getContractCreateResult());
 		assertNull(subject.getAssessedCustomFees());
 		assertTrue(subject.getNewTokenAssociations().isEmpty());
+		assertTrue(subject.getAlias().isEmpty());
 	}
 
 	@Test

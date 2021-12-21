@@ -25,14 +25,14 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ScheduleAnswers {
-    private final GetScheduleInfoAnswer scheduleInfo;
+	private final GetScheduleInfoAnswer scheduleInfo;
 
-    @Inject
-    public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
-        this.scheduleInfo = scheduleInfo;
-    }
+	@Inject
+	public ScheduleAnswers(GetScheduleInfoAnswer scheduleInfo) {
+		this.scheduleInfo = scheduleInfo;
+	}
 
-    public GetScheduleInfoAnswer getScheduleInfo() {
-        return scheduleInfo;
-    }
+	public GetScheduleInfoAnswer getScheduleInfo() {
+		return scheduleInfo;
+	}
 }

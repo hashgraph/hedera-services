@@ -369,29 +369,13 @@ class TokenCreateTransitionLogicTest {
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-
-		verify(ids).reclaimProvisionalIds();
-	}
-
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-
-		verify(ids).resetProvisionalIds();
-	}
-
 	private void givenInvalidSupplyTypeAndSupply() {
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setSupplyType(TokenSupplyType.INFINITE)
 						.setInitialSupply(0)
 						.setMaxSupply(1)
-						.build()
-				);
-
+						.build());
 
 		tokenCreateTxn = builder.build();
 	}
@@ -433,13 +417,6 @@ class TokenCreateTransitionLogicTest {
 			builder.getTokenCreationBuilder().setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey());
 		}
 		tokenCreateTxn = builder.build();
-	}
-
-	private void givenAvailTxn() {
-		given(accessor.getTxn()).willReturn(tokenCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(now);
-		given(validator.isValidExpiry(expiry)).willReturn(true);
 	}
 
 	private void givenInvalidInitialSupply() {

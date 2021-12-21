@@ -9,9 +9,9 @@ package com.hedera.services.context.init;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,10 +26,24 @@ import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,6 +83,22 @@ class StateInitializationFlowTest {
 	private FileUpdateInterceptor bFileInterceptor;
 	@Mock
 	private Consumer<HederaNumbers> staticNumbersHolder;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private MerkleMap<EntityNum, MerkleTopic> topics;
+	@Mock
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	@Mock
+	private MerkleMap<EntityNum, MerkleSchedule> schedules;
+	@Mock
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	@Mock
+	private VirtualMap<ContractKey, ContractValue> contractStorage;
 
 	private StateInitializationFlow subject;
 
@@ -89,6 +119,7 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);
@@ -111,6 +142,7 @@ class StateInitializationFlowTest {
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
+		givenMockMerkleMaps();
 
 		// when:
 		subject.runWith(activeState);
@@ -122,6 +154,17 @@ class StateInitializationFlowTest {
 		verify(staticNumbersHolder).accept(defaultNumbers);
 
 		cleanupMockNumInitialization();
+	}
+
+	private void givenMockMerkleMaps() {
+		given(activeState.accounts()).willReturn(accounts);
+		given(activeState.uniqueTokens()).willReturn(uniqueTokens);
+		given(activeState.tokenAssociations()).willReturn(tokenAssociations);
+		given(activeState.topics()).willReturn(topics);
+		given(activeState.tokens()).willReturn(tokens);
+		given(activeState.scheduleTxs()).willReturn(schedules);
+		given(activeState.storage()).willReturn(storage);
+		given(activeState.contractStorage()).willReturn(contractStorage);
 	}
 
 	private void setupMockNumInitialization() {

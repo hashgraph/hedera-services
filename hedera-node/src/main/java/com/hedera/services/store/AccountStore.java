@@ -144,6 +144,7 @@ public class AccountStore {
 		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
+		account.setAlias(merkleAccount.getAlias());
 
 		return account;
 	}
@@ -155,11 +156,11 @@ public class AccountStore {
 	 */
 	public void commitAccount(Account account) {
 		final var id = account.getId();
-
-		final var mutableAccount = accounts.getRef(id.asGrpcAccount());
+                final var grpcId = id.asGrpcAccount();
+		final var mutableAccount = accounts.getRef(grpcId);
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
-		accounts.put(id.asGrpcAccount(), mutableAccount);
+		accounts.put(grpcId, mutableAccount);
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {
