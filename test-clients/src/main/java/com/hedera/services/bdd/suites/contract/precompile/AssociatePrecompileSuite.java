@@ -41,7 +41,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_ASSOCIATE_CALL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
@@ -163,23 +162,23 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_GRACEFULLY_FAILING_CONTRACT).bytecode(THE_GRACEFULLY_FAILING_CONTRACT).gas(5_000_000),
+												contractCreate(THE_GRACEFULLY_FAILING_CONTRACT).bytecode(THE_GRACEFULLY_FAILING_CONTRACT).gas(100_000),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_GRACEFULLY_FAILING_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_GRACEFULLY_FAILING_CONTRACT, PERFORM_NON_EXISTING_FUNCTION_CALL_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
-														.via("Non existing function call txn")
+														.via("nonExistingFunctionCallTxn")
+														.gas(2_000_000)
 														.hasKnownStatus(SUCCESS),
-												getTxnRecord("Non existing function call txn").andAllChildRecords().logged()
+												getTxnRecord("nonExistingFunctionCallTxn").andAllChildRecords().logged()
 										)
 						)
 				).then(
-						childRecordsCheck("Non existing function call txn", SUCCESS,
-								recordWith().status(SUCCESS),
+						childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS,
 								recordWith().status(SUCCESS),
 								recordWith().status(SUCCESS)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
 
