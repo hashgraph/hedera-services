@@ -159,6 +159,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			Objects.requireNonNull(aliasKeySource);
 			final var expected = spec.registry().getKey(aliasKeySource).toByteString();
 			Assertions.assertEquals(expected, actualInfo.getAlias());
+			Assertions.assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID());
 		}
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);

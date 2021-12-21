@@ -78,17 +78,17 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						autoAccountCreationsHappyPath(),
-						autoAccountCreationBadAlias(),
-						autoAccountCreationUnsupportedAlias(),
-						transferToAccountAutoCreatedUsingAlias(),
-						transferToAccountAutoCreatedUsingAccount(),
-						transferFromAliasToAlias(),
-						transferFromAliasToAccount(),
-						multipleAutoAccountCreations(),
-						accountCreatedIfAliasUsedAsPubKey(),
-						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+//						autoAccountCreationsHappyPath(),
+//						autoAccountCreationBadAlias(),
+//						autoAccountCreationUnsupportedAlias(),
+//						transferToAccountAutoCreatedUsingAlias(),
+//						transferToAccountAutoCreatedUsingAccount(),
+//						transferFromAliasToAlias(),
+//						transferFromAliasToAccount(),
+//						multipleAutoAccountCreations(),
+//						accountCreatedIfAliasUsedAsPubKey(),
+//						aliasCanBeUsedOnManyAccountsNotAsAlias(),
+//						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
 						canGetBalanceAndInfoViaAlias()
 				}
 		);
@@ -114,10 +114,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.via(autoCreation)
 				).then(
 						getTxnRecord(autoCreation).andAllChildRecords().logged(),
-						getAliasedAccountBalance(ed25519SourceKey),
-						getAliasedAccountBalance(secp256k1SourceKey),
-						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey(),
-						getAliasedAccountInfo(secp256k1SourceKey).hasExpectedAliasKey()
+						getAliasedAccountBalance(ed25519SourceKey).logged(),
+						getAliasedAccountBalance(secp256k1SourceKey).logged(),
+						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey().logged(),
+						getAliasedAccountInfo(secp256k1SourceKey).hasExpectedAliasKey().logged()
 				);
 	}
 
