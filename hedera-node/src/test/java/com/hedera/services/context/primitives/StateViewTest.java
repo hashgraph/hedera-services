@@ -654,7 +654,7 @@ class StateViewTest {
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-				.setAccountID(accountWithAlias)
+				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
@@ -662,7 +662,7 @@ class StateViewTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
