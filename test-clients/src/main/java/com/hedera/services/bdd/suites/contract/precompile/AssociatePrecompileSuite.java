@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,8 +30,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -42,11 +41,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class AssociatePrecompileSuite extends HapiApiSuite {
@@ -122,11 +123,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         contractCall(theContract, ContractResources.ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN)
                                 .payingWith(theAccount)
                                 .via("associateMethodCall"),
-                        getTxnRecord("associateMethodCall").andAllChildRecords().logged(),
+                        childRecordsCheck("associateMethodCall", SUCCESS, recordWith()
+                                .status(SUCCESS),
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
                         getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN))
                 ).then(
                         cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS)
+                                .hasKnownStatus(SUCCESS)
                 );
 
     }
