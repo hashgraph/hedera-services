@@ -60,11 +60,11 @@ class CustomFeeMetaTest {
 		final var subject = new CustomFeeMeta(aToken, aTreasury, List.of(hbarFee, htsFee));
 
 		// given:
-		final var desired = "CustomFeeMeta{tokenId=Id{shard=1, realm=1, num=1}, treasuryId=Id{shard=9, realm=9, num=9}, " +
-				"customFees=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=100000, " +
-				"tokenDenomination=ℏ}, feeCollector=EntityId{shard=2, realm=3, num=4}}, " +
-				"FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6}, " +
-				"feeCollector=EntityId{shard=3, realm=4, num=5}}]}";
+		final var desired = "CustomFeeMeta[tokenId=Id[shard=1, realm=1, num=1], treasuryId=Id[shard=9, realm=9, num=9]," +
+				" customFees=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=100000, " +
+				"tokenDenomination=ℏ}, feeCollector=EntityId{shard=2, realm=3, num=4}}, FcCustomFee{feeType=FIXED_FEE, " +
+				"fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6}, feeCollector=EntityId{shard=3, " +
+				"realm=4, num=5}}]]";
 
 		// expect:
 		assertEquals(desired, subject.toString());

@@ -20,7 +20,7 @@ package com.hedera.services.state.merkle.internals;
  * ‍
  */
 
-import java.util.Objects;
+import com.hedera.services.utils.MiscUtils;
 
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
@@ -28,50 +28,15 @@ import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_D
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
 import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
 
-public class BlobKey {
+public record BlobKey(BlobType type, long entityNum) {
 	public enum BlobType {
 		FILE_DATA, FILE_METADATA, CONTRACT_STORAGE, CONTRACT_BYTECODE, SYSTEM_DELETED_ENTITY_EXPIRY
 	}
 
-	private final BlobType type;
-	private final long entityNum;
-
-	public BlobKey(BlobType type, long entityNum) {
-		this.type = type;
-		this.entityNum = entityNum;
-	}
-
-	public BlobType getType() {
-		return type;
-	}
-
-	public long getEntityNum() {
-		return entityNum;
-	}
-
-	@Override
-	public boolean equals(final Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o == null || BlobKey.class != o.getClass()) {
-			return false;
-		}
-		final var that = (BlobKey) o;
-		return this.type == that.type && this.entityNum == that.entityNum;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(type, entityNum);
-	}
-
-	@Override
-	public String toString() {
-		return "BlobKey{" +
-				"type=" + type +
-				", entityNum=" + entityNum +
-				'}';
+		final var result = type.hashCode();
+		return result * 31 + (int) MiscUtils.perm64(entityNum);
 	}
 
 	/**
@@ -82,19 +47,13 @@ public class BlobKey {
 	 * @return the blob type
 	 */
 	public static BlobType typeFromCharCode(final char code) {
-		switch (code) {
-			case 'f':
-				return FILE_DATA;
-			case 'k':
-				return FILE_METADATA;
-			case 's':
-				return CONTRACT_BYTECODE;
-			case 'd':
-				return CONTRACT_STORAGE;
-			case 'e':
-				return SYSTEM_DELETED_ENTITY_EXPIRY;
-			default:
-				throw new IllegalArgumentException("Invalid legacy code '" + code + "'");
-		}
+		return switch (code) {
+			case 'f' -> FILE_DATA;
+			case 'k' -> FILE_METADATA;
+			case 's' -> CONTRACT_BYTECODE;
+			case 'd' -> CONTRACT_STORAGE;
+			case 'e' -> SYSTEM_DELETED_ENTITY_EXPIRY;
+			default -> throw new IllegalArgumentException("Invalid legacy code '" + code + "'");
+		};
 	}
 }

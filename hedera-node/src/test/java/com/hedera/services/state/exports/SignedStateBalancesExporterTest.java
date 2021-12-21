@@ -27,11 +27,11 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -114,7 +114,8 @@ class SignedStateBalancesExporterTest {
 	private static final byte[] sig = "not-really-a-sig".getBytes();
 	private static final byte[] fileHash = "not-really-a-hash".getBytes();
 
-	private MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount, deletedAccount;
+	private MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount,
+			deletedAccount;
 
 	private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
 
@@ -326,8 +327,8 @@ class SignedStateBalancesExporterTest {
 
 		final var summary = subject.summarized(state);
 
-		assertEquals(ledgerFloat, summary.getTotalFloat().longValue());
-		assertEquals(expectedBalances, summary.getOrderedBalances());
+		assertEquals(ledgerFloat, summary.totalFloat().longValue());
+		assertEquals(expectedBalances, summary.orderedBalances());
 		assertThat(logCaptor.warnLogs(), contains(desiredWarning));
 	}
 

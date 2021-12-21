@@ -64,20 +64,20 @@ public class FeeAssessor {
 			List<FcAssessedCustomFee> accumulator,
 			ImpliedTransfersMeta.ValidationProps props
 	) {
-		if (changeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
+		if (changeManager.getLevelNo() > props.maxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
 		final var chargingToken = change.getToken();
 
 		final var feeMeta = customSchedulesManager.managedSchedulesFor(chargingToken);
 		final var payer = change.getAccount();
-		final var fees = feeMeta.getCustomFees();
+		final var fees = feeMeta.customFees();
 		/* Token treasuries are exempt from all custom fees */
-		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
+		if (fees.isEmpty() || feeMeta.treasuryId().equals(payer)) {
 			return OK;
 		}
 
-		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
+		final var maxBalanceChanges = props.maxXferBalanceChanges();
 		final var fixedFeeResult =
 				assessFixedFees(chargingToken, fees, payer, changeManager, accumulator, maxBalanceChanges);
 		if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {

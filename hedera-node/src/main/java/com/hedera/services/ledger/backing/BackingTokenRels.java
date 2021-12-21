@@ -48,17 +48,11 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	@Inject
 	public BackingTokenRels(Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate) {
 		this.delegate = delegate;
-		/* Existing rels view is re-built on restart or reconnect */
 	}
 
 	@Override
-	public void rebuildFromSources() {
-		/* No-op. */
-	}
-
-	@Override
-	public boolean contains(Pair<AccountID, TokenID> key) {
-		return delegate.get().containsKey(fromPairToEntityNumPair(key));
+	public boolean contains(final Pair<AccountID, TokenID> key) {
+		return delegate.get().containsKey(forMerkleMap(key));
 	}
 
 	@Override
@@ -68,8 +62,10 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void put(Pair<AccountID, TokenID> key, MerkleTokenRelStatus status) {
-		if (!delegate.get().containsKey(fromPairToEntityNumPair(key))) {
-			delegate.get().put(fromAccountTokenRel(key), status);
+		final var curTokenRels = delegate.get();
+		final var merkleKey = forMerkleMap(key);
+		if (!curTokenRels.containsKey(merkleKey)) {
+			curTokenRels.put(merkleKey, status);
 		}
 	}
 
@@ -101,7 +97,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		return String.format("%s <-> %s", readableId(rel.getLeft()), readableId(rel.getRight()));
 	}
 
-	private EntityNumPair fromPairToEntityNumPair(Pair<AccountID, TokenID> key) {
+	private EntityNumPair forMerkleMap(Pair<AccountID, TokenID> key) {
 		return EntityNumPair.fromLongs(key.getLeft().getAccountNum(),
 				key.getRight().getTokenNum());
 	}

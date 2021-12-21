@@ -20,42 +20,61 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEES;
+import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
 import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ImpliedTransfersMarshal {
 	private final FeeAssessor feeAssessor;
+	private final AliasManager aliasManager;
 	private final CustomFeeSchedules customFeeSchedules;
+	private final Supplier<AliasResolver> aliasResolverFactory;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final PureTransferSemanticChecks checks;
+	private final Predicate<CryptoTransferTransactionBody> aliasCheck;
 	private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
 	private final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory;
 
 	public ImpliedTransfersMarshal(
-			FeeAssessor feeAssessor,
-			CustomFeeSchedules customFeeSchedules,
-			GlobalDynamicProperties dynamicProperties,
-			PureTransferSemanticChecks checks,
-			BalanceChangeManager.ChangeManagerFactory changeManagerFactory,
-			Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory
+			final FeeAssessor feeAssessor,
+			final AliasManager aliasManager,
+			final CustomFeeSchedules customFeeSchedules,
+			final Supplier<AliasResolver> aliasResolverFactory,
+			final GlobalDynamicProperties dynamicProperties,
+			final PureTransferSemanticChecks checks,
+			final Predicate<CryptoTransferTransactionBody> aliasCheck,
+			final BalanceChangeManager.ChangeManagerFactory changeManagerFactory,
+			final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory
 	) {
 		this.checks = checks;
+		this.aliasCheck = aliasCheck;
+		this.aliasManager = aliasManager;
 		this.feeAssessor = feeAssessor;
+		this.aliasResolverFactory = aliasResolverFactory;
 		this.customFeeSchedules = customFeeSchedules;
 		this.dynamicProperties = dynamicProperties;
 		this.changeManagerFactory = changeManagerFactory;
@@ -64,6 +83,22 @@ public class ImpliedTransfersMarshal {
 
 	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
 		final var props = currentProps();
+
+		var numAutoCreations = 0;
+		Map<ByteString, EntityNum> resolvedAliases = NO_ALIASES;
+		if (aliasCheck.test(op)) {
+			final var aliasResolver = aliasResolverFactory.get();
+			op = aliasResolver.resolve(op, aliasManager);
+			if (aliasResolver.perceivedMissingAliases() > 0) {
+				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
+			} else if (aliasResolver.perceivedInvalidCreations() > 0) {
+				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ALIAS_KEY);
+			} else {
+				resolvedAliases = aliasResolver.resolutions();
+				numAutoCreations = aliasResolver.perceivedAutoCreations();
+			}
+		}
+
 		final var validity = checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props);
 		if (validity != OK) {
 			return ImpliedTransfers.invalid(props, validity);
@@ -74,17 +109,24 @@ public class ImpliedTransfersMarshal {
 			changes.add(changingHbar(aa));
 		}
 		if (!hasTokenChanges(op)) {
-			return ImpliedTransfers.valid(props, changes, Collections.emptyList(), Collections.emptyList());
+			return ImpliedTransfers.valid(
+					props, changes, NO_CUSTOM_FEE_META, NO_CUSTOM_FEES, resolvedAliases, numAutoCreations);
 		}
 
 		/* Add in the HTS balance changes from the transaction */
 		final var hbarOnly = changes.size();
 		appendToken(op, changes);
 
-		return assessCustomFeesAndValidate(changes, hbarOnly, props);
+		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
 	}
 
-	public ImpliedTransfers assessCustomFeesAndValidate(List<BalanceChange> changes, int hbarOnly, ImpliedTransfersMeta.ValidationProps props) {
+	public ImpliedTransfers assessCustomFeesAndValidate(
+			final int hbarOnly,
+			final int numAutoCreations,
+			final List<BalanceChange> changes,
+			final Map<ByteString, EntityNum> resolvedAliases,
+			final ImpliedTransfersMeta.ValidationProps props
+	) {
 		/* Construct the process objects for custom fee charging */
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);
@@ -102,7 +144,8 @@ public class ImpliedTransfersMarshal {
 			change = changeManager.nextAssessableChange();
 		}
 
-		return ImpliedTransfers.valid(props, changes, schedulesManager.metaUsed(), fees);
+		return ImpliedTransfers.valid(
+				props, changes, schedulesManager.metaUsed(), fees, resolvedAliases, numAutoCreations);
 	}
 
 	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {

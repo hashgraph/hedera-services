@@ -28,9 +28,41 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
+	CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAccountToAlias(FIRST_TOKEN_SENDER_ID, CURRENTLY_UNUSED_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAliasToAlias(CURRENTLY_UNUSED_ALIAS, NO_RECEIVER_SIG_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAccountToAlias(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
 	CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
@@ -42,6 +74,16 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		}
 	},
 	CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(RECEIVER_SIG_KT)
+							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
@@ -169,6 +211,16 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER_ALIAS, TOKEN_RECEIVER)
 							.get()
 			));
 		}

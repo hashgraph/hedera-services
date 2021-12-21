@@ -64,10 +64,10 @@ public class SignatoryUtils {
 	 * @param store
 	 * 		the store to retrieve the schedule from
 	 * @param validScheduleKeys
-	 * 		if present, a list of the relevant Ed25519 keys with valid signatures on the active
-	 * 		transaction (if absent, a linked Ed25519 key was expanded to an invalid signature)
+	 * 		if present, a list of the relevant primitive keys with valid signatures on the active
+	 * 		transaction (if absent, a linked primitive key was expanded to an invalid signature)
 	 * @param activationHelper
-	 * 		an information source on Ed25519 keys prerequisite to the relevant schedule
+	 * 		an information source on primitive keys prerequisite to the relevant schedule
 	 * @return a pair whose left element is the status result, right element is the ready-to-execute flag
 	 */
 	static Pair<ResponseCodeEnum, Boolean> witnessScoped(
@@ -88,6 +88,12 @@ public class SignatoryUtils {
 		return Pair.of(status, isReadyToExecute);
 	}
 
+	static boolean isReady(final MerkleSchedule schedule, final InHandleActivationHelper activationHelper) {
+		return activationHelper.areScheduledPartiesActive(
+				schedule.ordinaryViewOfScheduledTxn(),
+				(key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
+	}
+
 	private static ResponseCodeEnum witnessNonTriviallyScoped(
 			List<JKey> valid,
 			ScheduleID id,
@@ -95,7 +101,7 @@ public class SignatoryUtils {
 	) {
 		List<byte[]> signatories = new ArrayList<>();
 		for (JKey key : valid) {
-			appendIfUnique(signatories, key.getEd25519());
+			appendIfUnique(signatories, key.primitiveKeyIfPresent());
 		}
 		return witnessAnyNew(store, id, signatories) ? OK : NO_NEW_VALID_SIGNATURES;
 	}
@@ -109,17 +115,11 @@ public class SignatoryUtils {
 		l.add(bytes);
 	}
 
-	private static boolean isReady(MerkleSchedule schedule, InHandleActivationHelper activationHelper) {
-		return activationHelper.areScheduledPartiesActive(
-				schedule.ordinaryViewOfScheduledTxn(),
-				(key, sig) -> schedule.hasValidEd25519Signature(key.getEd25519()));
-	}
-
 	private static boolean witnessAnyNew(ScheduleStore store, ScheduleID id, List<byte[]> signatories) {
 		var witnessedNew = new AtomicBoolean(false);
 		store.apply(id, schedule -> {
 			for (byte[] key : signatories) {
-				if (schedule.witnessValidEd25519Signature(key)) {
+				if (schedule.witnessValidSignature(key)) {
 					witnessedNew.set(true);
 				}
 			}

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.TopLevelAutoCreation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -45,6 +47,10 @@ import javax.inject.Singleton;
 
 @Module
 public abstract class LedgerModule {
+	@Binds
+	@Singleton
+	public abstract AutoCreationLogic bindAutoCreationLogic(TopLevelAutoCreation topLevelAutoCreation);
+
 	@Binds
 	@Singleton
 	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
@@ -66,9 +72,9 @@ public abstract class LedgerModule {
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final AutoCreationLogic autoCreationLogic,
 			final TransferLogic transferLogic
-			) {
-
+	) {
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,
@@ -78,7 +84,8 @@ public abstract class LedgerModule {
 				recordsHistorian,
 				dynamicProperties,
 				accountsLedger,
-				transferLogic);
+				transferLogic,
+				autoCreationLogic);
 		ledger.setTokenViewsManager(uniqueTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);

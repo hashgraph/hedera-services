@@ -46,6 +46,7 @@ public class SafeLookupResult<T> {
 
 	private static final EnumMap<KeyOrderingFailure, SafeLookupResult<?>> KNOWN_FAILURES =
 			new EnumMap<>(KeyOrderingFailure.class);
+
 	static {
 		KNOWN_FAILURES.put(MISSING_FILE, new SafeLookupResult<>(MISSING_FILE));
 		KNOWN_FAILURES.put(MISSING_TOKEN, new SafeLookupResult<>(MISSING_TOKEN));
@@ -69,7 +70,7 @@ public class SafeLookupResult<T> {
 
 	@SuppressWarnings("unchecked")
 	public static <R> SafeLookupResult<R> failure(KeyOrderingFailure type) {
-		return (SafeLookupResult<R>)KNOWN_FAILURES.get(type);
+		return (SafeLookupResult<R>) KNOWN_FAILURES.get(type);
 	}
 
 	public boolean succeeded() {
@@ -86,8 +87,9 @@ public class SafeLookupResult<T> {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(SafeLookupResult.class)
-				.add("failure", failure)
-				.toString();
+		final var helper = MoreObjects.toStringHelper(SafeLookupResult.class)
+				.add("failure", failure);
+		metadata.ifPresent(meta -> helper.add("metadata", meta));
+		return helper.toString();
 	}
 }

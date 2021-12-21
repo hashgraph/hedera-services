@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
@@ -161,6 +162,8 @@ class BasicTransactionContextTest {
 	private EntityCreator creator;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private EntityIdSource ids;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -170,7 +173,7 @@ class BasicTransactionContextTest {
 	@BeforeEach
 	private void setup() {
 		subject = new BasicTransactionContext(
-				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker);
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids);
 
 		subject.resetFor(accessor, now, memberId);
 
@@ -281,6 +284,7 @@ class BasicTransactionContextTest {
 		// and:
 		verify(narratedCharging).resetForTxn(accessor, memberId);
 		verify(sideEffectsTracker, times(2)).reset();
+		verify(ids, times(2)).resetProvisionalIds();
 	}
 
 	@Test
@@ -593,8 +597,6 @@ class BasicTransactionContextTest {
 	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
-
-		// when:
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
 	}
 

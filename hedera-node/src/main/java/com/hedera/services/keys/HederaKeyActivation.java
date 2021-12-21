@@ -39,9 +39,17 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
 /**
  * Provides a static method to determine if a Hedera key is <i>active</i> relative to
  * a set of platform signatures corresponding to its simple keys.
+ *
  * @see JKey
  */
 public final class HederaKeyActivation {
+	private static final int ED25519_PUBLIC_KEY_LEN = 32;
+	private static final int SECP256K1_COORDINATE_LEN = 32;
+	private static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
+	private static final int UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 64;
+
+	private static final byte PARITY_MASK = (byte) 0x01;
+
 	public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, TransactionSignature> ONLY_IF_SIG_IS_VALID =
@@ -56,9 +64,9 @@ public final class HederaKeyActivation {
 	 * taken together, activate the payer's Hedera key.
 	 *
 	 * @param accessor
-	 * 		the txn to evaluate.
+	 * 		the txn to evaluate
 	 * @param validity
-	 * 		the logic deciding if a given simple key is activated by a given platform sig.
+	 * 		the logic deciding if a given simple key is activated by a given platform sig
 	 * @return whether the payer's Hedera key is active
 	 */
 	public static boolean payerSigIsActive(
@@ -86,12 +94,12 @@ public final class HederaKeyActivation {
 	 * of the Hedera key tree structure encounters the corresponding simple keys.
 	 *
 	 * @param key
-	 * 		the top-level Hedera key to test for activation.
+	 * 		the top-level Hedera key to test for activation
 	 * @param sigsFn
-	 * 		the source of platform signatures for the simple keys in the Hedera key.
+	 * 		the source of platform signatures for the simple keys in the Hedera key
 	 * @param validity
-	 * 		the logic deciding if a given simple key is activated by a given platform sig.
-	 * @return whether the Hedera key is active.
+	 * 		the logic deciding if a given simple key is activated by a given platform sig
+	 * @return whether the Hedera key is active
 	 */
 	public static boolean isActive(
 			final JKey key,
@@ -107,9 +115,7 @@ public final class HederaKeyActivation {
 			final BiPredicate<JKey, TransactionSignature> validity,
 			final KeyActivationCharacteristics characteristics
 	) {
-		if (!key.hasKeyList() && !key.hasThresholdKey()) {
-			return validity.test(key, sigsFn.apply(key.getEd25519()));
-		} else {
+		if (key.hasKeyList() || key.hasThresholdKey()) {
 			final var children = key.hasKeyList()
 					? key.getKeyList().getKeysList()
 					: key.getThresholdKey().getKeys().getKeysList();
@@ -123,6 +129,12 @@ public final class HederaKeyActivation {
 				}
 			}
 			return n >= m;
+		} else if (key.hasEd25519Key()) {
+			return validity.test(key, sigsFn.apply(key.getEd25519()));
+		} else if (key.hasECDSAsecp256k1Key()) {
+			return validity.test(key, sigsFn.apply(key.getECDSASecp256k1Key()));
+		} else {
+			return validity.test(key, INVALID_MISSING_SIG);
 		}
 	}
 
@@ -130,18 +142,36 @@ public final class HederaKeyActivation {
 	 * Factory for a source of platform signatures backed by a list.
 	 *
 	 * @param sigs
-	 * 		the backing list of platform sigs.
-	 * @return a supplier that produces the backing list sigs by public key.
+	 * 		the backing list of platform sigs
+	 * @return a supplier that produces the backing list sigs by public key
 	 */
 	public static Function<byte[], TransactionSignature> pkToSigMapFrom(final List<TransactionSignature> sigs) {
-		return key -> {
+		return pk -> {
 			for (var sig : sigs) {
-				if (Arrays.equals(key, sig.getExpandedPublicKeyDirect())) {
+				if (keysMatch(pk, sig.getExpandedPublicKeyDirect())) {
 					return sig;
 				}
 			}
 			return INVALID_MISSING_SIG;
 		};
+	}
+
+	static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
+		if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
+			return Arrays.equals(sourceKey, sigKey);
+		} else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
+			final var xCoordsMatch = Arrays.equals(
+					sourceKey, 1, COMPRESSED_SECP256K1_PUBLIC_KEY_LEN,
+					sigKey, 0, SECP256K1_COORDINATE_LEN);
+			if (!xCoordsMatch) {
+				return false;
+			} else {
+				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords. */
+				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
+			}
+		} else {
+			return false;
+		}
 	}
 
 	private static class InvalidSignature extends TransactionSignature {
