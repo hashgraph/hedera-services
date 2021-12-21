@@ -102,6 +102,24 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
+	void canUndoCreations() {
+		subject.begin();
+
+		subject.create(2L);
+
+		subject.undoCreations();
+
+		subject.commit();
+
+		verify(backingAccounts, never()).put(any(), any());
+	}
+
+	@Test
+	void canUndoCreationsOnlyInTxn() {
+		assertThrows(IllegalStateException.class, subject::undoCreations);
+	}
+
+	@Test
 	void rollbackClearsChanges() {
 		given(backingAccounts.contains(1L)).willReturn(true);
 

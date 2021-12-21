@@ -25,10 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public final class CongestionMultipliers {
-	private final int[] usagePercentTriggers;
-	private final long[] multipliers;
-
+public final record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
 	public static CongestionMultipliers from(final String csv) {
 		final List<Integer> triggers = new ArrayList<>();
 		final List<Long> multipliers = new ArrayList<>();
@@ -109,23 +106,11 @@ public final class CongestionMultipliers {
 		return s.substring(0, i);
 	}
 
-	private CongestionMultipliers(final int[] usagePercentTriggers, final long[] multipliers) {
-		this.usagePercentTriggers = usagePercentTriggers;
-		this.multipliers = multipliers;
-	}
-
-	public int[] usagePercentTriggers() {
-		return usagePercentTriggers;
-	}
-
-	public long[] multipliers() {
-		return multipliers;
-	}
-
 	@Override
 	public int hashCode() {
 		return Objects.hash(Arrays.hashCode(usagePercentTriggers), Arrays.hashCode(multipliers));
 	}
+
 
 	@Override
 	public boolean equals(final Object o) {

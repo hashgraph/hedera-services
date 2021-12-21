@@ -71,7 +71,7 @@ public class TokenSigningMetadata {
 				if (fee.getFeeType() != FcCustomFee.FeeType.ROYALTY_FEE) {
 					continue;
 				}
-				if (fee.getRoyaltyFeeSpec().getFallbackFee() != null) {
+				if (fee.getRoyaltyFeeSpec().fallbackFee() != null) {
 					hasRoyaltyWithFallback = true;
 					break;
 				}

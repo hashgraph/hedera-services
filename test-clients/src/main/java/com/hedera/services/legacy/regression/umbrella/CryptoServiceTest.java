@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
@@ -1179,7 +1180,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 */
 	public TransactionReceipt transfer(Transaction transferTxSigned) throws Throwable {
 		log.info("\n-----------------------------------\ntransfer: request = "
-				+ com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transferTxSigned));
+				+ TxnUtils.toReadableString(transferTxSigned));
 		TransactionResponse response = retryLoopTransaction(transferTxSigned, "transfer");
 		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
 		Assertions.assertNotNull(response);

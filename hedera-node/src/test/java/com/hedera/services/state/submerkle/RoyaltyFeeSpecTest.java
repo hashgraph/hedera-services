@@ -117,9 +117,9 @@ class RoyaltyFeeSpecTest {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
 
-		assertEquals(1, a.getNumerator());
-		assertEquals(10, a.getDenominator());
-		assertSame(fallback, a.getFallbackFee());
+		assertEquals(1, a.numerator());
+		assertEquals(10, a.denominator());
+		assertSame(fallback, a.fallbackFee());
 		assertTrue(a.hasFallbackFee());
 	}
 
@@ -127,8 +127,8 @@ class RoyaltyFeeSpecTest {
 	void toStringWorks() {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
-		final var desired = "RoyaltyFeeSpec{numerator=1, denominator=10, " +
-				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}}";
+		final var desired = "RoyaltyFeeSpec[numerator=1, denominator=10, " +
+				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}]";
 
 		assertEquals(desired, a.toString());
 	}

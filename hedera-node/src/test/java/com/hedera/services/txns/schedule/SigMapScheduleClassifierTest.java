@@ -21,6 +21,8 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -57,9 +59,10 @@ class SigMapScheduleClassifierTest {
 			.build();
 	static SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(aPair).build();
 
-	static JKey a = new JEd25519Key(pretendKeyStartingWith(aPrefix));
+	static JKey a = new JECDSASecp256k1Key(pretendKeyStartingWith(aPrefix));
 	static JKey both = new JEd25519Key(pretendKeyStartingWith(abPrefix));
 	static JKey neither = new JEd25519Key(pretendKeyStartingWith(cPrefix));
+	static JKey incomparable = new JContractIDKey(0, 0, 1234);
 
 	@Mock
 	Function<byte[], TransactionSignature> sigsFn;
@@ -67,8 +70,16 @@ class SigMapScheduleClassifierTest {
 	SigMapScheduleClassifier subject = new SigMapScheduleClassifier();
 
 	@Test
+	void returnsEmptyOptionalIfNonPrimitiveInner() {
+		var answer = subject.validScheduleKeys(List.of(incomparable), sigMap, sigsFn, new MatchingInvalidASig());
+
+		// then:
+		assertEquals(Optional.empty(), answer);
+	}
+
+	@Test
 	void returnsEmptyOptionalIfInvalidInner() {
-		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(INVALID_MISSING_SIG);
+		given(sigsFn.apply(eq(a.getECDSASecp256k1Key()))).willReturn(INVALID_MISSING_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
@@ -79,7 +90,7 @@ class SigMapScheduleClassifierTest {
 
 	@Test
 	void ignoresInvalidInnerIfMatchingOuter() {
-		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
+		given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(VALID_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());

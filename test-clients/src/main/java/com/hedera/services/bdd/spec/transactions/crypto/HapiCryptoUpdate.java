@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -37,6 +38,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -55,7 +57,9 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,7 +69,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	private boolean useContractKey = false;
 	private boolean skipNewKeyRegistryUpdate = false;
-	private final String account;
+	private String account;
+	private String aliasKeySource = null;
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
@@ -76,9 +81,19 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
+	}
+
+	public HapiCryptoUpdate(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+		} else {
+			account = reference;
+		}
 	}
 
 	public HapiCryptoUpdate notUpdatingRegistryWithNewKey() {
@@ -153,8 +168,17 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		try {
 			updKey = updKeyName.map(spec.registry()::getKey);
-		} catch (Exception ignore) { }
-		var id = TxnUtils.asId(account, spec);
+		} catch (Exception ignore) {
+		}
+		AccountID id;
+
+		if (referenceType == ReferenceType.REGISTRY_NAME) {
+			id = TxnUtils.asId(account, spec);
+		} else {
+			id = asIdForKeyLookUp(aliasKeySource, spec);
+			account = asAccountString(id);
+		}
+
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()
 				.<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
@@ -178,7 +202,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 									builder.setSendRecordThresholdWrapper(
 											UInt64Value.newBuilder().setValue(v).build()));
 							newExpiry.ifPresent(l ->
-								builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
+									builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 						}

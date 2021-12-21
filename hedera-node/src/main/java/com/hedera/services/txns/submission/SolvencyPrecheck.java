@@ -102,7 +102,7 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerStatus = queryableAccountStatus(accessor.getPayer(), accounts.get());
+		final var payerStatus = queryableAccountStatus(EntityNum.fromAccountId(accessor.getPayer()), accounts.get());
 		if (payerStatus != OK) {
 			return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
 		}

@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -65,11 +66,18 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
+	private AccountID newAccountId = null;
+	private ByteString newAccountAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
 	public SideEffectsTracker() {
 		/* For Dagger2 */
+	}
+
+	public void trackAutoCreation(final AccountID accountID, final ByteString alias){
+		this.newAccountId = accountID;
+		this.newAccountAlias = alias;
 	}
 
 	/**
@@ -173,6 +181,18 @@ public class SideEffectsTracker {
 	 */
 	public TokenID getTrackedNewTokenId() {
 		return newTokenId;
+	}
+
+	public boolean hasAutoCreation() {
+		return newAccountId != null;
+	}
+
+	public ByteString getAutoCreatedAccountAlias() {
+		return newAccountAlias;
+	}
+
+	public AccountID getAutoCreatedAccountId() {
+		return newAccountId;
 	}
 
 	/**
@@ -365,6 +385,8 @@ public class SideEffectsTracker {
 	public void reset() {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
+		newAccountId = null;
+		newAccountAlias = ByteString.EMPTY;
 	}
 
 	/**

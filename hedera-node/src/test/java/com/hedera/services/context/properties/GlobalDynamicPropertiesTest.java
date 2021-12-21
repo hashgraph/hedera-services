@@ -157,6 +157,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(44L, subject.maxNftMints());
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
+		assertEquals(51L, subject.triggerTxnWindBackNanos());
 	}
 
 	@Test
@@ -241,6 +242,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(45L, subject.maxNftMints());
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
+		assertEquals(52L, subject.triggerTxnWindBackNanos());
 	}
 
 	@Test
@@ -319,6 +321,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxRefundPercentOfGasLimit")).willReturn(i + 47);
 		given(properties.getLongProperty("contracts.frontendThrottleMaxGasLimit")).willReturn(i + 48L);
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
+		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

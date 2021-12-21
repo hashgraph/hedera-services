@@ -194,23 +194,7 @@ public class DeterministicThrottle {
 				.toString();
 	}
 
-	public static class UsageSnapshot {
-		private final long used;
-		private final Instant lastDecisionTime;
-
-		public UsageSnapshot(final long used, final Instant lastDecisionTime) {
-			this.used = used;
-			this.lastDecisionTime = lastDecisionTime;
-		}
-
-		public long used() {
-			return used;
-		}
-
-		public Instant lastDecisionTime() {
-			return lastDecisionTime;
-		}
-
+	public static record UsageSnapshot(long used, Instant lastDecisionTime) {
 		@Override
 		public String toString() {
 			final var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
@@ -220,23 +204,6 @@ public class DeterministicThrottle {
 					.append(lastDecisionTime == NEVER ? "<N/A>" : lastDecisionTime)
 					.append("}")
 					.toString();
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (o == this) {
-				return true;
-			}
-			if (o == null || !o.getClass().equals(UsageSnapshot.class)) {
-				return false;
-			}
-			final var that = (UsageSnapshot) o;
-			return this.used == that.used && Objects.equals(this.lastDecisionTime, that.lastDecisionTime);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(used, lastDecisionTime);
 		}
 	}
 

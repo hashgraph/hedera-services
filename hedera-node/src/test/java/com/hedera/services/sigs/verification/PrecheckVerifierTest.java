@@ -23,7 +23,7 @@ package com.hedera.services.sigs.verification;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
-import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -89,8 +89,8 @@ class PrecheckVerifierTest {
 		reqKeys = List.of(
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());
-		expectedSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
-				reqKeys, VALID_PROVIDER_FACTORY.get(), new BodySigningSigFactory(realAccessor)
+		expectedSigs = PlatformSigOps.createCryptoSigsFrom(
+				reqKeys, VALID_PROVIDER_FACTORY.get(), new ReusableBodySigningFactory(realAccessor)
 		).getPlatformSigs();
 	}
 

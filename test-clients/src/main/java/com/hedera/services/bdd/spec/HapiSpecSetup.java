@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
@@ -35,7 +36,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 public class HapiSpecSetup {
 	private static final Logger log = LogManager.getLogger(HapiSpecSetup.class);
@@ -175,6 +174,9 @@ public class HapiSpecSetup {
 	}
 	public byte[] defaultFileContents() {
 		return props.getBytes("default.file.contents");
+	}
+	public SigControl.KeyAlgo defaultKeyAlgo() {
+		return props.getKeyAlgorithm("default.keyAlgorithm");
 	}
 	public KeyType defaultKeyType() {
 		return props.getKeyType("default.keyType");
