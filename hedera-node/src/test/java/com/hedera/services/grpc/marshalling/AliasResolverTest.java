@@ -60,10 +60,6 @@ class AliasResolverTest {
 	}
 
 	@Test
-	void detectsInvalidCreations() {
-	}
-
-	@Test
 	void transformsTokenAdjusts() {
 		final var unresolved = aaId(bNum.longValue(), theAmount);
 		final var op = CryptoTransferTransactionBody.newBuilder()
