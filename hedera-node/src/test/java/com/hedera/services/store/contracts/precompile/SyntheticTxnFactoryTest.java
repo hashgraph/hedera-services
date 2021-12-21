@@ -42,7 +42,7 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedCryptoCreate() {
 		final var balance = 10L;
 		final var alias = KeyFactory.getDefaultInstance().newEd25519();
-		final var result = subject.cryptoCreate(alias, balance);
+		final var result = subject.createAccount(alias, balance);
 		final var txnBody = result.build();
 
 		assertTrue(txnBody.hasCryptoCreateAccount());
@@ -130,7 +130,7 @@ class SyntheticTxnFactoryTest {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
 
-		final var result = subject.createCryptoTransfer(Collections.singletonList(new SyntheticTxnFactory.TokenTransferList(
+		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				List.of(nftExchange),
 				List.of(fungibleTransfer))));
 		final var txnBody = result.build();

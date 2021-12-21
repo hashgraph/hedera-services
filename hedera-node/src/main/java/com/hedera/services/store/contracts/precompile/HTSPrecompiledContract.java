@@ -522,7 +522,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	private class TransferPrecompile implements Precompile {
-		private List<SyntheticTxnFactory.TokenTransferList> transferOp;
+		private List<TokenTransferWrapper> transferOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -538,13 +538,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return syntheticTxnFactory.createCryptoTransfer(transferOp);
 		}
 
-		private List<BalanceChange> constructBalanceChanges(final List<SyntheticTxnFactory.TokenTransferList> transferOp) {
+		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
 			final List<BalanceChange> allChanges = new ArrayList<>();
-			for(final SyntheticTxnFactory.TokenTransferList tokenTransferList: transferOp) {
+			for(final TokenTransferWrapper tokenTransferWrapper : transferOp) {
 				final List<BalanceChange> changes = new ArrayList<>();
 
-				for (final SyntheticTxnFactory.FungibleTokenTransfer fungibleTransfer :
-						tokenTransferList.getFungibleTransfers()) {
+				for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
 					if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
 						changes.addAll(List.of(
 								BalanceChange.changingFtUnits(
@@ -578,7 +577,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 
 				if (changes.isEmpty()) {
-					for (final var nftExchange : tokenTransferList.getNftExchanges()) {
+					for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
 						changes.add(
 								BalanceChange.changingNftOwnership(
 										Id.fromGrpcToken(nftExchange.getTokenType()),

@@ -449,7 +449,7 @@ class TransferPrecompilesTest {
 				UNUSABLE_AUTO_CREATION,
 				recordsHistorian
 		)).willReturn(transferLogic);
-		given(decoder.decodeTransferToken(pretendArguments)).willReturn(Collections.singletonList(tokenTransferList));
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
@@ -522,37 +522,37 @@ class TransferPrecompilesTest {
 					null,
 					receiver
 			);
-	private static final SyntheticTxnFactory.TokenTransferList tokenTransferList = new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
 			new ArrayList<>() {
 			},
 			List.of(transfer)
 	);
-	private static final SyntheticTxnFactory.TokenTransferList tokensTransferList =
-			new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper tokensTransferList =
+			new TokenTransferWrapper(
 					new ArrayList<>() {
 					},
 					List.of(transfer, transfer)
 			);
-	private static final SyntheticTxnFactory.TokenTransferList tokensTransferListSenderOnly =
-			new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper tokensTransferListSenderOnly =
+			new TokenTransferWrapper(
 					new ArrayList<>() {
 					},
 					List.of(transferSenderOnly, transferSenderOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferList tokensTransferListReceiverOnly =
-			new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper tokensTransferListReceiverOnly =
+			new TokenTransferWrapper(
 					new ArrayList<>() {
 					},
 					List.of(transferReceiverOnly, transferReceiverOnly)
 			);
-	private static final SyntheticTxnFactory.TokenTransferList nftTransferList =
-			new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper nftTransferList =
+			new TokenTransferWrapper(
 					List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
 					new ArrayList<>() {
 					}
 			);
-	private static final SyntheticTxnFactory.TokenTransferList nftsTransferList =
-			new SyntheticTxnFactory.TokenTransferList(
+	private static final TokenTransferWrapper nftsTransferList =
+			new TokenTransferWrapper(
 					List.of(
 							new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
 							new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)

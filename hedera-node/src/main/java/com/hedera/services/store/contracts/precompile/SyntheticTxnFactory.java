@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -75,18 +76,18 @@ public class SyntheticTxnFactory {
 	}
 
 	public TransactionBody.Builder createCryptoTransfer(
-			final List<TokenTransferList> tokenTransferLists
+			final List<TokenTransferWrapper> tokenTransferWrappers
 	) {
 		final var builder = CryptoTransferTransactionBody.newBuilder();
 
-		for (final TokenTransferList tokenTransferList : tokenTransferLists) {
-			for (final var nftExchange : tokenTransferList.getNftExchanges()) {
-				builder.addTokenTransfers(com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
+		for (final TokenTransferWrapper tokenTransferWrapper : tokenTransferWrappers) {
+			for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
+				builder.addTokenTransfers(TokenTransferList.newBuilder()
 						.setToken(nftExchange.getTokenType())
 						.addNftTransfers(nftExchange.nftTransfer()));
 			}
-			for (final var fungibleTransfer : tokenTransferList.getFungibleTransfers()) {
-				final var tokenTransferListBuilder = com.hederahashgraph.api.proto.java.TokenTransferList.newBuilder()
+			for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
+				final var tokenTransferListBuilder = TokenTransferList.newBuilder()
 						.setToken(fungibleTransfer.getDenomination());
 
 				if (fungibleTransfer.sender != null) {
@@ -117,6 +118,16 @@ public class SyntheticTxnFactory {
 		builder.addAllTokens(dissociation.tokenIds());
 
 		return TransactionBody.newBuilder().setTokenDissociate(builder);
+	}
+
+	public TransactionBody.Builder createAccount(final Key alias, final long balance) {
+		final var txnBody = CryptoCreateTransactionBody.newBuilder()
+				.setKey(alias)
+				.setMemo(AUTO_MEMO)
+				.setInitialBalance(balance)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+				.build();
+		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
 	}
 
 	public static class HbarTransfer {
@@ -175,41 +186,6 @@ public class SyntheticTxnFactory {
 
 		public TokenID getTokenType() {
 			return tokenType;
-		}
-	}
-
-	public TransactionBody.Builder cryptoCreate(Key alias, long balance) {
-		final var txnBody = CryptoCreateTransactionBody.newBuilder()
-				.setKey(alias)
-				.setMemo(AUTO_MEMO)
-				.setInitialBalance(balance)
-				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
-				.build();
-
-		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
-	}
-
-	public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
-		return new Dissociation(accountId, tokenIds);
-	}
-
-
-	public static class TokenTransferList {
-		private final List<SyntheticTxnFactory.NftExchange> nftExchanges;
-		private final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers;
-
-		public TokenTransferList(final List<SyntheticTxnFactory.NftExchange> nftExchanges,
-								 final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers) {
-			this.nftExchanges = nftExchanges;
-			this.fungibleTransfers = fungibleTransfers;
-		}
-
-		public List<SyntheticTxnFactory.NftExchange> getNftExchanges() {
-			return nftExchanges;
-		}
-
-		public List<SyntheticTxnFactory.FungibleTokenTransfer> getFungibleTransfers() {
-			return fungibleTransfers;
 		}
 	}
 }
