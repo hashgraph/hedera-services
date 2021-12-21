@@ -29,4 +29,5 @@ import com.hederahashgraph.api.proto.java.AccountID;
  */
 public interface AccountSigMetaLookup {
 	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
+	SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
 }

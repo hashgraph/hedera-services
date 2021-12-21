@@ -63,8 +63,8 @@ public class ExpiryManager {
 	ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
 	the same expiry is that we round expiration times to a consensus second. */
 	private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator
-			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::getExpiry)
-			.thenComparingLong(ee -> ee.getId().getKey());
+			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::expiry)
+			.thenComparingLong(ee -> ee.id().getKey());
 
 	private final long shard;
 	private final long realm;

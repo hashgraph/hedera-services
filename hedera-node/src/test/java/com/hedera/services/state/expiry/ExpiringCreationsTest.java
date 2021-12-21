@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -54,6 +55,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -128,7 +130,7 @@ class ExpiringCreationsTest {
 			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] { 123L }));
 	private static final List<FcTokenAssociation> newTokenAssociations = List.of(
 			new FcTokenAssociation(customFeeToken.num(), customFeeCollector.num()));
-	
+
 	@BeforeEach
 	void setup() {
 		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts);
@@ -149,7 +151,8 @@ class ExpiringCreationsTest {
 
 		final var record = subject.createSuccessfulSyntheticRecord(
 				customFeesCharged,
-				sideEffectsTracker);
+				sideEffectsTracker,
+				EMPTY_MEMO);
 
 		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
 		assertEquals(tokensExpected, record.getTokens());
@@ -190,8 +193,52 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void includesMintedSerialNos() {
+		final var mockMints = List.of(1L, 2L);
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertArrayEquals(mockMints.stream().mapToLong(l -> l).toArray(), created.getReceipt().getSerialNumbers());
+	}
+
+	@Test
+	void includesAutoCreatedAliases() {
+		final var mockAlias = ByteString.copyFromUtf8("make-believe");
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		given(sideEffectsTracker.hasAutoCreation()).willReturn(true);
+		given(sideEffectsTracker.getAutoCreatedAccountId()).willReturn(effPayer);
+		given(sideEffectsTracker.getAutoCreatedAccountAlias()).willReturn(mockAlias);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
+		assertEquals(mockAlias, created.getAlias());
+	}
+
+	@Test
 	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
-		setupTrackerNoTokenChanges();
+		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
 
 		final var created = subject.createTopLevelRecord(
@@ -256,7 +303,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(netTokenChanges);
 	}
 
-	private void setupTrackerNoTokenChanges() {
+	private void setupTrackerNoUnitOrOwnershipChanges() {
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(transfers);
 		given(sideEffectsTracker.getTrackedAutoAssociations()).willReturn(newTokenAssociations);
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(List.of());

@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,7 +52,8 @@ class AssetsLoader {
 	 * 0.9 for operations that create new entities, and 0.2 for other operations.
 	 *
 	 * @return the "weight" of the constant term for each operation
-	 * @throws IOException if the backing JSON resource cannot be loaded
+	 * @throws IOException
+	 * 		if the backing JSON resource cannot be loaded
 	 */
 	Map<HederaFunctionality, BigDecimal> loadConstWeights() throws IOException {
 		if (cachedConstWeights != null) {
@@ -80,7 +81,8 @@ class AssetsLoader {
 	 * and are just compared to infer the relative scarcity of each resource.
 	 *
 	 * @return the network "capacity" of each resource type
-	 * @throws IOException if the backing JSON resource cannot be loaded
+	 * @throws IOException
+	 * 		if the backing JSON resource cannot be loaded
 	 */
 	Map<UsableResource, BigDecimal> loadCapacities() throws IOException {
 		if (cachedCapacities != null) {
@@ -93,8 +95,8 @@ class AssetsLoader {
 			final Map<UsableResource, BigDecimal> typedCapacities = new EnumMap<>(UsableResource.class);
 			capacities.forEach((resourceName, amount) -> {
 				final var resource = UsableResource.valueOf((String) resourceName);
-				final var bdAmount = (amount instanceof Long)
-						? BigDecimal.valueOf((Long) amount)
+				final var bdAmount = (amount instanceof Long val)
+						? BigDecimal.valueOf(val)
 						: BigDecimal.valueOf((Integer) amount);
 				typedCapacities.put(resource, bdAmount);
 			});
@@ -111,7 +113,8 @@ class AssetsLoader {
 	 * TOKEN_NON_FUNGIBLE_UNIQUE, and TOKEN_FUNGIBLE_COMMON.)
 	 *
 	 * @return the desired per-type prices, in USD
-	 * @throws IOException if the backing JSON resource cannot be loaded
+	 * @throws IOException
+	 * 		if the backing JSON resource cannot be loaded
 	 */
 	Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
 		if (cachedCanonicalPrices != null) {
@@ -128,8 +131,8 @@ class AssetsLoader {
 				final Map<SubType, BigDecimal> scopedPrices = new EnumMap<>(SubType.class);
 				((Map) priceMap).forEach((typeName, price) -> {
 					final var type = SubType.valueOf((String) typeName);
-					final var bdPrice = (price instanceof Double)
-							? BigDecimal.valueOf((Double) price)
+					final var bdPrice = (price instanceof Double val)
+							? BigDecimal.valueOf(val)
 							: BigDecimal.valueOf((Integer) price);
 					scopedPrices.put(type, bdPrice);
 				});

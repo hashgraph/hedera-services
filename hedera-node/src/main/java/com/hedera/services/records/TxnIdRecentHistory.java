@@ -40,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingLong;
-import static java.util.stream.Collectors.toList;
 
 public class TxnIdRecentHistory {
 	private static final Comparator<RichInstant> RI_CMP =
@@ -69,7 +68,7 @@ public class TxnIdRecentHistory {
 	public List<ExpirableTxnRecord> duplicateRecords() {
 		return Stream.concat(classifiableDuplicates(), unclassifiableDuplicates())
 				.sorted(CONSENSUS_TIME_COMPARATOR)
-				.collect(toList());
+				.toList();
 	}
 
 	private Stream<ExpirableTxnRecord> classifiableDuplicates() {

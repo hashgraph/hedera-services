@@ -89,6 +89,7 @@ public class GlobalDynamicProperties {
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
+	private long triggerTxnWindBackNanos;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -160,6 +161,7 @@ public class GlobalDynamicProperties {
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 	}
 
 	public int maxTokensPerAccount() {
@@ -360,5 +362,9 @@ public class GlobalDynamicProperties {
 
 	public long consensusThrottleGasLimit() {
 		return consensusThrottleMaxGasLimit;
+        }
+
+	public long triggerTxnWindBackNanos() {
+		return triggerTxnWindBackNanos;
 	}
 }

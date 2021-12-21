@@ -20,11 +20,14 @@ package com.hedera.services.legacy.unit.utils;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Base64;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,5 +47,11 @@ class CommonUtilsTest {
 
 		assertTrue(NetworkCtxManager.inSameUtcDay(instant2_1, instant2_2));
 		assertTrue(NetworkCtxManager.inSameUtcDay(instant2_2, instant2_3));
+	}
+
+	@Test
+	void base64EncodesAsExpected() {
+		final var someBytes = "abcdefg".getBytes();
+		assertEquals(Base64.getEncoder().encodeToString(someBytes), CommonUtils.base64encode(someBytes));
 	}
 }

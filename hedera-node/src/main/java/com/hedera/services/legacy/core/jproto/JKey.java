@@ -39,6 +39,11 @@ import java.util.Objects;
 public abstract class JKey {
 	static final int MAX_KEY_DEPTH = 15;
 
+	private static final byte[] MISSING_RSA_3072_KEY = new byte[0];
+	private static final byte[] MISSING_ED25519_KEY = new byte[0];
+	private static final byte[] MISSING_ECDSA_384_KEY = new byte[0];
+	private static final byte[] MISSING_ECDSA_SECP256K1_KEY = new byte[0];
+
 	private boolean forScheduledTxn = false;
 
 	/**
@@ -116,6 +121,9 @@ public abstract class JKey {
 			rv = new JRSA_3072Key(pubKeyBytes);
 		} else if (key.getContractID().getContractNum() != 0) {
 			rv = new JContractIDKey(key.getContractID());
+		} else if (!key.getECDSASecp256K1().isEmpty()) {
+			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
+			rv = new JECDSASecp256k1Key(pubKeyBytes);
 		} else if (key.getDelegatableContractId().getContractNum() != 0) {
 			rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
 		} else {
@@ -144,6 +152,8 @@ public abstract class JKey {
 			rv = Key.newBuilder().setRSA3072(ByteString.copyFrom(jkey.getRSA3072())).build();
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
+		} else if (jkey.hasECDSAsecp256k1Key()) {
+			rv = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key())).build();
 		} else if (jkey.hasDelegatableContractId()) {
 			rv = Key.newBuilder().setDelegatableContractId(jkey.getDelegatableContractIdKey().getContractID()).build();
 		} else {
@@ -251,6 +261,10 @@ public abstract class JKey {
 		return false;
 	}
 
+	public boolean hasECDSAsecp256k1Key() {
+		return false;
+	}
+
 	public boolean hasRSA_3072Key() {
 		return false;
 	}
@@ -288,15 +302,19 @@ public abstract class JKey {
 	}
 
 	public byte[] getEd25519() {
-		return null;
+		return MISSING_ED25519_KEY;
 	}
 
 	public byte[] getECDSA384() {
-		return null;
+		return MISSING_ECDSA_384_KEY;
+	}
+
+	public byte[] getECDSASecp256k1Key() {
+		return MISSING_ECDSA_SECP256K1_KEY;
 	}
 
 	public byte[] getRSA3072() {
-		return null;
+		return MISSING_RSA_3072_KEY;
 	}
 
 	public JKey duplicate() {
@@ -309,6 +327,16 @@ public abstract class JKey {
 			}
 		} catch (IOException ex) {
 			throw new IllegalArgumentException(ex);
+		}
+	}
+
+	public byte[] primitiveKeyIfPresent() {
+		if (hasEd25519Key()) {
+			return getEd25519();
+		} else if (hasECDSAsecp256k1Key()) {
+			return getECDSASecp256k1Key();
+		} else {
+			return MISSING_ECDSA_SECP256K1_KEY;
 		}
 	}
 }

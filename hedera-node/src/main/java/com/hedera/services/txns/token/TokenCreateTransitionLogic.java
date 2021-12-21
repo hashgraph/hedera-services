@@ -121,16 +121,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
-	}
-
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenCreateTransactionBody op = txnBody.getTokenCreation();
 

@@ -20,6 +20,8 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
@@ -97,6 +99,8 @@ import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTI
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -133,6 +137,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -185,11 +190,12 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 public final class MiscUtils {
+	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
+
 	private MiscUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
@@ -350,7 +356,7 @@ public final class MiscUtils {
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
-		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
+		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
 	}
 
 	private static AccountAmount negationOf(final AccountAmount adjustment) {
@@ -364,7 +370,7 @@ public final class MiscUtils {
 				.filter(e -> e.getValue() != 0)
 				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
 				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
-				.collect(toList());
+				.toList();
 	}
 
 	public static String readableTransferList(final TransferList accountAmounts) {
@@ -376,7 +382,7 @@ public final class MiscUtils {
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 
@@ -388,7 +394,7 @@ public final class MiscUtils {
 						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
 						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 
@@ -440,6 +446,13 @@ public final class MiscUtils {
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}
+	}
+
+	public static Timestamp asTimestamp(final long packedTime) {
+		return Timestamp.newBuilder()
+				.setSeconds(unsignedHighOrder32From(packedTime))
+				.setNanos(signedLowOrder32From(packedTime))
+				.build();
 	}
 
 	public static Timestamp asTimestamp(final Instant when) {
@@ -514,8 +527,6 @@ public final class MiscUtils {
 		}
 	}
 
-	private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
-
 	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
 		final var oldSecs = start.getEpochSecond();
 		final var newNanos = start.getNano() + nanosOff;
@@ -526,6 +537,22 @@ public final class MiscUtils {
 		} else {
 			return Instant.ofEpochSecond(oldSecs, newNanos);
 		}
+	}
+
+	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
+		if (txn.hasCryptoTransfer()) {
+			return CryptoTransfer;
+		}
+		if (txn.hasConsensusSubmitMessage()) {
+			return ConsensusSubmitMessage;
+		}
+		if (txn.hasTokenMint()) {
+			return TokenMint;
+		}
+		if (txn.hasTokenBurn()) {
+			return TokenBurn;
+		}
+		return NONE;
 	}
 
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
@@ -757,7 +784,8 @@ public final class MiscUtils {
 	 * flipping bit j of perm64(x). For each possible pair (i,j), this function
 	 * achieves a probability between 49.8 and 50.2 percent.
 	 *
-	 * @param x the value to permute
+	 * @param x
+	 * 		the value to permute
 	 * @return the avalanche-optimized permutation
 	 */
 	public static long perm64(long x) {
@@ -795,10 +823,28 @@ public final class MiscUtils {
 	/**
 	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
 	 *
-	 * @param hederaFunctionality - the {@link HederaFunctionality} to verify
+	 * @param hederaFunctionality
+	 * 		- the {@link HederaFunctionality} to verify
 	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
 	 */
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
+	}
+
+	/**
+	 * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type Ed25519 or
+	 * ECDSA(secp256k1), returns true and false otherwise.
+	 *
+	 * @param alias
+	 * 		given alias byte string
+	 * @return whether it parses to a primitive key
+	 */
+	public static boolean isSerializedProtoKey(final ByteString alias) {
+		try {
+			final var key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ignore) {
+			return false;
+		}
 	}
 }
