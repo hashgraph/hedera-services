@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_NON_EXISTING_FUNCTION_CALL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.STATIC_ASSOCIATE_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -128,7 +129,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
 				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
 				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-				invalidAbiCallGracefullyFailsWithinSingleContractCall()
+				invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+				functionCallWithLessThanFourBytesFailsWithinSingleContractCall()
 		);
 	}
 
@@ -145,6 +147,46 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
 				associatePrecompileTokensPerAccountLimitExceeded()
 		);
+	}
+
+	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("Function call with less than four bytes fails within single contract call")
+				.given(
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT).path(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN),
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
+														.bytecode(THE_GRACEFULLY_FAILING_CONTRACT)
+														.gas(100_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_GRACEFULLY_FAILING_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT, PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(GENESIS)
+														.via("Function call with less than 4 bytes txn")
+														.gas(2_000_000)
+														.hasKnownStatus(SUCCESS),
+												getTxnRecord("Function call with less than 4 bytes txn").andAllChildRecords().logged()
+										)
+						)
+				).then(
+						childRecordsCheck("Function call with less than 4 bytes txn", SUCCESS,
+								recordWith().status(SUCCESS),
+								recordWith().status(SUCCESS)),
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
+				);
 	}
 
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {

@@ -699,6 +699,11 @@ public class ContractResources {
 			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"performInvalidlyFormattedFunctionCall\", \"outputs\": " +
 			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
+	public static final String PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
+			"\"token\", \"type\": \"address\" } ], \"name\": \"performLessThanFourBytesFunctionCall\", \"outputs\": " +
+			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
