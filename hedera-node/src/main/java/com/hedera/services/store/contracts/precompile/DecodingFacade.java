@@ -165,7 +165,7 @@ public class DecodingFacade {
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var metadataList = (byte[][]) decodedArguments.get(2);
-		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).collect(Collectors.toList());
+		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
 
 		if (fungibleAmount > 0) {
 			return MintWrapper.forFungible(tokenID, fungibleAmount);
