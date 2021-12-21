@@ -147,7 +147,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
 	protected static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
 	//mintToken(address token, uint64 amount, bytes calldata metadata)
-	protected static final int ABI_ID_MINT_TOKEN = 0x36dcedf0;
+	protected static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
 	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
 	protected static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
 	//associateTokens(address account, address[] calldata tokens)

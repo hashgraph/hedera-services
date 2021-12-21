@@ -67,7 +67,10 @@ interface IHederaTokenService {
     /// @param metadata Applicable to tokens of type NON_FUNGIBLE_UNIQUE. A list of metadata that are being created.
     ///                 Maximum allowed size of each metadata is 100 bytes
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function mintToken(address token, uint64 amount, bytes calldata metadata) external returns (int responseCode);
+    /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
+    /// @return serialNumbers If the token is an NFT the newly generate serial numbers, othersise empty.
+    function mintToken(address token, uint64 amount, bytes[] calldata metadata) external
+        returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers);
 
     /// Burns an amount of the token from the defined treasury account
     /// @param token The token for which to burn tokens. If token does not exist, transaction results in
@@ -77,7 +80,9 @@ interface IHederaTokenService {
     ///                account (0; balance], represented in the lowest denomination.
     /// @param serialNumbers Applicable to tokens of type NON_FUNGIBLE_UNIQUE. The list of serial numbers to be burned.
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function burnToken(address token, uint64 amount, int64[] calldata serialNumbers) external returns (int responseCode);
+    /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
+    function burnToken(address token, uint64 amount, int64[] calldata serialNumbers) external
+        returns (int responseCode, uint64 newTotalSupply);
 
     ///  Associates the provided account with the provided tokens. Must be signed by the provided
     ///  Account's key or called from the accounts contract key

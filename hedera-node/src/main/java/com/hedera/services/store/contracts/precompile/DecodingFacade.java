@@ -28,17 +28,15 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Singleton
 public class DecodingFacade {
@@ -74,9 +72,9 @@ public class DecodingFacade {
 	private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
 	private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
 
-	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes)", INT_OUTPUT);
+	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes[])", INT_OUTPUT);
 	private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,string)");
+	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
 
 	private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", INT_OUTPUT);
 	private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
@@ -154,22 +152,15 @@ public class DecodingFacade {
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
 		final var fungibleAmount = (long) decodedArguments.get(1);
-		final var metadataList = String.valueOf(decodedArguments.get(2));
-		final var splittedMetadataList = metadataList.split(StringUtils.toEncodedString(new byte[1], StandardCharsets.UTF_8));
-		final List<ByteString> metadataByteStringList = new ArrayList<>();
-		for (final var metadata: splittedMetadataList) {
-			if(metadata!=null && !StringUtils.isEmpty(metadata)) {
-				metadataByteStringList.add(ByteString.copyFrom(metadata.getBytes()));
-			}
-		}
+		final var metadataList = (byte[][]) decodedArguments.get(2);
+		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).collect(Collectors.toList());
 
 		if (fungibleAmount > 0) {
 			return MintWrapper.forFungible(
 					tokenID, fungibleAmount);
 		} else {
 			return MintWrapper.forNonFungible(
-					tokenID, !metadataByteStringList.isEmpty() ? metadataByteStringList :
-							Collections.singletonList(ByteString.copyFrom("".getBytes())));
+					tokenID, metadata);
 		}
 	}
 
