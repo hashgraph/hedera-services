@@ -694,6 +694,11 @@ public class ContractResources {
 			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"performNonExistingServiceFunctionCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
+	public static final String PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"performInvalidlyFormattedFunctionCall\", \"outputs\": " +
+			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
 	}
