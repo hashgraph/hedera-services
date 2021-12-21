@@ -411,7 +411,7 @@ public class StateView {
 			return Optional.empty();
 		}
 
-		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
+		final AccountID accountID = accountEntityNum.toGrpcAccountId();
 
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
