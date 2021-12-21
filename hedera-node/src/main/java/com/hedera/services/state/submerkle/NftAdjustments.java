@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
-import static java.util.stream.Collectors.toList;
 
 public class NftAdjustments implements SelfSerializable {
 	private static final int MERKLE_VERSION = 1;
@@ -128,11 +127,11 @@ public class NftAdjustments implements SelfSerializable {
 				.filter(nftTransfer -> nftTransfer.getSenderAccountID() != null)
 				.map(NftTransfer::getSenderAccountID)
 				.map(EntityId::fromGrpcAccountId)
-				.collect(toList());
+				.toList();
 		pojo.receiverAccIds = grpc.stream()
 				.map(NftTransfer::getReceiverAccountID)
 				.map(EntityId::fromGrpcAccountId)
-				.collect(toList());
+				.toList();
 
 		return pojo;
 	}

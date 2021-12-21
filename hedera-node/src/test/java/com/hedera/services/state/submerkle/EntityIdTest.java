@@ -170,9 +170,9 @@ class EntityIdTest {
 
 		var subject = new EntityId(id);
 
-		assertEquals(id.getShard(), subject.shard());
-		assertEquals(id.getRealm(), subject.realm());
-		assertEquals(id.getNum(), subject.num());
+		assertEquals(id.shard(), subject.shard());
+		assertEquals(id.realm(), subject.realm());
+		assertEquals(id.num(), subject.num());
 		assertTrue(subject.matches(id));
 	}
 

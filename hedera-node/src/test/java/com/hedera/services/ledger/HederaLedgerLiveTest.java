@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.TopLevelAutoCreation;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -50,6 +51,9 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,8 +62,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	private static final long thisSecond = 1_234_567L;
+
+	@Mock
+	private TopLevelAutoCreation autoCreationLogic;
 
 	@BeforeEach
 	void setup() {
@@ -103,7 +111,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingTokens());
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger,
-				transferLogic);
+				transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
 	}
 
@@ -143,6 +151,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
 
+		verify(historian).saveExpirableTransactionRecords();
 		verify(historian).noteNewExpirationEvents();
 	}
 

@@ -757,7 +757,7 @@ class RequestBuilderTest {
 	}
 
 	@Test
-	void assertConstructorThrowsException() throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+	void assertConstructorThrowsException() throws NoSuchMethodException {
 		Constructor<RequestBuilder> constructor = RequestBuilder.class.getDeclaredConstructor();
 		assertTrue(Modifier.isPrivate(constructor.getModifiers()));
 		constructor.setAccessible(true);
@@ -765,5 +765,37 @@ class RequestBuilderTest {
 				() -> {
 					constructor.newInstance();
 				});
+	}
+
+	@Test
+	void xferConvenienceBuildersDontThrow() {
+
+		assertNotNull(RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				100_000_000L,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				"MEMO",
+				5678l, -70000l,
+				5679l, 70000l));
+		assertNotNull(RequestBuilder.getHbarCryptoTransferRequestToAlias(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				100_000_000L,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				"MEMO",
+				5678l, -70000l,
+				ByteString.copyFromUtf8("ALIAS"), 70000l));
+		assertNotNull(RequestBuilder.getTokenTransferRequestToAlias(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				100_000_000L,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				"MEMO",
+				5678l, 5555l,-70000l,
+				ByteString.copyFromUtf8("aaaa"), 70000l));
 	}
 }

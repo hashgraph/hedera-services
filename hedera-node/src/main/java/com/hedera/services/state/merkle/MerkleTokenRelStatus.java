@@ -203,6 +203,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	@Override
 	public void setKey(EntityNumPair numbers) {
-		this.numbers = numbers.getValue();
+		this.numbers = numbers.value();
 	}
 }

@@ -43,7 +43,7 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	@Override
 	public void track(K id, long expiry) {
 		allExpiries.offer(new ExpiryEvent<>(id, expiry));
-		now = allExpiries.peek().getExpiry();
+		now = allExpiries.peek().expiry();
 	}
 
 	@Override
@@ -57,9 +57,10 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalStateException("No ids are queued for expiration!");
 		}
 		if (!allExpiries.peek().isExpiredAt(now)) {
-			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!", now));
+			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!",
+					now));
 		}
-		return allExpiries.remove().getId();
+		return allExpiries.remove().id();
 	}
 
 	PriorityQueue<ExpiryEvent<K>> getAllExpiries() {

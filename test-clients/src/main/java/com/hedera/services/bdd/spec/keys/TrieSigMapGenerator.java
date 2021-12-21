@@ -99,10 +99,17 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 							final var effPrefix = alwaysFullPrefixes.contains(wrappedKey)
 									? wrappedKey
 									: ByteString.copyFrom(prefixCalc.apply(key));
-							return SignaturePair.newBuilder()
-									.setPubKeyPrefix(effPrefix)
-									.setEd25519(ByteString.copyFrom(keySig.getValue()))
-									.build();
+							if (key.length == 32) {
+								return SignaturePair.newBuilder()
+										.setPubKeyPrefix(effPrefix)
+										.setEd25519(ByteString.copyFrom(keySig.getValue()))
+										.build();
+							} else {
+								return SignaturePair.newBuilder()
+										.setPubKeyPrefix(effPrefix)
+										.setECDSASecp256K1(ByteString.copyFrom(keySig.getValue()))
+										.build();
+							}
 						}
 				).collect(collectingAndThen(toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
 	}

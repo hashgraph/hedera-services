@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PojoSigMapTest {
 	@Test
-	void distinguishesBetweenFullAndPartialEd25519Prefixes() {
+	void distinguishesBetweenFullAndPartialPrefixes() {
 		final var partialEd25519Prefix = "a";
 		final var fullEd25519Prefix = "01234567890123456789012345678901";
 		final var fakeSig = "012345678901234567890123456789012345678901234567";
@@ -77,7 +77,7 @@ class PojoSigMapTest {
 						.setEd25519(ByteString.copyFromUtf8(secondFakeSig)))
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8(thirdFakePrefix))
-						.setEd25519(ByteString.copyFromUtf8(thirdFakeSig)))
+						.setECDSASecp256K1(ByteString.copyFromUtf8(thirdFakeSig)))
 				.build();
 
 		// when:
@@ -90,6 +90,10 @@ class PojoSigMapTest {
 		assertArrayEquals(expected[1][1], subject.primitiveSignature(1));
 		assertArrayEquals(expected[2][0], subject.pubKeyPrefix(2));
 		assertArrayEquals(expected[2][1], subject.primitiveSignature(2));
+		// and:
+		assertEquals(KeyType.ED25519, subject.keyType(0));
+		assertEquals(KeyType.ED25519, subject.keyType(1));
+		assertEquals(KeyType.ECDSA_SECP256K1, subject.keyType(2));
 		// and:
 		assertEquals(3, subject.numSigsPairs());
 	}

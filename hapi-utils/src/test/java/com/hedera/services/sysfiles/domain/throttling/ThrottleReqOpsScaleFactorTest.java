@@ -34,8 +34,8 @@ class ThrottleReqOpsScaleFactorTest {
 	void parsesValidAsExpected(String literal, int numerator, int denominator) {
 		final var subject = ThrottleReqOpsScaleFactor.from(literal);
 
-		assertEquals(numerator, subject.getNumerator());
-		assertEquals(denominator, subject.getDenominator());
+		assertEquals(numerator, subject.numerator());
+		assertEquals(denominator, subject.denominator());
 	}
 
 	@CsvSource({ "3:0", "15", "9223372036854775807:100", "1:-1", "-2:3" })

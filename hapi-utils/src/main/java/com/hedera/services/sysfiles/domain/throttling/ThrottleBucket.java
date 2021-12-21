@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 import static java.util.Collections.disjoint;
-import static java.util.stream.Collectors.toList;
 
 public final class ThrottleBucket {
 	private int burstPeriod;
@@ -81,7 +80,7 @@ public final class ThrottleBucket {
 		pojo.burstPeriodMs = bucket.getBurstPeriodMs();
 		pojo.throttleGroups.addAll(bucket.getThrottleGroupsList().stream()
 				.map(ThrottleGroup::fromProto)
-				.collect(toList()));
+				.toList());
 		return pojo;
 	}
 
@@ -91,7 +90,7 @@ public final class ThrottleBucket {
 				.setBurstPeriodMs(impliedBurstPeriodMs())
 				.addAllThrottleGroups(throttleGroups.stream()
 						.map(ThrottleGroup::toProto)
-						.collect(toList()))
+						.toList())
 				.build();
 	}
 

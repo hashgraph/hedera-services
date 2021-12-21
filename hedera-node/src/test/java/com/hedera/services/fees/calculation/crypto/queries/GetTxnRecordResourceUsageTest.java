@@ -111,6 +111,24 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
+	void setsChildRecordsInQueryCtxIfAppropos() {
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
+		final var mockedStatic = mockStatic(FeeCalcUtils.class);
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(desiredRecord));
+		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithChildrenNoDups))
+				.willReturn(Optional.of(desiredRecord));
+
+		subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
+
+		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
+
+		mockedStatic.close();
+	}
+
+	@Test
 	void invokesEstimatorAsExpectedForType() {
 		final var costAnswerUsage = mock(FeeData.class);
 		final var answerOnlyUsage = mock(FeeData.class);
@@ -158,24 +176,6 @@ class GetTxnRecordResourceUsageTest {
 		subject.usageGiven(satisfiableAnswerOnlyWithDupsQuery, view, queryCtx);
 
 		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
-
-		mockedStatic.close();
-	}
-
-	@Test
-	void setsChildRecordsInQueryCtxIfAppropos() {
-		final var answerOnlyUsage = mock(FeeData.class);
-		final var queryCtx = new HashMap<String, Object>();
-		final var mockedStatic = mockStatic(FeeCalcUtils.class);
-		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
-				.willReturn(answerOnlyUsage);
-		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithChildrenNoDups))
-				.willReturn(Optional.of(desiredRecord));
-
-		subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
-
-		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
 
 		mockedStatic.close();
 	}

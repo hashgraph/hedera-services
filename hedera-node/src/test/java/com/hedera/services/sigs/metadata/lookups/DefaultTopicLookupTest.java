@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,7 +74,8 @@ class DefaultTopicLookupTest {
 
 		final var result = subject.safeLookup(target);
 
-		Assertions.assertEquals(INVALID_TOPIC, result.failureIfAny()); }
+		Assertions.assertEquals(INVALID_TOPIC, result.failureIfAny());
+	}
 
 	@Test
 	void getsExtantSubmitKey() {
@@ -85,7 +86,7 @@ class DefaultTopicLookupTest {
 		final var result = subject.safeLookup(target);
 
 		assertTrue(result.succeeded());
-		assertSame(multi, result.metadata().getSubmitKey());
+		assertSame(multi, result.metadata().submitKey());
 	}
 
 	@Test
@@ -108,7 +109,7 @@ class DefaultTopicLookupTest {
 		final var result = subject.safeLookup(target);
 
 		assertTrue(result.succeeded());
-		assertSame(multi, result.metadata().getAdminKey());
+		assertSame(multi, result.metadata().adminKey());
 	}
 
 	@Test

@@ -27,6 +27,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -55,9 +56,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -76,11 +77,11 @@ class FileAppendTransitionLogicTest {
 	FileID immutable = IdUtils.asFile("0.0.667");
 	FileID special = IdUtils.asFile("0.0.150");
 
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
+	HederaFs.UpdateResult success = new SimpleUpdateResult(
 			false,
 			true,
 			SUCCESS);
-	HederaFs.UpdateResult okWithCaveat = new TieredHederaFs.SimpleUpdateResult(
+	HederaFs.UpdateResult okWithCaveat = new SimpleUpdateResult(
 			false,
 			true,
 			ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED);

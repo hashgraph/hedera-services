@@ -20,6 +20,7 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -50,7 +51,8 @@ class InHandleActivationHelperTest {
 	private byte[] scopedTxnBytes = "ANYTHING".getBytes();
 	private JKey other = new JEd25519Key("other".getBytes());
 	private JKey scheduled = new JEd25519Key("scheduled".getBytes());
-	List<JKey> required = List.of(other, scheduled);
+	private JKey secp256k1Scheduled = new JECDSASecp256k1Key("alsoScheduled".getBytes());
+	private List<JKey> required = List.of(other, scheduled, secp256k1Scheduled);
 
 	PlatformTxnAccessor accessor;
 
@@ -68,6 +70,7 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	void setup() {
 		scheduled.setForScheduledTxn(true);
+		secp256k1Scheduled.setForScheduledTxn(true);
 
 		characteristicsFactory = mock(CharacteristicsFactory.class);
 		given(characteristicsFactory.inferredFor(any())).willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
@@ -97,7 +100,8 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	void usesEmptyKeysOnErrorReport() {
 		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(
+				BiPredicate.class);
 
 		given(sigMeta.couldRationalizeOthers()).willReturn(false);
 
@@ -115,7 +119,8 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	void usesExpectedSigsFnForOthers() {
 		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(
+				BiPredicate.class);
 
 		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(false);
 
@@ -132,7 +137,8 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	void usesExpectedKeysForOtherPartiesActive() {
 		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(
+				BiPredicate.class);
 
 		given(activation.test(other, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
 
@@ -149,9 +155,11 @@ class InHandleActivationHelperTest {
 	@SuppressWarnings("unchecked")
 	void usesExpectedKeysForScheduled() {
 		// setup:
-		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
+		BiPredicate<JKey, TransactionSignature> tests = (BiPredicate<JKey, TransactionSignature>) mock(
+				BiPredicate.class);
 
 		given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
+		given(activation.test(secp256k1Scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS)).willReturn(true);
 
 		// when:
 		boolean ans = subject.areScheduledPartiesActive(nonFileDelete(), tests);
@@ -163,16 +171,19 @@ class InHandleActivationHelperTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void countsScheduledKeysAsExpected() {
-		// setup:
-		BiConsumer<JKey, TransactionSignature> visitor = (BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
+		final var mockSecp2561kSig = mock(TransactionSignature.class);
+		BiConsumer<JKey, TransactionSignature> visitor =
+				(BiConsumer<JKey, TransactionSignature>) mock(BiConsumer.class);
 
 		given(sigsFn.apply(scheduled.getEd25519())).willReturn(sig);
+		given(sigsFn.apply(secp256k1Scheduled.getECDSASecp256k1Key())).willReturn(mockSecp2561kSig);
 
 		// when:
 		subject.visitScheduledCryptoSigs(visitor);
 
 		// then:
 		verify(visitor).accept(scheduled, sig);
+		verify(visitor).accept(secp256k1Scheduled, mockSecp2561kSig);
 	}
 
 	@AfterEach

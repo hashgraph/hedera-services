@@ -217,6 +217,7 @@ class TxnAwareRecordsHistorianTest {
 		verify(topLevelRecord).excludeHbarChangesFrom(precedingBuilder);
 		verify(topLevelRecord).setNumChildRecords((short) 2);
 		verify(followingBuilder).setConsensusTime(RichInstant.fromJava(expectedFollowTime));
+		verify(followingBuilder).setParentConsensusTime(topLevelNow);
 		verify(precedingBuilder).setConsensusTime(RichInstant.fromJava(expectedPrecedingTime));
 		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
 		verify(followingBuilder).setTxnId(expectedFollowingChildId);
@@ -244,11 +245,13 @@ class TxnAwareRecordsHistorianTest {
 		verify(creator).saveExpiringRecord(effPayer, mockPrecedingRecord, precedingChildNows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockTopLevelRecord, nows, submittingMember);
 		verify(creator).saveExpiringRecord(effPayer, mockFollowingRecord, followingChildNows, submittingMember);
-		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
-		verify(followingBuilder).setTxnId(expectedFollowingChildId);
-		verify(precedingBuilder).setTxnHash(
+		verifyBuilderUse(
+				precedingBuilder,
+				expectedPrecedingChildId,
 				noThrowSha384HashOf(expectedPrecedeSynth.getSignedTransactionBytes().toByteArray()));
-		verify(followingBuilder).setTxnHash(
+		verifyBuilderUse(
+				followingBuilder,
+				expectedFollowingChildId,
 				noThrowSha384HashOf(expectedFollowSynth.getSignedTransactionBytes().toByteArray()));
 		verify(recordCache).setPostConsensus(expPrecedeId, INVALID_ACCOUNT_ID, mockPrecedingRecord);
 		verify(recordCache).setPostConsensus(expFollowId, INVALID_CHUNK_NUMBER, mockFollowingRecord);
@@ -360,5 +363,14 @@ class TxnAwareRecordsHistorianTest {
 
 	private TransactionBody.Builder aBuilderWith(final String memo) {
 		return TransactionBody.newBuilder().setMemo(memo);
+	}
+
+	private void verifyBuilderUse(
+			final ExpirableTxnRecord.Builder builder,
+			final TxnId expectedId,
+			final byte[] expectedHash
+	) {
+		verify(builder).setTxnId(expectedId);
+		verify(builder).setTxnHash(expectedHash);
 	}
 }

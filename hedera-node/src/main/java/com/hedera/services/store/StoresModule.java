@@ -120,7 +120,7 @@ public abstract class StoresModule {
 	@Provides
 	@Singleton
 	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			final BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		return new TransactionalLedger<>(
 				AccountProperty.class,
@@ -131,19 +131,22 @@ public abstract class StoresModule {
 
 	@Provides
 	@AreFcotmrQueriesDisabled
-	public static boolean provideAreFcotmrQueriesDisabled(@CompositeProps PropertySource properties) {
+	public static boolean provideAreFcotmrQueriesDisabled(final @CompositeProps PropertySource properties) {
 		return !properties.getBooleanProperty("tokens.nfts.areQueriesEnabled");
 	}
 
 	@Provides
 	@AreTreasuryWildcardsEnabled
-	public static boolean provideAreTreasuryWildcardsEnabled(@CompositeProps PropertySource properties) {
+	public static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 	}
 
 	@Provides
 	@Singleton
-	public static CodeCache provideCodeCache(NodeLocalProperties properties, MutableEntityAccess entityAccess) {
+	public static CodeCache provideCodeCache(
+			final NodeLocalProperties properties,
+			final MutableEntityAccess entityAccess
+	) {
 		return new CodeCache(properties, entityAccess);
 	}
 }

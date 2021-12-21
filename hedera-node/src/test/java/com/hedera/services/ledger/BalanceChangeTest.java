@@ -20,9 +20,11 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.Test;
@@ -52,11 +54,11 @@ class BalanceChangeTest {
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var tokenRepr = "BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var nftRepr = "BalanceChange{nft=Id{shard=1, realm=2, num=3}, serialNo=1234, " +
-				"from=Id{shard=1, realm=2, num=3}, to=Id{shard=2, realm=3, num=4}}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234}";
+		final var tokenRepr = "BalanceChange{token=Id[shard=1, realm=2, num=3], account=Id[shard=1, realm=2, num=3], " +
+				"alias=, units=-1234}";
+		final var nftRepr = "BalanceChange{nft=Id[shard=1, realm=2, num=3], serialNo=1234, " +
+				"from=Id[shard=1, realm=2, num=3], to=Id[shard=2, realm=3, num=4]}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -141,6 +143,21 @@ class BalanceChangeTest {
 		assertEquals(serialNo, nftChange.serialNo());
 		// and:
 		assertTrue(nftChange.isForNft());
-		assertEquals(new NftId(t.getShard(), t.getRealm(), t.getNum(), serialNo), nftChange.nftId());
+		assertEquals(new NftId(t.shard(), t.realm(), t.num(), serialNo), nftChange.nftId());
+	}
+
+	@Test
+	void canReplaceAlias() {
+		final var created = IdUtils.asAccount("0.0.1234");
+		final var anAlias = ByteString.copyFromUtf8("abcdefg");
+		final var subject = BalanceChange.changingHbar(AccountAmount.newBuilder()
+				.setAmount(1234)
+				.setAccountID(AccountID.newBuilder()
+						.setAlias(anAlias))
+				.build());
+
+		subject.replaceAliasWith(created);
+		assertFalse(subject.hasNonEmptyAlias());
+		assertEquals(created, subject.accountId());
 	}
 }
