@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.unit.serialization;
+package com.hedera.services.files;
 
 /*-
  * ‌
@@ -20,10 +20,9 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.services.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
@@ -53,6 +52,7 @@ import static com.hedera.services.files.HFileMetaSerde.deserialize;
 import static com.hedera.services.files.HFileMetaSerde.streamContentDiscovery;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -161,6 +161,15 @@ class HFileMetaSerdeTest {
 		assertEquals(expInfo.getExpirationTime(), replicaInfo.getExpirationTime());
 		assertEquals(expInfo.getDeleted(), replicaInfo.getDeleted());
 		assertEquals(expInfo.getKeys().getKeysCount(), replicaInfo.getKeys().getKeysCount());
+	}
+
+	@Test
+	void throwsOnWrongObjectType() throws IOException {
+		final var in = mock(DataInputStream.class);
+
+		given(in.readLong()).willReturn(JObjectType.FC_FILE_INFO.longValue() - 1);
+
+		assertThrows(IllegalStateException.class, () -> HFileMetaSerde.readPreMemoMeta(in));
 	}
 
 	@SuppressWarnings("unchecked")

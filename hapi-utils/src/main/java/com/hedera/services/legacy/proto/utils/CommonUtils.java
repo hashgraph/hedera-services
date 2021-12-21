@@ -53,27 +53,6 @@ public final class CommonUtils {
 	}
 
 	/**
-	 * Generates a human readable string for grpc transaction.
-	 *
-	 * @param grpcTransaction
-	 * 		GRPC transaction
-	 * @return generated readable string
-	 * @throws InvalidProtocolBufferException
-	 * 		when protocol buffer is invalid
-	 */
-	public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
-		String rv = null;
-		try {
-			TransactionBody body = extractTransactionBody(grpcTransaction);
-			rv = "body=" + TextFormat.shortDebugString(body) + "; sigs="
-					+ TextFormat.shortDebugString(extractSignatureMap(grpcTransaction));
-		} catch (InvalidProtocolBufferException e) {
-			throw e;
-		}
-		return rv;
-	}
-
-	/**
 	 * Generates a short human readable string for grpc transaction.
 	 *
 	 * @param grpcTransaction
@@ -82,8 +61,7 @@ public final class CommonUtils {
 	 * @throws InvalidProtocolBufferException
 	 * 		when protocol buffer is invalid
 	 */
-	public static String toReadableTransactionID(
-			Transaction grpcTransaction) throws InvalidProtocolBufferException {
+	public static String toReadableTransactionID(Transaction grpcTransaction) throws InvalidProtocolBufferException {
 		TransactionBody body = extractTransactionBody(grpcTransaction);
 		return "txID=" + TextFormat.shortDebugString(body.getTransactionID());
 	}

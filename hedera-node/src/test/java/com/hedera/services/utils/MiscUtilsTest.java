@@ -847,6 +847,7 @@ class MiscUtilsTest {
 								.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))))
 				.build()
 				.toByteString()));
+		assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
 	}
 
 	@Test
