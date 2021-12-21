@@ -26,13 +26,14 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -50,78 +51,120 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class TransferLogic {
-    private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
-            List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
-    private final SideEffectsTracker sideEffectsTracker;
-    private final TokenStore tokenStore;
-    private final MerkleAccountScopedCheck scopedCheck;
-    private final UniqueTokenViewsManager tokenViewsManager;
+	public static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS = List.of(
+			TOKENS,
+			NUM_NFTS_OWNED,
+			ALREADY_USED_AUTOMATIC_ASSOCIATIONS
+	);
 
-    @Inject
-    public TransferLogic(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-                         TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-                         TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-                         HederaTokenStore tokenStore,
-                         SideEffectsTracker sideEffectsTracker,
-                         UniqueTokenViewsManager tokenViewsManager,
-                         GlobalDynamicProperties dynamicProperties,
-                         OptionValidator validator) {
-        this.accountsLedger = accountsLedger;
-        this.nftsLedger = nftsLedger;
-        this.tokenRelsLedger = tokenRelsLedger;
-        this.sideEffectsTracker = sideEffectsTracker;
-        this.tokenStore = tokenStore;
-        this.tokenViewsManager = tokenViewsManager;
+	private final TokenStore tokenStore;
+	private final AutoCreationLogic autoCreationLogic;
+	private final SideEffectsTracker sideEffectsTracker;
+	private final UniqueTokenViewsManager tokenViewsManager;
+	private final AccountRecordsHistorian recordsHistorian;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final MerkleAccountScopedCheck scopedCheck;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 
-        scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
-    }
+	@Inject
+	public TransferLogic(
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+			final TokenStore tokenStore,
+			final SideEffectsTracker sideEffectsTracker,
+			final UniqueTokenViewsManager tokenViewsManager,
+			final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator,
+			final AutoCreationLogic autoCreationLogic,
+			final AccountRecordsHistorian recordsHistorian
+	) {
+		this.tokenStore = tokenStore;
+		this.nftsLedger = nftsLedger;
+		this.accountsLedger = accountsLedger;
+		this.tokenRelsLedger = tokenRelsLedger;
+		this.recordsHistorian = recordsHistorian;
+		this.tokenViewsManager = tokenViewsManager;
+		this.autoCreationLogic = autoCreationLogic;
+		this.dynamicProperties = dynamicProperties;
+		this.sideEffectsTracker = sideEffectsTracker;
 
-    public void transfer(List<BalanceChange> changes) {
-        var validity = OK;
-        for (var change : changes) {
-            if (change.isForHbar()) {
-                validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-            } else {
-                validity = tokenStore.tryTokenChange(change);
-            }
-            if (validity != OK) {
-                break;
-            }
-        }
+		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
+	}
 
-        if (validity == OK) {
-            adjustHbarUnchecked(changes);
-        } else {
-            dropPendingTokenChanges();
-            throw new InvalidTransactionException(validity);
-        }
-    }
+	public void doZeroSum(final List<BalanceChange> changes) {
+		var validity = OK;
+		var autoCreationFee = 0L;
+		for (var change : changes) {
+			if (change.isForHbar()) {
+				if (change.hasNonEmptyAlias()) {
+					final var result = autoCreationLogic.createFromTrigger(change);
+					validity = result.getKey();
+					autoCreationFee += result.getValue();
+				} else {
+					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+				}
+			} else {
+				validity = tokenStore.tryTokenChange(change);
+			}
+			if (validity != OK) {
+				break;
+			}
+		}
 
-    private void adjustHbarUnchecked(List<BalanceChange> changes) {
-        for (var change : changes) {
-            if (change.isForHbar()) {
-                final var accountId = change.accountId();
-                final var newBalance = change.getNewBalance();
-                accountsLedger.set(accountId, BALANCE, newBalance);
-                sideEffectsTracker.trackHbarChange(accountId, change.units());
-            }
-        }
-    }
+		if (validity == OK) {
+			adjustHbarUnchecked(changes);
+			if (autoCreationFee > 0) {
+				payFunding(autoCreationFee);
+				autoCreationLogic.submitRecordsTo(recordsHistorian);
+			}
+		} else {
+			dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
+			if (autoCreationLogic.reclaimPendingAliases()) {
+				accountsLedger.undoCreations();
+			}
+			throw new InvalidTransactionException(validity);
+		}
+	}
 
-    public void dropPendingTokenChanges() {
-        if (tokenRelsLedger.isInTransaction()) {
-            tokenRelsLedger.rollback();
-        }
-        if (nftsLedger.isInTransaction()) {
-            nftsLedger.rollback();
-        }
-        if (tokenViewsManager.isInTransaction()) {
-            tokenViewsManager.rollback();
-        }
-        accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
-        sideEffectsTracker.resetTrackedTokenChanges();
-    }
+	private void payFunding(final long autoCreationFee) {
+		final var funding = dynamicProperties.fundingAccount();
+		final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
+		final var newFundingBalance = fundingBalance + autoCreationFee;
+		accountsLedger.set(funding, BALANCE, newFundingBalance);
+		sideEffectsTracker.trackHbarChange(funding, autoCreationFee);
+	}
+
+	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
+		for (var change : changes) {
+			if (change.isForHbar()) {
+				final var accountId = change.accountId();
+				final var newBalance = change.getNewBalance();
+				accountsLedger.set(accountId, BALANCE, newBalance);
+				sideEffectsTracker.trackHbarChange(accountId, change.units());
+			}
+		}
+	}
+
+	public static void dropTokenChanges(
+			final SideEffectsTracker sideEffectsTracker,
+			final UniqueTokenViewsManager tokenViewsManager,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+	) {
+		if (tokenRelsLedger.isInTransaction()) {
+			tokenRelsLedger.rollback();
+		}
+		if (nftsLedger.isInTransaction()) {
+			nftsLedger.rollback();
+		}
+		if (tokenViewsManager.isInTransaction()) {
+			tokenViewsManager.rollback();
+		}
+		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
+		sideEffectsTracker.resetTrackedTokenChanges();
+	}
 }

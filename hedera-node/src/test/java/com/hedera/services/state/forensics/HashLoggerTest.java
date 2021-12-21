@@ -9,9 +9,9 @@ package com.hedera.services.state.forensics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -90,33 +90,33 @@ class HashLoggerTest {
 	@Test
 	void logsAsExpected() {
 		final var desired = "[SwirldState Hashes]\n" +
-				"  Overall                :: " +
+				"Overall                :: " +
 				"303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030\n" +
-				"  Accounts               :: " +
+				"Accounts               :: " +
 				"313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131\n" +
-				"  Storage                :: " +
+				"Storage                :: " +
 				"<N/A>\n" +
-				"  Topics                 :: " +
+				"Topics                 :: " +
 				"323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232\n" +
-				"  Tokens                 :: " +
+				"Tokens                 :: " +
 				"333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333\n" +
-				"  TokenAssociations      :: " +
+				"TokenAssociations      :: " +
 				"373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737373737\n" +
-				"  SpecialFiles           :: " +
+				"SpecialFiles           :: " +
 				"5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a\n" +
-				"  ScheduledTxs           :: " +
+				"ScheduledTxs           :: " +
 				"353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535353535\n" +
-				"  NetworkContext         :: " +
+				"NetworkContext         :: " +
 				"383838383838383838383838383838383838383838383838383838383838383838383838383838383838383838383838\n" +
-				"  AddressBook            :: " +
+				"AddressBook            :: " +
 				"393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939\n" +
-				"  RecordsRunningHashLeaf :: " +
+				"RecordsRunningHashLeaf :: " +
 				"585858585858585858585858585858585858585858585858585858585858585858585858585858585858585858585858\n" +
-				"    ↪ Running hash       :: " +
+				"  ↪ Running hash       :: " +
 				"595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959\n" +
-				"  UniqueTokens           :: " +
+				"UniqueTokens           :: " +
 				"343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434\n" +
-				"  ContractStorage        :: " +
+				"ContractStorage        :: " +
 				"<N/A>";
 
 		given(state.getHash()).willReturn(hashOf('0'));

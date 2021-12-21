@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
@@ -56,8 +57,8 @@ class RetryingAccountLookupTest {
 	private NodeLocalProperties properties;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
+	private AliasManager aliases;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private RetryingAccountLookup subject;
 	private Pause pause;
 	private final Pause defaultPause = SleepingPause.SLEEPING_PAUSE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
@@ -66,16 +67,20 @@ class RetryingAccountLookupTest {
 	private static JKey accountKeys;
 	private static final int RETRY_WAIT_MS = 10;
 
+	private RetryingAccountLookup subject;
+
 	@BeforeAll
 	private static void setupAll() throws Throwable {
 		accountKeys = KeyTree.withRoot(ed25519()).asJKey();
 	}
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	private void setup() {
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
 		pause = mock(Pause.class);
+		aliases = mock(AliasManager.class);
 		accounts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 		properties = mock(NodeLocalProperties.class);
 		given(properties.precheckLookupRetries()).willReturn(2);
@@ -86,15 +91,15 @@ class RetryingAccountLookupTest {
 	void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
-		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, aliases, properties, () -> accounts, runningAvgs, speedometers);
 
 		// when:
 		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
 		verifyZeroInteractions(pause);
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test
@@ -102,7 +107,7 @@ class RetryingAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, aliases, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause, speedometers, runningAvgs);
 
@@ -117,15 +122,16 @@ class RetryingAccountLookupTest {
 		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
 		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(2, captor.getValue().intValue());
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test
 	void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingAccountLookup(defaultPause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(defaultPause, aliases, properties, () -> accounts, runningAvgs,
+				speedometers);
 		// and:
 		InOrder inOrder = inOrder(runningAvgs, speedometers);
 
@@ -138,8 +144,8 @@ class RetryingAccountLookupTest {
 		inOrder.verify(runningAvgs).recordAccountLookupRetries(captor.capture());
 		inOrder.verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		assertEquals(1, captor.getValue().intValue());
-		assertTrue(meta.isReceiverSigRequired());
-		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.getKey()));
+		assertTrue(meta.receiverSigRequired());
+		assertEquals(JKey.mapJKey(accountKeys), JKey.mapJKey(meta.key()));
 	}
 
 	@Test
@@ -147,7 +153,7 @@ class RetryingAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, aliases, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause, runningAvgs, speedometers);
 
@@ -169,7 +175,7 @@ class RetryingAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingAccountLookup(pause, properties, () -> accounts, runningAvgs, speedometers);
+		subject = new RetryingAccountLookup(pause, aliases, properties, () -> accounts, runningAvgs, speedometers);
 		// and:
 		InOrder inOrder = inOrder(pause);
 

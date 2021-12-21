@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -77,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
 
+	private static final int UNKNOWN_NUM_AUTO_CREATIONS = -1;
 	private static final String ACCESSOR_LITERAL = " accessor";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
@@ -86,6 +89,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private int sigMapSize;
 	private int numSigPairs;
+	private int numAutoCreations = UNKNOWN_NUM_AUTO_CREATIONS;
 	private byte[] hash;
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
@@ -151,6 +155,28 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
+	}
+
+	@Override
+	public void countAutoCreationsWith(final AliasManager aliasManager) {
+		final var resolver = new AliasResolver();
+		resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+		numAutoCreations = resolver.perceivedAutoCreations();
+	}
+
+	@Override
+	public void setNumAutoCreations(final int numAutoCreations) {
+		this.numAutoCreations = numAutoCreations;
+	}
+
+	@Override
+	public int getNumAutoCreations() {
+		return numAutoCreations;
+	}
+
+	@Override
+	public boolean areAutoCreationsCounted() {
+		return numAutoCreations != UNKNOWN_NUM_AUTO_CREATIONS;
 	}
 
 	@Override

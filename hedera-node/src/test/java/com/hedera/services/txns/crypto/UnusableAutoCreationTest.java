@@ -1,4 +1,4 @@
-package com.hedera.services.ledger.accounts;
+package com.hedera.services.txns.crypto;
 
 /*-
  * ‌
@@ -20,26 +20,19 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.properties.AccountProperty;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class MerkleAccountCustomizerTest {
-	HederaAccountCustomizer subject = new HederaAccountCustomizer();
-
+class UnusableAutoCreationTest {
 	@Test
-	void hasExpectedOptionProps() {
-		// given:
-		Map<Option, AccountProperty> optionProperties = subject.getOptionProperties();
+	void methodsAsExpected() {
+		final var subject = UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 
-		// expect:
-		Arrays.stream(Option.class.getEnumConstants()).forEach(
-				option -> assertEquals(AccountProperty.valueOf(option.toString()), optionProperties.get(option))
-		);
+		assertDoesNotThrow(subject::reset);
+		assertDoesNotThrow(() -> subject.setFeeCalculator(null));
+		assertFalse(subject.reclaimPendingAliases());
+		assertThrows(UnsupportedOperationException.class, () -> subject.submitRecordsTo(null));
+		assertThrows(UnsupportedOperationException.class, () -> subject.createFromTrigger(null));
 	}
 }

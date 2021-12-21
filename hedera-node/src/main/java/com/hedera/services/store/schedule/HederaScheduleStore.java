@@ -203,7 +203,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (status != OK) {
 			return status;
 		}
-		final var executionTime = consensusTime.plusNanos(1L);
+		final var offset = properties.triggerTxnWindBackNanos();
+		final var executionTime = consensusTime.plusNanos(offset);
 		apply(id, schedule -> schedule.markExecuted(executionTime));
 		return OK;
 	}

@@ -22,7 +22,6 @@ package com.hedera.services.legacy.regression.umbrella;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -48,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -578,7 +578,7 @@ public class UmbrellaServiceRunnable implements Runnable {
 	private void handleGrpcException(Throwable e) {
 		if (e.getMessage() != null && e.getMessage().contains("UNAVAILABLE")) {
 			try {
-				CommonUtils.nap(GRPC_UNAVAILABLE_WAIT_SEC);
+				TimeUnit.SECONDS.sleep(GRPC_UNAVAILABLE_WAIT_SEC);
 			} catch (Exception e1) {
 				log.error("Error when handling GrpcException. ", e1);
 			}

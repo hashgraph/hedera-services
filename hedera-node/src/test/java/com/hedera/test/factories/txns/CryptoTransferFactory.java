@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static java.util.stream.Collectors.toList;
 
 public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactory> {
@@ -129,9 +128,9 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 				.stream()
 				.flatMap(fromTo -> List.of(
 						AccountAmount.newBuilder()
-								.setAccountID(asAccount(fromTo.getPayer())).setAmount(-1 * fromTo.getAmount()).build(),
+								.setAccountID(fromTo.payerId()).setAmount(-1 * fromTo.getAmount()).build(),
 						AccountAmount.newBuilder()
-								.setAccountID(asAccount(fromTo.getPayee())).setAmount(fromTo.getAmount()).build()
+								.setAccountID(fromTo.payeeId()).setAmount(fromTo.getAmount()).build()
 				).stream()).collect(toList());
 	}
 }

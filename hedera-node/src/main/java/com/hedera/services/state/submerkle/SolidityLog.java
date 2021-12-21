@@ -37,8 +37,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
-
 public class SolidityLog implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2af05aa9c7ff917L;
@@ -56,7 +54,8 @@ public class SolidityLog implements SelfSerializable {
 	public static final int MAX_BLOOM_BYTES = 256;
 	public static final int MAX_TOPIC_BYTES = 1024;
 
-	public SolidityLog() { }
+	public SolidityLog() {
+	}
 
 	public SolidityLog(
 			EntityId contractId,
@@ -152,7 +151,7 @@ public class SolidityLog implements SelfSerializable {
 				.add("data", CommonUtils.hex(data))
 				.add("bloom", CommonUtils.hex(bloom))
 				.add("contractId", contractId)
-				.add("topics", topics.stream().map(CommonUtils::hex).collect(toList()))
+				.add("topics", topics.stream().map(CommonUtils::hex).toList())
 				.toString();
 	}
 
@@ -180,7 +179,7 @@ public class SolidityLog implements SelfSerializable {
 		return new SolidityLog(
 				grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null,
 				grpc.getBloom().isEmpty() ? MISSING_BYTES : grpc.getBloom().toByteArray(),
-				grpc.getTopicList().stream().map(ByteString::toByteArray).collect(toList()),
+				grpc.getTopicList().stream().map(ByteString::toByteArray).toList(),
 				grpc.getData().isEmpty() ? MISSING_BYTES : grpc.getData().toByteArray());
 	}
 
@@ -191,7 +190,7 @@ public class SolidityLog implements SelfSerializable {
 		}
 		grpc.setBloom(ByteString.copyFrom(bloom));
 		grpc.setData(ByteString.copyFrom(data));
-		grpc.addAllTopic(topics.stream().map(ByteString::copyFrom).collect(toList()));
+		grpc.addAllTopic(topics.stream().map(ByteString::copyFrom).toList());
 		return grpc.build();
 	}
 }
