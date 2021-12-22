@@ -2,10 +2,10 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 /*-
  * ‌
- * Hedera Services Node
- *
+ * Hedera Services Test Clients
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,14 +50,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
-public class AssociatePrecompileSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
+public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(MixedHTSPrecompileTestsSuite.class);
 
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String A_TOKEN = "TokenA";
 
 	public static void main(String... args) {
-		new AssociatePrecompileSuite().runSuiteSync();
+		new MixedHTSPrecompileTestsSuite().runSuiteSync();
 	}
 
 	@Override
@@ -67,24 +67,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
-
-	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
 				HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile()
 		);
 	}
-
-	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
-
-		);
-	}
-
 
 	private HapiApiSpec HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile() {
 		final var theAccount = "anybody";
@@ -123,7 +109,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						contractCall(theContract, ContractResources.ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN)
 								.payingWith(theAccount)
 								.via("associateMethodCall"),
-						childRecordsCheck("associateMethodCall", SUCCESS, recordWith()
+						childRecordsCheck("associateMethodCall",
+								SUCCESS,
+								recordWith()
 										.status(SUCCESS),
 								recordWith()
 										.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
@@ -132,9 +120,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(SUCCESS)
 				);
-
 	}
-
 
 	@Override
 	protected Logger getResultsLogger() {
