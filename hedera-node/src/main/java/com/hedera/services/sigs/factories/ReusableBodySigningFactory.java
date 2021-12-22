@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ecdsaSecp256k1Sig;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
@@ -58,7 +59,7 @@ public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
 		if (keccak256Digest == null) {
 			keccak256Digest = keccak256DigestOf(accessor.getTxnBytes());
 		}
-		return ecdsaSecp256k1Sig(publicKey, sigBytes, keccak256Digest);
+		return ecdsaSecp256k1Sig(Arrays.copyOfRange(publicKey, 1, 65), sigBytes, keccak256Digest);
 	}
 
 	/* --- Only used by unit tests --- */
