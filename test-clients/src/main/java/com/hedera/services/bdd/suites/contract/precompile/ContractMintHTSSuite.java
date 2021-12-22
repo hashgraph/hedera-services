@@ -104,7 +104,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of();
+		return List.of(
+				rollbackOnFailedMintAfterFungibleTransfer(),
+				rollbackOnFailedAssociateAfterNonFungibleMint()
+		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
@@ -113,9 +116,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				helloWorldNftMint(),
 				happyPathFungibleTokenMint(),
 				happyPathNonFungibleTokenMint(),
-				transferNftAfterNestedMint(),
-				rollbackOnFailedMintAfterFungibleTransfer(),
-				rollbackOnFailedAssociateAfterNonFungibleMint()
+				transferNftAfterNestedMint()
 		);
 	}
 
@@ -331,10 +332,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
 						cryptoCreate(theRecipient),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(innerContract)
-								.path(ContractResources.MINT_CONTRACT),
-						fileCreate(outerContract)
-								.path(ContractResources.NESTED_MINT_CONTRACT),
 						tokenCreate(nonFungibleToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.INFINITE)
@@ -342,9 +339,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(multiKey)
 								.supplyKey(multiKey),
-						contractCreate(innerContract, MINT_CONS_ABI, new byte[]{})
+						fileCreate(innerContract),
+						updateLargeFile(theAccount, innerContract, extractByteCode(ContractResources.MINT_NFT_CONTRACT)),
+						fileCreate(outerContract),
+						updateLargeFile(theAccount, outerContract, extractByteCode(ContractResources.NESTED_MINT_CONTRACT)),
+						contractCreate(innerContract)
 								.bytecode(innerContract)
-								.gas(100_000L)
+								.gas(100_000)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -358,11 +359,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
 												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
+//												tokenUpdate(nonFungibleToken)
+//														.supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
 														ContractResources.NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI,
 														asAddress(spec.registry().getAccountID(theAccount)),
 														asAddress(spec.registry().getAccountID(theRecipient)),
-														"Test metadata 1", 1)
+														Arrays.asList("Test metadata 1"), 1L)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
@@ -371,7 +374,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
-						childRecordsCheck("nestedAssociateTxn", SUCCESS,
+						childRecordsCheck(nestedTransferTxn, SUCCESS,
 								recordWith().status(SUCCESS).tokenTransfers(NonFungibleTransfers.changingNFTBalances().
 												including(nonFungibleToken, theAccount, theRecipient, 1)))
 				);
@@ -391,12 +394,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(5 * ONE_HUNDRED_HBARS),
 						cryptoCreate(theRecipient),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(theContract)
-								.path(ContractResources.MINT_CONTRACT),
+						fileCreate(theContract),
+						updateLargeFile(theAccount, theContract, extractByteCode(ContractResources.MINT_CONTRACT)),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey),
 						tokenAssociate(theAccount, List.of(fungibleToken)),
 						tokenAssociate(theRecipient, List.of(fungibleToken)),
 						cryptoTransfer(moving(200, fungibleToken).between(TOKEN_TREASURY, theAccount))
@@ -436,16 +441,16 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var outerContract = "transferContract";
 		final var nestedMintTxn = "nestedMintTxn";
 
-		return defaultHapiSpec("TransferNftAfterNestedMint")
+		return defaultHapiSpec("RollbackOnFailedAssociateAfterNonFungibleMint")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
 						cryptoCreate(theRecipient),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(innerContract)
-								.path(ContractResources.MINT_CONTRACT),
-						fileCreate(outerContract)
-								.path(ContractResources.NESTED_MINT_CONTRACT),
+						fileCreate(innerContract),
+						updateLargeFile(theAccount, innerContract, extractByteCode(ContractResources.MINT_NFT_CONTRACT)),
+						fileCreate(outerContract),
+						updateLargeFile(theAccount, outerContract, extractByteCode(ContractResources.NESTED_MINT_CONTRACT)),
 						tokenCreate(nonFungibleToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.INFINITE)
@@ -453,7 +458,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(multiKey)
 								.supplyKey(multiKey),
-						contractCreate(innerContract, MINT_CONS_ABI, new byte[]{})
+						contractCreate(innerContract)
 								.bytecode(innerContract)
 								.gas(100_000L)
 				).when(withOpContext(
@@ -471,7 +476,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
 														ContractResources.REVERT_MINT_AFTER_FAILED_ASSOCIATE,
-														asAddress(spec.registry().getAccountID(theAccount)),"Test metadata 1")
+														asAddress(spec.registry().getAccountID(theAccount)),
+														Arrays.asList("Test metadata 1"))
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(nestedMintTxn)
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),

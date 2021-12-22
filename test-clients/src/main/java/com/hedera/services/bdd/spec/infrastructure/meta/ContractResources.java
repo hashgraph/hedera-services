@@ -89,6 +89,7 @@ public class ContractResources {
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
 	public static final String BURN_TOKEN = bytecodePath("BurnToken");
 	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String MINT_NFT_CONTRACT = bytecodePath("MintNFTContract");
 	public static final String NESTED_BURN = bytecodePath("NestedBurn");
 	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 
@@ -105,13 +106,13 @@ public class ContractResources {
 			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 	public static final String NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\"," +
 			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\"," +
-			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes\"," +
-			"\"name\": \"metadata\",\"type\": \"bytes\"},{\"internalType\": \"int64\"," +
+			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"},{\"internalType\": \"int64\"," +
 			"\"name\": \"serialNumber\",\"type\": \"int64\"}],\"name\": \"sendNFTAfterMint\"," +
 			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String REVERT_MINT_AFTER_FAILED_ASSOCIATE = "{\"inputs\": [{\"internalType" +
-			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes\"," +
-			"\"name\": \"metadata\",\"type\": \"bytes\"}],\"name\": \"revertMintAfterFailedAssociate\",\"outputs\": []," +
+			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"revertMintAfterFailedAssociate\",\"outputs\":[]," +
 			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -120,9 +121,9 @@ public class ContractResources {
 			"\"name\":\"amount\"," +
 			"\"type\":\"uint64\"}],\"name\":\"mintFungibleToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
-	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes[]\"," +
 			"\"name\":\"metadata\"," +
-			"\"type\":\"bytes\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String REVERT_AFTER_FAILED_MINT = "{\"inputs\": [{\"internalType\": \"address\"," +
 			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"}," +
