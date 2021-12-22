@@ -59,7 +59,8 @@ public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
 		if (keccak256Digest == null) {
 			keccak256Digest = keccak256DigestOf(accessor.getTxnBytes());
 		}
-		return ecdsaSecp256k1Sig(Arrays.copyOfRange(publicKey, 1, 65), sigBytes, keccak256Digest);
+		final var uncompressedPubKeyWithoutHeader = Arrays.copyOfRange(publicKey, 1, 65);
+		return ecdsaSecp256k1Sig(uncompressedPubKeyWithoutHeader, sigBytes, keccak256Digest);
 	}
 
 	/* --- Only used by unit tests --- */

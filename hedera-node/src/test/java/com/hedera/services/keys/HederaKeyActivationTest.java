@@ -165,7 +165,8 @@ class HederaKeyActivationTest {
 		assertEquals(SignatureType.ED25519, ed25519Sig.getSignatureType());
 		assertEquals(VerificationStatus.VALID, ed25519Sig.getSignatureStatus());
 
-		final var secp256k1Sig = subject.apply(Arrays.copyOfRange(secp256k1Key.getECDSASecp256k1Key(), 1, 65));
+		final var uncompressedPubKeyWithoutHeader = Arrays.copyOfRange(secp256k1Key.getECDSASecp256k1Key(), 1, 65);
+		final var secp256k1Sig = subject.apply(uncompressedPubKeyWithoutHeader);
 		assertEquals(SignatureType.ECDSA_SECP256K1, secp256k1Sig.getSignatureType());
 	}
 
