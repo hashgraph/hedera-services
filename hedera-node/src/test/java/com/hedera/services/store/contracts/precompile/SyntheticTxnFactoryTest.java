@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
@@ -41,7 +42,7 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedCryptoCreate() {
 		final var balance = 10L;
 		final var alias = KeyFactory.getDefaultInstance().newEd25519();
-		final var result = subject.cryptoCreate(alias, balance);
+		final var result = subject.createAccount(alias, balance);
 		final var txnBody = result.build();
 
 		assertTrue(txnBody.hasCryptoCreateAccount());
@@ -129,9 +130,9 @@ class SyntheticTxnFactoryTest {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
 
-		final var result = subject.createCryptoTransfer(
+		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				List.of(nftExchange),
-				List.of(fungibleTransfer));
+				List.of(fungibleTransfer))));
 		final var txnBody = result.build();
 
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();

@@ -72,325 +72,325 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractBurnHTSSuite extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
+	private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
 
-    private static final String ALICE = "Alice";
-    private static final String TOKEN = "Token";
-    private static final String TOKEN_TREASURY = "TokenTreasury";
+	private static final String ALICE = "Alice";
+	private static final String TOKEN = "Token";
+	private static final String TOKEN_TREASURY = "TokenTreasury";
 
-    public static void main(String... args) {
-        new ContractBurnHTSSuite().runSuiteAsync();
-    }
+	public static void main(String... args) {
+		new ContractBurnHTSSuite().runSuiteAsync();
+	}
 
-    @Override
-    public boolean canRunAsync() {
-        return true;
-    }
+	@Override
+	public boolean canRunAsync() {
+		return true;
+	}
 
-    @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                positiveSpecs(),
-                negativeSpecs()
-        );
-    }
+	@Override
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return allOf(
+				positiveSpecs(),
+				negativeSpecs()
+		);
+	}
 
-    List<HapiApiSpec> negativeSpecs() {
-        return List.of(
-                HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer()
-        );
-    }
+	List<HapiApiSpec> negativeSpecs() {
+		return List.of(
+				HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer()
+		);
+	}
 
-    List<HapiApiSpec> positiveSpecs() {
-        return List.of(
-                HSCS_PREC_004_token_burn_of_fungible_token_units(),
-                HSCS_PREC_005_token_burn_of_NFT(),
-                HSCS_PREC_011_burn_after_nested_mint()
-        );
-    }
+	List<HapiApiSpec> positiveSpecs() {
+		return List.of(
+				HSCS_PREC_004_token_burn_of_fungible_token_units(),
+				HSCS_PREC_005_token_burn_of_NFT(),
+				HSCS_PREC_011_burn_after_nested_mint()
+		);
+	}
 
-    private HapiApiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
-        final var theContract = "burn token";
-        final var multiKey = "purpose";
+	private HapiApiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
+		final var theContract = "burn token";
+		final var multiKey = "purpose";
 
-        return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(50L)
-                                .supplyKey(multiKey)
-                                .adminKey(multiKey)
-                                .treasury(TOKEN_TREASURY),
-                        fileCreate("bytecode").payingWith(ALICE),
-                        updateLargeFile(ALICE, "bytecode", extractByteCode(ContractResources.BURN_TOKEN)),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(theContract, ContractResources.BURN_TOKEN_CONSTRUCTOR_ABI,
-                                                        asAddress(spec.registry().getTokenID(TOKEN)))
-                                                        .payingWith(ALICE)
-                                                        .bytecode("bytecode")
-                                                        .via("creationTx")
-                                                        .gas(28_000))),
-                        getTxnRecord("creationTx").logged()
-                )
-                .when(
-                        contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
-                                .payingWith(ALICE)
-                                .alsoSigningWithFullPrefix(multiKey)
-                                .gas(48_000)
-                                .via("burn"),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
+		return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(50L)
+								.supplyKey(multiKey)
+								.adminKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						fileCreate("bytecode").payingWith(ALICE),
+						updateLargeFile(ALICE, "bytecode", extractByteCode(ContractResources.BURN_TOKEN)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.BURN_TOKEN_CONSTRUCTOR_ABI,
+														asAddress(spec.registry().getTokenID(TOKEN)))
+														.payingWith(ALICE)
+														.bytecode("bytecode")
+														.via("creationTx")
+														.gas(28_000))),
+						getTxnRecord("creationTx").logged()
+				)
+				.when(
+						contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
+								.payingWith(ALICE)
+								.alsoSigningWithFullPrefix(multiKey)
+								.gas(48_000)
+								.via("burn"),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
 
-                        childRecordsCheck("burn", SUCCESS, recordWith()
-                                .status(SUCCESS)
-                                .tokenTransfers(
-                                        changingFungibleBalances()
-                                                .including(TOKEN, TOKEN_TREASURY, -1)
-                                )
-                                .newTotalSupply(49)
-                        ),
+						childRecordsCheck("burn", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										changingFungibleBalances()
+												.including(TOKEN, TOKEN_TREASURY, -1)
+								)
+								.newTotalSupply(49)
+						),
 
-                        newKeyNamed("contractKey")
-                                .shape(DELEGATE_CONTRACT.signedWith(theContract)),
-                        tokenUpdate(TOKEN)
-                                .supplyKey("contractKey"),
-                        contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
-                                .via("burn with contract key")
-                                .gas(48_000),
+						newKeyNamed("contractKey")
+								.shape(DELEGATE_CONTRACT.signedWith(theContract)),
+						tokenUpdate(TOKEN)
+								.supplyKey("contractKey"),
+						contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
+								.via("burn with contract key")
+								.gas(48_000),
 
-                        childRecordsCheck("burn with contract key", SUCCESS, recordWith()
-                                .status(SUCCESS)
-                                .tokenTransfers(
-                                        changingFungibleBalances()
-                                                .including(TOKEN, TOKEN_TREASURY, -1)
-                                )
-                                .newTotalSupply(48)
-                        )
+						childRecordsCheck("burn with contract key", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										changingFungibleBalances()
+												.including(TOKEN, TOKEN_TREASURY, -1)
+								)
+								.newTotalSupply(48)
+						)
 
-                )
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48)
+				)
+				.then(
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48)
 
-                );
-    }
+				);
+	}
 
-    private HapiApiSpec HSCS_PREC_005_token_burn_of_NFT() {
-        final var theContract = "burn token";
-        final var multiKey = "purpose";
+	private HapiApiSpec HSCS_PREC_005_token_burn_of_NFT() {
+		final var theContract = "burn token";
+		final var multiKey = "purpose";
 
-        return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(multiKey)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
-                        mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
-                        fileCreate("bytecode").payingWith(ALICE),
-                        updateLargeFile(ALICE, "bytecode", extractByteCode(ContractResources.BURN_TOKEN)),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(theContract, ContractResources.BURN_TOKEN_CONSTRUCTOR_ABI,
-                                                        asAddress(spec.registry().getTokenID(TOKEN)))
-                                                        .payingWith(ALICE)
-                                                        .bytecode("bytecode")
-                                                        .via("creationTx")
-                                                        .gas(28_000))),
-                        getTxnRecord("creationTx").logged()
-                )
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var serialNumbers = new ArrayList<>();
-                                    serialNumbers.add(1L);
-                                    allRunFor(
-                                            spec,
-                                            contractCall(theContract, BURN_TOKEN_ABI, 0, serialNumbers)
-                                                    .payingWith(ALICE)
-                                                    .alsoSigningWithFullPrefix(multiKey)
-                                                    .gas(48_000)
-                                                    .via("burn"));
-                                }
-                                ),
+		return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
+						mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
+						fileCreate("bytecode").payingWith(ALICE),
+						updateLargeFile(ALICE, "bytecode", extractByteCode(ContractResources.BURN_TOKEN)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.BURN_TOKEN_CONSTRUCTOR_ABI,
+														asAddress(spec.registry().getTokenID(TOKEN)))
+														.payingWith(ALICE)
+														.bytecode("bytecode")
+														.via("creationTx")
+														.gas(28_000))),
+						getTxnRecord("creationTx").logged()
+				)
+				.when(
+						withOpContext(
+								(spec, opLog) -> {
+									var serialNumbers = new ArrayList<>();
+									serialNumbers.add(1L);
+									allRunFor(
+											spec,
+											contractCall(theContract, BURN_TOKEN_ABI, 0, serialNumbers)
+													.payingWith(ALICE)
+													.alsoSigningWithFullPrefix(multiKey)
+													.gas(48_000)
+													.via("burn"));
+								}
+						),
 
-                        childRecordsCheck("burn", SUCCESS, recordWith()
-                                .status(SUCCESS)
-                                .newTotalSupply(1)
-                        )
+						childRecordsCheck("burn", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.newTotalSupply(1)
+						)
 
-                )
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1)
+				)
+				.then(
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1)
 
-                );
-    }
+				);
+	}
 
-    private HapiApiSpec HSCS_PREC_011_burn_after_nested_mint() {
-        final var innerContract = "BurnTokenContract";
-        final var outerContract = "NestedBurnContract";
-        final var multiKey = "purpose";
-        final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
+	private HapiApiSpec HSCS_PREC_011_burn_after_nested_mint() {
+		final var innerContract = "BurnTokenContract";
+		final var outerContract = "NestedBurnContract";
+		final var multiKey = "purpose";
+		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
-        return defaultHapiSpec("HSCS_PREC_011_burn_after_nested_mint")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(50L)
-                                .supplyKey(multiKey)
-                                .adminKey(multiKey)
-                                .treasury(TOKEN_TREASURY),
-                        fileCreate(innerContract).path(ContractResources.MINT_TOKEN_CONTRACT),
-                        fileCreate(outerContract).path(ContractResources.NESTED_BURN),
-                        contractCreate(innerContract)
-                                .bytecode(innerContract)
-                                .gas(100_000),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(outerContract, ContractResources.NESTED_BURN_CONSTRUCTOR_ABI,
-                                                        getNestedContractAddress(innerContract, spec))
-                                                        .payingWith(ALICE)
-                                                        .bytecode(outerContract)
-                                                        .via("creationTx")
-                                                        .gas(28_000))),
-                        getTxnRecord("creationTx").logged()
+		return defaultHapiSpec("HSCS_PREC_011_burn_after_nested_mint")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(50L)
+								.supplyKey(multiKey)
+								.adminKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						fileCreate(innerContract).path(ContractResources.MINT_TOKEN_CONTRACT),
+						fileCreate(outerContract).path(ContractResources.NESTED_BURN),
+						contractCreate(innerContract)
+								.bytecode(innerContract)
+								.gas(100_000),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(outerContract, ContractResources.NESTED_BURN_CONSTRUCTOR_ABI,
+														getNestedContractAddress(innerContract, spec))
+														.payingWith(ALICE)
+														.bytecode(outerContract)
+														.via("creationTx")
+														.gas(28_000))),
+						getTxnRecord("creationTx").logged()
 
-                )
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                newKeyNamed("contractKey").shape(revisedKey.signedWith(sigs(ON, outerContract, innerContract))),
-                                                tokenUpdate(TOKEN)
-                                                        .supplyKey("contractKey"),
-                                                contractCall(outerContract, BURN_AFTER_NESTED_MINT_ABI,
-                                                        1, asAddress(spec.registry().getTokenID(TOKEN)), new ArrayList<>())
-                                                        .payingWith(ALICE)
-                                                        .via("burnAfterNestedMint"))),
+				)
+				.when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												newKeyNamed("contractKey").shape(revisedKey.signedWith(sigs(ON, outerContract, innerContract))),
+												tokenUpdate(TOKEN)
+														.supplyKey("contractKey"),
+												contractCall(outerContract, BURN_AFTER_NESTED_MINT_ABI,
+														1, asAddress(spec.registry().getTokenID(TOKEN)), new ArrayList<>())
+														.payingWith(ALICE)
+														.via("burnAfterNestedMint"))),
 
-                        childRecordsCheck("burnAfterNestedMint", SUCCESS, recordWith()
-                                .status(SUCCESS)
-                                .tokenTransfers(
-                                        changingFungibleBalances()
-                                                .including(TOKEN, TOKEN_TREASURY, 1)
-                                )
-                                .newTotalSupply(51),
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, -1)
-                                        )
-                                        .newTotalSupply(50)
-                        )
+						childRecordsCheck("burnAfterNestedMint", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(TOKEN, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(TOKEN, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						)
 
-                )
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50)
-                );
-    }
+				)
+				.then(
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50)
+				);
+	}
 
-    private HapiApiSpec HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer() {
-        final var bob = "bob";
-        final var feeCollector = "feeCollector";
-        final var supplyKey = "supplyKey";
-        final var tokenWithHbarFee = "tokenWithHbarFee";
-        final var theContract = "theContract";
+	private HapiApiSpec HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer() {
+		final var bob = "bob";
+		final var feeCollector = "feeCollector";
+		final var supplyKey = "supplyKey";
+		final var tokenWithHbarFee = "tokenWithHbarFee";
+		final var theContract = "theContract";
 
-        return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
-                .given(
-                        newKeyNamed(supplyKey),
-                        cryptoCreate(ALICE).balance(ONE_HBAR),
-                        cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(feeCollector).balance(0L),
-                        tokenCreate(tokenWithHbarFee)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(supplyKey)
-                                .initialSupply(0L)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
-                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
-                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
-                        fileCreate("bytecode").payingWith(bob),
-                        updateLargeFile(bob, "bytecode",
-                                extractByteCode(ContractResources.TRANSFER_AND_BURN)),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(theContract, ContractResources.TRANSFER_AND_BURN_CONSTRUCTOR_ABI,
-                                                        asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
-                                                        .payingWith(bob)
-                                                        .bytecode("bytecode")
-                                                        .gas(28_000))),
-                        tokenAssociate(ALICE, tokenWithHbarFee),
-                        tokenAssociate(bob, tokenWithHbarFee),
-                        tokenAssociate(theContract, tokenWithHbarFee),
-                        cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(GENESIS),
-                        getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
-                )
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var serialNumbers = new ArrayList<>();
-                                    serialNumbers.add(1L);
-                                    allRunFor(
-                                            spec,
-                                            contractCall(theContract, TRANSFER_BURN_ABI,
-                                                    asAddress(spec.registry().getAccountID(ALICE)),
-                                                    asAddress(spec.registry().getAccountID(bob)), 0,
-                                                    2L, serialNumbers)
-                                                    .payingWith(ALICE)
-                                                    .alsoSigningWithFullPrefix(ALICE)
-                                                    .alsoSigningWithFullPrefix(supplyKey)
-                                                    .gas(70_000)
-                                                    .via("contractCallTxn")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-                                }),
+		return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(ALICE).balance(ONE_HBAR),
+						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(feeCollector).balance(0L),
+						tokenCreate(tokenWithHbarFee)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyKey(supplyKey)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
+						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
+						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
+						fileCreate("bytecode").payingWith(bob),
+						updateLargeFile(bob, "bytecode",
+								extractByteCode(ContractResources.TRANSFER_AND_BURN)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(theContract, ContractResources.TRANSFER_AND_BURN_CONSTRUCTOR_ABI,
+														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+														.payingWith(bob)
+														.bytecode("bytecode")
+														.gas(28_000))),
+						tokenAssociate(ALICE, tokenWithHbarFee),
+						tokenAssociate(bob, tokenWithHbarFee),
+						tokenAssociate(theContract, tokenWithHbarFee),
+						cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(TOKEN_TREASURY, ALICE))
+								.payingWith(GENESIS),
+						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
+				)
+				.when(
+						withOpContext(
+								(spec, opLog) -> {
+									var serialNumbers = new ArrayList<>();
+									serialNumbers.add(1L);
+									allRunFor(
+											spec,
+											contractCall(theContract, TRANSFER_BURN_ABI,
+													asAddress(spec.registry().getAccountID(ALICE)),
+													asAddress(spec.registry().getAccountID(bob)), 0,
+													2L, serialNumbers)
+													.payingWith(ALICE)
+													.alsoSigningWithFullPrefix(ALICE)
+													.alsoSigningWithFullPrefix(supplyKey)
+													.gas(70_000)
+													.via("contractCallTxn")
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+								}),
 
-                        childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-                                        .status(REVERTED_SUCCESS),
-                                recordWith()
-                                        .status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                        )
-                )
-                .then(
-                        getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenWithHbarFee, 1),
-                        getAccountBalance(ALICE).hasTokenBalance(tokenWithHbarFee, 1)
-                );
-    }
-
-
-    @NotNull
-    private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-        return CommonUtils.calculateSolidityAddress(
-                (int) spec.registry().getContractId(outerContract).getShardNum(),
-                spec.registry().getContractId(outerContract).getRealmNum(),
-                spec.registry().getContractId(outerContract).getContractNum());
-    }
+						childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED, recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+						)
+				)
+				.then(
+						getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenWithHbarFee, 1),
+						getAccountBalance(ALICE).hasTokenBalance(tokenWithHbarFee, 1)
+				);
+	}
 
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+	@NotNull
+	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
+	}
+
+
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 }
