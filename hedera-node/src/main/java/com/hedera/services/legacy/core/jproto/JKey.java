@@ -29,11 +29,13 @@ import org.apache.commons.codec.DecoderException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import static com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+import static com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key.ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.decompressSecp256k1;
 
 /**
@@ -126,14 +128,15 @@ public abstract class JKey {
 			rv = new JContractIDKey(key.getContractID());
 		} else if (!key.getECDSASecp256K1().isEmpty()) {
 			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
-			byte[] uncompressedPubKeyBytes;
 
 			if (pubKeyBytes.length == ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-				uncompressedPubKeyBytes = decompressSecp256k1(pubKeyBytes);
-			} else {
-				uncompressedPubKeyBytes = pubKeyBytes;
+				pubKeyBytes = ByteBuffer.allocate(ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH)
+						.put(new byte[] { 0x04 })
+						.put(decompressSecp256k1(pubKeyBytes))
+						.array();
 			}
-			rv = new JECDSASecp256k1Key(uncompressedPubKeyBytes);
+
+			rv = new JECDSASecp256k1Key(pubKeyBytes);
 		} else if (key.getDelegatableContractId().getContractNum() != 0) {
 			rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
 		} else {

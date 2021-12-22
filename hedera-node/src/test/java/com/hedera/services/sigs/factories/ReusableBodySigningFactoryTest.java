@@ -88,16 +88,15 @@ class ReusableBodySigningFactoryTest {
 		final var kp = KeyFactory.ecdsaKpGenerator.generateKeyPair();
 		final var q = ((ECPublicKeyParameters) kp.getPublic()).getQ();
 		final var uncompressed = q.getEncoded(false);
-		final var uncompressedWithoutHeader = Arrays.copyOfRange(uncompressed, 1, 65);
 
 		given(accessor.getTxnBytes()).willReturn(data);
-
 		final var digest = MiscCryptoUtils.keccak256DigestOf(data);
 
+		final var uncompressedWithoutHeader = Arrays.copyOfRange(uncompressed, 1, uncompressed.length);
 		final var expectedSig = expectedEcdsaSecp256k1Sig(uncompressedWithoutHeader);
 
 		subject.resetFor(accessor);
-		final var actualSig = subject.signKeccak256DigestWithSecp256k1(uncompressedWithoutHeader, sig);
+		final var actualSig = subject.signKeccak256DigestWithSecp256k1(uncompressed, sig);
 
 		Assertions.assertEquals(expectedSig, actualSig);
 

@@ -21,15 +21,18 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
+import static com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key.ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -172,6 +175,22 @@ class JKeyTest {
 		assertEquals(65, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
 		assertTrue(validEDCSAsecp256K1Key.isValid());
 		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
+	}
+
+	@Test
+	void convertsCompressedECDSAsecp256k1Key() {
+		final var kp = KeyFactory.ecdsaKpGenerator.generateKeyPair();
+		final var q = ((ECPublicKeyParameters) kp.getPublic()).getQ();
+		final var uncompressed = q.getEncoded(false);
+		final var compressed = q.getEncoded(true);
+
+		final Key aKey = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(compressed)).build();
+
+		var validEDCSAsecp256K1Key = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
+		assertTrue(validEDCSAsecp256K1Key instanceof JECDSASecp256k1Key);
+		assertEquals(ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
+		assertTrue(validEDCSAsecp256K1Key.isValid());
+		assertTrue(Arrays.equals(uncompressed, validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
 	}
 
 	@Test
