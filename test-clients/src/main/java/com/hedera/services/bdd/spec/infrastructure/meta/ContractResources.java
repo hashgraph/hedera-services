@@ -85,6 +85,7 @@ public class ContractResources {
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
+	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -105,6 +106,16 @@ public class ContractResources {
 			"\"name\":\"metadata\"," +
 			"\"type\":\"bytes\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST = "{\"inputs\": [{\"components\": [{\"internalType\": \"address\"," +
+			"\"name\": \"token\",\"type\": \"address\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"accountID\"," +
+			"\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.AccountAmount[]\"," +
+			"\"name\": \"transfers\",\"type\": \"tuple[]\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"senderAccountID\",\"type\": \"address\"}," +
+			"{" + "\"internalType\": \"address\",\"name\": \"receiverAccountID\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNumber\"," +
+			"\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.NftTransfer[]\",\"name\": \"nftTransfers\",\"type\": \"tuple[]\"}]," +
+			"\"internalType\": \"struct IHederaTokenService.TokenTransferList[]\",\"name\": \"tokenTransfers\"," + "\"type\": \"tuple[]\"" + "}]," +
+			"\"name\": \"transferMultipleTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +

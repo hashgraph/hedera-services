@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -97,6 +98,8 @@ class ContractCallLocalResourceUsageTest {
 	private EntityIdSource ids;
 	@Mock
 	private OptionValidator validator;
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -107,7 +110,7 @@ class ContractCallLocalResourceUsageTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalResourceUsage(
-				usageEstimator, properties, accountStore, evmTxProcessor, ids, validator);
+				usageEstimator, properties, nodeLocalProperties, accountStore, evmTxProcessor, ids, validator);
 	}
 
 	@Test

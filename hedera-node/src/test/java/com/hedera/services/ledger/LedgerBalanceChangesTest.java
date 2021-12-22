@@ -462,7 +462,7 @@ class LedgerBalanceChangesTest {
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.build());
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-		given(syntheticTxnFactory.cryptoCreate(any(), anyLong())).willReturn(mockCreateTxn);
+		given(syntheticTxnFactory.createAccount(any(), anyLong())).willReturn(mockCreateTxn);
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(123);
