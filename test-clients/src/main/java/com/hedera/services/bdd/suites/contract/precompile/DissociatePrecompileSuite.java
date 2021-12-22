@@ -148,6 +148,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 		);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForFungibleVanilla() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -218,6 +219,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForFungibleFrozen() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -268,6 +270,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -316,6 +319,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -389,6 +393,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -440,6 +445,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
@@ -489,6 +495,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- Not specifically required in the HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
 		final String tbdUniqToken = "UniqToBeDeleted";
 		final String zeroBalanceFrozen = "0bFrozen";
@@ -618,6 +625,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- Not specifically required in the HTS Precompile Test Plan -- */
 	private HapiApiSpec nestedDissociateWorksAsExpected() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -663,6 +671,8 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+
+	/* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
 	public HapiApiSpec multiplePrecompileDissociationWithSigsForFungibleWorks() {
 		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -718,6 +728,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-1 from HTS Precompile Test Plan -- */
 	private HapiApiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -764,6 +775,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-3 from HTS Precompile Test Plan -- */
 	private HapiApiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -810,6 +822,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-2 from HTS Precompile Test Plan -- */
 	private HapiApiSpec staticCallForDissociatePrecompileFails() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();

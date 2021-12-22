@@ -149,6 +149,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		);
 	}
 
+	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -189,6 +190,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> coconutTokenID = new AtomicReference<>();
@@ -240,6 +242,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
 	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -280,6 +283,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
 	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -322,6 +326,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -365,6 +370,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-1 from HTS Precompile Test Plan -- */
 	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -410,6 +416,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-3 from HTS Precompile Test Plan -- */
 	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -455,6 +462,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-5 from HTS Precompile Test Plan -- */
 	private HapiApiSpec staticCallForAssociatePrecompileFails() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
@@ -497,6 +505,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
 	private HapiApiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -567,6 +576,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
 	private HapiApiSpec nestedAssociateWorksAsExpected() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -611,6 +621,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -662,6 +673,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -717,6 +729,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
@@ -770,6 +783,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -822,6 +836,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
@@ -877,6 +892,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
@@ -931,6 +947,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	/* -- Not specifically required in the HTS Precompile Test Plan -- */
 	private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
