@@ -106,6 +106,8 @@ class MintPrecompilesTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
+	private EncodingFacade encoder;
+	@Mock
 	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
 	@Mock
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
@@ -146,7 +148,7 @@ class MintPrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

@@ -18,19 +18,17 @@ public class EncodingFacade {
 
 	@Inject
 	public EncodingFacade() {
-		//Default constructor
 	}
 
-	public static Bytes getMintSuccessfulResultFromReceipt(final TxnReceipt.Builder receiptBuilder) {
+	public static Bytes getMintSuccessfulResultFromReceipt(final long totalSupply, final long[] serialNumbers) {
 		return functionResultBuilder().forFunction(FunctionType.MINT).withStatus(SUCCESS.getNumber()).
-				withTotalSupply(receiptBuilder.getNewTotalSupply()).
-				withSerialNumbers(receiptBuilder.getSerialNumbers() != null ? receiptBuilder.getSerialNumbers() :
-						new long[0]).build();
+				withTotalSupply(totalSupply).
+				withSerialNumbers(serialNumbers != null ? serialNumbers : new long[0]).build();
 	}
 
-	public static Bytes getBurnSuccessfulResultFromReceipt(final TxnReceipt.Builder receiptBuilder) {
+	public static Bytes getBurnSuccessfulResultFromReceipt(final long totalSupply) {
 		return functionResultBuilder().forFunction(FunctionType.BURN).withStatus(SUCCESS.getNumber()).
-				withTotalSupply(receiptBuilder.getNewTotalSupply()).build();
+				withTotalSupply(totalSupply).build();
 	}
 
 	private enum FunctionType {

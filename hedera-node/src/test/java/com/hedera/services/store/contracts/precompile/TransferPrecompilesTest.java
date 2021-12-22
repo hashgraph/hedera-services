@@ -113,6 +113,8 @@ class TransferPrecompilesTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
+	private EncodingFacade encoder;
+	@Mock
 	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
 	@Mock
 	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
@@ -158,7 +160,7 @@ class TransferPrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

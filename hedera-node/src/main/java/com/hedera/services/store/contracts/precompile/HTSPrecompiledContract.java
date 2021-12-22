@@ -90,8 +90,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.getBurnSuccessfulResultFromReceipt;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.getMintSuccessfulResultFromReceipt;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -129,6 +127,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private final EntityCreator creator;
 	private final DecodingFacade decoder;
+	private final EncodingFacade encoder;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 	private final SoliditySigsVerifier sigsVerifier;
@@ -169,6 +168,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final AccountRecordsHistorian recordsHistorian,
 			final TxnAwareSoliditySigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
+			final EncodingFacade encoder,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final ExpiringCreations creator,
 			final DissociationFactory dissociationFactory,
@@ -177,7 +177,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		super("HTS", gasCalculator);
 
 		this.decoder = decoder;
-
+		this.encoder = encoder;
 		this.sigsVerifier = sigsVerifier;
 		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
@@ -289,9 +289,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = precompile.run(recipient, contract, ledgers);
 
 			if(precompile instanceof MintPrecompile && childRecord.getReceiptBuilder()!=null) {
-				result = getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder());
+				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
+						childRecord.getReceiptBuilder().getSerialNumbers());
 			} else if(precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder()!=null) {
-				result = getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder());
+				result = encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
 			}
 
 			ledgers.commit();
