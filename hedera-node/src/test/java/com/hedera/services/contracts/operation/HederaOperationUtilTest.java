@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
@@ -65,6 +67,8 @@ class HederaOperationUtilTest {
 	private Supplier<Gas> gasSupplier;
 	@Mock
 	private Supplier<Operation.OperationResult> executionSupplier;
+	@Mock
+	private Map<String, PrecompiledContract> precompiledContractMap;
 
 	private final Optional<Gas> expectedHaltGas = Optional.of(Gas.of(10));
 	private final Optional<Gas> expectedSuccessfulGas = Optional.of(Gas.of(100));
@@ -196,7 +200,7 @@ class HederaOperationUtilTest {
 				Address.ZERO,
 				gasSupplier,
 				executionSupplier,
-				(a, b) -> false);
+				(a, b) -> false, precompiledContractMap);
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
@@ -229,7 +233,7 @@ class HederaOperationUtilTest {
 				Address.ZERO,
 				gasSupplier,
 				executionSupplier,
-				(a, b) -> true);
+				(a, b) -> true, precompiledContractMap);
 
 		// then:
 		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
@@ -264,7 +268,7 @@ class HederaOperationUtilTest {
 				Address.ZERO,
 				gasSupplier,
 				executionSupplier,
-				(a, b) -> true);
+				(a, b) -> true, precompiledContractMap);
 
 		// then:
 		assertTrue(result.getHaltReason().isEmpty());

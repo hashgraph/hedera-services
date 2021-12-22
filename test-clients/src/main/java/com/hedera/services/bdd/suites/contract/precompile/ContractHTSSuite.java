@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,6 +58,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
@@ -113,7 +114,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
 						tokenCreate(tokenWithHbarFee)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(treasuryForToken)
@@ -175,17 +176,16 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theReceiver),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("bytecode").payingWith(theAccount),
-						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.ZENOS_BANK_CONTRACT)),
+						updateLargeFile(theAccount, "bytecode", extractByteCode(ContractResources.ORDINARY_CALLS_CONTRACT)),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, ContractResources.ZENOS_BANK_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
+												contractCreate(theContract)
 														.payingWith(theAccount)
 														.bytecode("bytecode")
 														.via("creationTx")
@@ -218,7 +218,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
@@ -254,7 +254,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
