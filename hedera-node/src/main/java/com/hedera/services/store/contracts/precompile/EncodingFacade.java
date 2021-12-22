@@ -18,6 +18,7 @@ public class EncodingFacade {
 
 	@Inject
 	public EncodingFacade() {
+		//Default constructor
 	}
 
 	public static Bytes getMintSuccessfulResultFromReceipt(final TxnReceipt.Builder receiptBuilder) {
@@ -48,10 +49,15 @@ public class EncodingFacade {
 		private long[] serialNumbers;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			switch(functionType) {
-				case MINT -> tupleType = mintReturnType;
-				case BURN -> tupleType = burnReturnType;
-				default -> tupleType = TupleType.EMPTY;
+			switch (functionType) {
+				case MINT:
+					tupleType = mintReturnType;
+					break;
+				case BURN:
+					tupleType = burnReturnType;
+					break;
+				default:
+					tupleType = TupleType.EMPTY;
 			}
 			this.functionType = functionType;
 			return this;
@@ -74,15 +80,20 @@ public class EncodingFacade {
 
 		private Bytes build() {
 			Tuple result;
-			switch(functionType) {
-				case MINT -> result = com.esaulpaugh.headlong.abi.Tuple.of(
-						status,
-						BigInteger.valueOf(totalSupply),
-						serialNumbers);
-				case BURN -> result = com.esaulpaugh.headlong.abi.Tuple.of(
-						status,
-						BigInteger.valueOf(totalSupply));
-				default -> result = Tuple.EMPTY;
+			switch (functionType) {
+				case MINT:
+					result = com.esaulpaugh.headlong.abi.Tuple.of(
+							status,
+							BigInteger.valueOf(totalSupply),
+							serialNumbers);
+					break;
+				case BURN:
+					result = com.esaulpaugh.headlong.abi.Tuple.of(
+							status,
+							BigInteger.valueOf(totalSupply));
+					break;
+				default:
+					result = Tuple.EMPTY;
 			}
 			return Bytes.wrap(tupleType.encode(result).array());
 		}
