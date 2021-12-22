@@ -65,9 +65,4 @@ class LogUtilsTest {
 //		final var actualLogWithJndiLookUp = outContent.toString();
 //		assertTrue(actualLogWithJndiLookUp.contains(stackStraceSample));
 	}
-	@Test
-	void test() {
-		final String logMessage = String.format("Possibly CATASTROPHIC failure in %s :: %s ==>> %s ==>>", "123", "%s", "456");
-		System.out.println(logMessage);
-	}
 }
