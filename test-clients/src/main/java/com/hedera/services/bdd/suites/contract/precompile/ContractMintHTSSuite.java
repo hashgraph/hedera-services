@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,10 +28,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,12 +36,16 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_BRRR_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_CALL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_CALL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -59,6 +60,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
@@ -212,10 +216,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theAccount).balance(10 * ONE_MILLION_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(mintContractByteCode)
-								.path(ContractResources.MINT_CONTRACT).payingWith(theAccount),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode,
+								extractByteCode(ContractResources.MINT_CONTRACT)),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(0)
@@ -228,10 +233,16 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.bytecode(mintContractByteCode).payingWith(theAccount)
 								.gas(300_000L))
 				).then(
-						contractCall(theContract, MINT_FUNGIBLE_CALL_ABI, amount)
+						contractCall(theContract, MINT_FUNGIBLE_WITH_EVENT_CALL_ABI, amount)
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						getTxnRecord(firstMintTxn).hasPriority(
+								recordWith().contractCallResult(
+										resultWith().logs(inOrder(logWith().noData().withTopicsInOrder(
+												List.of(
+														parsedToByteString(amount),
+														parsedToByteString(0))))))),
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
 				);
@@ -240,13 +251,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	private HapiApiSpec happyPathNonFungibleTokenMint() {
 		final var theAccount = "anybody";
 		final var mintContractByteCode = "mintContractByteCode";
-		final var numberOfTokens = 2;
 		final var nonFungibleToken = "nonFungibleToken";
 		final var multiKey = "purpose";
 		final var theContract = "mintContract";
 		final var firstMintTxn = "firstMintTxn";
+		final var totalSupply = 2;
 
-		byte[] metadataBytes = getMetadata();
 		final AtomicLong nonFungibleNum = new AtomicLong();
 
 		return defaultHapiSpec("NonFungibleMint")
@@ -254,8 +264,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(mintContractByteCode)
-								.path(ContractResources.MINT_CONTRACT).payingWith(theAccount),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode,
+								extractByteCode(ContractResources.MINT_CONTRACT)),
 						tokenCreate(nonFungibleToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.INFINITE)
@@ -269,31 +280,20 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.bytecode(mintContractByteCode).payingWith(theAccount)
 								.gas(300_000L))
 				).then(
-						contractCall(theContract, MINT_NON_FUNGIBLE_CALL_ABI, metadataBytes)
+						contractCall(theContract, MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI,
+								Arrays.asList("Test metadata 1", "Test metadata 2"))
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(nonFungibleToken).hasTotalSupply(2),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 2)
+						getTxnRecord(firstMintTxn).hasPriority(
+								recordWith().contractCallResult(
+										resultWith().logs(inOrder(logWith().noData().withTopicsInOrder(
+												List.of(
+														parsedToByteString(totalSupply),
+														parsedToByteString(1))))))),
+						getTokenInfo(nonFungibleToken).hasTotalSupply(totalSupply),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, totalSupply)
 				);
-	}
-
-	private byte[] getMetadata() {
-		final List<String> metadataList = new ArrayList<>();
-		metadataList.add("Test metadata 1");
-		metadataList.add("Test metadata 2");
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		final DataOutputStream out = new DataOutputStream(baos);
-
-		for (final String element : metadataList) {
-			try {
-				out.writeUTF(element);
-			} catch (IOException e) {
-				log.warn("Invalid parsing of metadata list!");
-			}
-		}
-
-		return baos.toByteArray();
 	}
 
 	@Override
