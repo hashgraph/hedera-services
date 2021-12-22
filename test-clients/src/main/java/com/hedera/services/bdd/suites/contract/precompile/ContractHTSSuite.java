@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.core.CommonUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +38,6 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DISSOCIATE_TOKEN;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
@@ -77,7 +75,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -129,8 +126,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 		return List.of(
 				distributeMultipleTokens(),
 				depositAndWithdrawFungibleTokens(),
-				associateToken(),
-				dissociateToken(),
 				transferNft(),
 				transferMultipleNfts(),
 				tokenTransferFromFeeCollector()
@@ -639,78 +634,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
 				);
 	}
-
-	private HapiApiSpec associateToken() {
-		return defaultHapiSpec("associateHappyPath")
-				.given(
-						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(A_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
-						fileCreate("associateDissociateContractByteCode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "associateDissociateContractByteCode",
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
-														.payingWith(ACCOUNT)
-														.bytecode("associateDissociateContractByteCode")
-														.via("associateTxn")
-														.gas(100000),
-												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
-										)
-						)
-				).when(
-						contractCall(CONTRACT, ContractResources.ASSOCIATE_TOKEN).payingWith(ACCOUNT).via("associateMethodCall")
-				).then(
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-								.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-				);
-	}
-
-	private HapiApiSpec dissociateToken() {
-		return defaultHapiSpec("dissociateHappyPath")
-				.given(
-						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(A_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
-						fileCreate("associateDissociateContractByteCode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "associateDissociateContractByteCode",
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
-														.payingWith(ACCOUNT)
-														.bytecode("associateDissociateContractByteCode")
-														.via("associateTxn")
-														.gas(100000),
-												contractCall(CONTRACT, ContractResources.ASSOCIATE_TOKEN).payingWith(ACCOUNT).via("associateMethodCall"),
-												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-														.hasKnownStatus(SUCCESS),
-												cryptoTransfer(moving(200, A_TOKEN).between(ACCOUNT, TOKEN_TREASURY))
-														.hasKnownStatus(SUCCESS)
-										)
-						)
-				).when(
-						contractCall(CONTRACT, DISSOCIATE_TOKEN).payingWith(ACCOUNT).via("dissociateMethodCall")
-				).then(
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-								.hasKnownStatus(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
-				);
-	}
-
+	
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
