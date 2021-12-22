@@ -187,7 +187,7 @@ class JKeyListTest {
 	}
 
 	public static Key randomValidECDSASecp256K1Key() {
-		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x04 })
 				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH - 1));
 		return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 	}

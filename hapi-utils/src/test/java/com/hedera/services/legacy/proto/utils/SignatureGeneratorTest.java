@@ -47,7 +47,8 @@ class SignatureGeneratorTest {
 				java.security.KeyPairGenerator.getInstance("EC", BOUNCYCASTLE_PROVIDER);
 		generator.initialize(ecSpec, new SecureRandom());
 		final var kp = generator.generateKeyPair();
-		Assertions.assertDoesNotThrow(() -> SignatureGenerator.signBytes("abc".getBytes(), kp.getPrivate()));
+		final var sig = Assertions.assertDoesNotThrow(
+				() -> SignatureGenerator.signBytes("abc".getBytes(), kp.getPrivate()));
 	}
 
 	@Test

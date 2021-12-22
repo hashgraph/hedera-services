@@ -59,7 +59,7 @@ class JECDSASecp256K1KeyTest {
 
 	@Test
 	void nonEmptyValid0x02JECDSAsecp256k1KeyTest() {
-		bytes[0] = 0x02;
+		bytes[0] = 0x04;
 		JECDSASecp256k1Key key = new JECDSASecp256k1Key(bytes);
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
@@ -80,8 +80,8 @@ class JECDSASecp256K1KeyTest {
 
 	@Test
 	void constructorWorks() {
-		var bytes = new byte[33];
-		bytes[0] = 0x03;
+		var bytes = new byte[65];
+		bytes[0] = 0x04;
 		var subject = new JECDSASecp256k1Key(bytes);
 
 		assertEquals(bytes, subject.getECDSASecp256k1Key());
@@ -96,7 +96,7 @@ class JECDSASecp256K1KeyTest {
 	void toStringWorks() {
 		assertEquals(
 				"<JECDSASecp256k1Key: ecdsaSecp256k1Key " +
-						"hex=030000000000000000000000000000000000000000000000000000000000000000>",
+						"hex=0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000>",
 				subject.toString());
 	}
 
