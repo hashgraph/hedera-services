@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.pricing.RequiredPriceTypes;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -35,6 +36,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,7 +109,8 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 		try {
 			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN, "Using default usage prices to calculate fees for %s!" ,
+					accessor.getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_RESOURCE_PRICES;
 	}

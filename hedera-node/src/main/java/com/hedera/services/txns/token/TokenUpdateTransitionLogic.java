@@ -29,11 +29,13 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -96,7 +98,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getTokenUpdate());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unhandled error while processing :: %s!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			abortWith(FAIL_INVALID);
 		}
 	}

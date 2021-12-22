@@ -27,7 +27,9 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.TxnAccessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 public class ServicesTxnManager {
 	private static final Logger log = LogManager.getLogger(ServicesTxnManager.class);
 
-	private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
+	private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in %s :: %s ==>> %s ==>>";
 
 	private final Runnable scopedProcessing;
 	private final Runnable scopedRecordStreaming;
@@ -140,7 +142,8 @@ public class ServicesTxnManager {
 	private void logContextualizedError(Exception e, String context) {
 		try {
 			final var accessor = txnCtx.accessor();
-			log.error(ERROR_LOG_TPL, context, accessor.getSignedTxnWrapper(), ledger.currentChangeSet(), e);
+			final String logMessage = String.format(ERROR_LOG_TPL, context, "%s", ledger.currentChangeSet());
+			LogUtils.encodeGrpcAndLog(log, Level.ERROR, logMessage, accessor.getSignedTxnWrapper(), e);
 		} catch (Exception f) {
 			log.error("Possibly CATASTROPHIC failure in {}", context, e);
 			log.error("Full details could not be logged", f);

@@ -30,10 +30,12 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.txns.validation.PureValidation;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,7 +94,8 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			final var accessor = txnCtx.accessor();
 			transitionFor(accessor.getTxnBytes(), accessor.getSigMap());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unhandled error while processing :: %s!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			abortWith(FAIL_INVALID);
 		}
 	}

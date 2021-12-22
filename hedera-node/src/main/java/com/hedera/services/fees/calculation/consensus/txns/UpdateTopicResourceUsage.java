@@ -24,12 +24,14 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,7 +87,7 @@ public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator
 						expiry,
 						txnBody.getConsensusUpdateTopic());
 			} catch (final DecoderException illegal) {
-				log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
+				LogUtils.encodeGrpcAndLog(log, Level.WARN, "Usage estimation unexpectedly failed for %s!", txnBody, illegal);
 				throw new InvalidTxBodyException(illegal);
 			}
 		}

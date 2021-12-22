@@ -22,7 +22,9 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,19 +57,15 @@ public class InvariantChecks {
 		final var currentNetworkCtx = networkCtx.get();
 		final var lastConsensusTime = currentNetworkCtx.consensusTimeOfLastHandledTxn();
 		if (lastConsensusTime != null && !consensusTime.isAfter(lastConsensusTime)) {
-			log.error(
-					"Invariant failure! {} submitted by {} reached consensus at {}, not later than last-handled {}",
-					accessor.getSignedTxnWrapper(),
-					submittingMember,
-					consensusTime,
-					lastConsensusTime);
+			final String logMessage = String.format("submitted by %d reached consensus at %s, not later than last-handled %s",
+					submittingMember, consensusTime, lastConsensusTime);
+			LogUtils.encodeGrpcAndLog(log, Level.ERROR, logMessage, accessor.getSignedTxnWrapper());
 			return false;
 		}
 
 		if (nodeInfo.isZeroStake(submittingMember)) {
-			log.warn(
-					"Invariant failure! Zero-stake node {} submitted {}",
-					submittingMember,
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Invariant failure! Zero-stake node " + submittingMember + " submitted %s",
 					accessor.getSignedTxnWrapper());
 			return false;
 		}

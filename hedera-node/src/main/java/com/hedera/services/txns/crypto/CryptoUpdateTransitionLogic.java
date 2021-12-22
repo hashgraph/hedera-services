@@ -31,11 +31,13 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,7 +118,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unhandled error while processing :: %s!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

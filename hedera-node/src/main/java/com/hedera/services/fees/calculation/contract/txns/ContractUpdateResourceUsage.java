@@ -22,12 +22,14 @@ package com.hedera.services.fees.calculation.contract.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,7 +62,7 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
 			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {
-			log.debug("Unable to deduce ContractUpdate usage for {}, using defaults", txn.getTransactionID(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.DEBUG,"Unable to deduce ContractUpdate usage for %s, using defaults", txn, e);
 			return FeeData.getDefaultInstance();
 		}
 	}

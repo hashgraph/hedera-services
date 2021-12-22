@@ -174,7 +174,7 @@ public class BasicTransactionContext implements TransactionContext {
 		try {
 			return nodeInfo.accountOf(submittingMember);
 		} catch (IllegalArgumentException e) {
-			log.warn("No available Hedera account for member {}!", submittingMember, e);
+			log.warn("No available Hedera account for member {}! : {}", submittingMember, e.getMessage());
 			throw new IllegalStateException(String.format("Member %d must have a Hedera account!", submittingMember));
 		}
 	}

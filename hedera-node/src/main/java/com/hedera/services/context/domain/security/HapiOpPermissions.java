@@ -21,10 +21,12 @@ package com.hedera.services.context.domain.security;
  */
 
 import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,12 +62,12 @@ public class HapiOpPermissions {
 				var op = legacyKeys.get(opName);
 				var range = PermissionedAccountsRange.from(permission.getValue());
 				if (range == null) {
-					log.warn(String.format(UNPARSEABLE_RANGE_TPL, op, permission.getValue()));
+					LogUtils.encodeGrpcAndLog(log, Level.WARN, String.format(UNPARSEABLE_RANGE_TPL, op, permission.getValue()));
 				} else {
 					newPerms.put(op, range);
 				}
 			} else {
-				log.warn(String.format(MISSING_OP_TPL, opName));
+				LogUtils.encodeGrpcAndLog(log, Level.WARN, MISSING_OP_TPL, opName);
 			}
 		}
 		permissions = newPerms;

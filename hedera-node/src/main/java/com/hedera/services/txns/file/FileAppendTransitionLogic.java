@@ -26,8 +26,10 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,7 +102,8 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unrecognized failure handling %s!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

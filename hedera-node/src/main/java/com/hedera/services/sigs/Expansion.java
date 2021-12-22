@@ -25,10 +25,12 @@ import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,7 +61,8 @@ class Expansion {
 	}
 
 	public ResponseCodeEnum execute() {
-		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
+		LogUtils.encodeGrpcAndLog(log, Level.DEBUG,
+				"Expanding crypto sigs from Hedera sigs for txn %s...", txnAccessor.getSignedTxnWrapper());
 		final var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
 		if (payerStatus != OK) {
 			if (log.isDebugEnabled()) {

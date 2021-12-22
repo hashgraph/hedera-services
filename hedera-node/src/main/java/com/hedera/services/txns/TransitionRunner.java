@@ -23,8 +23,10 @@ package com.hedera.services.txns;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,7 +108,8 @@ public class TransitionRunner {
 		final var function = accessor.getFunction();
 		final var logic = lookup.lookupFor(function, txn);
 		if (logic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Transaction w/o applicable transition logic at consensus :: %s", accessor.getSignedTxnWrapper());
 			txnCtx.setStatus(FAIL_INVALID);
 			return false;
 		} else {
@@ -135,7 +138,8 @@ public class TransitionRunner {
 	private void resolveFailure(final InvalidTransactionException e, final TxnAccessor accessor) {
 		final var code = e.getResponseCode();
 		if (code == FAIL_INVALID) {
-			log.warn("Avoidable failure while handling {}", accessor.getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Avoidable failure while handling %s", accessor.getSignedTxnWrapper(), e);
 		}
 		txnCtx.setStatus(code);
 		ids.reclaimProvisionalIds();

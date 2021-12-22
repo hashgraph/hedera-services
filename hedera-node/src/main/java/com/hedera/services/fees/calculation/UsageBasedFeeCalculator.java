@@ -28,6 +28,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -40,6 +41,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -211,7 +213,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		try {
 			return usagePrices.pricesGiven(accessor.getFunction(), at);
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN, "Using default usage prices to calculate fees for %s!",
+					accessor.getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_RESOURCE_PRICES;
 	}
@@ -238,9 +241,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 				final var applicablePrices = prices.get(usage.getSubType());
 				return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier());
 			} catch (InvalidTxBodyException e) {
-				log.warn(
-						"Argument accessor={} malformed for implied estimator {}!",
-						accessor.getSignedTxnWrapper(), usageEstimator);
+				final var warnLog = "Argument accessor=%s malformed for implied estimator" + usageEstimator + "!";
+				LogUtils.encodeGrpcAndLog(log, Level.WARN, warnLog, accessor.getSignedTxnWrapper());
 				throw new IllegalArgumentException(e);
 			}
 		}

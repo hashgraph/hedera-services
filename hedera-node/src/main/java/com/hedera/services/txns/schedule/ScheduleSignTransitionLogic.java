@@ -25,10 +25,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +81,8 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			var accessor = txnCtx.accessor();
 			transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleSign());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unhandled error while processing :: %s!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

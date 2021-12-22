@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -98,7 +100,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 					.setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
 					.build();
 		} catch (final Exception internal) {
-			log.warn("Usage estimation unexpectedly failed for {}!", query, internal);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,"Usage estimation unexpectedly failed for %s!", query, internal);
 			throw new IllegalStateException(internal);
 		}
 	}

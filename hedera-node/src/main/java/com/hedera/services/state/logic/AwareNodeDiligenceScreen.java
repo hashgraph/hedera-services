@@ -25,8 +25,10 @@ import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,9 +50,9 @@ public final class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
 	private static final String WRONG_NODE_LOG_TPL =
-			"Node {} (member #{}) submitted a txn meant for node account {} :: {}";
+			"Node %s (member #%d) submitted a txn meant for node account %s :: ";
 	private static final String MISSING_NODE_LOG_TPL =
-			"Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
+			"Node %s (member #%d) submitted a txn w/ missing node account %s :: ";
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -162,10 +164,11 @@ public final class AwareNodeDiligenceScreen {
 			final AccountID relatedAccount,
 			final TxnAccessor accessor
 	) {
-		log.warn(message,
+		final String logMessage = String.format(
+				message,
 				readableId(submittingNodeAccount),
 				submittingMember,
-				readableId(relatedAccount),
-				accessor.getSignedTxnWrapper());
+				readableId(relatedAccount));
+		LogUtils.encodeGrpcAndLog(log, Level.WARN, logMessage + "%s", accessor.getSignedTxnWrapper());
 	}
 }

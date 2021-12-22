@@ -28,6 +28,7 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -129,7 +131,8 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Unrecognized failure handling %s!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

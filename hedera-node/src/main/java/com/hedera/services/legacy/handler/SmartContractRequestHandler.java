@@ -20,7 +20,6 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
-import com.google.protobuf.TextFormat;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
@@ -29,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.PureValidation;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -129,7 +130,7 @@ public class SmartContractRequestHandler {
 			}
 		} catch (Exception e) {
 			log.warn("Unhandled exception in SystemDelete", e);
-			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
+			LogUtils.encodeGrpcAndLog(log, Level.DEBUG, "File System Exception for SystemDelete tx= %s", txBody);
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
 
@@ -173,14 +174,15 @@ public class SmartContractRequestHandler {
 				} catch (Exception e) {
 					receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
 					if (log.isDebugEnabled()) {
-						log.debug("systemUndelete exception: can't serialize or deserialize! tx=" + txBody, e);
+						LogUtils.encodeGrpcAndLog(log, Level.DEBUG,
+								"systemUndelete exception: can't serialize or deserialize! tx=%s", txBody, e);
 					}
 				}
 			}
 			entityExpiries.remove(entity);
 		} catch (Exception e) {
 			log.warn("Unhandled exception in SystemUndelete", e);
-			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
+			LogUtils.encodeGrpcAndLog(log, Level.DEBUG, "File System Exception for SystemUndelete tx= %s", txBody);
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
 		TransactionRecord.Builder transactionRecord =

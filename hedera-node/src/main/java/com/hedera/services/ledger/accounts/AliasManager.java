@@ -70,7 +70,7 @@ public class AliasManager {
 				aliases.put(v.getAlias(), k);
 			}
 		});
-		log.info("Rebuild complete : No.of accounts with aliases {} ", aliases.size());
+		log.debug("Rebuild complete : No.of accounts with aliases {} ", aliases.size());
 	}
 
 	/**

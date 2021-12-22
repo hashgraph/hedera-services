@@ -345,7 +345,7 @@ public class StateView {
 			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
 		} catch (Exception unexpected) {
 			log.warn(
-					"Unexpected failure getting info for token {}!",
+					"Unexpected failure getting TokenType info for token {}!",
 					readableId(tokenID),
 					unexpected);
 			return Optional.empty();

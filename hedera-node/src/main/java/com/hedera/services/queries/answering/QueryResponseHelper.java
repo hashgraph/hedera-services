@@ -23,10 +23,12 @@ package com.hedera.services.queries.answering;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.utils.LogUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -78,7 +80,7 @@ public class QueryResponseHelper {
 			Runnable incAnsweredCount
 	) {
 		if (log.isDebugEnabled()) {
-			log.debug(ALL_QUERIES_MARKER, "Received query: {}", query);
+			LogUtils.encodeGrpcAndLog(log, Level.DEBUG, "Received query: %s", query);
 		}
 		Response response;
 		incReceivedCount.run();
@@ -86,7 +88,7 @@ public class QueryResponseHelper {
 		try {
 			response = answerFlow.satisfyUsing(answer, query);
 		} catch (Exception surprising) {
-			log.warn("Query flow unable to satisfy query {}!", query, surprising);
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,"Query flow unable to satisfy query %s!", query, surprising);
 			response = answer.responseGiven(query, EMPTY_VIEW, FAIL_INVALID, 0L);
 		}
 

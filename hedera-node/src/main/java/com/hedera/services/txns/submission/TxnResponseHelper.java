@@ -22,11 +22,13 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -78,7 +80,9 @@ public final class TxnResponseHelper {
 			response = submissionFlow.submit(signedTxn);
 		} catch (final Exception surprising) {
 			final var accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
-			log.warn("Submission flow unable to submit {}!", accessor.getSignedTxnWrapper(), surprising);
+
+			LogUtils.encodeGrpcAndLog(log, Level.WARN,
+					"Submission flow unable to submit %s!", accessor.getSignedTxnWrapper(), surprising);
 			response = FAIL_INVALID_RESPONSE;
 		}
 
