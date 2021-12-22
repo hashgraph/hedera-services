@@ -30,8 +30,8 @@ public class MiscCryptoUtils {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
-	private static final ECNamedCurveParameterSpec secp256k1 = ECNamedCurveTable.getParameterSpec("secp256k1");
-	private static final ECCurve curveSecp256k1 = secp256k1.getCurve();
+	public static final ECNamedCurveParameterSpec secp256k1 = ECNamedCurveTable.getParameterSpec("secp256k1");
+	public static final ECCurve curveSecp256k1 = secp256k1.getCurve();
 
 	public static byte[] keccak256DigestOf(final byte[] msg) {
 		return new Keccak.Digest256().digest(msg);

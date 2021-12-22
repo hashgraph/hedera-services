@@ -9,9 +9,9 @@ package com.hedera.services.sigs.factories;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,6 @@ import javax.inject.Singleton;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ecdsaSecp256k1Sig;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
-import static com.hedera.services.sigs.utils.MiscCryptoUtils.decompressSecp256k1;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 @Singleton
@@ -59,8 +58,8 @@ public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
 		if (keccak256Digest == null) {
 			keccak256Digest = keccak256DigestOf(accessor.getTxnBytes());
 		}
-		final var rawPublicKey = decompressSecp256k1(publicKey);
-		return ecdsaSecp256k1Sig(rawPublicKey, sigBytes, keccak256Digest);
+//		final var rawPublicKey = decompressSecp256k1(publicKey);
+		return ecdsaSecp256k1Sig(publicKey, sigBytes, keccak256Digest);
 	}
 
 	/* --- Only used by unit tests --- */

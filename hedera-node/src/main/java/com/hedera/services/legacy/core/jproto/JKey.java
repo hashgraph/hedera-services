@@ -33,6 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+import static com.hedera.services.sigs.utils.MiscCryptoUtils.decompressSecp256k1;
+
 /**
  * Maps to proto Key.
  */
@@ -123,7 +126,14 @@ public abstract class JKey {
 			rv = new JContractIDKey(key.getContractID());
 		} else if (!key.getECDSASecp256K1().isEmpty()) {
 			byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
-			rv = new JECDSASecp256k1Key(pubKeyBytes);
+			byte[] uncompressedPubKeyBytes;
+
+			if (pubKeyBytes.length == ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+				uncompressedPubKeyBytes = decompressSecp256k1(pubKeyBytes);
+			} else {
+				uncompressedPubKeyBytes = pubKeyBytes;
+			}
+			rv = new JECDSASecp256k1Key(uncompressedPubKeyBytes);
 		} else if (key.getDelegatableContractId().getContractNum() != 0) {
 			rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
 		} else {

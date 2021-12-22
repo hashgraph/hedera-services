@@ -32,6 +32,7 @@ public class JECDSASecp256k1Key extends JKey {
 	private byte[] ecdsaSecp256k1Key;
 
 	public static final int ECDSASECP256_COMPRESSED_BYTE_LENGTH = 33;
+	public static final int ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH = 64;
 
 	public JECDSASecp256k1Key(final byte[] ecdsaSecp256k1Key) {
 		this.ecdsaSecp256k1Key = ecdsaSecp256k1Key;
@@ -45,7 +46,7 @@ public class JECDSASecp256k1Key extends JKey {
 	@Override
 	public boolean isValid() {
 		return !(isEmpty()
-				|| (ecdsaSecp256k1Key.length != ECDSASECP256_COMPRESSED_BYTE_LENGTH)
+				|| (ecdsaSecp256k1Key.length != ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH)
 				|| (ecdsaSecp256k1Key[0] != 0x02 && ecdsaSecp256k1Key[0] != 0x03));
 	}
 
