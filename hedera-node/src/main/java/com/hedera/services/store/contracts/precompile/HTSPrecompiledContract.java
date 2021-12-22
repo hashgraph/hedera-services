@@ -288,10 +288,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 
-			var newTotalSupply = childRecord.getReceiptBuilder().getNewTotalSupply();
-			var serialNumbers = childRecord.getReceiptBuilder().getSerialNumbers();
+			final var newTotalSupply = childRecord.getReceiptBuilder().getNewTotalSupply();
 
 			if(precompile instanceof MintPrecompile) {
+				final var serialNumbers = childRecord.getReceiptBuilder().getSerialNumbers();
 				result = getMintSuccessfulResult(newTotalSupply, serialNumbers);
 			} else if(precompile instanceof BurnPrecompile) {
 				result = getBurnSuccessfulResult(newTotalSupply);

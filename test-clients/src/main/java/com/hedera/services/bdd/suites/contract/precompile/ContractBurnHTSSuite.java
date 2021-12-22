@@ -36,10 +36,14 @@ import java.util.List;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_AFTER_NESTED_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_WITH_EVENT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -66,6 +70,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -139,11 +144,15 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
-						contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
+						contractCall(theContract, BURN_TOKEN_WITH_EVENT_ABI, 1, new ArrayList<Long>())
 								.payingWith(ALICE)
 								.alsoSigningWithFullPrefix(multiKey)
 								.gas(48_000)
 								.via("burn"),
+						getTxnRecord("burn").hasPriority(
+								recordWith().contractCallResult(
+										resultWith().logs(inOrder(logWith().noData().withTopicsInOrder(
+												List.of(parsedToByteString(49))))))),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
 
 						childRecordsCheck("burn", SUCCESS, recordWith()
