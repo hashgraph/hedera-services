@@ -85,7 +85,8 @@ class HederaWorldStateTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaWorldState(ids, entityAccess);
+		CodeCache codeCache = new CodeCache(0, entityAccess);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache);
 	}
 
 	@Test

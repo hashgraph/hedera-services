@@ -23,6 +23,7 @@ package com.hedera.services.queries.contract;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -101,12 +102,15 @@ class ContractCallLocalAnswerTest {
 	private CallLocalEvmTxProcessor evmTxProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
+
 
 	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		subject = new ContractCallLocalAnswer(ids, accountStore, validator, dynamicProperties, evmTxProcessor);
+		subject = new ContractCallLocalAnswer(ids, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
 	}
 
 	@Test

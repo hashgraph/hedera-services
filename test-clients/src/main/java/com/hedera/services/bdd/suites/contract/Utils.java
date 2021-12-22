@@ -42,7 +42,6 @@ public class Utils {
 				Bytes.wrap(event.getBytes())).toArray());
 	}
 
-
 	public static ByteString parsedToByteString(long n) {
 		return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
 	}

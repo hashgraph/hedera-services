@@ -70,11 +70,14 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -481,7 +484,8 @@ class HederaTokenStoreTest {
 	void associatingRejectsAlreadyAssociatedTokens() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
 
 		final var status = subject.associate(sponsor, List.of(misc), false);
 
@@ -493,13 +497,12 @@ class HederaTokenStoreTest {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-
+		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
 		final var status = subject.associate(sponsor, List.of(misc), false);
 
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		verify(tokens, never()).associateAll(any());
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(accountsLedger).set(sponsor, TOKENS, tokens);
 	}
 
 	@Test
@@ -507,9 +510,11 @@ class HederaTokenStoreTest {
 		final var tokens = mock(MerkleAccountTokens.class);
 		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
-		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(alreadyUsedAutoAssocitaions);
+
+		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
+		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
+
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
@@ -521,7 +526,7 @@ class HederaTokenStoreTest {
 				List.of(new FcTokenAssociation(misc.getTokenNum(), sponsor.getAccountNum())),
 				sideEffectsTracker.getTrackedAutoAssociations());
 		verify(tokens).associateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(accountsLedger).set(sponsor, TOKENS, tokens);
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
@@ -533,9 +538,10 @@ class HederaTokenStoreTest {
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.includes(nonfungible)).willReturn(false);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(hederaLedger.maxAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
-		given(hederaLedger.alreadyUsedAutomaticAssociations(sponsor)).willReturn(maxAutoAssociations);
+
+		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
 
 		// auto associate a fungible token
 		var status = subject.associate(sponsor, List.of(misc), true);
@@ -630,7 +636,7 @@ class HederaTokenStoreTest {
 	@Test
 	void changingOwnerRejectsUnassociatedReceiver() {
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
-		given(hederaLedger.maxAutomaticAssociations(counterparty)).willReturn(0);
+		given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -645,8 +651,10 @@ class HederaTokenStoreTest {
 		final long startCounterpartyANfts = 1;
 		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
-		given(hederaLedger.maxAutomaticAssociations(counterparty)).willReturn(100);
-		given(hederaLedger.getAssociatedTokens(counterparty)).willReturn(tokens);
+
+		given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(100);
+		given(accountsLedger.get(counterparty, TOKENS)).willReturn(tokens);
+		given(accountsLedger.get(counterparty, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
@@ -1407,7 +1415,7 @@ class HederaTokenStoreTest {
 	@Test
 	void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
-		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(0);
+		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
@@ -1420,16 +1428,17 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
-		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(3);
-		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
-		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+		given(accountsLedger.get(anotherFeeCollector, TOKENS)).willReturn(tokens);
+
 		given(tokens.includes(misc)).willReturn(false);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 		verify(tokenRelsLedger, never()).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
-		verify(hederaLedger, never()).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
+		verify(accountsLedger, never()).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 4);
 	}
 
 	@Test
@@ -1439,16 +1448,17 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
-		given(hederaLedger.maxAutomaticAssociations(anotherFeeCollector)).willReturn(5);
-		given(hederaLedger.alreadyUsedAutomaticAssociations(anotherFeeCollector)).willReturn(3);
-		given(hederaLedger.getAssociatedTokens(anotherFeeCollector)).willReturn(tokens);
+		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(5);
+		given(accountsLedger.get(anotherFeeCollector, TOKENS)).willReturn(tokens);
+		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+
 		given(tokens.includes(misc)).willReturn(false);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
-		verify(hederaLedger).setAlreadyUsedAutomaticAssociations(anotherFeeCollector, 4);
+		verify(accountsLedger).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,4);
 	}
 
 	@Test
