@@ -9,9 +9,9 @@ package com.hedera.services.sigs.factories;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Arrays;
 
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.data;
@@ -87,8 +85,7 @@ class ReusableBodySigningFactoryTest {
 	void createsExpectedKeccak256Sig() {
 		final var kp = KeyFactory.ecdsaKpGenerator.generateKeyPair();
 		final var q = ((ECPublicKeyParameters) kp.getPublic()).getQ();
-		final var compressed = q.getEncoded(true);
-		final var uncompressed = Arrays.copyOfRange(q.getEncoded(false), 1, 65);
+		final var uncompressed = q.getEncoded(false);
 
 		given(accessor.getTxnBytes()).willReturn(data);
 
@@ -97,7 +94,7 @@ class ReusableBodySigningFactoryTest {
 		final var expectedSig = expectedEcdsaSecp256k1Sig(uncompressed);
 
 		subject.resetFor(accessor);
-		final var actualSig = subject.signKeccak256DigestWithSecp256k1(compressed, sig);
+		final var actualSig = subject.signKeccak256DigestWithSecp256k1(uncompressed, sig);
 
 		Assertions.assertEquals(expectedSig, actualSig);
 
