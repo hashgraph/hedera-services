@@ -159,14 +159,15 @@ public final class HederaKeyActivation {
 	static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
 		if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
 			return Arrays.equals(sourceKey, sigKey);
-		} else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
+		} else if (sourceKey.length == UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
 			final var xCoordsMatch = Arrays.equals(
-					sourceKey, 1, COMPRESSED_SECP256K1_PUBLIC_KEY_LEN,
+					sourceKey, 1, UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN,
 					sigKey, 0, SECP256K1_COORDINATE_LEN);
 			if (!xCoordsMatch) {
 				return false;
 			} else {
-				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords. */
+				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords
+				. */
 				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
 			}
 		} else {

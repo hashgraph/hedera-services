@@ -163,20 +163,20 @@ class JKeyTest {
 
 	@Test
 	void convertsECDSAsecp256k1Key() {
-		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x04 })
 				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH - 1));
 		final Key aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 
 		var validEDCSAsecp256K1Key = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
 		assertTrue(validEDCSAsecp256K1Key instanceof JECDSASecp256k1Key);
-		assertEquals(33, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
+		assertEquals(65, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
 		assertTrue(validEDCSAsecp256K1Key.isValid());
 		assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
 	}
 
 	@Test
 	void convertsECDSAsecp256k1BasicKey() {
-		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x02 })
+		ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] { 0x04 })
 				.concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSASECP256_UNCOMPRESSED_BYTE_LENGTH - 1));
 		JKey jkey = new JECDSASecp256k1Key(edcsaSecp256K1Bytes.toByteArray());
 		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));

@@ -133,7 +133,7 @@ class HederaKeyActivationTest {
 	}
 
 	@Test
-	void canMatchCompressedEcdsaSecp256k1Key() throws Exception {
+	void canMatchUnCompressedEcdsaSecp256k1Key() throws Exception {
 		final var mockTxnBytes =
 				"012345789012345789012345789012345789012345789012345789012345789012345789012345789012345789".getBytes();
 

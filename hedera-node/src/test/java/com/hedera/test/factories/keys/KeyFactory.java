@@ -142,7 +142,7 @@ public class KeyFactory {
 	 */
 	public static Key genSingleEcdsaSecp256k1Key(final Map<String, PrivateKey> publicToPrivateKey) {
 		final var kp = ecdsaKpGenerator.generateKeyPair();
-		final var pubKey = ((ECPublicKeyParameters) kp.getPublic()).getQ().getEncoded(true);
+		final var pubKey = ((ECPublicKeyParameters) kp.getPublic()).getQ().getEncoded(false);
 		final var privKeySpec = new ECPrivateKeySpec(((ECPrivateKeyParameters) kp.getPrivate()).getD(), curveParams);
 
 		try {
