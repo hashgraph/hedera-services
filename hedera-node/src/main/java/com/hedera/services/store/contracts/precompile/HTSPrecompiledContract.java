@@ -22,8 +22,6 @@ package com.hedera.services.store.contracts.precompile;
  *
  */
 
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -73,8 +71,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.eclipse.collections.impl.tuple.Tuples;
-import org.ethereum.util.ByteUtil;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -83,20 +79,19 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.getBurnSuccessfulResult;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.getMintSuccessfulResult;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -153,7 +148,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
 	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
 	protected static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
-	//mintToken(address token, uint64 amount, bytes calldata metadata)
+	//mintToken(address token, uint64 amount, bytes[] calldata metadata)
 	protected static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
 	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
 	protected static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
@@ -293,20 +288,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 
-			var serialNumbers = childRecord.getReceiptBuilder().getSerialNumbers();
 			var newTotalSupply = childRecord.getReceiptBuilder().getNewTotalSupply();
+			var serialNumbers = childRecord.getReceiptBuilder().getSerialNumbers();
 
 			if(precompile instanceof MintPrecompile) {
-				final var mintReturnType = TupleType.parse("(int256,uint64,int256[])");
-				final var resultTuple = com.esaulpaugh.headlong.abi.Tuple.of(SUCCESS.getNumber(),
-						BigInteger.valueOf(newTotalSupply),
-						serialNumbers != null ? serialNumbers : new long[]{});
-				result = Bytes.wrap(mintReturnType.encode(resultTuple).array());
+				result = getMintSuccessfulResult(newTotalSupply, serialNumbers);
 			} else if(precompile instanceof BurnPrecompile) {
-				final var burnReturnType = TupleType.parse("(int256,uint64)");
-				final var resultTuple = com.esaulpaugh.headlong.abi.Tuple.of(SUCCESS.getNumber(),
-						BigInteger.valueOf(newTotalSupply));
-				result = Bytes.wrap(burnReturnType.encode(resultTuple).array());
+				result = getBurnSuccessfulResult(newTotalSupply);
 			}
 
 			ledgers.commit();
