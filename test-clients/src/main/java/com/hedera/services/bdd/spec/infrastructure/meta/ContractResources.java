@@ -604,28 +604,11 @@ public class ContractResources {
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
 
-	public static final String VERSATILE_TRANSFERS_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"feeDistributorContractAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
-	public static final String VERSATILE_TRANSFERS_TOKENS = "{" +
-			"\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenAddress\",\"type\":\"address\"}," +
-			"{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"}," +
-			"{\"internalType\":\"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"}],\"name\":\"distributeTokens\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
-			"\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"sender\",\"type\":\"address[]\"}," +
-			"{\"internalType\":\"address[]\",\"name\":\"receiver\",\"type\":\"address[]\"},{\"internalType\":\"int64[]" +
-			"\",\"name\":\"serialNumber\",\"type\":\"int64[]\"}],\"name\":\"transferNfts\",\"outputs\":[],\"" +
-			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
-			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
-			"\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNum" +
-			"\",\"type\":\"int64\"}],\"name\":\"transferNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
-			"tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"feeTokenAddress\",\"type\":\"" +
-			"address\"},{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"},{\"internalType\":\"" +
-			"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"},{\"internalType\":\"address\",\"name\":\"feeCollector" +
-			"\",\"type\":\"address\"}],\"name\":\"feeDistributionAfterTransfer\",\"outputs\":[],\"stateMutability\":\"" +
-			"nonpayable\",\"type\":\"function\"}";
+	public static final String VERSATILE_TRANSFERS_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"feeDistributorContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String VERSATILE_TRANSFERS_TOKENS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"}],\"name\": \"distributeTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"sender\",\"type\": \"address[]\"},{\"internalType\": \"address[]\",\"name\": \"receiver\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumber\",\"type\": \"int64[]\"}],\"name\": \"transferNfts\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}],\"name\": \"transferNft\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"feeTokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"},{\"internalType\": \"address\",\"name\": \"feeCollector\",\"type\": \"address\"}],\"name\": \"feeDistributionAfterTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";

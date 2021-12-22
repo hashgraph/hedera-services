@@ -51,7 +51,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -73,6 +72,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -121,19 +121,19 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-//				HSCS_PREC_017_rollback_after_insufficient_balance()
+				HSCS_PREC_017_rollback_after_insufficient_balance()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				distributeMultipleTokens(),
-//				depositAndWithdrawFungibleTokens(),
-//				associateToken(),
-//				dissociateToken(),
-				transferNft()
-//				transferMultipleNfts(),
-//				tokenTransferFromFeeCollector()
+				distributeMultipleTokens(),
+				depositAndWithdrawFungibleTokens(),
+				associateToken(),
+				dissociateToken(),
+				transferNft(),
+				transferMultipleNfts(),
+				tokenTransferFromFeeCollector()
 		);
 	}
 
@@ -199,7 +199,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 								})
 				)
 				.then(
-						getTxnRecord("contractCallTxn").andAllChildRecords().logged(),
+						childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+						),
 						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				);
 	}
@@ -227,7 +232,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.bytecode("bytecode")
 														.via("creationTx")
 														.gas(28_000))),
-						getTxnRecord("creationTx").logged(),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
 						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
@@ -236,14 +240,32 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.payingWith(ACCOUNT)
 								.gas(48_000)
 								.via("zeno"),
-						getTxnRecord("zeno").andAllChildRecords().logged()
-				).then(
 						contractCall(CONTRACT, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(RECEIVER)
 								.alsoSigningWithFullPrefix(CONTRACT)
 								.gas(70_000)
-								.via("receiverTx"),
-						getTxnRecord("receiverTx").andAllChildRecords().logged()
+								.via("receiverTx")
+				).then(
+						childRecordsCheck("zeno",
+								SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -50L)
+														.including(A_TOKEN, CONTRACT, 50L)
+										)),
+						childRecordsCheck("receiverTx",
+								SUCCESS,
+								recordWith()
+										.status(SUCCESS),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, CONTRACT, -25L)
+														.including(A_TOKEN, RECEIVER, 25L)
+										))
 				);
 	}
 
@@ -262,16 +284,23 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						fileCreate("bytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
 						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT)
-														.payingWith(ACCOUNT)
-														.bytecode("bytecode")
-														.via("creationTx")
-														.gas(28_000))),
-						getTxnRecord("creationTx").logged(),
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+								}),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
 						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
 						tokenAssociate(RECEIVER, List.of(A_TOKEN)),
@@ -449,8 +478,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								recordWith()
 										.status(INSUFFICIENT_TOKEN_BALANCE)),
 
-						getAccountBalance(ACCOUNT).logged().hasTokenBalance(FEE_TOKEN, 1000),
-						getAccountBalance(FEE_COLLECTOR).logged().hasTokenBalance(FEE_TOKEN, 0)
+						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
 				);
 	}
 
@@ -478,16 +507,23 @@ public class ContractHTSSuite extends HapiApiSuite {
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						fileCreate("bytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
 						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT)
-														.payingWith(ACCOUNT)
-														.bytecode("bytecode")
-														.via("creationTx")
-														.gas(28_000))),
-						getTxnRecord("creationTx").logged(),
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+								}),
 						tokenAssociate(CONTRACT, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
 						cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT))
@@ -508,8 +544,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 											)
 													.payingWith(ACCOUNT)
 													.gas(48_000)
-													.via("distributeTx"),
-											getTxnRecord("distributeTx").andAllChildRecords().logged());
+													.via("distributeTx"));
 								})
 
 				).then(
@@ -545,16 +580,23 @@ public class ContractHTSSuite extends HapiApiSuite {
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						fileCreate("bytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
 						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT)
-														.payingWith(ACCOUNT)
-														.bytecode("bytecode")
-														.via("creationTx")
-														.gas(28_000))),
-						getTxnRecord("creationTx").logged(),
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+								}),
 						tokenAssociate(CONTRACT, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
 						cryptoTransfer(TokenMovement.movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, ACCOUNT))
@@ -579,11 +621,17 @@ public class ContractHTSSuite extends HapiApiSuite {
 											)
 													.payingWith(ACCOUNT)
 													.gas(48_000)
-													.via("distributeTx"),
-											getTxnRecord("distributeTx").andAllChildRecords().logged());
+													.via("distributeTx"));
 								})
 
 				).then(
+						childRecordsCheck("distributeTx", SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										NonFungibleTransfers.changingNFTBalances()
+												.including(NFT, ACCOUNT, RECEIVER, 1L)
+												.including(NFT, ACCOUNT, RECEIVER, 2L)
+								)),
 						getTokenInfo(NFT).hasTotalSupply(2),
 						getAccountInfo(RECEIVER).hasOwnedNfts(2),
 						getAccountBalance(RECEIVER).hasTokenBalance(NFT, 2),
@@ -591,7 +639,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
 				);
 	}
-
 
 	private HapiApiSpec associateToken() {
 		return defaultHapiSpec("associateHappyPath")
