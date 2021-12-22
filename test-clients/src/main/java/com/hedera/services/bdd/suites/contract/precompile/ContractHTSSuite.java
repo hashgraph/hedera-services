@@ -86,15 +86,20 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	private static final String CONTRACT = "theContract";
 	private static final String NESTED = "theNestedContract";
+
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
+
 	private static final String A_TOKEN = "TokenA";
 	private static final String NFT = "nft";
+
 	private static final String ACCOUNT = "sender";
 	private static final String FEE_COLLECTOR = "feeCollector";
 	private static final String RECEIVER = "receiver";
 	private static final String SECOND_RECEIVER = "receiver2";
+
 	private static final String FEE_TOKEN = "feeToken";
+
 	private static final String UNIVERSAL_KEY = "multipurpose";
 
 	public static void main(String... args) {
@@ -116,19 +121,19 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				HSCS_PREC_017_rollback_after_insufficient_balance()
+//				HSCS_PREC_017_rollback_after_insufficient_balance()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				distributeMultipleTokens(),
-				depositAndWithdrawFungibleTokens(),
-				associateToken(),
-				dissociateToken(),
-				transferNft(),
-				transferMultipleNfts(),
-				tokenTransferFromFeeCollector()
+//				distributeMultipleTokens(),
+//				depositAndWithdrawFungibleTokens(),
+//				associateToken(),
+//				dissociateToken(),
+				transferNft()
+//				transferMultipleNfts(),
+//				tokenTransferFromFeeCollector()
 		);
 	}
 
@@ -299,7 +304,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.status(SUCCESS)
 								.tokenTransfers(
 										changingFungibleBalances()
-												.including(A_TOKEN, ACCOUNT, 10L)
+												.including(A_TOKEN, ACCOUNT, -10L)
 												.including(A_TOKEN, RECEIVER, 5L)
 												.including(A_TOKEN, theSecondReceiver, 5L)
 								))
@@ -522,7 +527,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								))
 				);
 	}
-	
+
 	private HapiApiSpec transferMultipleNfts() {
 		return defaultHapiSpec("TransferMultipleNfts")
 				.given(
@@ -586,6 +591,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
 				);
 	}
+
 
 	private HapiApiSpec associateToken() {
 		return defaultHapiSpec("associateHappyPath")
