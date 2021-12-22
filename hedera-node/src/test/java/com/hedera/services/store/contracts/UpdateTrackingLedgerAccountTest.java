@@ -69,7 +69,8 @@ class UpdateTrackingLedgerAccountTest {
 
 	@BeforeEach
 	void setUp() {
-		parentState = new HederaWorldState(ids, entityAccess);
+		CodeCache codeCache = new CodeCache(0, entityAccess);
+		parentState = new HederaWorldState(ids, entityAccess, codeCache);
 	}
 
 	@Test

@@ -63,14 +63,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityAccess entityAccess;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
+	private final CodeCache codeCache;
 
 	@Inject
 	public HederaWorldState(
 			final EntityIdSource ids,
-			final EntityAccess entityAccess
+			final EntityAccess entityAccess,
+			final CodeCache codeCache
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
+		this.codeCache = codeCache;
 	}
 
 	@Override
@@ -204,7 +207,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return entityAccess.fetchCode(account);
+			return codeCache.get(address).getBytes();
 		}
 
 		public EntityId getProxyAccount() {
@@ -222,7 +225,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return Hash.hash(this.getCode());
+			return codeCache.get(address).getCodeHash();
 		}
 
 		@Override

@@ -6,6 +6,12 @@ import "./hip-206/IHederaTokenService.sol";
 import "./hip-206/HederaResponseCodes.sol";
 
 contract VersatileTransfers is HederaTokenService {
+    FeeDistributor feeDistributor;
+
+    constructor(address feeDistributorContractAddress) {
+        feeDistributor = FeeDistributor(feeDistributorContractAddress);
+    }
+
     function distributeTokens(address tokenAddress, address[] calldata accounts, int64[] calldata amounts) public {
         int response = HederaTokenService.transferTokens(tokenAddress, accounts, amounts);
         if (response != HederaResponseCodes.SUCCESS) {
@@ -24,6 +30,24 @@ contract VersatileTransfers is HederaTokenService {
         int response = HederaTokenService.transferNFTs(token, sender, receiver, serialNumber);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Transfer of NFTs failed");
+        }
+    }
+
+    function feeDistributionAfterTransfer(address tokenAddress, address feeTokenAddress, address[] calldata accounts, int64[] calldata amounts, address feeCollector) external {
+        int response = HederaTokenService.transferTokens(tokenAddress, accounts, amounts);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Transfer of tokens failed");
+        }
+
+        feeDistributor.distributeFees(feeTokenAddress, feeCollector, accounts[0]);
+    }
+}
+
+contract FeeDistributor is HederaTokenService {
+    function distributeFees(address tokenAddress, address feeCollector, address receiver) external {
+        int response = HederaTokenService.transferToken(tokenAddress, feeCollector, receiver, 100);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Transfer of tokens failed");
         }
     }
 }

@@ -151,7 +151,7 @@ public class TopLevelAutoCreation implements AutoCreationLogic {
 	public Pair<ResponseCodeEnum, Long> createFromTrigger(final BalanceChange change) {
 		final var alias = change.alias();
 		final var key = asPrimitiveKeyUnchecked(alias);
-		final var syntheticCreation = syntheticTxnFactory.cryptoCreate(key, 0L);
+		final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
 		final var fee = autoCreationFeeFor(syntheticCreation);
 		if (fee > change.units()) {
 			return Pair.of(change.codeForInsufficientBalance(), 0L);
