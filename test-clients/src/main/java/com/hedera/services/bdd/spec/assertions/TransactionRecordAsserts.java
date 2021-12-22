@@ -65,6 +65,18 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts txnId(TransactionID expectedTxn) {
+		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
+			try {
+				Assertions.assertEquals(expectedTxn, txnId, "Wrong txnId!");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {

@@ -110,6 +110,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* Copy the non-Merkle state from the source */
 		this.deserializedVersion = that.deserializedVersion;
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
+
+		this.platformForDeferredInit = that.platformForDeferredInit;
+		this.dualStateForDeferredInit = that.dualStateForDeferredInit;
+		this.addressBookForDeferredInit = that.addressBookForDeferredInit;
 	}
 
 	/* --- MerkleInternal --- */

@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Assertions;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,6 +105,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
+	private Optional<List<TransactionRecordAsserts>> childRecordsExpectations = Optional.empty();
 	private Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	private Optional<String> creationName = Optional.empty();
 	private Optional<String> saveTxnRecordToRegistry = Optional.empty();
@@ -238,6 +240,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts ...providers) {
+		childRecordsExpectations = Optional.of(Arrays.asList(providers));
+		return this;
+	}
+
 	public HapiGetTxnRecord hasDuplicates(ErroringAssertsProvider<List<TransactionRecord>> provider) {
 		duplicateExpectations = Optional.of(provider);
 		return this;
@@ -307,6 +314,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualRecord.getTransferList())));
 	}
 
+	private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords) throws Throwable {
+		if (childRecordsExpectations.isPresent()) {
+			final var expectedChildRecords = childRecordsExpectations.get();
+
+			assertEquals(expectedChildRecords.size(), actualRecords.size(), String.format("Expected %d child records, got %d", expectedChildRecords.size(), actualRecords.size()));
+			for (int i = 0; i < actualRecords.size(); i++) {
+				final var expectedChildRecord = expectedChildRecords.get(i);
+				final var actualChildRecord = actualRecords.get(i);
+
+				ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
+				List<Throwable> errors = asserts.errorsIn(actualChildRecord);
+				rethrowSummaryError(log, "Bad child records!", errors);
+				expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualChildRecord.getTransferList())));
+			}
+		}
+	}
+
 	private void assertDuplicates(HapiApiSpec spec) throws Throwable {
 		if (duplicateExpectations.isPresent()) {
 			var asserts = duplicateExpectations.get().assertsFor(spec);
@@ -363,7 +387,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
-		final var actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+		final var txRecord = response.getTransactionGetRecord();
+		final var actualRecord = txRecord.getTransactionRecord();
+		assertCorrectRecord(spec, actualRecord);
+
+		final var childRecords = txRecord.getChildTransactionRecordsList();
+		assertChildRecords(spec, childRecords);
+	}
+
+	private void assertCorrectRecord(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		assertPriority(spec, actualRecord);
 		if (scheduled || assertOnlyPriority) {
 			return;

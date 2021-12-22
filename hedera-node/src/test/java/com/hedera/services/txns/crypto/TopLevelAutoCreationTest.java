@@ -128,7 +128,7 @@ class TopLevelAutoCreationTest {
 	void shortCircuitsWhenFeeExceedsChangeBalance() {
 		given(txnCtx.consensusTime())
 				.willReturn(consensusNow);
-		given(syntheticTxnFactory.cryptoCreate(aPrimitiveKey, 0L))
+		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
 				.willReturn(mockSyntheticCreation);
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);
@@ -160,7 +160,7 @@ class TopLevelAutoCreationTest {
 				.willReturn(consensusNow);
 		given(ids.newAccountId(any()))
 				.willReturn(created);
-		given(syntheticTxnFactory.cryptoCreate(aPrimitiveKey, 0L))
+		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
 				.willReturn(mockSyntheticCreation);
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);
