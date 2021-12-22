@@ -90,8 +90,8 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.getBurnSuccessfulResult;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.getMintSuccessfulResult;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.getBurnSuccessfulResultFromReceipt;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.getMintSuccessfulResultFromReceipt;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -138,25 +138,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
-	//cryptoTransfer(TokenTransferList[] calldata tokenTransfers)
+	//cryptoTransfer(TokenTransferList[] memory tokenTransfers)
 	protected static final int ABI_ID_CRYPTO_TRANSFER = 0x189a554c;
-	//transferTokens(address token, address[] calldata accountId, int64[] calldata amount)
+	//transferTokens(address token, address[] memory accountId, int64[] memory amount)
 	protected static final int ABI_ID_TRANSFER_TOKENS = 0x82bba493;
 	//transferToken(address token, address sender, address recipient, int64 amount)
 	protected static final int ABI_ID_TRANSFER_TOKEN = 0xeca36917;
-	//transferNFTs(address token, address[] calldata sender, address[] calldata receiver, int64[] calldata serialNumber)
+	//transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber)
 	protected static final int ABI_ID_TRANSFER_NFTS = 0x2c4ba191;
 	//transferNFT(address token,  address sender, address recipient, int64 serialNum)
 	protected static final int ABI_ID_TRANSFER_NFT = 0x5cfc9011;
-	//mintToken(address token, uint64 amount, bytes[] calldata metadata)
+	//mintToken(address token, uint64 amount, bytes[] memory metadata)
 	protected static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
-	//burnToken(address token, uint64 amount, int64[] calldata serialNumbers)
+	//burnToken(address token, uint64 amount, int64[] memory serialNumbers)
 	protected static final int ABI_ID_BURN_TOKEN = 0xacb9cff9;
-	//associateTokens(address account, address[] calldata tokens)
+	//associateTokens(address account, address[] memory tokens)
 	protected static final int ABI_ID_ASSOCIATE_TOKENS = 0x2e63879b;
 	//associateToken(address account, address token)
 	protected static final int ABI_ID_ASSOCIATE_TOKEN = 0x49146bde;
-	//dissociateTokens(address account, address[] calldata tokens)
+	//dissociateTokens(address account, address[] memory tokens)
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
@@ -288,13 +288,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 
-			final var newTotalSupply = childRecord.getReceiptBuilder().getNewTotalSupply();
-
-			if(precompile instanceof MintPrecompile) {
-				final var serialNumbers = childRecord.getReceiptBuilder().getSerialNumbers();
-				result = getMintSuccessfulResult(newTotalSupply, serialNumbers);
-			} else if(precompile instanceof BurnPrecompile) {
-				result = getBurnSuccessfulResult(newTotalSupply);
+			if(precompile instanceof MintPrecompile && childRecord.getReceiptBuilder()!=null) {
+				result = getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder());
+			} else if(precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder()!=null) {
+				result = getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder());
 			}
 
 			ledgers.commit();

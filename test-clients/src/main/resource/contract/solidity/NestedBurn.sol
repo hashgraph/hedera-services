@@ -2,8 +2,8 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./HederaTokenService.sol";
-import "./HederaResponseCodes.sol";
+import "./hip-206/HederaTokenService.sol";
+import "./hip-206/HederaResponseCodes.sol";
 
 contract NestedBurn is HederaTokenService {
 
