@@ -25,7 +25,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -67,6 +66,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.Optional;
 
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
@@ -90,6 +90,8 @@ class AssociatePrecompileTest {
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
 	private DecodingFacade decoder;
+	@Mock
+	private EncodingFacade encoder;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -138,7 +140,7 @@ class AssociatePrecompileTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
@@ -182,7 +184,7 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
@@ -212,7 +214,7 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
@@ -220,7 +222,7 @@ class AssociatePrecompileTest {
 
 		// then:
 		assertEquals(successResult, result);
-		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.getTokenIds());
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), multiAssociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -244,10 +246,10 @@ class AssociatePrecompileTest {
 	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
 	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	private static final SyntheticTxnFactory.Association associateOp =
-			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
-	private static final SyntheticTxnFactory.Association multiAssociateOp =
-			SyntheticTxnFactory.Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final Association associateOp =
+			Association.singleAssociation(accountMerkleId, tokenMerkleId);
+	private static final Association multiAssociateOp =
+			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	private static final Address recipientAddress = Address.ALTBN128_ADD;
 	private static final Address contractAddress = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

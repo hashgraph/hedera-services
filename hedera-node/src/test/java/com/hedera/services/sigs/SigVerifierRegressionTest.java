@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
@@ -82,6 +83,7 @@ class SigVerifierRegressionTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
+	private AliasManager aliasManager;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
 	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
@@ -215,14 +217,15 @@ class SigVerifierRegressionTest {
 		platformTxn = scenario.platformTxn();
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(MiscSpeedometers.class);
+		aliasManager = mock(AliasManager.class);
 		keyOrder = new SigRequirements(
-				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
+				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		retryingKeyOrder =
 				new SigRequirements(
 						defaultLookupsPlusAccountRetriesFor(
-								null, () -> accounts, () -> null, ref -> null, ref -> null,
+								null, aliasManager, () -> accounts, () -> null, ref -> null, ref -> null,
 								MN, MN, runningAvgs, speedometers),
 						new MockGlobalDynamicProps(),
 						mockSignatureWaivers);

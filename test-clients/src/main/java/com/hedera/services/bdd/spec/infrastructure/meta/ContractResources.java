@@ -80,11 +80,17 @@ public class ContractResources {
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
+	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("MintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 	public static final String NESTED_MINT_CONTRACT = bytecodePath("NestedMintContract");
+	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
+	public static final String BURN_TOKEN = bytecodePath("BurnToken");
+	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String NESTED_BURN = bytecodePath("NestedBurn");
+	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -122,6 +128,56 @@ public class ContractResources {
 			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"}," +
 			"{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"revertMintAfterFailedMint\"," +
 			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MINT_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
+			"\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"mintFungibleTokenWithEvent\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"mintNonFungibleTokenWithEvent\",\"outputs\": " +
+			"[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST = "{\"inputs\": [{\"components\": [{\"internalType\": \"address\"," +
+			"\"name\": \"token\",\"type\": \"address\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"accountID\"," +
+			"\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.AccountAmount[]\"," +
+			"\"name\": \"transfers\",\"type\": \"tuple[]\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"senderAccountID\",\"type\": \"address\"}," +
+			"{" + "\"internalType\": \"address\",\"name\": \"receiverAccountID\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNumber\"," +
+			"\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.NftTransfer[]\",\"name\": \"nftTransfers\",\"type\": \"tuple[]\"}]," +
+			"\"internalType\": \"struct IHederaTokenService.TokenTransferList[]\",\"name\": \"tokenTransfers\"," + "\"type\": \"tuple[]\"" + "}]," +
+			"\"name\": \"transferMultipleTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String BURN_TOKEN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_TOKEN_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnToken\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String BURN_TOKEN_WITH_EVENT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": " +
+			"\"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnTokenWithEvent\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": " +
+			"\"function\"}";
+
+	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"mintTokenContractAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"} ]," +
+		"\"name\": \"burnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String TRANSFER_AND_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String TRANSFER_BURN_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
@@ -609,21 +665,12 @@ public class ContractResources {
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
-	public static final String VERSATILE_TRANSFERS_TOKENS = "{" +
-			"\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenAddress\",\"type\":\"address\"}," +
-			"{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"}," +
-			"{\"internalType\":\"int64[]\",\"name\":\"amounts\",\"type\":\"int64[]\"}],\"name\":\"distributeTokens\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
-			"\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"sender\",\"type\":\"address[]\"}," +
-			"{\"internalType\":\"address[]\",\"name\":\"receiver\",\"type\":\"address[]\"},{\"internalType\":\"int64[]" +
-			"\",\"name\":\"serialNumber\",\"type\":\"int64[]\"}],\"name\":\"transferNfts\",\"outputs\":[],\"" +
-			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
-			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
-			"\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"serialNum" +
-			"\",\"type\":\"int64\"}],\"name\":\"transferNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
+	public static final String VERSATILE_TRANSFERS_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"feeDistributorContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String VERSATILE_TRANSFERS_TOKENS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"}],\"name\": \"distributeTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"sender\",\"type\": \"address[]\"},{\"internalType\": \"address[]\",\"name\": \"receiver\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumber\",\"type\": \"int64[]\"}],\"name\": \"transferNfts\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}],\"name\": \"transferNft\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"feeTokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"},{\"internalType\": \"address\",\"name\": \"feeCollector\",\"type\": \"address\"}],\"name\": \"feeDistributionAfterTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +

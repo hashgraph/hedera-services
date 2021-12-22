@@ -71,7 +71,7 @@ class ExecutionTimeTrackerTest {
 	@Test
 	void tracksAtMostConfigured() {
 		final var busyNanos = 5_000_000;
-		final var epsilonNanos = 500_000;
+		final var epsilonNanos = 2_500_000;
 
 		given(nodeLocalProperties.numExecutionTimesToTrack()).willReturn(1);
 		withImpliedSubject();

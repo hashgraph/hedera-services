@@ -88,21 +88,4 @@ public interface TransitionLogic {
 	default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		return semanticCheck().apply(accessor.getTxn());
 	}
-
-	/**
-	 * Reclaims the created entity IDs from {@link com.hedera.services.ledger.ids.EntityIdSource} generated during the
-	 * execution of the Transaction
-	 * If a given {@link TransitionLogic} allocates new {@link com.hedera.services.ledger.ids.EntityIdSource} it must
-	 * override the default implementation
-	 */
-	default void reclaimCreatedIds() {
-	}
-
-	/**
-	 * Resets the provisional IDs created from {@link com.hedera.services.ledger.ids.EntityIdSource}
-	 * If a given {@link TransitionLogic} allocates new {@link com.hedera.services.ledger.ids.EntityIdSource} it must
-	 * override the default implementation
-	 */
-	default void resetCreatedIds() {
-	}
 }

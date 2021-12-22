@@ -30,7 +30,7 @@ public enum JObjectType {
 	FC_KEY_LIST, FC_THRESHOLD_KEY,
 	FC_ED25519_KEY, FC_ECDSA384_KEY, FC_RSA3072_KEY,
 	FC_CONTRACT_ID_KEY, FC_DELEGATE_CONTRACT_ID_KEY,
-	FC_FILE_INFO;
+	FC_FILE_INFO, FC_ECDSA_SECP256K1_KEY;
 
 	private static final HashMap<JObjectType, Long> LOOKUP_TABLE = new HashMap<>();
 	private static final HashMap<Long, JObjectType> REV_LOOKUP_TABLE = new HashMap<>();
@@ -46,6 +46,7 @@ public enum JObjectType {
 		addLookup(FC_FILE_INFO, 15636803);
 		addLookup(FC_CONTRACT_ID_KEY, 15545316);
 		addLookup(FC_DELEGATE_CONTRACT_ID_KEY, 15577777);
+		addLookup(FC_ECDSA_SECP256K1_KEY, 15661654);
 	}
 
 	private static void addLookup(final JObjectType type, final long value) {

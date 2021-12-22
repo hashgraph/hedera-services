@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +19,6 @@ package com.hedera.services.sigs.sourcing;
  * limitations under the License.
  * ‍
  */
-
-import java.util.function.BiConsumer;
 
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
@@ -35,15 +33,17 @@ import java.util.function.BiConsumer;
  * given the second.
  */
 public interface PubKeyToSigBytes {
-	byte[] EMPTY_SIG = {};
+	byte[] EMPTY_SIG = { };
 
 	/**
 	 * Return the cryptographic signature associated to a given public key in some
 	 * context (presumably the creation of a {@link com.swirlds.common.crypto.Signature}).
 	 *
- 	 * @param pubKey a public key whose private key was used to sign some data.
+	 * @param pubKey
+	 * 		a public key whose private key was used to sign some data.
 	 * @return the cryptographic signature that resulted.
-	 * @throws Exception if the desired cryptographic signature is unavailable.
+	 * @throws Exception
+	 * 		if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
 
@@ -58,18 +58,25 @@ public interface PubKeyToSigBytes {
 	 * with a full public key prefix, but <b>without</b> a matching public
 	 * key obviously linked to the parent transaction.
 	 *
-	 * A canonical example would the the supply key of a token that will be
+	 * A canonical example would be the supply key of a token that will be
 	 * minted through an HTS precompile run as part of a {@code ContractCall}
 	 * transaction. This key is not <b>obviously</b> linked to the top-level
 	 * {@code ContractCall}; but it will ultimately need to sign, hence requires
 	 * a signature supplied with full public key prefix.
 	 *
-	 * @param keySigObs an observer to be shown all the unused full-public-key-to-signature mappings
+	 * @param obs an observer to be shown all the unused full-public-key-to-signature mappings
 	 */
-	default void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+	default void forEachUnusedSigWithFullPrefix(SigObserver obs) {
 		/* No-op */
 	}
 
+	/**
+	 * Checks if there is any full-public-key-to-signature mapping that has not been used by
+	 * {@link PubKeyToSigBytes#sigBytesFor(byte[])} since the last call to
+	 * {@link PubKeyToSigBytes#resetAllSigsToUnused()} on this instance
+	 *
+	 * @return true if there is any unused signature mapping
+	 */
 	default boolean hasAtLeastOneUnusedSigWithFullPrefix() {
 		return false;
 	}

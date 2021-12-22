@@ -43,7 +43,6 @@ import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static java.util.stream.Collectors.toList;
 
 @Singleton
 public class RecordCache {
@@ -115,7 +114,7 @@ public class RecordCache {
 	}
 
 	public List<TransactionReceipt> getDuplicateReceipts(final TransactionID txnId) {
-		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
+		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).toList();
 	}
 
 	public List<TransactionReceipt> getChildReceipts(final TransactionID txnId) {
@@ -161,7 +160,7 @@ public class RecordCache {
 			return recentHistory.duplicateRecords()
 					.stream()
 					.map(ExpirableTxnRecord::asGrpc)
-					.collect(toList());
+					.toList();
 		}
 	}
 

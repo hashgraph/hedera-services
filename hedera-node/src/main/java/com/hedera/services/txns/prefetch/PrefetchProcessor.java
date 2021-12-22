@@ -96,12 +96,12 @@ public class PrefetchProcessor {
     public void submit(PlatformTxnAccessor accessor) {
         final var opt = lookup.lookupFor(accessor.getFunction(), accessor.getTxn());
 
-        if (!opt.isEmpty()) {
+        if (opt.isPresent()) {
             final var logic = opt.get();
-            if (logic instanceof PreFetchableTransition) {
+            if (logic instanceof PreFetchableTransition transition) {
                 executorService.execute(() -> {
                     try {
-                        ((PreFetchableTransition) logic).preFetch(accessor);
+                        transition.preFetch(accessor);
                     } catch (RuntimeException e) {
                         logger.warn("Exception thrown during pre-fetch", e);
                     }

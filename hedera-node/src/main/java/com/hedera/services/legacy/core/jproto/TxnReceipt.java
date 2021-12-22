@@ -38,7 +38,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -390,7 +389,7 @@ public class TxnReceipt implements SelfSerializable {
 
 		if (txReceipt.getSerialNumbers() != MISSING_SERIAL_NUMBERS) {
 			builder.addAllSerialNumbers(
-					Arrays.stream(txReceipt.getSerialNumbers()).boxed().collect(Collectors.toList()));
+					Arrays.stream(txReceipt.getSerialNumbers()).boxed().toList());
 		}
 		return builder.build();
 	}

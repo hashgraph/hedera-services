@@ -39,13 +39,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static java.lang.Long.parseLong;
 import static org.apache.tuweni.units.bigints.UInt256.SIZE;
 
-public class ReleaseTwentyMigration {
-	private static final Logger log = LogManager.getLogger(ReleaseTwentyMigration.class);
+public class ReleaseTwentyTwoMigration {
+	private static final Logger log = LogManager.getLogger(ReleaseTwentyTwoMigration.class);
 
 	/**
 	 * Migrates all non-contract storage data in the {@link com.swirlds.blob.BinaryObjectStore} into a
@@ -70,7 +70,7 @@ public class ReleaseTwentyMigration {
 			final ServicesState initializingState,
 			final int deserializedVersion
 	) {
-		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_0210_VERSION);
+		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_0220_VERSION);
 
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
@@ -96,12 +96,14 @@ public class ReleaseTwentyMigration {
 		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorage);
 
 		final var defaultZero = new AtomicInteger();
-		log.info("Migration complete for:"
-						+ "\n  ↪ {} file metadata blobs"
-						+ "\n  ↪ {} file data blobs"
-						+ "\n  ↪ {} contract bytecode blobs"
-						+ "\n  ↪ {} contract storage blobs"
-						+ "\n  ↪ {} system-deleted entity expiry blobs",
+		final var summaryTpl = """
+				Migration complete for:
+					\u21AA {} file metadata blobs
+					\u21AA {} file data blobs
+					\u21AA {} contract bytecode blobs
+					\u21AA {} contract storage blobs
+					\u21AA {} system-deleted entity expiry blobs""";
+		log.info(summaryTpl,
 				counts.getOrDefault('k', defaultZero).get(),
 				counts.getOrDefault('f', defaultZero).get(),
 				counts.getOrDefault('s', defaultZero).get(),
@@ -131,7 +133,7 @@ public class ReleaseTwentyMigration {
 		}
 	}
 
-	private ReleaseTwentyMigration() {
+	private ReleaseTwentyTwoMigration() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 }

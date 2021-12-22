@@ -26,6 +26,7 @@ import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.HandleSigReqs;
@@ -95,6 +96,7 @@ public abstract class SigsModule {
 	public static SigRequirements provideHandleSigReqs(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
+			AliasManager aliasManager,
 			SignatureWaivers signatureWaivers,
 			HfsSigMetaLookup hfsSigMetaLookup,
 			GlobalDynamicProperties dynamicProperties,
@@ -103,6 +105,7 @@ public abstract class SigsModule {
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = backedLookupsFor(
+				aliasManager,
 				hfsSigMetaLookup,
 				backingAccounts,
 				topics,
@@ -116,18 +119,20 @@ public abstract class SigsModule {
 	@Singleton
 	@RetryingSigReqs
 	public static SigRequirements provideQuerySigReqs(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			SignatureWaivers signatureWaivers,
-			HfsSigMetaLookup hfsSigMetaLookup,
-			MiscRunningAvgs runningAvgs,
-			MiscSpeedometers speedometers,
-			NodeLocalProperties nodeLocalProperties,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final TokenStore tokenStore,
+			final AliasManager aliasManager,
+			final ScheduleStore scheduleStore,
+			final SignatureWaivers signatureWaivers,
+			final HfsSigMetaLookup hfsSigMetaLookup,
+			final MiscRunningAvgs runningAvgs,
+			final MiscSpeedometers speedometers,
+			final NodeLocalProperties nodeLocalProperties,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultAccountRetryingLookupsFor(
+				aliasManager,
 				hfsSigMetaLookup,
 				nodeLocalProperties,
 				accounts,
@@ -143,15 +148,17 @@ public abstract class SigsModule {
 	@Singleton
 	@PayerSigReqs
 	public static SigRequirements providePayerSigReqs(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			HfsSigMetaLookup hfsSigMetaLookup,
-			SignatureWaivers signatureWaivers,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final TokenStore tokenStore,
+			final AliasManager aliasManager,
+			final ScheduleStore scheduleStore,
+			final HfsSigMetaLookup hfsSigMetaLookup,
+			final SignatureWaivers signatureWaivers,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var sigMetaLookup = defaultLookupsFor(
+				aliasManager,
 				hfsSigMetaLookup,
 				accounts,
 				topics,

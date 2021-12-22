@@ -3,15 +3,15 @@ package com.hedera.services.store.contracts.precompile;
 /*-
  * ‌
  * Hedera Services Node
- *
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -68,6 +67,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.Optional;
 
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
@@ -100,6 +100,8 @@ class DissociatePrecompilesTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private DecodingFacade decoder;
+	@Mock
+	private EncodingFacade encoder;
 	@Mock
 	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
 	@Mock
@@ -143,7 +145,7 @@ class DissociatePrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
@@ -184,7 +186,8 @@ class DissociatePrecompilesTest {
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects)).willReturn(mockRecordBuilder);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
@@ -216,7 +219,7 @@ class DissociatePrecompilesTest {
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
 				.willReturn(dissociateLogic);
-		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects))
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
@@ -224,7 +227,7 @@ class DissociatePrecompilesTest {
 
 		// then:
 		assertEquals(successResult, result);
-		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.getTokenIds());
+		verify(dissociateLogic).dissociate(accountId, multiDissociateOp.tokenIds());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -248,10 +251,10 @@ class DissociatePrecompilesTest {
 	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
 	private static final AccountID account = IdUtils.asAccount("0.0.3");
 	private static final Id accountId = Id.fromGrpcAccount(account);
-	private static final SyntheticTxnFactory.Dissociation dissociateToken =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
-	private static final SyntheticTxnFactory.Dissociation multiDissociateOp =
-			SyntheticTxnFactory.Dissociation.singleDissociation(account, nonFungible);
+	private static final Dissociation dissociateToken =
+			Dissociation.singleDissociation(account, nonFungible);
+	private static final Dissociation multiDissociateOp =
+			Dissociation.singleDissociation(account, nonFungible);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);

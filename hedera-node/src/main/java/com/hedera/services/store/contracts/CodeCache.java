@@ -48,12 +48,13 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
 @Singleton
 public class CodeCache {
     LoadingCache<BytesKey, Code> cache;
-    MutableEntityAccess entityAccess;
 
     @Inject
-    public CodeCache(NodeLocalProperties properties, MutableEntityAccess entityAccess) {
-        this.entityAccess = entityAccess;
+    public CodeCache(NodeLocalProperties properties, EntityAccess entityAccess) {
+        this(properties.prefetchCodeCacheTtlSecs(), entityAccess);
+    }
 
+    public CodeCache(int cacheTTL, EntityAccess entityAccess) {
         CacheLoader<BytesKey, Code> loader = key -> {
             final var acctId = accountParsedFromSolidityAddress(key.getArray());
             var codeBytes = entityAccess.fetchCode(acctId);
@@ -61,8 +62,8 @@ public class CodeCache {
         };
 
         this.cache = Caffeine.newBuilder()
-                .expireAfterAccess(properties.prefetchCodeCacheTtlSecs(), TimeUnit.SECONDS)
-                .weakValues()
+                .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
+                .softValues()
                 .build(loader);
     }
 

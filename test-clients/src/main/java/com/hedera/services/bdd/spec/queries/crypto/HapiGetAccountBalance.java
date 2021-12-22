@@ -51,7 +51,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -63,19 +62,33 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
 
-	private Pattern DOT_DELIMTED_ACCOUNT = Pattern.compile("\\d+[.]\\d+[.]\\d+");
-	private String entity;
+	private String account;
 	private Optional<AccountID> accountID = Optional.empty();
 	private boolean exportAccount = false;
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
 	Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
+	private String repr;
+
+	private String aliasKeySource = null;
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
-	public HapiGetAccountBalance(String entity) {
-		this.entity = entity;
+	public HapiGetAccountBalance(String account) {
+		this(account, ReferenceType.REGISTRY_NAME);
+	}
+
+	public HapiGetAccountBalance(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+			repr = "KeyAlias(" + aliasKeySource + ")";
+		} else {
+			account = reference;
+			repr = account;
+		}
 	}
 
 	public HapiGetAccountBalance(Supplier<String> supplier) {
@@ -204,30 +217,35 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
 		ResponseCodeEnum status = response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 		if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
-			log.info(spec.logPrefix() + entity + " was actually deleted!");
+			log.info(spec.logPrefix() + repr + " was actually deleted!");
 		} else {
 			long balance = response.getCryptogetAccountBalance().getBalance();
 			long TINYBARS_PER_HBAR = 100_000_000L;
 			long hBars = balance / TINYBARS_PER_HBAR;
 			if (!loggingOff) {
-				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance + " tinyBars (" + hBars + "ħ)");
+				log.info(spec.logPrefix() + "balance for '" + repr + "': " + balance + " tinyBars (" + hBars + "ħ)");
 			}
 			if (yahcliLogger) {
-				COMMON_MESSAGES.info(String.format("%20s | %20d |", entity, balance));
+				COMMON_MESSAGES.info(String.format("%20s | %20d |", repr, balance));
 			}
 		}
 	}
 
 	private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		if (entityFn.isPresent()) {
-			entity = entityFn.get().get();
+			account = entityFn.get().get();
 		}
+
 		Consumer<CryptoGetAccountBalanceQuery.Builder> config;
-		if (spec.registry().hasContractId(entity)) {
-			config = b -> b.setContractID(spec.registry().getContractId(entity));
+		if (spec.registry().hasContractId(account)) {
+			config = b -> b.setContractID(spec.registry().getContractId(account));
 		} else {
-			Matcher m = DOT_DELIMTED_ACCOUNT.matcher(entity);
-			AccountID id = m.matches() ? HapiPropertySource.asAccount(entity) : spec.registry().getAccountID(entity);
+			AccountID id;
+			if (referenceType == ReferenceType.REGISTRY_NAME) {
+				id = TxnUtils.asId(account, spec);
+			} else {
+				id = spec.registry().aliasIdFor(aliasKeySource);
+			}
 			config = b -> b.setAccountID(id);
 			accountID = Optional.of(id);
 		}
@@ -244,6 +262,6 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
-		return super.toStringHelper().add("account", entity);
+		return super.toStringHelper().add("account", account);
 	}
 }

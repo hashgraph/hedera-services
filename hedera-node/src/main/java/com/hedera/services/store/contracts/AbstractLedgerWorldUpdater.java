@@ -153,8 +153,8 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	@Override
 	public Optional<WorldUpdater> parentUpdater() {
-		if (world instanceof WorldUpdater) {
-			return Optional.of((WorldUpdater) world);
+		if (world instanceof WorldUpdater updater) {
+			return Optional.of(updater);
 		} else {
 			return Optional.empty();
 		}
