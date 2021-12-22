@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class EncodingFacadeTest {
+class EncodingFacadeTest {
 	private final EncodingFacade subject = new EncodingFacade();
 
 	private static final Bytes RETURN_FUNGIBLE_MINT_FOR_10_TOKENS = Bytes.fromHexString(

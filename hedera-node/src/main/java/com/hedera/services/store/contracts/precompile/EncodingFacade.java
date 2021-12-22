@@ -2,7 +2,6 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
@@ -18,15 +17,16 @@ public class EncodingFacade {
 
 	@Inject
 	public EncodingFacade() {
+		//Default constructor
 	}
 
-	public static Bytes getMintSuccessfulResultFromReceipt(final long totalSupply, final long[] serialNumbers) {
+	public Bytes getMintSuccessfulResultFromReceipt(final long totalSupply, final long[] serialNumbers) {
 		return functionResultBuilder().forFunction(FunctionType.MINT).withStatus(SUCCESS.getNumber()).
 				withTotalSupply(totalSupply).
 				withSerialNumbers(serialNumbers != null ? serialNumbers : new long[0]).build();
 	}
 
-	public static Bytes getBurnSuccessfulResultFromReceipt(final long totalSupply) {
+	public Bytes getBurnSuccessfulResultFromReceipt(final long totalSupply) {
 		return functionResultBuilder().forFunction(FunctionType.BURN).withStatus(SUCCESS.getNumber()).
 				withTotalSupply(totalSupply).build();
 	}
@@ -35,7 +35,7 @@ public class EncodingFacade {
 		MINT, BURN
 	}
 
-	private static FunctionResultBuilder functionResultBuilder() {
+	private FunctionResultBuilder functionResultBuilder() {
 		return new FunctionResultBuilder();
 	}
 
@@ -47,16 +47,12 @@ public class EncodingFacade {
 		private long[] serialNumbers;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			switch (functionType) {
-				case MINT:
-					tupleType = mintReturnType;
-					break;
-				case BURN:
-					tupleType = burnReturnType;
-					break;
-				default:
-					tupleType = TupleType.EMPTY;
+			if (functionType == FunctionType.MINT) {
+				tupleType = mintReturnType;
+			} else if (functionType == FunctionType.BURN) {
+				tupleType = burnReturnType;
 			}
+
 			this.functionType = functionType;
 			return this;
 		}
@@ -77,21 +73,16 @@ public class EncodingFacade {
 		}
 
 		private Bytes build() {
-			Tuple result;
-			switch (functionType) {
-				case MINT:
-					result = com.esaulpaugh.headlong.abi.Tuple.of(
-							status,
-							BigInteger.valueOf(totalSupply),
-							serialNumbers);
-					break;
-				case BURN:
-					result = com.esaulpaugh.headlong.abi.Tuple.of(
-							status,
-							BigInteger.valueOf(totalSupply));
-					break;
-				default:
-					result = Tuple.EMPTY;
+			Tuple result = Tuple.EMPTY;
+			if (functionType == FunctionType.MINT) {
+				result = Tuple.of(
+						status,
+						BigInteger.valueOf(totalSupply),
+						serialNumbers);
+			} else if (functionType == FunctionType.BURN) {
+				result = Tuple.of(
+						status,
+						BigInteger.valueOf(totalSupply));
 			}
 			return Bytes.wrap(tupleType.encode(result).array());
 		}
