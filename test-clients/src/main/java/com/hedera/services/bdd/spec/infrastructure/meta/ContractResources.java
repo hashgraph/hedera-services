@@ -87,9 +87,11 @@ public class ContractResources {
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("MintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
+	public static final String NESTED_MINT_CONTRACT = bytecodePath("NestedMintContract");
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
 	public static final String BURN_TOKEN = bytecodePath("BurnToken");
 	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String MINT_NFT_CONTRACT = bytecodePath("MintNFTContract");
 	public static final String NESTED_BURN = bytecodePath("NestedBurn");
 	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 	public static final String GRACEFULLY_FAILING_CONTRACT_BIN = bytecodePath("GracefullyFailingContract");
@@ -104,6 +106,19 @@ public class ContractResources {
 			"\"type\":\"function\"}";
 	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String NESTED_MINT_CONS_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_mintContractAddress\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"},{\"internalType\": \"int64\"," +
+			"\"name\": \"serialNumber\",\"type\": \"int64\"}],\"name\": \"sendNFTAfterMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String REVERT_MINT_AFTER_FAILED_ASSOCIATE = "{\"inputs\": [{\"internalType" +
+			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"revertMintAfterFailedAssociate\",\"outputs\":[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
@@ -111,9 +126,14 @@ public class ContractResources {
 			"\"name\":\"amount\"," +
 			"\"type\":\"uint64\"}],\"name\":\"mintFungibleToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
-	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\": [{\"internalType\": \"bytes[]\"," +
-			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"mintNonFungibleToken\",\"outputs\": []," +
-			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes[]\"," +
+			"\"name\":\"metadata\"," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String REVERT_AFTER_FAILED_MINT = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"revertMintAfterFailedMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String MINT_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
 			"\"name\":\"amount\"," +
 			"\"type\":\"uint64\"}],\"name\":\"mintFungibleTokenWithEvent\",\"outputs\":[]," +
