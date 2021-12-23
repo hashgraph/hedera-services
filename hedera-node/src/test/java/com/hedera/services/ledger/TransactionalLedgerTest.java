@@ -156,6 +156,18 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
+	void zombieIsResurrectedIfPutAgain() {
+		subject.begin();
+
+		subject.create(1L);
+		subject.destroy(1L);
+		subject.put(1L, account1);
+
+		subject.commit();
+		verify(backingAccounts).put(1L, account1);
+	}
+
+	@Test
 	void putsInOrderOfChanges() {
 		// setup:
 		int M = 2, N = 100;
