@@ -83,9 +83,17 @@ public class ContractResources {
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
+	public static final String BURN_TOKEN = bytecodePath("BurnToken");
+	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String NESTED_BURN = bytecodePath("NestedBurn");
+	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
+	public static final String GRACEFULLY_FAILING_CONTRACT_BIN = bytecodePath("GracefullyFailingContract");
+	public static final String ASSOCIATE_TRY_CATCH = bytecodePath("AssociateTryCatch");
+	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
 	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
 	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
 
@@ -118,6 +126,31 @@ public class ContractResources {
 			"\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.NftTransfer[]\",\"name\": \"nftTransfers\",\"type\": \"tuple[]\"}]," +
 			"\"internalType\": \"struct IHederaTokenService.TokenTransferList[]\",\"name\": \"tokenTransfers\"," + "\"type\": \"tuple[]\"" + "}]," +
 			"\"name\": \"transferMultipleTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String BURN_TOKEN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_TOKEN_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnToken\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"mintTokenContractAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"} ]," +
+		"\"name\": \"BurnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String TRANSFER_AND_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String TRANSFER_BURN_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
@@ -612,7 +645,6 @@ public class ContractResources {
 	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}],\"name\": \"transferNft\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"feeTokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"},{\"internalType\": \"address\",\"name\": \"feeCollector\",\"type\": \"address\"}],\"name\": \"feeDistributionAfterTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
-
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
 			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}, {\"internalType\": \"int64\",\"name\": \"serialNum2\",\"type\": \"int64\"}]," +
@@ -634,14 +666,88 @@ public class ContractResources {
 			"\"inputs\": [],\"name\": \"whoIsOnTheBubble\"," +
 			"\"outputs\": [{\"internalType\": \"address\",\"name\": \"hotSeatAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"view\",\"type\": \"function\"}";
+        public static final String ASSOCIATE_DISSOCIATE_CONSTRUCTOR = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"_tokenAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", " +
+			"\"type\": \"constructor\" }";
 
-	public static final String ASSOCIATE_DISSOCIATE_CONSTRUCTOR = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+	public static final String SINGLE_TOKEN_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
+			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String NON_SUPPORTED_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
+			"\"type\": \"address\" } ], \"name\": \"nonSupportedFunction\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SINGLE_TOKEN_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\"," +
+			" \"type\": \"address\" } ], \"name\": \"tokenDissociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String MULTIPLE_TOKENS_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensAssociate\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String ASSOCIATE_TRY_CATCH_CONSTRUCTOR = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"_tokenAddress\", \"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", " +
 			"\"type\": \"constructor\" }";
 
 	public static final String ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
+
+	public static final String MULTIPLE_TOKENS_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			"\"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"tokensDissociate\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR = "{ \"inputs\": " +
+			"[ { \"internalType\": \"address\", \"name\": \"associateDissociateContractAddress\", \"type\":" +
+			" \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"constructor\" }";
+
+	public static final String NESTED_TOKEN_ASSOCIATE = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
+			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDissociateContractCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String NESTED_TOKEN_DISSOCIATE = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateAssociateContractCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String STATIC_ASSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateStaticCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String STATIC_DISSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateStaticCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String DELEGATE_ASSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\"," +
+			" \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"associateDelegateCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String DELEGATE_DISSOCIATE_CALL_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", " +
+			"\"name\": \"tokenAddress\", \"type\": \"address\" } ], \"name\": \"dissociateDelegateCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String PERFORM_NON_EXISTING_FUNCTION_CALL_ABI = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
+			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"performNonExistingServiceFunctionCall\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
+			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"performInvalidlyFormattedFunctionCall\", \"outputs\": " +
+			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI = "{ \"inputs\": [ { \"internalType\": " +
+			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
+			"\"token\", \"type\": \"address\" } ], \"name\": \"performLessThanFourBytesFunctionCall\", \"outputs\": " +
+			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+	public static final String ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static final String DELEGATE_CONTRACT_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\", " +
