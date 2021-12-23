@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
@@ -50,7 +51,7 @@ contract ServiceContract is HederaTokenService {
 
 
     function tokenBurn(address token, uint64 amount, int64[] memory serialNumbers) external {
-        int response = HederaTokenService.burnToken(token, amount, serialNumbers);
+        (int response, uint64 newTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);
 
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token burn failed");
@@ -59,11 +60,11 @@ contract ServiceContract is HederaTokenService {
    }
 
     function tokenMint(address token, uint64 amount) external {
-       int response = HederaTokenService.mintToken(token, amount, new bytes(0));
+        (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(token, amount, new bytes[](0));
 
-        if (response != HederaResponseCodes.SUCCESS) {
-            revert ("Token mint failed");
-        }
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+                revert ("Mint of fungible token failed!");
+            }
    }
 
 }

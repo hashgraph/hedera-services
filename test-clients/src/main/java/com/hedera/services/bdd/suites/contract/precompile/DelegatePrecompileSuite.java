@@ -62,8 +62,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -180,8 +182,10 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("delegateCallForBurn")
                 .given(
                         newKeyNamed(supplyKey),
-                        fileCreate(INNER_CONTRACT).path(ContractResources.SERVICE_CONTRACT),
-                        fileCreate(OUTER_CONTRACT).path(ContractResources.DELEGATE_CONTRACT),
+                        fileCreate(INNER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, INNER_CONTRACT, extractByteCode(ContractResources.SERVICE_CONTRACT)),
+                        fileCreate(OUTER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
                                 .gas(100_000),
@@ -232,11 +236,13 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final var supplyKey = "supplyKey";
 
-        return defaultHapiSpec("delegateCallForBurn")
+        return defaultHapiSpec("delegateCallForMint")
                 .given(
                         newKeyNamed(supplyKey),
-                        fileCreate(INNER_CONTRACT).path(ContractResources.SERVICE_CONTRACT),
-                        fileCreate(OUTER_CONTRACT).path(ContractResources.DELEGATE_CONTRACT),
+                        fileCreate(INNER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, INNER_CONTRACT, extractByteCode(ContractResources.SERVICE_CONTRACT)),
+                        fileCreate(OUTER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
                                 .gas(100_000),
