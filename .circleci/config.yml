@@ -974,13 +974,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
-#    triggers:
-#      - schedule:
-#          cron: "0 4 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "0 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1599,7 +1599,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01907-D-transfers-with-invalid-accounts; cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
