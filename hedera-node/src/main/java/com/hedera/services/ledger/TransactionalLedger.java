@@ -53,9 +53,12 @@ import static java.util.stream.Collectors.joining;
  * backing store when the transaction is committed; or dropped with no effects
  * upon a rollback.
  *
- * @param <K> the type of id used by the ledger
- * @param <P> the family of properties associated to entities in the ledger
- * @param <A> the type of a ledger entity
+ * @param <K>
+ * 		the type of id used by the ledger
+ * @param <P>
+ * 		the family of properties associated to entities in the ledger
+ * @param <A>
+ * 		the type of a ledger entity
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		implements Ledger<K, P, A>, BackingStore<K, A> {
@@ -104,10 +107,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	/**
 	 * Constructs an active ledger backed by the given source ledger.
 	 *
-	 * @param sourceLedger the ledger to wrap
-	 * @param <K>          the type of id used by the ledger
-	 * @param <P>          the family of properties associated to entities in the ledger
-	 * @param <A>          the type of a ledger entity
+	 * @param sourceLedger
+	 * 		the ledger to wrap
+	 * @param <K>
+	 * 		the type of id used by the ledger
+	 * @param <P>
+	 * 		the family of properties associated to entities in the ledger
+	 * @param <A>
+	 * 		the type of a ledger entity
 	 * @return an active ledger wrapping the source
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
@@ -318,6 +325,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	public void put(K id, A entity) {
 		throwIfNotInTxn();
 
+		if (isZombie(id)) {
+			deadEntities.remove(id);
+		}
 		/* The ledger wrapping us may have created an entity we don't have; so catch up on that if necessary. */
 		if (!exists(id)) {
 			create(id);
@@ -475,7 +485,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("No active transaction!");
 		}
 		if (existsOrIsPendingCreation(id)) {
-			throw new IllegalArgumentException("An account already exists with key '" + id + "'!");
+			throw new IllegalArgumentException("An entity already exists with key '" + id + "'!");
 		}
 	}
 
