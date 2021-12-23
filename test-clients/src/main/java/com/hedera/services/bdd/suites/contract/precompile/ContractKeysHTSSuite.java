@@ -98,7 +98,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> HSCS_KEY_1() {
 		return List.of(
-				HSCS_KEY_TRANSFER_NFT()
+//				HSCS_KEY_TRANSFER_NFT()
 //				HSCS_KEY_MINT_TOKEN(),
 		);
 	}
@@ -213,7 +213,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.ORDINARY_CALLS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.ORDINARY_CALLS_CONTRACT))
+				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -229,30 +230,19 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												cryptoUpdate(ACCOUNT).key("contractKey"),
 												tokenAssociate(CONTRACT, List.of(NFT)),
 												tokenAssociate(RECEIVER, List.of(NFT)),
-												cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT))))
-				).when(
-						withOpContext(
-								(spec, opLog) -> {
-									final var tokenAddress = asAddress(spec.registry().getTokenID(NFT));
-									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
-									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
-
-									allRunFor(
-											spec,
-											contractCall(CONTRACT, TRANSFER_NFT_ORDINARY_CALL,
-													tokenAddress,
-													sender,
-													receiver,
-													1L
-											)
-													.fee(ONE_HBAR)
-													.hasKnownStatus(SUCCESS)
-													.payingWith(GENESIS)
-													.gas(48_000)
-													.via("distributeTx"),
-											getTxnRecord("distributeTx").andAllChildRecords().logged());
-								})
-
+												cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT)),
+												contractCall(CONTRACT, TRANSFER_NFT_ORDINARY_CALL,
+														asAddress(spec.registry().getTokenID(NFT)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asAddress(spec.registry().getAccountID(RECEIVER)),
+														1L
+												)
+														.fee(ONE_HBAR)
+														.hasKnownStatus(SUCCESS)
+														.payingWith(GENESIS)
+														.gas(48_000)
+														.via("distributeTx"),
+												getTxnRecord("distributeTx").andAllChildRecords().logged()))
 				).then(
 						getTokenInfo(NFT).hasTotalSupply(2),
 						getAccountInfo(RECEIVER).hasOwnedNfts(1),
