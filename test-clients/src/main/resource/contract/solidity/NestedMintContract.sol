@@ -16,8 +16,6 @@ contract NestedMintContract is HederaTokenService {
 
     function sendNFTAfterMint(address sender, address recipient, bytes[] memory metadata, int64 serialNumber) external {
         mintContract.mintNonFungibleTokenWithAddress(tokenAddress, metadata);
-        HederaTokenService.associateToken(sender, tokenAddress);
-        HederaTokenService.associateToken(recipient, tokenAddress);
         int response = HederaTokenService.transferNFT(tokenAddress, sender, recipient, serialNumber);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Non Fungible transfer failed!");

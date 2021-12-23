@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -325,12 +326,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var innerContract = "mintContract";
 		final var outerContract = "transferContract";
 		final var nestedTransferTxn = "nestedTransferTxn";
+		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
-						cryptoCreate(theRecipient),
+						cryptoCreate(theRecipient).maxAutomaticTokenAssociations(1),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(nonFungibleToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -356,27 +358,28 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
 														.gas(100_000),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-														outerContract))),
-												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
-//												tokenUpdate(nonFungibleToken)
-//														.supplyKey(DELEGATE_CONTRACT_KEY_NAME),
+												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(revisedKey.signedWith(sigs(ON,
+														outerContract, innerContract))),
+												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
+												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
 														ContractResources.NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI,
-														asAddress(spec.registry().getAccountID(theAccount)),
+														asAddress(spec.registry().getAccountID(TOKEN_TREASURY)),
 														asAddress(spec.registry().getAccountID(theRecipient)),
 														Arrays.asList("Test metadata 1"), 1L)
-														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
+														.payingWith(GENESIS)
+														.alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
+														.hasKnownStatus(SUCCESS),
 												getTxnRecord(nestedTransferTxn).andAllChildRecords().logged()
 										)
 						)
 				).then(
 						getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
 						childRecordsCheck(nestedTransferTxn, SUCCESS,
+								recordWith().status(SUCCESS),
 								recordWith().status(SUCCESS).tokenTransfers(NonFungibleTransfers.changingNFTBalances().
-												including(nonFungibleToken, theAccount, theRecipient, 1)))
+												including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)))
 				);
 	}
 
