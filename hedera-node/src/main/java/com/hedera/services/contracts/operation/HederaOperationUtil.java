@@ -33,8 +33,10 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiPredicate;
@@ -130,6 +132,7 @@ public final class HederaOperationUtil {
 	 * @param supplierHaltGasCost Supplier for the gas cost
 	 * @param supplierExecution   Supplier with the execution
 	 * @param addressValidator    Address validator predicate
+	 * @param precompiledContractMap
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
@@ -138,7 +141,12 @@ public final class HederaOperationUtil {
 			Address address,
 			Supplier<Gas> supplierHaltGasCost,
 			Supplier<Operation.OperationResult> supplierExecution,
-			BiPredicate<Address, MessageFrame> addressValidator) {
+			BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
+		// The Precompiled contracts verify their signatures themselves
+		if (precompiledContractMap.containsKey(address.toShortHexString())) {
+			return supplierExecution.get();
+		}
+
 		final var account = frame.getWorldUpdater().get(address);
 		if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 			return new Operation.OperationResult(

@@ -29,8 +29,10 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 /**
@@ -47,16 +49,19 @@ import java.util.function.BiPredicate;
 public class HederaCallCodeOperation extends CallCodeOperation {
 	private final SoliditySigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
+	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaCallCodeOperation(
             final SoliditySigsVerifier sigsVerifier, 
             final GasCalculator gasCalculator, 
-            final BiPredicate<Address, MessageFrame> addressValidator
+            final BiPredicate<Address, MessageFrame> addressValidator,
+			final Map<String, PrecompiledContract> precompiledContractMap
         ) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
+		this.precompiledContractMap = precompiledContractMap;
 	}
 
 	@Override
@@ -67,7 +72,8 @@ public class HederaCallCodeOperation extends CallCodeOperation {
 				to(frame),
 				() -> cost(frame),
 				() -> super.execute(frame, evm),
-				addressValidator
+				addressValidator,
+				precompiledContractMap
 		);
 	}
 }

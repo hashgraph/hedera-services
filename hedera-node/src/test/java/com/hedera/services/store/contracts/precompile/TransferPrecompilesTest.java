@@ -305,6 +305,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
 
@@ -348,6 +349,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
@@ -391,6 +393,7 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
@@ -434,8 +437,8 @@ class TransferPrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 
 		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(

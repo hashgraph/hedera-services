@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -68,12 +70,14 @@ class HederaCallOperationTest {
 	private SoliditySigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
+	@Mock
+	private Map<String, PrecompiledContract> precompiledContractMap;
 
 	private HederaCallOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCallOperation(sigsVerifier, calc, addressValidator);
+		subject = new HederaCallOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 

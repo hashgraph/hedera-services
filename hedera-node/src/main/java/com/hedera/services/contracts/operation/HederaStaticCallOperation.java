@@ -28,8 +28,10 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.StaticCallOperation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 /**
@@ -43,14 +45,16 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 
 	private final SoliditySigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
+	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaStaticCallOperation(GasCalculator gasCalculator,
 									 SoliditySigsVerifier sigsVerifier,
-									 BiPredicate<Address, MessageFrame> addressValidator) {
+									 BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
+		this.precompiledContractMap = precompiledContractMap;
 	}
 
 	@Override
@@ -61,6 +65,6 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 				to(frame),
 				() -> cost(frame),
 				() -> super.execute(frame, evm),
-				addressValidator);
+				addressValidator, precompiledContractMap);
 	}
 }

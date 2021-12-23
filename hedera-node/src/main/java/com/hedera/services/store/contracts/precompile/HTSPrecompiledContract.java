@@ -640,10 +640,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					recordsHistorian);
 			for (final var change : changes) {
 				final var units = change.units();
-				if (units < 0) {
+				if (units < 0 || change.isForNft()) {
 					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
-				} else if (units > 0) {
+				}
+				if (units > 0) {
 					final var hasReceiverSigIfReq =
 							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
 									change.getAccount().asEvmAddress(), recipient, contract);
