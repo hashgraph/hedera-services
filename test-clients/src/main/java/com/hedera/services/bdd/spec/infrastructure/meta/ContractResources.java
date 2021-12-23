@@ -86,6 +86,8 @@ public class ContractResources {
 	public static final String MINT_CONTRACT = bytecodePath("mintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
+	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
+	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -641,6 +643,24 @@ public class ContractResources {
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String DISSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"dissociateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String DELEGATE_CONTRACT_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\", " +
+			"\"name\": \"serviceContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\", " +
+			"\"type\": \"constructor\"}";
+
+	public static final String DELEGATE_TRANSFER_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}]," +
+			"\"name\": \"transferDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String DELEGATE_BURN_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\"," +
+			"\"type\": \"int64[]\"}],\"name\": \"burnDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String DELEGATE_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}]," +
+			"\"name\": \"mintDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {
