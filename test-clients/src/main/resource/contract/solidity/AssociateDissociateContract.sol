@@ -5,17 +5,35 @@ import "./HederaTokenService.sol";
 
 contract AssociateDissociateContract is HederaTokenService {
 
-    address tokenAddress;
+    function tokenAssociate(address sender, address tokenAddress) external {
+        int response = HederaTokenService.associateToken(sender, tokenAddress);
 
-    constructor(address _tokenAddress) public {
-        tokenAddress = _tokenAddress;
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Associate Failed");
+        }
     }
 
-    function associateToken() external {
-        HederaTokenService.associateToken(msg.sender, tokenAddress);
+    function tokenDissociate(address sender, address tokenAddress) external {
+        int response = HederaTokenService.dissociateToken(sender, tokenAddress);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Dissociate Failed");
+        }
     }
 
-    function dissociateToken() external {
-        HederaTokenService.dissociateToken(msg.sender, tokenAddress);
+    function tokensAssociate(address account, address[] memory tokens) external {
+        int response = HederaTokenService.associateTokens(account, tokens);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Multiple Associations Failed");
+        }
+    }
+
+    function tokensDissociate(address account, address[] memory tokens) external {
+        int response = HederaTokenService.dissociateTokens(account, tokens);
+
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Multiple Dissociations Failed");
+        }
     }
 }
