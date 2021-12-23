@@ -121,8 +121,10 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("delegateCallForTransfer")
                 .given(
                         newKeyNamed(supplyKey),
-                        fileCreate(INNER_CONTRACT).path(ContractResources.SERVICE_CONTRACT),
-                        fileCreate(OUTER_CONTRACT).path(ContractResources.DELEGATE_CONTRACT),
+                        fileCreate(INNER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, INNER_CONTRACT, extractByteCode(ContractResources.SERVICE_CONTRACT)),
+                        fileCreate(OUTER_CONTRACT).payingWith(GENESIS),
+                        updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
                                 .gas(100_000),
