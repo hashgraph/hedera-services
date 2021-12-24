@@ -149,7 +149,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
 						tokenCreate(tokenWithHbarFee)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(treasuryForToken)
