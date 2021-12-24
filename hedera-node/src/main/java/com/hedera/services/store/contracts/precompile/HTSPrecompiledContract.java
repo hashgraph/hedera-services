@@ -563,37 +563,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(
-												fungibleTransfer.amount).build()
-								),
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)),
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(
-												-fungibleTransfer.amount).build()
-								))
-						);
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount))));
 					} else if (fungibleTransfer.sender == null) {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(
-												fungibleTransfer.amount).build()
-								)
-						);
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)));
 					} else {
 						changes.add(
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(
-												-fungibleTransfer.amount).build()
-								)
-						);
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount)));
 					}
 				}
-
 				if (changes.isEmpty()) {
 					for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
 						changes.add(
@@ -617,16 +605,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final Address contract,
 				final WorldLedgers ledgers
 		) {
-			final List<BalanceChange> changes = constructBalanceChanges(transferOp);
-			var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
+			var changes = constructBalanceChanges(transferOp);
+			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
+			final var numExplicitChanges = changes.size();
+
+			final var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
 					0,
 					0,
 					changes,
 					NO_ALIASES,
 					impliedTransfersMarshal.currentProps());
-
 			final var assessmentStatus = validated.getMeta().code();
 			validateTrue(assessmentStatus == OK, assessmentStatus);
+			changes = validated.getAllBalanceChanges();
 
 			final var sideEffects = sideEffectsFactory.get();
 			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
@@ -646,12 +637,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validator,
 					UNUSABLE_AUTO_CREATION,
 					recordsHistorian);
-			for (final var change : changes) {
+			for (int i = 0, n = changes.size(); i < n; i++) {
+				final var change = changes.get(i);
 				final var units = change.units();
 				if (change.isForNft() || units < 0) {
 					final var hasSenderSig = sigsVerifier.hasActiveKey(
 							change.getAccount(), recipient, contract);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				}
+				if (i >= numExplicitChanges) {
+					/* Ignore receiver sig requirements for custom fee payments (which are never NFT transfers) */
+					continue;
 				}
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
@@ -664,7 +660,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
 
-			transferLogic.doZeroSum(validated.getAllBalanceChanges());
+			transferLogic.doZeroSum(changes);
 
 			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
 		}
@@ -709,12 +705,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
+	private static final AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.build();
+	}
+
 	/* --- Only used by unit tests --- */
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
 		this.mintLogicFactory = mintLogicFactory;
 	}
 
-	/* --- Only used by unit tests --- */
 	void setDissociateLogicFactory(final DissociateLogicFactory dissociateLogicFactory) {
 		this.dissociateLogicFactory = dissociateLogicFactory;
 	}
