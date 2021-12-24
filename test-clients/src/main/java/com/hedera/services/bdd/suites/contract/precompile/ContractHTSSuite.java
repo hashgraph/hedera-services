@@ -149,7 +149,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
 						tokenCreate(tokenWithHbarFee)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(treasuryForToken)
@@ -478,13 +478,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
-	}
-
 	private HapiApiSpec transferNft() {
 		return defaultHapiSpec("TransferNft")
 				.given(
@@ -634,7 +627,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
 				);
 	}
-	
+
+	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
+	}
+
 	@Override
 	protected Logger getResultsLogger() {
 		return log;

@@ -91,6 +91,8 @@ class AssociatePrecompileTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
+	private EncodingFacade encoder;
+	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private ExpiringCreations creator;
@@ -138,7 +140,7 @@ class AssociatePrecompileTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);

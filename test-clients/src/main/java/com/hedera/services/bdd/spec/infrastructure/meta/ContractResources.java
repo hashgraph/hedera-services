@@ -79,21 +79,26 @@ public class ContractResources {
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
+	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("OrdinaryCalls");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
-	public static final String MINT_CONTRACT = bytecodePath("mintContract");
+	public static final String MINT_CONTRACT = bytecodePath("MintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
+	public static final String NESTED_MINT_CONTRACT = bytecodePath("NestedMintContract");
 	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
 	public static final String BURN_TOKEN = bytecodePath("BurnToken");
 	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String MINT_NFT_CONTRACT = bytecodePath("MintNFTContract");
 	public static final String NESTED_BURN = bytecodePath("NestedBurn");
 	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
 	public static final String GRACEFULLY_FAILING_CONTRACT_BIN = bytecodePath("GracefullyFailingContract");
 	public static final String ASSOCIATE_TRY_CATCH = bytecodePath("AssociateTryCatch");
 	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
+	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
+	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -103,6 +108,19 @@ public class ContractResources {
 			"\"type\":\"function\"}";
 	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String NESTED_MINT_CONS_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_mintContractAddress\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"},{\"internalType\": \"int64\"," +
+			"\"name\": \"serialNumber\",\"type\": \"int64\"}],\"name\": \"sendNFTAfterMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String REVERT_MINT_AFTER_FAILED_ASSOCIATE = "{\"inputs\": [{\"internalType" +
+			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"revertMintAfterFailedAssociate\",\"outputs\":[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
@@ -110,10 +128,23 @@ public class ContractResources {
 			"\"name\":\"amount\"," +
 			"\"type\":\"uint64\"}],\"name\":\"mintFungibleToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
-	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes[]\"," +
 			"\"name\":\"metadata\"," +
-			"\"type\":\"bytes\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String REVERT_AFTER_FAILED_MINT = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"revertMintAfterFailedMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MINT_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
+			"\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"mintFungibleTokenWithEvent\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"mintNonFungibleTokenWithEvent\",\"outputs\": " +
+			"[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
 	public static final String CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST = "{\"inputs\": [{\"components\": [{\"internalType\": \"address\"," +
@@ -132,12 +163,18 @@ public class ContractResources {
 			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
 			"\"name\": \"burnToken\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
+	public static final String BURN_TOKEN_WITH_EVENT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": " +
+			"\"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnTokenWithEvent\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": " +
+			"\"function\"}";
+
 	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"mintTokenContractAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
 	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
 			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"} ]," +
-		"\"name\": \"BurnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+		"\"name\": \"burnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String TRANSFER_AND_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
@@ -571,6 +608,21 @@ public class ContractResources {
 			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"delegateCall\", " +
 			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
+	public static final String TRANSFER_NFT_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name" +
+			"\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type" +
+			"\":\"address\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"" +
+			"internalType\":\"int64\",\"name\":\"serialNum\",\"type\":\"int64\"}],\"name\":\"transferNFTCall" +
+			"\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String MINT_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"}],\"name\":\"mintTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String ASSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"associateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String DISSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"dissociateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String BURN_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"int64[]\",\"name\":\"serialNumbers\",\"type\":\"int64[]\"}],\"name\":\"burnTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+
 	public static final String STATIC_CALL_OP_CHECKER_ABI = "{ \"constant\": false, " +
 			"\"inputs\": [ { \"name\": \"_address\", \"type\": \"address\" } ], \"name\": \"staticcall\", " +
 			"\"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
@@ -747,6 +799,24 @@ public class ContractResources {
 			"[], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 	public static final String ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN = "{ \"inputs\": [], \"name\": \"associateToken\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String DELEGATE_CONTRACT_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\", " +
+			"\"name\": \"serviceContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\", " +
+			"\"type\": \"constructor\"}";
+
+	public static final String DELEGATE_TRANSFER_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}]," +
+			"\"name\": \"transferDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String DELEGATE_BURN_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\"," +
+			"\"type\": \"int64[]\"}],\"name\": \"burnDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String DELEGATE_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}]," +
+			"\"name\": \"mintDelegateCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {
