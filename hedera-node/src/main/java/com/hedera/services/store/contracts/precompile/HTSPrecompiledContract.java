@@ -92,6 +92,7 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
+import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -206,7 +207,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					ABI_ID_TRANSFER_TOKENS,
 					ABI_ID_TRANSFER_TOKEN,
 					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT -> computeTransfer( input, messageFrame);
+					ABI_ID_TRANSFER_NFT -> computeTransfer(input, messageFrame);
 			case ABI_ID_MINT_TOKEN -> computeMintToken(input, messageFrame);
 			case ABI_ID_BURN_TOKEN -> computeBurnToken(input, messageFrame);
 			case ABI_ID_ASSOCIATE_TOKENS -> computeAssociateTokens(input, messageFrame);
@@ -288,11 +289,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			synthBody = precompile.body(input);
 			childRecord = precompile.run(recipient, contract, ledgers);
 
-			if(precompile instanceof MintPrecompile && childRecord.getReceiptBuilder()!=null) {
+			if (precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
 				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
 						childRecord.getReceiptBuilder().getSerialNumbers());
-			} else if(precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder()!=null) {
-				result = encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
+			} else if (precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder() != null) {
+				result =
+						encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
 			}
 
 			ledgers.commit();
@@ -543,14 +545,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input);
 				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input);
 				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input);
-				default -> throw new InvalidTransactionException(FAIL_INVALID);
+				default -> throw new InvalidTransactionException(
+						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
+						FAIL_INVALID);
 			};
 			return syntheticTxnFactory.createCryptoTransfer(transferOp);
 		}
 
 		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
 			final List<BalanceChange> allChanges = new ArrayList<>();
-			for(final TokenTransferWrapper tokenTransferWrapper : transferOp) {
+			for (final TokenTransferWrapper tokenTransferWrapper : transferOp) {
 				final List<BalanceChange> changes = new ArrayList<>();
 
 				for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
@@ -559,12 +563,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(
+												fungibleTransfer.amount).build()
 								),
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(
+												-fungibleTransfer.amount).build()
 								))
 						);
 					} else if (fungibleTransfer.sender == null) {
@@ -572,7 +578,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(fungibleTransfer.amount).build()
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.receiver).setAmount(
+												fungibleTransfer.amount).build()
 								)
 						);
 					} else {
@@ -580,7 +587,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingFtUnits(
 										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
 										fungibleTransfer.getDenomination(),
-										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(-fungibleTransfer.amount).build()
+										AccountAmount.newBuilder().setAccountID(fungibleTransfer.sender).setAmount(
+												-fungibleTransfer.amount).build()
 								)
 						);
 					}
@@ -640,16 +648,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					recordsHistorian);
 			for (final var change : changes) {
 				final var units = change.units();
-				if (units < 0 || change.isForNft()) {
-					final var hasSenderSig = sigsVerifier.hasActiveKey(change.getAccount(), recipient, contract);
+				if (change.isForNft() || units < 0) {
+					final var hasSenderSig = sigsVerifier.hasActiveKey(
+							change.getAccount(), recipient, contract);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
-				if (units > 0) {
-					final var hasReceiverSigIfReq =
-							sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+				var hasReceiverSigIfReq = true;
+				if (change.isForNft()) {
+					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
+				} else if (units > 0) {
+					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
 									change.getAccount().asEvmAddress(), recipient, contract);
-					validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 				}
+				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
 
 			transferLogic.doZeroSum(validated.getAllBalanceChanges());

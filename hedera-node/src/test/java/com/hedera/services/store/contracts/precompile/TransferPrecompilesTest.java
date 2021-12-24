@@ -345,7 +345,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferNftHappyPathWorks() {
+		final var recipientAddr = Address.ALTBN128_ADD;
+		final var senderId = Id.fromGrpcAccount(sender);
+		final var receiverId = Id.fromGrpcAccount(receiver);
 		givenFrameContext();
+		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
@@ -385,6 +389,8 @@ class TransferPrecompilesTest {
 		verify(transferLogic).doZeroSum(nftTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		verify(sigsVerifier).hasActiveKey(senderId, recipientAddr, contractAddr);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(recipientAddr, recipientAddr, contractAddr);
 	}
 
 	@Test
@@ -616,7 +622,9 @@ class TransferPrecompilesTest {
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
 					token,
-					NftTransfer.newBuilder().setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L).build()
+					NftTransfer.newBuilder()
+							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
+							.build()
 			)
 	);
 
@@ -624,12 +632,16 @@ class TransferPrecompilesTest {
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
 					token,
-					NftTransfer.newBuilder().setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L).build()
+					NftTransfer.newBuilder()
+							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
+							.build()
 			),
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
 					token,
-					NftTransfer.newBuilder().setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(2L).build()
+					NftTransfer.newBuilder()
+							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(2L)
+							.build()
 			)
 	);
 }
