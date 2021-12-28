@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -209,10 +210,16 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				var key = registry.getKey(signatory);
 				expect.addKeys(key);
 			}
+			List<Key> expectedKeysList = expect.build().getKeysList();
+			List<Key> actualKeyList = actualInfo.getSigners().getKeysList();
 			Assertions.assertArrayEquals(
-					expect.build().getKeysList().toArray(),
-					actualInfo.getSigners().getKeysList().toArray(),
+					expectedKeysList.toArray(),
+					actualKeyList.toArray(),
 					"Wrong signatories!");
+
+			for (int i = 0; i < expectedKeysList.size(); i++) {
+				Assertions.assertEquals(expectedKeysList.get(i).getKeyCase(), actualKeyList.get(i).getKeyCase());
+			}
 		});
 
 		assertFor(

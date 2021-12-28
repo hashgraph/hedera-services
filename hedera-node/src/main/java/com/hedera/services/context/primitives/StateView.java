@@ -269,7 +269,10 @@ public class StateView {
 			var schedule = scheduleStore.get(id);
 			var signatories = schedule.signatories();
 			var signatoriesList = KeyList.newBuilder();
-			signatories.forEach(a -> signatoriesList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+
+			signatories.forEach(a -> signatoriesList.addKeys(a.length == 33 ?
+					Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(a))
+					: Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
