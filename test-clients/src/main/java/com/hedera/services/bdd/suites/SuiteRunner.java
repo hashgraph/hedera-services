@@ -108,6 +108,7 @@ import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadT
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithAutoAccounts;
+import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithInvalidAccounts;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
 import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
 import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
@@ -306,6 +307,7 @@ public class SuiteRunner {
 		put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
 		put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
 		put("CryptoTransferLoadTestWithAutoAccounts", aof(CryptoTransferLoadTestWithAutoAccounts::new));
+		put("CryptoTransferLoadTestWithInvalidAccounts", aof(CryptoTransferLoadTestWithInvalidAccounts::new));
 		put("MixedTransferAndSubmitLoadTest", aof(MixedTransferAndSubmitLoadTest::new));
 		put("MixedTransferCallAndSubmitLoadTest", aof(MixedTransferCallAndSubmitLoadTest::new));
 		put("HCSChunkingRealisticPerfSuite", aof(HCSChunkingRealisticPerfSuite::new));
