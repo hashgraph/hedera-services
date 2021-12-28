@@ -14,14 +14,14 @@ commands:
           name: Install necessary tools
           command: |
             apt install sudo;
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt install -y apt-utils;
-            sudo rm -f /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            python3 -m pip install --upgrade pip;
-            python3 -m pip -q install matplotlib;
-            python3 -m pip install awscli;
+#            sudo apt update -y;
+#            sudo apt install -y net-tools;
+#            sudo apt install -y apt-utils;
+#            sudo rm -f /usr/bin/python3;
+#            sudo ln -s python3.7 /usr/bin/python3;
+#            python3 -m pip install --upgrade pip;
+#            python3 -m pip -q install matplotlib;
+#            python3 -m pip install awscli;
       - run:
           name: Authenticate gcloud cli
           command: |
