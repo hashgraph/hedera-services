@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,11 +64,11 @@ public enum DefaultKeyGen implements KeyGenerator {
 		final var encodedPk = kp.getPublic().getEncoded();
 		final var rawPkCoords = Arrays.copyOfRange(encodedPk, encodedPk.length - 64, encodedPk.length);
 
-		final var compressedPk = new byte[33];
-		compressedPk[0] = (rawPkCoords[63] & 1) == 1 ? (byte) 0x03 : (byte) 0x02;
-		System.arraycopy(rawPkCoords, 0, compressedPk, 1, 32);
+		final var uncompressedPk = new byte[65];
+		uncompressedPk[0] = (byte) 0x04;
+		System.arraycopy(rawPkCoords, 0, uncompressedPk, 1, 64);
 
-		mutablePkMap.put(CommonUtils.hex(compressedPk), kp.getPrivate());
-		return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(compressedPk)).build();
+		mutablePkMap.put(CommonUtils.hex(uncompressedPk), kp.getPrivate());
+		return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(uncompressedPk)).build();
 	}
 }
