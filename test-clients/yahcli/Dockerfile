@@ -1,7 +1,10 @@
-FROM ubuntu:20.10 AS base-runtime
+FROM ubuntu:21.10 AS base-runtime
+# JDK
 RUN apt-get update && \
-  apt-get upgrade -y && \
-  apt-get install -y openjdk-15-jdk
+    apt-get upgrade -y && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:openjdk-r/ppa && \
+    apt-get install -y openjdk-17-jdk
 
 RUN mkdir -p /launch /opt/bin
 

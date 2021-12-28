@@ -194,8 +194,17 @@ public interface HapiPropertySource {
 				.build();
 	}
 
-	public static String asAccountString(AccountID account) {
+	static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+	}
+
+	static String asAliasableAccountString(final AccountID account) {
+		if (account.getAlias().isEmpty()) {
+			return asAccountString(account);
+		} else {
+			final var literalAlias = account.getAlias().toString();
+			return String.format("%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
+		}
 	}
 
 	static TopicID asTopic(String v) {
