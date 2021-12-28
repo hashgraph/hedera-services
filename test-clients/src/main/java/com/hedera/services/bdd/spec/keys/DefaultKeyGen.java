@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -33,7 +34,6 @@ import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
-import java.util.Arrays;
 import java.util.Map;
 
 public enum DefaultKeyGen implements KeyGenerator {
@@ -61,13 +61,7 @@ public enum DefaultKeyGen implements KeyGenerator {
 	@Override
 	public Key genEcdsaSecp256k1AndUpdate(Map<String, PrivateKey> mutablePkMap) {
 		final var kp = ecKpGenerator.generateKeyPair();
-		final var encodedPk = kp.getPublic().getEncoded();
-		final var rawPkCoords = Arrays.copyOfRange(encodedPk, encodedPk.length - 64, encodedPk.length);
-
-		final var uncompressedPk = new byte[65];
-		uncompressedPk[0] = (byte) 0x04;
-		System.arraycopy(rawPkCoords, 0, uncompressedPk, 1, 64);
-
+		final var uncompressedPk = ((BCECPublicKey) kp.getPublic()).getQ().getEncoded(false);
 		mutablePkMap.put(CommonUtils.hex(uncompressedPk), kp.getPrivate());
 		return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(uncompressedPk)).build();
 	}

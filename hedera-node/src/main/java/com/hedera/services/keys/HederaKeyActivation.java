@@ -46,7 +46,8 @@ public final class HederaKeyActivation {
 	private static final int ED25519_PUBLIC_KEY_LEN = 32;
 	private static final int SECP256K1_COORDINATE_LEN = 32;
 	private static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
-	private static final int UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 64;
+	private static final int UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN_WITHOUT_HEADER = 64;
+	private static final int UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN_WITH_HEADER = 65;
 
 	private static final byte PARITY_MASK = (byte) 0x01;
 
@@ -168,10 +169,11 @@ public final class HederaKeyActivation {
 			} else {
 				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords
 				. */
-				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
+				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN_WITHOUT_HEADER - 1] & PARITY_MASK);
 			}
-		} else if (sourceKey.length == UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
-			return Arrays.equals(sourceKey, sigKey);
+		} else if (sourceKey.length == UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN_WITH_HEADER) {
+			final var sourceKeyWithoutHeader = Arrays.copyOfRange(sourceKey, 1, sourceKey.length);
+			return Arrays.equals(sourceKeyWithoutHeader, sigKey);
 		} else {
 			return false;
 		}
