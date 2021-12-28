@@ -1,5 +1,6 @@
 package com.hedera.services.utils;
 
+import com.google.protobuf.ByteString;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -16,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,8 +38,8 @@ class LogUtilsTest {
 	@Test
 	void ignoresJndiInGrpc() {
 		final var malUri = "${jndi:https://previewnet.mirrornode.hedera.com/api/v1/accounts?account.id=0.0.90}";
-		final var message = "We re Doomed!! %s";
-		final var expectedLog = String.format(message, malUri);
+		final var escapedUri = "\\d{jndi\\ghttps\\g//previewnet.mirrornode.hedera.com/api/v1/accounts?account.id=0.0.90}";
+		final var message = "We are Doomed!! %s";
 		final var stackStraceSample = "at org.apache.logging.log4j.core.net.JndiManager.lookup";
 		final CryptoCreateTransactionBody createTxnBody = CryptoCreateTransactionBody.newBuilder()
 				.setMemo(malUri)
@@ -57,12 +59,21 @@ class LogUtilsTest {
 
 		final var actualLogWithNoJndiLookUp = outContent.toString();
 		assertFalse(actualLogWithNoJndiLookUp.contains(stackStraceSample));
-		assertTrue(actualLogWithNoJndiLookUp.contains(expectedLog));
+		assertTrue(actualLogWithNoJndiLookUp.contains(escapedUri));
 
-		// If using log4J version 2.15 or older the following testing is relevant.
-//		logger.log(Level.WARN, malUri);
-//
-//		final var actualLogWithJndiLookUp = outContent.toString();
-//		assertTrue(actualLogWithJndiLookUp.contains(stackStraceSample));
+		// If using log4J version 2.14 or older the following test code is relevant.
+		/*
+		logger.log(Level.WARN, malUri);
+
+		final var actualLogWithJndiLookUp = outContent.toString();
+		assertTrue(actualLogWithJndiLookUp.contains(stackStraceSample));
+		 */
+	}
+
+	@Test
+	void unescapesCorrectly() throws LogUtils.InvalidEscapeSequenceException {
+		final var malUri = "${jndi:https://previewnet.mirrornode.hedera.com/api/v1/accounts?account.id=0.0.90}";
+
+		assertEquals(malUri, LogUtils.unescapeBytes(LogUtils.escapeBytes(ByteString.copyFromUtf8(malUri))).toStringUtf8());
 	}
 }
