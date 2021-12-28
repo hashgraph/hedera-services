@@ -99,7 +99,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
 	private boolean fullyAggregateTokenTransfers = false;
-	private boolean sortTransferList = false;
 	private static boolean transferToKey = false;
 
 	@Override
@@ -165,6 +164,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	@SafeVarargs
 	public HapiCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
+		this(false, providers);
+	}
+
+	@SafeVarargs
+	public HapiCryptoTransfer(boolean sortTransferList, Function<HapiApiSpec, TransferList>... providers) {
 		if (providers.length == 0) {
 			hbarOnlyProvider = ignore -> TransferList.getDefaultInstance();
 		} else if (providers.length == 1) {
@@ -186,11 +190,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public HapiCryptoTransfer fullyAggregateTokenTransfers() {
 		this.fullyAggregateTokenTransfers = true;
-		return this;
-	}
-
-	public HapiCryptoTransfer sortingTransferList() {
-		this.sortTransferList = true;
 		return this;
 	}
 

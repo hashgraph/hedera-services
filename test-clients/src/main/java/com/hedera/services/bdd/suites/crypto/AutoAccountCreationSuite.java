@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -112,7 +113,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
 						newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape)
 				).when(
-						cryptoTransfer(
+						sortedCryptoTransfer(
 								tinyBarsFromAccountToAlias("civilian", ed25519SourceKey, ONE_HUNDRED_HBARS),
 								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
 						)
@@ -120,7 +121,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								* serialized bytes of an Ed25519 are always lexicographically prior to the serialized
 								* bytes of a secp256k1 key, so now the first child record will _always_ be for the
 								* ed25519 auto-creation). */
-								.sortingTransferList()
 								.payingWith(GENESIS)
 								.via(autoCreation)
 				).then(
