@@ -1,10 +1,10 @@
-## Installs OpenJDK12 and openssl (used by Swirlds Platform to 
+## Installs OpenJDK17 and openssl (used by Swirlds Platform to 
 ## generate node keys for e.g. signing states), then copies 
 ## required libraries and startup assets for a node with:
 ##  * Configuration from /opt/hedera/services/config-mount; and, 
 ##  * Logs at /opt/hedera/services/output; and, 
 ##  * Saved states under /opt/hedera/services/output
-FROM ubuntu:20.10 AS base-runtime
+FROM ubuntu:21.10 AS base-runtime
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y dos2unix openssl libsodium23 postgresql-client

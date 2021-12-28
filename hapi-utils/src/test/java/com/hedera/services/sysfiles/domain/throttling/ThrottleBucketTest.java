@@ -61,12 +61,27 @@ class ThrottleBucketTest {
 		assertEquals(bucketA, ThrottleBucket.fromProto(bucketA).toProto());
 	}
 
+	@Test
+	void burstPeriodAutoScalingWorks() throws IOException {
+		final var bucket = bucketFrom("bootstrap/auto-scale-exercise.json");
+
+		assertEquals(5_000, bucket.autoScaledBurstPeriodMs(2));
+		assertEquals(10_000L, bucket.autoScaledBurstPeriodMs(8));
+		assertEquals(20_000L, bucket.autoScaledBurstPeriodMs(16));
+		assertEquals(30_000L, bucket.autoScaledBurstPeriodMs(24));
+		assertEquals(31_250L, bucket.autoScaledBurstPeriodMs(25));
+	}
+
+	@Test
+	void roundsUpToEnsureMinBurstPeriodIfRequired() {
+		assertEquals(5, ThrottleBucket.quotientRoundedUp(35, 7));
+		assertEquals(6, ThrottleBucket.quotientRoundedUp(36, 7));
+	}
+
 	@ParameterizedTest
 	@CsvSource({
 			"2, bootstrap/insufficient-capacity-throttles.json",
-			"24, bootstrap/overdone-throttles.json",
 			"1, bootstrap/undersupplied-throttles.json",
-			"1, bootstrap/never-true-throttles.json",
 			"1, bootstrap/overflow-throttles.json",
 			"1, bootstrap/repeated-op-throttles.json"
 	})

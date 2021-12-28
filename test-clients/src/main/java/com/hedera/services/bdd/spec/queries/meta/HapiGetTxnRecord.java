@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Assertions;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +77,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -95,7 +95,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean assertNothingAboutHashes = false;
 	private boolean lookupScheduledFromRegistryId = false;
 	private boolean omitPaymentHeaderOnCostAnswer = false;
-	private boolean hasAliasInChildRecord = false;
 	private List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
@@ -115,8 +114,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
-	private Optional<Integer> childRecordNumber = Optional.empty();
-	private Optional<String> aliasKey = Optional.empty();
+
+	private static record ExpectedChildInfo(String aliasingKey) {
+	}
+
+	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -179,11 +181,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasAliasInChildRecord(final String validAlias, int num) {
+	public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
 		requestChildRecords = true;
-		hasAliasInChildRecord = true;
-		childRecordNumber = Optional.of(num);
-		aliasKey = Optional.of(validAlias);
+		childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey));
 		return this;
 	}
 
@@ -417,10 +417,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							asTokenId(pair.getLeft(), spec),
 							asId(pair.getRight(), spec), actualNewTokenAssociations));
 		}
-		if (hasAliasInChildRecord) {
-			assertFalse(childRecords.get(childRecordNumber.get()).getAlias().isEmpty());
-			assertEquals(spec.registry().getKey(aliasKey.get()).toByteString().toStringUtf8(),
-					childRecords.get(childRecordNumber.get()).getAlias().toStringUtf8());
+		if (!childExpectations.isEmpty()) {
+			for (final var index : childExpectations.keySet()) {
+				final var expectations = childExpectations.get(index);
+				if (expectations.aliasingKey() != null) {
+					final var childRecord = childRecords.get(index);
+					final var literalKey = spec.registry().getKey(expectations.aliasingKey());
+					assertEquals(literalKey.toByteString().toStringUtf8(), childRecord.getAlias().toStringUtf8());
+				}
+			}
 		}
 	}
 

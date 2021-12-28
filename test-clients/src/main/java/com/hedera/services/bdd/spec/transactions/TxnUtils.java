@@ -437,10 +437,10 @@ public class TxnUtils {
 				.stream()
 				.map(aa -> String.format(
 						"%s %s %s%s",
-						HapiPropertySource.asAccountString(aa.getAccountID()),
+						HapiPropertySource.asAliasableAccountString(aa.getAccountID()),
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
-						BigInteger.valueOf(aa.getAmount()).abs().toString()))
+						BigInteger.valueOf(aa.getAmount()).abs()))
 				.collect(toList())
 				.toString();
 	}
