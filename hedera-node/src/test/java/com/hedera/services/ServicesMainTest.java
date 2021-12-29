@@ -285,6 +285,7 @@ class ServicesMainTest {
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
+		given(app.latestSignedState()).willReturn(latestSignedState);
 		given(app.nodeId()).willReturn(nodeId);
 		given(balancesExporter.isTimeToExport(consensusNow)).willReturn(true);
 		given(currentPlatformStatus.get()).willReturn(ACTIVE);
