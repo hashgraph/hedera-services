@@ -21,6 +21,7 @@ package com.hedera.services.context.domain.security;
  */
 
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -113,7 +114,7 @@ class HapiOpPermissionsTest {
 		assertRangeProps(permissions.get(TokenMint), 666L, Long.MAX_VALUE);
 		// and:
 		assertThat(
-				logCaptor.warnLogs(),
+				LogUtils.unescapeBytes(logCaptor.warnLogs()),
 				contains(
 						equalTo(String.format(HapiOpPermissions.MISSING_OP_TPL, "doesntExist")),
 						equalTo(String.format(HapiOpPermissions.UNPARSEABLE_RANGE_TPL, TokenBurn, "abcde"))));

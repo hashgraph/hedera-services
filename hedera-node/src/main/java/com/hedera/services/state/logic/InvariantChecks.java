@@ -59,7 +59,7 @@ public class InvariantChecks {
 		if (lastConsensusTime != null && !consensusTime.isAfter(lastConsensusTime)) {
 			final String logMessage = String.format("submitted by %d reached consensus at %s, not later than last-handled %s",
 					submittingMember, consensusTime, lastConsensusTime);
-			LogUtils.encodeGrpcAndLog(log, Level.ERROR, logMessage, accessor.getSignedTxnWrapper());
+			LogUtils.encodeGrpcAndLog(log, Level.ERROR, "Invariant failure! %s " + logMessage, accessor.getSignedTxnWrapper());
 			return false;
 		}
 

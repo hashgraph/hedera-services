@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.utils.LogUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -87,7 +88,7 @@ class InvariantChecksTest {
 
 		// then:
 		assertFalse(result);
-		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Invariant failure!")));
+		assertThat(LogUtils.unescapeBytes(logCaptor.errorLogs()), contains(Matchers.startsWith("Invariant failure!")));
 	}
 
 	@Test

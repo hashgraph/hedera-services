@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public final class LogUtils {
 	private LogUtils() {
@@ -23,7 +24,7 @@ public final class LogUtils {
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, Transaction txn, Exception exception) {
-		var loggableGrpc = escapeBytes(txn.getSignedTransactionBytes());
+		var loggableGrpc = txn == null ? "null" : escapeBytes(txn.getSignedTransactionBytes());
 		logger.log(logLevel, String.format(message, loggableGrpc), exception);
 	}
 
@@ -32,7 +33,7 @@ public final class LogUtils {
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, Query query, Exception exception) {
-		var loggableGrpc = escapeBytes(query.toByteString());
+		var loggableGrpc = query == null ? "null" : escapeBytes(query.toByteString());
 		logger.log(logLevel, String.format(message, loggableGrpc), exception);
 	}
 
@@ -42,7 +43,7 @@ public final class LogUtils {
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, TransactionBody txnBody,
 			Exception exception) {
-		var loggableGrpc = escapeBytes(txnBody.toByteString());
+		var loggableGrpc = txnBody == null ? "null" : escapeBytes(txnBody.toByteString());
 		logger.log(logLevel, String.format(message, loggableGrpc), exception);
 	}
 
@@ -56,7 +57,7 @@ public final class LogUtils {
 		logger.log(logLevel, loggableGrpc);
 	}
 
-	static String escapeBytes(ByteString bs) {
+	public static String escapeBytes(ByteString bs) {
 		StringBuilder builder = new StringBuilder(bs.size());
 
 		for(int i = 0; i < bs.size(); ++i) {
@@ -113,7 +114,7 @@ public final class LogUtils {
 		return builder.toString();
 	}
 
-	public static ByteString unescapeBytes(CharSequence charString) throws InvalidEscapeSequenceException {
+	public static String unescapeBytes(CharSequence charString) throws InvalidEscapeSequenceException {
 		ByteString input = ByteString.copyFromUtf8(charString.toString());
 		byte[] result = new byte[input.size()];
 		int pos = 0;
@@ -255,7 +256,19 @@ public final class LogUtils {
 			}
 		}
 
-		return ByteString.copyFrom(result, 0, pos);
+		return ByteString.copyFrom(result, 0, pos).toStringUtf8();
+	}
+
+	public static List<String> unescapeBytes(List<String> escapedLogs) {
+		var logs =  escapedLogs.stream().map(log -> {
+			 try {
+				 return unescapeBytes(log);
+			 } catch (InvalidEscapeSequenceException ignore) {
+				 return "";
+			 }
+		 }).toList();
+
+		return logs;
 	}
 
 

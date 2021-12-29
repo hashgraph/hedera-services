@@ -74,6 +74,6 @@ class LogUtilsTest {
 	void unescapesCorrectly() throws LogUtils.InvalidEscapeSequenceException {
 		final var malUri = "${jndi:https://previewnet.mirrornode.hedera.com/api/v1/accounts?account.id=0.0.90}";
 
-		assertEquals(malUri, LogUtils.unescapeBytes(LogUtils.escapeBytes(ByteString.copyFromUtf8(malUri))).toStringUtf8());
+		assertEquals(malUri, LogUtils.unescapeBytes(LogUtils.escapeBytes(ByteString.copyFromUtf8(malUri))));
 	}
 }

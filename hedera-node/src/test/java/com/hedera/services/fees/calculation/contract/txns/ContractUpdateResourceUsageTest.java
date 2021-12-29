@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.contract.txns;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -99,6 +100,8 @@ class ContractUpdateResourceUsageTest {
 
 	@Test
 	void returnsDefaultUsageOnException() throws Exception {
+		given(contractUpdateTxn.toByteString()).willReturn(ByteString.EMPTY);
+
 		// when:
 		FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, null);
 
