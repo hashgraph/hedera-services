@@ -9,14 +9,11 @@ public class TokenMetaUtils {
 	}
 
 	public static TokenSigningMetadata signingMetaFrom(final MerkleToken token) {
-		boolean hasRoyaltyWithFallback = false;
+		var hasRoyaltyWithFallback = false;
 		final var customFees = token.customFeeSchedule();
 		if (!customFees.isEmpty()) {
-			for (var fee : customFees) {
-				if (fee.getFeeType() != FcCustomFee.FeeType.ROYALTY_FEE) {
-					continue;
-				}
-				if (fee.getRoyaltyFeeSpec().fallbackFee() != null) {
+			for (final var customFee : customFees) {
+				if (isRoyaltyWithFallback(customFee)) {
 					hasRoyaltyWithFallback = true;
 					break;
 				}
@@ -32,5 +29,9 @@ public class TokenMetaUtils {
 				token.pauseKey(),
 				hasRoyaltyWithFallback,
 				token.treasury());
+	}
+
+	private static boolean isRoyaltyWithFallback(final FcCustomFee fee) {
+		return fee.getFeeType() == FcCustomFee.FeeType.ROYALTY_FEE && fee.getRoyaltyFeeSpec().fallbackFee() != null;
 	}
 }
