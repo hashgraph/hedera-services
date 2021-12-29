@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -99,7 +98,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
 						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
 						tokenTransferFeesScaleAsExpected(),
 						okToSetInvalidPaymentHeaderForCostAnswer(),
 						baseCryptoTransferFeeChargedAsExpected(),
@@ -108,7 +106,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
 						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
 						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle()
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+						transferToNonAccountEntitiesReturnsInvalidAccountId(),
 				}
 		);
 	}
@@ -772,10 +771,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return String.format("%" + fmt, d);
 	}
 
-	private HapiApiSpec transferToTopicReturnsInvalidAccountId() {
+	private HapiApiSpec transferToNonAccountEntitiesReturnsInvalidAccountId() {
 		AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
-		return defaultHapiSpec("TransferToTopicReturnsInvalidAccountId")
+		return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId")
 				.given(
 						tokenCreate("token"),
 						createTopic("something"),

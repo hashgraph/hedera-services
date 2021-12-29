@@ -21,7 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.annotations.HandleSigReqs;
+import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -48,7 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class Rationalization {
 	private final SyncVerifier syncVerifier;
-	private final SigRequirements keyOrderer;
+	private final SigRequirements sigReqs;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private TxnAccessor txnAccessor;
@@ -66,10 +66,10 @@ public class Rationalization {
 	@Inject
 	public Rationalization(
 			SyncVerifier syncVerifier,
-			@HandleSigReqs SigRequirements keyOrderer,
+			@WorkingStateSigReqs SigRequirements sigReqs,
 			ReusableBodySigningFactory bodySigningFactory
 	) {
-		this.keyOrderer = keyOrderer;
+		this.sigReqs = sigReqs;
 		this.syncVerifier = syncVerifier;
 		this.bodySigningFactory = bodySigningFactory;
 	}
@@ -109,7 +109,7 @@ public class Rationalization {
 	private void execute() {
 		ResponseCodeEnum otherFailure = null;
 
-		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
+		final var payerStatus = expandIn(realPayerSigs, sigReqs::keysForPayer);
 		if (payerStatus != OK) {
 			txnAccessor.setSigMeta(RationalizedSigMeta.noneAvailable());
 			finalStatus = payerStatus;
@@ -117,7 +117,7 @@ public class Rationalization {
 		}
 		reqPayerSig = lastOrderResult.getPayerKey();
 
-		final var otherPartiesStatus = expandIn(realOtherPartySigs, keyOrderer::keysForOtherParties);
+		final var otherPartiesStatus = expandIn(realOtherPartySigs, sigReqs::keysForOtherParties);
 		if (otherPartiesStatus != OK) {
 			otherFailure = otherPartiesStatus;
 		} else {
@@ -195,8 +195,8 @@ public class Rationalization {
 		return pkToSigFn;
 	}
 
-	SigRequirements getKeyOrderer() {
-		return keyOrderer;
+	SigRequirements getSigReqs() {
+		return sigReqs;
 	}
 
 	List<TransactionSignature> getRealPayerSigs() {

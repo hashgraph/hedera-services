@@ -38,7 +38,7 @@ import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;

@@ -52,8 +52,6 @@ class NodeLocalPropertiesTest {
 
 		assertEquals(1, subject.port());
 		assertEquals(2, subject.tlsPort());
-		assertEquals(3, subject.precheckLookupRetries());
-		assertEquals(4, subject.precheckLookupRetryBackoffMs());
 		assertEquals(12, subject.recordStreamQueueCapacity());
 		assertEquals(13, subject.queryBlobLookupRetries());
 		assertEquals(19, subject.nettyMaxConcurrentCalls());
@@ -103,8 +101,6 @@ class NodeLocalPropertiesTest {
 		// expect:
 		assertEquals(2, subject.port());
 		assertEquals(3, subject.tlsPort());
-		assertEquals(4, subject.precheckLookupRetries());
-		assertEquals(5, subject.precheckLookupRetryBackoffMs());
 		assertEquals(logDir(10), subject.recordLogDir());
 		assertEquals(13, subject.recordStreamQueueCapacity());
 		assertEquals(14, subject.queryBlobLookupRetries());

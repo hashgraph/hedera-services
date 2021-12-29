@@ -20,7 +20,6 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,8 +32,8 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.function.Function;
 
 import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
-import static com.hedera.services.sigs.metadata.TokenSigningMetadata.from;
-import static com.hedera.services.sigs.metadata.lookups.SafeLookupResult.failure;
+import static com.hedera.services.sigs.metadata.TokenMetaUtils.signingMetaFrom;
+import static com.hedera.services.sigs.metadata.SafeLookupResult.failure;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 
@@ -49,7 +48,7 @@ public interface SigMetadataLookup {
 		TokenID id;
 		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
 				? failure(MISSING_TOKEN)
-				: new SafeLookupResult<>(from(tokenStore.get(id)));
+				: new SafeLookupResult<>(signingMetaFrom(tokenStore.get(id)));
 	};
 	Function<
 			ScheduleStore,

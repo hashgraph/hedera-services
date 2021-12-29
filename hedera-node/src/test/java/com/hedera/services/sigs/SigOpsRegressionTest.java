@@ -68,7 +68,6 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
@@ -385,17 +384,12 @@ class SigOpsRegressionTest {
 	}
 
 	private ResponseCodeEnum invokeExpansionScenario() {
-		int MAGIC_NUMBER = 10;
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups =
-				defaultLookupsPlusAccountRetriesFor(
-						hfsSigMetaLookup, aliasManager,
-						() -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
-						runningAvgs, speedometers);
+				defaultLookupsFor(
+						aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
-				sigMetaLookups,
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
+				sigMetaLookups, new MockGlobalDynamicProps(), mockSignatureWaivers);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
 		return expandIn(platformTxn, keyOrder, pkToSigFn);

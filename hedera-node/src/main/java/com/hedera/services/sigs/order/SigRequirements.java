@@ -651,26 +651,26 @@ public class SigRequirements {
 			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalFreezeKey);
+		return tokenAdjusts(id, factory, TokenSigningMetadata::freezeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenKnowing(
 			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalKycKey);
+		return tokenAdjusts(id, factory, TokenSigningMetadata::kycKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenRefloating(TokenID id, SigningOrderResultFactory<T> factory) {
-		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalSupplyKey);
+		return tokenAdjusts(id, factory, TokenSigningMetadata::supplyKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenWiping(TokenID id, SigningOrderResultFactory<T> factory) {
-		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalWipeKey);
+		return tokenAdjusts(id, factory, TokenSigningMetadata::wipeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenPausing(TokenID id, SigningOrderResultFactory<T> factory) {
-		return tokenAdjusts(id, factory, TokenSigningMetadata::optionalPauseKey);
+		return tokenAdjusts(id, factory, TokenSigningMetadata::pauseKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenFeeScheduleUpdates(
@@ -681,7 +681,7 @@ public class SigRequirements {
 		final var id = op.getTokenId();
 		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
-			final var feeScheduleKey = result.metadata().optionalFeeScheduleKey();
+			final var feeScheduleKey = result.metadata().feeScheduleKey();
 			if (feeScheduleKey.isPresent()) {
 				final List<JKey> required = new ArrayList<>();
 				required.add(feeScheduleKey.get());
@@ -876,7 +876,7 @@ public class SigRequirements {
 		if (!result.succeeded()) {
 			return factory.forMissingSchedule();
 		}
-		var optionalPayer = result.metadata().overridePayer();
+		var optionalPayer = result.metadata().designatedPayer();
 		if (optionalPayer.isPresent()) {
 			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get());
 			if (!payerResult.succeeded()) {
