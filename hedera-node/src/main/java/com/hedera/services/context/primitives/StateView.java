@@ -31,6 +31,7 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -269,7 +270,10 @@ public class StateView {
 			var schedule = scheduleStore.get(id);
 			var signatories = schedule.signatories();
 			var signatoriesList = KeyList.newBuilder();
-			signatories.forEach(a -> signatoriesList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+
+			signatories.forEach(a -> signatoriesList.addKeys(a.length == KeyType.ECDSA_SECP256K1.getLength() ?
+					Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(a))
+					: Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
