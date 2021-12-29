@@ -48,6 +48,7 @@ import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -147,6 +148,7 @@ public interface ServicesApp {
 	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
 	ReconnectCompleteListener reconnectListener();
+	@LatestSignedState StateAccessor latestSignedState();
 	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();

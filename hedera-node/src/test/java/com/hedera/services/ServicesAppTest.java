@@ -137,6 +137,7 @@ class ServicesAppTest {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
+		assertThat(subject.latestSignedState(), instanceOf(StateAccessor.class));
 		assertThat(subject.expansionHelper(), instanceOf(ExpansionHelper.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));

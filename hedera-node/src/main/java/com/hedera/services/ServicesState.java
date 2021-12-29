@@ -209,7 +209,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateFrom(that);
+			metadata.app().workingState().updateChildrenFrom(that);
 		}
 
 		return that;
