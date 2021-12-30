@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
@@ -417,13 +418,12 @@ class SigRequirementsTest {
 
 	@Test
 	void getsCryptoCreateNoReceiverSigReq() throws Throwable {
-		// given:
 		setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO);
+		final var linkedRefs = new LinkedRefs();
 
-		// when:
-		final var summary = subject.keysForPayer(txn, summaryFactory);
+		final var summary = subject.keysForPayer(txn, summaryFactory, linkedRefs);
 
-		// then:
+		assertEquals(PRETEND_SIGNING_TIME, linkedRefs.getSourceSignedAt());
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
 	}
 

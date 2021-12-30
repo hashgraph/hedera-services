@@ -73,7 +73,7 @@ public final class HederaToPlatformSigOps {
 	 *
 	 * @param txnAccessor
 	 * 		the accessor for the platform txn
-	 * @param keyOrderer
+	 * @param sigReqs
 	 * 		facility for listing Hedera keys required to sign the gRPC txn
 	 * @param pkToSigFn
 	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
@@ -81,12 +81,12 @@ public final class HederaToPlatformSigOps {
 	 */
 	public static ResponseCodeEnum expandIn(
 			final PlatformTxnAccessor txnAccessor,
-			final SigRequirements keyOrderer,
+			final SigRequirements sigReqs,
 			final PubKeyToSigBytes pkToSigFn
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
 		final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
-		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, scopedSigFactory).execute();
+		return new Expansion(txnAccessor, sigReqs, pkToSigFn, scopedSigFactory).execute();
 	}
 }

@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -95,6 +96,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] signedTxnWrapperBytes;
 	private String memo;
 	private boolean memoHasZeroByte;
+	private LinkedRefs linkedRefs;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
@@ -154,6 +156,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
+	}
+
+	@Override
+	public LinkedRefs getLinkedRefs() {
+		return linkedRefs;
+	}
+
+	@Override
+	public void setLinkedRefs(final LinkedRefs linkedRefs) {
+		this.linkedRefs = linkedRefs;
 	}
 
 	@Override
@@ -315,16 +327,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return pubKeyToSigBytes;
 	}
 
-	private void setBaseUsageMeta() {
-		if (function == CryptoTransfer) {
-			txnUsageMeta = new BaseTransactionMeta(
-					utf8MemoBytes.length,
-					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
-		} else {
-			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
-		}
-	}
-
 	@Override
 	public Map<String, Object> getSpanMap() {
 		return spanMap;
@@ -433,5 +435,15 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
+	}
+
+	private void setBaseUsageMeta() {
+		if (function == CryptoTransfer) {
+			txnUsageMeta = new BaseTransactionMeta(
+					utf8MemoBytes.length,
+					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
+		} else {
+			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+		}
 	}
 }

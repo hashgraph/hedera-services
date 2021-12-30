@@ -134,6 +134,9 @@ public class SigRequirements {
 			final SigningOrderResultFactory<T> factory,
 			final @Nullable LinkedRefs linkedRefs
 	) {
+		if (linkedRefs != null) {
+			linkedRefs.setSourceSignedAt(sigMetaLookup.sourceSignedAt());
+		}
 		return orderForPayer(txn, factory, linkedRefs);
 	}
 

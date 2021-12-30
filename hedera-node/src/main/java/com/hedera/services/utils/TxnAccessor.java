@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -102,4 +103,7 @@ public interface TxnAccessor {
     int getNumAutoCreations();
     boolean areAutoCreationsCounted();
     void countAutoCreationsWith(AliasManager aliasManager);
+
+    void setLinkedRefs(LinkedRefs linkedRefs);
+    LinkedRefs getLinkedRefs();
 }

@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,9 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.SigObserver;
@@ -32,6 +34,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,8 +43,10 @@ import java.nio.charset.StandardCharsets;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.services.sigs.order.SigningOrderResult.noKnownKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
@@ -52,7 +57,7 @@ class ExpansionTest {
 	@Mock
 	private PubKeyToSigBytes pkToSigFn;
 	@Mock
-	private SigRequirements keyOrderer;
+	private SigRequirements sigReqs;
 	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock
@@ -68,7 +73,35 @@ class ExpansionTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new Expansion(txnAccessor, keyOrderer, pkToSigFn, sigFactory);
+		subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, sigFactory);
+	}
+
+	@Test
+	void tracksLinkedRefs() {
+		final var mockTxn = TransactionBody.getDefaultInstance();
+		given(sigReqs.keysForPayer(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willAnswer(invocationOnMock -> {
+					final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
+					linkedRefs.link(1L);
+					return SigningOrderResult.noKnownKeys();
+				});
+		given(sigReqs.keysForOtherParties(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willAnswer(
+						invocationOnMock -> {
+							final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
+							linkedRefs.link(2L);
+							return SigningOrderResult.noKnownKeys();
+						});
+		given(txnAccessor.getTxn()).willReturn(mockTxn);
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
+
+		final var result = subject.execute();
+
+		assertEquals(OK, result);
+		final ArgumentCaptor<LinkedRefs> captor = ArgumentCaptor.forClass(LinkedRefs.class);
+		verify(txnAccessor).setLinkedRefs(captor.capture());
+		final var linkedRefs = captor.getValue();
+		assertArrayEquals(new long[] { 1L, 2L }, linkedRefs.linkedNumbers());
 	}
 
 	@Test
@@ -112,8 +145,8 @@ class ExpansionTest {
 	private void setupDegenerateMocks() {
 		final var degenTxnBody = TransactionBody.getDefaultInstance();
 		given(txnAccessor.getTxn()).willReturn(degenTxnBody);
-		given(keyOrderer.keysForPayer(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
-		given(keyOrderer.keysForOtherParties(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
+		given(sigReqs.keysForPayer(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
+		given(sigReqs.keysForOtherParties(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
 	}
 }
