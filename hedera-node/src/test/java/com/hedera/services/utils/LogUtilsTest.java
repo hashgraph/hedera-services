@@ -122,7 +122,7 @@ class LogUtilsTest {
 
 	@Test
 	void ignoresJndiInNullTxnBody() throws IOException {
-		LogUtils.encodeGrpcAndLog(logger, Level.WARN, message, (Transaction) null, null);
+		LogUtils.encodeGrpcAndLog(logger, Level.WARN, message, (TransactionBody) null);
 
 		final var actualLogWithNoJndiLookUp = readHgcaaLog();
 
