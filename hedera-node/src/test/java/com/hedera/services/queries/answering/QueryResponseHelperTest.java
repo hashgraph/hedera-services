@@ -30,7 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import static com.hedera.services.context.primitives.StateView.EMPTY_VIEW;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
@@ -96,6 +98,27 @@ class QueryResponseHelperTest {
 		// then:
 		inOrder.verify(opCounters).countReceived(TokenGetInfo);
 		inOrder.verify(answerFlow).satisfyUsing(answer, query);
+		inOrder.verify(observer).onNext(notOkResponse);
+		inOrder.verify(observer).onCompleted();
+		inOrder.verify(opCounters, never()).countAnswered(TokenGetInfo);
+	}
+
+	@Test
+	void helpsWithAnswerUnhappyPathWithException() {
+		// setup:
+		InOrder inOrder = inOrder(answerFlow, answer, opCounters, observer);
+
+		given(answerFlow.satisfyUsing(answer, query)).willThrow(IllegalStateException.class);
+		given(answer.responseGiven(query, EMPTY_VIEW, FAIL_INVALID, 0L)).willReturn(notOkResponse);
+		given(answer.extractValidityFrom(okResponse)).willReturn(FAIL_INVALID);
+
+		// when:
+		subject.answer(query, observer, answer, TokenGetInfo);
+
+		// then:
+		inOrder.verify(opCounters).countReceived(TokenGetInfo);
+		inOrder.verify(answerFlow).satisfyUsing(answer, query);
+		inOrder.verify(answer).responseGiven(query, EMPTY_VIEW, FAIL_INVALID, 0L);
 		inOrder.verify(observer).onNext(notOkResponse);
 		inOrder.verify(observer).onCompleted();
 		inOrder.verify(opCounters, never()).countAnswered(TokenGetInfo);

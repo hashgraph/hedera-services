@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -129,7 +130,7 @@ class LogUtilsTest {
 
 	@Test
 	void unescapeBytesWorksWithCornerCases() throws LogUtils.InvalidEscapeSequenceException {
-		final String escapedStr = "\\\"\\a\\b\\43\\?\\n\\t\\uffff\\U00000000\\x1";
+		final String escapedStr = "\\\"\\a\\b\\43\\?\\n\\t\\uffff\\U00000000\\x1f";
 		final byte[] bytes = new byte[4];
 		bytes[0] = 11;
 		bytes[1]= 12;
@@ -147,7 +148,9 @@ class LogUtilsTest {
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\xg"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufff"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufffff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufgffffff"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\"));
+		assertTrue(LogUtils.unescapeBytes(List.of("\\")).get(0).isEmpty());
 	}
 
 	private String readHgcaaLog() throws IOException {

@@ -177,7 +177,7 @@ public final class LogUtils {
 							for(int offset = i; offset < i + 8; ++offset) {
 								byte b = input.byteAt(offset);
 								if (!isHex(b)) {
-									throw new InvalidEscapeSequenceException("Invalid escape sequence: '\\U' with too few hex chars");
+									throw new InvalidEscapeSequenceException("Invalid escape sequence: '\\U' with invalid hex chars");
 								}
 
 								codepoint = codepoint << 4 | digitValue(b);
