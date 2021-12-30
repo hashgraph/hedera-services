@@ -94,18 +94,23 @@ class ExtantScheduleContextTest {
 
 	@Test
 	void requiresAllFieldsSet() {
+		final var numSigners = EnumSet.complementOf(EnumSet.of(NUM_SIGNERS));
+		final var adminAndNoAdmin = EnumSet.complementOf(
+				EnumSet.of(SettableField.ADMIN_KEY, NO_ADMIN_KEY));
+		final var memo = EnumSet.of(SettableField.MEMO);
+		final var scheduleTxn = EnumSet.complementOf(EnumSet.of(SettableField.SCHEDULED_TXN));
+		final var isResolved = EnumSet.complementOf(EnumSet.of(SettableField.IS_RESOLVED));
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(NUM_SIGNERS))).build());
+				() -> builderWith(numSigners).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(
-						EnumSet.of(SettableField.ADMIN_KEY, NO_ADMIN_KEY))).build());
+				() -> builderWith(adminAndNoAdmin).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.of(SettableField.MEMO)).build());
+				() -> builderWith(memo).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.SCHEDULED_TXN))).build());
+				() -> builderWith(scheduleTxn).build());
 		Assertions.assertThrows(IllegalStateException.class,
-				() -> builderWith(EnumSet.complementOf(EnumSet.of(SettableField.IS_RESOLVED))).build());
+				() -> builderWith(isResolved).build());
 
 	}
 

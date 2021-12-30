@@ -22,6 +22,7 @@ package com.hedera.services.legacy.regression.umbrella;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
@@ -46,7 +47,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.swirlds.common.CommonUtils;
 import io.grpc.Status;
@@ -450,7 +450,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 			ContractID contractToCall, ByteString callData) throws Throwable {
 		Transaction paymentTx = getQueryPaymentSigned(payerAccount, nodeAccount, "callContractLocal");
 		Query contractCallLocal = RequestBuilder
-				.getContractCallLocalQuery(contractToCall, DEFAULT_CONTRACT_OP_GAS, callData, 0L, 5000,
+				.getContractCallLocalQuery(contractToCall, DEFAULT_CONTRACT_OP_GAS, callData, 5000,
 						paymentTx, ResponseType.ANSWER_ONLY);
 
 		log.debug("callContractLocal: request = " + contractCallLocal);

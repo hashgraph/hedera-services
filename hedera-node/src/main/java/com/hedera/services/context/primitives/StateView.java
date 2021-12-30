@@ -502,6 +502,7 @@ public class StateView {
 			var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
+			return Optional.of(info.build());
 		}
 
 		return Optional.of(info.build());

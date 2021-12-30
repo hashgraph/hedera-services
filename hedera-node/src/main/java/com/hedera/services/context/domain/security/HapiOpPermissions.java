@@ -9,9 +9,9 @@ package com.hedera.services.context.domain.security;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,8 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HapiOpPermissions {
 	private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
-	static final String MISSING_OP_TPL = "Ignoring key '%s', which does not correspond to a known Hedera operation!";
-	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op %s---cannot interpret range '%s'!";
+	static final String MISSING_OP_TPL = "Ignoring key '{}', which does not correspond to a known Hedera operation!";
+	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op {}---cannot interpret range '{}'!";
 
 	private final AccountNumbers accountNums;
 
@@ -50,7 +50,8 @@ public class HapiOpPermissions {
 		this.accountNums = accountNums;
 	}
 
-	private EnumMap<HederaFunctionality, PermissionedAccountsRange> permissions = new EnumMap<>(HederaFunctionality.class);
+	private EnumMap<HederaFunctionality, PermissionedAccountsRange> permissions = new EnumMap<>(
+			HederaFunctionality.class);
 
 	public void reloadFrom(ServicesConfigurationList config) {
 		EnumMap<HederaFunctionality, PermissionedAccountsRange> newPerms = new EnumMap<>(HederaFunctionality.class);
@@ -60,12 +61,12 @@ public class HapiOpPermissions {
 				var op = legacyKeys.get(opName);
 				var range = PermissionedAccountsRange.from(permission.getValue());
 				if (range == null) {
-					log.warn(String.format(UNPARSEABLE_RANGE_TPL, op, permission.getValue()));
+					log.warn(UNPARSEABLE_RANGE_TPL, op, permission.getValue());
 				} else {
 					newPerms.put(op, range);
 				}
 			} else {
-				log.warn(String.format(MISSING_OP_TPL, opName));
+				log.warn(MISSING_OP_TPL, opName);
 			}
 		}
 		permissions = newPerms;

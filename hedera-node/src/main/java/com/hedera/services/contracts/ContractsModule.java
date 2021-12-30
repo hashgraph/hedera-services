@@ -67,22 +67,22 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 
 @Module
-public abstract class ContractsModule {
+public interface ContractsModule {
 	@Binds
 	@Singleton
-	public abstract Source<byte[], byte[]> bindByteCodeSource(BlobStorageSource blobStorageSource);
+	Source<byte[], byte[]> bindByteCodeSource(BlobStorageSource blobStorageSource);
 
 	@Binds
 	@Singleton
-	public abstract Source<byte[], AccountState> bindAccountsSource(LedgerAccountsSource ledgerAccountsSource);
+	Source<byte[], AccountState> bindAccountsSource(LedgerAccountsSource ledgerAccountsSource);
 
 	@Binds
 	@Singleton
-	public abstract StoragePersistence bindStoragePersistence(BlobStoragePersistence blobStoragePersistence);
+	StoragePersistence bindStoragePersistence(BlobStoragePersistence blobStoragePersistence);
 
 	@Provides
 	@Singleton
-	public static SoliditySigsVerifier provideSoliditySigsVerifier(
+	static SoliditySigsVerifier provideSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
@@ -96,7 +96,7 @@ public abstract class ContractsModule {
 
 	@Provides
 	@Singleton
-	public static ServicesRepositoryRoot provideServicesRepositoryRoot(
+	static ServicesRepositoryRoot provideServicesRepositoryRoot(
 			StoragePersistence storagePersistence,
 			Source<byte[], byte[]> bytecodeSource,
 			Source<byte[], AccountState> accountSource
@@ -109,86 +109,86 @@ public abstract class ContractsModule {
 	@Provides
 	@Singleton
 	@BytecodeSource
-	public static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
+	static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
 		return bytecodeMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
 	@StorageSource
-	public static Map<byte[], byte[]> provideStorageSource(Map<String, byte[]> blobStore) {
+	static Map<byte[], byte[]> provideStorageSource(Map<String, byte[]> blobStore) {
 		return storageMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
-	public static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
+	static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
 	@IntoSet
-	public static Operation provideCreate2Operation(GasCalculator gasCalculator) {
+	static Operation provideCreate2Operation(GasCalculator gasCalculator) {
 		return new InvalidOperation(0xF5, gasCalculator);
 	}
 
 	@Binds
 	@Singleton
-	public abstract GasCalculator bindHederaGasCalculatorV19(GasCalculatorHederaV19 gasCalculator);
+	GasCalculator bindHederaGasCalculatorV19(GasCalculatorHederaV19 gasCalculator);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindBalanceOperation(HederaBalanceOperation balance);
+	Operation bindBalanceOperation(HederaBalanceOperation balance);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
+	Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCallOperation(HederaCallOperation call);
+	Operation bindCallOperation(HederaCallOperation call);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCreateOperation(HederaCreateOperation create);
+	Operation bindCreateOperation(HederaCreateOperation create);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
+	Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
+	Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
+	Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
+	Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
+	Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindSStoreOperation(HederaSStoreOperation sstore);
+	Operation bindSStoreOperation(HederaSStoreOperation sstore);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
+	Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
 }

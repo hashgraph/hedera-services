@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,6 +50,8 @@ import java.util.Base64;
  * Common utilities.
  */
 public final class CommonUtils {
+	private static final Logger log = LogManager.getLogger(CommonUtils.class);
+
 	private CommonUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
@@ -117,6 +121,7 @@ public final class CommonUtils {
 			fos.write(data);
 			fos.flush();
 		} catch (IOException e) {
+			log.error("Exception caused while writing to file", e);
 			throw e;
 		}
 	}
@@ -239,6 +244,7 @@ public final class CommonUtils {
 			rv = "body=" + TextFormat.shortDebugString(body) + "; sigs="
 					+ TextFormat.shortDebugString(extractSignatureMap(grpcTransaction));
 		} catch (InvalidProtocolBufferException e) {
+			log.error("Exception caused while reading grpcTransaction to string", e);
 			throw e;
 		}
 		return rv;
