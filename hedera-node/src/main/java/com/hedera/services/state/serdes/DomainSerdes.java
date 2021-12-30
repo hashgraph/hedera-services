@@ -54,7 +54,7 @@ public class DomainSerdes {
 	}
 
 	public String readNullableString(SerializableDataInputStream in, int maxLen) throws IOException {
-		return readNullable(in, (input) -> input.readNormalisedString(maxLen));
+		return readNullable(in, input -> input.readNormalisedString(maxLen));
 	}
 
 	public <T> void writeNullable(
