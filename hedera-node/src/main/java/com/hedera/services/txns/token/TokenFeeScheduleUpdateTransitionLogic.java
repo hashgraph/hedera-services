@@ -53,7 +53,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
 
@@ -105,7 +105,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody txnBody) {

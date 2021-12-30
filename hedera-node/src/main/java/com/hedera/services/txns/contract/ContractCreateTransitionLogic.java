@@ -68,7 +68,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final HederaLedger hederaLedger;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -158,7 +158,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractCreateTxn) {

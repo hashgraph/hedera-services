@@ -72,7 +72,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -129,14 +129,12 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		final var changes = customizer.getChanges();
 		final var keyChanges = customizer.getChanges().keySet();
 
-		if (ledger.isDetached(target)) {
-			if (!keyChanges.equals(EXPIRY_ONLY)) {
-				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-			}
+		if (ledger.isDetached(target) && !keyChanges.equals(EXPIRY_ONLY)) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 
 		if (keyChanges.contains(AccountProperty.EXPIRY)) {
-			final long newExpiry = (long)changes.get(AccountProperty.EXPIRY);
+			final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
 			if (newExpiry < ledger.expiry(target)) {
 				return EXPIRATION_REDUCTION_NOT_ALLOWED;
 			}
@@ -193,7 +191,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {

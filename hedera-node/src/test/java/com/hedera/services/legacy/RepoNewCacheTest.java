@@ -67,7 +67,7 @@ class RepoNewCacheTest {
 	@Mock
 	private AutoCreationLogic autoAccountCreator;
 
-	@Disabled
+	@Disabled("Disabled temporarily")
 	public void test() {
 		MerkleMap<EntityNum, MerkleAccount> accountMap = new MerkleMap<>();
 		MerkleMap<String, MerkleOptionalBlob> storageMap = new MerkleMap<>();

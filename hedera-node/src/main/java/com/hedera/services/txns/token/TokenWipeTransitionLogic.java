@@ -54,7 +54,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	@Inject
 	public TokenWipeTransitionLogic(
@@ -107,7 +107,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

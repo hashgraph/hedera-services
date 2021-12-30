@@ -137,7 +137,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		}
 
 		var finalOutcome = OK;
-		if (signingOutcome.getRight()) {
+		if (Boolean.TRUE.equals(signingOutcome.getRight())) {
 			finalOutcome = executor.processExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);

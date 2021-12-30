@@ -49,7 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ScheduleSignTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ScheduleSignTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	private final InHandleActivationHelper activationHelper;
 
@@ -110,7 +110,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 		if (outcome == OK) {
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
-			if (signingOutcome.getRight()) {
+			if (Boolean.TRUE.equals(signingOutcome.getRight())) {
 				outcome = executor.processExecution(scheduleId, store, txnCtx);
 			}
 		}
@@ -124,7 +124,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

@@ -384,7 +384,7 @@ public final class MiscUtils {
 				.stream()
 				.map(nftTransfer -> String.format(
 						"%s %s %s",
-						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
+						nftTransfer.getSerialNumber(),
 						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
 				.toList()

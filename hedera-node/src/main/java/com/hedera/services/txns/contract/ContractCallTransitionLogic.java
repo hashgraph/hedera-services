@@ -53,7 +53,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final ServicesRepositoryRoot repositoryRoot;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validateSemantics;
 
 	@Inject
 	public ContractCallTransitionLogic(
@@ -115,7 +115,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {

@@ -22,9 +22,9 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -52,7 +52,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 	private final LegacySystemUndeleter delegate;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
+	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
 
 	@Inject
 	public ContractSysUndelTransitionLogic(
@@ -93,7 +93,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return semanticCheck;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractSysUndelTxn) {
