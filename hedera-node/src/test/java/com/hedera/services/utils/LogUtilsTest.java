@@ -125,6 +125,21 @@ class LogUtilsTest {
 		assertEquals(malUri, LogUtils.unescapeBytes(LogUtils.escapeBytes(ByteString.copyFromUtf8(malUri))));
 	}
 
+	@Test
+	void unescapeBytesWorksWithCornerCases() throws LogUtils.InvalidEscapeSequenceException {
+		final byte[] bytes = new byte[4];
+		bytes[0] = 11;
+		bytes[1]= 12;
+		bytes[2] = 13;
+		bytes[3] = 92;
+
+		final String str = "\"?";
+		final ByteString bs = ByteString.copyFrom(bytes);
+
+		assertEquals(bs.toStringUtf8(), LogUtils.unescapeBytes(LogUtils.escapeBytes(bs)));
+		assertEquals(str, LogUtils.unescapeBytes(LogUtils.escapeBytes(ByteString.copyFromUtf8(str))));
+	}
+
 	private String readHgcaaLog() throws IOException {
 		return Files.readString(Path.of(HGCAA_LOG_PATH), StandardCharsets.UTF_8);
 	}

@@ -144,7 +144,8 @@ class UtilsConstructorTest {
 			TokenLogicModule.class,
 			TopicConversion.class,
 			HederaOperationUtil.class,
-			GasCalculatorHederaUtil.class
+			GasCalculatorHederaUtil.class,
+			LogUtils.class
 	));
 
 	@Test
