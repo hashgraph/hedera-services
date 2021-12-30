@@ -130,7 +130,7 @@ class LogUtilsTest {
 
 	@Test
 	void unescapeBytesWorksWithCornerCases() throws LogUtils.InvalidEscapeSequenceException {
-		final String escapedStr = "\\\"\\a\\b\\43\\?\\n\\t\\uffff\\U00000000\\x1f";
+		final String escapedStr = "\\\"\\a\\b\\4\\43\\433\\?\\n\\t\\uffff\\U00000000\\x1f";
 		final byte[] bytes = new byte[4];
 		bytes[0] = 11;
 		bytes[1]= 12;
@@ -146,8 +146,16 @@ class LogUtilsTest {
 	void unescapeBytesFailsAsExpected() {
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\m"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\xg"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufg"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\uffg"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufffg"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\udc10"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufffff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Uffffffff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\U0000DC00"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\U0000D800"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\U0000DB80"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufgffffff"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\"));
 		assertTrue(LogUtils.unescapeBytes(List.of("\\")).get(0).isEmpty());
