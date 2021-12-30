@@ -25,20 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LogUtilsTest {
-//	private static final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-//	private static final PrintStream originalOut = System.out;
 	private static final String HGCAA_LOG_PATH = "output/hgcaa.log";
 
 	@BeforeAll
 	public static void clearHgcaaLog() throws FileNotFoundException {
 		new PrintWriter(HGCAA_LOG_PATH).close();
-//		System.setOut(new PrintStream(outContent));
 	}
-
-//	@AfterAll
-//	public static void restoreStreams() {
-//		System.setOut(originalOut);
-//	}
 
 	@Test
 	void ignoresJndiInGrpc() throws IOException {
