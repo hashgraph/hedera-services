@@ -7,6 +7,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +25,9 @@ public final class LogUtils {
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, Transaction txn, Exception exception) {
-		var loggableGrpc = txn == null ? "null" : escapeBytes(txn.getSignedTransactionBytes());
-		logger.log(logLevel, String.format(message, loggableGrpc), exception);
+		final var loggableGrpc = txn == null ? "null" : escapeBytes(txn.getSignedTransactionBytes());
+		final var logMessage = String.format(message, loggableGrpc);
+		logger.log(logLevel, logMessage, exception);
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, Query query) {
@@ -33,8 +35,15 @@ public final class LogUtils {
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, Query query, Exception exception) {
-		var loggableGrpc = query == null ? "null" : escapeBytes(query.toByteString());
-		logger.log(logLevel, String.format(message, loggableGrpc), exception);
+		final var loggableGrpc = query == null ? "null" : escapeBytes(query.toByteString());
+		final var logMessage = String.format(message, loggableGrpc);
+		logger.log(logLevel, logMessage, exception);
+	}
+
+	public static void encodeGrpcAndLog(Logger logger, Level logLevel, Marker marker, String message, Query query) {
+		final var loggableGrpc = query == null ? "null" : escapeBytes(query.toByteString());
+		final var logMessage = String.format(message, loggableGrpc);
+		logger.log(logLevel, marker, logMessage);
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, TransactionBody txnBody) {
@@ -43,17 +52,19 @@ public final class LogUtils {
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, TransactionBody txnBody,
 			Exception exception) {
-		var loggableGrpc = txnBody == null ? "null" : escapeBytes(txnBody.toByteString());
-		logger.log(logLevel, String.format(message, loggableGrpc), exception);
+		final var loggableGrpc = txnBody == null ? "null" : escapeBytes(txnBody.toByteString());
+		final var logMessage = String.format(message, loggableGrpc);
+		logger.log(logLevel, logMessage, exception);
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message, String grpc) {
-		var loggableGrpc = escapeBytes(ByteString.copyFromUtf8(grpc));
-		logger.log(logLevel, String.format(message, loggableGrpc));
+		final var loggableGrpc = escapeBytes(ByteString.copyFromUtf8(grpc));
+		final var logMessage = String.format(message, loggableGrpc);
+		logger.log(logLevel, logMessage);
 	}
 
 	public static void encodeGrpcAndLog(Logger logger, Level logLevel, String message) {
-		var loggableGrpc = escapeBytes(ByteString.copyFromUtf8(message));
+		final var loggableGrpc = escapeBytes(ByteString.copyFromUtf8(message));
 		logger.log(logLevel, loggableGrpc);
 	}
 

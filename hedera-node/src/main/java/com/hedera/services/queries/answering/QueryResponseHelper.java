@@ -80,7 +80,7 @@ public class QueryResponseHelper {
 			Runnable incAnsweredCount
 	) {
 		if (log.isDebugEnabled()) {
-			LogUtils.encodeGrpcAndLog(log, Level.DEBUG, "Received query: %s", query);
+			LogUtils.encodeGrpcAndLog(log, Level.DEBUG, ALL_QUERIES_MARKER, "Received query: %s", query);
 		}
 		Response response;
 		incReceivedCount.run();
