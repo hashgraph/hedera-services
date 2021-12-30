@@ -28,6 +28,7 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
@@ -38,6 +39,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
+import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -80,9 +83,20 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(final FileID id) {
+	public Instant sourceSignedAt() {
+		return stateChildren.getSignedAt();
+	}
+
+	@Override
+	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
+			final FileID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		if (fileNumbers.isSoftwareUpdateFile(id.getFileNum())) {
 			return SPECIAL_FILE_RESULT;
+		}
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getFileNum());
 		}
 		final var meta = metaMap.get(id);
 		return (meta == null)
@@ -91,7 +105,13 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(final TopicID id) {
+	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
+			final TopicID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getTopicNum());
+		}
 		final var topic = stateChildren.getTopics().get(fromTopicId(id));
 		if (topic == null || topic.isDeleted()) {
 			return SafeLookupResult.failure(INVALID_TOPIC);
@@ -103,7 +123,13 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(final TokenID id) {
+	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
+			final TokenID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getTokenNum());
+		}
 		final var token = stateChildren.getTokens().get(fromTokenId(id));
 		return (token == null)
 				? SafeLookupResult.failure(MISSING_TOKEN)

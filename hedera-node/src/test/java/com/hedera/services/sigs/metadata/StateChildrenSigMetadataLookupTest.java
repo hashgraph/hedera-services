@@ -33,6 +33,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -57,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +76,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StateChildrenSigMetadataLookupTest {
@@ -111,6 +115,17 @@ class StateChildrenSigMetadataLookupTest {
 	void setUp() {
 		subject = new StateChildrenSigMetadataLookup(
 				new MockFileNumbers(), aliasManager, stateChildren, tokenMetaTransform);
+	}
+
+	@Test
+	void canReportSourceSigningTime() {
+		final var mockSubject = mock(SigMetadataLookup.class);
+		doCallRealMethod().when(mockSubject).sourceSignedAt();
+		assertSame(Instant.EPOCH, mockSubject.sourceSignedAt());
+
+		final var signedAt = Instant.ofEpochSecond(1_234_567L, 890);
+		given(stateChildren.getSignedAt()).willReturn(signedAt);
+		assertSame(signedAt, subject.sourceSignedAt());
 	}
 
 	@Test
@@ -274,7 +289,7 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingToken() {
 		given(stateChildren.getTokens()).willReturn(tokens);
 
-		final var result = subject.tokenSigningMetaFor(unknownToken);
+		final var result = subject.tokenSigningMetaFor(unknownToken, null);
 
 		assertEquals(MISSING_TOKEN, result.failureIfAny());
 	}
@@ -285,9 +300,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(tokens.get(EntityNum.fromTokenId(knownToken))).willReturn(token);
 		given(tokenMetaTransform.apply(token)).willReturn(tokenMeta);
 
-		final var result = subject.tokenSigningMetaFor(knownToken);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.tokenSigningMetaFor(knownToken, linkedRefs);
 
 		assertSame(tokenMeta, result.metadata());
+		assertEquals(knownToken.getTokenNum(), linkedRefs.linkedNumbers()[0]);
 	}
 
 	@Test
@@ -299,11 +316,13 @@ class StateChildrenSigMetadataLookupTest {
 		given(topic.getAdminKey()).willReturn(wacl);
 		given(topic.getSubmitKey()).willReturn(simple);
 
-		final var result = subject.topicSigningMetaFor(knownTopic);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.topicSigningMetaFor(knownTopic, linkedRefs);
 
 		assertTrue(result.succeeded());
 		assertSame(wacl, result.metadata().adminKey());
 		assertSame(simple, result.metadata().submitKey());
+		assertEquals(knownTopic.getTopicNum(), linkedRefs.linkedNumbers()[0]);
 	}
 
 	@Test
@@ -311,7 +330,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(stateChildren.getTopics()).willReturn(topics);
 		given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 
-		final var result = subject.topicSigningMetaFor(knownTopic);
+		final var result = subject.topicSigningMetaFor(knownTopic, null);
 
 		assertTrue(result.succeeded());
 		assertFalse(result.metadata().hasAdminKey());
@@ -322,7 +341,7 @@ class StateChildrenSigMetadataLookupTest {
 	void returnsMissingTopicMeta() {
 		given(stateChildren.getTopics()).willReturn(topics);
 
-		final var result = subject.topicSigningMetaFor(unknownTopic);
+		final var result = subject.topicSigningMetaFor(unknownTopic, null);
 
 		assertEquals(INVALID_TOPIC, result.failureIfAny());
 	}
@@ -333,7 +352,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 		given(topic.isDeleted()).willReturn(true);
 
-		final var result = subject.topicSigningMetaFor(knownTopic);
+		final var result = subject.topicSigningMetaFor(knownTopic, null);
 
 		Assertions.assertEquals(INVALID_TOPIC, result.failureIfAny());
 	}
@@ -343,10 +362,12 @@ class StateChildrenSigMetadataLookupTest {
 		setupNonSpecialFileTest();
 		givenFile(knownFile, false, expiry, wacl);
 
-		final var result = subject.fileSigningMetaFor(knownFile);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.fileSigningMetaFor(knownFile, linkedRefs);
 
 		assertTrue(result.succeeded());
 		assertEquals(wacl.toString(), result.metadata().wacl().toString());
+		assertEquals(knownFile.getFileNum(), linkedRefs.linkedNumbers()[0]);
 	}
 
 	@Test
@@ -354,7 +375,7 @@ class StateChildrenSigMetadataLookupTest {
 		setupNonSpecialFileTest();
 		givenFile(knownFile, false, expiry, wacl);
 
-		final var result = subject.fileSigningMetaFor(unknownFile);
+		final var result = subject.fileSigningMetaFor(unknownFile, null);
 
 		assertFalse(result.succeeded());
 		assertEquals(KeyOrderingFailure.MISSING_FILE, result.failureIfAny());
@@ -362,7 +383,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void returnsSpecialFileMeta() {
-		final var result = subject.fileSigningMetaFor(knownSpecialFile);
+		final var result = subject.fileSigningMetaFor(knownSpecialFile, null);
 
 		assertTrue(result.succeeded());
 		assertSame(StateView.EMPTY_WACL, result.metadata().wacl());

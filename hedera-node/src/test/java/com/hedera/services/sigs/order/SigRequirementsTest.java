@@ -2797,8 +2797,8 @@ class SigRequirementsTest {
 								hfsSigMetaLookup,
 								() -> accounts,
 								() -> topics,
-								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
-								SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
+								DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
+								DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
 				new MockGlobalDynamicProps(),
 				signatureWaivers);
 	}
