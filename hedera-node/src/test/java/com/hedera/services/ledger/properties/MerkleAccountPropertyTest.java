@@ -97,16 +97,16 @@ class MerkleAccountPropertyTest {
 
 	@Test
 	void cannotSetNegativeBalance() {
-		assertThrows(
-				IllegalArgumentException.class,
-				() -> BALANCE.setter().accept(new MerkleAccount(), -1L));
+		final var account = new MerkleAccount();
+		final var balanceSetter = BALANCE.setter();
+		assertThrows(IllegalArgumentException.class, () -> balanceSetter.accept(account, -1L));
 	}
 
 	@Test
 	void cannotConvertNonNumericObjectToBalance() {
-		assertThrows(
-				IllegalArgumentException.class,
-				() -> BALANCE.setter().accept(new MerkleAccount(), "NotNumeric"));
+		final var account = new MerkleAccount();
+		final var balanceSetter = BALANCE.setter();
+		assertThrows(IllegalArgumentException.class, () -> balanceSetter.accept(account, "NotNumeric"));
 	}
 
 	@Test

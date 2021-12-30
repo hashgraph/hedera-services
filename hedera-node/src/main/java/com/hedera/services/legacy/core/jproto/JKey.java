@@ -146,7 +146,7 @@ public abstract class JKey {
 		Key rv;
 		if (jkey.hasEd25519Key()) {
 			rv = Key.newBuilder().setEd25519(ByteString.copyFrom(jkey.getEd25519())).build();
-		} else if (jkey.hasECDSA_383Key()) {
+		} else if (jkey.hasECDSA384Key()) {
 			rv = Key.newBuilder().setECDSA384(ByteString.copyFrom(jkey.getECDSA384())).build();
 		} else if (jkey.hasRSA3072Key()) {
 			rv = Key.newBuilder().setRSA3072(ByteString.copyFrom(jkey.getRSA3072())).build();
@@ -207,7 +207,8 @@ public abstract class JKey {
 	}
 
 	public static boolean equalUpToDecodability(JKey a, JKey b) {
-		Key aKey = null, bKey = null;
+		Key aKey = null;
+		Key bKey = null;
 		try {
 			aKey = mapJKey(a);
 		} catch (Exception ignore) {
@@ -257,7 +258,7 @@ public abstract class JKey {
 		return false;
 	}
 
-	public boolean hasECDSA_383Key() {
+	public boolean hasECDSA384Key() {
 		return false;
 	}
 

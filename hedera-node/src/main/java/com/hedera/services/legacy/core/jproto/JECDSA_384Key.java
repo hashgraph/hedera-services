@@ -27,13 +27,13 @@ public class JECDSA_384Key extends JKey {
 	private static final long serialVersionUID = 1L;
 	private byte[] ecdsa384Key = null;
 
-	public JECDSA_384Key(byte[] ECDSA_384Key) {
-		this.ecdsa384Key = ECDSA_384Key;
+	public JECDSA_384Key(byte[] ecdsa384Key) {
+		this.ecdsa384Key = ecdsa384Key;
 	}
 
 	@Override
 	public String toString() {
-		return "<JECDSA_384Key: ECDSA_384Key hex=" + CommonUtils.hex(ecdsa384Key) + ">";
+		return "<JECDSA_384Key: ecdsa384Key hex=" + CommonUtils.hex(ecdsa384Key) + ">";
 	}
 
 	@Override
@@ -49,5 +49,10 @@ public class JECDSA_384Key extends JKey {
 	@Override
 	public boolean isValid() {
 		return !isEmpty();
+	}
+
+	@Override
+	public boolean hasECDSA384Key() {
+		return true;
 	}
 }

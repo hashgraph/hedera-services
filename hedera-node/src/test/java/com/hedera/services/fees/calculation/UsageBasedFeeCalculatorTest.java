@@ -333,9 +333,11 @@ class UsageBasedFeeCalculatorTest {
 	void failsWithNseeSansApplicableUsageCalculator() {
 		// expect:
 		assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
+
+		final Map<String, Object> emptyMap = Collections.emptyMap();
+		final var prices = currentPrices.get(SubType.DEFAULT);
 		assertThrows(NoSuchElementException.class,
-				() -> subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at,
-						Collections.emptyMap()));
+				() -> subject.computePayment(query, prices, view, at, emptyMap));
 	}
 
 	@Test

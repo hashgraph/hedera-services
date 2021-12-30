@@ -47,9 +47,10 @@ public class HFileMetaSerde {
 	}
 
 	public static DomainSerdes serdes = new DomainSerdes();
-	public static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
-	public static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
-	public static Function<OutputStream, SerializableDataOutputStream> serOutFactory = SerializableDataOutputStream::new;
+	private static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
+	private static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
+	private static Function<OutputStream, SerializableDataOutputStream> serOutFactory =
+			SerializableDataOutputStream::new;
 
 	public static byte[] serialize(HFileMeta meta) throws IOException {
 		return streamContentDiscovery.discoverFor(out -> {
@@ -96,5 +97,25 @@ public class HFileMetaSerde {
 		byte[] key = stream.readAllBytes();
 		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
 		return new HFileMeta(deleted, wacl, expirationTime);
+	}
+
+	/* used for unit tests */
+	public static StreamContentDiscovery getStreamContentDiscovery() {
+		return streamContentDiscovery;
+	}
+
+	public static void setStreamContentDiscovery(
+			final StreamContentDiscovery streamContentDiscovery) {
+		HFileMetaSerde.streamContentDiscovery = streamContentDiscovery;
+	}
+
+	public static void setSerInFactory(
+			final Function<InputStream, SerializableDataInputStream> serInFactory) {
+		HFileMetaSerde.serInFactory = serInFactory;
+	}
+
+	public static void setSerOutFactory(
+			final Function<OutputStream, SerializableDataOutputStream> serOutFactory) {
+		HFileMetaSerde.serOutFactory = serOutFactory;
 	}
 }

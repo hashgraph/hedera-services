@@ -347,7 +347,7 @@ public class HederaLedger {
 			AccountID to,
 			long adjustment
 	) {
-		var validity = OK;
+		ResponseCodeEnum validity;
 		validity = adjustTokenBalance(from, tId, -adjustment);
 		if (validity == OK) {
 			validity = adjustTokenBalance(to, tId, adjustment);

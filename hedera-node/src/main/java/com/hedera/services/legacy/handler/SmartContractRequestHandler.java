@@ -240,9 +240,10 @@ public class SmartContractRequestHandler {
 	}
 
 	private ResponseCodeEnum validateIfDeleted(final AccountID beneficiary) {
-		return ledger.isDeleted(beneficiary)
-				? (ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED)
-				: SUCCESS;
+		if (!ledger.isDeleted(beneficiary)) {
+			return SUCCESS;
+		}
+		return ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED;
 	}
 
 	private ResponseCodeEnum validateContractDelete(ContractDeleteTransactionBody op) {

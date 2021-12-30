@@ -456,18 +456,19 @@ class HederaScheduleStoreTest {
 	@Test
 	void throwsOnExpiringMissingSchedule() {
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
+		final var entity = EntityId.fromGrpcScheduleId(created);
 
-		assertThrows(IllegalArgumentException.class, () -> subject.expire(EntityId.fromGrpcScheduleId(created)));
+		assertThrows(IllegalArgumentException.class, () -> subject.expire(entity));
 	}
 
 	@Test
 	void throwsOnExpiringPending() {
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
+		final var entity = EntityId.fromGrpcScheduleId(subject.pendingId);
 
 		subject.createProvisionally(expected, consensusTime);
 
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.expire(EntityId.fromGrpcScheduleId(subject.pendingId)));
+		assertThrows(IllegalArgumentException.class, () -> subject.expire(entity));
 	}
 
 	@Test

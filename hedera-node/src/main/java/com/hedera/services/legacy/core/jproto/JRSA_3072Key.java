@@ -30,13 +30,13 @@ public class JRSA_3072Key extends JKey {
 	private static final long serialVersionUID = 1L;
 	private byte[] rsa3072Key = null;
 
-	public JRSA_3072Key(byte[] RSA_3072Key) {
-		this.rsa3072Key = RSA_3072Key;
+	public JRSA_3072Key(byte[] rsa3072Key) {
+		this.rsa3072Key = rsa3072Key;
 	}
 
 	@Override
 	public String toString() {
-		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(rsa3072Key) + ">";
+		return "<JRSA_3072Key: rsa3072Key hex=" + CommonUtils.hex(rsa3072Key) + ">";
 	}
 
 	@Override

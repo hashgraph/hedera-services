@@ -499,7 +499,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (tId == MISSING_TOKEN) {
 			return INVALID_TOKEN_ID;
 		}
-		var validity = OK;
+		ResponseCodeEnum validity;
 		final var isExpiryOnly = affectsExpiryAtMost(changes);
 
 		validity = checkAutoRenewAccount(changes);

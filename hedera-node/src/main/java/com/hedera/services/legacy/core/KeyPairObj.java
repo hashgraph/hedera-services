@@ -31,11 +31,9 @@ import java.security.spec.X509EncodedKeySpec;
 public class KeyPairObj implements Serializable {
 	private static final long serialVersionUID = 9146375644904969927L;
 	private String publicKey;
-	private String privateKey;
 
-	public KeyPairObj(String publicKey, String privateKey) {
+	public KeyPairObj(String publicKey) {
 		this.publicKey = publicKey;
-		this.privateKey = privateKey;
 	}
 
 	public String getPublicKeyAbyteStr() throws InvalidKeySpecException {
@@ -47,5 +45,4 @@ public class KeyPairObj implements Serializable {
 		X509EncodedKeySpec pencoded = new X509EncodedKeySpec(pubKeybytes);
 		return new EdDSAPublicKey(pencoded);
 	}
-
 }

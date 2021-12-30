@@ -50,7 +50,7 @@ import java.util.function.Function;
 import static com.hedera.services.files.HFileMetaSerde.MAX_CONCEIVABLE_MEMO_UTF8_BYTES;
 import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
 import static com.hedera.services.files.HFileMetaSerde.deserialize;
-import static com.hedera.services.files.HFileMetaSerde.streamContentDiscovery;
+import static com.hedera.services.files.HFileMetaSerde.getStreamContentDiscovery;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.any;
@@ -128,7 +128,7 @@ class HFileMetaSerdeTest {
 		final var captor =
 				ArgumentCaptor.forClass(JKeySerializer.StreamConsumer.class);
 		final var inOrder = inOrder(out, serOut, serOutFactory, serdes);
-		given(streamContentDiscovery.discoverFor(captor.capture())).willReturn(pretend);
+		given(getStreamContentDiscovery().discoverFor(captor.capture())).willReturn(pretend);
 		given(serOutFactory.apply(out)).willReturn(serOut);
 
 		final var shouldBePretend = HFileMetaSerde.serialize(known);
@@ -172,16 +172,16 @@ class HFileMetaSerdeTest {
 
 		serdes = mock(DomainSerdes.class);
 		HFileMetaSerde.serdes = serdes;
-		HFileMetaSerde.serInFactory = serInFactory;
-		HFileMetaSerde.serOutFactory = serOutFactory;
-		HFileMetaSerde.streamContentDiscovery = discovery;
+		HFileMetaSerde.setSerInFactory(serInFactory);
+		HFileMetaSerde.setSerOutFactory(serOutFactory);
+		HFileMetaSerde.setStreamContentDiscovery(discovery);
 	}
 
 	private void undoStaticMocking() {
 		HFileMetaSerde.serdes = new DomainSerdes();
-		HFileMetaSerde.serInFactory = SerializableDataInputStream::new;
-		HFileMetaSerde.serOutFactory = SerializableDataOutputStream::new;
-		HFileMetaSerde.streamContentDiscovery = JKeySerializer::byteStream;
+		HFileMetaSerde.setSerInFactory(SerializableDataInputStream::new);
+		HFileMetaSerde.setSerOutFactory(SerializableDataOutputStream::new);
+		HFileMetaSerde.setStreamContentDiscovery(JKeySerializer::byteStream);
 	}
 
 	private static final FileInfo toGrpc(final HFileMeta info, final FileID fid, final long size) throws Exception {
