@@ -284,6 +284,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -373,10 +374,26 @@ class SigRequirementsTest {
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
+	void forwardsCallsWithoutLinkedRefs() {
+		final var mockTxn = TransactionBody.getDefaultInstance();
+		mockSummaryFactory();
+		final var mockSubject = mock(SigRequirements.class);
+
+		doCallRealMethod().when(mockSubject).keysForPayer(mockTxn, mockSummaryFactory);
+		doCallRealMethod().when(mockSubject).keysForOtherParties(mockTxn, mockSummaryFactory);
+
+		mockSubject.keysForPayer(mockTxn, mockSummaryFactory);
+		mockSubject.keysForOtherParties(mockTxn, mockSummaryFactory);
+
+		verify(mockSubject).keysForPayer(mockTxn, mockSummaryFactory, null);
+		verify(mockSubject).keysForOtherParties(mockTxn, mockSummaryFactory, null);
+	}
+
+	@Test
 	void reportsInvalidPayerId() throws Throwable {
 		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 
 		// when:
 		subject.keysForPayer(txn, mockSummaryFactory);
@@ -389,7 +406,7 @@ class SigRequirementsTest {
 	void reportsGeneralPayerError() throws Throwable {
 		// given:
 		setupForNonStdLookup(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO, EXCEPTION_THROWING_LOOKUP);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 
 		// when:
 		subject.keysForPayer(txn, mockSummaryFactory);
@@ -647,7 +664,7 @@ class SigRequirementsTest {
 	@Test
 	void reportsMissingCryptoTransferReceiver() throws Throwable {
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
@@ -669,7 +686,7 @@ class SigRequirementsTest {
 						TopicAdapter.throwingUoe(),
 						id -> null,
 						id -> null));
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -792,7 +809,7 @@ class SigRequirementsTest {
 	void reportsCryptoUpdateMissingAccount() throws Throwable {
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -995,7 +1012,7 @@ class SigRequirementsTest {
 	void reportsMissingFile() throws Throwable {
 		// given:
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1286,7 +1303,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1304,7 +1321,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1448,7 +1465,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1490,7 +1507,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1532,7 +1549,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1586,7 +1603,7 @@ class SigRequirementsTest {
 	void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
 		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1604,7 +1621,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -2804,7 +2821,7 @@ class SigRequirementsTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void aMockSummaryFactory() {
+	private void mockSummaryFactory() {
 		mockSummaryFactory = (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
 	}
 

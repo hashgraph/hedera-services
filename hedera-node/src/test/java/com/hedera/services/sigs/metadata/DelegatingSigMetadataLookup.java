@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -58,6 +59,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
  * delegating to type-specific lookups.
  */
 public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
+	public static final Instant PRETEND_SIGNING_TIME = Instant.ofEpochSecond(1_234_567L, 890);
 	public static final Function<
 			TokenStore,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
@@ -116,7 +118,8 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id) {
+	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id,
+			LinkedRefs linkedRefs) {
 		return contractSigMetaLookup.safeLookup(id);
 	}
 
@@ -129,12 +132,14 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id) {
+	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id,
+			LinkedRefs linkedRefs) {
 		return scheduleSigMetaLookup.apply(id);
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id,
+			LinkedRefs linkedRefs) {
 		return accountSigMetaLookup.safeLookup(id);
 	}
 
@@ -155,7 +160,13 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias) {
+	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias,
+			LinkedRefs linkedRefs) {
 		return accountSigMetaLookup.aliasableSafeLookup(idOrAlias);
+	}
+
+	@Override
+	public Instant sourceSignedAt() {
+		return PRETEND_SIGNING_TIME;
 	}
 }

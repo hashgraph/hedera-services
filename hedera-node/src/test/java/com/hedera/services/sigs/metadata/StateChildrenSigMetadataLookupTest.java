@@ -76,8 +76,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StateChildrenSigMetadataLookupTest {
@@ -119,10 +117,6 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void canReportSourceSigningTime() {
-		final var mockSubject = mock(SigMetadataLookup.class);
-		doCallRealMethod().when(mockSubject).sourceSignedAt();
-		assertSame(Instant.EPOCH, mockSubject.sourceSignedAt());
-
 		final var signedAt = Instant.ofEpochSecond(1_234_567L, 890);
 		given(stateChildren.getSignedAt()).willReturn(signedAt);
 		assertSame(signedAt, subject.sourceSignedAt());
@@ -132,7 +126,7 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingSchedule() {
 		given(stateChildren.getSchedules()).willReturn(schedules);
 
-		final var result = subject.scheduleSigningMetaFor(unknownSchedule);
+		final var result = subject.scheduleSigningMetaFor(unknownSchedule, null);
 
 		assertEquals(MISSING_SCHEDULE, result.failureIfAny());
 	}
@@ -148,7 +142,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(schedule.adminKey()).willReturn(Optional.of(simple));
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(mockTxn);
 
-		final var result = subject.scheduleSigningMetaFor(knownSchedule);
+		final var result = subject.scheduleSigningMetaFor(knownSchedule, null);
 
 		assertTrue(result.succeeded());
 		assertEquals(Optional.empty(), result.metadata().designatedPayer());
@@ -170,9 +164,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(schedule.adminKey()).willReturn(Optional.of(simple));
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(mockTxn);
 
-		final var result = subject.scheduleSigningMetaFor(knownSchedule);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.scheduleSigningMetaFor(knownSchedule, linkedRefs);
 
 		assertTrue(result.succeeded());
+		assertEquals(knownSchedule.getScheduleNum(), linkedRefs.linkedNumbers()[0]);
 		assertEquals(Optional.of(explicitPayer.toGrpcAccountId()), result.metadata().designatedPayer());
 		assertSame(mockTxn, result.metadata().scheduledTxn());
 		assertEquals(Optional.of(simple), result.metadata().adminKey());
@@ -182,7 +178,7 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingContract() {
 		given(stateChildren.getAccounts()).willReturn(accounts);
 
-		final var result = subject.contractSigningMetaFor(unknownContract);
+		final var result = subject.contractSigningMetaFor(unknownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -193,7 +189,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isDeleted()).willReturn(true);
 
-		final var result = subject.contractSigningMetaFor(knownContract);
+		final var result = subject.contractSigningMetaFor(knownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -203,7 +199,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(stateChildren.getAccounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 
-		final var result = subject.contractSigningMetaFor(knownContract);
+		final var result = subject.contractSigningMetaFor(knownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -214,11 +210,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isSmartContract()).willReturn(true);
 
-		final var nullResult = subject.contractSigningMetaFor(knownContract);
+		final var nullResult = subject.contractSigningMetaFor(knownContract, null);
 		assertEquals(IMMUTABLE_CONTRACT, nullResult.failureIfAny());
 
 		given(account.getAccountKey()).willReturn(contract);
-		final var contractResult = subject.contractSigningMetaFor(knownContract);
+		final var contractResult = subject.contractSigningMetaFor(knownContract, null);
 		assertEquals(IMMUTABLE_CONTRACT, contractResult.failureIfAny());
 	}
 
@@ -230,9 +226,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(account.isSmartContract()).willReturn(true);
 		given(account.isReceiverSigRequired()).willReturn(true);
 
-		final var result = subject.contractSigningMetaFor(knownContract);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.contractSigningMetaFor(knownContract, linkedRefs);
 
 		assertTrue(result.succeeded());
+		assertEquals(knownContract.getContractNum(), linkedRefs.linkedNumbers()[0]);
 		assertTrue(result.metadata().receiverSigRequired());
 		assertSame(simple, result.metadata().key());
 	}
@@ -241,8 +239,10 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingAccountNum() {
 		given(stateChildren.getAccounts()).willReturn(accounts);
 
-		final var result = subject.accountSigningMetaFor(unknownAccount);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.accountSigningMetaFor(unknownAccount, linkedRefs);
 
+		assertEquals(unknownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertEquals(MISSING_ACCOUNT, result.failureIfAny());
 	}
 
@@ -253,8 +253,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isReceiverSigRequired()).willReturn(true);
 
-		final var result = subject.aliasableAccountSigningMetaFor(knownAccount);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableAccountSigningMetaFor(knownAccount, linkedRefs);
 
+		assertTrue(linkedRefs.linkedAliases().isEmpty());
+		assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertTrue(result.succeeded());
 		assertTrue(result.metadata().receiverSigRequired());
 		assertSame(simple, result.metadata().key());
@@ -269,9 +272,12 @@ class StateChildrenSigMetadataLookupTest {
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isReceiverSigRequired()).willReturn(true);
 
-		final var result = subject.aliasableAccountSigningMetaFor(alias);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableAccountSigningMetaFor(alias, linkedRefs);
 
 		assertTrue(result.succeeded());
+		assertEquals(List.of(alias.getAlias()), linkedRefs.linkedAliases());
+		assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertTrue(result.metadata().receiverSigRequired());
 		assertSame(simple, result.metadata().key());
 	}
@@ -280,8 +286,10 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingAlias() {
 		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(EntityNum.MISSING_NUM);
 
-		final var result = subject.aliasableAccountSigningMetaFor(alias);
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableAccountSigningMetaFor(alias, linkedRefs);
 
+		assertEquals(List.of(alias.getAlias()), linkedRefs.linkedAliases());
 		assertEquals(MISSING_ACCOUNT, result.failureIfAny());
 	}
 
