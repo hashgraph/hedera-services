@@ -271,15 +271,13 @@ public final class LogUtils {
 	}
 
 	public static List<String> unescapeBytes(List<String> escapedLogs) {
-		var logs =  escapedLogs.stream().map(log -> {
+		return escapedLogs.stream().map(log -> {
 			 try {
 				 return unescapeBytes(log);
 			 } catch (InvalidEscapeSequenceException ignore) {
 				 return "";
 			 }
 		 }).toList();
-
-		return logs;
 	}
 
 
