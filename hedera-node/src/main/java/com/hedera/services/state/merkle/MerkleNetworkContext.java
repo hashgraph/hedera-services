@@ -131,10 +131,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		var activeThrottles = throttling.allActiveThrottles();
 
 		if (activeThrottles.size() != usageSnapshots.length) {
-			log.warn("There are " +
-					activeThrottles.size() + " active throttles, but " +
-					usageSnapshots.length + " usage snapshots from saved state. " +
-					"Not performing a reset!");
+			log.warn("There are {} active throttles, but {} usage snapshots from saved state. " +
+					"Not performing a reset!", activeThrottles.size(), usageSnapshots.length);
 			return;
 		}
 
@@ -471,9 +469,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				throttle.resetUsageTo(savedUsageSnapshot);
 				log.info("Reset {} with saved usage snapshot", throttle);
 			} catch (Exception e) {
-				log.warn("Saved usage snapshot #" + (i + 1)
-						+ " was not compatible with the corresponding active throttle ("
-						+ e.getMessage() + "); not performing a reset!");
+				log.warn(
+						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) not" +
+								" " +
+								"performing a reset !",
+						(i + 1), e.getMessage());
 				resetUnconditionally(throttles, currUsageSnapshots);
 				break;
 			}

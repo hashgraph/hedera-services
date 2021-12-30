@@ -616,14 +616,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final TokenID tId,
 			final TokenUpdateTransactionBody changes
 	) {
-		if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-			if (changes.hasTreasury()) {
-				/* This relationship is verified to exist in the TokenUpdateTransitionLogic */
-				final var newTreasuryRel = asTokenRel(changes.getTreasury(), tId);
-				final var balance = (long) tokenRelsLedger.get(newTreasuryRel, TOKEN_BALANCE);
-				if (balance != 0) {
-					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-				}
+		if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE) && changes.hasTreasury()) {
+			/* This relationship is verified to exist in the TokenUpdateTransitionLogic */
+			final var newTreasuryRel = asTokenRel(changes.getTreasury(), tId);
+			final var balance = (long) tokenRelsLedger.get(newTreasuryRel, TOKEN_BALANCE);
+			if (balance != 0) {
+				return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 			}
 		}
 		return OK;

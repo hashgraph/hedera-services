@@ -9,9 +9,9 @@ package com.hedera.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -99,105 +99,105 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
-public abstract class StateModule {
+public interface StateModule {
 	@Binds
 	@Singleton
-	public abstract SystemExits bindSystemExits(JvmSystemExits systemExits);
+	SystemExits bindSystemExits(JvmSystemExits systemExits);
 
 	@Binds
 	@Singleton
-	public abstract ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+	ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
 
 	@Binds
 	@Singleton
-	public abstract StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
+	StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
 			StateWriteToDiskListener stateWriteToDiskListener);
 
 	@Binds
 	@Singleton
-	public abstract LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
+	LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
 
 	@Binds
 	@Singleton
-	public abstract EntityCreator bindEntityCreator(ExpiringCreations creator);
+	EntityCreator bindEntityCreator(ExpiringCreations creator);
 
 	@Binds
 	@Singleton
-	public abstract BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
+	BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
 
 	@Binds
 	@Singleton
-	public abstract SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
+	SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
 
 	@Binds
 	@Singleton
-	public abstract AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
+	AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
 
 	@Binds
 	@Singleton
-	public abstract SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
+	SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
 
 	@Binds
 	@Singleton
-	public abstract InvalidSignedStateListener bindIssListener(IssListener issListener);
+	InvalidSignedStateListener bindIssListener(IssListener issListener);
 
 	@Provides
 	@Singleton
-	public static Pause providePause() {
+	static Pause providePause() {
 		return SleepingPause.SLEEPING_PAUSE;
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<Charset> provideNativeCharset() {
+	static Supplier<Charset> provideNativeCharset() {
 		return Charset::defaultCharset;
 	}
 
 	@Provides
 	@Singleton
-	public static NamedDigestFactory provideDigestFactory() {
+	static NamedDigestFactory provideDigestFactory() {
 		return MessageDigest::getInstance;
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<NotificationEngine> provideNotificationEngine() {
+	static Supplier<NotificationEngine> provideNotificationEngine() {
 		return NotificationFactory::getEngine;
 	}
 
 	@Provides
 	@Singleton
-	public static Optional<PrintStream> providePrintStream(Platform platform) {
+	static Optional<PrintStream> providePrintStream(Platform platform) {
 		final var console = platform.createConsole(true);
 		return Optional.ofNullable(console).map(c -> c.out);
 	}
 
 	@Provides
 	@Singleton
-	public static Address provideNodeAddress(Supplier<AddressBook> book, long selfId) {
+	static Address provideNodeAddress(Supplier<AddressBook> book, long selfId) {
 		return book.get().getAddress(selfId);
 	}
 
 	@Provides
-	public static ServicesNodeType provideNodeType(Address nodeAddress) {
+	static ServicesNodeType provideNodeType(Address nodeAddress) {
 		return nodeAddress.getStake() > 0 ? STAKED_NODE : ZERO_STAKE_NODE;
 	}
 
 	@Provides
 	@Singleton
-	public static UnaryOperator<byte[]> provideSigner(Platform platform) {
+	static UnaryOperator<byte[]> provideSigner(Platform platform) {
 		return platform::sign;
 	}
 
 	@Provides
 	@Singleton
-	public static NodeId provideNodeId(Platform platform) {
+	static NodeId provideNodeId(Platform platform) {
 		return platform.getSelfId();
 	}
 
 	@Provides
 	@Singleton
-	public static StateView provideCurrentView(
+	static StateView provideCurrentView(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			NodeLocalProperties nodeLocalProperties,
@@ -214,7 +214,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<StateView> provideStateViews(
+	static Supplier<StateView> provideStateViews(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			NodeLocalProperties nodeLocalProperties,
@@ -232,20 +232,20 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@WorkingState
-	public static StateAccessor provideWorkingState(ServicesState initialState) {
+	static StateAccessor provideWorkingState(ServicesState initialState) {
 		return new StateAccessor(initialState);
 	}
 
 	@Provides
 	@Singleton
 	@LatestSignedState
-	public static StateAccessor provideLatestSignedState() {
+	static StateAccessor provideLatestSignedState() {
 		return new StateAccessor();
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
+	static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::accounts;
@@ -253,7 +253,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<String, MerkleOptionalBlob>> provideWorkingStorage(
+	static Supplier<MerkleMap<String, MerkleOptionalBlob>> provideWorkingStorage(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::storage;
@@ -261,7 +261,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
+	static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::topics;
@@ -269,7 +269,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
+	static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokens;
@@ -277,7 +277,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+	static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokenAssociations;
@@ -285,7 +285,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
+	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::schedules;
@@ -293,7 +293,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
+	static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokens;
@@ -302,7 +302,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByType
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokenAssociations;
@@ -311,7 +311,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByOwner
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipAssociations;
@@ -320,7 +320,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@TreasuryNftsByType
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipTreasuryAssociations;
@@ -328,7 +328,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
+	static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::specialFiles;
@@ -336,7 +336,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
+	static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::networkCtx;
@@ -344,7 +344,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<AddressBook> provideWorkingAddressBook(
+	static Supplier<AddressBook> provideWorkingAddressBook(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::addressBook;
@@ -352,7 +352,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static EntityIdSource provideWorkingEntityIdSource(
+	static EntityIdSource provideWorkingEntityIdSource(
 			@WorkingState StateAccessor accessor
 	) {
 		return new SeqNoEntityIdSource(() -> accessor.networkCtx().seqNo());
@@ -360,7 +360,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<ExchangeRates> provideWorkingMidnightRates(
+	static Supplier<ExchangeRates> provideWorkingMidnightRates(
 			@WorkingState StateAccessor accessor
 	) {
 		return () -> accessor.networkCtx().midnightRates();
@@ -368,7 +368,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<SequenceNumber> provideWorkingSeqNo(
+	static Supplier<SequenceNumber> provideWorkingSeqNo(
 			@WorkingState StateAccessor accessor
 	) {
 		return () -> accessor.networkCtx().seqNo();
@@ -376,7 +376,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<JKey> provideSystemFileKey(
+	static Supplier<JKey> provideSystemFileKey(
 			LegacyEd25519KeyReader b64KeyReader,
 			@CompositeProps PropertySource properties
 	) {

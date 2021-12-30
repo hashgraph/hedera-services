@@ -83,7 +83,8 @@ public class EntityAutoRenewal {
 
 		renewalProcess.beginRenewalCycle(instantNow);
 
-		int i = 1, entitiesTouched = 0;
+		int i = 1;
+		int entitiesTouched = 0;
 		long scanNum = curNetworkCtx.lastScannedEntity();
 
 		log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);

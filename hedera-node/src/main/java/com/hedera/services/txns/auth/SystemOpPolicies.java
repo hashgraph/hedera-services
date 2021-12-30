@@ -112,27 +112,31 @@ public class SystemOpPolicies {
 	}
 
 	private SystemOpAuthorization checkSystemUndeleteFile(final long payerAccount, final FileID id) {
-		return entityNums.isSystemFile(id)
-				? IMPERMISSIBLE
-				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+		if (entityNums.isSystemFile(id)) {
+			return IMPERMISSIBLE;
+		}
+		return hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkSystemUndeleteContract(final long payerAccount, final ContractID id) {
-		return entityNums.isSystemContract(id)
-				? IMPERMISSIBLE
-				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+		if (entityNums.isSystemContract(id)) {
+			return IMPERMISSIBLE;
+		}
+		return hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkSystemDeleteFile(final long payerAccount, final FileID id) {
-		return entityNums.isSystemFile(id)
-				? IMPERMISSIBLE
-				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+		if (entityNums.isSystemFile(id)) {
+			return IMPERMISSIBLE;
+		}
+		return hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkSystemDeleteContract(final long payerAccount, final ContractID id) {
-		return entityNums.isSystemContract(id)
-				? IMPERMISSIBLE
-				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+		if (entityNums.isSystemContract(id)) {
+			return IMPERMISSIBLE;
+		}
+		return hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private boolean hasSysDelPrivileges(final long payerAccount) {
@@ -155,23 +159,26 @@ public class SystemOpPolicies {
 
 	private SystemOpAuthorization checkContractUpdate(final TransactionBody txn) {
 		final var target = txn.getContractUpdateInstance().getContractID();
-		return entityNums.isSystemContract(target)
-				? (canPerformNonCryptoUpdate(payerFor(txn), target.getContractNum()) ? AUTHORIZED : UNAUTHORIZED)
-				: UNNECESSARY;
+		if (!entityNums.isSystemContract(target)) {
+			return UNNECESSARY;
+		}
+		return canPerformNonCryptoUpdate(payerFor(txn), target.getContractNum()) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkFileUpdate(final TransactionBody txn) {
 		final var target = txn.getFileUpdate().getFileID();
-		return entityNums.isSystemFile(target)
-				? (canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
-				: UNNECESSARY;
+		if (!entityNums.isSystemFile(target)) {
+			return UNNECESSARY;
+		}
+		return canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkFileAppend(final TransactionBody txn) {
 		final var target = txn.getFileAppend().getFileID();
-		return entityNums.isSystemFile(target)
-				? (canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
-				: UNNECESSARY;
+		if (!entityNums.isSystemFile(target)) {
+			return UNNECESSARY;
+		}
+		return canPerformNonCryptoUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED;
 	}
 
 	private SystemOpAuthorization checkCryptoUpdate(final TransactionBody txn) {

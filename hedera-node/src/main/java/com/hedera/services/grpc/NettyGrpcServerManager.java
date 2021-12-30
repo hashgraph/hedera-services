@@ -99,7 +99,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 				break;
 			} catch (IOException e) {
 				final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
-				log.warn("(Attempts= {}) {} {}", retryNo, summaryMsg, e.getMessage());
+				log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
 				pause.forMs(startRetryIntervalMs);
 			}
 		}

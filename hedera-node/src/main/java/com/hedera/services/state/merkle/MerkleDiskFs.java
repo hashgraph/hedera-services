@@ -214,9 +214,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeInt(fileHashes.size());
-		serializeFidInfo(out, fid -> {
-			return contentsOf(fid);
-		});
+		serializeFidInfo(out, fid -> contentsOf(fid));
 	}
 
 	/* --- MerkleNode --- */
