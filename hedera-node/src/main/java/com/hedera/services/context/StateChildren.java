@@ -29,13 +29,14 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -58,6 +59,27 @@ public class StateChildren {
 	private AddressBook addressBook;
 	private MerkleSpecialFiles specialFiles;
 	private RecordsRunningHashLeaf runningHashLeaf;
+	private Instant signedAt = Instant.EPOCH;
+
+	public StateChildren() {
+		/* No-op */
+	}
+
+	public StateChildren(final Instant signedAt) {
+		this.signedAt = signedAt;
+	}
+
+	public boolean isSignedAfter(final StateChildren children) {
+		return signedAt.isAfter(children.signedAt);
+	}
+
+	public boolean isSigned() {
+		return signedAt.isAfter(Instant.EPOCH);
+	}
+
+	public Instant getSignedAt() {
+		return signedAt;
+	}
 
 	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
 		Objects.requireNonNull(accounts);

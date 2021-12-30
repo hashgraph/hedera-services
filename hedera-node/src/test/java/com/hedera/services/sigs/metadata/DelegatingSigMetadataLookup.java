@@ -20,24 +20,17 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.DefaultAccountLookup;
 import com.hedera.services.sigs.metadata.lookups.DefaultContractLookup;
 import com.hedera.services.sigs.metadata.lookups.DefaultTopicLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.RetryingAccountLookup;
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,8 +42,6 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
@@ -65,24 +56,6 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup;
 	private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup;
 
-	public static DelegatingSigMetadataLookup backedLookupsFor(
-			final AliasManager aliasManager,
-			final HfsSigMetaLookup hfsSigMetaLookup,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup
-	) {
-		return new DelegatingSigMetadataLookup(
-				hfsSigMetaLookup,
-				new BackedAccountLookup(backingAccounts, aliasManager),
-				new DefaultContractLookup(accounts),
-				new DefaultTopicLookup(topics),
-				tokenLookup,
-				scheduleSigMetaLookup);
-	}
-
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			final AliasManager aliasManager,
 			final HfsSigMetaLookup hfsSigMetaLookup,
@@ -94,57 +67,6 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 		return new DelegatingSigMetadataLookup(
 				hfsSigMetaLookup,
 				new DefaultAccountLookup(aliasManager, accounts),
-				new DefaultContractLookup(accounts),
-				new DefaultTopicLookup(topics),
-				tokenLookup,
-				scheduleLookup);
-	}
-
-	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
-			final HfsSigMetaLookup hfsSigMetaLookup,
-			final AliasManager aliasManager,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
-			final int maxRetries,
-			final int retryWaitIncrementMs,
-			final MiscRunningAvgs runningAvgs,
-			final MiscSpeedometers speedometers
-	) {
-		final var accountLookup = new RetryingAccountLookup(
-				accounts,
-				maxRetries,
-				retryWaitIncrementMs,
-				SLEEPING_PAUSE,
-				aliasManager,
-				runningAvgs,
-				speedometers);
-		return new DelegatingSigMetadataLookup(
-				hfsSigMetaLookup,
-				accountLookup,
-				new DefaultContractLookup(accounts),
-				new DefaultTopicLookup(topics),
-				tokenLookup,
-				scheduleLookup);
-	}
-
-	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
-			final AliasManager aliasManager,
-			final HfsSigMetaLookup hfsSigMetaLookup,
-			final NodeLocalProperties properties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
-			final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup,
-			final MiscRunningAvgs runningAvgs,
-			final MiscSpeedometers speedometers
-	) {
-		final var accountLookup =
-				new RetryingAccountLookup(SLEEPING_PAUSE, aliasManager, properties, accounts, runningAvgs, speedometers);
-		return new DelegatingSigMetadataLookup(
-				hfsSigMetaLookup,
-				accountLookup,
 				new DefaultContractLookup(accounts),
 				new DefaultTopicLookup(topics),
 				tokenLookup,

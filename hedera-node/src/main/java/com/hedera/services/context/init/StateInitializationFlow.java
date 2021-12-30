@@ -66,7 +66,7 @@ public class StateInitializationFlow {
 	public void runWith(ServicesState activeState) {
 		staticNumbersHolder.accept(hederaNums);
 
-		stateAccessor.updateFrom(activeState);
+		stateAccessor.updateChildrenFrom(activeState);
 		log.info("Context updated with working state");
 		log.info("  (@ {}) # NFTs               = {}",
 				StateChildIndices.UNIQUE_TOKENS,

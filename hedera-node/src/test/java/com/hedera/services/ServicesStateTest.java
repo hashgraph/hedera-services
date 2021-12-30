@@ -127,7 +127,7 @@ class ServicesStateTest {
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private SigRequirements retryingKeyOrder;
+	private SigRequirements expandKeyOrder;
 	@Mock
 	private PubKeyToSigBytes pubKeyToSigBytes;
 	@Mock
@@ -250,7 +250,7 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.retryingSigReqs()).willReturn(retryingKeyOrder);
+		given(app.workingStateSigReqs()).willReturn(expandKeyOrder);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -258,7 +258,7 @@ class ServicesStateTest {
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+		verify(expansionHelper).expandIn(txnAccessor, expandKeyOrder, pubKeyToSigBytes);
 	}
 
 	@Test
@@ -577,7 +577,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		verify(workingState).updateFrom(copy);
+		verify(workingState).updateChildrenFrom(copy);
 	}
 
 	@Test

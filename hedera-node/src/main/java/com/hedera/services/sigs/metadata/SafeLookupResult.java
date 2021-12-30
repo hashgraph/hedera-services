@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.metadata.lookups;
+package com.hedera.services.sigs.metadata;
 
 /*-
  * ‌

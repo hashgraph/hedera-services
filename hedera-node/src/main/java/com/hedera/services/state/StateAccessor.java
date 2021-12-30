@@ -31,35 +31,50 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 
-public class StateAccessor {
-	private final StateChildren children = new StateChildren();
+import java.time.Instant;
 
-	public StateAccessor(ServicesState initialState) {
-		updateFrom(initialState);
+public class StateAccessor {
+	private StateChildren children = new StateChildren();
+
+	public StateAccessor() {
+		/* No-op */
 	}
 
-	public void updateFrom(ServicesState state) {
-		children.setAccounts(state.accounts());
-		children.setTopics(state.topics());
-		children.setStorage(state.storage());
-		children.setTokens(state.tokens());
-		children.setTokenAssociations(state.tokenAssociations());
-		children.setSchedules(state.scheduleTxs());
-		children.setNetworkCtx(state.networkCtx());
-		children.setAddressBook(state.addressBook());
-		children.setSpecialFiles(state.specialFiles());
-		children.setUniqueTokens(state.uniqueTokens());
-		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-		children.setRunningHashLeaf(state.runningHashLeaf());
+	public StateAccessor(final ServicesState initialState) {
+		updateChildrenFrom(initialState);
+	}
+
+	/**
+	 * Updates this accessor's state children references from the given state (which in
+	 * our usage will always be the latest working state).
+	 *
+	 * <b>NOTE:</b> This method is not thread-safe; that is, if another thread makes
+	 * concurrent calls to getters on this accessor, that thread could get some references
+	 * from the previous state and some references from the updated state.
+	 *
+	 * @param state the new working state to update children from
+	 */
+	public void updateChildrenFrom(final ServicesState state) {
+		mapStateOnto(state, children);
+	}
+
+	/**
+	 * Replaces this accessor's state children references with new references from given state
+	 * (which in our usage will always be the latest signed state).
+	 *
+	 * @param state the latest signed state to replace children from
+	 */
+	public void replaceChildrenFrom(final ServicesState state, final Instant signedAt) {
+		final var newChildren = new StateChildren(signedAt);
+		mapStateOnto(state, newChildren);
+		children = newChildren;
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -120,5 +135,22 @@ public class StateAccessor {
 
 	public StateChildren children() {
 		return children;
+	}
+
+	private static void mapStateOnto(final ServicesState state, final StateChildren children) {
+		children.setAccounts(state.accounts());
+		children.setTopics(state.topics());
+		children.setStorage(state.storage());
+		children.setTokens(state.tokens());
+		children.setTokenAssociations(state.tokenAssociations());
+		children.setSchedules(state.scheduleTxs());
+		children.setNetworkCtx(state.networkCtx());
+		children.setAddressBook(state.addressBook());
+		children.setSpecialFiles(state.specialFiles());
+		children.setUniqueTokens(state.uniqueTokens());
+		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 }

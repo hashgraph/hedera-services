@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.annotations;
+package com.hedera.services.sigs.metadata.lookups;
 
 /*-
  * ‌
@@ -20,15 +20,14 @@ package com.hedera.services.sigs.annotations;
  * ‍
  */
 
-import javax.inject.Qualifier;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.hedera.services.sigs.metadata.FileSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hederahashgraph.api.proto.java.FileID;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Target({ ElementType.METHOD, ElementType.PARAMETER })
-@Qualifier
-@Retention(RUNTIME)
-public @interface PayerSigReqs {
+/**
+ * Defines a simple type that is able to recover metadata about signing activity
+ * associated with a given Hedera file.
+ */
+public interface FileSigMetaLookup {
+	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
 }

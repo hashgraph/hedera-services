@@ -137,8 +137,8 @@ class ServicesAppTest {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
+		assertThat(subject.latestSignedState(), instanceOf(StateAccessor.class));
 		assertThat(subject.expansionHelper(), instanceOf(ExpansionHelper.class));
-		assertThat(subject.retryingSigReqs(), instanceOf(SigRequirements.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
@@ -162,6 +162,7 @@ class ServicesAppTest {
 		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
+		assertThat(subject.workingStateSigReqs(), instanceOf(SigRequirements.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

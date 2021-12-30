@@ -111,7 +111,7 @@ class RationalizationTest {
 		// then:
 		assertSame(txnAccessor, subject.getTxnAccessor());
 		assertSame(syncVerifier, subject.getSyncVerifier());
-		assertSame(keyOrderer, subject.getKeyOrderer());
+		assertSame(keyOrderer, subject.getSigReqs());
 		assertSame(pkToSigFn, subject.getPkToSigFn());
 		assertSame(mockSigs, subject.getTxnSigs());
 		// and:

@@ -43,11 +43,12 @@ import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.annotations.RetryingSigReqs;
+import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
+import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -122,7 +123,7 @@ public interface ServicesApp {
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
-	@RetryingSigReqs SigRequirements retryingSigReqs();
+	@WorkingStateSigReqs SigRequirements workingStateSigReqs();
 
 	/* Needed by ServicesMain */
 	Pause pause();
@@ -147,6 +148,7 @@ public interface ServicesApp {
 	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
 	ReconnectCompleteListener reconnectListener();
+	@LatestSignedState StateAccessor latestSignedState();
 	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();

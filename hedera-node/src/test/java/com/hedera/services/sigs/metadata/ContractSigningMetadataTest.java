@@ -36,5 +36,4 @@ class ContractSigningMetadataTest {
 	void assertHasAdminKey() {
 		assertTrue(subject.hasAdminKey());
 	}
-
 }

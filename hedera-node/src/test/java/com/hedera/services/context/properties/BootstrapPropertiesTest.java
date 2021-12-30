@@ -154,8 +154,6 @@ class BootstrapPropertiesTest {
 			entry("netty.startRetryIntervalMs", 1_000L),
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
-			entry("precheck.account.maxLookupRetries", 10),
-			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),

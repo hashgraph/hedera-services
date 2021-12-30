@@ -271,9 +271,7 @@ public class StateView {
 			var signatories = schedule.signatories();
 			var signatoriesList = KeyList.newBuilder();
 
-			signatories.forEach(a -> signatoriesList.addKeys(a.length == KeyType.ECDSA_SECP256K1.getLength() ?
-					Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(a))
-					: Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+			signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
@@ -300,6 +298,14 @@ public class StateView {
 					readableId(scheduleID),
 					unexpected);
 			return Optional.empty();
+		}
+	}
+
+	private Key grpcKeyReprOf(final byte[] publicKey) {
+		if (publicKey.length == KeyType.ECDSA_SECP256K1.getLength()) {
+			return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build();
+		} else {
+			return Key.newBuilder().setEd25519(ByteString.copyFrom(publicKey)).build();
 		}
 	}
 

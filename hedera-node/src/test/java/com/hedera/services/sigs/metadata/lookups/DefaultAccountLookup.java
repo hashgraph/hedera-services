@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;

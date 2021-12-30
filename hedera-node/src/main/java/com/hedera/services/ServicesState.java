@@ -189,7 +189,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
-			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
+			app.expansionHelper().expandIn(accessor, app.workingStateSigReqs(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
@@ -209,7 +209,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateFrom(that);
+			metadata.app().workingState().updateChildrenFrom(that);
 		}
 
 		return that;
