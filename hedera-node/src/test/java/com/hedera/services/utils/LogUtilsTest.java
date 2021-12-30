@@ -92,6 +92,24 @@ class LogUtilsTest {
 	}
 
 	@Test
+	void ignoresJndiInNullQuery_WithMarker() throws IOException {
+		LogUtils.encodeGrpcAndLog(logger, Level.WARN, MarkerManager.getMarker("ALL_QUERIES"), message, null);
+
+		final var actualLogWithNoJndiLookUp = readHgcaaLog();
+
+		assertTrue(actualLogWithNoJndiLookUp.contains("null"));
+	}
+
+	@Test
+	void ignoresJndiInNullQuery() throws IOException {
+		LogUtils.encodeGrpcAndLog(logger, Level.WARN, message, (Query) null, null);
+
+		final var actualLogWithNoJndiLookUp = readHgcaaLog();
+
+		assertTrue(actualLogWithNoJndiLookUp.contains("null"));
+	}
+
+	@Test
 	void ignoresJndiInTxnBody() throws IOException {
 		final var txnBody = buildTransactionBody();
 
@@ -100,6 +118,15 @@ class LogUtilsTest {
 		final var actualLogWithNoJndiLookUp = readHgcaaLog();
 
 		commonAsserts(actualLogWithNoJndiLookUp);
+	}
+
+	@Test
+	void ignoresJndiInNullTxnBody() throws IOException {
+		LogUtils.encodeGrpcAndLog(logger, Level.WARN, message, (Transaction) null, null);
+
+		final var actualLogWithNoJndiLookUp = readHgcaaLog();
+
+		assertTrue(actualLogWithNoJndiLookUp.contains("null"));
 	}
 
 	@Test
