@@ -9,9 +9,9 @@ package com.hedera.services.grpc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -84,32 +84,32 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		}
 	}
 
-	Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause) throws Exception {
+	Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause) throws IOException {
 		println.accept(nettyAction("Starting", sslEnabled, port, true));
 
 		NettyServerBuilder builder = nettyBuilder.builderFor(port, sslEnabled);
 		bindableServices.forEach(builder::addService);
-		Server server = builder.build();
+		Server nettyServer = builder.build();
 
 		var retryNo = 1;
 		final var n = Math.max(0, startRetries);
 		for (; retryNo <= n; retryNo++) {
 			try {
-				server.start();
+				nettyServer.start();
 				break;
 			} catch (IOException e) {
 				final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
-				log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
+				log.warn("(Attempts= {}) {} {}", retryNo, summaryMsg, e.getMessage());
 				pause.forMs(startRetryIntervalMs);
 			}
 		}
 		if (retryNo == n + 1) {
-			server.start();
+			nettyServer.start();
 		}
 
 		println.accept(nettyAction("...done starting", sslEnabled, port, false));
 
-		return server;
+		return nettyServer;
 	}
 
 	private void terminateNetty(int port, int tlsPort, Consumer<String> println) {

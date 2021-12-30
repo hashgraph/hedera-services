@@ -26,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.AbstractMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -131,5 +132,20 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 				.stream()
 				.map(entry -> new SimpleEntry<>(entry.getKey(), entry.getValue().getData()))
 				.collect(toSet());
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		FcBlobsBytesStore that = (FcBlobsBytesStore) o;
+		return Objects.equals(blobFactory, that.blobFactory) && Objects.equals(pathedBlobs,
+				that.pathedBlobs);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), blobFactory, pathedBlobs);
 	}
 }

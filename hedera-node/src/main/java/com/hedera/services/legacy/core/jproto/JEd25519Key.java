@@ -51,7 +51,7 @@ public class JEd25519Key extends JKey {
 	public byte[] getEd25519() {
 		return ed25519;
 	}
-	
+
 	@Override
 	public boolean hasEd25519Key() {
 		return true;
@@ -62,11 +62,7 @@ public class JEd25519Key extends JKey {
 		if (isEmpty()) {
 			return false;
 		} else {
-			if (ed25519.length != ED25519_BYTE_LENGTH) {
-				return false;
-			} else {
-				return true;
-			}
+			return ed25519.length == ED25519_BYTE_LENGTH;
 		}
 	}
 

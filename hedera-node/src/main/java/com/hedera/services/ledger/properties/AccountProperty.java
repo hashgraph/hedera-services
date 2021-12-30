@@ -202,11 +202,5 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getAlias;
 		}
-	};
-
-	@Override
-	public abstract BiConsumer<MerkleAccount, Object> setter();
-
-	@Override
-	public abstract Function<MerkleAccount, Object> getter();
+	}
 }

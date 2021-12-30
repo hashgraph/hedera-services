@@ -9,9 +9,9 @@ package com.hedera.services.files.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.files.store;
 
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -62,6 +63,23 @@ public class BytesStoreAdapter<K, V> extends AbstractMap<K, V> {
 	@Override
 	public int size() {
 		return delegate.size();
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		BytesStoreAdapter<?, ?> that = (BytesStoreAdapter<?, ?>) o;
+		return Objects.equals(kType, that.kType) && Objects.equals(toK,
+				that.toK) && Objects.equals(fromK, that.fromK) && Objects.equals(toV,
+				that.toV) && Objects.equals(fromV, that.fromV) && Objects.equals(delegate,
+				that.delegate) && Objects.equals(delegateEntryFilter, that.delegateEntryFilter);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), kType, toK, fromK, toV, fromV, delegate, delegateEntryFilter);
 	}
 
 	@Override

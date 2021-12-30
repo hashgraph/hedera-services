@@ -9,9 +9,9 @@ package com.hedera.services.queries.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,7 +72,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		return responseFor(query, view, validity, cost, NO_QUERY_CTX);
+		return responseFor(query, validity, cost, NO_QUERY_CTX);
 	}
 
 	@Override
@@ -83,12 +83,11 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			long cost,
 			Map<String, Object> queryCtx
 	) {
-		return responseFor(query, view, validity, cost, Optional.of(queryCtx));
+		return responseFor(query, validity, cost, Optional.of(queryCtx));
 	}
 
 	private Response responseFor(
 			Query query,
-			StateView view,
 			ResponseCodeEnum validity,
 			long cost,
 			Optional<Map<String, Object>> queryCtx
@@ -103,7 +102,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				setAnswerOnly(response, view, op, cost, queryCtx);
+				setAnswerOnly(response, op, cost, queryCtx);
 			}
 		}
 
@@ -115,7 +114,6 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	@SuppressWarnings("unchecked")
 	private void setAnswerOnly(
 			ContractCallLocalResponse.Builder response,
-			StateView view,
 			ContractCallLocalQuery op,
 			long cost,
 			Optional<Map<String, Object>> queryCtx
@@ -126,7 +124,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 				throw new IllegalStateException("Query context had no cached local call result!");
 			} else {
 				response.mergeFrom(
-						withCid((ContractCallLocalResponse)ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
+						withCid((ContractCallLocalResponse) ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
 			}
 		} else {
 			/* If answering from a zero-stake node, there are no node payments, and the
@@ -142,8 +140,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
 	private ContractCallLocalResponse withCid(ContractCallLocalResponse response, ContractID target) {
 		return response.toBuilder()
-						.setFunctionResult(response.getFunctionResult().toBuilder()
-								.setContractID(target))
-						.build();
+				.setFunctionResult(response.getFunctionResult().toBuilder()
+						.setContractID(target))
+				.build();
 	}
 }

@@ -59,8 +59,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		final var balance = (long) getEffective(BALANCE, account, changeSet);
 
 		final var isDetached = dynamicProperties.autoRenewEnabled() &&
-						balance == 0L &&
-						!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet));
+				balance == 0L &&
+				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet));
 		if (isDetached) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
@@ -96,7 +96,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return account.getBalance();
 			case EXPIRY:
 				return account.getExpiry();
+			default:
+				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
-		throw new IllegalArgumentException("Property " + prop + " cannot be validated in scoped check");
 	}
 }

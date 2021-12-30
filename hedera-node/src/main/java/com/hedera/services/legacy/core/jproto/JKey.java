@@ -148,7 +148,7 @@ public abstract class JKey {
 			rv = Key.newBuilder().setEd25519(ByteString.copyFrom(jkey.getEd25519())).build();
 		} else if (jkey.hasECDSA_383Key()) {
 			rv = Key.newBuilder().setECDSA384(ByteString.copyFrom(jkey.getECDSA384())).build();
-		} else if (jkey.hasRSA_3072Key()) {
+		} else if (jkey.hasRSA3072Key()) {
 			rv = Key.newBuilder().setRSA3072(ByteString.copyFrom(jkey.getRSA3072())).build();
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
@@ -265,7 +265,7 @@ public abstract class JKey {
 		return false;
 	}
 
-	public boolean hasRSA_3072Key() {
+	public boolean hasRSA3072Key() {
 		return false;
 	}
 

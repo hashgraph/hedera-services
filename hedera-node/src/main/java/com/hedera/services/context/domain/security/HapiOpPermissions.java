@@ -40,8 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HapiOpPermissions {
 	private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
-	static final String MISSING_OP_TPL = "Ignoring key '{}', which does not correspond to a known Hedera operation!";
-	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op {}---cannot interpret range '{}'!";
+	static final String MISSING_OP_TPL = "Ignoring key '%s', which does not correspond to a known Hedera operation!";
+	static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op %s---cannot interpret range '%s'!";
 
 	private final AccountNumbers accountNums;
 
@@ -61,12 +61,12 @@ public class HapiOpPermissions {
 				var op = legacyKeys.get(opName);
 				var range = PermissionedAccountsRange.from(permission.getValue());
 				if (range == null) {
-					log.warn(UNPARSEABLE_RANGE_TPL, op, permission.getValue());
+					log.warn(String.format(UNPARSEABLE_RANGE_TPL, op, permission.getValue()));
 				} else {
 					newPerms.put(op, range);
 				}
 			} else {
-				log.warn(MISSING_OP_TPL, opName);
+				log.warn(String.format(MISSING_OP_TPL, opName));
 			}
 		}
 		permissions = newPerms;
