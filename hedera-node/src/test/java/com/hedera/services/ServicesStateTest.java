@@ -577,7 +577,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		verify(workingState).updateFrom(copy);
+		verify(workingState).updateChildrenFrom(copy);
 	}
 
 	@Test
