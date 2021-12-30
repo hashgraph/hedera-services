@@ -173,9 +173,10 @@ class LogUtilsTest {
 	void unescapeBytesFailsAsExpected() {
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\m"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\xg"));
-		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufg"));
-		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\uffg"));
-		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\uff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ugfff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufgff"));
+		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\uffgf"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\ufffg"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\udc10"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufffff"));
