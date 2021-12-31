@@ -40,8 +40,8 @@ public class LinkedRefs {
 	private List<ByteString> linkedAliases = null;
 
 	public boolean haveNoChangesAccordingTo(final ChangeHistorian historian) {
-		for (int i = 0; i < linkedNums.length && linkedNums[i] != 0; i++) {
-			if (historian.entityStatusSince(sourceSignedAt, linkedNums[i]) != UNCHANGED) {
+		for (int j = 0; j < linkedNums.length && linkedNums[j] != 0; j++) {
+			if (historian.entityStatusSince(sourceSignedAt, linkedNums[j]) != UNCHANGED) {
 				return false;
 			}
 		}

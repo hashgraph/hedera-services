@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -74,12 +75,14 @@ class FileDeleteTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private HederaFs hfs;
 	private TransactionContext txnCtx;
+	private ChangeHistorian changeHistorian;
 	private FileDeleteTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
+		changeHistorian = mock(ChangeHistorian.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(tbd)).willReturn(true);
@@ -90,12 +93,12 @@ class FileDeleteTransitionLogicTest {
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 		given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileDeleteTransitionLogic(hfs, txnCtx);
+		subject = new FileDeleteTransitionLogic(hfs, changeHistorian, txnCtx);
 	}
 
 	@Test
 	void happyPathFlows() {
-		final var inOrder = inOrder(hfs, txnCtx, accessor);
+		final var inOrder = inOrder(hfs, txnCtx, accessor, changeHistorian);
 		givenTxnCtxDeleting(TargetType.VALID);
 
 		subject.doStateTransition();
@@ -105,6 +108,7 @@ class FileDeleteTransitionLogicTest {
 		inOrder.verify(hfs).exists(tbd);
 		inOrder.verify(hfs).getattr(tbd);
 		inOrder.verify(hfs).delete(tbd);
+		inOrder.verify(changeHistorian).markEntityChanged(tbd.getFileNum());
 	}
 
 	@Test

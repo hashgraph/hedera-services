@@ -32,7 +32,7 @@ import java.util.Map;
 
 /**
  * Tracks changes to ledger entities and aliases over a trailing window of length given by the global/dynamic
- * property <tt>ledger.changeHistorian.memorySecs</tt>. (The change historian will return {@code UNKNOWN} if asked
+ * property {@code ledger.changeHistorian.memorySecs}. (The change historian will return {@code UNKNOWN} if asked
  * for the change status of an entity outside its tracked window.)
  *
  * For an account, contract, file, topic, or token a <i>change</i> can be a creation, update, deletion, or auto-removal.

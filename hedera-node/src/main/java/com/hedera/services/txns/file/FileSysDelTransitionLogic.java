@@ -23,6 +23,7 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -52,18 +53,21 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
+	private final ChangeHistorian changeHistorian;
 	private final TransactionContext txnCtx;
 	private final Map<EntityId, Long> expiries;
 
 	@Inject
 	public FileSysDelTransitionLogic(
-			HederaFs hfs,
-			Map<EntityId, Long> expiries,
-			TransactionContext txnCtx
+			final HederaFs hfs,
+			final ChangeHistorian changeHistorian,
+			final Map<EntityId, Long> expiries,
+			final TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
+		this.changeHistorian = changeHistorian;
 	}
 
 	@Override
@@ -94,6 +98,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 				expiries.put(fromGrpcFileId(tbd), oldExpiry);
 			}
 			txnCtx.setStatus(SUCCESS);
+			changeHistorian.markEntityChanged(tbd.getFileNum());
 		} catch (Exception unknown) {
 			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);

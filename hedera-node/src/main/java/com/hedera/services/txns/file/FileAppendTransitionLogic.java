@@ -24,6 +24,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 @Singleton
@@ -55,12 +57,14 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final FileNumbers fileNumbers;
 	private final TransactionContext txnCtx;
+	private final ChangeHistorian changeHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
 	public FileAppendTransitionLogic(
 			final HederaFs hfs,
 			final FileNumbers fileNumbers,
+			final ChangeHistorian changeHistorian,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleNetworkContext> networkCtx
 	) {
@@ -68,6 +72,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
 		this.fileNumbers = fileNumbers;
+		this.changeHistorian = changeHistorian;
 	}
 
 	@Override
@@ -95,8 +100,12 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			var result = hfs.append(target, data);
-			txnCtx.setStatus(result.outcome());
+			final var result = hfs.append(target, data);
+			final var status = result.outcome();
+			txnCtx.setStatus(status);
+			if (status == SUCCESS) {
+				changeHistorian.markEntityChanged(target.getFileNum());
+			}
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {

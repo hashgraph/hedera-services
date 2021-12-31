@@ -23,6 +23,7 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -45,18 +46,21 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
+	private final ChangeHistorian changeHistorian;
 	private final TransactionContext txnCtx;
 	private final Map<EntityId, Long> expiries;
 
 	@Inject
 	public FileSysUndelTransitionLogic(
-			HederaFs hfs,
-			Map<EntityId, Long> expiries,
-			TransactionContext txnCtx
+			final HederaFs hfs,
+			final ChangeHistorian changeHistorian,
+			final Map<EntityId, Long> expiries,
+			final TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
+		this.changeHistorian = changeHistorian;
 	}
 
 	@Override
@@ -83,6 +87,7 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 		}
 		expiries.remove(entity);
 		txnCtx.setStatus(SUCCESS);
+		changeHistorian.markEntityChanged(tbu.getFileNum());
 	}
 
 	private ResponseCodeEnum tryLookup(
