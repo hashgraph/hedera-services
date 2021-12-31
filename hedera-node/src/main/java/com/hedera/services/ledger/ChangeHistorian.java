@@ -120,7 +120,7 @@ public class ChangeHistorian {
 	 * @param entityNum the changed entity
 	 */
 	public void markEntityChanged(final long entityNum) {
-		throw new AssertionError("Not implemented");
+		/* No-op */
 	}
 
 	/**
