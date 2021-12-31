@@ -20,9 +20,11 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class RationalizationTest {
@@ -76,19 +79,22 @@ class RationalizationTest {
 	private PubKeyToSigBytes pkToSigFn;
 	@Mock
 	private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
+	@Mock
+	private ChangeHistorian changeHistorian;
+	@Mock
+	private LinkedRefs linkedRefs;
 
 	private Rationalization subject;
 
 	@BeforeEach
 	void setUp() {
-		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
-
-		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
+		subject = new Rationalization(syncVerifier, changeHistorian, keyOrderer, sigFactory);
 	}
 
 	@Test
 	void resetWorks() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+
 		final List<TransactionSignature> mockSigs = new ArrayList<>();
 		final JKey fake = new JEd25519Key("FAKE".getBytes(StandardCharsets.UTF_8));
 
@@ -129,8 +135,19 @@ class RationalizationTest {
 	}
 
 	@Test
+	void doesNothingIfLinkedRefsAvailableAndUnchanged() {
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(linkedRefs.haveNoChangesAccordingTo(changeHistorian)).willReturn(true);
+
+		subject.performFor(txnAccessor);
+
+		verifyNoMoreInteractions(txnAccessor);
+	}
+
+	@Test
 	void setsUnavailableMetaIfCannotListPayerKey() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
@@ -149,7 +166,7 @@ class RationalizationTest {
 
 	@Test
 	void propagatesFailureIfCouldNotExpandOthersKeys() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);

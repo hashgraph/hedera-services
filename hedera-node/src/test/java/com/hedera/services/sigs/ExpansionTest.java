@@ -145,8 +145,10 @@ class ExpansionTest {
 	private void setupDegenerateMocks() {
 		final var degenTxnBody = TransactionBody.getDefaultInstance();
 		given(txnAccessor.getTxn()).willReturn(degenTxnBody);
-		given(sigReqs.keysForPayer(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
-		given(sigReqs.keysForOtherParties(degenTxnBody, CODE_ORDER_RESULT_FACTORY)).willReturn(noKnownKeys());
+		given(sigReqs.keysForPayer(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willReturn(noKnownKeys());
+		given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willReturn(noKnownKeys());
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
 	}
 }

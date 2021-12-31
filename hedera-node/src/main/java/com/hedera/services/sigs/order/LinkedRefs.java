@@ -39,7 +39,7 @@ public class LinkedRefs {
 	private long[] linkedNums = new long[EXPECTED_LINKED_NUMS];
 	private List<ByteString> linkedAliases = null;
 
-	public boolean hasNoChangesAccordingTo(final ChangeHistorian historian) {
+	public boolean haveNoChangesAccordingTo(final ChangeHistorian historian) {
 		for (int i = 0; i < linkedNums.length && linkedNums[i] != 0; i++) {
 			if (historian.entityStatusSince(sourceSignedAt, linkedNums[i]) != UNCHANGED) {
 				return false;

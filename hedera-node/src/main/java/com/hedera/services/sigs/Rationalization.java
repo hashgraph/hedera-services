@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -49,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class Rationalization {
 	private final SyncVerifier syncVerifier;
 	private final SigRequirements sigReqs;
+	private final ChangeHistorian changeHistorian;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private TxnAccessor txnAccessor;
@@ -65,16 +67,23 @@ public class Rationalization {
 
 	@Inject
 	public Rationalization(
-			SyncVerifier syncVerifier,
-			@WorkingStateSigReqs SigRequirements sigReqs,
-			ReusableBodySigningFactory bodySigningFactory
+			final SyncVerifier syncVerifier,
+			final ChangeHistorian changeHistorian,
+			final @WorkingStateSigReqs SigRequirements sigReqs,
+			final ReusableBodySigningFactory bodySigningFactory
 	) {
 		this.sigReqs = sigReqs;
 		this.syncVerifier = syncVerifier;
+		this.changeHistorian = changeHistorian;
 		this.bodySigningFactory = bodySigningFactory;
 	}
 
-	public void performFor(TxnAccessor txnAccessor) {
+	public void performFor(final TxnAccessor txnAccessor) {
+		final var linkedRefs = txnAccessor.getLinkedRefs();
+		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(changeHistorian)) {
+			return;
+		}
+
 		resetFor(txnAccessor);
 		execute();
 	}
@@ -87,7 +96,7 @@ public class Rationalization {
 		return verifiedSync;
 	}
 
-	void resetFor(TxnAccessor txnAccessor) {
+	void resetFor(final TxnAccessor txnAccessor) {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 
@@ -241,5 +250,13 @@ public class Rationalization {
 
 	void setVerifiedSync(boolean verifiedSync) {
 		this.verifiedSync = verifiedSync;
+	}
+
+	public Rationalization(
+			final SyncVerifier syncVerifier,
+			final SigRequirements sigReqs,
+			final ReusableBodySigningFactory bodySigningFactory
+	) {
+		this(syncVerifier, null, sigReqs, bodySigningFactory);
 	}
 }

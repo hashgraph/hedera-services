@@ -95,7 +95,7 @@ public class ChangeHistorian {
 	 * @return the status of changes to the entity since the given time
 	 */
 	public ChangeStatus entityStatusSince(final Instant then, final long entityNum) {
-		throw new AssertionError("Not implemented");
+		return ChangeStatus.UNKNOWN;
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class ChangeHistorian {
 	 * @return the status of changes to the alias since the given time
 	 */
 	public ChangeStatus aliasStatusSince(final Instant then, final ByteString alias) {
-		throw new AssertionError("Not implemented");
+		return ChangeStatus.UNKNOWN;
 	}
 
 	/**

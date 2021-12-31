@@ -60,7 +60,7 @@ class LinkedRefsTest {
 		subject.link(2L);
 		subject.link(3L);
 
-		assertTrue(subject.hasNoChangesAccordingTo(historian));
+		assertTrue(subject.haveNoChangesAccordingTo(historian));
 	}
 
 	@Test
@@ -76,7 +76,7 @@ class LinkedRefsTest {
 		subject.link(3L);
 		subject.link(alias);
 
-		assertTrue(subject.hasNoChangesAccordingTo(historian));
+		assertTrue(subject.haveNoChangesAccordingTo(historian));
 	}
 
 	@Test
@@ -88,7 +88,7 @@ class LinkedRefsTest {
 		subject.link(1L);
 		subject.link(2L);
 
-		assertFalse(subject.hasNoChangesAccordingTo(historian));
+		assertFalse(subject.haveNoChangesAccordingTo(historian));
 	}
 
 	@Test
@@ -102,7 +102,7 @@ class LinkedRefsTest {
 		subject.link(2L);
 		subject.link(alias);
 
-		assertFalse(subject.hasNoChangesAccordingTo(historian));
+		assertFalse(subject.haveNoChangesAccordingTo(historian));
 	}
 
 	@Test
