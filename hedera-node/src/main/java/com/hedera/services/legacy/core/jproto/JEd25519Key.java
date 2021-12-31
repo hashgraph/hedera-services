@@ -28,10 +28,8 @@ import java.util.Arrays;
  * Maps to proto Key of type ed25519.
  */
 public class JEd25519Key extends JKey {
-
 	public static final int ED25519_BYTE_LENGTH = 32;
-	private static final long serialVersionUID = 1L;
-	private byte[] ed25519 = null;
+	private byte[] ed25519;
 
 	public JEd25519Key(byte[] ed25519) {
 		this.ed25519 = ed25519;

@@ -27,9 +27,7 @@ import java.util.List;
  * Maps to proto Key of type KeyList.
  */
 public class JKeyList extends JKey {
-
-	private static final long serialVersionUID = 1L;
-	private List<JKey> keys = null;
+	private List<JKey> keys;
 
 	public JKeyList() {
 		this.keys = new LinkedList<JKey>();

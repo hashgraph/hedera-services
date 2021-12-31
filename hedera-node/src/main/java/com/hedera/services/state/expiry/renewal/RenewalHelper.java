@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,6 +62,7 @@ public class RenewalHelper {
 	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
 	private final TokenStore tokenStore;
+	private final ChangeHistorian changeHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -77,6 +79,7 @@ public class RenewalHelper {
 	@Inject
 	public RenewalHelper(
 			final TokenStore tokenStore,
+			final ChangeHistorian changeHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
@@ -89,6 +92,7 @@ public class RenewalHelper {
 		this.accounts = accounts;
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
+		this.changeHistorian = changeHistorian;
 		this.backingAccounts = backingAccounts;
 		this.aliasManager = aliasManager;
 	}
@@ -149,8 +153,8 @@ public class RenewalHelper {
 		/* Remove the entry from auto created accounts map if there is an entry in the map */
 		aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
 
-		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
+		changeHistorian.markEntityChanged(lastClassifiedEntityId.longValue());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 

@@ -26,9 +26,7 @@ import com.swirlds.common.CommonUtils;
  * Maps to proto Key of type RSA_3072.
  */
 public class JRSA_3072Key extends JKey {
-
-	private static final long serialVersionUID = 1L;
-	private byte[] RSA_3072Key = null;
+	private byte[] RSA_3072Key;
 
 	public JRSA_3072Key(byte[] RSA_3072Key) {
 		this.RSA_3072Key = RSA_3072Key;
