@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -56,7 +56,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
 	private final HederaFs hfs;
 	private final OptionValidator validator;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
@@ -65,13 +65,13 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	public FileCreateTransitionLogic(
 			final HederaFs hfs,
 			final OptionValidator validator,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -91,7 +91,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
-			changeHistorian.markEntityChanged(created.getFileNum());
+			sigImpactHistorian.markEntityChanged(created.getFileNum());
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {

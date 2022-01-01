@@ -22,7 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -74,7 +74,7 @@ class ContractUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private MerkleAccount contract = new MerkleAccount();
 	private OptionValidator validator;
-	private ChangeHistorian changeHistorian;
+	private SigImpactHistorian sigImpactHistorian;
 	private HederaAccountCustomizer customizer;
 	private UpdateCustomizerFactory customizerFactory;
 	private TransactionBody contractUpdateTxn;
@@ -95,10 +95,10 @@ class ContractUpdateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
-		changeHistorian = mock(ChangeHistorian.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		subject = new ContractUpdateTransitionLogic(
-				ledger, validator, changeHistorian, txnCtx, customizerFactory, () -> contracts);
+				ledger, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
 	}
 
 	@Test
@@ -133,7 +133,7 @@ class ContractUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).customize(targetId, customizer);
 		verify(txnCtx).setStatus(SUCCESS);
-		verify(changeHistorian).markEntityChanged(target.getContractNum());
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
 	@Test

@@ -31,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ChangeHistorianTest {
+class SigImpactHistorianTest {
 	private static final GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
-	final ChangeHistorian subject = new ChangeHistorian(dynamicProperties);
+	final SigImpactHistorian subject = new SigImpactHistorian(dynamicProperties);
 
 	@Test
 	void windowMgmtAsExpected() {

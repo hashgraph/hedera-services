@@ -22,7 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -88,12 +88,12 @@ public final class ContractLogicModule {
 	public static List<TransitionLogic> provideContractUpdateLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var contractUpdateTransitionLogic = new ContractUpdateTransitionLogic(
-				ledger, validator, changeHistorian, txnCtx, new UpdateCustomizerFactory(), accounts);
+				ledger, validator, sigImpactHistorian, txnCtx, new UpdateCustomizerFactory(), accounts);
 		return List.of(contractUpdateTransitionLogic);
 	}
 

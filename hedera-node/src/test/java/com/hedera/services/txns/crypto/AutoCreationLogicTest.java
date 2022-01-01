@@ -25,10 +25,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -51,6 +53,7 @@ import java.time.Instant;
 import java.util.Collections;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,13 +79,19 @@ class AutoCreationLogicTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private AutoCreationLogic subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AutoCreationLogic(syntheticTxnFactory, creator, ids, aliasManager, currentView, txnCtx);
+		subject = new AutoCreationLogic(
+				syntheticTxnFactory, creator, ids, aliasManager, sigImpactHistorian, currentView, txnCtx);
+
 		subject.setFeeCalculator(feeCalculator);
 	}
 
@@ -93,10 +102,13 @@ class AutoCreationLogicTest {
 		final var input = wellKnownChange();
 
 		final var result = subject.create(input, accountsLedger);
+		subject.submitRecordsTo(recordsHistorian);
 
 		assertEquals(initialTransfer - totalFee, input.units());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
 		verify(aliasManager).createAlias(alias, createdNum);
+		verify(sigImpactHistorian).markAliasChanged(alias);
+		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
 		assertEquals(Pair.of(OK, totalFee), result);
 	}
 
@@ -110,7 +122,7 @@ class AutoCreationLogicTest {
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);
 		given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
-				.willReturn(ExpirableTxnRecord.newBuilder());
+				.willReturn(mockBuilder);
 	}
 
 	private BalanceChange wellKnownChange() {
@@ -131,4 +143,6 @@ class AutoCreationLogicTest {
 	private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
 	private static final long totalFee = 6L;
 	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final ExpirableTxnRecord.Builder mockBuilder = ExpirableTxnRecord.newBuilder()
+			.setAlias(alias);
 }

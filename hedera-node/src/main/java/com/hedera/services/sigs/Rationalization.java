@@ -20,7 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -50,7 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class Rationalization {
 	private final SyncVerifier syncVerifier;
 	private final SigRequirements sigReqs;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private TxnAccessor txnAccessor;
@@ -68,19 +68,19 @@ public class Rationalization {
 	@Inject
 	public Rationalization(
 			final SyncVerifier syncVerifier,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final @WorkingStateSigReqs SigRequirements sigReqs,
 			final ReusableBodySigningFactory bodySigningFactory
 	) {
 		this.sigReqs = sigReqs;
 		this.syncVerifier = syncVerifier;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.bodySigningFactory = bodySigningFactory;
 	}
 
 	public void performFor(final TxnAccessor txnAccessor) {
 		final var linkedRefs = txnAccessor.getLinkedRefs();
-		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(changeHistorian)) {
+		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
 			return;
 		}
 

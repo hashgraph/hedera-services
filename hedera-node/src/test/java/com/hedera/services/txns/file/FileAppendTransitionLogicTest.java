@@ -29,7 +29,6 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.files.TieredHederaFs;
-import com.hedera.services.ledger.ChangeHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.MiscUtils;
@@ -95,7 +94,6 @@ class FileAppendTransitionLogicTest {
 	PlatformTxnAccessor accessor;
 
 	HederaFs hfs;
-	ChangeHistorian changeHistorian;
 	TransactionContext txnCtx;
 	MerkleNetworkContext networkCtx;
 
@@ -112,7 +110,6 @@ class FileAppendTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		networkCtx = mock(MerkleNetworkContext.class);
-		changeHistorian = mock(ChangeHistorian.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(target)).willReturn(true);
@@ -124,7 +121,7 @@ class FileAppendTransitionLogicTest {
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 		given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-		subject = new FileAppendTransitionLogic(hfs, numbers, changeHistorian, txnCtx, () -> networkCtx);
+		subject = new FileAppendTransitionLogic(hfs, numbers, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -214,7 +211,7 @@ class FileAppendTransitionLogicTest {
 	@Test
 	void happyPathFlowsForNonSpecialFile() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, changeHistorian);
+		InOrder inOrder = inOrder(hfs, txnCtx);
 
 		givenTxnCtxAppending(TargetType.VALID);
 		// and:
@@ -226,7 +223,6 @@ class FileAppendTransitionLogicTest {
 		// then:
 		inOrder.verify(hfs).append(argThat(target::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
-		inOrder.verify(changeHistorian).markEntityChanged(target.getFileNum());
 	}
 
 	@Test

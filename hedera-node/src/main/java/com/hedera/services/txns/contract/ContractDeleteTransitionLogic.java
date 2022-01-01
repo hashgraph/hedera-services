@@ -21,7 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -53,7 +53,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final LegacyDeleter delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
@@ -63,7 +63,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 			final HederaLedger ledger,
 			final LegacyDeleter delegate,
 			final OptionValidator validator,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
@@ -72,7 +72,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@FunctionalInterface
@@ -97,7 +97,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 			final var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
 			final var status = legacyRecord.getReceipt().getStatus();
 			if (status == SUCCESS) {
-				changeHistorian.markEntityChanged(op.getContractID().getContractNum());
+				sigImpactHistorian.markEntityChanged(op.getContractID().getContractNum());
 			}
 			txnCtx.setStatus(status);
 		} catch (Exception e) {

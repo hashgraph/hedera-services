@@ -21,7 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -63,7 +63,7 @@ class ContractSysUndelTransitionLogicTest {
 	private TransactionBody contractSysUndelTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private ChangeHistorian changeHistorian;
+	private SigImpactHistorian sigImpactHistorian;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractSysUndelTransitionLogic subject;
 
@@ -77,9 +77,9 @@ class ContractSysUndelTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
-		changeHistorian = mock(ChangeHistorian.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
-		subject = new ContractSysUndelTransitionLogic(validator, changeHistorian, txnCtx, delegate, () -> contracts);
+		subject = new ContractSysUndelTransitionLogic(validator, sigImpactHistorian, txnCtx, delegate, () -> contracts);
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class ContractSysUndelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(changeHistorian).markEntityChanged(target.getContractNum());
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 

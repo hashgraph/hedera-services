@@ -21,7 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
@@ -50,7 +50,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractSysUndelTransitionLogic.class);
 
 	private final OptionValidator validator;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final LegacySystemUndeleter delegate;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
@@ -60,7 +60,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 	@Inject
 	public ContractSysUndelTransitionLogic(
 			final OptionValidator validator,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final LegacySystemUndeleter delegate,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
@@ -69,7 +69,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 		this.txnCtx = txnCtx;
 		this.delegate = delegate;
 		this.contracts = contracts;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@FunctionalInterface
@@ -86,7 +86,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 			final var status = legacyRecord.getReceipt().getStatus();
 			if (status == SUCCESS) {
 				final var target = contractSysUndelTxn.getSystemUndelete().getContractID();
-				changeHistorian.markEntityChanged(target.getContractNum());
+				sigImpactHistorian.markEntityChanged(target.getContractNum());
 			}
 			txnCtx.setStatus(status);
 		} catch (Exception e) {

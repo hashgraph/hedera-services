@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -89,7 +89,7 @@ class FileSysDelTransitionLogicTest {
 	HederaFs hfs;
 	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
-	ChangeHistorian changeHistorian;
+	SigImpactHistorian sigImpactHistorian;
 
 	FileSysDelTransitionLogic subject;
 
@@ -101,7 +101,7 @@ class FileSysDelTransitionLogicTest {
 
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
-		changeHistorian = mock(ChangeHistorian.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 		oldExpiries = mock(Map.class);
 
 		hfs = mock(HederaFs.class);
@@ -111,7 +111,7 @@ class FileSysDelTransitionLogicTest {
 		given(hfs.getattr(tbd)).willReturn(attr);
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 
-		subject = new FileSysDelTransitionLogic(hfs, changeHistorian, oldExpiries, txnCtx);
+		subject = new FileSysDelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx);
 	}
 
 	@Test
@@ -162,7 +162,7 @@ class FileSysDelTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, changeHistorian);
+		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
 
 		givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
 		// and:
@@ -177,7 +177,7 @@ class FileSysDelTransitionLogicTest {
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.fromGrpcFileId(tbd), oldExpiry);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
-		inOrder.verify(changeHistorian).markEntityChanged(tbd.getFileNum());
+		inOrder.verify(sigImpactHistorian).markEntityChanged(tbd.getFileNum());
 	}
 
 	@Test

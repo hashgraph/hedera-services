@@ -22,7 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -53,7 +53,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final ServicesRepositoryRoot repositoryRoot;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -61,7 +61,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	public ContractCallTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final HederaWorldState worldState,
 			final TransactionRecordService recordService,
 			final CallEvmTxProcessor evmTxProcessor,
@@ -73,7 +73,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
 		this.repositoryRoot = repositoryRoot;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -110,7 +110,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 
 		/* --- Externalise result --- */
 		for (final var createdContract : createdContracts) {
-			changeHistorian.markEntityChanged(createdContract.getContractNum());
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}
 		recordService.externaliseEvmCallTransaction(result);
 	}

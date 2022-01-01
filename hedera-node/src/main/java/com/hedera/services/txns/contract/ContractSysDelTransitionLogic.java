@@ -21,7 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -49,7 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractSysDelTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractSysDelTransitionLogic.class);
 
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final LegacySystemDeleter delegate;
@@ -61,7 +61,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 	public ContractSysDelTransitionLogic(
 			final OptionValidator validator,
 			final TransactionContext txnCtx,
-			final ChangeHistorian changeHistorian,
+			final SigImpactHistorian sigImpactHistorian,
 			final LegacySystemDeleter delegate,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
@@ -69,7 +69,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 		this.txnCtx = txnCtx;
 		this.delegate = delegate;
 		this.contracts = contracts;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@FunctionalInterface
@@ -87,7 +87,7 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 			final var status = legacyRecord.getReceipt().getStatus();
 			if (status == SUCCESS) {
 				final var target = contractSysDelTxn.getSystemDelete().getContractID();
-				changeHistorian.markEntityChanged(target.getContractNum());
+				sigImpactHistorian.markEntityChanged(target.getContractNum());
 			}
 			txnCtx.setStatus(status);
 		} catch (Exception e) {

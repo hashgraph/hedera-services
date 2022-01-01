@@ -26,7 +26,7 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -116,7 +116,7 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private ContractCreateTransactionBody transactionBody;
 	@Mock
-	private ChangeHistorian changeHistorian;
+	private SigImpactHistorian sigImpactHistorian;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -130,7 +130,7 @@ class ContractCreateTransitionLogicTest {
 		subject = new ContractCreateTransitionLogic(
 				hfs,
 				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor, hederaLedger, changeHistorian);
+				worldState, recordServices, evmTxProcessor, hederaLedger, sigImpactHistorian);
 	}
 
 	@Test
@@ -426,8 +426,8 @@ class ContractCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(changeHistorian).markEntityChanged(contractAccount.getId().num());
-		verify(changeHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 		verify(worldState, never()).reclaimContractId();

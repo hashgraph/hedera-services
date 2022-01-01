@@ -23,6 +23,7 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -97,6 +98,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private TransactionContext transactionContext;
 	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
+	private SigImpactHistorian sigImpactHistorian;
 	private OptionValidator validator;
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
@@ -120,9 +122,11 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.memoCheck("")).willReturn(OK);
 		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
 		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		ledger = mock(HederaLedger.class);
-		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext, ledger);
+		subject = new TopicUpdateTransitionLogic(
+				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian);
 	}
 
 	@Test
@@ -173,6 +177,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		assertEquals(VALID_AUTORENEW_PERIOD_SECONDS, topic.getAutoRenewDurationSeconds());
 		assertEquals(EntityId.fromGrpcAccountId(MISC_ACCOUNT), topic.getAutoRenewAccountId());
 		assertEquals(updatedExpirationTime.getEpochSecond(), topic.getExpirationTimestamp().getSeconds());
+		verify(sigImpactHistorian).markEntityChanged(TOPIC_ID.getTopicNum());
 	}
 
 	@Test

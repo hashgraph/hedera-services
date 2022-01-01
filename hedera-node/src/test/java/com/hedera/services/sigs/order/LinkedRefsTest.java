@@ -21,7 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,9 +32,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.ledger.ChangeHistorian.ChangeStatus.CHANGED;
-import static com.hedera.services.ledger.ChangeHistorian.ChangeStatus.UNCHANGED;
-import static com.hedera.services.ledger.ChangeHistorian.ChangeStatus.UNKNOWN;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,7 +47,7 @@ class LinkedRefsTest {
 	private LinkedRefs subject = new LinkedRefs();
 
 	@Mock
-	private ChangeHistorian historian;
+	private SigImpactHistorian historian;
 
 	@Test
 	void recognizesNoChangesToNumOnly() {

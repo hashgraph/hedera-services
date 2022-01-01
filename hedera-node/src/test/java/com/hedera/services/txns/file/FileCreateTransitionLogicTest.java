@@ -26,7 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
@@ -95,7 +95,7 @@ class FileCreateTransitionLogicTest {
 
 	HederaFs hfs;
 	OptionValidator validator;
-	ChangeHistorian changeHistorian;
+	SigImpactHistorian sigImpactHistorian;
 	TransactionContext txnCtx;
 
 	FileCreateTransitionLogic subject;
@@ -108,14 +108,14 @@ class FileCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		hfs = mock(HederaFs.class);
-		changeHistorian = mock(ChangeHistorian.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(true);
 		given(validator.hasGoodEncoding(wacl)).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
 
-		subject = new FileCreateTransitionLogic(hfs, validator, changeHistorian, txnCtx);
+		subject = new FileCreateTransitionLogic(hfs, validator, sigImpactHistorian, txnCtx);
 	}
 
 	@Test
@@ -130,7 +130,7 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, changeHistorian);
+		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
 
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		// and:
@@ -150,7 +150,7 @@ class FileCreateTransitionLogicTest {
 				argThat(genesis::equals));
 		inOrder.verify(txnCtx).setCreated(created);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
-		inOrder.verify(changeHistorian).markEntityChanged(created.getFileNum());
+		inOrder.verify(sigImpactHistorian).markEntityChanged(created.getFileNum());
 	}
 
 	@Test

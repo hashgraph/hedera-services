@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -68,7 +68,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final HederaLedger hederaLedger;
-	private final ChangeHistorian changeHistorian;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -82,7 +82,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final TransactionRecordService recordService,
 			final CreateEvmTxProcessor evmTxProcessor,
 			final HederaLedger hederaLedger,
-			final ChangeHistorian changeHistorian
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
@@ -90,7 +90,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
-		this.changeHistorian = changeHistorian;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.evmTxProcessor = evmTxProcessor;
 		this.hederaLedger = hederaLedger;
 	}
@@ -148,11 +148,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Externalise changes --- */
 		for (final var createdContract : createdContracts) {
-			changeHistorian.markEntityChanged(createdContract.getContractNum());
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}
 		if (result.isSuccessful()) {
 			final var newContractId = contractParsedFromSolidityAddress(newContractAddress.toArray());
-			changeHistorian.markEntityChanged(newContractId.getContractNum());
+			sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
 			txnCtx.setCreated(newContractId);
 		}
 		recordService.externaliseEvmCreateTransaction(result);

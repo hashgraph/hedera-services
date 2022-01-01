@@ -20,7 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
@@ -80,7 +80,7 @@ class RationalizationTest {
 	@Mock
 	private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
 	@Mock
-	private ChangeHistorian changeHistorian;
+	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private LinkedRefs linkedRefs;
 
@@ -88,7 +88,7 @@ class RationalizationTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new Rationalization(syncVerifier, changeHistorian, keyOrderer, sigFactory);
+		subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory);
 	}
 
 	@Test
@@ -137,7 +137,7 @@ class RationalizationTest {
 	@Test
 	void doesNothingIfLinkedRefsAvailableAndUnchanged() {
 		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
-		given(linkedRefs.haveNoChangesAccordingTo(changeHistorian)).willReturn(true);
+		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
 
 		subject.performFor(txnAccessor);
 

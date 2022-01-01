@@ -30,16 +30,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AliasManagerTest {
+	private final AliasManager subject = new AliasManager();
+
 	@Test
 	void createAliasAddsToMap() {
 		final var alias = ByteString.copyFromUtf8("aaaa");
 		final var num = EntityNum.fromLong(1234L);
 
 
-		final var subject = new AliasManager();
 		subject.createAlias(alias, num);
 
 		assertEquals(Map.of(alias, num), subject.getAliases());
@@ -56,13 +58,22 @@ class AliasManagerTest {
 			put(aliasB, b);
 		}};
 
-		var subject = new AliasManager();
 		assertTrue(subject.getAliases().isEmpty());
 
 		subject.setAliases(expectedMap);
 		assertEquals(expectedMap, subject.getAliases());
 		assertEquals(b, subject.lookupIdBy(ByteString.copyFromUtf8("bbbb")));
 		assertTrue(subject.contains(aliasA));
+	}
+
+	@Test
+	void returnsFalseIfAliasNotPresentToForget() {
+		final var accountWithNoAlias = new MerkleAccount();
+		final var withoutNum = EntityNum.fromLong(2L);
+		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+		liveAccounts.put(withoutNum, accountWithNoAlias);
+
+		assertFalse(subject.forgetAliasIfPresent(withoutNum, liveAccounts));
 	}
 
 	@Test
@@ -80,7 +91,6 @@ class AliasManagerTest {
 		liveAccounts.put(withNum, accountWithAlias);
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
-		final var subject = new AliasManager();
 		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 
@@ -88,8 +98,7 @@ class AliasManagerTest {
 		assertEquals(1, finalMap.size());
 		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
 
-		// finally when
-		subject.forgetAliasIfPresent(withNum, liveAccounts);
+		assertTrue(subject.forgetAliasIfPresent(withNum, liveAccounts));
 		assertEquals(0, subject.getAliases().size());
 	}
 }

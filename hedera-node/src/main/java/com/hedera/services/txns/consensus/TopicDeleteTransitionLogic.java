@@ -21,6 +21,7 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
@@ -45,16 +46,19 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext transactionContext;
 
 	@Inject
 	public TopicDeleteTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext transactionContext
 	) {
 		this.topics = topics;
 		this.validator = validator;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
 	}
 
@@ -82,6 +86,7 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 		mutableTopic.setDeleted(true);
 
 		transactionContext.setStatus(SUCCESS);
+		sigImpactHistorian.markEntityChanged(topicId.getTopicNum());
 	}
 
 	@Override

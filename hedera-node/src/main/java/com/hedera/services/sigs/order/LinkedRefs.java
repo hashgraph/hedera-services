@@ -21,7 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.ChangeHistorian;
+import com.hedera.services.ledger.SigImpactHistorian;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.ledger.ChangeHistorian.ChangeStatus.UNCHANGED;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
 
 public class LinkedRefs {
 	private static final int EXPECTED_LINKED_NUMS = 1;
@@ -39,7 +39,7 @@ public class LinkedRefs {
 	private long[] linkedNums = new long[EXPECTED_LINKED_NUMS];
 	private List<ByteString> linkedAliases = null;
 
-	public boolean haveNoChangesAccordingTo(final ChangeHistorian historian) {
+	public boolean haveNoChangesAccordingTo(final SigImpactHistorian historian) {
 		for (int j = 0; j < linkedNums.length && linkedNums[j] != 0; j++) {
 			if (historian.entityStatusSince(sourceSignedAt, linkedNums[j]) != UNCHANGED) {
 				return false;

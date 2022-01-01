@@ -137,6 +137,11 @@ public class Creation {
 		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
 
+	public Id newTokenId() {
+		return provisionalId;
+	}
+
+
 	/* --- Only used by unit tests --- */
 	void setProvisionalId(Id provisionalId) {
 		this.provisionalId = provisionalId;
@@ -156,10 +161,6 @@ public class Creation {
 
 	void setNewRels(List<TokenRelationship> newRels) {
 		this.newRels = newRels;
-	}
-
-	Id getProvisionalId() {
-		return provisionalId;
 	}
 
 	Account getTreasury() {
