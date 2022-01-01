@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SignedStateSigReqs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
@@ -128,6 +129,8 @@ class ServicesStateTest {
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
 	private SigRequirements expandKeyOrder;
+	@Mock
+	private SignedStateSigReqs signedStateSigReqs;
 	@Mock
 	private PubKeyToSigBytes pubKeyToSigBytes;
 	@Mock
@@ -250,7 +253,8 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.workingStateSigReqs()).willReturn(expandKeyOrder);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
+		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -268,6 +272,8 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
+		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
 
 		// when:
@@ -285,6 +291,8 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 

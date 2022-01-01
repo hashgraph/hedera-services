@@ -43,8 +43,7 @@ import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
-import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SignedStateSigReqs;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
@@ -119,11 +118,11 @@ public interface ServicesApp {
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
+	SignedStateSigReqs signedStateSigReqs();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
-	@WorkingStateSigReqs SigRequirements workingStateSigReqs();
 
 	/* Needed by ServicesMain */
 	Pause pause();

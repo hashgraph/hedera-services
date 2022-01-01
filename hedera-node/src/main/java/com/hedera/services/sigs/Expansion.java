@@ -20,6 +20,7 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -30,73 +31,88 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
+import static com.hedera.services.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 class Expansion {
-	private static final Logger log = LogManager.getLogger(Expansion.class);
-
+	private final SigRequirements sigReqs;
 	private final PubKeyToSigBytes pkToSigFn;
-	private final SigRequirements keyOrderer;
 	private final PlatformTxnAccessor txnAccessor;
 	private final TxnScopedPlatformSigFactory sigFactory;
 
-	private final LinkedRefs linkedRefs =  new LinkedRefs();
+	private final LinkedRefs linkedRefs = new LinkedRefs();
+	private final List<TransactionSignature> expandedSigs = new ArrayList<>();
+
+	private JKey payerKey;
+	private List<JKey> otherPartyKeys;
+
+	private enum Role {PAYER, OTHER_PARTIES}
 
 	public Expansion(
 			final PlatformTxnAccessor txnAccessor,
-			final SigRequirements keyOrderer,
+			final SigRequirements sigReqs,
 			final PubKeyToSigBytes pkToSigFn,
 			final TxnScopedPlatformSigFactory sigFactory
 	) {
 		this.txnAccessor = txnAccessor;
 		this.sigFactory = sigFactory;
-		this.keyOrderer = keyOrderer;
+		this.sigReqs = sigReqs;
 		this.pkToSigFn = pkToSigFn;
 	}
 
 	public ResponseCodeEnum execute() {
-		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
-		final var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
 		txnAccessor.setLinkedRefs(linkedRefs);
+
+		final var payerStatus = expand(Role.PAYER, pkToSigFn, sigReqs::keysForPayer);
 		if (payerStatus != OK) {
-			if (log.isDebugEnabled()) {
-				log.debug(
-						"Failed expanding Hedera payer sigs for txn {}: {}", txnAccessor.getTxnId(), payerStatus);
-			}
+			txnAccessor.setSigMeta(noneAvailable());
 			return payerStatus;
 		}
-		final var otherStatus = expand(pkToSigFn, keyOrderer::keysForOtherParties);
+
+		final var otherStatus = expand(Role.OTHER_PARTIES, pkToSigFn, sigReqs::keysForOtherParties);
 		if (otherStatus != OK) {
-			if (log.isDebugEnabled()) {
-				log.debug(
-						"Failed expanding other Hedera sigs for txn {}: {}", txnAccessor.getTxnId(), otherStatus);
-			}
+			txnAccessor.getPlatformTxn().addAll(expandedSigs.toArray(new TransactionSignature[0]));
+			txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs));
 			return otherStatus;
 		}
 
 		if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
 			pkToSigFn.forEachUnusedSigWithFullPrefix((type, pubKey, sig) ->
-					txnAccessor.getPlatformTxn().add(sigFactory.signAppropriately(type, pubKey, sig)));
+					expandedSigs.add(sigFactory.signAppropriately(type, pubKey, sig)));
 		}
+		txnAccessor.getPlatformTxn().addAll(expandedSigs.toArray(new TransactionSignature[0]));
+		txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs));
 
 		return OK;
 	}
 
-	private ResponseCodeEnum expand(final PubKeyToSigBytes pkToSigFn, final SigReqsFunction sigReqsFn) {
+	private ResponseCodeEnum expand(
+			final Role role,
+			final PubKeyToSigBytes pkToSigFn,
+			final SigReqsFunction sigReqsFn
+	) {
 		var orderResult = sigReqsFn.apply(
 				txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, linkedRefs);
 		if (orderResult.hasErrorReport()) {
 			return orderResult.getErrorReport();
 		}
+		if (role == Role.PAYER) {
+			payerKey = orderResult.getPayerKey();
+		} else {
+			otherPartyKeys = orderResult.getOrderedKeys();
+		}
 
 		final var creationResult = createCryptoSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (!creationResult.hasFailed()) {
-			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
+			expandedSigs.addAll(creationResult.getPlatformSigs());
 		}
 		/* Ignore sig creation failures. */
 		return OK;

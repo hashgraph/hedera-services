@@ -69,6 +69,7 @@ import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
@@ -142,6 +143,16 @@ class SigOpsRegressionTest {
 		// then:
 		assertEquals(OK, actualStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		final var sigMeta = platformTxn.getSigMeta();
+		assertTrue(sigMeta.couldRationalizePayer());
+		assertTrue(sigMeta.couldRationalizeOthers());
+		assertEquals(
+				DEFAULT_PAYER_KT.asKey(),
+				asKeyUnchecked(sigMeta.payerKey()));
+		assertEquals(1, sigMeta.othersReqSigs().size());
+		assertEquals(
+				List.of(CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asKey()),
+				List.of(asKeyUnchecked(sigMeta.othersReqSigs().get(0))));
 	}
 
 	@Test
@@ -155,19 +166,19 @@ class SigOpsRegressionTest {
 		// then:
 		statusMatches(expectedErrorStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertFalse(platformTxn.getSigMeta().couldRationalizePayer());
 	}
 
 	@Test
 	void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
-		// given:
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 
-		// when:
 		actualStatus = invokeExpansionScenario();
 
-		// then:
 		statusMatches(expectedErrorStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertTrue(platformTxn.getSigMeta().couldRationalizePayer());
+		assertFalse(platformTxn.getSigMeta().couldRationalizeOthers());
 	}
 
 	@Test

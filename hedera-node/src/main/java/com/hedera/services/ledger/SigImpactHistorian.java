@@ -24,11 +24,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
+import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN;
 
 /**
  * Tracks changes to ledger entities and aliases that can impact signature validity over a trailing window of length
@@ -56,9 +62,13 @@ import java.util.Map;
 public class SigImpactHistorian {
 	private final GlobalDynamicProperties dynamicProperties;
 
+	/* The current time used to mark a change; statuses are returned given strictly earlier changes in the window. */
 	private Instant now;
+	/* Null if the historian has observed at least a full window of consensus times, otherwise the first known time. */
 	private Instant firstNow;
+	/* Has the historian seen at least ledger.changeHistorian.memorySecs full seconds of consensus times? */
 	private boolean fullWindowElapsed = false;
+
 	private final Map<Long, Instant> entityChangeTimes = new HashMap<>();
 	private final Map<ByteString, Instant> aliasChangeTimes = new HashMap<>();
 	private final MonotonicFullQueueExpiries<Long> entityChangeExpiries = new MonotonicFullQueueExpiries<>();
@@ -78,11 +88,27 @@ public class SigImpactHistorian {
 	 *
 	 * @param now the new consensus time of any changes
 	 */
-	public void advanceClockTo(final Instant now) {
+	public void setChangeTime(final Instant now) {
 		this.now = now;
 
 		if (!fullWindowElapsed) {
 			manageFirstWindow(now);
+		}
+
+		final var thisSecond = now.getEpochSecond();
+		while (aliasChangeExpiries.hasExpiringAt(thisSecond)) {
+			final var maybeExpiredAliasChange = aliasChangeExpiries.expireNextAt(thisSecond);
+			final var aliasChangeTime = aliasChangeTimes.get(maybeExpiredAliasChange);
+			if (!inCurrentFullWindow(aliasChangeTime)) {
+				aliasChangeTimes.remove(maybeExpiredAliasChange);
+			}
+		}
+		while (entityChangeExpiries.hasExpiringAt(thisSecond)) {
+			final var maybeExpiredEntityChange = entityChangeExpiries.expireNextAt(thisSecond);
+			final var entityChangeTime = entityChangeTimes.get(maybeExpiredEntityChange);
+			if (!inCurrentFullWindow(entityChangeTime)) {
+				entityChangeTimes.remove(maybeExpiredEntityChange);
+			}
 		}
 	}
 
@@ -99,7 +125,11 @@ public class SigImpactHistorian {
 	 * @return the status of changes to the entity since the given time
 	 */
 	public ChangeStatus entityStatusSince(final Instant then, final long entityNum) {
-		return ChangeStatus.UNKNOWN;
+		if (noHistoryAvailableFor(then)) {
+			return UNKNOWN;
+		}
+		final var lastChangeInWindow = entityChangeTimes.get(entityNum);
+		return statusGiven(lastChangeInWindow, then);
 	}
 
 	/**
@@ -115,7 +145,11 @@ public class SigImpactHistorian {
 	 * @return the status of changes to the alias since the given time
 	 */
 	public ChangeStatus aliasStatusSince(final Instant then, final ByteString alias) {
-		return ChangeStatus.UNKNOWN;
+		if (noHistoryAvailableFor(then)) {
+			return UNKNOWN;
+		}
+		final var lastChangeInWindow = aliasChangeTimes.get(alias);
+		return statusGiven(lastChangeInWindow, then);
 	}
 
 	/**
@@ -124,7 +158,9 @@ public class SigImpactHistorian {
 	 * @param entityNum the changed entity
 	 */
 	public void markEntityChanged(final long entityNum) {
-		/* No-op */
+		Objects.requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+		entityChangeTimes.put(entityNum, now);
+		entityChangeExpiries.track(entityNum, expirySec());
 	}
 
 	/**
@@ -133,7 +169,9 @@ public class SigImpactHistorian {
 	 * @param alias the changed alias
 	 */
 	public void markAliasChanged(final ByteString alias) {
-		/* No-op */
+		Objects.requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+		aliasChangeTimes.put(alias, now);
+		aliasChangeExpiries.track(alias, expirySec());
 	}
 
 	/**
@@ -141,7 +179,18 @@ public class SigImpactHistorian {
 	 * following calls to {@code entityStatusSince()} and {@code aliasStatusSince()} will return {@code UNKNOWN}.
 	 */
 	public void invalidateCurrentWindow() {
-		/* No-op */
+		now = null;
+		firstNow = null;
+		fullWindowElapsed = false;
+
+		aliasChangeTimes.clear();
+		entityChangeTimes.clear();
+		aliasChangeExpiries.reset();
+		entityChangeExpiries.reset();
+	}
+
+	private boolean noHistoryAvailableFor(final Instant then) {
+		return now == null || !then.isBefore(now);
 	}
 
 	private void manageFirstWindow(final Instant now) {
@@ -156,6 +205,27 @@ public class SigImpactHistorian {
 		}
 	}
 
+	private ChangeStatus statusGiven(final @Nullable Instant lastChangeInWindow, final Instant then) {
+		if (lastChangeInWindow == null)	{
+			if (fullWindowElapsed) {
+				return inCurrentFullWindow(then) ? UNCHANGED : UNKNOWN;
+			} else {
+				return then.isAfter(firstNow) ? UNCHANGED : UNKNOWN;
+			}
+		} else {
+			return then.isAfter(lastChangeInWindow) ? UNCHANGED : CHANGED;
+		}
+	}
+
+	private boolean inCurrentFullWindow(final Instant then)  {
+		return then.getEpochSecond() >= now.getEpochSecond() - dynamicProperties.changeHistorianMemorySecs();
+	}
+
+	private long expirySec() {
+		/* Remember each change for at least the requested memory seconds. */
+		return now.getEpochSecond() + dynamicProperties.changeHistorianMemorySecs() + 1;
+	}
+
 	/* --- Only used for unit tests --- */
 	Instant getNow() {
 		return now;
@@ -167,5 +237,21 @@ public class SigImpactHistorian {
 
 	boolean isFullWindowElapsed() {
 		return fullWindowElapsed;
+	}
+
+	Map<Long, Instant> getEntityChangeTimes() {
+		return entityChangeTimes;
+	}
+
+	Map<ByteString, Instant> getAliasChangeTimes() {
+		return aliasChangeTimes;
+	}
+
+	MonotonicFullQueueExpiries<Long> getEntityChangeExpiries() {
+		return entityChangeExpiries;
+	}
+
+	MonotonicFullQueueExpiries<ByteString> getAliasChangeExpiries() {
+		return aliasChangeExpiries;
 	}
 }
