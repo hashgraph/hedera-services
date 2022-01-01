@@ -63,6 +63,23 @@ class SigImpactHistorianTest {
 	}
 
 	@Test
+	void safeForMultipleExpiriesToBeScheduledAtSameConsensusSecond() {
+		final var sameSecondChange = firstNow.plusNanos(1L);
+
+		subject.setChangeTime(firstNow);
+		subject.markAliasChanged(aAlias);
+		subject.markEntityChanged(aNum);
+		subject.setChangeTime(sameSecondChange);
+		subject.markAliasChanged(aAlias);
+		subject.markEntityChanged(aNum);
+
+		subject.setChangeTime(nowPostFirstWindow);
+
+		assertTrue(subject.getAliasChangeTimes().isEmpty());
+		assertTrue(subject.getEntityChangeTimes().isEmpty());
+	}
+
+	@Test
 	void ignoresExpiryIfChangeStillInWindow() {
 		subject.setChangeTime(firstNow);
 		subject.markAliasChanged(aAlias);

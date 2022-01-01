@@ -78,8 +78,8 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 
 	private HapiApiSpec runSimpleXfers() {
 		return HapiApiSpec.customHapiSpec("RunTokenTransfers").withProperties(Map.of(
-				"default.keyAlgorithm", "SECP256K1"
-//				"default.keyAlgorithm", "ED25519"
+//				"default.keyAlgorithm", "SECP256K1"
+				"default.keyAlgorithm", "ED25519"
 		)).given().when().then(
 				runWithProvider(avoidantXfersFactory())
 						.lasting(duration::get, unit::get)

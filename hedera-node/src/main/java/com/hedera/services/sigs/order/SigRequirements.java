@@ -994,7 +994,7 @@ public class SigRequirements {
 		}
 
 		var scheduledTxn = MiscUtils.asOrdinary(op.getScheduledTransactionBody());
-		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory);
+		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
@@ -1021,21 +1021,22 @@ public class SigRequirements {
 			}
 		}
 		var scheduledTxn = result.metadata().scheduledTxn();
-		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory);
+		var mergeError = mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs);
 		return mergeError.orElseGet(() -> factory.forValidOrder(required));
 	}
 
 	private <T> Optional<SigningOrderResult<T>> mergeScheduledKeys(
-			List<JKey> required,
-			TransactionBody scheduledTxn,
-			SigningOrderResultFactory<T> factory
+			final List<JKey> required,
+			final TransactionBody scheduledTxn,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs
 	) {
 		try {
 			var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
 			if (!properties.schedulingWhitelist().contains(scheduledFunction)) {
 				return Optional.of(factory.forUnschedulableTxn());
 			}
-			var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory);
+			var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory, linkedRefs);
 			if (scheduledOrderResult.hasErrorReport()) {
 				return Optional.of(factory.forUnresolvableRequiredSigners());
 			} else {

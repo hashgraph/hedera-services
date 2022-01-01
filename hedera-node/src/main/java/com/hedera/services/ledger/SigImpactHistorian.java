@@ -30,11 +30,11 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
 import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
 import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Tracks changes to ledger entities and aliases that can impact signature validity over a trailing window of length
@@ -84,7 +84,8 @@ public class SigImpactHistorian {
 	}
 
 	/**
-	 * Marks the new consensus time at which changes may happen.
+	 * Marks the new consensus time at which changes may happen. As a side effect, expires any tracked changes
+	 * that are no longer in the current window.
 	 *
 	 * @param now the new consensus time of any changes
 	 */
@@ -96,20 +97,8 @@ public class SigImpactHistorian {
 		}
 
 		final var thisSecond = now.getEpochSecond();
-		while (aliasChangeExpiries.hasExpiringAt(thisSecond)) {
-			final var maybeExpiredAliasChange = aliasChangeExpiries.expireNextAt(thisSecond);
-			final var aliasChangeTime = aliasChangeTimes.get(maybeExpiredAliasChange);
-			if (!inCurrentFullWindow(aliasChangeTime)) {
-				aliasChangeTimes.remove(maybeExpiredAliasChange);
-			}
-		}
-		while (entityChangeExpiries.hasExpiringAt(thisSecond)) {
-			final var maybeExpiredEntityChange = entityChangeExpiries.expireNextAt(thisSecond);
-			final var entityChangeTime = entityChangeTimes.get(maybeExpiredEntityChange);
-			if (!inCurrentFullWindow(entityChangeTime)) {
-				entityChangeTimes.remove(maybeExpiredEntityChange);
-			}
-		}
+		expire(thisSecond, aliasChangeTimes, aliasChangeExpiries);
+		expire(thisSecond, entityChangeTimes, entityChangeExpiries);
 	}
 
 	/**
@@ -125,7 +114,7 @@ public class SigImpactHistorian {
 	 * @return the status of changes to the entity since the given time
 	 */
 	public ChangeStatus entityStatusSince(final Instant then, final long entityNum) {
-		if (noHistoryAvailableFor(then)) {
+		if (inFutureWindow(then)) {
 			return UNKNOWN;
 		}
 		final var lastChangeInWindow = entityChangeTimes.get(entityNum);
@@ -145,7 +134,7 @@ public class SigImpactHistorian {
 	 * @return the status of changes to the alias since the given time
 	 */
 	public ChangeStatus aliasStatusSince(final Instant then, final ByteString alias) {
-		if (noHistoryAvailableFor(then)) {
+		if (inFutureWindow(then)) {
 			return UNKNOWN;
 		}
 		final var lastChangeInWindow = aliasChangeTimes.get(alias);
@@ -158,7 +147,7 @@ public class SigImpactHistorian {
 	 * @param entityNum the changed entity
 	 */
 	public void markEntityChanged(final long entityNum) {
-		Objects.requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+		requireNonNull(now, "Cannot mark an entity changed at null consensus time");
 		entityChangeTimes.put(entityNum, now);
 		entityChangeExpiries.track(entityNum, expirySec());
 	}
@@ -169,7 +158,7 @@ public class SigImpactHistorian {
 	 * @param alias the changed alias
 	 */
 	public void markAliasChanged(final ByteString alias) {
-		Objects.requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+		requireNonNull(now, "Cannot mark an entity changed at null consensus time");
 		aliasChangeTimes.put(alias, now);
 		aliasChangeExpiries.track(alias, expirySec());
 	}
@@ -189,7 +178,23 @@ public class SigImpactHistorian {
 		entityChangeExpiries.reset();
 	}
 
-	private boolean noHistoryAvailableFor(final Instant then) {
+	/* --- Internal helpers --- */
+	private <T> void expire(
+			final long thisSecond,
+			final Map<T, Instant> changeTimes,
+			final MonotonicFullQueueExpiries<T> expiries
+	) {
+		while (expiries.hasExpiringAt(thisSecond)) {
+			final var maybeExpiredChange = expiries.expireNextAt(thisSecond);
+			/* This could be null if two changes to the same thing happened in the same consensus second. */
+			final var changeTime = changeTimes.get(maybeExpiredChange);
+			if (changeTime != null && !inCurrentFullWindow(changeTime)) {
+				changeTimes.remove(maybeExpiredChange);
+			}
+		}
+	}
+
+	private boolean inFutureWindow(final Instant then) {
 		return now == null || !then.isBefore(now);
 	}
 
