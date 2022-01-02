@@ -47,6 +47,7 @@ import org.mockito.Mockito;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -83,6 +84,8 @@ class HederaScheduleStoreTest {
 	private static final long expectedExpiry = 1_234_567L;
 	private static final RichInstant consensusTime = new RichInstant(expectedExpiry, 0);
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
+	private static final Set<HederaFunctionality> whitelist = Set.of(
+			HederaFunctionality.CryptoTransfer, HederaFunctionality.CryptoDelete, HederaFunctionality.TokenBurn);
 
 	private static final ScheduleID created = IdUtils.asSchedule("0.0.333333");
 	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
@@ -275,6 +278,8 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void createProvisionallyWorks() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+
 		final var expected = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 
 		final var outcome = subject.createProvisionally(expected, consensusTime);
@@ -294,6 +299,7 @@ class HederaScheduleStoreTest {
 				IdUtils.asAccount("22.33.44"),
 				entitySchedulingAccount.toGrpcAccountId(),
 				schedulingTXValidStart.toGrpc());
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 
 		final var outcome = subject.createProvisionally(
 				MerkleSchedule.from(parentTxn.toByteArray(), 0L), consensusTime);
@@ -317,6 +323,8 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void createProvisionallyRejectsInvalidScheduler() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+
 		final var differentParentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				adminJKey,
 				entityMemo,
@@ -329,6 +337,7 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rejectsCreateProvisionallyDeletedPayer() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 		given(hederaLedger.isDeleted(payerId)).willReturn(true);
 
 		rejectWith(INVALID_SCHEDULE_PAYER_ID, parentTxn);
@@ -336,7 +345,9 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rejectsCreateProvisionallyDeletedScheduler() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 		given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 
 		rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);
 	}
@@ -344,6 +355,7 @@ class HederaScheduleStoreTest {
 	@Test
 	void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
 		given(accountsLedger.exists(schedulingAccount)).willReturn(false);
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 
 		rejectWith(INVALID_SCHEDULE_ACCOUNT_ID, parentTxn);
 	}
