@@ -497,7 +497,6 @@ class ServicesStateTest {
 
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.systemExits()).willReturn(mockExit);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		// and:
 		APPS.save(selfId.getId(), app);
