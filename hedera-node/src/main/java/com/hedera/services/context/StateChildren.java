@@ -19,41 +19,41 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 
 public interface StateChildren {
-	Instant getSignedAt();
+	Instant signedAt();
 
 	default boolean isSignedAfter(final StateChildren children) {
-		return getSignedAt().isAfter(children.getSignedAt());
+		return signedAt().isAfter(children.signedAt());
 	}
 
 	default boolean isSigned() {
-		return getSignedAt().isAfter(Instant.EPOCH);
+		return signedAt().isAfter(Instant.EPOCH);
 	}
 
-	MerkleMap<EntityNum, MerkleAccount> getAccounts();
+	MerkleMap<EntityNum, MerkleAccount> accounts();
 
-	MerkleMap<EntityNum, MerkleTopic> getTopics();
+	MerkleMap<EntityNum, MerkleTopic> topics();
 
-	MerkleMap<EntityNum, MerkleToken> getTokens();
+	MerkleMap<EntityNum, MerkleToken> tokens();
 
-	MerkleMap<EntityNum, MerkleSchedule> getSchedules();
+	MerkleMap<EntityNum, MerkleSchedule> schedules();
 
-	MerkleMap<String, MerkleOptionalBlob> getStorage();
+	MerkleMap<String, MerkleOptionalBlob> storage();
 
-	MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations();
+	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 
-	MerkleNetworkContext getNetworkCtx();
+	MerkleNetworkContext networkCtx();
 
-	AddressBook getAddressBook();
+	AddressBook addressBook();
 
-	MerkleSpecialFiles getSpecialFiles();
+	MerkleSpecialFiles specialFiles();
 
-	MerkleMap<EntityNumPair, MerkleUniqueToken> getUniqueTokens();
+	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
 
-	FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations();
+	FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations();
 
-	FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations();
+	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations();
 
-	FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipTreasuryAssociations();
+	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations();
 
-	RecordsRunningHashLeaf getRunningHashLeaf();
+	RecordsRunningHashLeaf runningHashLeaf();
 }

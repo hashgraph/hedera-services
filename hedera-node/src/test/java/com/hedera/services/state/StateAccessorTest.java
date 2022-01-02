@@ -99,7 +99,7 @@ class StateAccessorTest {
 		subject.replaceChildrenFrom(state, signedAt);
 
 		assertNotSame(currentChildren, subject.children());
-		assertEquals(signedAt, subject.children().getSignedAt());
+		assertEquals(signedAt, subject.children().signedAt());
 		Assertions.assertThrows(IllegalStateException.class, () -> subject.updateChildrenFrom(state));
 	}
 

@@ -118,13 +118,13 @@ class StateChildrenSigMetadataLookupTest {
 	@Test
 	void canReportSourceSigningTime() {
 		final var signedAt = Instant.ofEpochSecond(1_234_567L, 890);
-		given(stateChildren.getSignedAt()).willReturn(signedAt);
+		given(stateChildren.signedAt()).willReturn(signedAt);
 		assertSame(signedAt, subject.sourceSignedAt());
 	}
 
 	@Test
 	void recognizesMissingSchedule() {
-		given(stateChildren.getSchedules()).willReturn(schedules);
+		given(stateChildren.schedules()).willReturn(schedules);
 
 		final var result = subject.scheduleSigningMetaFor(unknownSchedule, null);
 
@@ -137,7 +137,7 @@ class StateChildrenSigMetadataLookupTest {
 				.setContractCall(ContractCallTransactionBody.getDefaultInstance())
 				.build();
 
-		given(stateChildren.getSchedules()).willReturn(schedules);
+		given(stateChildren.schedules()).willReturn(schedules);
 		given(schedules.get(EntityNum.fromScheduleId(knownSchedule))).willReturn(schedule);
 		given(schedule.adminKey()).willReturn(Optional.of(simple));
 		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(mockTxn);
@@ -157,7 +157,7 @@ class StateChildrenSigMetadataLookupTest {
 				.setContractCall(ContractCallTransactionBody.getDefaultInstance())
 				.build();
 
-		given(stateChildren.getSchedules()).willReturn(schedules);
+		given(stateChildren.schedules()).willReturn(schedules);
 		given(schedules.get(EntityNum.fromScheduleId(knownSchedule))).willReturn(schedule);
 		given(schedule.hasExplicitPayer()).willReturn(true);
 		given(schedule.payer()).willReturn(explicitPayer);
@@ -176,7 +176,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesMissingContract() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 
 		final var result = subject.contractSigningMetaFor(unknownContract, null);
 
@@ -185,7 +185,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesDeletedContract() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isDeleted()).willReturn(true);
 
@@ -196,7 +196,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesNonContractAccount() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 
 		final var result = subject.contractSigningMetaFor(knownContract, null);
@@ -206,7 +206,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesImmutableContract() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isSmartContract()).willReturn(true);
 
@@ -220,7 +220,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesExtantContract() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isSmartContract()).willReturn(true);
@@ -237,7 +237,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesMissingAccountNum() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 
 		final var linkedRefs = new LinkedRefs();
 		final var result = subject.accountSigningMetaFor(unknownAccount, linkedRefs);
@@ -248,7 +248,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesExtantAccount() {
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isReceiverSigRequired()).willReturn(true);
@@ -266,7 +266,7 @@ class StateChildrenSigMetadataLookupTest {
 	@Test
 	void recognizesExtantAlias() {
 		final var knownNum = EntityNum.fromAccountId(knownAccount);
-		given(stateChildren.getAccounts()).willReturn(accounts);
+		given(stateChildren.accounts()).willReturn(accounts);
 		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(knownNum);
 		given(accounts.get(knownNum)).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
@@ -295,7 +295,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesMissingToken() {
-		given(stateChildren.getTokens()).willReturn(tokens);
+		given(stateChildren.tokens()).willReturn(tokens);
 
 		final var result = subject.tokenSigningMetaFor(unknownToken, null);
 
@@ -304,7 +304,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesExtantToken() {
-		given(stateChildren.getTokens()).willReturn(tokens);
+		given(stateChildren.tokens()).willReturn(tokens);
 		given(tokens.get(EntityNum.fromTokenId(knownToken))).willReturn(token);
 		given(tokenMetaTransform.apply(token)).willReturn(tokenMeta);
 
@@ -317,7 +317,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void includesTopicKeysIfPresent() {
-		given(stateChildren.getTopics()).willReturn(topics);
+		given(stateChildren.topics()).willReturn(topics);
 		given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 		given(topic.hasAdminKey()).willReturn(true);
 		given(topic.hasSubmitKey()).willReturn(true);
@@ -335,7 +335,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void omitsTopicKeysIfAbsent() {
-		given(stateChildren.getTopics()).willReturn(topics);
+		given(stateChildren.topics()).willReturn(topics);
 		given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 
 		final var result = subject.topicSigningMetaFor(knownTopic, null);
@@ -347,7 +347,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void returnsMissingTopicMeta() {
-		given(stateChildren.getTopics()).willReturn(topics);
+		given(stateChildren.topics()).willReturn(topics);
 
 		final var result = subject.topicSigningMetaFor(unknownTopic, null);
 
@@ -356,7 +356,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void failsOnDeletedTopic() {
-		given(stateChildren.getTopics()).willReturn(topics);
+		given(stateChildren.topics()).willReturn(topics);
 		given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 		given(topic.isDeleted()).willReturn(true);
 
@@ -399,7 +399,7 @@ class StateChildrenSigMetadataLookupTest {
 
 	private void setupNonSpecialFileTest() {
 		storage = new MerkleMap<>();
-		given(stateChildren.getStorage()).willReturn(storage);
+		given(stateChildren.storage()).willReturn(storage);
 		metaMap = MetadataMapFactory.metaMapFrom(new FcBlobsBytesStore(MerkleOptionalBlob::new, () -> storage));
 	}
 

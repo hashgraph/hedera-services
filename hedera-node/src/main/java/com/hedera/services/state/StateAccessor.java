@@ -98,59 +98,59 @@ public class StateAccessor {
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		return children.getAccounts();
+		return children.accounts();
 	}
 
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		return children.getTopics();
+		return children.topics();
 	}
 
 	public MerkleMap<String, MerkleOptionalBlob> storage() {
-		return children.getStorage();
+		return children.storage();
 	}
 
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
-		return children.getTokens();
+		return children.tokens();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		return children.getTokenAssociations();
+		return children.tokenAssociations();
 	}
 
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
-		return children.getSchedules();
+		return children.schedules();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		return children.getUniqueTokens();
+		return children.uniqueTokens();
 	}
 
 	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		return children.getUniqueTokenAssociations();
+		return children.uniqueTokenAssociations();
 	}
 
 	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		return children.getUniqueOwnershipAssociations();
+		return children.uniqueOwnershipAssociations();
 	}
 
 	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
-		return children.getUniqueOwnershipTreasuryAssociations();
+		return children.uniqueOwnershipTreasuryAssociations();
 	}
 
 	public MerkleSpecialFiles specialFiles() {
-		return children.getSpecialFiles();
+		return children.specialFiles();
 	}
 
 	public MerkleNetworkContext networkCtx() {
-		return children.getNetworkCtx();
+		return children.networkCtx();
 	}
 
 	public AddressBook addressBook() {
-		return children.getAddressBook();
+		return children.addressBook();
 	}
 
 	public RecordsRunningHashLeaf runningHashLeaf() {
-		return children.getRunningHashLeaf();
+		return children.runningHashLeaf();
 	}
 
 	public StateChildren children() {

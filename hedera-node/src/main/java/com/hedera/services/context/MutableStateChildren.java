@@ -72,12 +72,12 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public Instant getSignedAt() {
+	public Instant signedAt() {
 		return signedAt;
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
+	public MerkleMap<EntityNum, MerkleAccount> accounts() {
 		Objects.requireNonNull(accounts);
 		return accounts;
 	}
@@ -87,7 +87,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleTopic> getTopics() {
+	public MerkleMap<EntityNum, MerkleTopic> topics() {
 		Objects.requireNonNull(topics);
 		return topics;
 	}
@@ -97,7 +97,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleToken> getTokens() {
+	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		Objects.requireNonNull(tokens);
 		return tokens;
 	}
@@ -107,7 +107,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNum, MerkleSchedule> getSchedules() {
+	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
 		Objects.requireNonNull(schedules);
 		return schedules;
 	}
@@ -117,7 +117,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<String, MerkleOptionalBlob> getStorage() {
+	public MerkleMap<String, MerkleOptionalBlob> storage() {
 		Objects.requireNonNull(storage);
 		return storage;
 	}
@@ -127,7 +127,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations() {
+	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
 		Objects.requireNonNull(tokenAssociations);
 		return tokenAssociations;
 	}
@@ -137,7 +137,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleNetworkContext getNetworkCtx() {
+	public MerkleNetworkContext networkCtx() {
 		Objects.requireNonNull(networkCtx);
 		return networkCtx;
 	}
@@ -147,7 +147,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public AddressBook getAddressBook() {
+	public AddressBook addressBook() {
 		Objects.requireNonNull(addressBook);
 		return addressBook;
 	}
@@ -157,7 +157,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleSpecialFiles getSpecialFiles() {
+	public MerkleSpecialFiles specialFiles() {
 		Objects.requireNonNull(specialFiles);
 		return specialFiles;
 	}
@@ -167,7 +167,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> getUniqueTokens() {
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		Objects.requireNonNull(uniqueTokens);
 		return uniqueTokens;
 	}
@@ -177,7 +177,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
 		Objects.requireNonNull(uniqueTokenAssociations);
 		return uniqueTokenAssociations;
 	}
@@ -187,7 +187,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
 		Objects.requireNonNull(uniqueOwnershipAssociations);
 		return uniqueOwnershipAssociations;
 	}
@@ -199,7 +199,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipTreasuryAssociations() {
+	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
 		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
 		return uniqueOwnershipTreasuryAssociations;
 	}
@@ -211,7 +211,7 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public RecordsRunningHashLeaf getRunningHashLeaf() {
+	public RecordsRunningHashLeaf runningHashLeaf() {
 		Objects.requireNonNull(runningHashLeaf);
 		return runningHashLeaf;
 	}

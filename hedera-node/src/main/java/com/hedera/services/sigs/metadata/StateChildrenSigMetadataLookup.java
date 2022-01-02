@@ -78,13 +78,13 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		this.stateChildren = stateChildren;
 		this.tokenMetaTransform = tokenMetaTransform;
 
-		final var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, stateChildren::getStorage);
+		final var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, stateChildren::storage);
 		this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);
 	}
 
 	@Override
 	public Instant sourceSignedAt() {
-		return stateChildren.getSignedAt();
+		return stateChildren.signedAt();
 	}
 
 	@Override
@@ -112,7 +112,7 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.getTopicNum());
 		}
-		final var topic = stateChildren.getTopics().get(fromTopicId(id));
+		final var topic = stateChildren.topics().get(fromTopicId(id));
 		if (topic == null || topic.isDeleted()) {
 			return SafeLookupResult.failure(INVALID_TOPIC);
 		} else {
@@ -130,7 +130,7 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.getTokenNum());
 		}
-		final var token = stateChildren.getTokens().get(fromTokenId(id));
+		final var token = stateChildren.tokens().get(fromTokenId(id));
 		return (token == null)
 				? SafeLookupResult.failure(MISSING_TOKEN)
 				: new SafeLookupResult<>(tokenMetaTransform.apply(token));
@@ -171,7 +171,7 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.getScheduleNum());
 		}
-		final var schedule = stateChildren.getSchedules().get(EntityNum.fromScheduleId(id));
+		final var schedule = stateChildren.schedules().get(EntityNum.fromScheduleId(id));
 		if (schedule == null) {
 			return SafeLookupResult.failure(MISSING_SCHEDULE);
 		} else {
@@ -191,7 +191,7 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.getContractNum());
 		}
-		final var contract = stateChildren.getAccounts().get(fromContractId(id));
+		final var contract = stateChildren.accounts().get(fromContractId(id));
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
@@ -211,7 +211,7 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (linkedRefs != null) {
 			linkedRefs.link(id.longValue());
 		}
-		final var account = stateChildren.getAccounts().get(id);
+		final var account = stateChildren.accounts().get(id);
 		if (account == null) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		} else {
