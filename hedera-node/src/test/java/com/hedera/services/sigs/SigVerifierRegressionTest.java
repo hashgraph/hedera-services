@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
@@ -65,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class SigVerifierRegressionTest {
@@ -207,7 +209,9 @@ class SigVerifierRegressionTest {
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
 				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
-		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
+		final var nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
+		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);

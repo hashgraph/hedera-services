@@ -227,4 +227,15 @@ public class RecordStreamManagerTest {
 				"RecordStream inFreeze is set to be false",
 				"RecordStream inFreeze is set to be true"));
 	}
+
+	@Test
+	void computesExpectedLogDirs() {
+		final var memo = "0.0.3";
+		final var withoutSeparatorSuffix = "somewhere/else";
+		final var withSeparatorSuffix = "somewhere/else/";
+		final var expected = "somewhere/else/record0.0.3";
+
+		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
+	}
 }

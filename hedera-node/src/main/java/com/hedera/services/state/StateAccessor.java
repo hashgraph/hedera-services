@@ -9,9 +9,9 @@ package com.hedera.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.ImmutableStateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -41,7 +43,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 
 public class StateAccessor {
-	private volatile StateChildren children = new StateChildren();
+	private volatile StateChildren children = new MutableStateChildren();
 
 	public StateAccessor() {
 		/* No-op */
@@ -59,22 +61,40 @@ public class StateAccessor {
 	 * concurrent calls to getters on this accessor, that thread could get some references
 	 * from the previous state and some references from the updated state.
 	 *
-	 * @param state the new working state to update children from
+	 * @param state
+	 * 		the new working state to update children from
 	 */
 	public void updateChildrenFrom(final ServicesState state) {
-		mapStateOnto(state, children);
+		if (children instanceof ImmutableStateChildren) {
+			throw new IllegalStateException("Can only replace immutable children");
+		}
+		mapStateOnto(state, (MutableStateChildren) children);
 	}
 
 	/**
 	 * Replaces this accessor's state children references with new references from given state
 	 * (which in our usage will always be the latest signed state).
 	 *
-	 * @param state the latest signed state to replace children from
+	 * @param state
+	 * 		the latest signed state to replace children from
 	 */
 	public void replaceChildrenFrom(final ServicesState state, final Instant signedAt) {
-		final var newChildren = new StateChildren(signedAt);
-		mapStateOnto(state, newChildren);
-		children = newChildren;
+		children = new ImmutableStateChildren(
+				state.accounts(),
+				state.topics(),
+				state.tokens(),
+				state.uniqueTokens(),
+				state.scheduleTxs(),
+				state.storage(),
+				state.tokenAssociations(),
+				state.uniqueTokenAssociations(),
+				state.uniqueOwnershipAssociations(),
+				state.uniqueTreasuryOwnershipAssociations(),
+				state.networkCtx(),
+				state.addressBook(),
+				state.specialFiles(),
+				state.runningHashLeaf(),
+				signedAt);
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -137,7 +157,7 @@ public class StateAccessor {
 		return children;
 	}
 
-	private static void mapStateOnto(final ServicesState state, final StateChildren children) {
+	private static void mapStateOnto(final ServicesState state, final MutableStateChildren children) {
 		children.setAccounts(state.accounts());
 		children.setTopics(state.topics());
 		children.setStorage(state.storage());

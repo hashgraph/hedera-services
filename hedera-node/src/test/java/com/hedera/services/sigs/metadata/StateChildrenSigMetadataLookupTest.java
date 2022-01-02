@@ -21,7 +21,7 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
@@ -80,7 +80,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class StateChildrenSigMetadataLookupTest {
 	@Mock
-	private StateChildren stateChildren;
+	private MutableStateChildren stateChildren;
 	@Mock
 	private AliasManager aliasManager;
 	@Mock

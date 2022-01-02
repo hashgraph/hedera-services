@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -146,16 +145,8 @@ class RationalizationTest {
 		subject.performFor(txnAccessor);
 
 		verifyNoMoreInteractions(txnAccessor);
-		assertEquals(subject.finalStatus(), KEY_PREFIX_MISMATCH);
+		assertEquals(KEY_PREFIX_MISMATCH, subject.finalStatus());
 		assertFalse(subject.usedSyncVerification());
-	}
-
-	@Test
-	void failsFastIfFinalStatusSomehowNullGivenLinkedRefs() {
-		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
-		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
-
-		assertThrows(IllegalStateException.class, () -> subject.performFor(txnAccessor));
 	}
 
 	@Test
@@ -181,6 +172,8 @@ class RationalizationTest {
 	@Test
 	void propagatesFailureIfCouldNotExpandOthersKeys() {
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);

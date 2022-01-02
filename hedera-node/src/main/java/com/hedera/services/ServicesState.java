@@ -73,7 +73,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
@@ -326,9 +326,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (APPS.includes(selfId)) {
 			app = APPS.get(selfId);
 		} else {
+			final var nodeAddress = addressBook().getAddress(selfId);
+			final var initialHash = runningHashLeaf().getRunningHash().getHash();
 			app = appBuilder.get()
+					.staticAccountMemo(nodeAddress.getMemo())
 					.bootstrapProps(bootstrapProps)
-					.initialState(this)
+					.initialHash(initialHash)
 					.platform(platform)
 					.selfId(selfId)
 					.build();
@@ -359,6 +362,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app);
+			app.workingState().updateChildrenFrom(this);
 			app.initializationFlow().runWith(this);
 
 			logSummary();

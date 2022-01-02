@@ -34,6 +34,8 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -48,6 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class Rationalization {
+	private static final Logger log = LogManager.getLogger(Rationalization.class);
+
 	private final SyncVerifier syncVerifier;
 	private final SigRequirements sigReqs;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -83,10 +87,11 @@ public class Rationalization {
 		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
 			finalStatus = txnAccessor.getExpandedSigStatus();
 			if (finalStatus == null) {
-				throw new IllegalStateException("Accessor has non-null linked refs but null expanded status");
+				log.warn("{} had non-null linked refs but null sig status", txnAccessor.getSignedTxnWrapper());
+			} else {
+				verifiedSync = false;
+				return;
 			}
-			verifiedSync = false;
-			return;
 		}
 
 		resetFor(txnAccessor);

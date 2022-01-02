@@ -21,6 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -43,12 +44,12 @@ import java.time.Instant;
 import java.util.function.Function;
 
 /**
- * Will be used by {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} to get the
+ * Used by {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} to get the
  * "best available" implementation of {@link SigRequirements} when expanding signatures.
  *
- * (We prefer to expand from the latest signed state so that---<b>once</b> logic is in place to detect keys
- * that changed between {@code expandSignatures} and {@code handleTransaction}---it is no longer necessary to
- * call {@link Rationalization#performFor(TxnAccessor)} during {@code handleTransaction}.)
+ * We prefer to expand from the latest signed state since whenever the entities and aliases linked to a
+ * transaction are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can short-circuit
+ * out of {@link Rationalization#performFor(TxnAccessor)} during {@code handleTransaction}.)
  */
 @Singleton
 public class SignedStateSigReqs {
@@ -65,7 +66,7 @@ public class SignedStateSigReqs {
 	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
-	private StateChildren signedChildren = new StateChildren();
+	private StateChildren signedChildren = new MutableStateChildren();
 	private SigRequirements signedSigReqs;
 	/* Before we have a first signed state, we must use the working state's children to expand signatures. */
 	private SigRequirements workingSigReqs;

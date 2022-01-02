@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -92,7 +92,7 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		view = new StateView(
 				null,
 				null,

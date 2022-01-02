@@ -72,6 +72,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -96,6 +97,7 @@ class ServicesStateTest {
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
+	private static final String bookMemo = "0.0.4";
 
 	@Mock
 	private HashLogger hashLogger;
@@ -386,6 +388,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -408,8 +411,11 @@ class ServicesStateTest {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 
+		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(address.getMemo()).willReturn(bookMemo);
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
-		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+		given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
 		given(appBuilder.platform(platform)).willReturn(appBuilder);
 		given(appBuilder.selfId(1L)).willReturn(appBuilder);
 		given(appBuilder.build()).willReturn(app);
@@ -417,6 +423,7 @@ class ServicesStateTest {
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.workingState()).willReturn(workingState);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -439,10 +446,11 @@ class ServicesStateTest {
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
+		verify(workingState).updateChildrenFrom(subject);
 		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
-		verify(appBuilder).initialState(subject);
+		verify(appBuilder).initialHash(EMPTY_HASH);
 		verify(appBuilder).platform(platform);
 		verify(appBuilder).selfId(selfId.getId());
 		// and:
@@ -460,6 +468,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -488,6 +497,7 @@ class ServicesStateTest {
 
 		given(platform.getSelfId()).willReturn(selfId);
 		given(app.systemExits()).willReturn(mockExit);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		// and:
 		APPS.save(selfId.getId(), app);
@@ -511,6 +521,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -533,6 +544,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:

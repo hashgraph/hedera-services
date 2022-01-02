@@ -121,9 +121,9 @@ public class StateView {
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
+	private final StateChildren stateChildren;
 	private final UniqTokenView uniqTokenView;
 	private final NodeLocalProperties nodeLocalProperties;
-	private final StateChildren stateChildren;
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
