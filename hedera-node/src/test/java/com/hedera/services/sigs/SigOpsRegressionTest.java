@@ -96,7 +96,6 @@ class SigOpsRegressionTest {
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
-	private ResponseCodeEnum actualStatus;
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements signingOrder;
@@ -138,10 +137,10 @@ class SigOpsRegressionTest {
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
 		// when:
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
 		// then:
-		assertEquals(OK, actualStatus);
+		assertEquals(OK, platformTxn.getExpandedSigStatus());
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
 		final var sigMeta = platformTxn.getSigMeta();
 		assertTrue(sigMeta.couldRationalizePayer());
@@ -161,7 +160,7 @@ class SigOpsRegressionTest {
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
 		// when:
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
 		// then:
 		statusMatches(expectedErrorStatus);
@@ -173,7 +172,7 @@ class SigOpsRegressionTest {
 	void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
 		statusMatches(expectedErrorStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
@@ -367,7 +366,7 @@ class SigOpsRegressionTest {
 	}
 
 	private void statusMatches(ResponseCodeEnum expectedStatus) {
-		assertEquals(expectedStatus, actualStatus);
+		assertEquals(expectedStatus, platformTxn.getExpandedSigStatus());
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
@@ -394,7 +393,7 @@ class SigOpsRegressionTest {
 		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
 	}
 
-	private ResponseCodeEnum invokeExpansionScenario() {
+	private void invokeExpansionScenario() {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsFor(
@@ -403,7 +402,7 @@ class SigOpsRegressionTest {
 				sigMetaLookups, new MockGlobalDynamicProps(), mockSignatureWaivers);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
-		return expandIn(platformTxn, keyOrder, pkToSigFn);
+		expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
 	private Rationalization invokeRationalizationScenario() {

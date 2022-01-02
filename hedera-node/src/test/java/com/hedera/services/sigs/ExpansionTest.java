@@ -45,9 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -71,12 +69,15 @@ class ExpansionTest {
 	private TransactionSignature ed25519Sig;
 	@Mock
 	private TransactionSignature secp256k1Sig;
+	@Mock
+	private Expansion.CryptoSigsCreation cryptoSigsCreation;
 
 	private Expansion subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, sigFactory);
+		subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory);
+		given(cryptoSigsCreation.createFrom(any(), any(), any())).willReturn(new PlatformSigsCreationResult());
 	}
 
 	@Test
@@ -98,9 +99,8 @@ class ExpansionTest {
 		given(txnAccessor.getTxn()).willReturn(mockTxn);
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldTransaction);
 
-		final var result = subject.execute();
+		subject.execute();
 
-		assertEquals(OK, result);
 		final ArgumentCaptor<LinkedRefs> captor = ArgumentCaptor.forClass(LinkedRefs.class);
 		verify(txnAccessor).setLinkedRefs(captor.capture());
 		final var linkedRefs = captor.getValue();
@@ -111,9 +111,8 @@ class ExpansionTest {
 	void skipsUnusedFullKeySigsIfNotPresent() {
 		setupDegenerateMocks();
 
-		final var result = subject.execute();
+		subject.execute();
 
-		assertEquals(OK, result);
 		verify(pkToSigFn, never()).forEachUnusedSigWithFullPrefix(any());
 	}
 
@@ -138,9 +137,8 @@ class ExpansionTest {
 			return null;
 		}).given(pkToSigFn).forEachUnusedSigWithFullPrefix(any());
 
-		final var result = subject.execute();
+		subject.execute();
 
-		assertEquals(OK, result);
 		final var allSigs = new TransactionSignature[] { ed25519Sig, secp256k1Sig };
 		verify(swirldTransaction).addAll(allSigs);
 	}

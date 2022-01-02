@@ -49,10 +49,12 @@ import java.util.List;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -137,11 +139,23 @@ class RationalizationTest {
 	@Test
 	void doesNothingIfLinkedRefsAvailableAndUnchanged() {
 		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(txnAccessor.getExpandedSigStatus()).willReturn(KEY_PREFIX_MISMATCH);
 		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
+		subject.setVerifiedSync(true);
 
 		subject.performFor(txnAccessor);
 
 		verifyNoMoreInteractions(txnAccessor);
+		assertEquals(subject.finalStatus(), KEY_PREFIX_MISMATCH);
+		assertFalse(subject.usedSyncVerification());
+	}
+
+	@Test
+	void failsFastIfFinalStatusSomehowNullGivenLinkedRefs() {
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
+
+		assertThrows(IllegalStateException.class, () -> subject.performFor(txnAccessor));
 	}
 
 	@Test

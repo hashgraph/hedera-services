@@ -114,10 +114,10 @@ class HederaToPlatformSigOpsTest {
 	void includesSuccessfulExpansions() throws Exception {
 		wellBehavedOrdersAndSigSources();
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(OK, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
@@ -125,9 +125,9 @@ class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
@@ -141,9 +141,9 @@ class HederaToPlatformSigOpsTest {
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
+		assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
 		assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getPlatformTxn().getSignatures());
 	}
 

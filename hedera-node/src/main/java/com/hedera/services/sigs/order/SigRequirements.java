@@ -818,7 +818,11 @@ public class SigRequirements {
 			final LinkedRefs linkedRefs
 	) {
 		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
-		var basic = tokenMutates(op.getToken(), factory, nonAdminReqs, linkedRefs);
+		final var basic = tokenMutates(op.getToken(), factory, nonAdminReqs, linkedRefs);
+		if (basic.hasErrorReport()) {
+			return basic;
+		}
+
 		var required = basic.getOrderedKeys();
 		if (!addAccount(
 				payer,

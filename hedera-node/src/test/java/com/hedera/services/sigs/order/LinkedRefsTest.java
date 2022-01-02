@@ -64,6 +64,18 @@ class LinkedRefsTest {
 	}
 
 	@Test
+	void linkingNonPositiveDoesNothing() {
+		subject.link(1);
+		subject.link(-1);
+		subject.link(0);
+		subject.link(2);
+
+		assertArrayEquals(
+				new long[] { 1, 2 },
+				Arrays.copyOfRange(subject.linkedNumbers(), 0, 2));
+	}
+
+	@Test
 	void recognizesNoChangesToNumOrAlias() {
 		given(historian.entityStatusSince(when, 1L)).willReturn(UNCHANGED);
 		given(historian.entityStatusSince(when, 2L)).willReturn(UNCHANGED);

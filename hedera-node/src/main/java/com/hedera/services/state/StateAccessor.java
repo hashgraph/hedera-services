@@ -41,7 +41,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 
 public class StateAccessor {
-	private StateChildren children = new StateChildren();
+	private volatile StateChildren children = new StateChildren();
 
 	public StateAccessor() {
 		/* No-op */

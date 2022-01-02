@@ -37,6 +37,7 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -101,6 +102,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
+	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
 	private SubmitMessageMeta submitMessageMeta;
 	private CryptoTransferMeta xferUsageMeta;
@@ -156,6 +158,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
+	}
+
+	@Override
+	public void setExpandedSigStatus(final ResponseCodeEnum expandedSigStatus) {
+		this.expandedSigStatus = expandedSigStatus;
+	}
+
+	@Override
+	public ResponseCodeEnum getExpandedSigStatus() {
+		return expandedSigStatus;
 	}
 
 	@Override

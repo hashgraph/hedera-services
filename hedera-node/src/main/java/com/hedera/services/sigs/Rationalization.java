@@ -81,6 +81,11 @@ public class Rationalization {
 	public void performFor(final TxnAccessor txnAccessor) {
 		final var linkedRefs = txnAccessor.getLinkedRefs();
 		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
+			finalStatus = txnAccessor.getExpandedSigStatus();
+			if (finalStatus == null) {
+				throw new IllegalStateException("Accessor has non-null linked refs but null expanded status");
+			}
+			verifiedSync = false;
 			return;
 		}
 

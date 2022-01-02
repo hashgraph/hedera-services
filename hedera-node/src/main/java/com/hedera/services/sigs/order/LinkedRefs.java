@@ -77,6 +77,10 @@ public class LinkedRefs {
 	 * @param num the entity number to record as linked
 	 */
 	public void link(final long num) {
+		/* Only positive entity numbers can possibly change, so just ignore anything else. */
+		if (num <= 0) {
+			return;
+		}
 		if (i == linkedNums.length) {
 			linkedNums = Arrays.copyOf(linkedNums, 2 * linkedNums.length);
 		}

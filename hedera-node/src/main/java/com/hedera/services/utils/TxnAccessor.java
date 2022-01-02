@@ -29,6 +29,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -47,6 +48,8 @@ public interface TxnAccessor {
     int sigMapSize();
     int numSigPairs();
     SignatureMap getSigMap();
+    void setExpandedSigStatus(ResponseCodeEnum status);
+    ResponseCodeEnum getExpandedSigStatus();
     default PubKeyToSigBytes getPkToSigsFn() {
         throw new UnsupportedOperationException();
     }
