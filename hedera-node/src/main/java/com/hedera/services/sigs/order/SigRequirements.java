@@ -20,7 +20,6 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -40,6 +39,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -56,8 +56,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -71,6 +73,8 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static java.util.Collections.EMPTY_LIST;
 
 /**
@@ -82,16 +86,17 @@ import static java.util.Collections.EMPTY_LIST;
  * equivalent decision for a crypto account.
  */
 public class SigRequirements {
+	/* The current architecture does not support a triggered transaction itself triggering a transaction. So
+	 * no matter what is in the scheduling.whitelist property, we have to abort any attempt to schedule these. */
+	private static final Set<HederaFunctionality> IMPOSSIBLE_TO_SCHEDULE = EnumSet.of(ScheduleCreate, ScheduleSign);
+
 	private final SignatureWaivers signatureWaivers;
 	private final SigMetadataLookup sigMetaLookup;
-	private final GlobalDynamicProperties properties;
 
 	public SigRequirements(
 			final SigMetadataLookup sigMetaLookup,
-			final GlobalDynamicProperties properties,
 			final SignatureWaivers signatureWaivers
 	) {
-		this.properties = properties;
 		this.sigMetaLookup = sigMetaLookup;
 		this.signatureWaivers = signatureWaivers;
 	}
@@ -1036,8 +1041,8 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		try {
-			var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
-			if (!properties.schedulingWhitelist().contains(scheduledFunction)) {
+			final var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
+			if (IMPOSSIBLE_TO_SCHEDULE.contains(scheduledFunction)) {
 				return Optional.of(factory.forUnschedulableTxn());
 			}
 			var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory, linkedRefs);

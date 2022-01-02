@@ -25,20 +25,19 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -179,7 +178,6 @@ import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.VANILLA_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_INVALID_XFER;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NONSENSE;
-import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NOT_IN_WHITELIST;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_NO_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER;
@@ -2598,19 +2596,6 @@ class SigRequirementsTest {
 	}
 
 	@Test
-	void getsScheduleCreateWithNonwhitelistFunction() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NOT_IN_WHITELIST);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, summary.getErrorReport());
-	}
-
-	@Test
 	void getsScheduleCreateWithNonsense() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_NONSENSE);
@@ -2816,7 +2801,6 @@ class SigRequirementsTest {
 								() -> topics,
 								DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
-				new MockGlobalDynamicProps(),
 				signatureWaivers);
 	}
 

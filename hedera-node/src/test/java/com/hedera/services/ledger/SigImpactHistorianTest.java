@@ -57,6 +57,7 @@ class SigImpactHistorianTest {
 		assertEquals(firstNow, subject.getAliasChangeTimes().get(aAlias));
 
 		subject.setChangeTime(nowPostFirstWindow);
+		subject.purge();
 
 		assertFalse(subject.getAliasChangeTimes().containsKey(aAlias));
 		assertFalse(subject.getEntityChangeTimes().containsKey(aNum));
@@ -74,6 +75,7 @@ class SigImpactHistorianTest {
 		subject.markEntityChanged(aNum);
 
 		subject.setChangeTime(nowPostFirstWindow);
+		subject.purge();
 
 		assertTrue(subject.getAliasChangeTimes().isEmpty());
 		assertTrue(subject.getEntityChangeTimes().isEmpty());
@@ -96,6 +98,7 @@ class SigImpactHistorianTest {
 		assertEquals(nowInMiddleOfFirstWindow, subject.getAliasChangeTimes().get(aAlias));
 
 		subject.setChangeTime(nowPostFirstWindow);
+		subject.purge();
 
 		assertEquals(nowInMiddleOfFirstWindow, subject.getEntityChangeTimes().get(aNum));
 		assertEquals(nowInMiddleOfFirstWindow, subject.getAliasChangeTimes().get(aAlias));

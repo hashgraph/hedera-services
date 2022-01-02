@@ -30,6 +30,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -108,6 +109,18 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
+	void recognizesMissingFunction() {
+		final var noneBodyBytes = parentTxn.toBuilder()
+				.setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
+				.build()
+				.toByteArray();
+
+		subject = MerkleSchedule.from(noneBodyBytes, expiry);
+
+		assertEquals(HederaFunctionality.NONE, subject.scheduledFunction());
+	}
+
+	@Test
 	void factoryWorks() {
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isExecuted());
@@ -122,6 +135,7 @@ public class MerkleScheduleTest {
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 		assertEquals(number, subject.getKey().intValue());
+		assertEquals(HederaFunctionality.CryptoDelete, subject.scheduledFunction());
 	}
 
 	@Test

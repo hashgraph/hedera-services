@@ -24,7 +24,6 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
@@ -372,7 +371,6 @@ class SigOpsRegressionTest {
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
@@ -387,7 +385,6 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
 		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
@@ -398,8 +395,7 @@ class SigOpsRegressionTest {
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsFor(
 						aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
-		SigRequirements keyOrder = new SigRequirements(
-				sigMetaLookups, new MockGlobalDynamicProps(), mockSignatureWaivers);
+		SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
 		expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -413,7 +409,6 @@ class SigOpsRegressionTest {
 				aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
 		// given:
@@ -437,7 +432,6 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		signingOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);

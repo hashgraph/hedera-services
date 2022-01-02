@@ -23,7 +23,6 @@ package com.hedera.services.sigs.order;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -61,7 +60,6 @@ public class SignedStateSigReqs {
 	private final StateAccessor workingState;
 	private final StateAccessor latestSignedState;
 	private final SignatureWaivers signatureWaivers;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
@@ -76,7 +74,6 @@ public class SignedStateSigReqs {
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
-			final GlobalDynamicProperties dynamicProperties,
 			final @WorkingState StateAccessor workingState,
 			final @LatestSignedState StateAccessor latestSignedState
 	) {
@@ -85,7 +82,6 @@ public class SignedStateSigReqs {
 		this.workingState = workingState;
 		this.signatureWaivers = signatureWaivers;
 		this.latestSignedState = latestSignedState;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	/**
@@ -102,7 +98,7 @@ public class SignedStateSigReqs {
 				signedChildren = latestSignedChildren;
 				final var lookup = lookupsFactory.from(
 						fileNumbers, aliasManager, signedChildren, TOKEN_META_TRANSFORM);
-				signedSigReqs = sigReqsFactory.from(lookup, dynamicProperties, signatureWaivers);
+				signedSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 
 				/* Once we have a signed state, we won't go back to the working state */
 				workingSigReqs = null;
@@ -117,7 +113,7 @@ public class SignedStateSigReqs {
 		if (workingSigReqs == null) {
 			final var lookup = lookupsFactory.from(
 					fileNumbers, aliasManager, workingState.children(), TOKEN_META_TRANSFORM);
-			workingSigReqs = sigReqsFactory.from(lookup, dynamicProperties, signatureWaivers);
+			workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 		}
 		return workingSigReqs;
 	}
@@ -126,7 +122,6 @@ public class SignedStateSigReqs {
 	interface SigReqsFactory {
 		SigRequirements from(
 				SigMetadataLookup sigMetaLookup,
-				GlobalDynamicProperties properties,
 				SignatureWaivers signatureWaivers);
 	}
 

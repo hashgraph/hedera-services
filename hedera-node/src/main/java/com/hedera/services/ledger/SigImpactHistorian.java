@@ -84,8 +84,7 @@ public class SigImpactHistorian {
 	}
 
 	/**
-	 * Marks the new consensus time at which changes may happen. As a side effect, expires any tracked changes
-	 * that are no longer in the current window.
+	 * Marks the new consensus time at which changes may happen.
 	 *
 	 * @param now the new consensus time of any changes
 	 */
@@ -95,7 +94,12 @@ public class SigImpactHistorian {
 		if (!fullWindowElapsed) {
 			manageFirstWindow(now);
 		}
+	}
 
+	/**
+	 * Expires any tracked changes that are no longer in the current window.
+	 */
+	public void purge() {
 		final var thisSecond = now.getEpochSecond();
 		expire(thisSecond, aliasChangeTimes, aliasChangeExpiries);
 		expire(thisSecond, entityChangeTimes, entityChangeExpiries);

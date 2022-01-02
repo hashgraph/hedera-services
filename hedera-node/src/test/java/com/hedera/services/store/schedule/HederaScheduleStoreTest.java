@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
@@ -256,6 +259,18 @@ class HederaScheduleStoreTest {
 		willThrow(IllegalStateException.class).given(change).accept(any());
 
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(created, change));
+	}
+
+	@Test
+	void createProvisionallyImmediatelyRejectsNonWhitelistedTxn() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(EnumSet.of(HederaFunctionality.TokenMint));
+		final var mockCreation = mock(MerkleSchedule.class);
+		given(mockCreation.scheduledFunction()).willReturn(HederaFunctionality.TokenBurn);
+
+		final var outcome = subject.createProvisionally(mockCreation, consensusTime);
+
+		assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, outcome.status());
+		assertNull(outcome.created());
 	}
 
 	@Test

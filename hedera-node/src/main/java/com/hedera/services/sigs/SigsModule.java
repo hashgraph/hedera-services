@@ -22,7 +22,6 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -77,12 +76,11 @@ public abstract class SigsModule {
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
-			final GlobalDynamicProperties dynamicProperties,
 			final @WorkingState StateAccessor workingState
 	) {
 		final var sigMetaLookup = new StateChildrenSigMetadataLookup(
 				fileNumbers, aliasManager, workingState.children(), TokenMetaUtils::signingMetaFrom);
-		return new SigRequirements(sigMetaLookup, dynamicProperties, signatureWaivers);
+		return new SigRequirements(sigMetaLookup, signatureWaivers);
 	}
 
 	@Provides

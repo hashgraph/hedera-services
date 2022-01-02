@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -207,7 +206,6 @@ class SigVerifierRegressionTest {
 		aliasManager = mock(AliasManager.class);
 		keyOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var nodeInfo = mock(NodeInfo.class);
 		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
