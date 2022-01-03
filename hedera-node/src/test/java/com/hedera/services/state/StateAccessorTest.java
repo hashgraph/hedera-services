@@ -87,7 +87,8 @@ class StateAccessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateAccessor(state);
+		subject = new StateAccessor();
+		subject.updateChildrenFrom(state);
 	}
 
 	@Test

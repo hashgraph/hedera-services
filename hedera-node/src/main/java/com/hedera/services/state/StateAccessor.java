@@ -66,7 +66,7 @@ public class StateAccessor {
 	 */
 	public void updateChildrenFrom(final ServicesState state) {
 		if (children instanceof ImmutableStateChildren) {
-			throw new IllegalStateException("Can only replace immutable children");
+			throw new IllegalStateException("Can only replace mutable children");
 		}
 		mapStateOnto(state, (MutableStateChildren) children);
 	}
