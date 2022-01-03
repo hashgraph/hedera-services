@@ -30,9 +30,11 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
@@ -108,6 +110,7 @@ class AutoCreationLogicTest {
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
 		verify(aliasManager).createAlias(alias, createdNum);
 		verify(sigImpactHistorian).markAliasChanged(alias);
+		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
 		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
 		assertEquals(Pair.of(OK, totalFee), result);
 	}
@@ -144,5 +147,7 @@ class AutoCreationLogicTest {
 	private static final long totalFee = 6L;
 	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final ExpirableTxnRecord.Builder mockBuilder = ExpirableTxnRecord.newBuilder()
-			.setAlias(alias);
+			.setAlias(alias)
+			.setReceiptBuilder(TxnReceipt.newBuilder()
+					.setAccountId(new EntityId(0, 0, createdNum.longValue())));
 }

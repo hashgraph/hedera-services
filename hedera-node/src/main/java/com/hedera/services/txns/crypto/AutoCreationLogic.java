@@ -141,6 +141,7 @@ public class AutoCreationLogic {
 			final var syntheticCreation = pendingCreation.syntheticBody();
 			final var childRecord = pendingCreation.recordBuilder();
 			sigImpactHistorian.markAliasChanged(childRecord.getAlias());
+			sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
 			recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		}
 	}
