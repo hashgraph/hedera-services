@@ -22,8 +22,6 @@ package com.hedera.services.files.store;
 
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,15 +131,5 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 				.stream()
 				.map(entry -> new SimpleEntry<>(entry.getKey(), entry.getValue().getData()))
 				.collect(toSet());
-	}
-
-	@Override
-	public boolean equals(final Object o) {
-		return EqualsBuilder.reflectionEquals(this, o);
-	}
-
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
 	}
 }
