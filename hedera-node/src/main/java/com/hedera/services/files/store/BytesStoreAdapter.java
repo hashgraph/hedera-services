@@ -20,6 +20,9 @@ package com.hedera.services.files.store;
  * ‍
  */
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
@@ -67,19 +70,12 @@ public class BytesStoreAdapter<K, V> extends AbstractMap<K, V> {
 
 	@Override
 	public boolean equals(final Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		BytesStoreAdapter<?, ?> that = (BytesStoreAdapter<?, ?>) o;
-		return Objects.equals(kType, that.kType) && Objects.equals(toK,
-				that.toK) && Objects.equals(fromK, that.fromK) && Objects.equals(toV,
-				that.toV) && Objects.equals(fromV, that.fromV) && Objects.equals(delegate,
-				that.delegate) && Objects.equals(delegateEntryFilter, that.delegateEntryFilter);
+		return EqualsBuilder.reflectionEquals(this, o);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), kType, toK, fromK, toV, fromV, delegate, delegateEntryFilter);
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
 	@Override

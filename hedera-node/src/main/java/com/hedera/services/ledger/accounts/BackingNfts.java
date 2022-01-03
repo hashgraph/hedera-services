@@ -60,7 +60,9 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	public void put(NftId id, MerkleUniqueToken nft) {
 		final var key = fromNftId(id);
 		final var currentNfts = delegate.get();
-		currentNfts.computeIfAbsent(key, k -> nft);
+		if (!currentNfts.containsKey(key)) {
+			currentNfts.put(key, nft);
+		}
 	}
 
 	@Override
