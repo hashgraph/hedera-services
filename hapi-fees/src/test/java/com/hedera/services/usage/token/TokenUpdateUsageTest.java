@@ -98,6 +98,11 @@ class TokenUpdateUsageTest {
 	}
 
 	@Test
+	void getterWork() {
+		assertEquals(TxnUsage.getEstimatorFactory(), factory);
+	}
+
+	@Test
 	void createsExpectedCappedLifetimeDeltaForNewLargerKeys() {
 		// setup:
 		var curRb = curSize(A_KEY_LIST);
