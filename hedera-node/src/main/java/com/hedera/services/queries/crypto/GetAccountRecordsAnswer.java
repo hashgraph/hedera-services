@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -35,6 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
+import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -43,14 +45,17 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 public class GetAccountRecordsAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 	private final AnswerFunctions answerFunctions;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountRecordsAnswer(
 			final AnswerFunctions answerFunctions,
-			final OptionValidator optionValidator
+			final OptionValidator optionValidator,
+			final AliasManager aliasManager
 	) {
 		this.answerFunctions = answerFunctions;
 		this.optionValidator = optionValidator;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -77,12 +82,14 @@ public class GetAccountRecordsAnswer implements AnswerService {
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
+			final var accountID = getUsableAccountID(op.getAccountID(), aliasManager);
+
 			if (type == COST_ANSWER) {
-				response.setAccountID(op.getAccountID());
+				response.setAccountID(accountID);
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				response.setHeader(answerOnlyHeader(OK));
-				response.setAccountID(op.getAccountID());
+				response.setAccountID(accountID);
 				response.addAllRecords(answerFunctions.accountRecords(view, op));
 			}
 		}
@@ -95,8 +102,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var id = query.getCryptoGetAccountRecords().getAccountID();
+		final var accountID = getUsableAccountID(id, aliasManager);
 
-		return optionValidator.queryableAccountStatus(id, view.accounts());
+		return optionValidator.queryableAccountStatus(accountID, view.accounts());
 	}
 
 	@Override

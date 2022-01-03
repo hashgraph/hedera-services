@@ -23,6 +23,7 @@ package com.hedera.services.queries.answering;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -84,6 +85,7 @@ class AnswerFunctionsTest {
 	private NodeLocalProperties nodeProps;
 
 	private AnswerFunctions subject;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -104,8 +106,9 @@ class AnswerFunctionsTest {
 				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		recordCache = mock(RecordCache.class);
+		aliasManager = mock(AliasManager.class);
 
-		subject = new AnswerFunctions();
+		subject = new AnswerFunctions(aliasManager);
 	}
 
 	@Test

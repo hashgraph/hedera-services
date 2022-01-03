@@ -23,6 +23,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -62,6 +63,7 @@ class GetAccountRecordsResourceUsageTest {
 	private MerkleAccount aValue;
 	private List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
 	private NodeLocalProperties nodeProps;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -79,8 +81,9 @@ class GetAccountRecordsResourceUsageTest {
 				nodeProps,
 				children,
 				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+		aliasManager = mock(AliasManager.class);
 
-		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(), usageEstimator);
+		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(aliasManager), usageEstimator);
 	}
 
 	@Test

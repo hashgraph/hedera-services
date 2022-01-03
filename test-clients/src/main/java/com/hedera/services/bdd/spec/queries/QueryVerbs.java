@@ -82,6 +82,10 @@ public class QueryVerbs {
 		return new HapiGetAccountRecords(account);
 	}
 
+	public static HapiGetAccountRecords getAliasedAccountRecords(final String sourceKey) {
+		return new HapiGetAccountRecords(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+	}
+
 	public static HapiGetTxnRecord getTxnRecord(final String txn) {
 		return new HapiGetTxnRecord(txn);
 	}

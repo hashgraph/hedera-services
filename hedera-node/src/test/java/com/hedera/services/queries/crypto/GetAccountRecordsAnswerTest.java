@@ -20,9 +20,11 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -44,6 +46,7 @@ import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.QueryUtils.defaultPaymentTxn;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
@@ -71,6 +74,7 @@ class GetAccountRecordsAnswerTest {
 	private GetAccountRecordsAnswer subject;
 
 	private NodeLocalProperties nodeProps;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -101,8 +105,9 @@ class GetAccountRecordsAnswerTest {
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 
 		optionValidator = mock(OptionValidator.class);
+		aliasManager = mock(AliasManager.class);
 
-		subject = new GetAccountRecordsAnswer(new AnswerFunctions(), optionValidator);
+		subject = new GetAccountRecordsAnswer(new AnswerFunctions(aliasManager), optionValidator, aliasManager);
 	}
 
 	@Test
@@ -177,6 +182,20 @@ class GetAccountRecordsAnswerTest {
 		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
 	}
 
+	@Test
+	void worksWithAlias() {
+		final var alias = "aaa";
+		final var query = validQueryWithAlias(ANSWER_ONLY, fee, "aaa");
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias)))
+				.willReturn(EntityNum.fromAccountId(asAccount(target)));
+
+		final var response = subject.responseGiven(query, view, OK, fee);
+
+		validate(response, OK, ANSWER_ONLY, 0L);
+		assertEquals(ExpirableTxnRecord.allToGrpc(payerAccount.recordList()),
+				response.getCryptoGetAccountRecords().getRecordsList());
+	}
+
 	private void validate(
 			final Response response,
 			final ResponseCodeEnum precheck,
@@ -199,6 +218,14 @@ class GetAccountRecordsAnswerTest {
 		final var op = CryptoGetAccountRecordsQuery.newBuilder()
 				.setHeader(header)
 				.setAccountID(asAccount(idLit));
+		return queryOf(op);
+	}
+
+	private Query validQueryWithAlias(final ResponseType type, final long payment, final String idLit) {
+		final var header = queryHeaderOf(type, payment);
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setHeader(header)
+				.setAccountID(asAccountWithAlias(idLit));
 		return queryOf(op);
 	}
 }

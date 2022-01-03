@@ -21,6 +21,7 @@ package com.hedera.services.queries.answering;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
@@ -34,14 +35,20 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
+
 @Singleton
 public class AnswerFunctions {
+	private final AliasManager aliasManager;
+
 	@Inject
-	public AnswerFunctions() {
+	public AnswerFunctions(final AliasManager aliasManager) {
+		this.aliasManager = aliasManager;
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var key = EntityNum.fromAccountId(op.getAccountID());
+		final var id = getUsableAccountID(op.getAccountID(), aliasManager);
+		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
 	}

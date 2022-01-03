@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -55,6 +56,8 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountRecords.class);
 
 	private String account;
+	private String aliasKeySource = null;
+	private ReferenceType referenceType;
 	private Optional<String> snapshotDirPath = Optional.empty();
 	private Optional<String> expectationsDirPath = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> expectation = Optional.empty();
@@ -82,7 +85,16 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	}
 
 	public HapiGetAccountRecords(String account) {
-		this.account = account;
+		this(account, ReferenceType.REGISTRY_NAME);
+	}
+
+	public HapiGetAccountRecords(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+		} else {
+			account = reference;
+		}
 	}
 
 	@Override
@@ -180,7 +192,16 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	}
 
 	private Query getRecordsQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
-		var id = TxnUtils.asId(account, spec);
+		AccountID id;
+		
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			id = AccountID.newBuilder()
+					.setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+					.build();
+		} else {
+			id = TxnUtils.asId(account, spec);
+		}
+
 		CryptoGetAccountRecordsQuery query = CryptoGetAccountRecordsQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setAccountID(id)
@@ -189,7 +210,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	}
 
 	@Override
-	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+	protected long costOnlyNodePayment(HapiApiSpec spec) {
 		return spec.fees().forOp(
 				HederaFunctionality.CryptoGetAccountRecords,
 				cryptoFees.getCostCryptoAccountRecordsQueryFeeMatrices());

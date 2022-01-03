@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,10 +33,12 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -68,9 +70,40 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 //						failsForMalformedPayment(),
 //						failsForUnfundablePayment(),
 //						succeedsNormally(),
-						getAccountRecords_testForDuplicates()
+//						getAccountRecords_testForDuplicates(),
+						getAccountRecordUsingAlias()
 				}
 		);
+	}
+
+	private HapiApiSpec getAccountRecordUsingAlias() {
+		String memo = "Dim galleries, dusky corridors got past...";
+		String alias = "alias";
+		String payer = "payer";
+
+		return defaultHapiSpec("SucceedsNormally")
+				.given(
+						newKeyNamed(alias),
+						cryptoCreate(payer)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(GENESIS, alias, ONE_HUNDRED_HBARS))
+								.payingWith(payer)
+								.memo(memo)
+								.via("autoCreateTransfer"),
+						cryptoTransfer(tinyBarsFromToWithAlias(alias, payer, 1L))
+								.payingWith(payer)
+								.memo(memo)
+								.signedBy(payer, alias)
+								.via("transferTxn")
+				).then(
+						getAliasedAccountRecords(alias).has(AssertUtils.inOrder(
+								recordWith()
+										.txnId("transferTxn")
+										.memo(memo)
+										.transfers(including(tinyBarsFromToWithAlias(alias, payer, 1L)))
+										.status(SUCCESS)
+										.payer(payer)))
+				);
 	}
 
 	private HapiApiSpec succeedsNormally() {
@@ -177,7 +210,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo("account1", "account2", 10L))
 								.payingWith("account1")
 								.via("thresholdTxn")
-						)
+				)
 				.then(
 						getAccountRecords("account1").logged()
 				);
