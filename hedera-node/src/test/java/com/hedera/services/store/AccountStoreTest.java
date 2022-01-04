@@ -20,9 +20,11 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -30,6 +32,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -45,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,6 +66,8 @@ class AccountStoreTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private AliasManager aliasManager;
 
 	private AccountStore subject;
 
@@ -69,7 +75,7 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
-		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
+		subject = new AccountStore(validator, dynamicProperties, () -> accounts, aliasManager);
 	}
 
 	@Test
@@ -218,6 +224,27 @@ class AccountStoreTest {
 		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 	}
 
+	@Test
+	void fetchesAliasNumAsExpected() {
+		given(aliasManager.lookupIdBy(validAlias)).willReturn(miscMerkleId);
+
+		assertEquals(miscAccountNum, subject.getAccountNumFromAlias(validAlias, 0L));
+	}
+
+	@Test
+	void fetchesGivenAccountNumIfAliasIsEmpty() {
+		assertEquals(miscAccountNum, subject.getAccountNumFromAlias(ByteString.EMPTY, miscAccountNum));
+	}
+
+	@Test
+	void failsWhenGivenAnInvalidAlias() {
+		given(aliasManager.lookupIdBy(validAlias)).willReturn(EntityNum.MISSING_NUM);
+
+		var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.getAccountNumFromAlias(validAlias, miscAccountNum));
+		assertEquals(INVALID_ALIAS_KEY,ex.getResponseCode());
+	}
+
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
@@ -268,6 +295,7 @@ class AccountStoreTest {
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
+	private final ByteString validAlias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
 
 	private MerkleAccount miscMerkleAccount;
 }

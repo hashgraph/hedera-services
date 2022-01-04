@@ -20,8 +20,10 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -29,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -45,8 +48,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,12 +59,16 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAssociateTransitionLogicTest {
-	private AccountID account = IdUtils.asAccount("0.0.2");
-	private TokenID firstToken = IdUtils.asToken("1.2.3");
-	private TokenID secondToken = IdUtils.asToken("2.3.4");
-	private Id accountId = new Id(0, 0, 2);
-	private Id firstTokenId = new Id(1, 2, 3);
-	private Id secondTokenId = new Id(2, 3, 4);
+	private final ByteString alias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private final AccountID account = IdUtils.asAccount("0.0.2");
+	private final AccountID accountWithAlias = AccountID.newBuilder().setAlias(alias).build();
+	private final TokenID firstToken = IdUtils.asToken("1.2.3");
+	private final TokenID secondToken = IdUtils.asToken("2.3.4");
+	private final long mappedAliasNum = 1234L;
+	private final Id accountId = new Id(0, 0, 2);
+	private final Id mappedAliasId = new Id(0, 0, mappedAliasNum);
+	private final Id firstTokenId = new Id(1, 2, 3);
+	private final Id secondTokenId = new Id(2, 3, 4);
 
 	@Mock
 	private Account modelAccount;
@@ -98,6 +107,7 @@ class TokenAssociateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(account.getAlias(), account.getAccountNum())).willReturn(account.getAccountNum());
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
@@ -115,6 +125,42 @@ class TokenAssociateTransitionLogicTest {
 		inOrder.verify(accountStore).persistAccount(modelAccount);
 		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
 		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
+	}
+
+	@Test
+	void appliesExpectedTransitionWithAlias() {
+		InOrder inOrder = Mockito.inOrder(modelAccount, accountStore, tokenStore);
+
+		givenValidAliasTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(alias, accountWithAlias.getAccountNum())).willReturn(mappedAliasNum);
+		given(accountStore.loadAccount(mappedAliasId)).willReturn(modelAccount);
+		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
+		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
+		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
+		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(123);
+		List<Token> tokens = List.of(firstModelToken, secondModelToken);
+
+		subject.doStateTransition();
+
+		inOrder.verify(modelAccount).associateWith(tokens, 123, false);
+		inOrder.verify(accountStore).persistAccount(modelAccount);
+		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
+		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
+	}
+
+	@Test
+	void failsAsExpectedTransitionWithInvalidAlias() {
+		givenValidAliasTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(alias, accountWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
 	}
 
 	@Test
@@ -154,6 +200,14 @@ class TokenAssociateTransitionLogicTest {
 		tokenAssociateTxn = TransactionBody.newBuilder()
 				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
 						.setAccount(account)
+						.addAllTokens(List.of(firstToken, secondToken)))
+				.build();
+	}
+
+	private void givenValidAliasTxnCtx() {
+		tokenAssociateTxn = TransactionBody.newBuilder()
+				.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+						.setAccount(accountWithAlias)
 						.addAllTokens(List.of(firstToken, secondToken)))
 				.build();
 	}

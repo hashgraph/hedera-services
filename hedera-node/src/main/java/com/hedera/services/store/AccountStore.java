@@ -20,8 +20,10 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -41,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 @Singleton
@@ -48,16 +51,19 @@ public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public AccountStore(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AliasManager aliasManager
 	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
+		this.aliasManager = aliasManager;
 	}
 
 	/**
@@ -174,6 +180,21 @@ public class AccountStore {
 		final var mutableAccount = accounts.get().getForModify(key);
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
+	}
+
+	/**
+	 * Fetches the account Num from the alias map that is mapped to the given alias
+	 * @param alias
+	 * @return
+	 */
+	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum) {
+		if (!alias.isEmpty()) {
+			var entityNum = aliasManager.lookupIdBy(alias);
+			validateTrue(entityNum != EntityNum.MISSING_NUM, INVALID_ALIAS_KEY);
+			return entityNum.longValue();
+		} else {
+			return possibleAccountNum;
+		}
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {

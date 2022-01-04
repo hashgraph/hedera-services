@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
@@ -29,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -55,12 +58,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
 class TokenGrantKycTransitionLogicTest {
-	private long tokenNum = 12345L;
-	private long accountNum = 54321L;
-	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
-	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
-	private Id tokenId = new Id(0,0,tokenNum);
-	private Id accountId = new Id(0,0,accountNum);
+	private final ByteString alias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private final long tokenNum = 12345L;
+	private final long accountNum = 54321L;
+	private final TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
+	private final AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
+	private final AccountID accountWithAlias = AccountID.newBuilder().setAlias(alias).build();
+	private final long mappedAliasNum = 1234L;
+	private final Id mappedAliasId = new Id(0, 0, mappedAliasNum);
+	private final Id tokenId = new Id(0,0,tokenNum);
+	private final Id accountId = new Id(0,0,accountNum);
 
 	private TypedTokenStore tokenStore;
 	private AccountStore accountStore;
@@ -114,6 +121,27 @@ class TokenGrantKycTransitionLogicTest {
 	}
 
 	@Test
+	void followsAliasHappyPath() {
+		givenValidAliasTxnCtx();
+		given(token.hasKycKey()).willReturn(true);
+
+		subject.doStateTransition();
+
+		verify(tokenRelationship).changeKycState(true);
+		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
+	}
+
+	@Test
+	void failsWhenInvalidAlias() {
+		givenValidAliasTxnCtx();
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+	}
+
+	@Test
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
@@ -154,8 +182,25 @@ class TokenGrantKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+				.willReturn(accountNum);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
+		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
+	}
+
+	private void givenValidAliasTxnCtx() {
+		tokenGrantKycTxn = TransactionBody.newBuilder()
+				.setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
+						.setAccount(accountWithAlias)
+						.setToken(tokenID))
+				.build();
+		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willReturn(mappedAliasNum);
+		given(tokenStore.loadToken(tokenId)).willReturn(token);
+		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
 	}
 

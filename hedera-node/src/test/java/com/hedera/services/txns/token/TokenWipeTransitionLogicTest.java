@@ -271,6 +271,8 @@ class TokenWipeTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+				.willReturn(accountID.getAccountNum());
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
@@ -288,6 +290,8 @@ class TokenWipeTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+				.willReturn(accountID.getAccountNum());
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(typedTokenStore.loadToken(any())).willReturn(token);

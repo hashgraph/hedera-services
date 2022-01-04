@@ -77,7 +77,9 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		var op = txnCtx.accessor().getTxn().getTokenDissociate();
-		final var accountId = Id.fromGrpcAccount(op.getAccount());
+		final var grpcId = op.getAccount();
+		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());;
+		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
 
 		/* --- Load the model objects --- */
 		final var account = accountStore.loadAccount(accountId);

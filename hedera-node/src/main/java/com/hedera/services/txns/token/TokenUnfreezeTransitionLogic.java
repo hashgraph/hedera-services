@@ -66,12 +66,13 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
 		final var op = txnCtx.accessor().getTxn().getTokenUnfreeze();
 
 		final var grpcTokenId = op.getToken();
-		final var grpcAccountId = op.getAccount();
+		final var grpcId = op.getAccount();
+		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());;
 
 		/* --- Convert to model ids --- */
 
 		final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
-		final var targetAccountId = Id.fromGrpcAccount(grpcAccountId);
+		final var targetAccountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
 
 		/* --- Load the model objects --- */
 
