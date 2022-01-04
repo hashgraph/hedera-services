@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,7 +61,8 @@ public class NodeInfo {
 	/**
 	 * For a staked node, validates presence of a self-account in the address book.
 	 *
-	 * @throws IllegalStateException if the node is staked but has no account
+	 * @throws IllegalStateException
+	 * 		if the node is staked but has no account
 	 */
 	public void validateSelfAccountIfStaked() {
 		if (!isSelfZeroStake() && !hasSelfAccount()) {
@@ -73,16 +74,18 @@ public class NodeInfo {
 	 * Returns true if the node in the address book at the given index (casting
 	 * the argument as an {@code int}) has zero stake.
 	 *
-	 * @param nodeId the id of interest
+	 * @param nodeId
+	 * 		the id of interest
 	 * @return whether or not the node of interest has zero stake.
-	 * @throws IllegalArgumentException if the {@code nodeId} cast to an {@code int} is not a usable index
+	 * @throws IllegalArgumentException
+	 * 		if the {@code nodeId} cast to an {@code int} is not a usable index
 	 */
 	public boolean isZeroStake(long nodeId) {
 		if (!bookIsRead) {
 			readBook();
 		}
 
-		final int index = (int)nodeId;
+		final int index = (int) nodeId;
 		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("The address book does not have a node at index " + index);
 		}
@@ -102,9 +105,11 @@ public class NodeInfo {
 	 * Returns the account parsed from the address book memo corresponding
 	 * to the given node id.
 	 *
-	 * @param nodeId the id of interest
+	 * @param nodeId
+	 * 		the id of interest
 	 * @return the account parsed from the address book memo corresponding to the given node id.
-	 * @throws IllegalArgumentException if the book did not contain the id, or was missing an account for the id
+	 * @throws IllegalArgumentException
+	 * 		if the book did not contain the id, or was missing an account for the id
 	 */
 	public AccountID accountOf(long nodeId) {
 		final int index = validatedIndexFor(nodeId);
@@ -123,7 +128,7 @@ public class NodeInfo {
 			readBook();
 		}
 
-		final int index = (int)nodeId;
+		final int index = (int) nodeId;
 		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
@@ -151,7 +156,8 @@ public class NodeInfo {
 	 * Convenience method to get this node's account from the address book.
 	 *
 	 * @return this node's account from the address book.
-	 * @throws IllegalArgumentException if the node did not have an account
+	 * @throws IllegalArgumentException
+	 * 		if the node did not have an account
 	 */
 	public AccountID selfAccount() {
 		return accountOf(selfId);

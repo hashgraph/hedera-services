@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
@@ -38,6 +39,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
+import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -75,14 +78,25 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		this.stateChildren = stateChildren;
 		this.tokenMetaTransform = tokenMetaTransform;
 
-		final var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, stateChildren::getStorage);
+		final var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, stateChildren::storage);
 		this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);
 	}
 
 	@Override
-	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(final FileID id) {
+	public Instant sourceSignedAt() {
+		return stateChildren.signedAt();
+	}
+
+	@Override
+	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
+			final FileID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		if (fileNumbers.isSoftwareUpdateFile(id.getFileNum())) {
 			return SPECIAL_FILE_RESULT;
+		}
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getFileNum());
 		}
 		final var meta = metaMap.get(id);
 		return (meta == null)
@@ -91,8 +105,14 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(final TopicID id) {
-		final var topic = stateChildren.getTopics().get(fromTopicId(id));
+	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
+			final TopicID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getTopicNum());
+		}
+		final var topic = stateChildren.topics().get(fromTopicId(id));
 		if (topic == null || topic.isDeleted()) {
 			return SafeLookupResult.failure(INVALID_TOPIC);
 		} else {
@@ -103,33 +123,55 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(final TokenID id) {
-		final var token = stateChildren.getTokens().get(fromTokenId(id));
+	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
+			final TokenID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getTokenNum());
+		}
+		final var token = stateChildren.tokens().get(fromTokenId(id));
 		return (token == null)
 				? SafeLookupResult.failure(MISSING_TOKEN)
 				: new SafeLookupResult<>(tokenMetaTransform.apply(token));
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id) {
-		return lookupByNumber(fromAccountId(id));
+	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
+			final AccountID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		return lookupByNumber(fromAccountId(id), linkedRefs);
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(final AccountID idOrAlias) {
+	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
+			final AccountID idOrAlias,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		if (isAlias(idOrAlias)) {
-			final var explicitId = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			final var alias = idOrAlias.getAlias();
+			if (linkedRefs != null) {
+				linkedRefs.link(alias);
+			}
+			final var explicitId = aliasManager.lookupIdBy(alias);
 			return (explicitId == MISSING_NUM)
 					? SafeLookupResult.failure(MISSING_ACCOUNT)
-					: lookupByNumber(explicitId);
+					: lookupByNumber(explicitId, linkedRefs);
 		} else {
-			return lookupByNumber(fromAccountId(idOrAlias));
+			return lookupByNumber(fromAccountId(idOrAlias), linkedRefs);
 		}
 	}
 
 	@Override
-	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id) {
-		final var schedule = stateChildren.getSchedules().get(EntityNum.fromScheduleId(id));
+	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
+			final ScheduleID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getScheduleNum());
+		}
+		final var schedule = stateChildren.schedules().get(EntityNum.fromScheduleId(id));
 		if (schedule == null) {
 			return SafeLookupResult.failure(MISSING_SCHEDULE);
 		} else {
@@ -142,8 +184,14 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id) {
-		final var contract = stateChildren.getAccounts().get(fromContractId(id));
+	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(
+			final ContractID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.getContractNum());
+		}
+		final var contract = stateChildren.accounts().get(fromContractId(id));
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
@@ -156,8 +204,14 @@ public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		}
 	}
 
-	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
-		final var account = stateChildren.getAccounts().get(id);
+	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(
+			final EntityNum id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		if (linkedRefs != null) {
+			linkedRefs.link(id.longValue());
+		}
+		final var account = stateChildren.accounts().get(id);
 		if (account == null) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		} else {

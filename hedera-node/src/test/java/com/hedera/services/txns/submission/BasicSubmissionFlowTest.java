@@ -20,6 +20,7 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -29,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -52,6 +51,8 @@ class BasicSubmissionFlowTest {
 	private static final Transaction someTxn = Transaction.getDefaultInstance();
 	private static final SignedTxnAccessor someAccessor = SignedTxnAccessor.uncheckedFrom(someTxn);
 
+	@Mock
+	private NodeInfo nodeInfo;
 	@Mock
 	private TransactionPrecheck precheck;
 	@Mock
@@ -121,10 +122,11 @@ class BasicSubmissionFlowTest {
 	}
 
 	private void setupStakedNode() {
-		subject = new BasicSubmissionFlow(STAKED_NODE, precheck, submissionManager);
+		subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
 	}
 
 	private void setupZeroStakeNode() {
-		subject = new BasicSubmissionFlow(ZERO_STAKE_NODE, precheck, submissionManager);
+		given(nodeInfo.isSelfZeroStake()).willReturn(true);
+		subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
 	}
 }

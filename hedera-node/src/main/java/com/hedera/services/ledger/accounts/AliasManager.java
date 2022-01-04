@@ -42,6 +42,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 @Singleton
 public class AliasManager {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
+
 	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
@@ -80,12 +81,15 @@ public class AliasManager {
 	 * 		entity id that is expired
 	 * @param accounts
 	 * 		current accounts map
+	 * @return whether the alias was forgotten
 	 */
-	public void forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var alias = accounts.get(expiredId).getAlias();
 		if (!alias.isEmpty()) {
 			aliases.remove(alias);
+			return true;
 		}
+		return false;
 	}
 
 	/**

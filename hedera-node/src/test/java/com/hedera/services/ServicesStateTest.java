@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SignedStateSigReqs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
@@ -71,6 +72,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -95,6 +97,7 @@ class ServicesStateTest {
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
+	private static final String bookMemo = "0.0.4";
 
 	@Mock
 	private HashLogger hashLogger;
@@ -128,6 +131,8 @@ class ServicesStateTest {
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
 	private SigRequirements expandKeyOrder;
+	@Mock
+	private SignedStateSigReqs signedStateSigReqs;
 	@Mock
 	private PubKeyToSigBytes pubKeyToSigBytes;
 	@Mock
@@ -250,7 +255,8 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.workingStateSigReqs()).willReturn(expandKeyOrder);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
+		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -268,6 +274,8 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
+		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
 
 		// when:
@@ -285,6 +293,8 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 
@@ -378,6 +388,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -400,8 +411,11 @@ class ServicesStateTest {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 
+		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(address.getMemo()).willReturn(bookMemo);
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
-		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+		given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
 		given(appBuilder.platform(platform)).willReturn(appBuilder);
 		given(appBuilder.selfId(1L)).willReturn(appBuilder);
 		given(appBuilder.build()).willReturn(app);
@@ -409,6 +423,7 @@ class ServicesStateTest {
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.workingState()).willReturn(workingState);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -431,10 +446,11 @@ class ServicesStateTest {
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
+		verify(workingState).updateChildrenFrom(subject);
 		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
-		verify(appBuilder).initialState(subject);
+		verify(appBuilder).initialHash(EMPTY_HASH);
 		verify(appBuilder).platform(platform);
 		verify(appBuilder).selfId(selfId.getId());
 		// and:
@@ -452,6 +468,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -503,6 +520,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -525,6 +543,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:

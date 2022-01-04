@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
@@ -42,12 +43,14 @@ import java.util.function.Supplier;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class ContractSysUndelTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractSysUndelTransitionLogic.class);
 
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final LegacySystemUndeleter delegate;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
@@ -56,15 +59,17 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public ContractSysUndelTransitionLogic(
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			LegacySystemUndeleter delegate,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final LegacySystemUndeleter delegate,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.delegate = delegate;
 		this.contracts = contracts;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@FunctionalInterface
@@ -77,9 +82,13 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 		try {
 			var contractSysUndelTxn = txnCtx.accessor().getTxn();
 
-			var legacyRecord = delegate.perform(contractSysUndelTxn, txnCtx.consensusTime());
-
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
+			final var legacyRecord = delegate.perform(contractSysUndelTxn, txnCtx.consensusTime());
+			final var status = legacyRecord.getReceipt().getStatus();
+			if (status == SUCCESS) {
+				final var target = contractSysUndelTxn.getSystemUndelete().getContractID();
+				sigImpactHistorian.markEntityChanged(target.getContractNum());
+			}
+			txnCtx.setStatus(status);
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);

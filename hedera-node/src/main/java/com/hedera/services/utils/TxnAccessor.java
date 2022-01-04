@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -28,6 +29,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -46,6 +48,8 @@ public interface TxnAccessor {
     int sigMapSize();
     int numSigPairs();
     SignatureMap getSigMap();
+    void setExpandedSigStatus(ResponseCodeEnum status);
+    ResponseCodeEnum getExpandedSigStatus();
     default PubKeyToSigBytes getPkToSigsFn() {
         throw new UnsupportedOperationException();
     }
@@ -102,4 +106,7 @@ public interface TxnAccessor {
     int getNumAutoCreations();
     boolean areAutoCreationsCounted();
     void countAutoCreationsWith(AliasManager aliasManager);
+
+    void setLinkedRefs(LinkedRefs linkedRefs);
+    LinkedRefs getLinkedRefs();
 }

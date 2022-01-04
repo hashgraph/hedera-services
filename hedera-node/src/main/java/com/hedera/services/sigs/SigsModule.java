@@ -21,7 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -37,7 +37,6 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.logic.PayerSigValidity;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
@@ -77,18 +76,17 @@ public abstract class SigsModule {
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
-			final GlobalDynamicProperties dynamicProperties,
 			final @WorkingState StateAccessor workingState
 	) {
 		final var sigMetaLookup = new StateChildrenSigMetadataLookup(
 				fileNumbers, aliasManager, workingState.children(), TokenMetaUtils::signingMetaFrom);
-		return new SigRequirements(sigMetaLookup, dynamicProperties, signatureWaivers);
+		return new SigRequirements(sigMetaLookup, signatureWaivers);
 	}
 
 	@Provides
 	@Singleton
-	public static Predicate<TransactionBody> provideQueryPaymentTest(AccountID nodeAccount) {
-		return PrecheckUtils.queryPaymentTestFor(nodeAccount);
+	public static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
+		return PrecheckUtils.queryPaymentTestFor(nodeInfo);
 	}
 
 	@Provides

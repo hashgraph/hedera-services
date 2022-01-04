@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
@@ -68,6 +69,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -80,6 +82,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties,
 			final EntityIdSource ids,
+			final SigImpactHistorian sigImpactHistorian,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.validator = validator;
@@ -88,6 +91,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		this.ids = ids;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
@@ -109,6 +113,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Record activity in the transaction context --- */
 		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
+		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());
 	}
 
 	@Override

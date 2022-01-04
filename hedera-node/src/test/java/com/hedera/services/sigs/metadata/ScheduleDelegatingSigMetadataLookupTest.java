@@ -64,7 +64,7 @@ class ScheduleDelegatingSigMetadataLookupTest {
 
         scheduleStore = mock(ScheduleStore.class);
 
-        subject = SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
+        subject = DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
     }
 
     @Test

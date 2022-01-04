@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,6 +62,7 @@ public class RenewalHelper {
 	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
 	private final TokenStore tokenStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -77,6 +79,7 @@ public class RenewalHelper {
 	@Inject
 	public RenewalHelper(
 			final TokenStore tokenStore,
+			final SigImpactHistorian sigImpactHistorian,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
@@ -89,6 +92,7 @@ public class RenewalHelper {
 		this.accounts = accounts;
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.backingAccounts = backingAccounts;
 		this.aliasManager = aliasManager;
 	}
@@ -147,10 +151,12 @@ public class RenewalHelper {
 		}
 
 		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get());
+		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
+			sigImpactHistorian.markAliasChanged(lastClassifiedAccount.getAlias());
+		}
 
-		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
+		sigImpactHistorian.markEntityChanged(lastClassifiedEntityId.longValue());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 

@@ -61,7 +61,7 @@ class DelegatingSigMetadataLookupTest {
 	void setup() {
 		tokenStore = mock(TokenStore.class);
 
-		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
+		subject = DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
 	}
 
 	@Test

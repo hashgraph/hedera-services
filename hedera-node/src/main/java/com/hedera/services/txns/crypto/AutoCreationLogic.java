@@ -27,6 +27,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -72,6 +73,7 @@ public class AutoCreationLogic {
 	private final EntityCreator creator;
 	private final TransactionContext txnCtx;
 	private final AliasManager aliasManager;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
 
@@ -86,6 +88,7 @@ public class AutoCreationLogic {
 			final EntityCreator creator,
 			final EntityIdSource ids,
 			final AliasManager aliasManager,
+			final SigImpactHistorian sigImpactHistorian,
 			final StateView currentView,
 			final TransactionContext txnCtx
 	) {
@@ -93,6 +96,7 @@ public class AutoCreationLogic {
 		this.txnCtx = txnCtx;
 		this.creator = creator;
 		this.currentView = currentView;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.aliasManager = aliasManager;
 	}
@@ -136,6 +140,8 @@ public class AutoCreationLogic {
 		for (final var pendingCreation : pendingCreations) {
 			final var syntheticCreation = pendingCreation.syntheticBody();
 			final var childRecord = pendingCreation.recordBuilder();
+			sigImpactHistorian.markAliasChanged(childRecord.getAlias());
+			sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
 			recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		}
 	}

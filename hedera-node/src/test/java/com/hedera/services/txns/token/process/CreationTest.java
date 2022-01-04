@@ -140,7 +140,7 @@ class CreationTest {
 
 		assertSame(treasury, subject.getTreasury());
 		assertNull(subject.getAutoRenew());
-		assertEquals(provisionalId, subject.getProvisionalId());
+		assertEquals(provisionalId, subject.newTokenId());
 	}
 
 	@Test

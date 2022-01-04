@@ -21,7 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -194,7 +194,7 @@ class StateViewTest {
 	private MerkleSpecialFiles specialFiles;
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
-	private StateChildren children;
+	private MutableStateChildren children;
 	@Mock
 	private AliasManager aliasManager;
 
@@ -318,7 +318,7 @@ class StateViewTest {
 		uniqTokenView = mock(UniqTokenView.class);
 		uniqTokenViewFactory = mock(UniqTokenViewFactory.class);
 
-		children = new StateChildren();
+		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);
 		children.setAccounts(contracts);
 		children.setTokenAssociations(tokenRels);
@@ -709,7 +709,7 @@ class StateViewTest {
 
 	@Test
 	void getTopics() {
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 
 		subject = new StateView(
