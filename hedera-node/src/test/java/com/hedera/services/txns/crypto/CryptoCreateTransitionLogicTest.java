@@ -76,6 +76,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 class CryptoCreateTransitionLogicTest {
 	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -90,7 +91,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final Instant consensusTime = Instant.now();
-	private static final AccountID aliasedProxyID = asAccountWithAlias("aaa");
+	public static final AccountID aliasedProxyID = asAccountWithAlias("aaa");
 
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -194,6 +195,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		willCallRealMethod().given(validator)
+				.isExistingAliasedID(cryptoCreateTxn.getCryptoCreateAccount().getProxyAccountID(), aliasManager);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -261,7 +264,7 @@ class CryptoCreateTransitionLogicTest {
 		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.fromAccountId(PAYER));
 
 		subject.doStateTransition();
-		
+
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 

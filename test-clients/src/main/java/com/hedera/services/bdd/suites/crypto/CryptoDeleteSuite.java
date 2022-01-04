@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -70,19 +71,18 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				fundsTransferOnDelete(),
-//				cannotDeleteAccountsWithNonzeroTokenBalances(),
-//				cannotDeleteAlreadyDeletedAccount(),
-//				cannotDeleteAccountWithSameBeneficiary(),
-//				cannotDeleteTreasuryAccount(),
-//				deletedAccountCannotBePayer(),
+				fundsTransferOnDelete(),
+				cannotDeleteAccountsWithNonzeroTokenBalances(),
+				cannotDeleteAlreadyDeletedAccount(),
+				cannotDeleteAccountWithSameBeneficiary(),
+				cannotDeleteTreasuryAccount(),
+				deletedAccountCannotBePayer(),
 				canDeleteAccountSpecifiedWithAlias(),
-//				transferAccountCanBeSpecifiedAsAlias()
+				transferAccountCanBeSpecifiedAsAlias()
 		});
 	}
 
 	private HapiApiSpec canDeleteAccountSpecifiedWithAlias() {
-		long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 		final var aliasToBeDeleted = "alias";
 
 		return defaultHapiSpec("canDeleteAccountSpecifiedWithAlias")
@@ -96,17 +96,17 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 
 						cryptoDeleteAliased(aliasToBeDeleted)
 								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, "transferAccount", DEFAULT_PAYER)
 								.via("deleteTxn")
 				).then(
 						getAccountInfo("transferAccount")
-								.has(accountWith().balance(B)),
-						getTxnRecord("deleteTxn")
-								.hasPriority(recordWith().transfers(including(
-										tinyBarsFromTo(aliasToBeDeleted, "transferAccount", B)))));
+								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.05)),
+						getTxnRecord("deleteTxn").logged(),
+						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED));
 	}
 
 	private HapiApiSpec transferAccountCanBeSpecifiedAsAlias() {
-		long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 		final var aliasToBeDeleted = "alias";
 		final var transferAccount = "transferAccount";
 
@@ -122,13 +122,14 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 
 						cryptoDeleteAliased(aliasToBeDeleted)
 								.transferAliased(transferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
 								.via("deleteTxn")
 				).then(
-						getAccountInfo(transferAccount)
-								.has(accountWith().balance(B)),
-						getTxnRecord("deleteTxn")
-								.hasPriority(recordWith().transfers(including(
-										tinyBarsFromTo(aliasToBeDeleted, transferAccount, B)))));
+						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getAliasedAccountInfo(transferAccount).has(
+								accountWith().expectedBalanceWithChargedUsd(2 * ONE_HUNDRED_HBARS, 0.1, 0.05)),
+						getTxnRecord("deleteTxn").logged());
 	}
 
 	private HapiApiSpec deletedAccountCannotBePayer() {
