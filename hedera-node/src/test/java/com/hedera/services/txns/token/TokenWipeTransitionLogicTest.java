@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -28,12 +29,14 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +49,7 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -67,8 +71,12 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 
 class TokenWipeTransitionLogicTest {
-	private AccountID accountID = IdUtils.asAccount("1.2.4");
+	private final ByteString alias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
 	private TokenID id = IdUtils.asToken("1.2.3");
+	private AccountID accountID = IdUtils.asAccount("1.2.4");
+	private final AccountID accountWithAlias = AccountID.newBuilder().setAlias(alias).build();
+	private final long mappedAliasNum = 1234L;
+	private final Id mappedAliasId = new Id(0, 0, mappedAliasNum);
 	private long wipeAmount = 100;
 	private long totalAmount = 1000L;
 
@@ -125,6 +133,25 @@ class TokenWipeTransitionLogicTest {
 
 		// then:
 		verify(token).wipe(any(), anyLong());
+	}
+
+	@Test
+	void followsAliasHappyPathForCommon() {
+		givenValidAliasCommonTxnCtx();
+
+		subject.doStateTransition();
+
+		verify(token).wipe(any(), anyLong());
+	}
+
+	@Test
+	void failsWhenInvalidAlias() {
+		givenValidAliasCommonTxnCtx();
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+
+		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
 	}
 
 	@Test
@@ -271,11 +298,32 @@ class TokenWipeTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+				.willReturn(accountID.getAccountNum());
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
 		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(accountStore.loadAccount(any())).willReturn(account);
+		given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
+	}
+
+	private void givenValidAliasCommonTxnCtx() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(accountWithAlias)
+						.setAmount(wipeAmount))
+				.build();
+		given(accessor.getTxn()).willReturn(tokenWipeTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willReturn(mappedAliasNum);
+		given(merkleToken.totalSupply()).willReturn(totalAmount);
+		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(typedTokenStore.loadToken(any())).willReturn(token);
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);
 		given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
 	}
 
@@ -288,6 +336,8 @@ class TokenWipeTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+				.willReturn(accountID.getAccountNum());
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(typedTokenStore.loadToken(any())).willReturn(token);

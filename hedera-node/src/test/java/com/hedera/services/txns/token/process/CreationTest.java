@@ -20,7 +20,9 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
@@ -31,6 +33,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -45,12 +48,14 @@ import java.util.List;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -60,9 +65,22 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CreationTest {
+	private final ByteString aliasA = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private final ByteString aliasB = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
 	private final int maxTokensPerAccount = 1_000;
 	private final long now = 1_234_567L;
 	private final long initialSupply = 777L;
+	private final AccountID grpcSponsor = IdUtils.asAccount("0.0.3");
+	private final AccountID grpcTreasuryId = IdUtils.asAccount("0.0.1234");
+	private final AccountID grpcAutoRenewId = IdUtils.asAccount("0.0.2345");
+	private final AccountID treasuryWithAlias = AccountID.newBuilder().setAlias(aliasA).build();
+	private final AccountID autoRenewWithAlias = AccountID.newBuilder().setAlias(aliasB).build();
+	private final long mappedTreasuryAliasNum = 1234L;
+	private final long mappedAutoRenewAliasNum = 1235L;
+	private final Id mappedTreasuryAliasId = new Id(0, 0, mappedTreasuryAliasNum);
+	private final Id mappedAutoRenewAliasId = new Id(0, 0, mappedAutoRenewAliasNum);
+	private final Id treasuryId = Id.fromGrpcAccount(grpcTreasuryId);
+	private final Id autoRenewId = Id.fromGrpcAccount(grpcAutoRenewId);
 	private final Id provisionalId = new Id(0, 0, 666);
 
 	private TokenCreateTransactionBody op;
@@ -133,6 +151,8 @@ class CreationTest {
 	@Test
 	void onlyLoadsTreasuryWithNoAutoRenew() {
 		givenSubjectNoAutoRenew();
+		given(accountStore.getAccountNumFromAlias(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum()))
+				.willReturn(grpcTreasuryId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
 
@@ -146,7 +166,11 @@ class CreationTest {
 	@Test
 	void loadsAutoRenewWhenAvail() {
 		givenSubjectWithEverything();
+		given(accountStore.getAccountNumFromAlias(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum()))
+				.willReturn(grpcTreasuryId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
+		given(accountStore.getAccountNumFromAlias(grpcAutoRenewId.getAlias(), grpcAutoRenewId.getAccountNum()))
+				.willReturn(grpcAutoRenewId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
 
@@ -154,6 +178,51 @@ class CreationTest {
 
 		assertSame(treasury, subject.getTreasury());
 		assertSame(autoRenew, subject.getAutoRenew());
+	}
+
+	@Test
+	void loadsTreasuryAndAutoRenewWhenAvailWithAlias() {
+		givenSubjectWithEverythingAlias();
+		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum()))
+				.willReturn(mappedTreasuryAliasNum);
+		given(accountStore.loadAccountOrFailWith(mappedTreasuryAliasId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
+		given(accountStore.getAccountNumFromAlias(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum()))
+				.willReturn(mappedAutoRenewAliasNum);
+		given(accountStore.loadAccountOrFailWith(mappedAutoRenewAliasId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
+		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
+
+		subject.loadModelsWith(grpcSponsor, ids, validator);
+
+		assertSame(treasury, subject.getTreasury());
+		assertSame(autoRenew, subject.getAutoRenew());
+	}
+
+	@Test
+	void failsWithInvalidAliasInTreasury() {
+		givenSubjectWithEverythingAlias();
+		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+
+		final var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.loadModelsWith(grpcSponsor, ids, validator));
+
+		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+	}
+
+	@Test
+	void failsWithInvalidAliasInAutoRenew() {
+		givenSubjectWithEverythingAlias();
+		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum()))
+				.willReturn(mappedTreasuryAliasNum);
+		given(accountStore.loadAccountOrFailWith(mappedTreasuryAliasId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
+
+		given(accountStore.getAccountNumFromAlias(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+
+		final var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.loadModelsWith(grpcSponsor, ids, validator));
+
+		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
 	}
 
 	@Test
@@ -211,6 +280,10 @@ class CreationTest {
 		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverything());
 	}
 
+	private void givenSubjectWithEverythingAlias() {
+		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverythingAlias());
+	}
+
 	private void givenSubjectWithEverythingExceptInitialSupply() {
 		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverythingExceptInitialSupply());
 	}
@@ -223,17 +296,22 @@ class CreationTest {
 		subject = new Creation(accountStore, tokenStore, dynamicProperties, creationInvalidExpiry());
 	}
 
-	private final AccountID grpcSponsor = IdUtils.asAccount("0.0.3");
-	private final AccountID grpcTreasuryId = IdUtils.asAccount("0.0.1234");
-	private final AccountID grpcAutoRenewId = IdUtils.asAccount("0.0.2345");
-	private final Id treasuryId = Id.fromGrpcAccount(grpcTreasuryId);
-	private final Id autoRenewId = Id.fromGrpcAccount(grpcAutoRenewId);
-
 	private TokenCreateTransactionBody creationInvalidExpiry() {
 		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(now))
 				.setTreasury(grpcTreasuryId)
 				.setAutoRenewAccount(grpcAutoRenewId)
+				.build();
+		return op;
+	}
+
+	private TokenCreateTransactionBody creationWithEverythingAlias() {
+		op = TokenCreateTransactionBody.newBuilder()
+				.setTreasury(treasuryWithAlias)
+				.setInitialSupply(initialSupply)
+				.setAutoRenewAccount(autoRenewWithAlias)
+				.addCustomFees(CustomFee.getDefaultInstance())
+				.addCustomFees(CustomFee.getDefaultInstance())
 				.build();
 		return op;
 	}

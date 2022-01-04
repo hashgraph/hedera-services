@@ -74,7 +74,8 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
 		/* First the account */
 		final var grpcId = op.getAccount();
-		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
+		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());;
+		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
 		/* And then the tokens */
 		final List<Id> tokenIds = new ArrayList<>();
 		for (final var _grpcId : op.getTokensList()) {

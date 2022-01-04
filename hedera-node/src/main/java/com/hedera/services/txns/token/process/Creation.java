@@ -102,11 +102,15 @@ public class Creation {
 		final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
 		validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
 
-		final var treasuryId = Id.fromGrpcAccount(op.getTreasury());
+		final var treasuryGrpc = op.getTreasury();
+		final var treasuryNum = accountStore.getAccountNumFromAlias(treasuryGrpc.getAlias(), treasuryGrpc.getAccountNum());
+		final var treasuryId = new Id(treasuryGrpc.getShardNum(), treasuryGrpc.getRealmNum(), treasuryNum);
 		treasury = accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		autoRenew = null;
 		if (op.hasAutoRenewAccount()) {
-			final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount());
+			final var autoRenewGrpc = op.getAutoRenewAccount();
+			final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewGrpc.getAlias(), autoRenewGrpc.getAccountNum());
+			final var autoRenewId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
 			autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
 		}
 
