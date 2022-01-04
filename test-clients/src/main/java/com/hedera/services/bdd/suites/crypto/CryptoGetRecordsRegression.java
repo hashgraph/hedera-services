@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
