@@ -20,6 +20,7 @@ package com.hedera.services.txns.consensus;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -316,7 +317,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void failsOnInvalidTopic() throws Throwable {
+	void failsOnInvalidTopic() {
 		// given:
 		givenValidTransactionInvalidTopic();
 
@@ -382,7 +383,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void clearsAutoRenewAccount() throws Throwable {
+	void clearsAutoRenewAccountIfCorrectSentinelUsed() throws Throwable {
 		// given:
 		givenExistingTopicWithAutoRenewAccount();
 		givenTransactionClearingAutoRenewAccount();
@@ -394,6 +395,21 @@ class MerkleTopicUpdateTransitionLogicTest {
 		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		verify(transactionContext).setStatus(SUCCESS);
 		assertFalse(topic.hasAutoRenewAccountId());
+	}
+
+	@Test
+	void doesntClearAutoRenewAccountIfSentinelWithAliasUsed() throws Throwable {
+		// given:
+		givenExistingTopicWithAutoRenewAccount();
+		givenTransactionChangingAutoRenewAccountWithAliasId();
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
+		verify(transactionContext).setStatus(INVALID_AUTORENEW_ACCOUNT);
+		assertTrue(topic.hasAutoRenewAccountId());
 	}
 
 	private void assertTopicNotUpdated(MerkleTopic originalMerkleTopic, MerkleTopic originalMerkleTopicClone) {
@@ -487,6 +503,14 @@ class MerkleTopicUpdateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(
 								AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(0).build())
+		);
+	}
+
+	private void givenTransactionChangingAutoRenewAccountWithAliasId() {
+		givenTransaction(
+				getBasicValidTransactionBodyBuilder()
+						.setAutoRenewAccount(
+								AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("pretend")).build())
 		);
 	}
 
