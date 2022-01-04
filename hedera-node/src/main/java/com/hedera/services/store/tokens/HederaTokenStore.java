@@ -333,7 +333,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
-			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
+			if (owner.equals(EntityId.MISSING_ENTITY_ID)) {
 				final var tid = nftId.tokenId();
 				final var key = EntityNum.fromTokenId(tid);
 				owner = this.tokens.get().get(key).treasury();

@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -170,7 +171,7 @@ public final class EntityIdUtils {
 
 	public static AccountID asAccount(final EntityId jId) {
 		if (jId == null || jId.equals(EntityId.MISSING_ENTITY_ID)) {
-			return AccountID.getDefaultInstance();
+			return StateView.WILDCARD_OWNER;
 		}
 		return AccountID.newBuilder()
 				.setRealmNum(jId.realm())

@@ -239,7 +239,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private boolean designatesAccountRemoval(AccountID id) {
-		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0;
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0 && id.getAlias().isEmpty();
 	}
 
 	private boolean canApplyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {

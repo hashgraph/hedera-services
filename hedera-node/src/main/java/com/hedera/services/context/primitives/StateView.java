@@ -101,7 +101,7 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
-	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
+	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
 			.setAccountNum(0L)
 			.build();
 
