@@ -174,7 +174,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						withOpContext( (spec, log) -> {
 							if(settings.getBooleanProperty("clientToExportBalances", false)) {
 								log.info("Now get all {} accounts created and save them", totalAccounts);
-								AccountID acctID = AccountID.getDefaultInstance();
+								AccountID acctID;
 								String lastGoodAcct = null;
 								int acctProcessed = 0;
 								int batchSize = 10000;
