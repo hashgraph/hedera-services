@@ -132,7 +132,7 @@ class TxnIdRecentHistoryTest {
 
 	@Test
 	void recognizesEmptyDuplicates() {
-		assertTrue(subject.duplicateRecords().isEmpty());
+		assertTrue(subject.allDuplicateRecords().isEmpty());
 	}
 
 	@Test
@@ -171,6 +171,16 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
+	void canStillClassifyDuplicatesAfterSomeHistoryIsExpired() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
+
+		subject.forgetExpiredAt(expiryAtOffset(4));
+
+		assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
+		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(3));
+	}
+
+	@Test
 	void forgetsAsExpectedFromListOfSizeOne() {
 		givenSomeWellKnownHistoryWithListOfSizeOne();
 
@@ -201,7 +211,7 @@ class TxnIdRecentHistoryTest {
 				recordOf(2, 1, INVALID_NODE_ACCOUNT),
 				INVALID_NODE_ACCOUNT);
 
-		final var duplicates = subject.duplicateRecords();
+		final var duplicates = subject.allDuplicateRecords();
 
 		assertEquals(
 				List.of(
@@ -213,7 +223,7 @@ class TxnIdRecentHistoryTest {
 	void returnsOrderedDuplicates() {
 		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
-		final var records = subject.duplicateRecords();
+		final var records = subject.allDuplicateRecords();
 
 		assertEquals(
 				List.of(
@@ -225,6 +235,23 @@ class TxnIdRecentHistoryTest {
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
 				), records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+	}
+
+	@Test
+	void forgetsFromExpiredClassifiableListOfSizeOne() {
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+
+		subject.forgetExpiredAt(expiryAtOffset(1));
+
+		assertTrue(subject.isForgotten());
+
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.forgetExpiredAt(expiryAtOffset(0));
+		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
 	}
 
 	private void givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne() {
