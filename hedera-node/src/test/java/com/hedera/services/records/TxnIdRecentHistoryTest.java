@@ -57,6 +57,21 @@ class TxnIdRecentHistoryTest {
 		subject = new TxnIdRecentHistory();
 	}
 
+
+	@Test
+	void safeToExpireFromEmptyHistory() {
+		subject.observe(
+				recordOf(0, 0, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
+		assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
+		subject.observe(
+				recordOf(1, 0, SUCCESS),
+				SUCCESS);
+
+		subject.forgetExpiredAt(expiryAtOffset(0));
+		assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
+	}
+
 	@Test
 	void getsMemory() {
 		subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));

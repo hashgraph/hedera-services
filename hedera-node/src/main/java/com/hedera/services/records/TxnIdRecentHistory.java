@@ -263,8 +263,8 @@ public class TxnIdRecentHistory {
 			final var iter = classifiableRecords.iterator();
 			var discardedDuplicatesFromDifferentNodes = 0;
 			for (int i = 0; iter.hasNext(); i++) {
-				final var record = iter.next();
-				if (record.getExpiry() <= now) {
+				final var nextRecord = iter.next();
+				if (nextRecord.getExpiry() <= now) {
 					iter.remove();
 					if (i < numDuplicatesFromDifferentNodes) {
 						discardedDuplicatesFromDifferentNodes++;
