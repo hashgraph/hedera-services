@@ -22,10 +22,9 @@ retrieval of opaque binary data.
 There are also two secondary service families:
 1. The [network service](https://github.com/hashgraph/hedera-protobufs-java/blob/main/src/main/proto/network_service.proto), for operations scoped
 to the network or its constituent nodes rather user-controlled entities as above.
-2. The [freeze service](https://github.com/hashgraph/hedera-protobufs-java/blob/main/src/main/proto/freeze_service.proto), for use by 
+2. The [scheduling service](https://github.com/hashgraph/hedera-protobufs-java/blob/main/src/main/proto/schedule_service.proto), for scheduling a transaction to be executed when the ledger has received enough prequisite signatures.
+3. The [freeze service](https://github.com/hashgraph/hedera-protobufs-java/blob/main/src/main/proto/freeze_service.proto), for use by 
 privileged accounts to suspend network operations during a maintenance window.
-3. The [schedule service](https://github.com/hashgraph/hedera-protobufs-java/blob/main/src/main/proto/schedule_service.proto), for allowing transactions and queries to be submitted 
-without all the required signatures and allows anyone to provide the required signatures independently after a transaction has already been created.
 
 It is important to note that most network services are gated by fees which 
 must be paid **in ℏ from a cryptocurrency account**. The payer authorizes a
