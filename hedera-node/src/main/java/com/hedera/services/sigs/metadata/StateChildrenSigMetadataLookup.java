@@ -60,7 +60,7 @@ import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 
-public class StateChildrenSigMetadataLookup implements SigMetadataLookup {
+public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	private final FileNumbers fileNumbers;
 	private final AliasManager aliasManager;
 	private final StateChildren stateChildren;
