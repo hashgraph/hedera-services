@@ -24,11 +24,13 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,6 +51,8 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.txns.crypto.CryptoDeleteTransitionLogicTest.aliasAccountPayer;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -86,6 +90,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final Instant consensusTime = Instant.now();
+	private static final AccountID aliasedProxyID = asAccountWithAlias("aaa");
 
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -94,6 +99,7 @@ class CryptoCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -103,10 +109,12 @@ class CryptoCreateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		aliasManager = mock(AliasManager.class);
+
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties, aliasManager);
 	}
 
 	@Test
@@ -127,7 +135,7 @@ class CryptoCreateTransitionLogicTest {
 
 	@Test
 	void returnsKeyRequiredOnEmptyKey() {
-		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build(), PROXY, ourTxnId());
 
 		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -246,6 +254,28 @@ class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	void worksWithValidAliasedProxy() {
+		givenValidTxnCtxWithAliasedProxy();
+		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias())).willReturn(EntityNum.fromAccountId(PROXY));
+		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.fromAccountId(PAYER));
+
+		subject.doStateTransition();
+		
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void failsWithInvalidAliasedProxy() {
+		givenValidTxnCtxWithAliasedProxy();
+		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.MISSING_NUM);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
 	}
@@ -320,17 +350,21 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(KEY);
+		givenValidTxnCtx(KEY, PROXY, ourTxnId());
 	}
 
-	private void givenValidTxnCtx(final Key toUse) {
+	private void givenValidTxnCtxWithAliasedProxy() {
+		givenValidTxnCtx(KEY, aliasedProxyID, txnIdWithAlias());
+	}
+
+	private void givenValidTxnCtx(final Key toUse, final AccountID proxy, final TransactionID txnId) {
 		cryptoCreateTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
+				.setTransactionID(txnId)
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setMemo(MEMO)
 								.setInitialBalance(BALANCE)
-								.setProxyAccountID(PROXY)
+								.setProxyAccountID(proxy)
 								.setReceiverSigRequired(true)
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
 								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
@@ -347,6 +381,14 @@ class CryptoCreateTransitionLogicTest {
 				.setAccountID(PAYER)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+				.build();
+	}
+
+	private TransactionID txnIdWithAlias() {
+		return TransactionID.newBuilder()
+				.setAccountID(aliasAccountPayer)
+				.setTransactionValidStart(
+						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();
 	}
 

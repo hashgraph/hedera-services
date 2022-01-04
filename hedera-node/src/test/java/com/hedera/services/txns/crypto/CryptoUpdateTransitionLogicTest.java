@@ -29,6 +29,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -102,6 +103,7 @@ class CryptoUpdateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -112,11 +114,12 @@ class CryptoUpdateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		aliasManager = mock(AliasManager.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties, aliasManager);
 	}
 
 	@Test

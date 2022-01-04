@@ -23,7 +23,9 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
@@ -41,11 +43,13 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -72,25 +76,28 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final AliasManager aliasManager
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+			AccountID sponsor = getUsableAccountID(cryptoCreateTxn.getTransactionID().getAccountID(), aliasManager);
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
@@ -98,6 +105,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
+		} catch (MissingAccountException ex) {
+			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (InsufficientFundsException ife) {
 			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
 		} catch (Exception e) {
@@ -120,7 +129,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+			customizer.proxy(EntityId.fromGrpcAccountId(getUsableAccountID(op.getProxyAccountID(), aliasManager)));
 		}
 		return customizer;
 	}
@@ -172,6 +181,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+		}
+
+		if (op.hasProxyAccountID() && !validator.isExistingAliasedID(op.getProxyAccountID(), aliasManager)) {
+			return INVALID_ACCOUNT_ID;
 		}
 
 		return OK;

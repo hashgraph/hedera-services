@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -48,6 +49,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -57,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -69,25 +73,62 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				negativeTests()
+//				positiveTests()
+		);
+	}
+
+	private List<HapiApiSpec> positiveTests() {
+		return List.of(
+				createAccountWithAliasedProxy()
 		);
 	}
 
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
-				createAnAccountEmptyThresholdKey(),
-				createAnAccountEmptyKeyList(),
-				createAnAccountEmptyNestedKey(),
-				createAnAccountInvalidKeyList(),
-				createAnAccountInvalidNestedKeyList(),
-				createAnAccountInvalidThresholdKey(),
-				createAnAccountInvalidNestedThresholdKey(),
-				createAnAccountThresholdKeyWithInvalidThreshold(),
-				createAnAccountInvalidED25519(),
-				syntaxChecksAreAsExpected(),
-				xferRequiresCrypto(),
-				maxAutoAssociationSpec(),
-				usdFeeAsExpected()
+//				createAnAccountEmptyThresholdKey(),
+//				createAnAccountEmptyKeyList(),
+//				createAnAccountEmptyNestedKey(),
+//				createAnAccountInvalidKeyList(),
+//				createAnAccountInvalidNestedKeyList(),
+//				createAnAccountInvalidThresholdKey(),
+//				createAnAccountInvalidNestedThresholdKey(),
+//				createAnAccountThresholdKeyWithInvalidThreshold(),
+//				createAnAccountInvalidED25519(),
+//				syntaxChecksAreAsExpected(),
+//				xferRequiresCrypto(),
+//				maxAutoAssociationSpec(),
+//				usdFeeAsExpected(),
+				createAccountWithMissingAliasedProxy()
 		);
+	}
+
+	private HapiApiSpec createAccountWithMissingAliasedProxy() {
+		return defaultHapiSpec("createAccountWithMissingAliasedProxy")
+				.given(newKeyNamed("someRandomAlias"))
+				.when()
+				.then(
+						cryptoCreate("accountWithInvalidAliasProxy")
+								.proxyWithAlias("someRandomAlias")
+								.hasPrecheck(INVALID_ACCOUNT_ID)
+				);
+	}
+
+
+	private HapiApiSpec createAccountWithAliasedProxy() {
+		final var alias = "alias";
+
+		return defaultHapiSpec("createAccountWithAliasedProxy")
+				.given(
+						newKeyNamed(alias)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+								.via("proxyCreation"),
+						getTxnRecord("proxyCreation").andAllChildRecords().hasChildRecordCount(1)
+				).then(
+						cryptoCreate("accountWithAliasProxy")
+								.proxyWithAlias(alias)
+								.hasKnownStatus(SUCCESS)
+				);
 	}
 
 	private HapiApiSpec maxAutoAssociationSpec() {

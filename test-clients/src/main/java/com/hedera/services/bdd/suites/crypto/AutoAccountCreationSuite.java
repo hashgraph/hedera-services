@@ -39,15 +39,15 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
@@ -118,9 +118,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
 						)
 								/* Sort the transfer list so the accounts are created in a predictable order (the
-								* serialized bytes of an Ed25519 are always lexicographically prior to the serialized
-								* bytes of a secp256k1 key, so now the first child record will _always_ be for the
-								* ed25519 auto-creation). */
+								 * serialized bytes of an Ed25519 are always lexicographically prior to the serialized
+								 * bytes of a secp256k1 key, so now the first child record will _always_ be for the
+								 * ed25519 auto-creation). */
 								.payingWith(GENESIS)
 								.via(autoCreation)
 				).then(
@@ -172,13 +172,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAliasedAccountInfo("validAlias").has(
-										accountWith()
-												.key("validAlias")
-												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-												.alias("validAlias")
-												.autoRenew(THREE_MONTHS_IN_SECONDS)
-												.receiverSigReq(false)
-												.memo(AUTO_MEMO))
+								accountWith()
+										.key("validAlias")
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+										.alias("validAlias")
+										.autoRenew(THREE_MONTHS_IN_SECONDS)
+										.receiverSigReq(false)
+										.memo(AUTO_MEMO))
 				);
 	}
 

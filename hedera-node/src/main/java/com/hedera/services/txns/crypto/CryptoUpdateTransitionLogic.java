@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -45,6 +46,7 @@ import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -78,25 +80,27 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties,
+			final AliasManager aliasManager) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			final var target = op.getAccountIDToUpdate();
+			final var target = getUsableAccountID(op.getAccountIDToUpdate(), aliasManager);
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
@@ -136,7 +140,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		if (keyChanges.contains(AccountProperty.EXPIRY)) {
-			final long newExpiry = (long)changes.get(AccountProperty.EXPIRY);
+			final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
 			if (newExpiry < ledger.expiry(target)) {
 				return EXPIRATION_REDUCTION_NOT_ALLOWED;
 			}
@@ -167,7 +171,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+			customizer.proxy(EntityId.fromGrpcAccountId(getUsableAccountID(op.getProxyAccountID(), aliasManager)));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
 			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());

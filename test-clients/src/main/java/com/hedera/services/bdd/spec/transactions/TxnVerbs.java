@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
@@ -80,10 +79,6 @@ public class TxnVerbs {
 		return new HapiCryptoDelete(account);
 	}
 
-	public static HapiCryptoDelete cryptoDeleteAliased(final String alias) {
-		return new HapiCryptoDelete(alias, ReferenceType.ALIAS_KEY_NAME);
-	}
-
 	@SafeVarargs
 	public static HapiCryptoTransfer sortedCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(true, providers);
@@ -100,10 +95,6 @@ public class TxnVerbs {
 
 	public static HapiCryptoUpdate cryptoUpdate(String account) {
 		return new HapiCryptoUpdate(account);
-	}
-
-	public static HapiCryptoUpdate cryptoUpdateAliased(final String alias) {
-		return new HapiCryptoUpdate(alias, ReferenceType.ALIAS_KEY_NAME);
 	}
 
 	/* CONSENSUS */

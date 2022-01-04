@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.Instant;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -69,12 +72,15 @@ import static org.mockito.BDDMockito.willThrow;
 class CryptoDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+	final public static AccountID aliasAccountPayer = asAccountWithAlias("aaa");
+	final private AccountID aliasAccountTarget = asAccountWithAlias("bbb");
 	final private boolean withKnownTreasury = true;
 
 	private HederaLedger ledger;
 	private TransactionBody cryptoDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -86,10 +92,11 @@ class CryptoDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		aliasManager = mock(AliasManager.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx);
+		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx, aliasManager);
 	}
 
 	@Test
@@ -248,6 +255,24 @@ class CryptoDeleteTransitionLogicTest {
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
 	}
 
+	@Test
+	void worksWithAlias() {
+		AccountID aliasedTransfer = asAccountWithAlias("ccc");
+		givenDeleteTxnWithAlias(aliasedTransfer);
+
+		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.fromAccountId(payer));
+		given(aliasManager.lookupIdBy(aliasedTransfer.getAlias())).willReturn(EntityNum.fromAccountId(payer));
+		given(aliasManager.lookupIdBy(aliasAccountTarget.getAlias())).willReturn(EntityNum.fromAccountId(target));
+
+		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+		assertEquals(OK, validity);
+
+		subject.doStateTransition();
+
+		verify(ledger).delete(target, payer);
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(payer);
 	}
@@ -285,9 +310,30 @@ class CryptoDeleteTransitionLogicTest {
 				).build();
 	}
 
+	private void givenDeleteTxnWithAlias(AccountID aliasedTransfer) {
+		cryptoDeleteTxn = TransactionBody.newBuilder()
+				.setTransactionID(txnIdWithAlias())
+				.setCryptoDelete(
+						CryptoDeleteTransactionBody.newBuilder()
+								.setDeleteAccountID(aliasAccountTarget)
+								.setTransferAccountID(aliasedTransfer)
+								.build()
+				).build();
+		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+	}
+
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
 				.setAccountID(payer)
+				.setTransactionValidStart(
+						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
+				.build();
+	}
+
+	private TransactionID txnIdWithAlias() {
+		return TransactionID.newBuilder()
+				.setAccountID(aliasAccountPayer)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();

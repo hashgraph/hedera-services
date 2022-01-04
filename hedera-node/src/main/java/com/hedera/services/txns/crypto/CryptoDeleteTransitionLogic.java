@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -37,6 +38,7 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -63,11 +65,15 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
+	private final AliasManager aliasManager;
 
 	@Inject
-	public CryptoDeleteTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
+	public CryptoDeleteTransitionLogic(final HederaLedger ledger,
+			final TransactionContext txnCtx,
+			final AliasManager aliasManager) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -75,12 +81,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			AccountID id = op.getDeleteAccountID();
+			AccountID id = getUsableAccountID(op.getDeleteAccountID(), aliasManager);
 			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
 			}
-			AccountID beneficiary = op.getTransferAccountID();
+			AccountID beneficiary = getUsableAccountID(op.getTransferAccountID(), aliasManager);
 			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 				return;

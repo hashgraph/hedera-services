@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -52,7 +51,9 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	private String aliasKeySource = null;
 	private boolean shouldPurge = false;
 	private Optional<String> transferAccount = Optional.empty();
+
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+	private ReferenceType transferAccountRefType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoDelete(String account) {
 		this.account = account;
@@ -62,6 +63,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 		this.referenceType = type;
 		if (type == ReferenceType.ALIAS_KEY_NAME) {
 			aliasKeySource = reference;
+			account = reference;
 		} else {
 			account = reference;
 		}
@@ -78,6 +80,12 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	}
 
 	public HapiCryptoDelete transfer(String to) {
+		transferAccount = Optional.of(to);
+		return this;
+	}
+
+	public HapiCryptoDelete transferAliased(String to) {
+		transferAccountRefType = ReferenceType.ALIAS_KEY_NAME;
 		transferAccount = Optional.of(to);
 		return this;
 	}
@@ -102,15 +110,15 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 		if (referenceType == ReferenceType.REGISTRY_NAME) {
 			target = TxnUtils.asId(account, spec);
 		} else {
-			account = lookUpAccountWithAlias(spec, aliasKeySource);
-			target = asAccount(account);
+//			account = asAccountString(lookUpAccountWithAlias(spec, aliasKeySource));
+			target = lookUpAccountWithAlias(spec, aliasKeySource);
 		}
 
 		CryptoDeleteTransactionBody opBody = spec
 				.txns()
 				.<CryptoDeleteTransactionBody, CryptoDeleteTransactionBody.Builder>
 						body(CryptoDeleteTransactionBody.class, b -> {
-					transferAccount.ifPresent(a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
+					transferAccount.ifPresent(a -> b.setTransferAccountID(getTransferAccount(spec, a)));
 					b.setDeleteAccountID(target);
 				});
 		return b -> b.setCryptoDelete(opBody);
@@ -154,5 +162,13 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper().add("account", account);
+	}
+
+
+	private AccountID getTransferAccount(HapiApiSpec spec, String transferAccount) {
+		if (transferAccountRefType == ReferenceType.ALIAS_KEY_NAME) {
+			return TxnUtils.asIdForKeyLookUp(transferAccount, spec);
+		}
+		return spec.registry().getAccountID(transferAccount);
 	}
 }
