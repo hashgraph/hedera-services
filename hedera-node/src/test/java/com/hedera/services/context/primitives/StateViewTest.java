@@ -25,6 +25,8 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -291,9 +293,9 @@ class StateViewTest {
 						MiscUtils.asTimestamp(now.toJava())
 				);
 		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
-		schedule.witnessValidSignature("firstPretendKey".getBytes());
-		schedule.witnessValidSignature("secondPretendKey".getBytes());
-		schedule.witnessValidSignature("thirdPretendKey".getBytes());
+		schedule.witnessValidSignature("01234567890123456789012345678901".getBytes());
+		schedule.witnessValidSignature("_123456789_123456789_123456789_1".getBytes());
+		schedule.witnessValidSignature("_o23456789_o23456789_o23456789_o".getBytes());
 
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
@@ -390,17 +392,15 @@ class StateViewTest {
 
 	@Test
 	void recognizesMissingSchedule() {
+		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 		final var info = subject.infoForSchedule(missingScheduleId);
-
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void infoForScheduleFailsGracefully() {
 		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
-
 		final var info = subject.infoForSchedule(scheduleId);
-
 		assertTrue(info.isEmpty());
 	}
 
@@ -433,14 +433,21 @@ class StateViewTest {
 
 	@Test
 	void getsScheduleInfoForExecuted() {
+		final var mockEd25519Key = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
+		final var mockSecp256k1Key = new JECDSASecp256k1Key("012345678901234567890123456789012".getBytes());
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+		schedule.witnessValidSignature(mockEd25519Key.primitiveKeyIfPresent());
+		schedule.witnessValidSignature(mockSecp256k1Key.primitiveKeyIfPresent());
 
 		schedule.markExecuted(resolutionTime);
 		final var gotten = subject.infoForSchedule(scheduleId);
 		final var info = gotten.get();
 
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
+		final var signatures = info.getSigners().getKeysList();
+		assertEquals(MiscUtils.asKeyUnchecked(mockEd25519Key), signatures.get(3));
+		assertEquals(MiscUtils.asKeyUnchecked(mockSecp256k1Key), signatures.get(4));
 	}
 
 	@Test
@@ -654,7 +661,7 @@ class StateViewTest {
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-				.setAccountID(accountWithAlias)
+				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
@@ -662,7 +669,7 @@ class StateViewTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
