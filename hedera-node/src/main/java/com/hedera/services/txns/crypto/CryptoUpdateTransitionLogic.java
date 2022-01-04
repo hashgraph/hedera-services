@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -156,6 +157,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
+		// TODO : should we also check if proxy accountID is valid and exists if not alias
+		if (keyChanges.contains(AccountProperty.PROXY)) {
+			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
+			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId(), aliasManager)) {
+				return INVALID_ALIAS_KEY;
+			}
+		}
+
 		return OK;
 	}
 
@@ -171,7 +180,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(getUsableAccountID(op.getProxyAccountID(), aliasManager)));
+			final var id = getUsableAccountID(op.getProxyAccountID(), aliasManager);
+			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
 			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());

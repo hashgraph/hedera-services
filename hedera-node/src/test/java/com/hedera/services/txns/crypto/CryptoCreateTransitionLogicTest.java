@@ -91,7 +91,7 @@ class CryptoCreateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final Instant consensusTime = Instant.now();
-	public static final AccountID aliasedProxyID = asAccountWithAlias("aaa");
+	public static final AccountID aliasedProxyID = asAccountWithAlias("aaaaaaaaa");
 
 	private HederaLedger ledger;
 	private OptionValidator validator;

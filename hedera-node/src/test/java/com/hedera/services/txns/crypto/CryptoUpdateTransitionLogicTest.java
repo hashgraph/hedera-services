@@ -35,6 +35,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,6 +57,8 @@ import java.util.EnumSet;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogicTest.aliasedProxyID;
+import static com.hedera.services.txns.crypto.CryptoDeleteTransitionLogicTest.aliasAccountPayer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -78,6 +81,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 
 class CryptoUpdateTransitionLogicTest {
@@ -120,6 +124,7 @@ class CryptoUpdateTransitionLogicTest {
 		withRubberstampingValidator();
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties, aliasManager);
+		willCallRealMethod().given(validator).isExistingAliasedID(any(), any());
 	}
 
 	@Test
@@ -353,7 +358,7 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void preemptsMissingAccountException() {
-		givenTxnCtx();
+		givenTxnCtx(EnumSet.of(EXPIRY), EnumSet.of(EXPIRY));
 		given(ledger.exists(TARGET)).willReturn(false);
 
 		subject.doStateTransition();
@@ -393,6 +398,45 @@ class CryptoUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
+
+	@Test
+	void acceptsAliasedAccountIDToUpdate() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(aliasAccountPayer))
+				.build();
+		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias()))
+				.willReturn(EntityNum.fromAccountId(TARGET));
+
+		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void acceptsAliasedProxyAccountIDToUpdate() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(aliasAccountPayer)
+						.setProxyAccountID(aliasedProxyID))
+				.build();
+		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias()))
+				.willReturn(EntityNum.fromAccountId(TARGET));
+		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias()))
+				.willReturn(EntityNum.fromAccountId(PROXY));
+
+		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	private Key unmappableKey() {
@@ -485,5 +529,13 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+	}
+
+	private TransactionID txnIdWithAlias() {
+		return TransactionID.newBuilder()
+				.setAccountID(aliasAccountPayer)
+				.setTransactionValidStart(
+						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
+				.build();
 	}
 }
