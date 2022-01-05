@@ -38,6 +38,8 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_DISTRIBUTE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
@@ -118,17 +120,18 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				HSCS_PREC_017_rollback_after_insufficient_balance()
+//				HSCS_PREC_017_rollback_after_insufficient_balance()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				distributeMultipleTokens(),
-				depositAndWithdrawFungibleTokens(),
-				transferNft(),
-				transferMultipleNfts(),
-				tokenTransferFromFeeCollector()
+//				distributeMultipleTokens(),
+//				depositAndWithdrawFungibleTokens(),
+//				transferNft(),
+//				transferMultipleNfts(),
+//				tokenTransferFromFeeCollector(),
+				hbarTransferFromFeeCollector()
 		);
 	}
 
@@ -473,6 +476,92 @@ public class ContractHTSSuite extends HapiApiSuite {
 								recordWith()
 										.status(INSUFFICIENT_TOKEN_BALANCE)),
 
+						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
+				);
+	}
+
+	private HapiApiSpec hbarTransferFromFeeCollector() {
+		return defaultHapiSpec("HbarTransferFromFeeCollector")
+				.given(
+						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(FEE_COLLECTOR),
+
+						fileCreate("bytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.HBAR_FEE_TRANSFER)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.TRANSFERER)),
+						withOpContext(
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, HBAR_FEE_TRANSFER_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+									allRunFor(spec,
+											tokenCreate(A_TOKEN)
+													.tokenType(TokenType.FUNGIBLE_COMMON)
+													.initialSupply(TOTAL_SUPPLY)
+													.treasury(TOKEN_TREASURY)
+													.withCustom(fixedHbarFee(100L, CONTRACT)),
+
+											tokenAssociate(ACCOUNT, A_TOKEN),
+											tokenAssociate(RECEIVER, A_TOKEN),
+
+											cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
+													.between(TOKEN_TREASURY, ACCOUNT)));
+								})
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var token = asAddress(spec.registry().getTokenID(A_TOKEN));
+									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var feeCollector = asAddress(spec.registry().getAccountID(FEE_COLLECTOR));
+
+									/* --- HSCS-PREC-009 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, HBAR_FEE_TRANSFER_DISTRIBUTE,
+													token,
+													sender,
+													receiver,
+													10L,
+													feeCollector
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("distributeTx")
+													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
+													.hasKnownStatus(SUCCESS));
+								})
+
+				).then(
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -10L)
+														.including(A_TOKEN, RECEIVER, 5L)
+														.including(A_TOKEN, SECOND_RECEIVER, 5L)
+										),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+														.including(FEE_TOKEN, ACCOUNT, 100L)
+										)),
 						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
 						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
 				);
