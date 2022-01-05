@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
@@ -86,12 +86,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId;
-		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-			aId = asIdForKeyLookUp(account, spec);
-		} else {
-			aId = TxnUtils.asId(account, spec);
-		}
+		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
 		TokenGrantKycTransactionBody opBody = spec
 				.txns()
 				.<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(

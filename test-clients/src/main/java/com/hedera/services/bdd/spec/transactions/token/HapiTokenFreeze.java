@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
@@ -84,19 +84,14 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
 		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		tokenOpsUsage.tokenFreezeUsage(suFrom(svo), baseTransactionMeta, tokenFreezeMeta, accumulator );
+		tokenOpsUsage.tokenFreezeUsage(suFrom(svo), baseTransactionMeta, tokenFreezeMeta, accumulator);
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId;
-		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-			aId = asIdForKeyLookUp(account, spec);
-		} else {
-			aId = TxnUtils.asId(account, spec);
-		}
+		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
 		TokenFreezeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(

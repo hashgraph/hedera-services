@@ -110,7 +110,6 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 		if (referenceType == ReferenceType.REGISTRY_NAME) {
 			target = TxnUtils.asId(account, spec);
 		} else {
-//			account = asAccountString(lookUpAccountWithAlias(spec, aliasKeySource));
 			target = lookUpAccountWithAlias(spec, aliasKeySource);
 		}
 

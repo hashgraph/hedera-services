@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
 
@@ -63,6 +63,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 		this.account = account;
 		this.tokens.addAll(List.of(tokens));
 	}
+
 	public HapiTokenDissociate(String reference, ReferenceType type, List<String> tokens) {
 		this.tokens.addAll(tokens);
 		this.referenceType = type;
@@ -86,12 +87,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID aId;
-		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-			aId = asIdForKeyLookUp(account, spec);
-		} else {
-			aId = TxnUtils.asId(account, spec);
-		}
+		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
 		TokenDissociateTransactionBody opBody = spec
 				.txns()
 				.<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(

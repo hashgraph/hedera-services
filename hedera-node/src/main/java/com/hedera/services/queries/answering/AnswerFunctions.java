@@ -35,7 +35,8 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
+import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
+
 
 @Singleton
 public class AnswerFunctions {

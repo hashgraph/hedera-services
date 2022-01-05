@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -828,5 +829,9 @@ public final class MiscUtils {
 		} catch (InvalidProtocolBufferException ignore) {
 			return false;
 		}
+	}
+
+	public static AccountID getUsableAccountID(AccountID id, AliasManager aliasManager) {
+		return id.getAlias().isEmpty() ? id : aliasManager.lookupIdBy(id.getAlias()).toGrpcAccountId();
 	}
 }

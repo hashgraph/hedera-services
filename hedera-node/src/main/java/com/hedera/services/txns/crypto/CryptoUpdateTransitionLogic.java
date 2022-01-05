@@ -46,8 +46,8 @@ import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -157,7 +157,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		// should we also check if proxy accountID is valid and exists if not alias ?
+		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
 			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId(), aliasManager)) {

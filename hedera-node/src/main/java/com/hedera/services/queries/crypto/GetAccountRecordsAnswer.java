@@ -36,7 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
+import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;

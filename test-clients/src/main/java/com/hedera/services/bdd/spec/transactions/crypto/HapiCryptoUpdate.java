@@ -57,7 +57,6 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
@@ -176,7 +175,6 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 			id = TxnUtils.asId(account, spec);
 		} else {
 			id = asIdForKeyLookUp(aliasKeySource, spec);
-			account = asAccountString(id);
 		}
 
 		CryptoUpdateTransactionBody opBody = spec

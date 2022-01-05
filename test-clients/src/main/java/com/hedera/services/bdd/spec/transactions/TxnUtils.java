@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -199,6 +200,16 @@ public class TxnUtils {
 		return spec.registry().hasAccountId(lookedUpKey) ?
 				spec.registry().getAccountID(lookedUpKey) :
 				asIdWithAlias(key.toByteString());
+	}
+
+
+	public static AccountID getIdWithAliasLookUp(final String account, final HapiApiSpec spec,
+			final ReferenceType type) {
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			return asIdForKeyLookUp(account, spec);
+		} else {
+			return TxnUtils.asId(account, spec);
+		}
 	}
 
 	public static AccountID asIdWithAlias(final ByteString s) {

@@ -48,7 +48,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
@@ -69,10 +69,12 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 		this.account = account;
 		this.tokens.addAll(List.of(tokens));
 	}
+
 	public HapiTokenAssociate(String account, List<String> tokens) {
 		this.account = account;
 		this.tokens.addAll(tokens);
 	}
+
 	public HapiTokenAssociate(String reference, ReferenceType type, List<String> tokens) {
 		this.tokens.addAll(tokens);
 		this.referenceType = type;
@@ -132,12 +134,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID aId;
-		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-			aId = asIdForKeyLookUp(account, spec);
-		} else {
-			aId = TxnUtils.asId(account, spec);
-		}
+		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
 		TokenAssociateTransactionBody opBody = spec
 				.txns()
 				.<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(

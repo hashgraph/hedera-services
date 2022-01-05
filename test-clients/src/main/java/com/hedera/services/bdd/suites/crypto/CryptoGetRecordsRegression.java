@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -77,32 +78,29 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 	}
 
 	private HapiApiSpec getAccountRecordUsingAlias() {
-		String memo = "Dim galleries, dusky corridors got past...";
 		String alias = "alias";
 		String payer = "payer";
 
-		return defaultHapiSpec("SucceedsNormally")
+		return defaultHapiSpec("getAccountRecordUsingAlias")
 				.given(
 						newKeyNamed(alias),
 						cryptoCreate(payer)
 				).when(
-						cryptoTransfer(tinyBarsFromToWithAlias(GENESIS, alias, ONE_HUNDRED_HBARS))
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
 								.payingWith(payer)
-								.memo(memo)
 								.via("autoCreateTransfer"),
-						cryptoTransfer(tinyBarsFromToWithAlias(alias, payer, 1L))
-								.payingWith(payer)
-								.memo(memo)
-								.signedBy(payer, alias)
+						getTxnRecord("autoCreateTransfer").andAllChildRecords().logged(),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, payer, 1L))
+								.payingWithAlias(alias)
+								.signedBy(alias, DEFAULT_PAYER)
 								.via("transferTxn")
 				).then(
 						getAliasedAccountRecords(alias).has(AssertUtils.inOrder(
 								recordWith()
 										.txnId("transferTxn")
-										.memo(memo)
-										.transfers(including(tinyBarsFromToWithAlias(alias, payer, 1L)))
+										.transfers(including(tinyBarsFromTo(DEFAULT_PAYER, payer, 1L)))
 										.status(SUCCESS)
-										.payer(payer)))
+										.payer(alias))).logged()
 				);
 	}
 

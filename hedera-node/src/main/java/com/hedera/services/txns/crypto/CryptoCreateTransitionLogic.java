@@ -43,8 +43,8 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.queries.QueryUtils.getUsableAccountID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -184,7 +184,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
 
-		//  should we also check if proxy accountID is valid ?
+		//  should we also check if proxy accountID is valid and exists in address book ?
 		if (op.hasProxyAccountID() && !validator.isExistingAliasedID(op.getProxyAccountID(), aliasManager)) {
 			return INVALID_ALIAS_KEY;
 		}

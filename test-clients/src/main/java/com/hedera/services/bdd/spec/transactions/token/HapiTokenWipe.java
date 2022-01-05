@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
@@ -114,19 +114,14 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn, subType);
 		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		tokenOpsUsage.tokenWipeUsage(suFrom(svo), baseTransactionMeta, tokenWipeMeta, accumulator );
+		tokenOpsUsage.tokenWipeUsage(suFrom(svo), baseTransactionMeta, tokenWipeMeta, accumulator);
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId;
-		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-			aId = asIdForKeyLookUp(account, spec);
-		} else {
-			aId = TxnUtils.asId(account, spec);
-		}
+		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
 		TokenWipeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(

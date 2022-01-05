@@ -136,10 +136,7 @@ public interface OptionValidator {
 	}
 
 	default boolean isExistingAliasedID(AccountID id, AliasManager aliasManager) {
-		if (!id.getAlias().isEmpty() && id.getAccountNum() == 0 &&
-				aliasManager.lookupIdBy(id.getAlias()).equals(EntityNum.MISSING_NUM)) {
-			return false;
-		}
-		return true;
+		return !(!id.getAlias().isEmpty() && id.getAccountNum() == 0 &&
+				aliasManager.lookupIdBy(id.getAlias()).equals(EntityNum.MISSING_NUM));
 	}
 }

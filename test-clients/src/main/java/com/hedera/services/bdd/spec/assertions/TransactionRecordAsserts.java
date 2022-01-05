@@ -53,6 +53,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts payerWithAlias(String account) {
+		registerIdLookupAssert(account, r -> r.getTransactionID().getAccountID(), AccountID.class, "Bad payer!");
+		return this;
+	}
+
 	public TransactionRecordAsserts txnId(String expectedTxn) {
 		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
 			try {
