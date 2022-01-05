@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingNfts;
@@ -65,6 +66,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 	@Mock
 	private AutoCreationLogic autoAccountCreator;
+	@Mock
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	void setup() {
@@ -105,7 +108,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				aliasManager);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator);
 	}

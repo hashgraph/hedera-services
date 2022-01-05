@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
@@ -141,6 +142,8 @@ class LedgerBalanceChangesTest {
 	private EntityIdSource entityIdSource;
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
+	@Mock
+	private AliasManager aliasManager;
 
 	private HederaLedger subject;
 
@@ -174,7 +177,8 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				aliasManager);
 
 		tokenStore.rebuildViews();
 
@@ -295,7 +299,8 @@ class LedgerBalanceChangesTest {
 				dynamicProperties,
 				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				aliasManager);
 
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties,

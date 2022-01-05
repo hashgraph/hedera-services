@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -75,6 +76,7 @@ import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -83,11 +85,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -128,6 +132,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public HederaTokenStore(
@@ -138,7 +143,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final GlobalDynamicProperties properties,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final AliasManager aliasManager
 	) {
 		super(ids);
 		this.tokens = tokens;
@@ -148,6 +154,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
+		this.aliasManager = aliasManager;
 		/* Known-treasuries view is re-built on restart or reconnect */
 	}
 
@@ -427,6 +434,32 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
 
+	@Override
+	public Pair<AccountID, ResponseCodeEnum> fetchAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
+		var newAccountId = AccountID.getDefaultInstance();
+		var validity = OK;
+		if (!grpcId.getAlias().isEmpty()) {
+			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
+			if (accountNum == MISSING_NUM) {
+				return Pair.of(grpcId, INVALID_ALIAS_KEY);
+			}
+			newAccountId = AccountID.newBuilder()
+					.setShardNum(grpcId.getShardNum())
+					.setRealmNum(grpcId.getRealmNum())
+					.setAccountNum(accountNum.longValue())
+					.build();
+		} else {
+			newAccountId = grpcId;
+		}
+
+		validity = usableOrElse(newAccountId, invalidAccountID);
+		if (validity != OK) {
+			return Pair.of(newAccountId, validity);
+		}
+
+		return Pair.of(newAccountId, OK);
+	}
+
 	public void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId) {
 		throwIfKnownTreasuryIsMissing(aId);
 		knownTreasuries.get(aId).remove(tId);
@@ -502,7 +535,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var validity = OK;
 		final var isExpiryOnly = affectsExpiryAtMost(changes);
 
-		validity = checkAutoRenewAccount(changes);
+		final var autoRenewAccountLookup = checkNewAutoRenewAccount(changes);
+		validity = autoRenewAccountLookup.getRight();
+		if (validity != OK) {
+			return validity;
+		}
+
+		final var treasuryAccountLookUp = checkNewTreasuryAccount(changes);
+		validity = treasuryAccountLookUp.getRight();
 		if (validity != OK) {
 			return validity;
 		}
@@ -544,7 +584,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			updateAdminKeyIfAppropriate(token, changes);
-			updateAutoRenewAccountIfAppropriate(token, changes);
+			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.getLeft());
 			updateAutoRenewPeriodIfAppropriate(token, changes);
 
 			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
@@ -557,22 +597,25 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateTokenSymbolIfAppropriate(token, changes);
 			updateTokenNameIfAppropriate(token, changes);
-			updateTreasuryIfAppropriate(token, changes, tId);
+			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.getLeft(), tId);
 			updateMemoIfAppropriate(token, changes);
 			updateExpiryIfAppropriate(token, changes);
 		});
 		return appliedValidity.get();
 	}
 
-	private ResponseCodeEnum checkAutoRenewAccount(final TokenUpdateTransactionBody changes) {
-		ResponseCodeEnum validity = OK;
+	private Pair<AccountID, ResponseCodeEnum> checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
-			validity = usableOrElse(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (validity != OK) {
-				return validity;
-			}
+			return fetchAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		}
-		return validity;
+		return Pair.of(AccountID.getDefaultInstance(), OK);
+	}
+
+	private Pair<AccountID, ResponseCodeEnum> checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
+		if (changes.hasTreasury()) {
+			return fetchAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		}
+		return Pair.of(AccountID.getDefaultInstance(), OK);
 	}
 
 	private void processExpiry(
@@ -641,9 +684,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void updateAutoRenewAccountIfAppropriate(final MerkleToken token,
-			final TokenUpdateTransactionBody changes) {
-		if (changes.hasAutoRenewAccount()) {
-			token.setAutoRenewAccount(fromGrpcAccountId(changes.getAutoRenewAccount()));
+			final AccountID newAutoRenewId) {
+		if (!newAutoRenewId.equals(AccountID.getDefaultInstance())) {
+			token.setAutoRenewAccount(fromGrpcAccountId(newAutoRenewId));
 		}
 	}
 
@@ -682,13 +725,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void updateTreasuryIfAppropriate(final MerkleToken token,
-			final TokenUpdateTransactionBody changes,
+			final AccountID newTreasury,
 			final TokenID tId) {
-		if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
-			final var treasuryId = fromGrpcAccountId(changes.getTreasury());
-			removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
-			token.setTreasury(treasuryId);
-			addKnownTreasury(changes.getTreasury(), tId);
+		if (!newTreasury.equals(AccountID.getDefaultInstance())) {
+			if (!newTreasury.equals(token.treasury().toGrpcAccountId())) {
+				final var treasuryId = fromGrpcAccountId(newTreasury);
+				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
+				token.setTreasury(treasuryId);
+				addKnownTreasury(newTreasury, tId);
+			}
 		}
 	}
 
