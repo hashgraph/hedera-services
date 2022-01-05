@@ -87,7 +87,10 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
 		final var memo = op.getMemo();
 		final var autoRenewPeriod = op.getAutoRenewPeriod();
-		final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccount());
+		final var autoRenewGrpc = op.getAutoRenewAccount();
+		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewGrpc.getAlias(),
+				autoRenewGrpc.getAccountNum());
+		final var autoRenewAccountId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
 
 		/* --- Validate --- */
 		final var memoValidationResult = validator.memoCheck(memo);

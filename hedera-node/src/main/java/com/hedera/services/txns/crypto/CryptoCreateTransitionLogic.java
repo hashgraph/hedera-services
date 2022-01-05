@@ -190,7 +190,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 
 		//  should we also check if proxy accountID is valid and exists in address book ?
-		if (op.hasProxyAccountID() && !validator.isExistingAliasedID(op.getProxyAccountID(), aliasManager)) {
+		if (op.hasProxyAccountID() && !validator.isExistingAliasedID(op.getProxyAccountID())) {
 			return INVALID_ALIAS_KEY;
 		}
 

@@ -200,7 +200,7 @@ class CryptoCreateTransitionLogicTest {
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
 		willCallRealMethod().given(validator)
-				.isExistingAliasedID(cryptoCreateTxn.getCryptoCreateAccount().getProxyAccountID(), aliasManager);
+				.isExistingAliasedID(cryptoCreateTxn.getCryptoCreateAccount().getProxyAccountID());
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}

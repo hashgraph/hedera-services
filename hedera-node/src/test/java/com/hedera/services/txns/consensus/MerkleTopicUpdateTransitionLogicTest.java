@@ -30,8 +30,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.ALIASED_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_ACCOUNT;
@@ -104,6 +106,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private TopicUpdateTransitionLogic subject;
+	private AccountStore accountStore;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	@BeforeEach
@@ -124,10 +127,11 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
 		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		accountStore = mock(AccountStore.class);
 
 		ledger = mock(HederaLedger.class);
 		subject = new TopicUpdateTransitionLogic(
-				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian);
+				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian, accountStore);
 	}
 
 	@Test
@@ -157,6 +161,27 @@ class MerkleTopicUpdateTransitionLogicTest {
 
 		// expect:
 		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(transactionBody));
+	}
+
+	@Test
+	void syntaxCheckWithValidAliasedAutoRenewAccount() throws Throwable {
+		givenExistingTopicWithAdminKey();
+		givenValidTransactionWithAliasedAutoRenewAccount();
+		given(accountStore.getAccountNumFromAlias(ALIASED_ACCOUNT.getAlias(), ALIASED_ACCOUNT.getAccountNum()))
+				.willReturn(MISC_ACCOUNT.getAccountNum());
+
+		subject.doStateTransition();
+
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
+		assertNotNull(topic);
+		verify(transactionContext).setStatus(SUCCESS);
+		assertEquals(VALID_MEMO, topic.getMemo());
+		assertArrayEquals(JKey.mapKey(updatedAdminKey).serialize(), topic.getAdminKey().serialize());
+		assertArrayEquals(JKey.mapKey(updatedSubmitKey).serialize(), topic.getSubmitKey().serialize());
+		assertEquals(VALID_AUTORENEW_PERIOD_SECONDS, topic.getAutoRenewDurationSeconds());
+		assertEquals(EntityId.fromGrpcAccountId(MISC_ACCOUNT), topic.getAutoRenewAccountId());
+		assertEquals(updatedExpirationTime.getEpochSecond(), topic.getExpirationTimestamp().getSeconds());
+		verify(sigImpactHistorian).markEntityChanged(TOPIC_ID.getTopicNum());
 	}
 
 	@Test
@@ -530,14 +555,22 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 	}
 
+	private void givenValidTransactionWithAliasedAutoRenewAccount() {
+		givenValidTransactionWithAllOptions(ALIASED_ACCOUNT);
+	}
+
 	private void givenValidTransactionWithAllOptions() {
+		givenValidTransactionWithAllOptions(MISC_ACCOUNT);
+	}
+
+	private void givenValidTransactionWithAllOptions(AccountID autoRenewAccount) {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
 						.setMemo(StringValue.of(VALID_MEMO))
 						.setAdminKey(updatedAdminKey)
 						.setSubmitKey(updatedSubmitKey)
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build())
-						.setAutoRenewAccount(MISC_ACCOUNT)
+						.setAutoRenewAccount(autoRenewAccount)
 						.setExpirationTime(Timestamp.newBuilder().setSeconds(updatedExpirationTime.getEpochSecond()))
 		);
 		given(validator.hasGoodEncoding(updatedAdminKey)).willReturn(true);

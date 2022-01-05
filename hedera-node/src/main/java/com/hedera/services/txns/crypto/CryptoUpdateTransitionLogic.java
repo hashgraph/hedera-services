@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -166,7 +166,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
-			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId(), aliasManager)) {
+			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId())) {
 				return INVALID_ALIAS_KEY;
 			}
 		}

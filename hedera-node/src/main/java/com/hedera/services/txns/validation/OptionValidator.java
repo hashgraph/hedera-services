@@ -21,7 +21,6 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -90,6 +89,8 @@ public interface OptionValidator {
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
+	boolean isExistingAliasedID(AccountID id);
+
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
 	}
@@ -133,10 +134,5 @@ public interface OptionValidator {
 			Instant estimatedConsensusTime
 	) {
 		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
-	}
-
-	default boolean isExistingAliasedID(AccountID id, AliasManager aliasManager) {
-		return !(!id.getAlias().isEmpty() && id.getAccountNum() == 0 &&
-				aliasManager.lookupIdBy(id.getAlias()).equals(EntityNum.MISSING_NUM));
 	}
 }

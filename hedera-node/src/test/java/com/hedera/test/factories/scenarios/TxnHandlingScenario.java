@@ -71,6 +71,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
@@ -386,6 +387,8 @@ public interface TxnHandlingScenario {
 	String MISC_ACCOUNT_ID = "0.0.1339";
 	AccountID MISC_ACCOUNT = asAccount(MISC_ACCOUNT_ID);
 	KeyTree MISC_ACCOUNT_KT = withRoot(ed25519());
+
+	AccountID ALIASED_ACCOUNT = asAccountWithAlias("aaa");
 
 	String SYS_ACCOUNT_ID = "0.0.666";
 

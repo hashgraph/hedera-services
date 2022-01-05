@@ -184,21 +184,20 @@ public class AccountStore {
 
 	/**
 	 * Fetches the account Num from the alias map that is mapped to the given alias
+	 *
 	 * @param alias
-	 * 			alias of the account.
+	 * 		alias of the account.
 	 * @param possibleAccountNum
-	 * 			AccountNum to be used if the alias is empty.
-	 * @return
-	 * 		AccountNum of the alias account if alias is found in the aliasManager.
+	 * 		AccountNum to be used if the alias is empty.
+	 * @return AccountNum of the alias account if alias is found in the aliasManager.
 	 */
 	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum) {
-		if (!alias.isEmpty()) {
+		if (!alias.isEmpty() && possibleAccountNum == 0) {
 			var entityNum = aliasManager.lookupIdBy(alias);
 			validateTrue(entityNum != EntityNum.MISSING_NUM, INVALID_ALIAS_KEY);
 			return entityNum.longValue();
-		} else {
-			return possibleAccountNum;
 		}
+		return possibleAccountNum;
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {

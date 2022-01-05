@@ -26,6 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -125,6 +126,7 @@ class ContextOptionValidatorTest {
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -144,7 +146,8 @@ class ContextOptionValidatorTest {
 		topics = mock(MerkleMap.class);
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
-		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
+		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(
+				now.plusSeconds(555L).getEpochSecond()).get();
 		given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 		given(topics.get(EntityNum.fromTopicId(missingTopicId))).willReturn(null);
 		given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
@@ -158,9 +161,10 @@ class ContextOptionValidatorTest {
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
+		aliasManager = mock(AliasManager.class);
 
 		subject = new ContextOptionValidator(
-				nodeInfo, properties, txnCtx, dynamicProperties);
+				nodeInfo, properties, txnCtx, dynamicProperties, aliasManager);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
@@ -672,7 +676,7 @@ class ContextOptionValidatorTest {
 	@Test
 	void rejectsInvalidMetadata() {
 		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
-		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[] { 1, 2, 3, 4 }));
 	}
 
 	@Test
