@@ -137,13 +137,18 @@ class DeterministicThrottlingTest {
 		subject.rebuildFor(defs);
 
 		final var accessor = scheduling(scheduledSubmit);
-		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 150; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 
 		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
 		final var aNow = throttlesNow.get(0);
 
-		assertFalse(ans);
-		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(149999992500000L, aNow.used());
 	}
 
 	@Test
@@ -176,6 +181,31 @@ class DeterministicThrottlingTest {
 								.addAccountAmounts(AccountAmount.newBuilder()
 										.setAmount(+1_000_000_000)
 										.setAccountID(AccountID.newBuilder().setAlias(alias)))))
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferWithAutoCreation);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases() throws IOException {
+		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(-1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.3333")))
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(+1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.4444")))))
 				.build();
 		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
 		subject.rebuildFor(defs);
@@ -361,10 +391,15 @@ class DeterministicThrottlingTest {
 		given(accessor.getNumAutoCreations()).willReturn(0);
 		subject.rebuildFor(defs);
 
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 10000; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 
 		verify(accessor, never()).countAutoCreationsWith(aliasManager);
-		assertFalse(ans);
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
 	}
 
 	@Test
