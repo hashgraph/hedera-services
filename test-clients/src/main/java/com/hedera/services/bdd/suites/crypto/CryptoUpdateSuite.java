@@ -50,13 +50,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -113,9 +116,73 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
 						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected()
+						usdFeeAsExpected(),
+						canUpdateUsingAlias(),
+						canUpdateProxyUsingAlias(),
+						failsWhenInvalidAlias()
 				}
 		);
+	}
+
+	private HapiApiSpec failsWhenInvalidAlias() {
+		String alias = "alias";
+		String memo = "Second";
+		return defaultHapiSpec("CanUpdateMemo")
+				.given(
+						newKeyNamed(alias)
+				).when(
+						cryptoUpdate(alias)
+								.entityMemo(memo)
+								.hasPrecheck(INVALID_ACCOUNT_ID)
+				).then(
+						getAccountInfo(alias)
+								.has(accountWith().memo(memo))
+				);
+	}
+
+	private HapiApiSpec canUpdateProxyUsingAlias() {
+		String alias = "alias";
+		String proxyAlias = "proxyAlias";
+		String memo = "MEMO";
+		return defaultHapiSpec("CanUpdateMemo")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(proxyAlias),
+						sortedCryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, proxyAlias, ONE_HUNDRED_HBARS))
+								.via("transferTxn")
+				).when(
+						getAccountInfo(alias)
+								.has(accountWith().memo("auto-created account")),
+						cryptoUpdate(alias)
+								.newProxy(proxyAlias)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getAccountInfo(alias)
+								.has(accountWith().memo(memo))
+				);
+	}
+
+	private HapiApiSpec canUpdateUsingAlias() {
+		String alias = "alias";
+		String memo = "Second";
+		return defaultHapiSpec("CanUpdateMemo")
+				.given(
+						newKeyNamed(alias),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
+								.via("transferTxn")
+				).when(
+						getAccountInfo(alias)
+								.has(accountWith().memo("auto-created account")),
+						cryptoUpdate(alias)
+								.entityMemo(memo)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getAccountInfo(alias)
+								.has(accountWith().memo(memo))
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {

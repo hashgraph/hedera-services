@@ -157,7 +157,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		// TODO : should we also check if proxy accountID is valid and exists if not alias
+		// should we also check if proxy accountID is valid and exists if not alias ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
 			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId(), aliasManager)) {

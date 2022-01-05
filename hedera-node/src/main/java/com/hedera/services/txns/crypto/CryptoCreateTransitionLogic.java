@@ -184,7 +184,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
 
-		// TODO : should we also check if proxy accountID is valid
+		//  should we also check if proxy accountID is valid ?
 		if (op.hasProxyAccountID() && !validator.isExistingAliasedID(op.getProxyAccountID(), aliasManager)) {
 			return INVALID_ALIAS_KEY;
 		}

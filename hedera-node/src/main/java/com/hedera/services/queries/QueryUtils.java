@@ -26,6 +26,10 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class QueryUtils {
+	private QueryUtils() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	public static AccountID getUsableAccountID(AccountID id, AliasManager aliasManager) {
 		return id.getAlias().isEmpty() ? id : aliasManager.lookupIdBy(id.getAlias()).toGrpcAccountId();
 	}

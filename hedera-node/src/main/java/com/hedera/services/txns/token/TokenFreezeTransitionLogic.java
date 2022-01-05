@@ -67,7 +67,7 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
 
 		final var grpcTokenId = op.getToken();
 		final var grpcId = op.getAccount();
-		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());;
+		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());
 
 		/* --- Convert to model ids --- */
 
