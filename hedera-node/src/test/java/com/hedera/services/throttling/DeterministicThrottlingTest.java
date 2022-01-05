@@ -153,6 +153,7 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations() throws IOException {
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		final var scheduledXferNoAliases = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
 				.build();
@@ -197,6 +198,7 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases() throws IOException {
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
 						.setTransfers(TransferList.newBuilder()
