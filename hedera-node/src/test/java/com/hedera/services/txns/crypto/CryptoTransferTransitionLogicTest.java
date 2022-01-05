@@ -249,6 +249,7 @@ class CryptoTransferTransitionLogicTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
 				pretendXferTxn.getCryptoTransfer().getTransfers(),

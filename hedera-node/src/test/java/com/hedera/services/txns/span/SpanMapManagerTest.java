@@ -188,6 +188,7 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:
