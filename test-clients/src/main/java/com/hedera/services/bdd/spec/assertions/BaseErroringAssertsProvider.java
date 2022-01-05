@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
@@ -43,11 +44,21 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
 		});
 	}
 
+	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
+		registerIdLookupAssert(key, getActual, cls, err, ReferenceType.REGISTRY_NAME);
+	}
+
 	/* Helper for asserting something about a ContractID, FileID, AccountID, etc. */
 	@SuppressWarnings("unchecked")
-	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
+	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err,
+			ReferenceType type) {
 		registerProvider((spec, o) -> {
-			R expected = spec.registry().getId(key, cls);
+			R expected;
+			if (type == ReferenceType.ALIAS_KEY_NAME) {
+				expected = spec.registry().getId(spec.registry().getKey(key).toByteString().toStringUtf8(), cls);
+			} else {
+				expected = spec.registry().getId(key, cls);
+			}
 			R actual = getActual.apply((T) o);
 			Assertions.assertEquals(expected, actual, err);
 		});

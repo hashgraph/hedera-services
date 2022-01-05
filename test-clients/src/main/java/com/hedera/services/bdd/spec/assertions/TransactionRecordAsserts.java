@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -54,7 +55,8 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 	}
 
 	public TransactionRecordAsserts payerWithAlias(String account) {
-		registerIdLookupAssert(account, r -> r.getTransactionID().getAccountID(), AccountID.class, "Bad payer!");
+		registerIdLookupAssert(account, r -> r.getTransactionID().getAccountID(), AccountID.class, "Bad payer!",
+				ReferenceType.ALIAS_KEY_NAME);
 		return this;
 	}
 

@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 public class TokenMovement {
@@ -183,7 +184,7 @@ public class TokenMovement {
 
 	private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
 		return AccountAmount.newBuilder()
-				.setAccountID(asId(name, spec))
+				.setAccountID(asIdForKeyLookUp(name, spec))
 				.setAmount(value)
 				.build();
 	}

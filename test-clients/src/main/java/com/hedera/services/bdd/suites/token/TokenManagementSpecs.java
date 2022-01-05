@@ -91,19 +91,19 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						freezeMgmtSuccessCasesWork(),
-//						kycMgmtFailureCasesWork(),
-//						kycMgmtSuccessCasesWork(),
-//						supplyMgmtSuccessCasesWork(),
-//						wipeAccountFailureCasesWork(),
-//						wipeAccountSuccessCasesWork(),
-//						supplyMgmtFailureCasesWork(),
-//						burnTokenFailsDueToInsufficientTreasuryBalance(),
-//						frozenTreasuryCannotBeMintedOrBurned(),
-//						revokedKYCTreasuryCannotBeMintedOrBurned(),
-//						fungibleCommonMaxSupplyReachWork(),
-//						mintingMaxLongValueWorks(),
-//						nftMintProvidesMintedNftsAndNewTotalSupply(),
+						freezeMgmtSuccessCasesWork(),
+						kycMgmtFailureCasesWork(),
+						kycMgmtSuccessCasesWork(),
+						supplyMgmtSuccessCasesWork(),
+						wipeAccountFailureCasesWork(),
+						wipeAccountSuccessCasesWork(),
+						supplyMgmtFailureCasesWork(),
+						burnTokenFailsDueToInsufficientTreasuryBalance(),
+						frozenTreasuryCannotBeMintedOrBurned(),
+						revokedKYCTreasuryCannotBeMintedOrBurned(),
+						fungibleCommonMaxSupplyReachWork(),
+						mintingMaxLongValueWorks(),
+						nftMintProvidesMintedNftsAndNewTotalSupply(),
 						tokenOpsWithAutoCreatedAccount()
 				}
 		);
@@ -115,52 +115,54 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec tokenOpsWithAutoCreatedAccount() {
+		final var validAlias = "validAlias";
+		final var invalidAlias = "invalidAlias";
+		final var token = "tokenA";
+
 		return defaultHapiSpec("TokenOpsWithAutoCreatedAccount")
 				.given(
-						newKeyNamed("validAlias"),
-						newKeyNamed("invalidAlias"),
+						newKeyNamed(validAlias),
+						newKeyNamed(invalidAlias),
 						newKeyNamed("adminKey"),
 						newKeyNamed("freezeKey"),
 						newKeyNamed("kycKey"),
 						newKeyNamed("wipeKey"),
-						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "validAlias", ONE_HUNDRED_HBARS))
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, validAlias, ONE_HUNDRED_HBARS))
 								.via("autoCreate")
 				)
 				.when(
-						getTxnRecord("autoCreate")
-								.hasAliasInChildRecord("validAlias", 0),
-						tokenCreate("tokenA")
+						getTxnRecord("autoCreate").hasAliasInChildRecord(validAlias, 0),
+						tokenCreate(token)
 								.initialSupply(1000)
 								.adminKey("adminKey")
 								.freezeKey("freezeKey")
 								.kycKey("kycKey")
 								.wipeKey("wipeKey")
 								.treasury(DEFAULT_PAYER),
-						tokenAssociateAliased("validAlias", "tokenA")
+						tokenAssociateAliased(validAlias, "tokenA")
 				)
 				.then(
-						grantTokenKycAliased("tokenA", "validAlias"),
-						grantTokenKycAliased("tokenA", "invalidAlias")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
-						tokenUnfreezeAliased("tokenA", "validAlias"),
-						tokenUnfreezeAliased("tokenA", "invalidAlias")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
-//						cryptoTransfer(
-//								moving(500, "tokenA").between(DEFAULT_PAYER, "validAlias")),
-//						getAliasedAccountInfo("validAlias")
-//								.hasToken(relationshipWith("tokenA").balance(500))
-//								.logged(),
-						revokeTokenKycAliased("tokenA", "validAlias"),
-						revokeTokenKycAliased("tokenA", "invalidAlias")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
-						tokenFreezeAliased("tokenA", "validAlias"),
-						tokenFreezeAliased("tokenA", "invalidAlias")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
-						wipeTokenAccountAliased("tokenA", "validAlias", 250),
-						wipeTokenAccountAliased("tokenA", "invalidAlias", 250)
-								.hasKnownStatus(INVALID_ALIAS_KEY),
-						getAliasedAccountInfo("validAlias")
-								.hasToken(relationshipWith("tokenA").balance(250))
+						grantTokenKycAliased(token, validAlias),
+						grantTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+
+						tokenUnfreezeAliased(token, validAlias),
+						tokenUnfreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+						cryptoTransfer(
+								moving(500, token).between(DEFAULT_PAYER, validAlias)),
+						getAliasedAccountInfo(validAlias)
+								.hasToken(relationshipWith(token).balance(500))
+								.logged(),
+						revokeTokenKycAliased(token, validAlias),
+						revokeTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+
+						tokenFreezeAliased(token, validAlias),
+						tokenFreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+
+						wipeTokenAccountAliased(token, validAlias, 250).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+						wipeTokenAccountAliased(token, invalidAlias, 250).hasKnownStatus(INVALID_ALIAS_KEY),
+
+						getAliasedAccountInfo(validAlias)
+								.hasToken(relationshipWith(token).balance(500))
 								.logged()
 				);
 	}

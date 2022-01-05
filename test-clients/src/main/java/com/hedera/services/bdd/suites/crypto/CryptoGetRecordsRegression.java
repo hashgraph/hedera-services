@@ -64,14 +64,14 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						failsForDeletedAccount(),
-//						failsForMissingAccount(),
-//						failsForMissingPayment(),
-//						failsForInsufficientPayment(),
-//						failsForMalformedPayment(),
-//						failsForUnfundablePayment(),
-//						succeedsNormally(),
-//						getAccountRecords_testForDuplicates(),
+						failsForDeletedAccount(),
+						failsForMissingAccount(),
+						failsForMissingPayment(),
+						failsForInsufficientPayment(),
+						failsForMalformedPayment(),
+						failsForUnfundablePayment(),
+						succeedsNormally(),
+						getAccountRecords_testForDuplicates(),
 						getAccountRecordUsingAlias()
 				}
 		);
@@ -100,7 +100,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 										.txnId("transferTxn")
 										.transfers(including(tinyBarsFromTo(DEFAULT_PAYER, payer, 1L)))
 										.status(SUCCESS)
-										.payer(alias))).logged()
+										.payerWithAlias(alias))).logged()
 				);
 	}
 
