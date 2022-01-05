@@ -107,6 +107,7 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
 		given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
 
 		// expect:
@@ -149,6 +150,11 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.areNftsEnabled()).willReturn(!areNftsEnabled);
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+		// and:
+		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(!autoCreationEnabled);
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 	}
 
 	private final int maxExplicitHbarAdjusts = 5;
@@ -157,13 +163,15 @@ class ImpliedTransfersTest {
 	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
 	private final boolean areNftsEnabled = true;
+	private final boolean autoCreationEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
 			maxExplicitOwnershipChanges,
 			maxFeeNesting,
 			maxBalanceChanges,
-			areNftsEnabled);
+			areNftsEnabled,
+			autoCreationEnabled);
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	private final Id someId = new Id(1, 2, 3);
