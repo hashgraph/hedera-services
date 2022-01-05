@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.hedera.services.context.MutableStateChildren;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.StateView;
@@ -95,7 +96,7 @@ class GetAccountRecordsAnswerTest {
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,

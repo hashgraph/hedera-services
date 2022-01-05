@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
@@ -78,6 +79,7 @@ class CryptoDeleteTransitionLogicTest {
 
 	private HederaLedger ledger;
 	private TransactionBody cryptoDeleteTxn;
+	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private AliasManager aliasManager;
@@ -93,10 +95,11 @@ class CryptoDeleteTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		aliasManager = mock(AliasManager.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx, aliasManager);
+		subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx, aliasManager);
 	}
 
 	@Test
@@ -158,6 +161,7 @@ class CryptoDeleteTransitionLogicTest {
 		// then:
 		verify(ledger).delete(target, payer);
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
 	}
 
 	@Test

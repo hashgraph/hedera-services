@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.NftId;
@@ -73,22 +74,25 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
 	@Inject
 	public TokenUpdateTransitionLogic(
-			@AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
-			OptionValidator validator,
-			TokenStore tokenStore,
-			HederaLedger ledger,
-			TransactionContext txnCtx,
-			Predicate<TokenUpdateTransactionBody> affectsExpiryOnly
+			final @AreTreasuryWildcardsEnabled boolean allowChangedTreasuryToOwnNfts,
+			final OptionValidator validator,
+			final TokenStore tokenStore,
+			final HederaLedger ledger,
+			final TransactionContext txnCtx,
+			final SigImpactHistorian sigImpactHistorian,
+			final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly
 	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.affectsExpiryOnly = affectsExpiryOnly;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
 	}
 
@@ -186,7 +190,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 							replacedTreasuryBalance);
 				} else {
 					outcome = tokenStore.changeOwnerWildCard(
-							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1), oldTreasury, newTreasury);
+							new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1), oldTreasury,
+							newTreasury);
 				}
 			}
 		}
@@ -196,6 +201,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		txnCtx.setStatus(SUCCESS);
+		sigImpactHistorian.markEntityChanged(id.getTokenNum());
 	}
 
 	@Override

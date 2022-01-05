@@ -21,7 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -70,7 +70,7 @@ class SignedStateSigReqsTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SignedStateSigReqs(
-				fileNumbers, aliasManager, signatureWaivers, properties, workingState, latestSignedState);
+				fileNumbers, aliasManager, signatureWaivers, workingState, latestSignedState);
 	}
 
 	@Test
@@ -79,8 +79,7 @@ class SignedStateSigReqsTest {
 		given(workingState.children()).willReturn(workingChildren);
 		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
 				.willReturn(sigMetadataLookup);
-		given(sigReqsFactory.from(sigMetadataLookup, properties, signatureWaivers))
-				.willReturn(sigRequirements);
+		given(sigReqsFactory.from(sigMetadataLookup, signatureWaivers)).willReturn(sigRequirements);
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
 
@@ -89,7 +88,8 @@ class SignedStateSigReqsTest {
 
 		assertSame(sigRequirements, firstAns);
 		assertSame(sigRequirements, secondAns);
-		verify(sigReqsFactory, times(1)).from(sigMetadataLookup, properties, signatureWaivers);
+		verify(sigReqsFactory, times(1))
+				.from(sigMetadataLookup, signatureWaivers);
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class SignedStateSigReqsTest {
 		given(latestSignedState.children()).willReturn(firstSignedChildren);
 		given(lookupsFactory.from(fileNumbers, aliasManager, firstSignedChildren, TOKEN_META_TRANSFORM))
 				.willReturn(sigMetadataLookup);
-		given(sigReqsFactory.from(sigMetadataLookup, properties, signatureWaivers))
+		given(sigReqsFactory.from(sigMetadataLookup, signatureWaivers))
 				.willReturn(sigRequirements);
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
@@ -110,17 +110,17 @@ class SignedStateSigReqsTest {
 		given(latestSignedState.children()).willReturn(secondSignedChildren);
 		given(lookupsFactory.from(fileNumbers, aliasManager, secondSignedChildren, TOKEN_META_TRANSFORM))
 				.willReturn(sigMetadataLookup);
-		given(sigReqsFactory.from(sigMetadataLookup, properties, signatureWaivers))
+		given(sigReqsFactory.from(sigMetadataLookup, signatureWaivers))
 				.willReturn(otherSigRequirements);
 		final var thirdAns = subject.getBestAvailable();
 		assertSame(otherSigRequirements, thirdAns);
 
-		verify(sigReqsFactory, times(2)).from(sigMetadataLookup, properties, signatureWaivers);
+		verify(sigReqsFactory, times(2)).from(sigMetadataLookup, signatureWaivers);
 	}
 
 	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
-	private static final StateChildren unsignedChildren = new StateChildren();
-	private static final StateChildren workingChildren = new StateChildren();
-	private static final StateChildren firstSignedChildren = new StateChildren(signedAt);
-	private static final StateChildren secondSignedChildren = new StateChildren(signedAt.plusSeconds(3));
+	private static final MutableStateChildren unsignedChildren = new MutableStateChildren();
+	private static final MutableStateChildren workingChildren = new MutableStateChildren();
+	private static final MutableStateChildren firstSignedChildren = new MutableStateChildren(signedAt);
+	private static final MutableStateChildren secondSignedChildren = new MutableStateChildren(signedAt.plusSeconds(3));
 }

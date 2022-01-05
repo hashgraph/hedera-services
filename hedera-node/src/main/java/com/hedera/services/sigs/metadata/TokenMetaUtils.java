@@ -23,7 +23,7 @@ package com.hedera.services.sigs.metadata;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
 
-public class TokenMetaUtils {
+public final class TokenMetaUtils {
 	private TokenMetaUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}

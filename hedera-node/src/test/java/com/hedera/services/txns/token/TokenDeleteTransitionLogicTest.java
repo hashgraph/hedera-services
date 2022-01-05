@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -55,6 +56,7 @@ class TokenDeleteTransitionLogicTest {
 	private Token token;
 
 	private TransactionBody tokenDeleteTxn;
+	private SigImpactHistorian sigImpactHistorian;
 	private TokenDeleteTransitionLogic subject;
 
 	@BeforeEach
@@ -62,7 +64,8 @@ class TokenDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
+		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore, sigImpactHistorian);
 		token = mock(Token.class);
 	}
 
@@ -78,6 +81,7 @@ class TokenDeleteTransitionLogicTest {
 
 		verify(token).delete();
 		verify(typedTokenStore).persistToken(token);
+		verify(sigImpactHistorian).markEntityChanged(tokenId.num());
 	}
 
 	@Test

@@ -20,7 +20,7 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.context.ServicesNodeType;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -40,24 +39,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public final class BasicSubmissionFlow implements SubmissionFlow {
-	private final ServicesNodeType nodeType;
+	private final NodeInfo nodeInfo;
 	private final TransactionPrecheck precheck;
 	private final PlatformSubmissionManager submissionManager;
 
 	@Inject
 	public BasicSubmissionFlow(
-			final ServicesNodeType nodeType,
+			final NodeInfo nodeInfo,
 			final TransactionPrecheck precheck,
 			final PlatformSubmissionManager submissionManager
 	) {
 		this.precheck = precheck;
-		this.nodeType = nodeType;
+		this.nodeInfo = nodeInfo;
 		this.submissionManager = submissionManager;
 	}
 
 	@Override
 	public TransactionResponse submit(final Transaction signedTxn) {
-		if (nodeType == ZERO_STAKE_NODE) {
+		if (nodeInfo.isSelfZeroStake()) {
 			return responseWith(INVALID_NODE_ACCOUNT);
 		}
 

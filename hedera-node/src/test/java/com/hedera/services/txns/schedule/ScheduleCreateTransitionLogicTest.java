@@ -23,6 +23,7 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -114,7 +115,7 @@ class ScheduleCreateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleExecutor executor;
-
+	private SigImpactHistorian sigImpactHistorian;
 	private TransactionBody scheduleCreateTxn;
 	private InHandleActivationHelper activationHelper;
 	private SigMapScheduleClassifier classifier;
@@ -130,7 +131,7 @@ class ScheduleCreateTransitionLogicTest {
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleExecutor.class);
 		merkleSchedule = mock(MerkleSchedule.class);
-
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 		given(accessor.getTxnBytes()).willReturn(bodyBytes);
 
 		classifier = mock(SigMapScheduleClassifier.class);
@@ -144,7 +145,8 @@ class ScheduleCreateTransitionLogicTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-		subject = new ScheduleCreateTransitionLogic(store, txnCtx, activationHelper, validator, executor);
+		subject = new ScheduleCreateTransitionLogic(
+				store, txnCtx, activationHelper, validator, executor, sigImpactHistorian);
 
 		subject.signingsWitness = replSigningWitness;
 		subject.classifier = classifier;
@@ -174,6 +176,7 @@ class ScheduleCreateTransitionLogicTest {
 		verify(txnCtx).addExpiringEntities(any());
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
 	}
 
 	@Test

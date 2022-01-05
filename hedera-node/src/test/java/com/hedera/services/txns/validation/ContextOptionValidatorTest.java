@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -149,13 +150,17 @@ class ContextOptionValidatorTest {
 		given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
 		given(topics.get(EntityNum.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
+		NodeInfo nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.selfAccount()).willReturn(thisNodeAccount);
+
+
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
 		subject = new ContextOptionValidator(
-				thisNodeAccount, properties, txnCtx, dynamicProperties);
+				nodeInfo, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {

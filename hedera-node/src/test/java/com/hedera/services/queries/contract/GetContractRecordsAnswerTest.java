@@ -20,7 +20,7 @@ package com.hedera.services.queries.contract;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
@@ -70,7 +70,7 @@ class GetContractRecordsAnswerTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		accounts = mock(MerkleMap.class);
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,

@@ -20,8 +20,6 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -71,7 +69,6 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
@@ -94,8 +91,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
@@ -174,17 +169,6 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Address provideNodeAddress(Supplier<AddressBook> book, long selfId) {
-		return book.get().getAddress(selfId);
-	}
-
-	@Provides
-	public static ServicesNodeType provideNodeType(Address nodeAddress) {
-		return nodeAddress.getStake() > 0 ? STAKED_NODE : ZERO_STAKE_NODE;
-	}
-
-	@Provides
-	@Singleton
 	public static UnaryOperator<byte[]> provideSigner(Platform platform) {
 		return platform::sign;
 	}
@@ -232,8 +216,8 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@WorkingState
-	public static StateAccessor provideWorkingState(ServicesState initialState) {
-		return new StateAccessor(initialState);
+	public static StateAccessor provideWorkingState() {
+		return new StateAccessor();
 	}
 
 	@Provides

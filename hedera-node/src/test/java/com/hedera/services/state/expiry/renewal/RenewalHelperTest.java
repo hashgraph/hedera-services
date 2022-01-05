@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -142,12 +143,16 @@ class RenewalHelperTest {
 	private TokenStore tokenStore;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private RenewalHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels,
+		subject = new RenewalHelper(
+				tokenStore, sigImpactHistorian, dynamicProps,
+				() -> tokens, () -> accounts, () -> tokenRels,
 				backingAccounts, aliasManager);
 		addEntitiesToAutoAccountsMap();
 	}
@@ -291,6 +296,7 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 		given(accounts.get(expiredKey)).willReturn(expiredAccountZeroBalance);
+		given(aliasManager.forgetAliasIfPresent(expiredKey, accounts)).willReturn(true);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);
@@ -300,10 +306,12 @@ class RenewalHelperTest {
 
 		// then:
 		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
+		verify(sigImpactHistorian).markEntityChanged(brokeExpiredAccountNum);
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
+		verify(sigImpactHistorian).markAliasChanged(expiredAccountZeroBalance.getAlias());
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
@@ -323,7 +331,9 @@ class RenewalHelperTest {
 		backingAccounts.put(IdUtils.asAccount("0.0." + nonExpiredAccountNum), nonExpiredAccount);
 		backingAccounts.put(IdUtils.asAccount("0.0." + brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
+		subject = new RenewalHelper(
+				tokenStore, sigImpactHistorian, dynamicProps,
+				() -> tokens, () -> accountsMap, () -> tokenRels,
 				backingAccounts, aliasManager);
 
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);

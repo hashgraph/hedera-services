@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -50,6 +51,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
@@ -57,16 +59,18 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public ContractUpdateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			UpdateCustomizerFactory customizerFactory,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final UpdateCustomizerFactory customizerFactory,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.customizerFactory = customizerFactory;
 	}
 
@@ -82,6 +86,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
 				ledger.customize(asAccount(id), customizer.get());
+				sigImpactHistorian.markEntityChanged(id.getContractNum());
 				txnCtx.setStatus(SUCCESS);
 			} else {
 				txnCtx.setStatus(result.getRight());

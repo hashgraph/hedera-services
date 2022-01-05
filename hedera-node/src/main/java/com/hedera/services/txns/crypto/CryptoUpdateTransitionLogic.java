@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -79,6 +80,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final AliasManager aliasManager;
@@ -87,12 +89,15 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	public CryptoUpdateTransitionLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties,
-			final AliasManager aliasManager) {
+			final AliasManager aliasManager
+	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
 		this.aliasManager = aliasManager;
 	}
@@ -115,6 +120,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 
 			ledger.customize(target, customizer);
+			sigImpactHistorian.markEntityChanged(target.getAccountNum());
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);

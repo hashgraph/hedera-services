@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
  * Maps to proto Key of type contractID.
  */
 public class JContractIDKey extends JKey {
-
-	private static final long serialVersionUID = 1L;
 	private long shardNum = 0; // the shard number (nonnegative)
 	private long realmNum = 0; // the realm number (nonnegative)
 	private long contractNum = 0; // a nonnegative number unique within its realm

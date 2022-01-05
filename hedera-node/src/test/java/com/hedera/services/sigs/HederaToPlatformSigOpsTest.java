@@ -43,7 +43,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
@@ -58,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -92,7 +92,11 @@ class HederaToPlatformSigOpsTest {
 	private void wellBehavedOrdersAndSigSources() throws Exception {
 		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(payerKey));
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willReturn(new SigningOrderResult<>(payerKey));
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+				.willReturn(new SigningOrderResult<>(otherKeys));
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
@@ -110,36 +114,36 @@ class HederaToPlatformSigOpsTest {
 	void includesSuccessfulExpansions() throws Exception {
 		wellBehavedOrdersAndSigSources();
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(OK, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
 	void returnsImmediatelyOnPayerKeyOrderFailure() {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
 	void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
+		assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
 		assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getPlatformTxn().getSignatures());
 	}
 

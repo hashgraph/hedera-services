@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.TransitionLogic;
@@ -64,15 +65,20 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final HederaLedger ledger;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final AliasManager aliasManager;
 
 	@Inject
-	public CryptoDeleteTransitionLogic(final HederaLedger ledger,
+	public CryptoDeleteTransitionLogic(
+			final HederaLedger ledger,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
-			final AliasManager aliasManager) {
+			final AliasManager aliasManager
+	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.aliasManager = aliasManager;
 	}
 
@@ -98,6 +104,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			}
 
 			ledger.delete(id, beneficiary);
+			sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {

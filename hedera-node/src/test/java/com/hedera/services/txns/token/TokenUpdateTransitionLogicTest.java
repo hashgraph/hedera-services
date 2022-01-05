@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
@@ -110,6 +111,7 @@ class TokenUpdateTransitionLogicTest {
 	private TokenStore store;
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
+	private SigImpactHistorian sigImpactHistorian;
 	private PlatformTxnAccessor accessor;
 	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
 
@@ -121,6 +123,7 @@ class TokenUpdateTransitionLogicTest {
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		token = mock(MerkleToken.class);
 		given(token.adminKey()).willReturn(Optional.of(adminKey));
@@ -146,7 +149,7 @@ class TokenUpdateTransitionLogicTest {
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
 		subject = new TokenUpdateTransitionLogic(
-				true, validator, store, ledger, txnCtx, expiryOnlyCheck);
+				true, validator, store, ledger, txnCtx, sigImpactHistorian, expiryOnlyCheck);
 	}
 
 	@Test
@@ -367,6 +370,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
 	}
 
 	@Test
@@ -429,6 +433,7 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).getTokenBalance(oldTreasury, target);
 		verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
 	}
 
 	@Test
@@ -566,7 +571,7 @@ class TokenUpdateTransitionLogicTest {
 	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
 		final long oldTreasuryBalance = 1;
 		subject = new TokenUpdateTransitionLogic(
-				false, validator, store, ledger, txnCtx, expiryOnlyCheck);
+				false, validator, store, ledger, txnCtx, sigImpactHistorian, expiryOnlyCheck);
 
 		givenValidTxnCtx(true);
 		givenToken(true, true, true);
