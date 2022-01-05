@@ -20,11 +20,13 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -43,6 +45,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -74,6 +77,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -92,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -130,6 +135,8 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 
 class HederaTokenStoreTest {
+	private static final ByteString aliasT = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private static final ByteString aliasA = KeyFactory.getDefaultInstance().newEcdsaSecp256k1().getECDSASecp256K1();
 	private static final Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private static final JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
 	private static final Key adminKey = TOKEN_ADMIN_KT.asKey();
@@ -162,9 +169,11 @@ class HederaTokenStoreTest {
 	private static final long newAutoRenewPeriod = 2_000_000L;
 	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
 	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
+	private static final AccountID newAutoRenewAccountWithAlias = AccountID.newBuilder().setAlias(aliasA).build();
 	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
 	private static final AccountID treasury = IdUtils.asAccount("0.0.3");
 	private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
+	private static final AccountID newTreasuryWithAlias = AccountID.newBuilder().setAlias(aliasT).build();
 	private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
 	private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
 	private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
@@ -192,6 +201,7 @@ class HederaTokenStoreTest {
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private HederaLedger hederaLedger;
+	private AliasManager aliasManager;
 
 	private MerkleToken token;
 	private MerkleToken nonfungibleToken;
@@ -229,6 +239,7 @@ class HederaTokenStoreTest {
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
 				TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
+		given(accountsLedger.exists(newTreasury)).willReturn(true);
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
@@ -236,6 +247,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(accountsLedger.exists(counterparty)).willReturn(true);
 		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(newTreasury, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 
@@ -282,10 +294,14 @@ class HederaTokenStoreTest {
 
 		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 
+		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(aliasT)).willReturn(new EntityNum(1));
+		given(aliasManager.lookupIdBy(aliasA)).willReturn(new EntityNum(6));
+
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
 				ids, TEST_VALIDATOR, sideEffectsTracker, uniqTokenViewsManager, properties,
-				() -> tokens, tokenRelsLedger, nftsLedger);
+				() -> tokens, tokenRelsLedger, nftsLedger, aliasManager);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{
@@ -880,7 +896,7 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
-		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
+		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -888,8 +904,28 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void updateRejectsInvalidNewAutoRenewAlias() {
+		given(aliasManager.lookupIdBy(aliasA)).willReturn(MISSING_NUM);
+		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome);
+	}
+
+	@Test
+	void updateRejectsInvalidNewTreasuryAlias() {
+		given(aliasManager.lookupIdBy(aliasT)).willReturn(MISSING_NUM);
+		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome);
+	}
+
+	@Test
 	void updateRejectsInvalidNewAutoRenewPeriod() {
-		final var op = updateWith(NO_KEYS, misc, true, true, false, false, false)
+		final var op = updateWith(NO_KEYS, misc, true, true, false, false, false, false)
 				.toBuilder()
 				.setAutoRenewPeriod(enduring(-1L))
 				.build();
@@ -1105,6 +1141,35 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void updateHappyPathWorksForEverythingWithAliasAndNewExpiry() {
+		subject.addKnownTreasury(treasury, misc);
+		final Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(misc);
+		givenUpdateTarget(ALL_KEYS, token);
+		final var op = updateWith(ALL_KEYS, misc, true, true, true, true)
+				.toBuilder()
+				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+				.setFeeScheduleKey(newKey)
+				.build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(OK, outcome);
+		verify(token).setSymbol(newSymbol);
+		verify(token).setName(newName);
+		verify(token).setExpiry(newExpiry);
+		verify(token).setTreasury(EntityId.fromGrpcAccountId(newTreasury));
+		verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		assertFalse(subject.knownTreasuries.containsKey(treasury));
+		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
+	}
+
+	@Test
 	void updateHappyPathWorksWithNewMemo() {
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
@@ -1116,7 +1181,8 @@ class HederaTokenStoreTest {
 				false,
 				false,
 				false,
-				true);
+				true,
+				false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1137,7 +1203,8 @@ class HederaTokenStoreTest {
 				false,
 				false,
 				false,
-				true);
+				true,
+				false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1149,7 +1216,7 @@ class HederaTokenStoreTest {
 	void updateHappyPathWorksWithNewAutoRenewAccount() {
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
-		final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true);
+		final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true, false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1172,7 +1239,18 @@ class HederaTokenStoreTest {
 			final boolean useNewName,
 			final boolean useNewTreasury
 	) {
-		return updateWith(keys, tokenId, useNewName, useNewSymbol, useNewTreasury, false, false);
+		return updateWith(keys, tokenId, useNewName, useNewSymbol, useNewTreasury, false, false, false);
+	}
+
+	private TokenUpdateTransactionBody updateWith(
+			final EnumSet<KeyType> keys,
+			final TokenID tokenId,
+			final boolean useNewSymbol,
+			final boolean useNewName,
+			final boolean useNewTreasury,
+			final boolean useAlias
+	) {
+		return updateWith(keys, tokenId, useNewName, useNewSymbol, useNewTreasury, false, false, useAlias);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
@@ -1182,7 +1260,8 @@ class HederaTokenStoreTest {
 			final boolean useNewName,
 			final boolean useNewTreasury,
 			final boolean useNewAutoRenewAccount,
-			final boolean useNewAutoRenewPeriod
+			final boolean useNewAutoRenewPeriod,
+			final boolean useAlias
 	) {
 		return updateWith(
 				keys,
@@ -1193,7 +1272,8 @@ class HederaTokenStoreTest {
 				useNewAutoRenewAccount,
 				useNewAutoRenewPeriod,
 				false,
-				false);
+				false,
+				useAlias);
 	}
 
 	private TokenUpdateTransactionBody updateWith(
@@ -1205,7 +1285,8 @@ class HederaTokenStoreTest {
 			final boolean useNewAutoRenewAccount,
 			final boolean useNewAutoRenewPeriod,
 			final boolean setInvalidKeys,
-			final boolean useNewMemo
+			final boolean useNewMemo,
+			final boolean useAlias
 	) {
 		final var invalidKey = Key.getDefaultInstance();
 		final var op = TokenUpdateTransactionBody.newBuilder().setToken(tokenId);
@@ -1219,10 +1300,10 @@ class HederaTokenStoreTest {
 			op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
 		}
 		if (useNewTreasury) {
-			op.setTreasury(newTreasury);
+			op.setTreasury(useAlias ? newTreasuryWithAlias : newTreasury);
 		}
 		if (useNewAutoRenewAccount) {
-			op.setAutoRenewAccount(newAutoRenewAccount);
+			op.setAutoRenewAccount(useAlias ? newAutoRenewAccountWithAlias : newAutoRenewAccount);
 		}
 		if (useNewAutoRenewPeriod) {
 			op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));

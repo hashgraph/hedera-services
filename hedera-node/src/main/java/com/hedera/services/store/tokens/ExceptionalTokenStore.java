@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -104,6 +105,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Pair<AccountID, ResponseCodeEnum> fetchAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
@@ -32,13 +33,16 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +55,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
@@ -66,9 +72,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -79,13 +85,21 @@ import static org.mockito.BDDMockito.verify;
 
 class TokenUpdateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
+	private final ByteString validAliasA = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private final ByteString validAliasT = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private TokenID target = IdUtils.asToken("1.2.666");
 	private NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
 	private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
+	private final AccountID newAutoRenewWithAlias = AccountID.newBuilder().setAlias(validAliasA).build();
+	private final AccountID newTreasuryWithAlias = AccountID.newBuilder().setAlias(validAliasT).build();
 	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
+	private final Pair<AccountID, ResponseCodeEnum> oldAutoRenewLookup = Pair.of(oldAutoRenew, OK);
+	private final Pair<AccountID, ResponseCodeEnum> oldTreasuryLookup = Pair.of(oldTreasury, OK);
+	private final Pair<AccountID, ResponseCodeEnum> newAutoRenewLookup = Pair.of(newAutoRenew, OK);
+	private final Pair<AccountID, ResponseCodeEnum> newTreasuryLookup = Pair.of(newTreasury, OK);
 	private String symbol = "SYMBOL";
 	private String name = "Name";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
@@ -118,6 +132,12 @@ class TokenUpdateTransitionLogicTest {
 		given(store.get(target)).willReturn(token);
 		given(store.associationExists(newTreasury, target)).willReturn(true);
 		given(store.associationExists(oldTreasury, target)).willReturn(true);
+		given(store.fetchAccountId(oldAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(oldAutoRenewLookup);
+		given(store.fetchAccountId(oldTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(oldTreasuryLookup);
+		given(store.fetchAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
+		given(store.fetchAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
+		given(store.fetchAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
+		given(store.fetchAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
 		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
@@ -209,7 +229,8 @@ class TokenUpdateTransitionLogicTest {
 	void abortsOnDetachedNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
-		given(ledger.isDetached(newTreasury)).willReturn(true);
+		given(store.fetchAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
+				Pair.of(newTreasury, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
 
@@ -248,7 +269,8 @@ class TokenUpdateTransitionLogicTest {
 	void abortsOnDetachedNewAutoRenew() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
-		given(ledger.isDetached(newAutoRenew)).willReturn(true);
+		given(store.fetchAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				Pair.of(newAutoRenew, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
 
@@ -319,7 +341,7 @@ class TokenUpdateTransitionLogicTest {
 
 	@Test
 	void doesntReplaceIdenticalTreasury() {
-		givenValidTxnCtx(true, true);
+		givenValidTxnCtx(true, true, false);
 		givenToken(true, true);
 		given(store.update(any(), anyLong())).willReturn(OK);
 
@@ -345,6 +367,49 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void followsHappyPathWithNewTreasuryWithAlias() {
+		// setup:
+		final long oldTreasuryBalance = 1000;
+		givenValidTxnCtxWithAlias(true);
+		givenToken(true, true);
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance)).willReturn(OK);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void failsWithNewTreasuryWithInvalidAlias() {
+		// setup:
+		givenValidTxnCtxWithAlias(true);
+		givenToken(true, true);
+		given(store.fetchAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(Pair.of(newTreasury, INVALID_ALIAS_KEY));
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+	}
+
+	@Test
+	void failsWithNewAutoRenewAccountWithInvalidAlias() {
+		// setup:
+		givenValidTxnCtxWithAlias(false);
+		givenToken(true, true);
+		given(store.fetchAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(Pair.of(newAutoRenew, INVALID_ALIAS_KEY));
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
 	}
 
 	@Test
@@ -534,31 +599,35 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(boolean withNewTreasury) {
-		givenValidTxnCtx(withNewTreasury, false);
+		givenValidTxnCtx(withNewTreasury, false, false);
 	}
 
-	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
+	private void givenValidTxnCtxWithAlias(boolean withNewTreasury) {
+		givenValidTxnCtx(withNewTreasury, false, true);
+	}
+
+	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury,boolean useAlias) {
 		final var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
-						.setAutoRenewAccount(newAutoRenew)
+						.setAutoRenewAccount(useAlias ? newAutoRenewWithAlias : newAutoRenew)
 						.setName(name)
 						.setMemo(StringValue.newBuilder().setValue("FATALITY").build())
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
-					.setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
+					.setTreasury(useDuplicateTreasury ? oldTreasury : useAlias ? newTreasuryWithAlias : newTreasury);
 		}
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(ledger.exists(newTreasury)).willReturn(true);
-		given(ledger.exists(newAutoRenew)).willReturn(true);
-		given(ledger.isDeleted(newTreasury)).willReturn(false);
-		given(ledger.exists(oldTreasury)).willReturn(true);
-		given(ledger.isDeleted(oldTreasury)).willReturn(false);
-		given(ledger.isDetached(newTreasury)).willReturn(false);
+//		given(ledger.exists(newTreasury)).willReturn(true);
+//		given(ledger.exists(newAutoRenew)).willReturn(true);
+//		given(ledger.isDeleted(newTreasury)).willReturn(false);
+//		given(ledger.exists(oldTreasury)).willReturn(true);
+//		given(ledger.isDeleted(oldTreasury)).willReturn(false);
+//		given(ledger.isDetached(newTreasury)).willReturn(false);
 	}
 
 	private void givenMissingToken() {

@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -74,6 +75,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
+	Pair<AccountID, ResponseCodeEnum> fetchAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;
