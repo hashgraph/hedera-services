@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -47,6 +48,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -68,7 +70,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
+	private Optional<String> newTreasuryAlias = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<String> autoRenewAccountAlias = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 	private boolean useImproperEmptyKey = false;
@@ -154,6 +158,15 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate treasuryAlias(String treasury) {
+		this.newTreasuryAlias = Optional.of(treasury);
+		return this;
+	}
+
+	public HapiTokenUpdate autoRenewAccountAlias(String account) {
+		this.autoRenewAccountAlias = Optional.of(account);
+		return this;
+	}
 	public HapiTokenUpdate autoRenewPeriod(long secs) {
 		this.autoRenewPeriod = OptionalLong.of(secs);
 		return this;
@@ -252,6 +265,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							}
 							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
+							newTreasuryAlias.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec, ReferenceType.ALIAS_KEY_NAME)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
@@ -265,6 +279,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(autoRenewId);
+							}
+							if (autoRenewAccountAlias.isPresent()) {
+								var newAutoRenewId = getIdWithAliasLookUp(
+										autoRenewAccountAlias.get(), spec, ReferenceType.ALIAS_KEY_NAME);
+								b.setAutoRenewAccount(newAutoRenewId);
 							}
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
@@ -285,8 +304,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 			}
 		});
 		newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
+		newTreasuryAlias.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
 		autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
+		autoRenewAccountAlias.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
 		return signers;
 	}
 

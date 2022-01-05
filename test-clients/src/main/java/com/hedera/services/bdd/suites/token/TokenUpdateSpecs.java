@@ -57,6 +57,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeSchedul
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenAssociateAliased;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
@@ -65,6 +67,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -126,8 +129,44 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						canUpdateFeeScheduleKeyWithAdmin(),
 						updateUniqueTreasuryWithNfts(),
 						updateHappyPath(),
+						/* HIP-32 */
+						updateWithAliasWorks()
 				}
 		);
+	}
+
+	private HapiApiSpec updateWithAliasWorks() {
+		return defaultHapiSpec("UpdateWithAliasWorks")
+				.given(
+						newKeyNamed("autoRenewAlias"),
+						newKeyNamed("treasuryAlias"),
+						newKeyNamed("invalidAlias"),
+						newKeyNamed("adminKey"),
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "autoRenewAlias", ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, "treasuryAlias", ONE_HUNDRED_HBARS))
+								.via("autoCreate")
+				)
+				.when(
+						getTxnRecord("autoCreate")
+								.hasAliasInChildRecord("autoRenewAlias", 0)
+								.hasAliasInChildRecord("treasuryAlias", 1),
+						tokenCreate("tokenA")
+								.adminKey("adminKey")
+								.treasury(DEFAULT_PAYER)
+								.autoRenewAccount(DEFAULT_PAYER),
+						tokenAssociateAliased("treasuryAlias", "tokenA")
+				)
+				.then(
+						tokenUpdate("tokenA")
+								.autoRenewAccountAlias("autoRenewAlias")
+								.treasuryAlias("treasuryAlias"),
+						tokenUpdate("tokenA")
+								.treasuryAlias("invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						tokenUpdate("tokenA")
+								.autoRenewAccountAlias("invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY)
+				);
 	}
 
 	private HapiApiSpec validatesNewExpiry() {
