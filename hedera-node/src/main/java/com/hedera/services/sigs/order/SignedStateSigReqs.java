@@ -21,8 +21,8 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -43,12 +43,12 @@ import java.time.Instant;
 import java.util.function.Function;
 
 /**
- * Will be used by {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} to get the
+ * Used by {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} to get the
  * "best available" implementation of {@link SigRequirements} when expanding signatures.
  *
- * (We prefer to expand from the latest signed state so that---<b>once</b> logic is in place to detect keys
- * that changed between {@code expandSignatures} and {@code handleTransaction}---it is no longer necessary to
- * call {@link Rationalization#performFor(TxnAccessor)} during {@code handleTransaction}.)
+ * We prefer to expand from the latest signed state since whenever the entities and aliases linked to a
+ * transaction are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can short-circuit
+ * out of {@link Rationalization#performFor(TxnAccessor)} during {@code handleTransaction}.)
  */
 @Singleton
 public class SignedStateSigReqs {
@@ -60,12 +60,11 @@ public class SignedStateSigReqs {
 	private final StateAccessor workingState;
 	private final StateAccessor latestSignedState;
 	private final SignatureWaivers signatureWaivers;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
-	private StateChildren signedChildren = new StateChildren();
+	private StateChildren signedChildren = new MutableStateChildren();
 	private SigRequirements signedSigReqs;
 	/* Before we have a first signed state, we must use the working state's children to expand signatures. */
 	private SigRequirements workingSigReqs;
@@ -75,7 +74,6 @@ public class SignedStateSigReqs {
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
-			final GlobalDynamicProperties dynamicProperties,
 			final @WorkingState StateAccessor workingState,
 			final @LatestSignedState StateAccessor latestSignedState
 	) {
@@ -84,7 +82,6 @@ public class SignedStateSigReqs {
 		this.workingState = workingState;
 		this.signatureWaivers = signatureWaivers;
 		this.latestSignedState = latestSignedState;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	/**
@@ -101,7 +98,7 @@ public class SignedStateSigReqs {
 				signedChildren = latestSignedChildren;
 				final var lookup = lookupsFactory.from(
 						fileNumbers, aliasManager, signedChildren, TOKEN_META_TRANSFORM);
-				signedSigReqs = sigReqsFactory.from(lookup, dynamicProperties, signatureWaivers);
+				signedSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 
 				/* Once we have a signed state, we won't go back to the working state */
 				workingSigReqs = null;
@@ -116,7 +113,7 @@ public class SignedStateSigReqs {
 		if (workingSigReqs == null) {
 			final var lookup = lookupsFactory.from(
 					fileNumbers, aliasManager, workingState.children(), TOKEN_META_TRANSFORM);
-			workingSigReqs = sigReqsFactory.from(lookup, dynamicProperties, signatureWaivers);
+			workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 		}
 		return workingSigReqs;
 	}
@@ -125,7 +122,6 @@ public class SignedStateSigReqs {
 	interface SigReqsFactory {
 		SigRequirements from(
 				SigMetadataLookup sigMetaLookup,
-				GlobalDynamicProperties properties,
 				SignatureWaivers signatureWaivers);
 	}
 

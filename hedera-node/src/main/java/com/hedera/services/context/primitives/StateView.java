@@ -101,7 +101,7 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
-	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
+	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder()
 			.setAccountNum(0L)
 			.build();
 
@@ -121,9 +121,9 @@ public class StateView {
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
+	private final StateChildren stateChildren;
 	private final UniqTokenView uniqTokenView;
 	private final NodeLocalProperties nodeLocalProperties;
-	private final StateChildren stateChildren;
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
@@ -167,7 +167,7 @@ public class StateView {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
-		final var specialFiles = stateChildren.getSpecialFiles();
+		final var specialFiles = stateChildren.specialFiles();
 		if (specialFiles.contains(id)) {
 			return Optional.ofNullable(specialFiles.get(id));
 		} else {
@@ -509,43 +509,43 @@ public class StateView {
 	}
 
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTopics();
+		return stateChildren == null ? emptyMm() : stateChildren.topics();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
+		return stateChildren == null ? emptyMm() : stateChildren.accounts();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> contracts() {
-		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
+		return stateChildren == null ? emptyMm() : stateChildren.accounts();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTokenAssociations();
+		return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
+		return stateChildren == null ? emptyMm() : stateChildren.uniqueTokens();
 	}
 
 	MerkleMap<String, MerkleOptionalBlob> storage() {
-		return stateChildren == null ? emptyMm() : stateChildren.getStorage();
+		return stateChildren == null ? emptyMm() : stateChildren.storage();
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTokens();
+		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> nftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueTokenAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueTokenAssociations();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> nftsByOwner() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipAssociations();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> treasuryNftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipTreasuryAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipTreasuryAssociations();
 	}
 
 	UniqTokenView uniqTokenView() {

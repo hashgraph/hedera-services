@@ -22,6 +22,7 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -67,22 +68,25 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public TopicUpdateTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext,
-			HederaLedger ledger
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final OptionValidator validator,
+			final TransactionContext transactionContext,
+			final HederaLedger ledger,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.accounts = accounts;
 		this.ledger = ledger;
 		this.topics = topics;
 		this.validator = validator;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
 	}
 
@@ -91,7 +95,8 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		var transactionBody = transactionContext.accessor().getTxn();
 		var op = transactionBody.getConsensusUpdateTopic();
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
+		final var target = op.getTopicID();
+		var topicStatus = validator.queryableTopicStatus(target, topics.get());
 		if (topicStatus != OK) {
 			transactionContext.setStatus(topicStatus);
 			return;
@@ -110,6 +115,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		var mutableTopic = topics.get().getForModify(topicId);
 		applyNewFields(op, mutableTopic);
 		transactionContext.setStatus(SUCCESS);
+		sigImpactHistorian.markEntityChanged(target.getTopicNum());
 	}
 
 	private boolean wantsToMutateNonExpiryField(ConsensusUpdateTopicTransactionBody op) {
@@ -233,7 +239,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private boolean designatesAccountRemoval(AccountID id) {
-		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0;
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0 && id.getAlias().isEmpty();
 	}
 
 	private boolean canApplyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {

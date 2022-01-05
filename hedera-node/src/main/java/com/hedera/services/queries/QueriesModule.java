@@ -21,12 +21,13 @@ package com.hedera.services.queries;
  */
 
 import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.ServicesNodeType;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.answering.QueryHeaderValidity;
+import com.hedera.services.queries.answering.StakeAwareAnswerFlow;
 import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.validation.QueryFeeCheck;
@@ -40,18 +41,16 @@ import dagger.Provides;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-
 @Module
 public final class QueriesModule {
 
 	@Provides
 	@Singleton
 	public static AnswerFlow provideAnswerFlow(
+			final NodeInfo nodeInfo,
 			final FeeCalculator fees,
 			final AccountNumbers accountNums,
 			final QueryFeeCheck queryFeeCheck,
-			final ServicesNodeType nodeType,
 			final HapiOpPermissions hapiOpPermissions,
 			final Supplier<StateView> stateViews,
 			final UsagePricesProvider usagePrices,
@@ -60,21 +59,24 @@ public final class QueriesModule {
 			final PlatformSubmissionManager submissionManager,
 			@HapiThrottle final FunctionalityThrottling hapiThrottling
 	) {
-		if (nodeType == STAKED_NODE) {
-			return new StakedAnswerFlow(
-					fees,
-					accountNums,
-					stateViews,
-					usagePrices,
-					hapiThrottling,
-					submissionManager,
-					queryHeaderValidity,
-					transactionPrecheck,
-					hapiOpPermissions,
-					queryFeeCheck);
-		} else {
-			return new ZeroStakeAnswerFlow(queryHeaderValidity, stateViews, hapiThrottling);
-		}
+		final var stakedFlow = new StakedAnswerFlow(
+				fees,
+				accountNums,
+				stateViews,
+				usagePrices,
+				hapiThrottling,
+				submissionManager,
+				queryHeaderValidity,
+				transactionPrecheck,
+				hapiOpPermissions,
+				queryFeeCheck);
+
+		final var zeroStakeFlow = new ZeroStakeAnswerFlow(
+				queryHeaderValidity,
+				stateViews,
+				hapiThrottling);
+
+		return new StakeAwareAnswerFlow(nodeInfo, stakedFlow, zeroStakeFlow);
 	}
 
 	private QueriesModule() {

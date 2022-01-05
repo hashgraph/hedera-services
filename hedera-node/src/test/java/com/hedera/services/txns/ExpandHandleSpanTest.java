@@ -33,13 +33,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
@@ -85,10 +84,8 @@ class ExpandHandleSpanTest {
 		final var endAccessor = subject.accessorFor(validTxn);
 
 		// then:
-		assertSame(startAccessor, endAccessor);
-		// and:
-		Mockito.verify(handleSpanMap).expandSpan(startAccessor);
-		Mockito.verify(handleSpanMap).rationalizeSpan(endAccessor);
+		verify(handleSpanMap).expandSpan(startAccessor);
+		verify(handleSpanMap).rationalizeSpan(endAccessor);
 	}
 
 	@Test
@@ -96,6 +93,6 @@ class ExpandHandleSpanTest {
 		// when:
 		final var endAccessor = subject.accessorFor(validTxn);
 
-		Mockito.verify(handleSpanMap).expandSpan(endAccessor);
+		verify(handleSpanMap).expandSpan(endAccessor);
 	}
 }

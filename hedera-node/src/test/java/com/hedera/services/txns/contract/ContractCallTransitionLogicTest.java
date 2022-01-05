@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -81,6 +82,8 @@ class ContractCallTransitionLogicTest {
 	private CallEvmTxProcessor evmTxProcessor;
 	@Mock
 	private ServicesRepositoryRoot repositoryRoot;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -91,7 +94,8 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, accountStore, worldState, recordService, evmTxProcessor, repositoryRoot);
+		subject = new ContractCallTransitionLogic(
+				txnCtx, accountStore, sigImpactHistorian, worldState, recordService, evmTxProcessor, repositoryRoot);
 	}
 
 	@Test
@@ -117,8 +121,9 @@ class ContractCallTransitionLogicTest {
 		// and:
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(
+				senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
@@ -152,15 +157,18 @@ class ContractCallTransitionLogicTest {
 		// and:
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
 	@Test
@@ -203,7 +211,8 @@ class ContractCallTransitionLogicTest {
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(Bytes.EMPTY.toArray());
+		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(
+				Bytes.EMPTY.toArray());
 
 		// when:
 		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());

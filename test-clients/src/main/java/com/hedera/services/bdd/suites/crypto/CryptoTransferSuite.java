@@ -105,9 +105,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						royaltyCollectorsCanUseAutoAssociation(),
 						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
 						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
 						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
 						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
 				}
 		);
 	}
@@ -157,7 +157,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.txnId(uncheckedTxn)
 						).payingWith(GENESIS)
 				).then(
-						sleepFor(1_000),
+						sleepFor(2_000),
 						getReceipt(uncheckedTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						getAccountInfo(owningParty)
 								.has(accountWith().noChangesFromSnapshot(owningParty))

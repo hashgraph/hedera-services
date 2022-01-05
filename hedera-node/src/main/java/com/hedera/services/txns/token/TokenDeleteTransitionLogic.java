@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
@@ -45,14 +46,17 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	@Inject
 	public TokenDeleteTransitionLogic(
 			final TransactionContext txnCtx,
-			final TypedTokenStore tokenStore
+			final TypedTokenStore tokenStore,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -72,6 +76,7 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the updated model --- */
 		tokenStore.persistToken(loadedToken);
+		sigImpactHistorian.markEntityChanged(grpcTokenId.getTokenNum());
 	}
 
 	@Override

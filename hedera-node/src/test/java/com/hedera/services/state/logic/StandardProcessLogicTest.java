@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.state.logic;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -40,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -48,6 +48,7 @@ import java.time.Instant;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -81,6 +82,8 @@ class StandardProcessLogicTest {
 	private ExecutionTimeTracker executionTimeTracker;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -90,14 +93,14 @@ class StandardProcessLogicTest {
 	@BeforeEach
 	void setUp() {
 		subject = new StandardProcessLogic(
-				expiries,
-				invariantChecks, expandHandleSpan, autoRenewal,
-				txnManager, txnCtx, executionTimeTracker, dynamicProperties);
+				expiries, invariantChecks,
+				expandHandleSpan, autoRenewal, txnManager,
+				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
-		final InOrder inOrder = Mockito.inOrder(expiries, executionTimeTracker, txnManager, autoRenewal);
+		final InOrder inOrder = inOrder(expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian);
 
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
@@ -106,7 +109,9 @@ class StandardProcessLogicTest {
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
 		// then:
+		inOrder.verify(sigImpactHistorian).setChangeTime(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
+		inOrder.verify(sigImpactHistorian).purge();
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();

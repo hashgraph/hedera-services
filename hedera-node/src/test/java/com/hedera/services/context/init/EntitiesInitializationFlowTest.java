@@ -20,6 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.swirlds.blob.BinaryObjectStore;
@@ -42,12 +43,15 @@ class EntitiesInitializationFlowTest {
 	private NetworkCtxManager networkCtxManager;
 	@Mock
 	private BinaryObjectStore binaryObjectStore;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private EntitiesInitializationFlow subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new EntitiesInitializationFlow(expiryManager, networkCtxManager, () -> binaryObjectStore);
+		subject = new EntitiesInitializationFlow(
+				expiryManager, sigImpactHistorian, networkCtxManager, () -> binaryObjectStore);
 	}
 
 	@Test
@@ -58,6 +62,7 @@ class EntitiesInitializationFlowTest {
 		// then:
 		verify(expiryManager).reviewExistingPayerRecords();
 		verify(expiryManager).reviewExistingShortLivedEntities();
+		verify(sigImpactHistorian).invalidateCurrentWindow();
 		verify(networkCtxManager).setObservableFilesNotLoaded();
 		verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 	}

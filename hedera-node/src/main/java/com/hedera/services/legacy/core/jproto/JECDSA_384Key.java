@@ -23,9 +23,7 @@ package com.hedera.services.legacy.core.jproto;
 import com.swirlds.common.CommonUtils;
 
 public class JECDSA_384Key extends JKey {
-
-	private static final long serialVersionUID = 1L;
-	private byte[] ecdsa384Key = null;
+	private byte[] ecdsa384Key;
 
 	public JECDSA_384Key(byte[] ecdsa384Key) {
 		this.ecdsa384Key = ecdsa384Key;

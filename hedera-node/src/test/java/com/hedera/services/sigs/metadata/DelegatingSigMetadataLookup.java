@@ -29,8 +29,11 @@ import com.hedera.services.sigs.metadata.lookups.DefaultTopicLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,14 +43,39 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
 
+import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static com.hedera.services.sigs.metadata.SafeLookupResult.failure;
+import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
+import static com.hedera.services.sigs.metadata.TokenMetaUtils.signingMetaFrom;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
  * delegating to type-specific lookups.
  */
 public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
+	public static final Instant PRETEND_SIGNING_TIME = Instant.ofEpochSecond(1_234_567L, 890);
+	public static final Function<
+			TokenStore,
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
+		TokenID id;
+		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
+				? failure(MISSING_TOKEN)
+				: new SafeLookupResult<>(signingMetaFrom(tokenStore.get(id)));
+	};
+	public static final Function<
+			ScheduleStore,
+			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>> SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
+		ScheduleID id;
+		return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
+				? failure(MISSING_SCHEDULE)
+				: new SafeLookupResult<>(from(scheduleStore.get(id)));
+	};
 	private final FileSigMetaLookup fileSigMetaLookup;
 	private final AccountSigMetaLookup accountSigMetaLookup;
 	private final ContractSigMetaLookup contractSigMetaLookup;
@@ -90,37 +118,55 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id) {
+	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id,
+			LinkedRefs linkedRefs) {
 		return contractSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(final FileID id) {
+	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
+			final FileID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		return fileSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id) {
+	public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(final ScheduleID id,
+			LinkedRefs linkedRefs) {
 		return scheduleSigMetaLookup.apply(id);
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id) {
+	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id,
+			LinkedRefs linkedRefs) {
 		return accountSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(final TopicID id) {
+	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
+			final TopicID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		return topicSigMetaLookup.safeLookup(id);
 	}
 
 	@Override
-	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(final TokenID id) {
+	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
+			final TokenID id,
+			final @Nullable LinkedRefs linkedRefs
+	) {
 		return tokenSigMetaLookup.apply(id);
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias) {
+	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias,
+			LinkedRefs linkedRefs) {
 		return accountSigMetaLookup.aliasableSafeLookup(idOrAlias);
+	}
+
+	@Override
+	public Instant sourceSignedAt() {
+		return PRETEND_SIGNING_TIME;
 	}
 }
