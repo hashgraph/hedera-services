@@ -20,7 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -158,7 +158,7 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 		view = new StateView(

@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -66,7 +66,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	void setup() {
 		topics = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 		view = new StateView(
 				null,

@@ -292,6 +292,15 @@ class MiscUtilsTest {
 	}
 
 	@Test
+	void canUnpackTime() {
+		final long seconds = 1_234_567L;
+		final int nanos = 890;
+		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
+		final var expected = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+		assertEquals(expected, MiscUtils.asTimestamp(packedTime));
+	}
+
+	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
 		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();

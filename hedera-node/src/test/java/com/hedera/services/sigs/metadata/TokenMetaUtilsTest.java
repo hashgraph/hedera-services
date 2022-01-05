@@ -29,9 +29,11 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TokenSigningMetadataTest {
+class TokenMetaUtilsTest {
 	@Test
 	void classifiesRoyaltyWithFallback() {
 		// setup:
@@ -48,7 +50,7 @@ class TokenSigningMetadataTest {
 						new EntityId(1, 2, 5))));
 
 		// given:
-		final var meta = TokenSigningMetadata.from(royaltyFeeWithFallbackToken);
+		final var meta = TokenMetaUtils.signingMetaFrom(royaltyFeeWithFallbackToken);
 
 		// expect:
 		assertTrue(meta.hasRoyaltyWithFallback());
@@ -71,7 +73,7 @@ class TokenSigningMetadataTest {
 						new EntityId(1, 2, 5))));
 
 		// given:
-		final var meta = TokenSigningMetadata.from(royaltyFeeNoFallbackToken);
+		final var meta = TokenMetaUtils.signingMetaFrom(royaltyFeeNoFallbackToken);
 
 		// expect:
 		assertFalse(meta.hasRoyaltyWithFallback());

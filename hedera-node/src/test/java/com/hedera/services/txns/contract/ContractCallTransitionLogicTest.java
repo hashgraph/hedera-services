@@ -25,6 +25,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -85,6 +87,8 @@ class ContractCallTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private CodeCache codeCache;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -96,7 +100,7 @@ class ContractCallTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
-				txnCtx, accountStore, worldState, recordService, evmTxProcessor, properties, codeCache);
+				txnCtx, accountStore, sigImpactHistorian, worldState, recordService, evmTxProcessor, properties, codeCache);
 	}
 
 	@Test
@@ -123,8 +127,7 @@ class ContractCallTransitionLogicTest {
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime()))
-				.willReturn(results);
+				txnCtx.consensusTime())).willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
@@ -167,6 +170,7 @@ class ContractCallTransitionLogicTest {
 		// then:
 		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
 	@Test

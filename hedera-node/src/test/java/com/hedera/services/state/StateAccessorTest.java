@@ -47,6 +47,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
@@ -89,31 +93,33 @@ class StateAccessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateAccessor(state);
+		subject = new StateAccessor();
+		subject.updateChildrenFrom(state);
+	}
+
+	@Test
+	void childrenGetReplacedAsExpected() {
+		givenStateWithMockChildren();
+		subject.updateChildrenFrom(state);
+		final var currentChildren = subject.children();
+
+		subject.replaceChildrenFrom(state, signedAt);
+
+		assertNotSame(currentChildren, subject.children());
+		assertEquals(signedAt, subject.children().signedAt());
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.updateChildrenFrom(state));
 	}
 
 	@Test
 	void childrenGetUpdatedAsExpected() {
-		given(state.accounts()).willReturn(accounts);
-		given(state.storage()).willReturn(storage);
-		given(state.topics()).willReturn(topics);
-		given(state.tokens()).willReturn(tokens);
-		given(state.tokenAssociations()).willReturn(tokenAssociations);
-		given(state.scheduleTxs()).willReturn(scheduleTxs);
-		given(state.networkCtx()).willReturn(networkCtx);
-		given(state.addressBook()).willReturn(addressBook);
-		given(state.specialFiles()).willReturn(specialFiles);
-		given(state.uniqueTokens()).willReturn(uniqueTokens);
-		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
-		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
-		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
-		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(state.contractStorage()).willReturn(contractStorage);
+		givenStateWithMockChildren();
 
-		// when:
-		subject.updateFrom(state);
+		subject.updateChildrenFrom(state);
 
-		// then:
+		assertChildrenAreExpectedMocks();
+	}
+
+	private void assertChildrenAreExpectedMocks() {
 		assertSame(accounts, subject.accounts());
 		assertSame(storage, subject.storage());
 		assertSame(topics, subject.topics());
@@ -131,9 +137,29 @@ class StateAccessorTest {
 		assertSame(contractStorage, subject.contractStorage());
 	}
 
+	private void givenStateWithMockChildren() {
+		given(state.accounts()).willReturn(accounts);
+		given(state.storage()).willReturn(storage);
+		given(state.topics()).willReturn(topics);
+		given(state.tokens()).willReturn(tokens);
+		given(state.tokenAssociations()).willReturn(tokenAssociations);
+		given(state.scheduleTxs()).willReturn(scheduleTxs);
+		given(state.networkCtx()).willReturn(networkCtx);
+		given(state.addressBook()).willReturn(addressBook);
+		given(state.specialFiles()).willReturn(specialFiles);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
+		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
+		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
+		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
+		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.contractStorage()).willReturn(contractStorage);
+	}
+
 	@Test
 	void childrenNonNull() {
 		// expect:
 		Assertions.assertNotNull(subject.children());
 	}
+
+	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }

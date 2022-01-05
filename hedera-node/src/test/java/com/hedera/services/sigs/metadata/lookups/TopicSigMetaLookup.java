@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.annotations;
+package com.hedera.services.sigs.metadata.lookups;
 
 /*-
  * ‌
@@ -20,15 +20,13 @@ package com.hedera.services.sigs.annotations;
  * ‍
  */
 
-import javax.inject.Qualifier;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hedera.services.sigs.metadata.TopicSigningMetadata;
+import com.hederahashgraph.api.proto.java.TopicID;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-@Target({ ElementType.METHOD, ElementType.PARAMETER })
-@Qualifier
-@Retention(RUNTIME)
-public @interface RetryingSigReqs {
+/**
+ * Defines a simple type that is able to recover metadata about signing activity associated with a given HCS topic.
+ */
+public interface TopicSigMetaLookup {
+	SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id);
 }

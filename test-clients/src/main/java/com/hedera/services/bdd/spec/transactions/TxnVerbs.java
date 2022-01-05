@@ -85,6 +85,11 @@ public class TxnVerbs {
 	}
 
 	@SafeVarargs
+	public static HapiCryptoTransfer sortedCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
+		return new HapiCryptoTransfer(true, providers);
+	}
+
+	@SafeVarargs
 	public static HapiCryptoTransfer cryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(providers);
 	}

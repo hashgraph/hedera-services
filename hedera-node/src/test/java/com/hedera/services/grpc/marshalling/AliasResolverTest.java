@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -100,7 +99,7 @@ class AliasResolverTest {
 	}
 
 	@Test
-	void transformsHbarAdjustsWithRepeatedMissingAlias() {
+	void transformsHbarAdjusts() {
 		final var creationAdjust = aaAlias(anAlias, theAmount);
 		final var badCreationAdjust = aaAlias(someAlias, theAmount);
 		final var op = CryptoTransferTransactionBody.newBuilder()
@@ -128,63 +127,8 @@ class AliasResolverTest {
 	}
 
 	@Test
-	void transformsHbarAdjustsWithInvalidAlias() {
-		final var badCreationAdjust = aaAlias(someAlias, theAmount);
-		final var op = CryptoTransferTransactionBody.newBuilder()
-				.setTransfers(TransferList.newBuilder()
-						.addAccountAmounts(aaAlias(theAlias, anAmount))
-						.addAccountAmounts(badCreationAdjust)
-						.build())
-				.build();
-		assertTrue(AliasResolver.usesAliases(op));
-
-		given(aliasManager.lookupIdBy(theAlias)).willReturn(aNum);
-		given(aliasManager.lookupIdBy(someAlias)).willReturn(MISSING_NUM);
-
-		final var resolvedOp = subject.resolve(op, aliasManager);
-
-		assertEquals(0, subject.perceivedAutoCreations());
-		assertEquals(1, subject.perceivedInvalidCreations());
-		assertEquals(Map.of(theAlias, aNum, someAlias, MISSING_NUM), subject.resolutions());
-		assertEquals(aNum.toGrpcAccountId(), resolvedOp.getTransfers().getAccountAmounts(0).getAccountID());
-	}
-
-	@Test
-	void detectsNoAliases() {
-		final var noAliasBody=  CryptoTransferTransactionBody.newBuilder()
-				.setTransfers(TransferList.newBuilder()
-						.addAccountAmounts(aaId(1_234L, 4_321L))
-						.build())
-				.addAllTokenTransfers(List.of(
-						TokenTransferList.newBuilder()
-								.setToken(someToken)
-								.addTransfers(aaId(2_345L, 5_432L))
-								.build(),
-						TokenTransferList.newBuilder()
-								.setToken(otherToken)
-								.addNftTransfers(NftTransfer.newBuilder()
-										.setSenderAccountID(aNum.toGrpcAccountId())
-										.setReceiverAccountID(bNum.toGrpcAccountId())
-										.setSerialNumber(1L)
-										.build())
-								.build()))
-				.build();
-		assertFalse(AliasResolver.usesAliases(noAliasBody));
-	}
-
-	@Test
-	void detectsFungibleAliases() {
-		final var fungibleAliasBody=  CryptoTransferTransactionBody.newBuilder()
-				.setTransfers(TransferList.newBuilder()
-						.addAccountAmounts(aaId(1_234L, 4_321L))
-						.build())
-				.addAllTokenTransfers(List.of(
-						TokenTransferList.newBuilder()
-								.setToken(someToken)
-								.addTransfers(aaAlias(anAlias, 5_432L))
-								.build()))
-				.build();
-		assertTrue(AliasResolver.usesAliases(fungibleAliasBody));
+	void noAliasesCanBeReturned() {
+		assertFalse(AliasResolver.usesAliases(CryptoTransferTransactionBody.getDefaultInstance()));
 	}
 
 	private AccountAmount aaAlias(final ByteString alias, final long amount) {
@@ -214,5 +158,4 @@ class AliasResolverTest {
 	private static final ByteString someAlias = ByteString.copyFromUtf8("third");
 	private static final ByteString otherAlias = ByteString.copyFromUtf8("fourth");
 	private static final TokenID someToken = IdUtils.asToken("0.0.666");
-	private static final TokenID otherToken = IdUtils.asToken("0.0.777");
 }

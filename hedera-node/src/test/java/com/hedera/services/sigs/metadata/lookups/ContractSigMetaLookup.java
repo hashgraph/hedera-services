@@ -20,12 +20,14 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.TopicSigningMetadata;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.services.sigs.metadata.ContractSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 
 /**
- * Defines a simple type that is able to recover metadata about signing activity associated with a given HCS topic.
+ * Defines a simple type that is able to recover metadata about signing activity
+ * associated with a given Hedera smart contract.
  */
-public interface TopicSigMetaLookup {
-	SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id);
+public interface ContractSigMetaLookup {
+	SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id);
 }

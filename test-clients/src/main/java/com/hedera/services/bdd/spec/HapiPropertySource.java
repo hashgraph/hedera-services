@@ -198,6 +198,15 @@ public interface HapiPropertySource {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 	}
 
+	static String asAliasableAccountString(final AccountID account) {
+		if (account.getAlias().isEmpty()) {
+			return asAccountString(account);
+		} else {
+			final var literalAlias = account.getAlias().toString();
+			return String.format("%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
+		}
+	}
+
 	static TopicID asTopic(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TopicID.newBuilder()

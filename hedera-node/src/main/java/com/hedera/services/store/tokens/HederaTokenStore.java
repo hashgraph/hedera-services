@@ -40,6 +40,7 @@ import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -368,7 +369,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
-			if (owner.equals(fromGrpcAccountId(AccountID.getDefaultInstance()))) {
+			if (owner.equals(EntityId.MISSING_ENTITY_ID)) {
 				final var tid = nftId.tokenId();
 				owner = this.backingTokens.getImmutableRef(tid).treasury();
 			}

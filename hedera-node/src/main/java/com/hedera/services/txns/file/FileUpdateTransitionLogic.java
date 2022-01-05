@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -69,6 +70,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
 	private final EntityNumbers entityNums;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
@@ -77,6 +79,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			final HederaFs hfs,
 			final EntityNumbers entityNums,
 			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleNetworkContext> networkCtx
 	) {
@@ -85,6 +88,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.networkCtx = networkCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -121,11 +125,15 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 				changeResult = Optional.of(hfs.setattr(target, attr));
 			}
 
-			txnCtx.setStatus(firstUnsuccessful(
+			final var status = firstUnsuccessful(
 					replaceResult.map(HederaFs.UpdateResult::outcome)
 							.orElse(SUCCESS),
 					changeResult.map(HederaFs.UpdateResult::outcome)
-							.orElse(SUCCESS)));
+							.orElse(SUCCESS));
+			txnCtx.setStatus(status);
+			if (status == SUCCESS) {
+				sigImpactHistorian.markEntityChanged(target.getFileNum());
+			}
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {

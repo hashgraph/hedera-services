@@ -99,7 +99,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						complexKeyAcctPaysForOwnTransfer(),
 						twoComplexKeysRequired(),
 						specialAccountsBalanceCheck(),
-						transferToTopicReturnsInvalidAccountId(),
 						tokenTransferFeesScaleAsExpected(),
 						okToSetInvalidPaymentHeaderForCostAnswer(),
 						baseCryptoTransferFeeChargedAsExpected(),
@@ -107,8 +106,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						royaltyCollectorsCanUseAutoAssociation(),
 						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
 						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+						transferToNonAccountEntitiesReturnsInvalidAccountId(),
 						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle()
 				}
 		);
 	}
@@ -158,7 +158,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.txnId(uncheckedTxn)
 						).payingWith(GENESIS)
 				).then(
-						sleepFor(1_000),
+						sleepFor(2_000),
 						getReceipt(uncheckedTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						getAccountInfo(owningParty)
 								.has(accountWith().noChangesFromSnapshot(owningParty))
@@ -772,10 +772,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return String.format("%" + fmt, d);
 	}
 
-	private HapiApiSpec transferToTopicReturnsInvalidAccountId() {
+	private HapiApiSpec transferToNonAccountEntitiesReturnsInvalidAccountId() {
 		AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
-		return defaultHapiSpec("TransferToTopicReturnsInvalidAccountId")
+		return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId")
 				.given(
 						tokenCreate("token"),
 						createTopic("something"),

@@ -396,7 +396,9 @@ class DeterministicThrottlingTest {
 
 	@Test
 	void logsErrorOnBadBucketButDoesntFail() throws IOException {
-		// given:
+		final var ridiculousSplitFactor = 1_000_000;
+		subject = new DeterministicThrottling(() -> ridiculousSplitFactor, aliasManager, dynamicProperties);
+
 		var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
 
 		// expect:
@@ -406,7 +408,7 @@ class DeterministicThrottlingTest {
 		// and:
 		assertThat(logCaptor.errorLogs(),
 				contains("When constructing bucket 'A' from state: NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: " +
-						"Bucket A contains an unsatisfiable milliOpsPerSec with 2 nodes!"));
+						"Bucket A contains an unsatisfiable milliOpsPerSec with 1000000 nodes!"));
 	}
 
 	@Test

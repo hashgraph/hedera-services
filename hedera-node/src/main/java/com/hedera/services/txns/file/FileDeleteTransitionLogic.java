@@ -22,6 +22,7 @@ package com.hedera.services.txns.file;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,12 +42,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 @Singleton
 public final class FileDeleteTransitionLogic implements TransitionLogic {
 	private final HederaFs hfs;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 
 	@Inject
-	public FileDeleteTransitionLogic(final HederaFs hfs, final TransactionContext txnCtx) {
+	public FileDeleteTransitionLogic(
+			final HederaFs hfs,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx
+	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -63,6 +70,7 @@ public final class FileDeleteTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		hfs.delete(tbd);
+		sigImpactHistorian.markEntityChanged(tbd.getFileNum());
 	}
 
 	@Override

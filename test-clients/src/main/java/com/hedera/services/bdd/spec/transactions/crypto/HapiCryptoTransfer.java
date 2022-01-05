@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -131,6 +132,20 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				aList -> TransferList.newBuilder().addAllAccountAmounts(aList).build());
 	}
 
+	private static Collector<TransferList, ?, TransferList> sortedTransferCollector(
+			BinaryOperator<List<AccountAmount>> reducer
+	) {
+		return collectingAndThen(
+				reducing(
+						Collections.emptyList(),
+						TransferList::getAccountAmountsList,
+						reducer),
+				aList -> {
+					aList.sort(ACCOUNT_AMOUNT_COMPARATOR);
+					return TransferList.newBuilder().addAllAccountAmounts(aList).build();
+				});
+	}
+
 	private final static BinaryOperator<List<AccountAmount>> accountMerge = (a, b) ->
 			Stream.of(a, b).flatMap(List::stream).collect(collectingAndThen(
 					groupingBy(AccountAmount::getAccountID, mapping(AccountAmount::getAmount, toList())),
@@ -139,19 +154,33 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 							.map(entry ->
 									AccountAmount.newBuilder()
 											.setAccountID(entry.getKey())
-											.setAmount(entry.getValue().stream().mapToLong(l -> (long) l).sum())
+											.setAmount(entry.getValue().stream().mapToLong(l -> l).sum())
 											.build())
 							.collect(toList())));
-	private final static Collector<TransferList, ?, TransferList> mergingAccounts = transferCollector(accountMerge);
+	private final static Collector<TransferList, ?, TransferList> mergingAccounts =
+			transferCollector(accountMerge);
+	private final static Collector<TransferList, ?, TransferList> mergingSortedAccounts =
+			sortedTransferCollector(accountMerge);
 
 	@SafeVarargs
 	public HapiCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
+		this(false, providers);
+	}
+
+	@SafeVarargs
+	public HapiCryptoTransfer(boolean sortTransferList, Function<HapiApiSpec, TransferList>... providers) {
 		if (providers.length == 0) {
 			hbarOnlyProvider = ignore -> TransferList.getDefaultInstance();
 		} else if (providers.length == 1) {
 			hbarOnlyProvider = providers[0];
 		} else {
-			this.hbarOnlyProvider = spec -> Stream.of(providers).map(p -> p.apply(spec)).collect(mergingAccounts);
+			if (sortTransferList) {
+				this.hbarOnlyProvider = spec ->
+						Stream.of(providers).map(p -> p.apply(spec)).collect(mergingSortedAccounts);
+			} else {
+				this.hbarOnlyProvider = spec ->
+						Stream.of(providers).map(p -> p.apply(spec)).collect(mergingAccounts);
+			}
 		}
 	}
 
@@ -522,7 +551,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						TokenTransferList::getNftTransfersList,
 						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList()),
 						LinkedHashMap::new));
-		System.out.println(aggregated);
 		if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
 			throw new RuntimeException("Aggregation seems to have failed (expected " + uniqueCount
 					+ " distinct unique token types, got " + aggregated.size() + ")");
@@ -541,4 +569,19 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			log.info("Resolved to {}", actualStatus);
 		}
 	}
+
+	private static final Comparator<AccountID> ACCOUNT_NUM_COMPARATOR = Comparator
+			.comparingLong(AccountID::getAccountNum)
+			.thenComparingLong(AccountID::getShardNum)
+			.thenComparingLong(AccountID::getRealmNum);
+	private static final Comparator<AccountID> ACCOUNT_NUM_OR_ALIAS_COMPARATOR = (a, b) -> {
+		if (!a.getAlias().isEmpty() || !b.getAlias().isEmpty()) {
+			return ByteString.unsignedLexicographicalComparator().compare(a.getAlias(), b.getAlias());
+		} else {
+			return ACCOUNT_NUM_COMPARATOR.compare(a, b);
+		}
+	};
+	private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR = Comparator.comparing(
+			AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
+
 }

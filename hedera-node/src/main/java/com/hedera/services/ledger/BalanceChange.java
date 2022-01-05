@@ -109,6 +109,12 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 	}
 
+	public void replaceAliasWith(final AccountID createdId) {
+		accountId = createdId;
+		account = Id.fromGrpcAccount(createdId);
+		alias = ByteString.EMPTY;
+	}
+
 	/* HTS constructor */
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;

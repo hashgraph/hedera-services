@@ -167,9 +167,9 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
-		if (sideEffectsTracker.hasAutoCreation()) {
-			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getAutoCreatedAccountId()));
-			baseRecord.setAlias(sideEffectsTracker.getAutoCreatedAccountAlias());
+		if (sideEffectsTracker.hasTrackedAutoCreation()) {
+			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+			baseRecord.setAlias(sideEffectsTracker.getNewAccountAlias());
 		}
 
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();

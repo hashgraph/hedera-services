@@ -77,6 +77,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -135,18 +136,19 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
+	private AutoCreationLogic autoAccountCreator;
+	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private EntityIdSource entityIdSource;
 	@Mock
 	private TxnAwareRecordsHistorian recordsHistorian;
-	@Mock
-	private AutoCreationLogic autoCreationLogic;
 
 	private HederaLedger subject;
 
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
+		MockitoAnnotations.initMocks(this);
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
@@ -289,7 +291,6 @@ class LedgerBalanceChangesTest {
 		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		final var sideEffectsTracker = new SideEffectsTracker();
 		final var viewManager = new UniqueTokenViewsManager(
-				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
 				false, true);

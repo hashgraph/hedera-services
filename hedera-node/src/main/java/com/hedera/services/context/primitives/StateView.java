@@ -27,9 +27,11 @@ import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -104,7 +106,7 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
-	private static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
+	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
 	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
@@ -124,6 +126,7 @@ public class StateView {
 	private final ScheduleStore scheduleStore;
 	private final UniqTokenView uniqTokenView;
 	private final StateChildren stateChildren;
+	private final NodeLocalProperties nodeLocalProperties;
 
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
@@ -162,7 +165,7 @@ public class StateView {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
-		final var specialFiles = stateChildren.getSpecialFiles();
+		final var specialFiles = stateChildren.specialFiles();
 		if (specialFiles.contains(id)) {
 			return Optional.ofNullable(specialFiles.get(id));
 		} else {
@@ -261,7 +264,8 @@ public class StateView {
 			var schedule = scheduleStore.get(id);
 			var signatories = schedule.signatories();
 			var signatoriesList = KeyList.newBuilder();
-			signatories.forEach(a -> signatoriesList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+
+			signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
 			var info = ScheduleInfo.newBuilder()
 					.setScheduleID(id)
@@ -288,6 +292,14 @@ public class StateView {
 					readableId(scheduleID),
 					unexpected);
 			return Optional.empty();
+		}
+	}
+
+	private Key grpcKeyReprOf(final byte[] publicKey) {
+		if (publicKey.length == KeyType.ECDSA_SECP256K1.getLength()) {
+			return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build();
+		} else {
+			return Key.newBuilder().setEd25519(ByteString.copyFrom(publicKey)).build();
 		}
 	}
 
@@ -379,15 +391,18 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager aliasManager) {
-		final var accountId = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
-		final var account = accounts().get(accountId);
+		final var accountEntityNum = id.getAlias().isEmpty() 
+                      ? fromAccountId(id) 
+                      : aliasManager.lookupIdBy(id.getAlias());
+		final var account = accounts().get(accountEntityNum);
 		if (account == null) {
 			return Optional.empty();
 		}
 
+		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(account.getAccountKey()))
-				.setAccountID(id)
+				.setAccountID(accountID)
 				.setAlias(account.getAlias())
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
@@ -395,13 +410,13 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(id))
+				.setContractAccountID(asSolidityAddressHex(accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRelsFn.apply(this, accountId);
+		final var tokenRels = tokenRelsFn.apply(this, accountEntityNum);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -467,23 +482,23 @@ public class StateView {
 	}
 
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTopics();
+		return stateChildren == null ? emptyMm() : stateChildren.topics();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
+		return stateChildren == null ? emptyMm() : stateChildren.accounts();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> contracts() {
-		return stateChildren == null ? emptyMm() : stateChildren.getAccounts();
+		return stateChildren == null ? emptyMm() : stateChildren.accounts();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTokenAssociations();
+		return stateChildren == null ? emptyMm() : stateChildren.tokenAssociations();
 	}
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		return stateChildren == null ? emptyMm() : stateChildren.getUniqueTokens();
+		return stateChildren == null ? emptyMm() : stateChildren.uniqueTokens();
 	}
 
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -495,19 +510,19 @@ public class StateView {
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
-		return stateChildren == null ? emptyMm() : stateChildren.getTokens();
+		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> nftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueTokenAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueTokenAssociations();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> nftsByOwner() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipAssociations();
 	}
 
 	FCOneToManyRelation<EntityNum, Long> treasuryNftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.getUniqueOwnershipTreasuryAssociations();
+		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipTreasuryAssociations();
 	}
 
 	UniqTokenView uniqTokenView() {

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;

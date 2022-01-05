@@ -27,7 +27,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.txns.crypto.TopLevelAutoCreation;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -85,7 +85,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	public UsageBasedFeeCalculator(
 			final AutoRenewCalcs autoRenewCalcs,
 			final HbarCentExchange exchange,
-			final TopLevelAutoCreation autoCreationLogic,
+			final AutoCreationLogic autoCreationLogic,
 			final UsagePricesProvider usagePrices,
 			final FeeMultiplierSource feeMultiplierSource,
 			final PricedUsageCalculator pricedUsageCalculator,

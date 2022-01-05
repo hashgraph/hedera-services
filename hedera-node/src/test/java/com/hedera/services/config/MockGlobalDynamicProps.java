@@ -232,7 +232,13 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 		return throttleByGas;
 	}
 
+        @Override
 	public void setThrottleByGas(boolean throttleByGas) {
 		this.throttleByGas = throttleByGas;
+        }
+
+        @Override
+	public int changeHistorianMemorySecs() {
+		return 20;
 	}
 }

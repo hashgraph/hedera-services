@@ -20,13 +20,15 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.FileSigningMetadata;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.services.sigs.metadata.AccountSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hederahashgraph.api.proto.java.AccountID;
 
 /**
  * Defines a simple type that is able to recover metadata about signing activity
- * associated with a given Hedera file.
+ * associated with a given Hedera cryptocurrency account.
  */
-public interface FileSigMetaLookup {
-	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
+public interface AccountSigMetaLookup {
+	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
+	SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
 }

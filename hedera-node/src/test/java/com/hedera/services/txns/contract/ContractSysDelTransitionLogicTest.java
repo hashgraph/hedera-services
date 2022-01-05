@@ -21,9 +21,10 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -62,6 +63,7 @@ class ContractSysDelTransitionLogicTest {
 	private TransactionBody contractSysDelTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private SigImpactHistorian sigImpactHistorian;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractSysDelTransitionLogic subject;
 
@@ -75,8 +77,9 @@ class ContractSysDelTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
-		subject = new ContractSysDelTransitionLogic(validator, txnCtx, delegate, () -> contracts);
+		subject = new ContractSysDelTransitionLogic(validator, txnCtx, sigImpactHistorian, delegate, () -> contracts);
 	}
 
 	@Test
@@ -125,6 +128,7 @@ class ContractSysDelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 

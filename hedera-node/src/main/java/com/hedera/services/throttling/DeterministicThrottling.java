@@ -273,7 +273,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
 	}
 
-
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
 		final var numNfts = op.getMetadataCount();
 		if (numNfts == 0) {
