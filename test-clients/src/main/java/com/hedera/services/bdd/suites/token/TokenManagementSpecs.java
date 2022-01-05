@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -50,6 +51,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.grantTokenKycAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.revokeTokenKycAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenAssociateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenFreezeAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenUnfreezeAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.wipeTokenAccountAliased;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -58,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -82,19 +91,20 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						freezeMgmtSuccessCasesWork(),
-						kycMgmtFailureCasesWork(),
-						kycMgmtSuccessCasesWork(),
-						supplyMgmtSuccessCasesWork(),
-						wipeAccountFailureCasesWork(),
-						wipeAccountSuccessCasesWork(),
-						supplyMgmtFailureCasesWork(),
-						burnTokenFailsDueToInsufficientTreasuryBalance(),
-						frozenTreasuryCannotBeMintedOrBurned(),
-						revokedKYCTreasuryCannotBeMintedOrBurned(),
-						fungibleCommonMaxSupplyReachWork(),
-						mintingMaxLongValueWorks(),
-						nftMintProvidesMintedNftsAndNewTotalSupply(),
+//						freezeMgmtSuccessCasesWork(),
+//						kycMgmtFailureCasesWork(),
+//						kycMgmtSuccessCasesWork(),
+//						supplyMgmtSuccessCasesWork(),
+//						wipeAccountFailureCasesWork(),
+//						wipeAccountSuccessCasesWork(),
+//						supplyMgmtFailureCasesWork(),
+//						burnTokenFailsDueToInsufficientTreasuryBalance(),
+//						frozenTreasuryCannotBeMintedOrBurned(),
+//						revokedKYCTreasuryCannotBeMintedOrBurned(),
+//						fungibleCommonMaxSupplyReachWork(),
+//						mintingMaxLongValueWorks(),
+//						nftMintProvidesMintedNftsAndNewTotalSupply(),
+						tokenOpsWithAutoCreatedAccount()
 				}
 		);
 	}
@@ -102,6 +112,57 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec tokenOpsWithAutoCreatedAccount() {
+		return defaultHapiSpec("TokenOpsWithAutoCreatedAccount")
+				.given(
+						newKeyNamed("validAlias"),
+						newKeyNamed("invalidAlias"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("wipeKey"),
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "validAlias", ONE_HUNDRED_HBARS))
+								.via("autoCreate")
+				)
+				.when(
+						getTxnRecord("autoCreate")
+								.hasAliasInChildRecord("validAlias", 0),
+						tokenCreate("tokenA")
+								.initialSupply(1000)
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.kycKey("kycKey")
+								.wipeKey("wipeKey")
+								.treasury(DEFAULT_PAYER),
+						tokenAssociateAliased("validAlias", "tokenA")
+				)
+				.then(
+						grantTokenKycAliased("tokenA", "validAlias"),
+						grantTokenKycAliased("tokenA", "invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						tokenUnfreezeAliased("tokenA", "validAlias"),
+						tokenUnfreezeAliased("tokenA", "invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+//						cryptoTransfer(
+//								moving(500, "tokenA").between(DEFAULT_PAYER, "validAlias")),
+//						getAliasedAccountInfo("validAlias")
+//								.hasToken(relationshipWith("tokenA").balance(500))
+//								.logged(),
+						revokeTokenKycAliased("tokenA", "validAlias"),
+						revokeTokenKycAliased("tokenA", "invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						tokenFreezeAliased("tokenA", "validAlias"),
+						tokenFreezeAliased("tokenA", "invalidAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						wipeTokenAccountAliased("tokenA", "validAlias", 250),
+						wipeTokenAccountAliased("tokenA", "invalidAlias", 250)
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						getAliasedAccountInfo("validAlias")
+								.hasToken(relationshipWith("tokenA").balance(250))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {

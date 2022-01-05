@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -59,6 +60,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenAssociateAliased;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenDissociateAliased;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -67,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -109,7 +114,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						contractInfoQueriesAsExpected(),
 						dissociateHasExpectedSemanticsForDeletedTokens(),
 						dissociateHasExpectedSemanticsForDissociatedContracts(),
-						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury()
+						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+						canAssociateWithAutoCreatedAccount()
 				}
 		);
 	}
@@ -117,6 +123,38 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec canAssociateWithAutoCreatedAccount() {
+		return defaultHapiSpec("CanAssociateWithAutoCreatedAccount")
+				.given(
+						newKeyNamed("validAlias"),
+						newKeyNamed("invalidAlias"),
+						newKeyNamed("adminKey"),
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "validAlias", ONE_HUNDRED_HBARS))
+								.via("autoCreate")
+				)
+				.when(
+						getTxnRecord("autoCreate")
+								.hasAliasInChildRecord("validAlias", 0),
+						tokenCreate("tokenA")
+								.adminKey("adminKey")
+								.treasury(DEFAULT_PAYER)
+				)
+				.then(
+						tokenAssociateAliased("validAlias", "tokenA"),
+						tokenAssociateAliased("invalidAlias", "tokenA")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						getAliasedAccountInfo("validAlias")
+								.hasToken(relationshipWith("tokenA"))
+								.logged(),
+						tokenDissociateAliased("validAlias", "tokenA"),
+						tokenDissociateAliased("invalidAlias", "tokenA")
+								.hasKnownStatus(INVALID_ALIAS_KEY),
+						getAliasedAccountInfo("validAlias")
+								.hasNoTokenRelationship("tokenA")
+								.logged()
+				);
 	}
 
 	public HapiApiSpec handlesUseOfDefaultTokenId() {

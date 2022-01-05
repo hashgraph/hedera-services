@@ -23,11 +23,13 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
@@ -56,6 +59,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	private long amount;
 	private List<Long> serialNumbers;
 	private SubType subType;
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -70,11 +74,28 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
 	}
 
+	public HapiTokenWipe(String token, String account, long amount, ReferenceType type) {
+		this.token = token;
+		this.account = account;
+		this.amount = amount;
+		this.serialNumbers = new ArrayList<>();
+		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
+		this.referenceType = type;
+	}
+
 	public HapiTokenWipe(String token, String account, List<Long> serialNumbers) {
 		this.token = token;
 		this.account = account;
 		this.serialNumbers = serialNumbers;
 		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+	}
+
+	public HapiTokenWipe(String token, String account, List<Long> serialNumbers, ReferenceType type) {
+		this.token = token;
+		this.account = account;
+		this.serialNumbers = serialNumbers;
+		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+		this.referenceType = type;
 	}
 
 	@Override
@@ -100,7 +121,12 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		var aId = TxnUtils.asId(account, spec);
+		AccountID aId;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			aId = asIdForKeyLookUp(account, spec);
+		} else {
+			aId = TxnUtils.asId(account, spec);
+		}
 		TokenWipeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(

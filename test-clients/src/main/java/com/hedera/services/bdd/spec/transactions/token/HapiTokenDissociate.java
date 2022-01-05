@@ -22,9 +22,11 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.token.TokenDissociateUsage;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
 
@@ -49,6 +52,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
 	private String account;
 	private List<String> tokens = new ArrayList<>();
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -58,6 +62,11 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 	public HapiTokenDissociate(String account, String... tokens) {
 		this.account = account;
 		this.tokens.addAll(List.of(tokens));
+	}
+	public HapiTokenDissociate(String reference, ReferenceType type, List<String> tokens) {
+		this.tokens.addAll(tokens);
+		this.referenceType = type;
+		this.account = reference;
 	}
 
 	@Override
@@ -77,7 +86,12 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var aId = TxnUtils.asId(account, spec);
+		AccountID aId;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			aId = asIdForKeyLookUp(account, spec);
+		} else {
+			aId = TxnUtils.asId(account, spec);
+		}
 		TokenDissociateTransactionBody opBody = spec
 				.txns()
 				.<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(

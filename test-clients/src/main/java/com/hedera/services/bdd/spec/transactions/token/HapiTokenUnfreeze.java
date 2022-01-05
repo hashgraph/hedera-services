@@ -23,11 +23,13 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,12 +43,14 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 
 public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	private String token;
 	private String account;
+	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -56,6 +60,12 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	public HapiTokenUnfreeze(String token, String account) {
 		this.token = token;
 		this.account = account;
+	}
+
+	public HapiTokenUnfreeze(String token, String account, ReferenceType type) {
+		this.token = token;
+		this.account = account;
+		this.referenceType = type;
 	}
 
 	@Override
@@ -80,8 +90,13 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
+		AccountID aId;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			aId = asIdForKeyLookUp(account, spec);
+		} else {
+			aId = TxnUtils.asId(account, spec);
+		}
 		TokenUnfreezeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenUnfreezeAccountTransactionBody, TokenUnfreezeAccountTransactionBody.Builder>body(

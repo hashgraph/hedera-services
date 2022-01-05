@@ -185,7 +185,11 @@ public class AccountStore {
 	/**
 	 * Fetches the account Num from the alias map that is mapped to the given alias
 	 * @param alias
+	 * 			alias of the account.
+	 * @param possibleAccountNum
+	 * 			AccountNum to be used if the alias is empty.
 	 * @return
+	 * 		AccountNum of the alias account if alias is found in the aliasManager.
 	 */
 	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum) {
 		if (!alias.isEmpty()) {
