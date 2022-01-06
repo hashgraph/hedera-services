@@ -20,16 +20,13 @@ package com.hedera.services.sigs;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.NodeInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
