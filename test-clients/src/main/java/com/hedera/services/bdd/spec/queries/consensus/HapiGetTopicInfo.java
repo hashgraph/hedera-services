@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.queries.consensus;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
@@ -40,7 +41,7 @@ import java.util.function.LongSupplier;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -60,6 +61,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> submitKey = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private ReferenceType autoRenewAccountRefType = ReferenceType.REGISTRY_NAME;
 	private boolean saveRunningHash = false;
 	private Optional<LongConsumer> seqNoInfoObserver = Optional.empty();
 
@@ -122,6 +124,12 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		return this;
 	}
 
+	public HapiGetTopicInfo hasAutoRenewAccountWithAlias(String exp) {
+		autoRenewAccountRefType = ReferenceType.ALIAS_KEY_NAME;
+		autoRenewAccount = Optional.of(exp);
+		return this;
+	}
+
 	public HapiGetTopicInfo saveRunningHash() {
 		saveRunningHash = true;
 		return this;
@@ -170,7 +178,8 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		submitKey.ifPresent(exp ->
 				assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
 		autoRenewAccount.ifPresent(exp ->
-				assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
+				assertEquals(getIdWithAliasLookUp(exp, spec,
+						autoRenewAccountRefType), info.getAutoRenewAccount(), "Bad auto-renew account!"));
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}
