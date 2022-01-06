@@ -127,7 +127,7 @@ public class TransferLogic {
 			}
 		} else {
 			dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
-			if (autoCreationLogic.reclaimPendingAliases()) {
+			if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
 				accountsLedger.undoCreations();
 			}
 			throw new InvalidTransactionException(validity);
