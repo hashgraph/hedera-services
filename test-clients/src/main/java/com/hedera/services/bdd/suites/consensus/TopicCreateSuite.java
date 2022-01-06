@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,14 +29,18 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -51,15 +55,17 @@ public class TopicCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				signingRequirementsEnforced(),
-				autoRenewPeriodIsValidated(),
-				autoRenewAccountIdNeedsAdminKeyToo(),
-				submitKeyIsValidated(),
-				adminKeyIsValidated(),
-				autoRenewAccountIsValidated(),
-				noAutoRenewPeriod(),
-				allFieldsSetHappyCase(),
-				feeAsExpected()
+//				signingRequirementsEnforced(),
+//				autoRenewPeriodIsValidated(),
+//				autoRenewAccountIdNeedsAdminKeyToo(),
+//				submitKeyIsValidated(),
+//				adminKeyIsValidated(),
+//				autoRenewAccountIsValidated(),
+//				noAutoRenewPeriod(),
+//				allFieldsSetHappyCase(),
+//				feeAsExpected(),
+				autoRenewAccountWorksWithAlias(),
+				invalidAutoRenewAccountFailsWithAlias()
 		);
 	}
 
@@ -246,9 +252,56 @@ public class TopicCreateSuite extends HapiApiSuite {
 								.via("topicCreate")
 				)
 				.then(
-				        validateChargedUsd("topicCreate", 0.0226)
+						validateChargedUsd("topicCreate", 0.0226)
 				);
 	}
+
+	private HapiApiSpec invalidAutoRenewAccountFailsWithAlias() {
+		final var alias = "alias";
+		return defaultHapiSpec("invalidAutoRenewAccountFailsWithAlias")
+				.given(
+						newKeyNamed("adminKey"),
+						newKeyNamed("submitKey"),
+						newKeyNamed(alias)
+				)
+				.when()
+				.then(
+						createTopic("testTopic")
+								.topicMemo("testmemo")
+								.adminKeyName("adminKey")
+								.submitKeyName("submitKey")
+								.autoRenewAccountIdAsAlias(alias)
+								.hasKnownStatus(INVALID_ALIAS_KEY)
+				);
+	}
+
+	private HapiApiSpec autoRenewAccountWorksWithAlias() {
+		final var alias = "alias";
+		return defaultHapiSpec("autoRenewAccountWorksWithAlias")
+				.given(
+						newKeyNamed("adminKey"),
+						newKeyNamed("submitKey"),
+						newKeyNamed(alias)
+				)
+				.when(
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS)
+						).via("transferTxn"),
+						getTxnRecord("transferTxn")
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasAliasInChildRecord(alias, 0)
+				)
+				.then(
+						createTopic("testTopic")
+								.topicMemo("testmemo")
+								.adminKeyName("adminKey")
+								.submitKeyName("submitKey")
+								.autoRenewAccountIdAsAlias(alias),
+						getTopicInfo("testTopic").hasAutoRenewAccountWithAlias(alias)
+				);
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {

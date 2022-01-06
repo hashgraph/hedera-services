@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -45,9 +46,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTimestamp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
@@ -62,6 +63,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 	private Optional<String> newSubmitKeyName = Optional.empty();
 	private Optional<Key> newSubmitKey = Optional.empty();
 	private Optional<String> newAutoRenewAccount = Optional.empty();
+	private ReferenceType newAutoRenewAccountRefType = ReferenceType.REGISTRY_NAME;
 
 	public HapiTopicUpdate(String topic) {
 		this.topic = topic;
@@ -103,6 +105,12 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 	}
 
 	public HapiTopicUpdate autoRenewAccountId(String id) {
+		newAutoRenewAccount = Optional.of(id);
+		return this;
+	}
+
+	public HapiTopicUpdate autoRenewAccountIdWithAlias(String id) {
+		newAutoRenewAccountRefType = ReferenceType.ALIAS_KEY_NAME;
 		newAutoRenewAccount = Optional.of(id);
 		return this;
 	}
@@ -158,7 +166,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 							newSubmitKey.ifPresent(b::setSubmitKey);
 							newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
 							newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
-							newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
+							newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(
+									getIdWithAliasLookUp(id, spec, newAutoRenewAccountRefType)));
 						});
 		return b -> b.setConsensusUpdateTopic(opBody);
 	}

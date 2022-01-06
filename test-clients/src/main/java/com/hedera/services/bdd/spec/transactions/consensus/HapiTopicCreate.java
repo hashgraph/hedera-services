@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -45,7 +46,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -64,6 +65,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 	private Optional<String> autoRenewAccountId = Optional.empty();
 	private Optional<KeyShape> adminKeyShape = Optional.empty();
 	private Optional<KeyShape> submitKeyShape = Optional.empty();
+	private ReferenceType autoRenewAccountIdRefType = ReferenceType.REGISTRY_NAME;
 
 	/** For some test we need the capability to build transaction has no autoRenewPeiord */
 	private boolean clearAutoRenewPeriod = false;
@@ -81,34 +83,48 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 		topicMemo = Optional.of(s);
 		return this;
 	}
+
 	public HapiTopicCreate adminKeyName(String s) {
 		adminKeyName = Optional.of(s);
 		return this;
 	}
+
 	public HapiTopicCreate submitKeyName(String s) {
 		submitKeyName = Optional.of(s);
 		return this;
 	}
+
 	public HapiTopicCreate adminKeyShape(KeyShape shape) {
 		adminKeyShape = Optional.of(shape);
 		return this;
 	}
+
 	public HapiTopicCreate submitKeyShape(KeyShape shape) {
 		submitKeyShape = Optional.of(shape);
 		return this;
 	}
+
 	public HapiTopicCreate autoRenewAccountId(String id) {
 		autoRenewAccountId = Optional.of(id);
 		return this;
 	}
+
+	public HapiTopicCreate autoRenewAccountIdAsAlias(String id) {
+		autoRenewAccountIdRefType = ReferenceType.ALIAS_KEY_NAME;
+		autoRenewAccountId = Optional.of(id);
+		return this;
+	}
+
 	public HapiTopicCreate autoRenewPeriod(long secs) {
 		autoRenewPeriod = OptionalLong.of(secs);
 		return this;
 	}
+
 	public HapiTopicCreate clearAutoRenewPeriod() {
 		this.clearAutoRenewPeriod = true;
 		return this;
 	}
+
 	@Override
 	protected Key lookupKey(HapiApiSpec spec, String name) {
 		if (submitKey.isPresent() && (topic + "Submit").equals(name)) {
@@ -134,18 +150,19 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 		ConsensusCreateTopicTransactionBody opBody = spec
 				.txns()
 				.<ConsensusCreateTopicTransactionBody, ConsensusCreateTopicTransactionBody.Builder>body(
-					ConsensusCreateTopicTransactionBody.class, b -> {
-						if (adminKey != null) {
-							b.setAdminKey(adminKey);
-						}
-						topicMemo.ifPresent(b::setMemo);
-						submitKey.ifPresent(b::setSubmitKey);
-						autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
-						autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
-						if (clearAutoRenewPeriod) {
-							b.clearAutoRenewPeriod();
-						}
-					});
+						ConsensusCreateTopicTransactionBody.class, b -> {
+							if (adminKey != null) {
+								b.setAdminKey(adminKey);
+							}
+							topicMemo.ifPresent(b::setMemo);
+							submitKey.ifPresent(b::setSubmitKey);
+							autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(
+									getIdWithAliasLookUp(id, spec, autoRenewAccountIdRefType)));
+							autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
+							if (clearAutoRenewPeriod) {
+								b.clearAutoRenewPeriod();
+							}
+						});
 		return b -> b.setConsensusCreateTopic(opBody);
 	}
 
