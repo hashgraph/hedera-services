@@ -21,9 +21,11 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -153,7 +155,9 @@ class StateViewTest {
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
-	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(),
+			cid.getContractNum());
+	private final ContractID notCid = asContract("0.0.3");
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
 	private final long autoRenewPeriod = 1_234_567;
@@ -188,7 +192,8 @@ class StateViewTest {
 	private MerkleSpecialFiles specialFiles;
 	private UniqTokenView uniqTokenView;
 	private UniqTokenViewFactory uniqTokenViewFactory;
-	private StateChildren children;
+	private MutableStateChildren children;
+
 	@Mock
 	private AliasManager aliasManager;
 
@@ -281,9 +286,9 @@ class StateViewTest {
 						MiscUtils.asTimestamp(now.toJava())
 				);
 		schedule = MerkleSchedule.from(parentScheduleCreate.toByteArray(), expiry);
-		schedule.witnessValidSignature("firstPretendKey".getBytes());
-		schedule.witnessValidSignature("secondPretendKey".getBytes());
-		schedule.witnessValidSignature("thirdPretendKey".getBytes());
+		schedule.witnessValidSignature("01234567890123456789012345678901".getBytes());
+		schedule.witnessValidSignature("_123456789_123456789_123456789_1".getBytes());
+		schedule.witnessValidSignature("_o23456789_o23456789_o23456789_o".getBytes());
 
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
@@ -306,7 +311,7 @@ class StateViewTest {
 		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
 		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
 
-		children = new StateChildren();
+		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);
 		children.setAccounts(contracts);
 		children.setTokenAssociations(tokenRels);
@@ -378,17 +383,15 @@ class StateViewTest {
 
 	@Test
 	void recognizesMissingSchedule() {
+		given(scheduleStore.resolve(missingScheduleId)).willReturn(ScheduleStore.MISSING_SCHEDULE);
 		final var info = subject.infoForSchedule(missingScheduleId);
-
 		assertTrue(info.isEmpty());
 	}
 
 	@Test
 	void infoForScheduleFailsGracefully() {
 		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
-
 		final var info = subject.infoForSchedule(scheduleId);
-
 		assertTrue(info.isEmpty());
 	}
 
@@ -421,14 +424,21 @@ class StateViewTest {
 
 	@Test
 	void getsScheduleInfoForExecuted() {
+		final var mockEd25519Key = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
+		final var mockSecp256k1Key = new JECDSASecp256k1Key("012345678901234567890123456789012".getBytes());
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+		schedule.witnessValidSignature(mockEd25519Key.primitiveKeyIfPresent());
+		schedule.witnessValidSignature(mockSecp256k1Key.primitiveKeyIfPresent());
 
 		schedule.markExecuted(resolutionTime);
 		final var gotten = subject.infoForSchedule(scheduleId);
 		final var info = gotten.get();
 
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
+		final var signatures = info.getSigners().getKeysList();
+		assertEquals(MiscUtils.asKeyUnchecked(mockEd25519Key), signatures.get(3));
+		assertEquals(MiscUtils.asKeyUnchecked(mockSecp256k1Key), signatures.get(4));
 	}
 
 	@Test
@@ -641,7 +651,7 @@ class StateViewTest {
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-				.setAccountID(accountWithAlias)
+				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
 				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
 				.setDeleted(tokenAccount.isDeleted())
@@ -649,7 +659,7 @@ class StateViewTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(accountWithAlias))
+				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
@@ -689,7 +699,7 @@ class StateViewTest {
 
 	@Test
 	void getTopics() {
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 
 		subject = new StateView(
@@ -702,7 +712,7 @@ class StateViewTest {
 
 	@Test
 	void getStorageAndContractStorage() {
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setContractStorage(contractStorage);
 		children.setStorage(storage);
 

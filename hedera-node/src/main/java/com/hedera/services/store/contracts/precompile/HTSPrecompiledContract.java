@@ -91,7 +91,6 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -635,7 +634,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
 					validator,
-					UNUSABLE_AUTO_CREATION,
+					null,
 					recordsHistorian);
 			for (int i = 0, n = changes.size(); i < n; i++) {
 				final var change = changes.get(i);

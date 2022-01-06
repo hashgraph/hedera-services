@@ -22,6 +22,7 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -82,15 +83,15 @@ class TopicCreateTransitionLogicTest {
 	private static final Instant consensusTimestamp = Instant.ofEpochSecond(1546304463);
 	private TransactionBody transactionBody;
 
+	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+
 	@Mock
 	private TransactionContext transactionContext;
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private OptionValidator validator;
-	private TopicCreateTransitionLogic subject;
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	@Mock
 	private EntityIdSource entityIdSource;
 	@Mock
@@ -99,6 +100,10 @@ class TopicCreateTransitionLogicTest {
 	private AccountStore accountStore;
 	@Mock
 	private Account autoRenew;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+
+	private TopicCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -106,7 +111,7 @@ class TopicCreateTransitionLogicTest {
 		topics.clear();
 
 		subject = new TopicCreateTransitionLogic(
-				topicStore, entityIdSource, validator, transactionContext, accountStore);
+				topicStore, entityIdSource, validator, sigImpactHistorian, transactionContext, accountStore);
 	}
 
 	@Test
@@ -149,6 +154,7 @@ class TopicCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(topicStore).persistNew(any());
+		verify(sigImpactHistorian).markEntityChanged(NEW_TOPIC_ID.getTopicNum());
 	}
 
 	@Test

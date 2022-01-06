@@ -23,10 +23,8 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hederahashgraph.api.proto.java.FileID;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import static com.hedera.services.context.primitives.StateView.EMPTY_WACL;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
@@ -36,7 +34,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
  * to avoid an expensive metadata lookup; this is fine, since the privileged payer
  * requirement makes them effectively so.
  */
-@Singleton
 public class HfsSigMetaLookup implements FileSigMetaLookup {
 	private static final FileSigningMetadata SPECIAL_FILE_META =
 			new FileSigningMetadata(EMPTY_WACL);
@@ -46,7 +43,6 @@ public class HfsSigMetaLookup implements FileSigMetaLookup {
 	private final HederaFs hfs;
 	private final FileNumbers fileNumbers;
 
-	@Inject
 	public HfsSigMetaLookup(final HederaFs hfs, final FileNumbers fileNumbers) {
 		this.hfs = hfs;
 		this.fileNumbers = fileNumbers;

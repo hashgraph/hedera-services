@@ -67,6 +67,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
 	private boolean assertAliasKeyMatches = false;
+	private boolean assertAccountIDIsNotAlias = false;
 	private ReferenceType referenceType;
 
 	public HapiGetAccountInfo(String account) {
@@ -94,6 +95,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	public HapiGetAccountInfo hasExpectedAliasKey() {
 		assertAliasKeyMatches = true;
+		return this;
+	}
+
+	public HapiGetAccountInfo hasExpectedAccountID() {
+		assertAccountIDIsNotAlias = true;
 		return this;
 	}
 
@@ -159,6 +165,13 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			Objects.requireNonNull(aliasKeySource);
 			final var expected = spec.registry().getKey(aliasKeySource).toByteString();
 			Assertions.assertEquals(expected, actualInfo.getAlias());
+		}
+		if (assertAccountIDIsNotAlias) {
+			Objects.requireNonNull(aliasKeySource);
+			final var expectedKeyForAccount = spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
+			final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
+			Assertions.assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
+			Assertions.assertEquals(expectedID, actualInfo.getAccountID());
 		}
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);

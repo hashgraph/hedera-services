@@ -1,4 +1,4 @@
-package com.hedera.services.queries;
+package com.hedera.services.sigs.metadata.lookups;
 
 /*-
  * ‌
@@ -20,29 +20,14 @@ package com.hedera.services.queries;
  * ‍
  */
 
-import com.hedera.services.context.ServicesNodeType;
-import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
-import org.junit.jupiter.api.Test;
+import com.hedera.services.sigs.metadata.FileSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hederahashgraph.api.proto.java.FileID;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-
-class QueriesModuleTest {
-	@Test
-	void usesZeroStakeWhenAppropriate() {
-		// expect:
-		assertThat(QueriesModule.provideAnswerFlow(
-			null,
-			null,
-			null,
-			ServicesNodeType.ZERO_STAKE_NODE,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null
-		), instanceOf(ZeroStakeAnswerFlow.class));
-	}
+/**
+ * Defines a simple type that is able to recover metadata about signing activity
+ * associated with a given Hedera file.
+ */
+public interface FileSigMetaLookup {
+	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
 }

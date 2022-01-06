@@ -23,6 +23,7 @@ package com.hedera.services.state.logic;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -46,6 +47,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -57,6 +59,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final ExpandHandleSpan expandHandleSpan,
 			final EntityAutoRenewal autoRenewal,
 			final ServicesTxnManager txnManager,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final ExecutionTimeTracker executionTimeTracker,
 			final GlobalDynamicProperties dynamicProperties
@@ -69,6 +72,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -85,7 +89,9 @@ public class StandardProcessLogic implements ProcessLogic {
 				return;
 			}
 
+			sigImpactHistorian.setChangeTime(effectiveConsensusTime);
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
+			sigImpactHistorian.purge();
 
 			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 

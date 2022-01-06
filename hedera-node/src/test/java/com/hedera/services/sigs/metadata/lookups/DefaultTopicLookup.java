@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;

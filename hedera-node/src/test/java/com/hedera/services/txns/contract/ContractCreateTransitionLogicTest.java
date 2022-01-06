@@ -27,6 +27,7 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -118,6 +119,8 @@ class ContractCreateTransitionLogicTest {
 	private ContractCreateTransactionBody transactionBody;
 	@Mock
 	private GlobalDynamicProperties properties;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -131,7 +134,8 @@ class ContractCreateTransitionLogicTest {
 		subject = new ContractCreateTransitionLogic(
 				hfs,
 				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor, hederaLedger, properties);
+				worldState, recordServices, evmTxProcessor, 
+                                hederaLedger, properties, sigImpactHistorian);
 	}
 
 	@Test
@@ -404,12 +408,14 @@ class ContractCreateTransitionLogicTest {
 	void followsHappyPathWithOverrides() {
 		// setup:
 		givenValidTxnCtx();
+		final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
@@ -421,8 +427,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
-				contractAccount.getId().asEvmAddress());
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -437,6 +443,8 @@ class ContractCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
 		verify(worldState).persistProvisionalContractCreations();
 		verify(recordServices).externaliseEvmCreateTransaction(result);

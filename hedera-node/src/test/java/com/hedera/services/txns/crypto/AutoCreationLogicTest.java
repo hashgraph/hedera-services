@@ -25,13 +25,16 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
@@ -53,19 +56,16 @@ import java.util.Collections;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class TopLevelAutoCreationTest {
+class AutoCreationLogicTest {
 	@Mock
 	private StateView currentView;
 	@Mock
@@ -81,16 +81,19 @@ class TopLevelAutoCreationTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
-	private TopLevelAutoCreation subject;
+	private AutoCreationLogic subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TopLevelAutoCreation(
-				syntheticTxnFactory, creator, ids, aliasManager, currentView, txnCtx, accountsLedger);
+		subject = new AutoCreationLogic(
+				syntheticTxnFactory, creator, ids, aliasManager, sigImpactHistorian, currentView, txnCtx);
+
 		subject.setFeeCalculator(feeCalculator);
 	}
 
@@ -100,59 +103,16 @@ class TopLevelAutoCreationTest {
 
 		final var input = wellKnownChange();
 
-		final var result = subject.createFromTrigger(input);
+		final var result = subject.create(input, accountsLedger);
 		subject.submitRecordsTo(recordsHistorian);
 
 		assertEquals(initialTransfer - totalFee, input.units());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
 		verify(aliasManager).link(alias, createdNum);
+		verify(sigImpactHistorian).markAliasChanged(alias);
+		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
 		assertEquals(Pair.of(OK, totalFee), result);
-		verify(recordsHistorian).trackPrecedingChildRecord(
-				eq(DEFAULT_SOURCE_ID),
-				eq(mockSyntheticCreation),
-				any(ExpirableTxnRecord.Builder.class));
-	}
-
-	@Test
-	void translatesPresumablyImpossibleDecodingErrorUnchecked() {
-		final var invalidAlias = ByteString.copyFromUtf8("not-a-primitive-key");
-		final var invalidInput = BalanceChange.changingHbar(AccountAmount.newBuilder()
-				.setAmount(initialTransfer)
-				.setAccountID(AccountID.newBuilder().setAlias(invalidAlias).build())
-				.build());
-
-		assertThrows(IllegalStateException.class, () -> subject.createFromTrigger(invalidInput));
-	}
-
-	@Test
-	void shortCircuitsWhenFeeExceedsChangeBalance() {
-		given(txnCtx.consensusTime())
-				.willReturn(consensusNow);
-		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
-				.willReturn(mockSyntheticCreation);
-		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
-				.willReturn(fees);
-
-		final var input = wellKnownChange();
-		input.adjustUnits(-initialTransfer - totalFee - 1);
-
-		final var result = subject.createFromTrigger(input);
-		assertEquals(input.codeForInsufficientBalance(), result.getKey());
-	}
-
-	@Test
-	void resetAndReclaimWork() {
-		givenCollaborators();
-		final var input = wellKnownChange();
-
-		subject.createFromTrigger(input);
-		assertFalse(subject.getPendingCreations().isEmpty());
-
-		assertTrue(subject.reclaimPendingAliases());
-		subject.reset();
-		assertTrue(subject.getPendingCreations().isEmpty());
-		verify(aliasManager).unlink(alias);
-		assertFalse(subject.reclaimPendingAliases());
 	}
 
 	private void givenCollaborators() {
@@ -165,7 +125,7 @@ class TopLevelAutoCreationTest {
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);
 		given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(AUTO_MEMO)))
-				.willReturn(ExpirableTxnRecord.newBuilder().setAlias(alias));
+				.willReturn(mockBuilder);
 	}
 
 	private BalanceChange wellKnownChange() {
@@ -186,4 +146,8 @@ class TopLevelAutoCreationTest {
 	private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
 	private static final long totalFee = 6L;
 	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final ExpirableTxnRecord.Builder mockBuilder = ExpirableTxnRecord.newBuilder()
+			.setAlias(alias)
+			.setReceiptBuilder(TxnReceipt.newBuilder()
+					.setAccountId(new EntityId(0, 0, createdNum.longValue())));
 }

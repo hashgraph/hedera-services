@@ -23,6 +23,7 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;

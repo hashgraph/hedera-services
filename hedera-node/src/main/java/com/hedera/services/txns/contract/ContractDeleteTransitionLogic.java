@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -42,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class ContractDeleteTransitionLogic implements TransitionLogic {
@@ -51,23 +53,26 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final LegacyDeleter delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public ContractDeleteTransitionLogic(
-			HederaLedger ledger,
-			LegacyDeleter delegate,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			final HederaLedger ledger,
+			final LegacyDeleter delegate,
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
 	) {
 		this.ledger = ledger;
 		this.delegate = delegate;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@FunctionalInterface
@@ -89,9 +94,12 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 				}
 			}
 
-			var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
-
-			txnCtx.setStatus(legacyRecord.getReceipt().getStatus());
+			final var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
+			final var status = legacyRecord.getReceipt().getStatus();
+			if (status == SUCCESS) {
+				sigImpactHistorian.markEntityChanged(op.getContractID().getContractNum());
+			}
+			txnCtx.setStatus(status);
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);

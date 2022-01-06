@@ -42,9 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -54,6 +52,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
 	private Random r = new Random();
 	private final static long TEST_ACCOUNT_STARTS_FROM = 1001L;
+
 	public static void main(String... args) {
 		parseArgs(args);
 
@@ -63,7 +62,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return	List.of(
+		return List.of(
 				runCryptoTransfers()
 		);
 	}
@@ -74,25 +73,25 @@ public class CryptoTransferLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> transferBurst = () -> {
 			String sender = "sender";
 			String receiver = "receiver";
-			if(settings.getTotalAccounts() > 2) {
-				int s =  r.nextInt(settings.getTotalAccounts());
+			if (settings.getTotalAccounts() > 2) {
+				int s = r.nextInt(settings.getTotalAccounts());
 				int re = 0;
 				do {
-					re =  r.nextInt(settings.getTotalAccounts());
+					re = r.nextInt(settings.getTotalAccounts());
 				} while (re == s);
 				sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
 				receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
 			}
 
 			return new HapiSpecOperation[] { cryptoTransfer(
-					tinyBarsFromTo(sender, receiver , 1L))
+					tinyBarsFromTo(sender, receiver, 1L))
 					.noLogging()
 					.payingWith(sender)
 					.signedBy(GENESIS)
 					.suppressStats(true)
 					.fee(100_000_000L)
 					.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
-							,UNKNOWN,TRANSACTION_EXPIRED,
+							, UNKNOWN, TRANSACTION_EXPIRED,
 							INSUFFICIENT_ACCOUNT_BALANCE)
 					.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 					.deferStatusResolution()
@@ -114,7 +113,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 						cryptoCreate("receiver")
 								.payingWith(GENESIS)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						        .key(GENESIS).logging()
+								.key(GENESIS).logging()
 				).then(
 						defaultLoadTest(transferBurst, settings),
 						getAccountBalance("sender").logged()
