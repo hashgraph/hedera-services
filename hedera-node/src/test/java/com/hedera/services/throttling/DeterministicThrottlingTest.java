@@ -397,7 +397,7 @@ class DeterministicThrottlingTest {
 	@Test
 	void logsErrorOnBadBucketButDoesntFail() throws IOException {
 		final var ridiculousSplitFactor = 1_000_000;
-		subject = new DeterministicThrottling(() -> ridiculousSplitFactor, aliasManager, dynamicProperties);
+		subject = new DeterministicThrottling(() -> ridiculousSplitFactor, aliasManager, dynamicProperties, true);
 
 		var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
 

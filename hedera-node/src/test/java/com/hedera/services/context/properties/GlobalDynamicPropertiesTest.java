@@ -137,7 +137,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(46, subject.maxXferBalanceChanges());
 		assertEquals(47, subject.maxCustomFeeDepth());
 		assertEquals(48, subject.maxGasRefundPercentage());
-		assertEquals(49, subject.changeHistorianMemorySecs());
+		assertEquals(52, subject.changeHistorianMemorySecs());
 	}
 
 	@Test
@@ -223,7 +223,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(47, subject.maxXferBalanceChanges());
 		assertEquals(48, subject.maxCustomFeeDepth());
 		assertEquals(49, subject.maxGasRefundPercentage());
-		assertEquals(50, subject.changeHistorianMemorySecs());
+		assertEquals(53, subject.changeHistorianMemorySecs());
 	}
 
 	@Test

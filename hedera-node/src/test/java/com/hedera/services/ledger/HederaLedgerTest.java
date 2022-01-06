@@ -68,7 +68,7 @@ import static org.mockito.BDDMockito.verify;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreationLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -187,7 +187,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoAccountCreator);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertFalse(subject.isDetached(genesis));
 	}

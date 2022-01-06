@@ -30,7 +30,6 @@ import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -126,7 +125,6 @@ public class StateView {
 	private final ScheduleStore scheduleStore;
 	private final UniqTokenView uniqTokenView;
 	private final StateChildren stateChildren;
-	private final NodeLocalProperties nodeLocalProperties;
 
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
@@ -502,11 +500,11 @@ public class StateView {
 	}
 
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-		return stateChildren == null ? emptyVm() : stateChildren.getStorage();
+		return stateChildren == null ? emptyVm() : stateChildren.storage();
 	}
 
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
-		return stateChildren == null ? emptyVm() : stateChildren.getContractStorage();
+		return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
 	}
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {

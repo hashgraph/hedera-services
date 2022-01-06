@@ -86,8 +86,8 @@ import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.txns.crypto.TopLevelAutoCreation.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.TopLevelAutoCreation.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
@@ -99,6 +99,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -136,7 +137,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreationLogic;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -293,6 +294,7 @@ class LedgerBalanceChangesTest {
 		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
+				() -> uniqueOwnershipTreasuryAssociations,
 				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
@@ -421,7 +423,7 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(validAliasAccountWithId, validAliasAccount);
 		backingAccounts.put(funding, fundingAccount);
 
-		given(autoCreationLogic.createFromTrigger(any())).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(any(), eq(accountsLedger))).willAnswer(invocationOnMock -> {
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(validAliasEntityNum.toGrpcAccountId());
 			return Pair.of(OK, 100L);

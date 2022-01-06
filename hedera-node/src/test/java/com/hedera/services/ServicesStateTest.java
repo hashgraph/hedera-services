@@ -89,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -274,7 +275,7 @@ class ServicesStateTest {
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+		verify(expansionHelper).expandIn(txnAccessor, expandKeyOrder, pubKeyToSigBytes);
 		verify(prefetchProcessor).submit(txnAccessor);
 	}
 
@@ -432,7 +433,7 @@ class ServicesStateTest {
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
-		willCallRealMethod().given(subject).migrate();
+		doCallRealMethod().when(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);

@@ -21,12 +21,10 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -48,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -120,9 +117,6 @@ class RenewalHelperTest {
 	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
 	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
-	private final HashMap<ByteString, EntityNum> autoAccountsMap = new HashMap();
-
-	private final HederaNumbers nums = new MockHederaNumbers();
 
 	{
 		deletedToken.setDeleted(true);
@@ -295,8 +289,6 @@ class RenewalHelperTest {
 
 		subject.classify(brokeExpiredAccountNum, now);
 
-		assertTrue(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
-		// and:
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
 		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
@@ -347,7 +339,6 @@ class RenewalHelperTest {
 		subject.removeLastClassifiedAccount();
 
 		assertFalse(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
-		assertFalse(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 	}
 
 	@Test

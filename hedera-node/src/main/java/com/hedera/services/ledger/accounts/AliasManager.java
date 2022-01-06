@@ -117,4 +117,8 @@ public class AliasManager {
 	void setAliases(final Map<ByteString, EntityNum> aliases) {
 		this.aliases = aliases;
 	}
+
+	Map<ByteString, EntityNum> getAliases() {
+		return aliases;
+	}
 }

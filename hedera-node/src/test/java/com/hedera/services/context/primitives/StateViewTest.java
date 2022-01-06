@@ -22,7 +22,6 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -713,7 +712,7 @@ class StateViewTest {
 
 	@Test
 	void getStorageAndContractStorage() {
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setContractStorage(contractStorage);
 		children.setStorage(storage);
 

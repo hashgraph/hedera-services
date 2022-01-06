@@ -219,9 +219,9 @@ class ExpiringCreationsTest {
 		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
 
-		given(sideEffectsTracker.hasAutoCreation()).willReturn(true);
-		given(sideEffectsTracker.getAutoCreatedAccountId()).willReturn(effPayer);
-		given(sideEffectsTracker.getAutoCreatedAccountAlias()).willReturn(mockAlias);
+		given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
+		given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
+		given(sideEffectsTracker.getNewAccountAlias()).willReturn(mockAlias);
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,

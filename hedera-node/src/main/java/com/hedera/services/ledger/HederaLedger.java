@@ -69,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -133,7 +132,6 @@ public class HederaLedger {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
-	private final MerkleAccountScopedCheck scopedCheck;
 	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(

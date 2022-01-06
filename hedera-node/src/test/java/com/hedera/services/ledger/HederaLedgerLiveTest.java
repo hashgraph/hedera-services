@@ -67,7 +67,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	private static final long thisSecond = 1_234_567L;
 
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreationLogic;
 
 	@BeforeEach
 	void setup() {

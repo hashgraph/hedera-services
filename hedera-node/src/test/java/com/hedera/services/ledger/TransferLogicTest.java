@@ -106,7 +106,8 @@ class TransferLogicTest {
 		final var firstAlias = ByteString.copyFromUtf8("fake");
 		final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
 
-		given(autoCreationLogic.createFromTrigger(failingTrigger)).willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
+		given(autoCreationLogic.create(failingTrigger, accountsLedger))
+				.willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
 		accountsLedger.begin();
 		accountsLedger.create(mockCreation);
 		given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
@@ -129,7 +130,7 @@ class TransferLogicTest {
 
 		final var firstTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
 		final var secondTrigger = BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount));
-		given(autoCreationLogic.createFromTrigger(firstTrigger)).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(firstTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(firstNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(firstNewAccount);
@@ -137,7 +138,7 @@ class TransferLogicTest {
 			change.setNewBalance(change.units());
 			return Pair.of(OK, autoFee);
 		});
-		given(autoCreationLogic.createFromTrigger(secondTrigger)).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(secondTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(secondNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(secondNewAccount);

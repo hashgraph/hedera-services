@@ -78,7 +78,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -93,12 +92,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean requestDuplicates = false;
 	private boolean requestChildRecords = false;
 	private boolean shouldBeTransferFree = false;
-	private boolean requestChildRecords = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
 	private boolean lookupScheduledFromRegistryId = false;
 	private boolean omitPaymentHeaderOnCostAnswer = false;
-	private boolean hasAliasInChildRecord = false;
 	private List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
@@ -119,7 +116,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
-	private Optional<String> aliasKey = Optional.empty();
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
 	private static record ExpectedChildInfo(String aliasingKey) {
@@ -184,11 +180,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingNothingAboutHashes() {
 		assertNothingAboutHashes = true;
-		return this;
-	}
-
-	public HapiGetTxnRecord andAllChildRecords() {
-		requestChildRecords = true;
 		return this;
 	}
 
@@ -600,6 +591,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
 		for (var rec : childRecords) {

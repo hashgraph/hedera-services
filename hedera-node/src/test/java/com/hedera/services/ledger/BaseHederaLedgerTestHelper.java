@@ -23,7 +23,6 @@ package com.hedera.services.ledger;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -254,6 +253,7 @@ public class BaseHederaLedgerTestHelper {
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 		sideEffectsTracker = mock(SideEffectsTracker.class);
 		mutableEntityAccess = mock(MutableEntityAccess.class);
+		final var autoCreationLogic = mock(AutoCreationLogic.class);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, 
                                 accountsLedger, transferLogic, autoCreationLogic);

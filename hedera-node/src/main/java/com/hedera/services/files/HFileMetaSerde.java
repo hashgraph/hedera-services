@@ -90,16 +90,6 @@ public class HFileMetaSerde {
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
 	}
 
-	private static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
-		long objectType = in.readLong();
-		if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
-			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
-		}
-		/* Unused legacy length information. */
-		in.readLong();
-		return unpack(in);
-	}
-
 	private static HFileMeta unpack(DataInputStream stream) throws IOException {
 		boolean deleted = stream.readBoolean();
 		long expirationTime = stream.readLong();

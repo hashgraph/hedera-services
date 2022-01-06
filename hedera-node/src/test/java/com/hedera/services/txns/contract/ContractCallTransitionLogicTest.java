@@ -25,7 +25,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -70,7 +69,6 @@ class ContractCallTransitionLogicTest {
 	private int gas = 1_234;
 	private long sent = 1_234L;
 
-
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -100,7 +98,8 @@ class ContractCallTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
-				txnCtx, accountStore, sigImpactHistorian, worldState, recordService, evmTxProcessor, properties, codeCache);
+				txnCtx, accountStore, worldState,
+				recordService, evmTxProcessor, properties, codeCache, sigImpactHistorian);
 	}
 
 	@Test

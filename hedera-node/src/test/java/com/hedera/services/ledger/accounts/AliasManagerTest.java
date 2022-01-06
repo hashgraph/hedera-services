@@ -59,7 +59,6 @@ class AliasManagerTest {
 	void settersAndGettersWork() {
 		final var a = new EntityNum(1);
 		final var b = new EntityNum(2);
-
 		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
 		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
 		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
@@ -68,23 +67,12 @@ class AliasManagerTest {
 		}};
 
 		var subject = new AliasManager();
-
 		assertTrue(subject.getAliases().isEmpty());
 
 		subject.setAliases(expectedMap);
 		assertEquals(expectedMap, subject.getAliases());
 		assertEquals(b, subject.lookupIdBy(ByteString.copyFromUtf8("bbbb")));
 		assertTrue(subject.contains(aliasA));
-	}
-
-	@Test
-	void returnsFalseIfAliasNotPresentToForget() {
-		final var accountWithNoAlias = new MerkleAccount();
-		final var withoutNum = EntityNum.fromLong(2L);
-		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
-		liveAccounts.put(withoutNum, accountWithNoAlias);
-
-		assertFalse(subject.forgetAliasIfPresent(withoutNum, liveAccounts));
 	}
 
 	@Test
@@ -103,7 +91,6 @@ class AliasManagerTest {
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
 		final var subject = new AliasManager();
-
 		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 
@@ -111,8 +98,8 @@ class AliasManagerTest {
 		assertEquals(1, finalMap.size());
 		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
 
+		// finally when
 		subject.forgetAliasIfPresent(withNum, liveAccounts);
-
 		assertEquals(0, subject.getAliases().size());
 	}
 }

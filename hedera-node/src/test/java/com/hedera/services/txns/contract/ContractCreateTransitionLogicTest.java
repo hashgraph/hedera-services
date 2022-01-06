@@ -415,7 +415,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given (worldState.persist()).willReturn(secondaryCreations);
+		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
