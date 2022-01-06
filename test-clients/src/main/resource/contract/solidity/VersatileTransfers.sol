@@ -8,7 +8,7 @@ import "./hip-206/HederaResponseCodes.sol";
 contract VersatileTransfers is HederaTokenService {
     FeeDistributor feeDistributor;
 
-    constructor(address feeDistributorContractAddress) {
+    constructor(address feeDistributorContractAddress) public {
         feeDistributor = FeeDistributor(feeDistributorContractAddress);
     }
 
@@ -41,12 +41,31 @@ contract VersatileTransfers is HederaTokenService {
 
         feeDistributor.distributeFees(feeTokenAddress, feeCollector, accounts[0]);
     }
+
+    function feeDistributionAfterTransferStaticNestedCall(address tokenAddress, address feeTokenAddress, address[] calldata accounts, int64[] calldata amounts, address feeCollector) external {
+        int response = HederaTokenService.transferTokens(tokenAddress, accounts, amounts);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Transfer of tokens failed");
+        }
+
+        feeDistributor.distributeFeesStaticCall(feeTokenAddress, feeCollector, accounts[0]);
+    }
 }
 
 contract FeeDistributor is HederaTokenService {
     function distributeFees(address tokenAddress, address feeCollector, address receiver) external {
         int response = HederaTokenService.transferToken(tokenAddress, feeCollector, receiver, 100);
         if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Transfer of tokens failed");
+        }
+    }
+
+    function distributeFeesStaticCall(address tokenAddress, address feeCollector, address receiver) external {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.transferToken.selector,
+            tokenAddress, feeCollector, receiver, 100));
+        int responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ("Transfer of tokens failed");
         }
     }
