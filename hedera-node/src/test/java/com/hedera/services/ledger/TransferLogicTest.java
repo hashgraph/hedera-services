@@ -104,8 +104,8 @@ class TransferLogicTest {
 				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
 				null, recordsHistorian);
 
-		assertThrows(IllegalStateException.class, () ->
-				subject.doZeroSum(List.of(inappropriateTrigger)));
+		final var triggerList = List.of(inappropriateTrigger);
+		assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));
 	}
 
 	@Test
