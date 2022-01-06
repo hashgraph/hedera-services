@@ -84,18 +84,18 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						autoAccountCreationsHappyPath(),
-						autoAccountCreationBadAlias(),
-						autoAccountCreationUnsupportedAlias(),
-						transferToAccountAutoCreatedUsingAlias(),
-						transferToAccountAutoCreatedUsingAccount(),
-						transferFromAliasToAlias(),
-						transferFromAliasToAccount(),
-						multipleAutoAccountCreations(),
-						accountCreatedIfAliasUsedAsPubKey(),
-						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-						canGetBalanceAndInfoViaAlias()
+//						autoAccountCreationsHappyPath(),
+//						autoAccountCreationBadAlias(),
+//						autoAccountCreationUnsupportedAlias(),
+//						transferToAccountAutoCreatedUsingAlias(),
+//						transferToAccountAutoCreatedUsingAccount(),
+//						transferFromAliasToAlias(),
+//						transferFromAliasToAccount(),
+//						multipleAutoAccountCreations(),
+//						accountCreatedIfAliasUsedAsPubKey(),
+//						aliasCanBeUsedOnManyAccountsNotAsAlias(),
+						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount()
+//						canGetBalanceAndInfoViaAlias()
 				}
 		);
 	}

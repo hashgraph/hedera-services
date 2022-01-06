@@ -171,11 +171,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		}
 		AccountID id;
 
-		if (referenceType == ReferenceType.REGISTRY_NAME) {
-			id = TxnUtils.asId(account, spec);
-		} else {
-			id = asIdForKeyLookUp(aliasKeySource, spec);
-		}
+//		if (referenceType == ReferenceType.REGISTRY_NAME) {
+//			id = TxnUtils.asId(account, spec);
+//		} else {
+//			id = asIdForKeyLookUp(aliasKeySource, spec);
+//		}
+		id = asIdForKeyLookUp(aliasKeySource, spec);
 
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()

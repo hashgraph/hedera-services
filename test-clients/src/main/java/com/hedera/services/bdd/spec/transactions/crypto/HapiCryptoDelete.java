@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
@@ -63,7 +62,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 		this.referenceType = type;
 		if (type == ReferenceType.ALIAS_KEY_NAME) {
 			aliasKeySource = reference;
-			account = reference;
+//			account = reference;
 		} else {
 			account = reference;
 		}
@@ -110,7 +109,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 		if (referenceType == ReferenceType.REGISTRY_NAME) {
 			target = TxnUtils.asId(account, spec);
 		} else {
-			target = lookUpAccountWithAlias(spec, aliasKeySource);
+			target = TxnUtils.asIdForKeyLookUp(aliasKeySource, spec);
 		}
 
 		CryptoDeleteTransactionBody opBody = spec
@@ -139,7 +138,6 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 			if (spec.registry().hasKey(aliasKeySource)) {
 				final var lookedUpKey = spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
 				spec.registry().removeAccount(lookedUpKey);
-				spec.registry().removeKey(lookedUpKey);
 			}
 		}
 	}
@@ -148,7 +146,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> deleteSigners = new ArrayList<>();
 		deleteSigners.addAll(super.defaultSigners());
-		deleteSigners.add(spec -> spec.registry().getKey(account));
+		deleteSigners.add(spec -> spec.registry().getKey(referenceType == ReferenceType.REGISTRY_NAME ? account : aliasKeySource));
 		deleteSigners.add(spec -> spec.registry().getKey(transferAccount.orElse(spec.setup().defaultTransferName())));
 		return deleteSigners;
 	}
@@ -160,14 +158,17 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
-		return super.toStringHelper().add("account", account);
+		return super.toStringHelper()
+				.add("account", account)
+				.add("alias", aliasKeySource);
 	}
 
 
 	private AccountID getTransferAccount(HapiApiSpec spec, String transferAccount) {
-		if (transferAccountRefType == ReferenceType.ALIAS_KEY_NAME) {
-			return TxnUtils.asIdForKeyLookUp(transferAccount, spec);
-		}
-		return spec.registry().getAccountID(transferAccount);
+//		if (transferAccountRefType == ReferenceType.ALIAS_KEY_NAME) {
+//			return TxnUtils.asIdForKeyLookUp(transferAccount, spec);
+//		}
+//		return spec.registry().getAccountID(transferAccount);
+		return TxnUtils.asIdForKeyLookUp(transferAccount, spec);
 	}
 }

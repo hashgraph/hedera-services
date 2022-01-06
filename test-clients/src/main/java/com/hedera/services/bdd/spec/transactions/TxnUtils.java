@@ -196,20 +196,22 @@ public class TxnUtils {
 
 	private static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
 		final var key = spec.registry().getKey(alias);
-		final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
-		return spec.registry().hasAccountId(lookedUpKey) ?
-				spec.registry().getAccountID(lookedUpKey) :
-				asIdWithAlias(key.toByteString());
+//		final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
+//		return spec.registry().hasAccountId(lookedUpKey) ?
+//				spec.registry().getAccountID(lookedUpKey) :
+//				asIdWithAlias(key.toByteString());
+		return asIdWithAlias(key.toByteString());
 	}
 
 
 	public static AccountID getIdWithAliasLookUp(final String account, final HapiApiSpec spec,
 			final ReferenceType type) {
-		if (type == ReferenceType.ALIAS_KEY_NAME) {
-			return asIdForKeyLookUp(account, spec);
-		} else {
-			return TxnUtils.asId(account, spec);
-		}
+//		if (type == ReferenceType.ALIAS_KEY_NAME) {
+//			return asIdForKeyLookUp(account, spec);
+//		} else {
+//			return TxnUtils.asId(account, spec);
+//		}
+		return asIdForKeyLookUp(account, spec);
 	}
 
 	public static AccountID asIdWithAlias(final ByteString s) {

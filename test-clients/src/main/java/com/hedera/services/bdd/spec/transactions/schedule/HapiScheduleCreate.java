@@ -26,8 +26,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -51,6 +51,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -74,6 +75,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<BiConsumer<String, byte[]>> successCb = Optional.empty();
 	private AtomicReference<SchedulableTransactionBody> scheduledTxn = new AtomicReference<>();
+	private ReferenceType designatedPayerReferenceType = ReferenceType.REGISTRY_NAME;
 
 	private final String scheduleEntity;
 	private final HapiTxnOp<T> scheduled;
@@ -132,6 +134,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		return this;
 	}
 
+	public HapiScheduleCreate<T> designatingPayerAlias(String s) {
+		payerAccountID = Optional.of(s);
+		designatedPayerReferenceType = ReferenceType.ALIAS_KEY_NAME;
+		return this;
+	}
+
 	public HapiScheduleCreate<T> alsoSigningWith(String... s) {
 		initialSigners = List.of(s);
 		return this;
@@ -178,7 +186,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							}
 							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
-								var payer = TxnUtils.asId(a, spec);
+								var payer = getIdWithAliasLookUp(a, spec, designatedPayerReferenceType);
 								b.setPayerAccountID(payer);
 							});
 						}

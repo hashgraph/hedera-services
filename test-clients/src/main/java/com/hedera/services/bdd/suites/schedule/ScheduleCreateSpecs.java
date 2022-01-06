@@ -57,12 +57,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateFunctionless;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -86,32 +88,33 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				notIdenticalScheduleIfScheduledTxnChanges(),
-				notIdenticalScheduleIfAdminKeyChanges(),
-				notIdenticalScheduleIfMemoChanges(),
-				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
-				rejectsSentinelKeyListAsAdminKey(),
-				rejectsMalformedScheduledTxnMemo(),
-				bodyOnlyCreation(),
-				onlyBodyAndAdminCreation(),
-				onlyBodyAndMemoCreation(),
-				bodyAndSignatoriesCreation(),
-				bodyAndPayerCreation(),
-				rejectsUnresolvableReqSigners(),
-				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(),
-				failsWithNonExistingPayerAccountId(),
-				failsWithTooLongMemo(),
-				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
-				rejectsFunctionlessTxn(),
-				whitelistWorks(),
-				preservesRevocationServiceSemanticsForFileDelete(),
-				worksAsExpectedWithDefaultScheduleId(),
-				infoIncludesTxnIdFromCreationReceipt(),
-				suiteCleanup(),
-				validateSignersInInfo()
+//				notIdenticalScheduleIfScheduledTxnChanges(),
+//				notIdenticalScheduleIfAdminKeyChanges(),
+//				notIdenticalScheduleIfMemoChanges(),
+//				recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer(),
+//				rejectsSentinelKeyListAsAdminKey(),
+//				rejectsMalformedScheduledTxnMemo(),
+//				bodyOnlyCreation(),
+//				onlyBodyAndAdminCreation(),
+//				onlyBodyAndMemoCreation(),
+//				bodyAndSignatoriesCreation(),
+//				bodyAndPayerCreation(),
+//				rejectsUnresolvableReqSigners(),
+//				triggersImmediatelyWithBothReqSimpleSigs(),
+//				onlySchedulesWithMissingReqSimpleSigs(),
+//				failsWithNonExistingPayerAccountId(),
+//				failsWithTooLongMemo(),
+//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+//				doesntTriggerUntilPayerSigns(),
+//				requiresExtantPayer(),
+//				rejectsFunctionlessTxn(),
+//				whitelistWorks(),
+//				preservesRevocationServiceSemanticsForFileDelete(),
+//				worksAsExpectedWithDefaultScheduleId(),
+//				infoIncludesTxnIdFromCreationReceipt(),
+//				suiteCleanup(),
+//				validateSignersInInfo(),
+				creationWorksWithAlias()
 		});
 	}
 
@@ -119,6 +122,41 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+				);
+	}
+
+	private HapiApiSpec creationWorksWithAlias() {
+		return defaultHapiSpec("CreationWorksWithAlias")
+				.given(
+						newKeyNamed("payerAlias"),
+						newKeyNamed("schedulingAlias"),
+						newKeyNamed("invalidAlias"),
+						cryptoCreate("sender1"),
+						cryptoCreate("sender2")
+				)
+				.when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "payerAlias", ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, "schedulingAlias", ONE_HUNDRED_HBARS))
+								.via("autoCreate"),
+						getTxnRecord("autoCreate")
+								.hasChildRecordCount(2)
+				)
+				.then(
+//						scheduleCreate("validScheduleWithAlias",
+//								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender1", 1)))
+//								.designatingPayerAlias("payerAlias")
+//								.payingWithAlias("schedulingAlias"),
+//						getScheduleInfo("validScheduleWithAlias").logged(),
+						scheduleCreate("validScheduleWithAlias",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
+								.designatingPayerAlias("invalidAlias")
+								.payingWithAlias("schedulingAlias")
+								.hasKnownStatus(INVALID_ALIAS_KEY)
+//						scheduleCreate("validScheduleWithAlias",
+//								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
+//								.designatingPayerAlias("payerAlias")
+//								.payingWithAlias("invalidAlias")
+//								.hasKnownStatus(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 
