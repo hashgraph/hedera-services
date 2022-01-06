@@ -75,7 +75,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
-	Pair<AccountID, ResponseCodeEnum> fetchAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
+
+	Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

@@ -20,12 +20,14 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -77,6 +79,10 @@ public class MerkleScheduleTest {
 	private static final long expiry = 1_234_567L;
 	private static final String entityMemo = "Just some memo again";
 	private static final String otherEntityMemo = "Yet another memo";
+	private static final ByteString payerAlias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
+	private static final ByteString schedulingAccountAlias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
+	private static final AccountID payerWithAlias = AccountID.newBuilder().setAlias(payerAlias).build();
+	private static final AccountID schedulingAccountWithAlias = AccountID.newBuilder().setAlias(schedulingAccountAlias).build();
 	private static final EntityId payer = new EntityId(4, 5, 6);
 	private static final EntityId otherPayer = new EntityId(4, 5, 5);
 	private static final EntityId schedulingAccount = new EntityId(1, 2, 3);
@@ -304,6 +310,30 @@ public class MerkleScheduleTest {
 
 		assertEquals(subject, other);
 		assertEquals(subject.hashCode(), other.hashCode());
+		assertEquals(otherPayer , other.payer());
+		assertEquals(otherPayer , other.schedulingAccount());
+		assertTrue(other.getPayerAlias().isEmpty());
+		assertTrue(other.getSchedulingAccountAlias().isEmpty());
+	}
+
+	@Test
+	void txnWithAliasAreParsedAsExpected() {
+		final var bodyBytesWithAlias = parentTxn.toBuilder()
+				.setTransactionID(parentTxn.getTransactionID().toBuilder()
+						.setAccountID(schedulingAccountWithAlias)
+						.setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+						.setPayerAccountID(payerWithAlias))
+				.build().toByteArray();
+		final var other = MerkleSchedule.from(bodyBytesWithAlias, expiry + 1);
+		other.markExecuted(resolutionTime);
+		other.markDeleted(resolutionTime);
+		other.witnessValidSignature(fpk);
+
+		assertEquals(EntityId.MISSING_ENTITY_ID , other.payer());
+		assertEquals(EntityId.MISSING_ENTITY_ID , other.schedulingAccount());
+		assertEquals(payerAlias, other.getPayerAlias());
+		assertEquals(schedulingAccountAlias, other.getSchedulingAccountAlias());
 	}
 
 	@Test

@@ -20,7 +20,9 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
@@ -28,6 +30,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -65,6 +68,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 	private final GlobalDynamicProperties properties;
 	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private final AliasManager aliasManager;
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
@@ -74,11 +78,13 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	public HederaScheduleStore(
 			GlobalDynamicProperties properties,
 			EntityIdSource ids,
-			Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
+			Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules,
+			final AliasManager aliasManager
 	) {
 		super(ids);
 		this.schedules = schedules;
 		this.properties = properties;
+		this.aliasManager = aliasManager;
 		/* Content-addressable view is re-built on restart or reconnect */
 	}
 
@@ -127,18 +133,25 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
-		var validity = OK;
 		if (schedule.hasExplicitPayer()) {
-			validity = usableOrElse(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
-		}
-		if (validity == OK) {
-			validity = usableOrElse(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
-		}
-		if (validity != OK) {
-			return failure(validity);
+			final var grpcPayer = buildAccountId(schedule.payer(), schedule.getPayerAlias());
+			final var schedulePayerLookUp = lookUpAccountId(grpcPayer, INVALID_SCHEDULE_PAYER_ID);
+			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.getLeft()));
+
+			if (schedulePayerLookUp.getRight() != OK) {
+				return failure(schedulePayerLookUp.getRight());
+			}
 		}
 
-		pendingId = ids.newScheduleId(schedule.schedulingAccount().toGrpcAccountId());
+		final var grpcSchedulingAccount = buildAccountId(schedule.schedulingAccount(), schedule.getSchedulingAccountAlias());
+		final var schedulingAccountLookup = lookUpAccountId(grpcSchedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
+		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.getLeft()));
+
+		if (schedulingAccountLookup.getRight() != OK) {
+			return failure(schedulingAccountLookup.getRight());
+		}
+
+		pendingId = ids.newScheduleId(schedulingAccountLookup.getLeft());
 		pendingCreation = schedule;
 
 		return success(pendingId);
@@ -228,6 +241,20 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		var schedule = get(id);
 		schedules.get().remove(fromLong(entityId.num()));
 		extantSchedules.remove(schedule);
+	}
+
+	@Override
+	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
+		return lookUpAccountId(grpcId, aliasManager, invalidAccountID);
+	}
+
+	private AccountID buildAccountId(EntityId entityId, ByteString alias) {
+		return alias.isEmpty() ? entityId.toGrpcAccountId() :
+				AccountID.newBuilder()
+						.setShardNum(entityId.shard())
+						.setRealmNum(entityId.realm())
+						.setAlias(alias)
+						.build();
 	}
 
 	private void resetPendingCreation() {

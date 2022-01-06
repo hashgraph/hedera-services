@@ -481,6 +481,10 @@ public class HederaLedger {
 		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
+	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID) {
+		return tokenStore.lookUpAccountId(grpcId, invalidAccountID);
+	}
+
 	public boolean isDeleted(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}

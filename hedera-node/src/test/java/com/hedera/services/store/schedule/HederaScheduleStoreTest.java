@@ -20,9 +20,11 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -31,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -52,9 +55,11 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -84,6 +89,8 @@ class HederaScheduleStoreTest {
 	private static final long expectedExpiry = 1_234_567L;
 	private static final RichInstant consensusTime = new RichInstant(expectedExpiry, 0);
 	private static final Key adminJKey = asKeyUnchecked(SCHEDULE_ADMIN_KT.asJKeyUnchecked());
+	private static final ByteString payerAlias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
+	private static final ByteString schedulingAccountAlias = KeyFactory.getDefaultInstance().newEd25519().toByteString();
 	private static final Set<HederaFunctionality> whitelist = Set.of(
 			HederaFunctionality.CryptoTransfer, HederaFunctionality.CryptoDelete, HederaFunctionality.TokenBurn);
 
@@ -91,10 +98,13 @@ class HederaScheduleStoreTest {
 	private static final AccountID schedulingAccount = IdUtils.asAccount("0.0.333");
 	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
 	private static final AccountID anotherPayerId = IdUtils.asAccount("0.0.457");
+	private static final AccountID entityPayerWithAlias = AccountID.newBuilder().setAlias(payerAlias).build();
+	private static final AccountID entitySchedulingAccountWithAlias = AccountID.newBuilder().setAlias(schedulingAccountAlias).build();
 
 	private static final EntityId entityPayer = fromGrpcAccountId(payerId);
 	private static final EntityId entitySchedulingAccount = fromGrpcAccountId(schedulingAccount);
-
+	private static final EntityNum payerNum = EntityNum.fromLong(entityPayer.num());
+	private static final EntityNum schedulingAccountNum = EntityNum.fromLong(entitySchedulingAccount.num());
 	private static final TransactionBody parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 			adminJKey,
 			entityMemo,
@@ -107,6 +117,7 @@ class HederaScheduleStoreTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private HederaLedger hederaLedger;
 	private GlobalDynamicProperties globalDynamicProperties;
+	private AliasManager aliasManager;
 
 	private MerkleSchedule schedule;
 	private MerkleSchedule anotherSchedule;
@@ -142,7 +153,11 @@ class HederaScheduleStoreTest {
 		given(schedules.get(fromScheduleId(created))).willReturn(schedule);
 		given(schedules.containsKey(fromScheduleId(created))).willReturn(true);
 
-		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules);
+		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(payerAlias)).willReturn(payerNum);
+		given(aliasManager.lookupIdBy(schedulingAccountAlias)).willReturn(schedulingAccountNum);
+
+		subject = new HederaScheduleStore(globalDynamicProperties, ids, () -> schedules, aliasManager);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 	}
@@ -289,6 +304,49 @@ class HederaScheduleStoreTest {
 		assertEquals(created, subject.pendingId);
 		assertSame(expected, subject.pendingCreation);
 		assertEquals(expectedExpiry, expected.expiry());
+	}
+
+	@Test
+	void createProvisionallyWorksWithAlias() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+		final var bodyBytesWithAlias = useAliasAccountsInTxn();
+		final var schedule = MerkleSchedule.from(bodyBytesWithAlias, 0L);
+
+		final var outcome = subject.createProvisionally(schedule, consensusTime);
+
+		assertEquals(OK, outcome.status());
+		assertEquals(created, outcome.created());
+		assertEquals(created, subject.pendingId);
+		assertSame(subject.pendingCreation, schedule);
+		assertEquals(expectedExpiry, schedule.expiry());
+		assertEquals(entitySchedulingAccount, schedule.schedulingAccount());
+		assertEquals(entityPayer, schedule.payer());
+	}
+
+	@Test
+	void createProvisionallyFailsWithInvalidAliasAsPayer() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+		final var bodyBytesWithAlias = useAliasAccountsInTxn();
+		final var schedule = MerkleSchedule.from(bodyBytesWithAlias, 0L);
+
+		given(aliasManager.lookupIdBy(payerAlias)).willReturn(MISSING_NUM);
+
+		final var outcome = subject.createProvisionally(schedule, consensusTime);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome.status());
+	}
+
+	@Test
+	void createProvisionallyFailsWithInvalidAliasAsSchedulingAccount() {
+		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+		final var bodyBytesWithAlias = useAliasAccountsInTxn();
+		final var schedule = MerkleSchedule.from(bodyBytesWithAlias, 0L);
+
+		given(aliasManager.lookupIdBy(schedulingAccountAlias)).willReturn(MISSING_NUM);
+
+		final var outcome = subject.createProvisionally(schedule, consensusTime);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome.status());
 	}
 
 	@Test
@@ -510,5 +568,14 @@ class HederaScheduleStoreTest {
 		assertNull(outcome.created());
 		assertNull(subject.pendingCreation);
 		assertEquals(ScheduleID.getDefaultInstance(), subject.pendingId);
+	}
+
+	private byte[] useAliasAccountsInTxn() {
+		return parentTxn.toBuilder()
+				.setTransactionID(parentTxn.getTransactionID().toBuilder()
+						.setAccountID(entitySchedulingAccountWithAlias))
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+						.setPayerAccountID(entityPayerWithAlias))
+				.build().toByteArray();
 	}
 }

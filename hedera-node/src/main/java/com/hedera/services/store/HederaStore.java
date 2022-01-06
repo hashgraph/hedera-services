@@ -22,15 +22,19 @@ package com.hedera.services.store;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.tuple.Pair;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -77,5 +81,29 @@ public abstract class HederaStore {
 		} else {
 			return OK;
 		}
+	}
+
+	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(
+			final AccountID grpcId,
+			final AliasManager aliasManager,
+			final ResponseCodeEnum invalidAccountID) {
+		var newAccountId = AccountID.getDefaultInstance();
+		if (!grpcId.getAlias().isEmpty()) {
+			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
+			if (accountNum == MISSING_NUM) {
+				return Pair.of(grpcId, INVALID_ALIAS_KEY);
+			}
+			newAccountId = AccountID.newBuilder()
+					.setShardNum(grpcId.getShardNum())
+					.setRealmNum(grpcId.getRealmNum())
+					.setAccountNum(accountNum.longValue())
+					.build();
+		} else {
+			newAccountId = grpcId;
+		}
+
+		var validity = usableOrElse(newAccountId, invalidAccountID);
+
+		return Pair.of(newAccountId, validity);
 	}
 }

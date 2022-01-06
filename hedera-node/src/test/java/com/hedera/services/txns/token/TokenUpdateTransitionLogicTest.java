@@ -135,12 +135,12 @@ class TokenUpdateTransitionLogicTest {
 		given(store.get(target)).willReturn(token);
 		given(store.associationExists(newTreasury, target)).willReturn(true);
 		given(store.associationExists(oldTreasury, target)).willReturn(true);
-		given(store.fetchAccountId(oldAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(oldAutoRenewLookup);
-		given(store.fetchAccountId(oldTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(oldTreasuryLookup);
-		given(store.fetchAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
-		given(store.fetchAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
-		given(store.fetchAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
-		given(store.fetchAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
+		given(store.lookUpAccountId(oldAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(oldAutoRenewLookup);
+		given(store.lookUpAccountId(oldTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(oldTreasuryLookup);
+		given(store.lookUpAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
+		given(store.lookUpAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
+		given(store.lookUpAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
+		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
 		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
@@ -232,7 +232,7 @@ class TokenUpdateTransitionLogicTest {
 	void abortsOnDetachedNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
-		given(store.fetchAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
+		given(store.lookUpAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
 				Pair.of(newTreasury, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
@@ -272,7 +272,7 @@ class TokenUpdateTransitionLogicTest {
 	void abortsOnDetachedNewAutoRenew() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
-		given(store.fetchAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(store.lookUpAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(
 				Pair.of(newAutoRenew, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
@@ -395,7 +395,7 @@ class TokenUpdateTransitionLogicTest {
 		// setup:
 		givenValidTxnCtxWithAlias(true);
 		givenToken(true, true);
-		given(store.fetchAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(Pair.of(newTreasury, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();
@@ -408,7 +408,7 @@ class TokenUpdateTransitionLogicTest {
 		// setup:
 		givenValidTxnCtxWithAlias(false);
 		givenToken(true, true);
-		given(store.fetchAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT))
+		given(store.lookUpAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(Pair.of(newAutoRenew, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();

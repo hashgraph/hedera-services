@@ -67,7 +67,7 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.removeKnownTreasuryForToken(null, null));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.fetchAccountId(null, null));
+				() -> NOOP_TOKEN_STORE.lookUpAccountId(null, null));
 
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);

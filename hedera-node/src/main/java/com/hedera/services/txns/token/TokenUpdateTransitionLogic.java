@@ -145,7 +145,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		AccountID newTreasury = null;
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			var newTreasuryLookUp = tokenStore.fetchAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			var newTreasuryLookUp = tokenStore.lookUpAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 			if (newTreasuryLookUp.getRight() != OK) {
 				txnCtx.setStatus(newTreasuryLookUp.getRight());
 				return;
@@ -260,7 +260,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
 		if (op.hasAutoRenewAccount()) {
-			final var newAutoRenewAccountLookUp = tokenStore.fetchAccountId(
+			final var newAutoRenewAccountLookUp = tokenStore.lookUpAccountId(
 					op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (newAutoRenewAccountLookUp.getRight() != OK) {
 				return newAutoRenewAccountLookUp.getRight();

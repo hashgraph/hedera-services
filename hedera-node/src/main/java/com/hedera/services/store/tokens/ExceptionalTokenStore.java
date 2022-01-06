@@ -109,7 +109,8 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public Pair<AccountID, ResponseCodeEnum> fetchAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID) {
+	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId,
+			final ResponseCodeEnum invalidAccountID) {
 		throw new UnsupportedOperationException();
 	}
 

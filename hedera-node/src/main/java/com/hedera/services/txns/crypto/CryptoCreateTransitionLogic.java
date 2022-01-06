@@ -102,7 +102,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = getUsableAccountID(cryptoCreateTxn.getTransactionID().getAccountID(), aliasManager);
+			AccountID sponsor = ledger.lookUpAccountId(
+					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID)
+					.getLeft();
+					//getUsableAccountID(cryptoCreateTxn.getTransactionID().getAccountID(), aliasManager);
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();

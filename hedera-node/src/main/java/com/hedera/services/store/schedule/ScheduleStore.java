@@ -25,6 +25,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,6 +47,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	Pair<ScheduleID, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
 	ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
 	void expire(EntityId id);
+	Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

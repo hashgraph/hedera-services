@@ -75,6 +75,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	public static final EntityId UNUSED_PAYER = null;
 	public static final RichInstant UNRESOLVED_TIME = null;
 
+	private ByteString payerAlias = ByteString.EMPTY;
+	private ByteString schedulingAccountAlias = ByteString.EMPTY;
 	private Key grpcAdminKey = UNUSED_GRPC_KEY;
 	private JKey adminKey = UNUSED_KEY;
 	private String memo;
@@ -191,7 +193,9 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.add("deleted", deleted)
 				.add("memo", memo)
 				.add("payer", readablePayer())
+//				.add("payerAlias", payerAlias.toStringUtf8())
 				.add("schedulingAccount", schedulingAccount)
+//				.add("schedulingAccountAlias", schedulingAccountAlias.toStringUtf8())
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
 				.add("adminKey", describe(adminKey));
@@ -327,6 +331,10 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return payer;
 	}
 
+	public ByteString getPayerAlias() {
+		return payerAlias;
+	}
+
 	public EntityId effectivePayer() {
 		return hasExplicitPayer() ? payer : schedulingAccount;
 	}
@@ -335,8 +343,17 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return payer != UNUSED_PAYER;
 	}
 
+	public void setSchedulingAccount(EntityId schedulingAccount) {
+		throwIfImmutable("Cannot change this schedule's schedulingAccount if it's immutable.");
+		this.schedulingAccount = schedulingAccount;
+	}
+
 	public EntityId schedulingAccount() {
 		return schedulingAccount;
+	}
+
+	public ByteString getSchedulingAccountAlias() {
+		return schedulingAccountAlias;
 	}
 
 	public RichInstant schedulingTXValidStart() {
@@ -416,14 +433,18 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 
 	private void initFromBodyBytes() {
 		try {
-			var parentTxn = TransactionBody.parseFrom(bodyBytes);
-			var creationOp = parentTxn.getScheduleCreate();
+			final var parentTxn = TransactionBody.parseFrom(bodyBytes);
+			final var creationOp = parentTxn.getScheduleCreate();
 
 			if (!creationOp.getMemo().isEmpty()) {
 				memo = creationOp.getMemo();
 			}
 			if (creationOp.hasPayerAccountID()) {
-				payer = EntityId.fromGrpcAccountId(creationOp.getPayerAccountID());
+				final var grpcPayer = creationOp.getPayerAccountID();
+				if (!grpcPayer.getAlias().isEmpty()) {
+					payerAlias = grpcPayer.getAlias();
+				}
+				payer = EntityId.fromGrpcAccountId(grpcPayer);
 			}
 			if (creationOp.hasAdminKey()) {
 				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
@@ -431,8 +452,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}
-			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
-			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
+			scheduledTxn = creationOp.getScheduledTransactionBody();
+			final var grpcSchedulingAccount = parentTxn.getTransactionID().getAccountID();
+			if (!grpcSchedulingAccount.getAlias().isEmpty()) {
+				schedulingAccountAlias = grpcSchedulingAccount.getAlias();
+			}
+			schedulingAccount = EntityId.fromGrpcAccountId(grpcSchedulingAccount);
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {
