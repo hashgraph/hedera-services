@@ -101,6 +101,10 @@ public class TransferLogic {
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				if (change.hasNonEmptyAlias()) {
+					if (autoCreationLogic == null) {
+						throw new IllegalStateException(
+								"Cannot auto-create account from " + change + " with null autoCreationLogic");
+					}
 					final var result = autoCreationLogic.create(change, accountsLedger);
 					validity = result.getKey();
 					autoCreationFee += result.getValue();

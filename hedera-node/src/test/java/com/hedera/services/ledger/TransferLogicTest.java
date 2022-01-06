@@ -55,6 +55,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -87,16 +88,24 @@ class TransferLogicTest {
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		subject = new TransferLogic(
-				accountsLedger,
-				nftsLedger,
-				tokenRelsLedger,
-				tokenStore,
-				sideEffectsTracker,
-				tokenViewsManager,
-				dynamicProperties,
-				TEST_VALIDATOR,
-				autoCreationLogic,
-				recordsHistorian);
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				autoCreationLogic, recordsHistorian);
+	}
+
+	@Test
+	void throwsIseOnNonEmptyAliasWithNullAutoCreationLogic() {
+		final var firstAmount = 1_000L;
+		final var firstAlias = ByteString.copyFromUtf8("fake");
+		final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
+
+		subject = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				null, recordsHistorian);
+
+		assertThrows(IllegalStateException.class, () ->
+				subject.doZeroSum(List.of(inappropriateTrigger)));
 	}
 
 	@Test
