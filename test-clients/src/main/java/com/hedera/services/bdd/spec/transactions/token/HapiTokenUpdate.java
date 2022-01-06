@@ -57,6 +57,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	private String token;
 
+	private boolean treasuryIsAlias = false;
+	private boolean autoRenewAccountIsAlias = false;
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> newMemo = Optional.empty();
@@ -70,9 +72,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
-	private Optional<String> newTreasuryAlias = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
-	private Optional<String> autoRenewAccountAlias = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 	private boolean useImproperEmptyKey = false;
@@ -158,15 +158,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
-	public HapiTokenUpdate treasuryAlias(String treasury) {
-		this.newTreasuryAlias = Optional.of(treasury);
+	public HapiTokenUpdate treasuryIsAlias() {
+		this.treasuryIsAlias = true;
 		return this;
 	}
 
-	public HapiTokenUpdate autoRenewAccountAlias(String account) {
-		this.autoRenewAccountAlias = Optional.of(account);
+	public HapiTokenUpdate autoRenewAccountIsAlias() {
+		this.autoRenewAccountIsAlias = true;
 		return this;
 	}
+
 	public HapiTokenUpdate autoRenewPeriod(long secs) {
 		this.autoRenewPeriod = OptionalLong.of(secs);
 		return this;
@@ -264,8 +265,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							} else {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							}
-							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
-							newTreasuryAlias.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec, ReferenceType.ALIAS_KEY_NAME)));
+							newTreasury.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec,
+									treasuryIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
@@ -276,15 +277,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							}
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							newPauseKey.ifPresent(k -> b.setPauseKey(spec.registry().getKey(k)));
-							if (autoRenewAccount.isPresent()) {
-								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
-								b.setAutoRenewAccount(autoRenewId);
-							}
-							if (autoRenewAccountAlias.isPresent()) {
-								var newAutoRenewId = getIdWithAliasLookUp(
-										autoRenewAccountAlias.get(), spec, ReferenceType.ALIAS_KEY_NAME);
-								b.setAutoRenewAccount(newAutoRenewId);
-							}
+							autoRenewAccount.ifPresent(a -> b.setAutoRenewAccount(getIdWithAliasLookUp(a, spec,
+									autoRenewAccountIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME)));
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
@@ -304,10 +298,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 			}
 		});
 		newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
-		newTreasuryAlias.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
 		autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
-		autoRenewAccountAlias.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
 		return signers;
 	}
 

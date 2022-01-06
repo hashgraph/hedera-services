@@ -158,13 +158,17 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				)
 				.then(
 						tokenUpdate("tokenA")
-								.autoRenewAccountAlias("autoRenewAlias")
-								.treasuryAlias("treasuryAlias"),
+								.autoRenewAccount("autoRenewAlias")
+								.autoRenewAccountIsAlias()
+								.treasury("treasuryAlias")
+								.treasuryIsAlias(),
 						tokenUpdate("tokenA")
-								.treasuryAlias("invalidAlias")
+								.treasury("invalidAlias")
+								.treasuryIsAlias()
 								.hasKnownStatus(INVALID_ALIAS_KEY),
 						tokenUpdate("tokenA")
-								.autoRenewAccountAlias("invalidAlias")
+								.autoRenewAccount("invalidAlias")
+								.autoRenewAccountIsAlias()
 								.hasKnownStatus(INVALID_ALIAS_KEY)
 				);
 	}
