@@ -158,7 +158,7 @@ public class RecordCache {
 		if (recentHistory == null) {
 			return Collections.emptyList();
 		} else {
-			return recentHistory.duplicateRecords()
+			return recentHistory.allDuplicateRecords()
 					.stream()
 					.map(ExpirableTxnRecord::asGrpc)
 					.toList();

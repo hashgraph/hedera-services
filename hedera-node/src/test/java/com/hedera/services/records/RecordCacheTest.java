@@ -105,7 +105,7 @@ class RecordCacheTest {
 	@Test
 	void getsDuplicateRecordsAsExpected() {
 		final var duplicateRecords = List.of(aRecord);
-		given(recentHistory.duplicateRecords()).willReturn(duplicateRecords);
+		given(recentHistory.allDuplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		final var actual = subject.getDuplicateRecords(txnIdA);
@@ -172,7 +172,7 @@ class RecordCacheTest {
 	void getsDuplicateReceiptsAsExpected() {
 		final var history = mock(TxnIdRecentHistory.class);
 		final var duplicateRecords = List.of(aRecord);
-		given(history.duplicateRecords()).willReturn(duplicateRecords);
+		given(history.allDuplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		final var duplicateReceipts = subject.getDuplicateReceipts(txnIdA);
