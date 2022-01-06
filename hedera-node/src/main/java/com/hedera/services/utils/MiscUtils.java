@@ -831,7 +831,7 @@ public final class MiscUtils {
 		}
 	}
 
-	public static AccountID getUsableAccountID(AccountID id, AliasManager aliasManager) {
+	public static AccountID asUsableAccountID(AccountID id, AliasManager aliasManager) {
 		return id.getAlias().isEmpty() ? id : aliasManager.lookupIdBy(id.getAlias()).toGrpcAccountId();
 	}
 }

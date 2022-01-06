@@ -119,11 +119,13 @@ class SigOpsRegressionTest {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(
+				accessor.getPlatformTxn().getSignatures());
 
 		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
+			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID,
+					characteristics)) {
 				return false;
 			}
 		}
@@ -371,7 +373,7 @@ class SigOpsRegressionTest {
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				mockSignatureWaivers);
+				mockSignatureWaivers, aliasManager);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
 		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
@@ -385,7 +387,7 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
-				mockSignatureWaivers);
+				mockSignatureWaivers, aliasManager);
 
 		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
 	}
@@ -395,7 +397,7 @@ class SigOpsRegressionTest {
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsFor(
 						aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
-		SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
+		SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers, aliasManager);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
 		expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -409,7 +411,7 @@ class SigOpsRegressionTest {
 				aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
-				mockSignatureWaivers);
+				mockSignatureWaivers, aliasManager);
 
 		// given:
 		final var rationalization = new Rationalization(syncVerifier, keyOrder, new ReusableBodySigningFactory());
@@ -432,7 +434,7 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		signingOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
-				mockSignatureWaivers);
+				mockSignatureWaivers, aliasManager);
 		final var payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		expectedSigs = new ArrayList<>();

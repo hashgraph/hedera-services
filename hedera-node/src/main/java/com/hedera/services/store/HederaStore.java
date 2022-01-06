@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -88,7 +89,7 @@ public abstract class HederaStore {
 			final AliasManager aliasManager,
 			final ResponseCodeEnum invalidAccountID) {
 		var newAccountId = AccountID.getDefaultInstance();
-		if (!grpcId.getAlias().isEmpty()) {
+		if (isAlias(grpcId)) {
 			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
 			if (accountNum == MISSING_NUM) {
 				return Pair.of(grpcId, INVALID_ALIAS_KEY);

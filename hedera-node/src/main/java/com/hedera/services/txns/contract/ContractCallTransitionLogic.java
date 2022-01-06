@@ -82,7 +82,12 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+
+		final var senderGrpc = contractCallTxn.getTransactionID().getAccountID();
+		final var lookedUpSender = accountStore.getAccountNumFromAlias(senderGrpc.getAlias(),
+				senderGrpc.getAccountNum());
+		final var senderId = new Id(senderGrpc.getShardNum(), senderGrpc.getRealmNum(), lookedUpSender);
+
 		final var contractId = Id.fromGrpcContract(op.getContractID());
 
 		/* --- Load the model objects --- */

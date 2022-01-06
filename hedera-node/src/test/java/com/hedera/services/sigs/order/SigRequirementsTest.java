@@ -733,7 +733,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
 	}
 
@@ -1069,7 +1069,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(MISC_FILE_WACL_KT.asKey()));
 	}
 
@@ -1635,7 +1635,8 @@ class SigRequirementsTest {
 	@Test
 	void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
-		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO,
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -2801,7 +2802,7 @@ class SigRequirementsTest {
 								() -> topics,
 								DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
-				signatureWaivers);
+				signatureWaivers, aliasManager);
 	}
 
 	@SuppressWarnings("unchecked")

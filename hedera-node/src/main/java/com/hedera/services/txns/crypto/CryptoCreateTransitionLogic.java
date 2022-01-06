@@ -45,7 +45,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
+import static com.hedera.services.utils.MiscUtils.asUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -103,9 +103,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
 			AccountID sponsor = ledger.lookUpAccountId(
-					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID)
+							cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID)
 					.getLeft();
-					//getUsableAccountID(cryptoCreateTxn.getTransactionID().getAccountID(), aliasManager);
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
@@ -138,7 +137,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(getUsableAccountID(op.getProxyAccountID(), aliasManager)));
+			customizer.proxy(EntityId.fromGrpcAccountId(asUsableAccountID(op.getProxyAccountID(), aliasManager)));
 		}
 		return customizer;
 	}

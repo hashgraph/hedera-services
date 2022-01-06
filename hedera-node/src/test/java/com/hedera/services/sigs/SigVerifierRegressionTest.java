@@ -206,7 +206,7 @@ class SigVerifierRegressionTest {
 		aliasManager = mock(AliasManager.class);
 		keyOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				mockSignatureWaivers);
+				mockSignatureWaivers, aliasManager);
 		final var nodeInfo = mock(NodeInfo.class);
 		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);

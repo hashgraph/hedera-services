@@ -22,8 +22,9 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -52,16 +53,19 @@ public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AccountStore accountStore;
 
 	@Inject
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			AccountStore accountStore
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
+		this.accountStore = accountStore;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -139,11 +143,13 @@ public class QueryFeeCheck {
 	 * Validate each payer has enough balance that is needed for transfer.
 	 * If one of the payer for query is also paying transactionFee validate the payer has balance to pay both
 	 *
-	 * @param txn the transaction body to validate
+	 * @param txn
+	 * 		the transaction body to validate
 	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-		AccountID transactionPayer = txn.getTransactionID().getAccountID();
+		AccountID payerId = txn.getTransactionID().getAccountID();
+		AccountID transactionPayer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
 		long transactionFee = txn.getTransactionFee();

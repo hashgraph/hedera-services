@@ -111,7 +111,7 @@ public interface OptionValidator {
 		return PureValidation.asCoercedInstant(when);
 	}
 
-	default boolean isPlausibleAccount(AccountID id) {
+	default boolean isPlausibleAccount(final AccountID id) {
 		return id.getAccountNum() > 0 &&
 				id.getRealmNum() >= 0 &&
 				id.getShardNum() >= 0;

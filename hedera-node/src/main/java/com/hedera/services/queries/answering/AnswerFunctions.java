@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
+import static com.hedera.services.utils.MiscUtils.asUsableAccountID;
 
 
 @Singleton
@@ -48,7 +48,7 @@ public class AnswerFunctions {
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var id = getUsableAccountID(op.getAccountID(), aliasManager);
+		final var id = asUsableAccountID(op.getAccountID(), aliasManager);
 		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());

@@ -95,8 +95,7 @@ public class SigRequirements {
 
 	public SigRequirements(
 			final SigMetadataLookup sigMetaLookup,
-			final SignatureWaivers signatureWaivers
-	) {
+			final SignatureWaivers signatureWaivers) {
 		this.sigMetaLookup = sigMetaLookup;
 		this.signatureWaivers = signatureWaivers;
 	}
@@ -205,7 +204,7 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		final var payer = txn.getTransactionID().getAccountID();
-		final var result = sigMetaLookup.accountSigningMetaFor(payer, linkedRefs);
+		final var result = sigMetaLookup.aliasableAccountSigningMetaFor(payer, linkedRefs);
 		if (result.succeeded()) {
 			return factory.forValidOrder(List.of(result.metadata().key()));
 		} else {
@@ -364,7 +363,7 @@ public class SigRequirements {
 
 		if (op.hasTransferAccountID()) {
 			var beneficiary = op.getTransferAccountID();
-			var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
+			var beneficiaryResult = sigMetaLookup.aliasableAccountSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
 				return factory.forInvalidAccount();
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -519,7 +518,7 @@ public class SigRequirements {
 
 		var target = op.getDeleteAccountID();
 		if (!payer.equals(target)) {
-			var targetResult = sigMetaLookup.accountSigningMetaFor(target, linkedRefs);
+			var targetResult = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
 			if (!targetResult.succeeded()) {
 				return accountFailure(targetResult.failureIfAny(), factory);
 			}
@@ -529,7 +528,7 @@ public class SigRequirements {
 
 		var beneficiary = op.getTransferAccountID();
 		if (!payer.equals(beneficiary)) {
-			var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
+			var beneficiaryResult = sigMetaLookup.aliasableAccountSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
 				return accountFailure(beneficiaryResult.failureIfAny(), factory);
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -552,7 +551,7 @@ public class SigRequirements {
 		final var targetAccountKeyMustSign = !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn);
 		final var op = cryptoUpdateTxn.getCryptoUpdateAccount();
 		var target = op.getAccountIDToUpdate();
-		var result = sigMetaLookup.accountSigningMetaFor(target, linkedRefs);
+		var result = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
 		if (!result.succeeded()) {
 			return accountFailure(result.failureIfAny(), factory);
 		} else {
@@ -886,7 +885,7 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		if (!payer.equals(id)) {
-			var result = sigMetaLookup.accountSigningMetaFor(id, linkedRefs);
+			var result = sigMetaLookup.aliasableAccountSigningMetaFor(id, linkedRefs);
 			if (result.succeeded()) {
 				final var metadata = result.metadata();
 				if (alwaysAdd || metadata.receiverSigRequired()) {
@@ -1020,7 +1019,7 @@ public class SigRequirements {
 		}
 		var optionalPayer = result.metadata().designatedPayer();
 		if (optionalPayer.isPresent()) {
-			var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get(), linkedRefs);
+			var payerResult = sigMetaLookup.aliasableAccountSigningMetaFor(optionalPayer.get(), linkedRefs);
 			if (!payerResult.succeeded()) {
 				return accountFailure(INVALID_ACCOUNT, factory);
 			} else {
@@ -1089,7 +1088,7 @@ public class SigRequirements {
 		List<JKey> required = EMPTY_LIST;
 
 		if (!payer.equals(target)) {
-			var result = sigMetaLookup.accountSigningMetaFor(target, linkedRefs);
+			var result = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
 			if (result.succeeded()) {
 				var meta = result.metadata();
 				required = mutable(required);
@@ -1247,7 +1246,7 @@ public class SigRequirements {
 		if (op.hasAutoRenewAccount() && !isEliding(op.getAutoRenewAccount())) {
 			var account = op.getAutoRenewAccount();
 			if (!payer.equals(account)) {
-				var autoRenewResult = sigMetaLookup.accountSigningMetaFor(account, linkedRefs);
+				var autoRenewResult = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 				if (autoRenewResult.succeeded()) {
 					required = mutable(required);
 					required.add(autoRenewResult.metadata().key());

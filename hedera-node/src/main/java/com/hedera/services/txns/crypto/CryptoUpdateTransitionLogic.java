@@ -48,7 +48,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
+import static com.hedera.services.utils.MiscUtils.asUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -106,7 +106,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			final var target = getUsableAccountID(op.getAccountIDToUpdate(), aliasManager);
+			final var target = asUsableAccountID(op.getAccountIDToUpdate(), aliasManager);
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
@@ -186,7 +186,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = getUsableAccountID(op.getProxyAccountID(), aliasManager);
+			final var id = asUsableAccountID(op.getProxyAccountID(), aliasManager);
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
