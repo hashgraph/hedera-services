@@ -30,6 +30,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -111,6 +112,7 @@ class FileUpdateTransitionLogicTest {
 	MerkleNetworkContext networkCtx;
 	EntityNumbers number = new MockEntityNumbers();
 	TransactionContext txnCtx;
+	SigImpactHistorian sigImpactHistorian;
 
 	FileUpdateTransitionLogic subject;
 
@@ -139,7 +141,9 @@ class FileUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
 		given(validator.memoCheck(newMemo)).willReturn(OK);
 
-		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx, () -> networkCtx);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
+
+		subject = new FileUpdateTransitionLogic(hfs, number, validator, sigImpactHistorian, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -311,7 +315,7 @@ class FileUpdateTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx);
+		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
 
 		givenTxnCtxUpdating(EnumSet.allOf(UpdateTarget.class));
 		// and:
@@ -332,6 +336,7 @@ class FileUpdateTransitionLogicTest {
 				argThat(nonSysFileTarget::equals),
 				argThat(attr -> newAttr.toString().equals(attr.toString())));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(nonSysFileTarget.getFileNum());
 	}
 
 	@Test

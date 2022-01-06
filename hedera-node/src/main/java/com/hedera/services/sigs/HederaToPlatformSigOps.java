@@ -56,6 +56,8 @@ public final class HederaToPlatformSigOps {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
+	private static final Expansion.CryptoSigsCreation cryptoSigsFunction = PlatformSigOps::createCryptoSigsFrom;
+
 	/**
 	 * Try to set the {@link Signature} list on the accessible platform txn to exactly
 	 * the base-level signatures of the signing hierarchy for each Hedera {@link JKey}
@@ -73,20 +75,18 @@ public final class HederaToPlatformSigOps {
 	 *
 	 * @param txnAccessor
 	 * 		the accessor for the platform txn
-	 * @param keyOrderer
+	 * @param sigReqs
 	 * 		facility for listing Hedera keys required to sign the gRPC txn
 	 * @param pkToSigFn
 	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
-	 * @return a representation of the outcome
 	 */
-	public static ResponseCodeEnum expandIn(
+	public static void expandIn(
 			final PlatformTxnAccessor txnAccessor,
-			final SigRequirements keyOrderer,
+			final SigRequirements sigReqs,
 			final PubKeyToSigBytes pkToSigFn
 	) {
 		txnAccessor.getPlatformTxn().clear();
-
 		final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
-		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, scopedSigFactory).execute();
+		new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory).execute();
 	}
 }

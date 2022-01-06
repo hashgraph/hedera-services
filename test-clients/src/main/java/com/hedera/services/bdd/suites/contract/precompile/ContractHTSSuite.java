@@ -623,13 +623,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
-	}
-
 	private HapiApiSpec transferNft() {
 		return defaultHapiSpec("TransferNft")
 				.given(
@@ -779,7 +772,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
 				);
 	}
-	
+
+	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(outerContract).getShardNum(),
+				spec.registry().getContractId(outerContract).getRealmNum(),
+				spec.registry().getContractId(outerContract).getContractNum());
+	}
+
 	@Override
 	protected Logger getResultsLogger() {
 		return log;

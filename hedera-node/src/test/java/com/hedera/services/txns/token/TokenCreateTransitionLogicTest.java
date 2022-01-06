@@ -24,10 +24,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -85,10 +87,10 @@ class TokenCreateTransitionLogicTest {
 	private final Instant now = Instant.ofEpochSecond(thisSecond);
 	private final int decimals = 2;
 	private final long initialSupply = 1_000_000L;
+	private final Id createdId = new Id(0, 0, 777);
 	private final AccountID payer = IdUtils.asAccount("1.2.3");
 	private final AccountID treasury = IdUtils.asAccount("1.2.4");
 	private final AccountID renewAccount = IdUtils.asAccount("1.2.5");
-	private final Timestamp expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 
 	private TransactionBody tokenCreateTxn;
 
@@ -112,13 +114,16 @@ class TokenCreateTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private Creation.CreationFactory creationFactory;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TokenCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore, txnCtx, dynamicProperties, ids, sideEffectsTracker);
+				validator, tokenStore, accountStore,
+				txnCtx, dynamicProperties, ids, sigImpactHistorian, sideEffectsTracker);
 	}
 
 	@Test
@@ -138,6 +143,7 @@ class TokenCreateTransitionLogicTest {
 				dynamicProperties,
 				tokenCreateTxn.getTokenCreation())).willReturn(creation);
 		given(creation.newAssociations()).willReturn(mockAssociations);
+		given(creation.newTokenId()).willReturn(createdId);
 
 		subject.doStateTransition();
 
@@ -145,6 +151,7 @@ class TokenCreateTransitionLogicTest {
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
 		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
+		verify(sigImpactHistorian).markEntityChanged(createdId.num());
 	}
 
 	@Test

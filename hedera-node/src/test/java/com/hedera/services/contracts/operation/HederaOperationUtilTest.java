@@ -45,6 +45,7 @@ import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -72,6 +73,25 @@ class HederaOperationUtilTest {
 
 	private final Optional<Gas> expectedHaltGas = Optional.of(Gas.of(10));
 	private final Optional<Gas> expectedSuccessfulGas = Optional.of(Gas.of(100));
+
+	@Test
+	void shortCircuitsForPrecompileSigCheck() {
+		final var degenerateResult =
+				new Operation.OperationResult(Optional.empty(), Optional.empty());
+		given(precompiledContractMap.containsKey(PRETEND_RECIPIENT_ADDR.toShortHexString())).willReturn(true);
+		given(executionSupplier.get()).willReturn(degenerateResult);
+
+		final var result = HederaOperationUtil.addressSignatureCheckExecution(
+				sigsVerifier,
+				messageFrame,
+				PRETEND_RECIPIENT_ADDR,
+				gasSupplier,
+				executionSupplier,
+				(a, b) -> false,
+				precompiledContractMap);
+		
+		assertSame(degenerateResult, result);
+	}
 
 	@Test
 	void computeExpiryForNewContractHappyPath() {

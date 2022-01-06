@@ -21,7 +21,7 @@ package com.hedera.services.grpc;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Singleton
 public class GrpcStarter {
@@ -38,23 +39,23 @@ public class GrpcStarter {
 	private static final int PORT_MODULUS = 1000;
 
 	private final NodeId nodeId;
-	private final Address nodeAddress;
 	private final GrpcServerManager grpc;
 	private final NodeLocalProperties nodeLocalProperties;
 	private final Optional<PrintStream> console;
+	private final Supplier<AddressBook> addressBook;
 
 	@Inject
 	public GrpcStarter(
-			NodeId nodeId,
-			Address nodeAddress,
-			GrpcServerManager grpc,
-			NodeLocalProperties nodeLocalProperties,
-			Optional<PrintStream> console
+			final NodeId nodeId,
+			final GrpcServerManager grpc,
+			final NodeLocalProperties nodeLocalProperties,
+			final Supplier<AddressBook> addressBook,
+			final Optional<PrintStream> console
 	) {
 		this.nodeId = nodeId;
 		this.console = console;
-		this.nodeAddress = nodeAddress;
 		this.grpc = grpc;
+		this.addressBook = addressBook;
 		this.nodeLocalProperties = nodeLocalProperties;
 	}
 
@@ -73,6 +74,8 @@ public class GrpcStarter {
 						grpc.start(port, tlsPort, this::logInfoWithConsoleEcho);
 					}
 				} else {
+					final var staticBook = addressBook.get();
+					final var nodeAddress = staticBook.getAddress(nodeId.getId());
 					int portOffset = thisNodeIsDefaultListener() ? 0 : nodeAddress.getPortExternalIpv4() % PORT_MODULUS;
 					grpc.start(port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
 				}
@@ -92,8 +95,8 @@ public class GrpcStarter {
 	}
 
 	private boolean thisNodeIsDefaultListener() {
-		final var thisAccount = nodeAddress.getMemo();
 		final var blessedNodeAccount = nodeLocalProperties.devListeningAccount();
-		return blessedNodeAccount.equals(thisAccount);
+		final var staticBook = addressBook.get();
+		return blessedNodeAccount.equals(staticBook.getAddress(nodeId.getId()).getMemo());
 	}
 }

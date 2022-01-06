@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+
 public final class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
 
@@ -58,7 +60,7 @@ public final class MetadataMapFactory {
 		assert flag;
 
 		return FileID.newBuilder()
-				.setShardNum(0)
+				.setShardNum(STATIC_PROPERTIES.getShard())
 				.setRealmNum(Long.parseLong(matcher.group(REALM_INDEX)))
 				.setFileNum(Long.parseLong(matcher.group(ACCOUNT_INDEX)))
 				.build();

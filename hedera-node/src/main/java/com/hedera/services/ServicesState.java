@@ -81,7 +81,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
@@ -145,7 +145,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-          /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
+                /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
 	}
 
 	@Override
@@ -218,17 +218,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void expandSignatures(SwirldTransaction platformTxn) {
+	public void expandSignatures(final SwirldTransaction platformTxn) {
 		try {
 			final var app = metadata.app();
+			final var sigReqs = app.signedStateSigReqs().getBestAvailable();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
 
 			// Submit the transaction for any prepare stage processing that can be performed
 			// such as pre-fetching of contract bytecode. This step is performed asynchronously
 			// so get this step started before synchronous signature expansion.
 			app.prefetchProcessor().submit(accessor);
-
-			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
+			app.expansionHelper().expandIn(accessor, sigReqs, accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
@@ -248,7 +248,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateFrom(that);
+			metadata.app().workingState().updateChildrenFrom(that);
 		}
 
 		return that;
@@ -367,9 +367,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (APPS.includes(selfId)) {
 			app = APPS.get(selfId);
 		} else {
+			final var nodeAddress = addressBook().getAddress(selfId);
+			final var initialHash = runningHashLeaf().getRunningHash().getHash();
 			app = appBuilder.get()
+					.staticAccountMemo(nodeAddress.getMemo())
 					.bootstrapProps(bootstrapProps)
-					.initialState(this)
+					.initialHash(initialHash)
 					.platform(platform)
 					.selfId(selfId)
 					.build();
@@ -400,6 +403,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app);
+			app.workingState().updateChildrenFrom(this);
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting

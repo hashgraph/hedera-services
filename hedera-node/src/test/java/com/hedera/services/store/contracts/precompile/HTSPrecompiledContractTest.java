@@ -74,6 +74,8 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
+	private EncodingFacade encoder;
+	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private ExpiringCreations creator;
@@ -89,7 +91,7 @@ class HTSPrecompiledContractTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
 	}
 

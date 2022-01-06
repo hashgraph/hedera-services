@@ -119,7 +119,6 @@ public class HederaLedger {
 	private final TransferLogic transferLogic;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
-	private final AutoCreationLogic autoCreationLogic;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final AccountRecordsHistorian historian;
@@ -128,7 +127,12 @@ public class HederaLedger {
 	private MutableEntityAccess mutableEntityAccess;
 	private UniqueTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = null;
+	private TransactionalLedger<
+			Pair<AccountID, TokenID>,
+			TokenRelProperty,
+			MerkleTokenRelStatus> tokenRelsLedger = null;
+
+	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(
 			final TokenStore tokenStore,
@@ -222,7 +226,6 @@ public class HederaLedger {
 		throwIfPendingStateIsInconsistent();
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
-
 		accountsLedger.commit();
 		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {

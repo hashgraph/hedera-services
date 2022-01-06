@@ -13,13 +13,11 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt install sudo;
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt install -y apt-utils;
-            sudo rm -f /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            python3 -m pip install --upgrade pip;
+            apt update -y;
+            apt install -y net-tools;
+            apt install -y apt-utils;
+            rm -f /usr/bin/python3;
+            ln -s /usr/bin/python3.7 /usr/bin/python3;
             python3 -m pip -q install matplotlib;
             python3 -m pip install awscli;
       - run:
@@ -973,6 +971,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
+    triggers:
+      - schedule:
+          cron: "0 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_4C/CryptoInvalidAccounts
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
@@ -1482,8 +1503,8 @@ jobs:
       - run:
           name: Upload codecov
           command: |
-            apt-get update
-            apt-get install -y curl
+            apt update -y
+            apt install -y curl
             bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
@@ -1506,9 +1527,9 @@ jobs:
           name: Install tools for Sonar scan
           command: |
             export DEBIAN_FRONTEND=noninteractive
-            apt-get update && \
-            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
-            apt-get install -y jq libjq1 libonig4 curl && \
+            apt update -y && \
+            apt install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt install -y jq libjq1 libonig4 curl && \
             echo | cpan && \
             cpan install CPAN && \
             cpan install Mozilla::CA && \

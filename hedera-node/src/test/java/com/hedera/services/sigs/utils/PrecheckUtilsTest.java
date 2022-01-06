@@ -20,25 +20,41 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.function.Predicate;
 
-import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
 
+
+@ExtendWith(MockitoExtension.class)
 class PrecheckUtilsTest {
 	private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
 	private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
-	private static final Predicate<TransactionBody> subject = queryPaymentTestFor(node);
+
+	@Mock
+	private NodeInfo nodeInfo;
+
+	private Predicate<TransactionBody> subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = PrecheckUtils.queryPaymentTestFor(nodeInfo);
+	}
 
 	@Test
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
@@ -51,6 +67,7 @@ class PrecheckUtilsTest {
 
 	@Test
 	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
+		given(nodeInfo.selfAccount()).willReturn(node);
 		final var txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
@@ -62,6 +79,7 @@ class PrecheckUtilsTest {
 
 	@Test
 	void queryPaymentTransfersToTargetNode() throws Throwable {
+		given(nodeInfo.selfAccount()).willReturn(node);
 		final var txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo(nodeId, "0.0.2048", 1_000L)

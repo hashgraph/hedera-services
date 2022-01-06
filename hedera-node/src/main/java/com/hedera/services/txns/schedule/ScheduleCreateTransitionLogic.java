@@ -23,6 +23,7 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
@@ -62,8 +63,8 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			NO_NEW_VALID_SIGNATURES);
 
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final InHandleActivationHelper activationHelper;
-
 	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
@@ -73,17 +74,19 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public ScheduleCreateTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx,
-			InHandleActivationHelper activationHelper,
-			OptionValidator validator,
-			ScheduleExecutor executor
+			final ScheduleStore store,
+			final TransactionContext txnCtx,
+			final InHandleActivationHelper activationHelper,
+			final OptionValidator validator,
+			final ScheduleExecutor executor,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.activationHelper = activationHelper;
 		this.validator = validator;
 		this.executor = executor;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -141,6 +144,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 			finalOutcome = executor.processExecution(scheduleId, store, txnCtx);
 		}
 		completeContextWith(scheduleId, schedule, finalOutcome == OK ? SUCCESS : finalOutcome);
+		sigImpactHistorian.markEntityChanged(scheduleId.getScheduleNum());
 	}
 
 	private void completeContextWith(ScheduleID scheduleID, MerkleSchedule schedule, ResponseCodeEnum finalOutcome) {

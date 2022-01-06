@@ -40,7 +40,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
-import com.hedera.services.txns.crypto.TopLevelAutoCreation;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -67,7 +67,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	private static final long thisSecond = 1_234_567L;
 
 	@Mock
-	private TopLevelAutoCreation autoCreationLogic;
+	private AutoCreationLogic autoCreationLogic;
 
 	@BeforeEach
 	void setup() {

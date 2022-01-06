@@ -20,8 +20,9 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.annotations.HandleSigReqs;
+import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.CodeOrderResultFactory;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -33,6 +34,8 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,8 +50,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class Rationalization {
+	private static final Logger log = LogManager.getLogger(Rationalization.class);
+
 	private final SyncVerifier syncVerifier;
-	private final SigRequirements keyOrderer;
+	private final SigRequirements sigReqs;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
 	private TxnAccessor txnAccessor;
@@ -65,16 +71,29 @@ public class Rationalization {
 
 	@Inject
 	public Rationalization(
-			SyncVerifier syncVerifier,
-			@HandleSigReqs SigRequirements keyOrderer,
-			ReusableBodySigningFactory bodySigningFactory
+			final SyncVerifier syncVerifier,
+			final SigImpactHistorian sigImpactHistorian,
+			final @WorkingStateSigReqs SigRequirements sigReqs,
+			final ReusableBodySigningFactory bodySigningFactory
 	) {
-		this.keyOrderer = keyOrderer;
+		this.sigReqs = sigReqs;
 		this.syncVerifier = syncVerifier;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.bodySigningFactory = bodySigningFactory;
 	}
 
-	public void performFor(TxnAccessor txnAccessor) {
+	public void performFor(final TxnAccessor txnAccessor) {
+		final var linkedRefs = txnAccessor.getLinkedRefs();
+		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
+			finalStatus = txnAccessor.getExpandedSigStatus();
+			if (finalStatus == null) {
+				log.warn("{} had non-null linked refs but null sig status", txnAccessor.getSignedTxnWrapper());
+			} else {
+				verifiedSync = false;
+				return;
+			}
+		}
+
 		resetFor(txnAccessor);
 		execute();
 	}
@@ -87,7 +106,7 @@ public class Rationalization {
 		return verifiedSync;
 	}
 
-	void resetFor(TxnAccessor txnAccessor) {
+	void resetFor(final TxnAccessor txnAccessor) {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 
@@ -109,7 +128,7 @@ public class Rationalization {
 	private void execute() {
 		ResponseCodeEnum otherFailure = null;
 
-		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
+		final var payerStatus = expandIn(realPayerSigs, sigReqs::keysForPayer);
 		if (payerStatus != OK) {
 			txnAccessor.setSigMeta(RationalizedSigMeta.noneAvailable());
 			finalStatus = payerStatus;
@@ -117,7 +136,7 @@ public class Rationalization {
 		}
 		reqPayerSig = lastOrderResult.getPayerKey();
 
-		final var otherPartiesStatus = expandIn(realOtherPartySigs, keyOrderer::keysForOtherParties);
+		final var otherPartiesStatus = expandIn(realOtherPartySigs, sigReqs::keysForOtherParties);
 		if (otherPartiesStatus != OK) {
 			otherFailure = otherPartiesStatus;
 		} else {
@@ -195,8 +214,8 @@ public class Rationalization {
 		return pkToSigFn;
 	}
 
-	SigRequirements getKeyOrderer() {
-		return keyOrderer;
+	SigRequirements getSigReqs() {
+		return sigReqs;
 	}
 
 	List<TransactionSignature> getRealPayerSigs() {
@@ -241,5 +260,13 @@ public class Rationalization {
 
 	void setVerifiedSync(boolean verifiedSync) {
 		this.verifiedSync = verifiedSync;
+	}
+
+	public Rationalization(
+			final SyncVerifier syncVerifier,
+			final SigRequirements sigReqs,
+			final ReusableBodySigningFactory bodySigningFactory
+	) {
+		this(syncVerifier, null, sigReqs, bodySigningFactory);
 	}
 }

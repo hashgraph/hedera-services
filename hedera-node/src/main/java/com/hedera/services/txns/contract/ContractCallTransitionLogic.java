@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -57,6 +58,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final CodeCache codeCache;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
 
@@ -68,7 +70,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			final TransactionRecordService recordService,
 			final CallEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
-			final CodeCache codeCache
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.worldState = worldState;
@@ -77,11 +80,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
 		this.codeCache = codeCache;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
 	public void doStateTransition() {
-
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
@@ -109,6 +112,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */
+		for (final var createdContract : createdContracts) {
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+		}
 		recordService.externaliseEvmCallTransaction(result);
 	}
 

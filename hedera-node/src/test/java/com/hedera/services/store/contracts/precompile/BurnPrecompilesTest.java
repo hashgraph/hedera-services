@@ -30,6 +30,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -101,6 +102,8 @@ class BurnPrecompilesTest {
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
+	private EncodingFacade encoder;
+	@Mock
 	private HTSPrecompiledContract.BurnLogicFactory burnLogicFactory;
 	@Mock
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
@@ -141,7 +144,7 @@ class BurnPrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder,
+				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
@@ -201,14 +204,14 @@ class BurnPrecompilesTest {
 		)).willReturn(tokenStore);
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-				.willReturn(mockRecordBuilder);
-
+				.willReturn(expirableTxnRecordBuilder);
+		given(encoder.getBurnSuccessfulResultFromReceipt(49)).willReturn(burnSuccessResultWith49Supply);
 		final var result = subject.computeBurnToken(pretendArguments, frame);
 
-		assertEquals(successResult, result);
+		assertEquals(burnSuccessResultWith49Supply, result);
 		verify(burnLogic).burn(fungibleId, amount, List.of());
 		verify(wrappedLedgers).commit();
-		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	private void givenNonfungibleFrameContext() {
@@ -252,5 +255,11 @@ class BurnPrecompilesTest {
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	private static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
+			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	private static final TxnReceipt.Builder receiptBuilder =
+			TxnReceipt.newBuilder().setNewTotalSupply(49).setStatus(ResponseCodeEnum.SUCCESS.name());
+	private static final ExpirableTxnRecord.Builder expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+			.setReceiptBuilder(receiptBuilder);
 }

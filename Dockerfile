@@ -1,13 +1,19 @@
-## Installs OpenJDK12 and openssl (used by Swirlds Platform to 
+## Installs OpenJDK17 and openssl (used by Swirlds Platform to 
 ## generate node keys for e.g. signing states), then copies 
 ## required libraries and startup assets for a node with:
 ##  * Configuration from /opt/hedera/services/config-mount; and, 
 ##  * Logs at /opt/hedera/services/output; and, 
 ##  * Saved states under /opt/hedera/services/output
-FROM ubuntu:20.10 AS base-runtime
+FROM ubuntu:21.10 AS base-runtime
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y dos2unix openssl openjdk-15-jdk libsodium23 postgresql-client
+    apt-get install -y dos2unix openssl libsodium23 postgresql-client
+
+# JDK
+RUN apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:openjdk-r/ppa && \
+    apt-get install -y openjdk-17-jdk
+
 # Services runtime
 RUN mkdir -p /opt/hedera/services/data/lib
 RUN mkdir -p /opt/hedera/services/data/backup
@@ -21,8 +27,16 @@ RUN mkdir /opt/hedera/services/config-mount
 ## Builds the HederaNode.jar from the current source tree and creates 
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
+
 # Maven
-RUN apt-get update && apt-get install -y maven
+# Note: Java 17 requires Maven 3.8+ so the distro provided one just won't do
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    wget https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.zip && \
+    unzip apache-maven-3.8.4-bin.zip -d /opt && \
+    rm apache-maven-3.8.4-bin.zip
+ENV PATH=/opt/apache-maven-3.8.4/bin:$PATH
+
 WORKDIR /opt/hedera/services
 # Install Services
 COPY .env /opt/hedera/services
