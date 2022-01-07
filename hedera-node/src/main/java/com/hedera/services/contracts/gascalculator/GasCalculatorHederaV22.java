@@ -33,17 +33,15 @@ import javax.inject.Inject;
 /**
  * Updates gas costs enabled by gas-per-second throttling.
  */
-public class GasCalculatorHederaV20 extends GasCalculatorHederaV19 {
+public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
 
 	private static final Gas TX_DATA_ZERO_COST = Gas.of(4L);
 	private static final Gas ISTANBUL_TX_DATA_NON_ZERO_COST = Gas.of(16L);
 	private static final Gas TX_BASE_COST = Gas.of(21_000L);
 
-	private static final Gas CODE_DEPOSIT_BYTE_COST = Gas.of(200L);
-
 	@Inject
-	public GasCalculatorHederaV20(final GlobalDynamicProperties dynamicProperties,
-			final UsagePricesProvider usagePrices, final HbarCentExchange exchange) {
+	public GasCalculatorHederaV22(final GlobalDynamicProperties dynamicProperties,
+								  final UsagePricesProvider usagePrices, final HbarCentExchange exchange) {
 		super(dynamicProperties, usagePrices, exchange);
 	}
 
@@ -63,10 +61,5 @@ public class GasCalculatorHederaV20 extends GasCalculatorHederaV19 {
 						.plus(ISTANBUL_TX_DATA_NON_ZERO_COST.times(nonZeros));
 
 		return isContractCreation ? cost.plus(txCreateExtraGasCost()) : cost;
-	}
-
-	@Override
-	public Gas codeDepositGasCost(final int codeSize) {
-		return CODE_DEPOSIT_BYTE_COST.times(codeSize);
 	}
 }

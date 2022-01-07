@@ -23,7 +23,7 @@ package com.hedera.services.contracts;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV20;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;
@@ -125,7 +125,7 @@ public abstract class ContractsModule {
 
 	@Binds
 	@Singleton
-	public abstract GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV20 gasCalculator);
+	public abstract GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
 
 	@Binds
 	@Singleton

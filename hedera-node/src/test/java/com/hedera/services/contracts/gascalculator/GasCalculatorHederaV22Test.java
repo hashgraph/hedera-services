@@ -27,7 +27,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,8 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
-class GasCalculatorHederaV20Test {
-    GasCalculatorHederaV20 subject;
+class GasCalculatorHederaV22Test {
+    GasCalculatorHederaV22 subject;
 
     @Mock
     GlobalDynamicProperties globalDynamicProperties;
@@ -51,14 +50,14 @@ class GasCalculatorHederaV20Test {
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHederaV20(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV22(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test
     void gasDepositCost() {
-        assertEquals(Gas.of(200 * 37), subject.codeDepositGasCost(37));
+//        assertEquals(Gas.of(200 * 37), subject.codeDepositGasCost(37));
+        assertEquals(Gas.ZERO, subject.codeDepositGasCost(37));
     }
-
 
     @Test
     void transactionIntrinsicGasCost() {
@@ -74,5 +73,4 @@ class GasCalculatorHederaV20Test {
                 32_000L   // contract creation base cost
         ), subject.transactionIntrinsicGasCost(Bytes.of(0, 1, 0, 3, 0), true));
     }
-
 }
