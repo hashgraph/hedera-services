@@ -20,11 +20,13 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
@@ -35,6 +37,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -73,11 +76,13 @@ class SolvencyPrecheckTest {
 	private final long acceptableRequiredFeeSansSvc = 333L;
 	private final long unacceptableRequiredFee = 667L;
 	private final long unacceptableRequiredFeeSansSvc = 334L;
+	private final ByteString payerAlias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
 	private final FeeObject acceptableFees = new FeeObject(111L, 222L, 333L);
 	private final FeeObject unacceptableFees = new FeeObject(111L, 223L, 333L);
 	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private final Timestamp now = MiscUtils.asTimestamp(Instant.ofEpochSecond(1_234_567L));
 	private final AccountID payer = IdUtils.asAccount("0.0.1234");
+	private final AccountID payerWithAlias = AccountID.newBuilder().setAlias(payerAlias).build();
 	private final MerkleAccount solventPayerAccount = MerkleAccountFactory.newAccount()
 			.accountKeys(payerKey)
 			.balance(payerBalance)
@@ -92,6 +97,14 @@ class SolvencyPrecheckTest {
 					.setTransactionID(TransactionID.newBuilder()
 							.setTransactionValidStart(now)
 							.setAccountID(payer))
+					.setTransactionFee(acceptableRequiredFee)
+					.build().toByteString())
+			.build());
+	private final SignedTxnAccessor accessorCoveringAllFeesWithAliasedPayer = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
+					.setTransactionID(TransactionID.newBuilder()
+							.setTransactionValidStart(now)
+							.setAccountID(payerWithAlias))
 					.setTransactionFee(acceptableRequiredFee)
 					.build().toByteString())
 			.build());
@@ -119,6 +132,8 @@ class SolvencyPrecheckTest {
 	private PrecheckVerifier precheckVerifier;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private AliasManager aliasManager;
 
 	private SolvencyPrecheck subject;
 
@@ -126,7 +141,7 @@ class SolvencyPrecheckTest {
 	void setUp() {
 		subject = new SolvencyPrecheck(
 				feeExemptions, feeCalculator, validator, precheckVerifier,
-				() -> stateView, dynamicProperties, () -> accounts);
+				() -> stateView, dynamicProperties, () -> accounts, aliasManager);
 	}
 
 	@Test
@@ -135,6 +150,14 @@ class SolvencyPrecheckTest {
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
 		// then:
+		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);
+	}
+
+	@Test
+	void rejectsUnusablePayerWithAlias() {
+		given(aliasManager.lookupIdBy(payerAlias)).willReturn(EntityNum.MISSING_NUM);
+		var result = subject.assessWithSvcFees(accessorCoveringAllFeesWithAliasedPayer);
+
 		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);
 	}
 
@@ -191,7 +214,7 @@ class SolvencyPrecheckTest {
 	@Test
 	void alwaysOkForVerifiedExemptPayer() {
 		givenSolventPayer();
-		givenValidSigs();
+		givenValidSigs(false);
 		given(feeExemptions.hasExemptPayer(accessorCoveringAllFees)).willReturn(true);
 
 		// when:
@@ -204,7 +227,7 @@ class SolvencyPrecheckTest {
 	@Test
 	void translatesFeeCalcFailure() {
 		givenSolventPayer();
-		givenValidSigs();
+		givenValidSigs(false);
 		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now))
 				.willThrow(IllegalStateException.class);
 
@@ -218,7 +241,7 @@ class SolvencyPrecheckTest {
 	@Test
 	void recognizesUnwillingnessToPayAllFees() {
 		givenSolventPayer();
-		givenValidSigs();
+		givenValidSigs(false);
 		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now))
 				.willReturn(unacceptableFees);
 
@@ -247,8 +270,8 @@ class SolvencyPrecheckTest {
 	void refinesInsufficientPayerBalanceToDetachedResponseIfExpired() {
 		given(validator.isAfterConsensusSecond(insolventExpiry)).willReturn(false);
 		givenInsolventPayer();
-		givenValidSigs();
-		givenAcceptableFees();
+		givenValidSigs(false);
+		givenAcceptableFees(false);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
 
 		// when:
@@ -261,8 +284,8 @@ class SolvencyPrecheckTest {
 	@Test
 	void cannotBeDetachedIfAutorenewDisabled() {
 		givenInsolventPayer();
-		givenValidSigs();
-		givenAcceptableFees();
+		givenValidSigs(false);
+		givenAcceptableFees(false);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
 		// and:
 		dynamicProperties.disableAutoRenew();
@@ -278,8 +301,8 @@ class SolvencyPrecheckTest {
 	void recognizesInTxnAdjustmentsDontCreateSolvency() {
 		given(validator.isAfterConsensusSecond(insolventExpiry)).willReturn(true);
 		givenInsolventPayer();
-		givenValidSigs();
-		givenAcceptableFees();
+		givenValidSigs(false);
+		givenAcceptableFees(false);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
 
 		// when:
@@ -292,8 +315,8 @@ class SolvencyPrecheckTest {
 	@Test
 	void recognizesInTxnAdjustmentsMayCreateInsolvency() {
 		givenSolventPayer();
-		givenValidSigs();
-		givenAcceptableFees();
+		givenValidSigs(false);
+		givenAcceptableFees(false);
 		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-payerBalance);
 
 		// when:
@@ -306,9 +329,9 @@ class SolvencyPrecheckTest {
 	@Test
 	void recognizesSolventPayer() {
 		givenSolventPayer();
-		givenValidSigs();
-		givenAcceptableFees();
-		givenNoMaterialAdjustment();
+		givenValidSigs(false);
+		givenAcceptableFees(false);
+		givenNoMaterialAdjustment(false);
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -317,17 +340,42 @@ class SolvencyPrecheckTest {
 		assertBothValidityAndReqFee(result, OK, acceptableRequiredFee);
 	}
 
-	private void givenNoMaterialAdjustment() {
-		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-1L);
+	@Test
+	void recognizesSolventPayerWithAlias() {
+		given(aliasManager.lookupIdBy(payerAlias)).willReturn(EntityNum.fromLong(1234L));
+		givenSolventPayer();
+		givenValidSigs(true);
+		givenAcceptableFees(true);
+		givenNoMaterialAdjustment(true);
+
+		var result = subject.assessWithSvcFees(accessorCoveringAllFeesWithAliasedPayer);
+
+		assertBothValidityAndReqFee(result, OK, acceptableRequiredFee);
 	}
 
-	private void givenAcceptableFees() {
-		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willReturn(acceptableFees);
+	private void givenNoMaterialAdjustment(boolean aliased) {
+		if (aliased) {
+			given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFeesWithAliasedPayer, now)).willReturn(-1L);
+		} else {
+			given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-1L);
+		}
 	}
 
-	private void givenValidSigs() {
+	private void givenAcceptableFees(boolean aliased) {
+		if (aliased) {
+			given(feeCalculator.estimateFee(accessorCoveringAllFeesWithAliasedPayer, payerKey, stateView, now)).willReturn(acceptableFees);
+		} else {
+			given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willReturn(acceptableFees);
+		}
+	}
+
+	private void givenValidSigs(boolean aliased) {
 		try {
-			given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willReturn(true);
+			if (aliased) {
+				given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFeesWithAliasedPayer)).willReturn(true);
+			} else {
+				given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willReturn(true);
+			}
 		} catch (Exception impossible) {}
 	}
 

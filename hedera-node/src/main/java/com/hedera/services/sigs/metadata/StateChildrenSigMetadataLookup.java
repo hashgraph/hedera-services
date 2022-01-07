@@ -137,14 +137,6 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
-			final AccountID id,
-			final @Nullable LinkedRefs linkedRefs
-	) {
-		return lookupByNumber(fromAccountId(id), linkedRefs);
-	}
-
-	@Override
 	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
 			final AccountID idOrAlias,
 			final @Nullable LinkedRefs linkedRefs

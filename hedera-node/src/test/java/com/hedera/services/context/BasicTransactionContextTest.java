@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -164,6 +165,8 @@ class BasicTransactionContextTest {
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private EntityIdSource ids;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -173,7 +176,7 @@ class BasicTransactionContextTest {
 	@BeforeEach
 	private void setup() {
 		subject = new BasicTransactionContext(
-				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids);
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids, aliasManager);
 
 		subject.resetFor(accessor, now, memberId);
 

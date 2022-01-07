@@ -45,9 +45,6 @@ public interface SigMetadataLookup {
 	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
 			TokenID id, @Nullable LinkedRefs linkedRefs);
 
-	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
-			AccountID id, @Nullable LinkedRefs linkedRefs);
-
 	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
 			ScheduleID id, @Nullable LinkedRefs linkedRefs);
 
