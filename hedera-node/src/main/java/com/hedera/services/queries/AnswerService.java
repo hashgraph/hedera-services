@@ -9,9 +9,9 @@ package com.hedera.services.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,8 +40,11 @@ public interface AnswerService {
 	Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
 
 	boolean needsAnswerOnlyCost(Query query);
+
 	boolean requiresNodePayment(Query query);
+
 	Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost);
+
 	default Response responseGiven(
 			Query query,
 			StateView view,
@@ -51,9 +54,13 @@ public interface AnswerService {
 	) {
 		return responseGiven(query, view, validity, cost);
 	}
+
 	ResponseCodeEnum checkValidity(Query query, StateView view);
+
 	HederaFunctionality canonicalFunction();
+
 	ResponseCodeEnum extractValidityFrom(Response response);
+
 	Optional<SignedTxnAccessor> extractPaymentFrom(Query query);
 
 	default Response responseGiven(Query query, StateView view, ResponseCodeEnum validity) {

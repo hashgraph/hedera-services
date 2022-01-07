@@ -36,16 +36,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
-public class GetAccountRecordsAnswer implements AnswerService {
+public class GetAccountRecordsAnswer extends CryptoAccountLookUp implements AnswerService {
 	private final OptionValidator optionValidator;
 	private final AnswerFunctions answerFunctions;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountRecordsAnswer(
@@ -53,9 +51,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
 			final OptionValidator optionValidator,
 			final AliasManager aliasManager
 	) {
+		super(aliasManager);
 		this.answerFunctions = answerFunctions;
 		this.optionValidator = optionValidator;
-		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -82,9 +80,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
-			final var accountID = isAlias(op.getAccountID()) ?
-					aliasManager.lookupIdBy(op.getAccountID().getAlias()).toGrpcAccountId()
-					: op.getAccountID();
+			final var accountID = lookUpAccountID(op.getAccountID());
 
 			if (type == COST_ANSWER) {
 				response.setAccountID(accountID);
@@ -103,10 +99,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		final var id = query.getCryptoGetAccountRecords().getAccountID();
-		final var accountID = isAlias(id) ?
-				aliasManager.lookupIdBy(id.getAlias()).toGrpcAccountId()
-				: id;
+		final var accountID = lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID());
 
 		return optionValidator.queryableAccountStatus(accountID, view.accounts());
 	}
