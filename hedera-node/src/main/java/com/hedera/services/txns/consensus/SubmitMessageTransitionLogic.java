@@ -22,11 +22,12 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -40,6 +41,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
@@ -59,7 +62,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
-	private final TokenStore tokenStore;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public SubmitMessageTransitionLogic(
@@ -67,13 +70,13 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			OptionValidator validator,
 			TransactionContext transactionContext,
 			GlobalDynamicProperties globalDynamicProperties,
-			TokenStore tokenStore
+			AliasManager aliasManager
 	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
 		this.globalDynamicProperties = globalDynamicProperties;
-		this.tokenStore = tokenStore;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -118,13 +121,20 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
-			final var result = tokenStore.lookUpAccountId(transactionBody.getTransactionID().getAccountID(),
-					INVALID_PAYER_ACCOUNT_ID);
-			if (result.getRight() != OK) {
-				transactionContext.setStatus(result.getRight());
+			AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
+			AccountID payer;
+			if (isAlias(payerAccountId)) {
+				final var payerId = aliasManager.lookupIdBy(payerAccountId.getAlias());
+				if (payerId == MISSING_NUM) {
+					transactionContext.setStatus(INVALID_PAYER_ACCOUNT_ID);
+				}
+				payer = payerId.toGrpcAccountId();
+			} else {
+				payer = payerAccountId;
 			}
+
 			mutableTopic.updateRunningHashAndSequenceNumber(
-					result.getLeft(),
+					payer,
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());

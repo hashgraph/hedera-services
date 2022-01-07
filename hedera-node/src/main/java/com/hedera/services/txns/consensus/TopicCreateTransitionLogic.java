@@ -28,9 +28,9 @@ import com.hedera.services.store.TopicStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -55,13 +54,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public final class TopicCreateTransitionLogic implements TransitionLogic {
-	private final TokenStore tokenStore;
+	private final AccountStore accountStore;
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext transactionContext;
-	private final AccountStore accountStore;
 
 	@Inject
 	public TopicCreateTransitionLogic(
@@ -70,16 +68,14 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext transactionContext,
-			final AccountStore accountStore,
-			final TokenStore tokenStore
+			final AccountStore accountStore
 	) {
-		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
 		this.topicStore = topicStore;
 		this.entityIdSource = entityIdSource;
 		this.validator = validator;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
-		this.accountStore = accountStore;
 	}
 
 	@Override
@@ -92,17 +88,18 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
 		final var memo = op.getMemo();
 		final var autoRenewPeriod = op.getAutoRenewPeriod();
-
-		final var autoRenewValidationResult = tokenStore.lookUpAccountId(op.getAutoRenewAccount(),
-				INVALID_AUTORENEW_ACCOUNT);
-		validateTrue(OK == autoRenewValidationResult.getRight(), autoRenewValidationResult.getRight());
-		final var autoRenewAccountId = Id.fromGrpcAccount(autoRenewValidationResult.getLeft());
+		final var autoRenewId = op.getAutoRenewAccount();
 
 		/* --- Validate --- */
-		final var payerValidationResult = tokenStore.lookUpAccountId(payerId,
-				INVALID_PAYER_ACCOUNT_ID);
-		validateTrue(OK == payerValidationResult.getRight(), payerValidationResult.getRight());
-		final var payerAccountId = payerValidationResult.getLeft();
+		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewId.getAlias(),
+				autoRenewId.getAccountNum());
+		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
+
+		final var payer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());
+		final var payerAccountId = AccountID.newBuilder()
+				.setShardNum(payerId.getShardNum())
+				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
+				.build();
 
 		final var memoValidationResult = validator.memoCheck(memo);
 		validateTrue(OK == memoValidationResult, memoValidationResult);

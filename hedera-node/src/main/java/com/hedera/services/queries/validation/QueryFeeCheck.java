@@ -21,8 +21,8 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -54,19 +56,19 @@ public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final TokenStore tokenStore;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			TokenStore tokenStore
+			AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
-		this.tokenStore = tokenStore;
+		this.aliasManager = aliasManager;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -149,13 +151,19 @@ public class QueryFeeCheck {
 	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-		final var result = tokenStore.lookUpAccountId(txn.getTransactionID().getAccountID(), INVALID_PAYER_ACCOUNT_ID);
-
-		if (result.getRight() != OK) {
-			return result.getRight();
+		final var payerAccountId = txn.getTransactionID().getAccountID();
+		
+		AccountID transactionPayer;
+		if (isAlias(payerAccountId)) {
+			final var payerId = aliasManager.lookupIdBy(payerAccountId.getAlias());
+			if (payerId == MISSING_NUM) {
+				return INVALID_PAYER_ACCOUNT_ID;
+			}
+			transactionPayer = payerId.toGrpcAccountId();
+		} else {
+			transactionPayer = payerAccountId;
 		}
 
-		AccountID transactionPayer = result.getLeft();
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
 		long transactionFee = txn.getTransactionFee();
