@@ -23,10 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -39,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,7 +81,6 @@ class CryptoDeleteTransitionLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -94,12 +92,11 @@ class CryptoDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
-		aliasManager = mock(AliasManager.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx, aliasManager);
+		subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx);
 	}
 
 	@Test
@@ -264,9 +261,9 @@ class CryptoDeleteTransitionLogicTest {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
 
-		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.fromAccountId(payer));
-		given(aliasManager.lookupIdBy(aliasedTransfer.getAlias())).willReturn(EntityNum.fromAccountId(payer));
-		given(aliasManager.lookupIdBy(aliasAccountTarget.getAlias())).willReturn(EntityNum.fromAccountId(target));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(payer, OK));
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(payer, OK));
+		given(ledger.lookUpAccountId(aliasAccountTarget, INVALID_ACCOUNT_ID)).willReturn(Pair.of(target, OK));
 
 		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 		assertEquals(OK, validity);
@@ -292,6 +289,8 @@ class CryptoDeleteTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.lookUpAccountId(target, INVALID_ACCOUNT_ID)).willReturn(Pair.of(target, OK));
+		given(ledger.lookUpAccountId(transfer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(transfer, OK));
 	}
 
 	private void givenDeleteTxnMissingTarget() {
@@ -302,6 +301,8 @@ class CryptoDeleteTransitionLogicTest {
 								.setTransferAccountID(asAccount("0.0.1234"))
 								.build()
 				).build();
+		given(ledger.lookUpAccountId(asAccount("0.0.1234"), INVALID_ACCOUNT_ID)).willReturn(
+				Pair.of(asAccount("0.0.1234"), INVALID_ACCOUNT_ID));
 	}
 
 	private void givenDeleteTxnMissingTransfer() {

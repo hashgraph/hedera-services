@@ -25,13 +25,11 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,6 +40,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -58,6 +57,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -77,7 +78,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willCallRealMethod;
 
 class CryptoCreateTransitionLogicTest {
 	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -102,7 +102,6 @@ class CryptoCreateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
-	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -113,13 +112,11 @@ class CryptoCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		aliasManager = mock(AliasManager.class);
 
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
-				aliasManager);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -199,8 +196,6 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
-		willCallRealMethod().given(validator)
-				.isExistingAliasedID(cryptoCreateTxn.getCryptoCreateAccount().getProxyAccountID());
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -265,8 +260,9 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void worksWithValidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias())).willReturn(EntityNum.fromAccountId(PROXY));
-		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.fromAccountId(PAYER));
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PAYER, OK));
+		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
 		subject.doStateTransition();
 
@@ -276,12 +272,14 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias())).willReturn(EntityNum.MISSING_NUM);
-		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(
+				Pair.of(aliasedProxyID, INVALID_ALIAS_KEY));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+				Pair.of(aliasAccountPayer, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
 	}
 
 	private Key unmappableKey() {
@@ -382,6 +380,9 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(Pair.of(proxy, OK));
+		given(ledger.lookUpAccountId(cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID))
+				.willReturn(Pair.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
 	}
 
 	private TransactionID ourTxnId() {

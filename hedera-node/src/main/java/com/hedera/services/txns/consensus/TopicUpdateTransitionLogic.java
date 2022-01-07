@@ -54,7 +54,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -204,10 +203,18 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (!op.hasAutoRenewAccount()) {
 			return true;
 		}
-		var newAutoRenewAccount = getValidAutoRenewAccountFromAlias(op.getAutoRenewAccount()).toGrpcAccountId();
-		if (designatesAccountRemoval(newAutoRenewAccount)) {
+
+		if (designatesAccountRemoval(op.getAutoRenewAccount())) {
 			return true;
 		}
+
+		final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+		if (result.getRight() != OK) {
+			transactionContext.setStatus(result.getRight());
+			return false;
+		}
+		var newAutoRenewAccount = result.getLeft();
+
 		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
@@ -224,9 +231,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
 		}
-		if (!validator.isExistingAliasedID(newAutoRenewAccount)) {
-			transactionContext.setStatus(INVALID_ALIAS_KEY);
-		}
 		return true;
 	}
 
@@ -235,7 +239,8 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			if (designatesAccountRemoval(op.getAutoRenewAccount())) {
 				topic.setAutoRenewAccountId(null);
 			} else {
-				topic.setAutoRenewAccountId(getValidAutoRenewAccountFromAlias(op.getAutoRenewAccount()));
+				final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(result.getLeft()));
 			}
 		}
 	}
@@ -337,11 +342,5 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		return OK;
-	}
-
-	private EntityId getValidAutoRenewAccountFromAlias(AccountID grpcId) {
-		final var autoRenewAccountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(),
-				grpcId.getAccountNum());
-		return new EntityId(grpcId.getShardNum(), grpcId.getRealmNum(), autoRenewAccountNum);
 	}
 }

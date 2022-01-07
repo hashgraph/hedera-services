@@ -25,8 +25,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
@@ -45,19 +45,17 @@ import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class GetAccountBalanceAnswer implements AnswerService {
-	private final AliasManager aliasManager;
+public class GetAccountBalanceAnswer extends CryptoAccountLookUp implements AnswerService {
 	private final OptionValidator optionValidator;
 
 	@Inject
 	public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
-		this.aliasManager = aliasManager;
+		super(aliasManager);
 		this.optionValidator = optionValidator;
 	}
 
@@ -119,7 +117,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
 		} else if (op.hasAccountID()) {
-			final var effId = resolvedNonContract(op.getAccountID());
+			final var effId = lookUpAccountID(op.getAccountID());
 			return optionValidator.queryableAccountStatus(effId, accounts);
 		} else {
 			return INVALID_ACCOUNT_ID;
@@ -130,16 +128,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return asAccount(op.getContractID());
 		} else {
-			return resolvedNonContract(op.getAccountID());
-		}
-	}
-
-	private AccountID resolvedNonContract(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
+			return lookUpAccountID(op.getAccountID());
 		}
 	}
 

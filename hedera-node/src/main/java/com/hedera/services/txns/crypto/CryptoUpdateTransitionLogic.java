@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -48,7 +47,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -57,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -83,7 +80,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
@@ -91,22 +87,27 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties,
-			final AliasManager aliasManager
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
-		this.aliasManager = aliasManager;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			final var target = asUsableAccountID(op.getAccountIDToUpdate(), aliasManager);
+
+			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+			if (result.getRight() != OK) {
+				txnCtx.setStatus(result.getRight());
+				return;
+			}
+
+			final var target = result.getLeft();
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
@@ -166,8 +167,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
-			if (!validator.isExistingAliasedID(proxy.toGrpcAccountId())) {
-				return INVALID_ALIAS_KEY;
+			final var result = ledger.lookUpAccountId(proxy.toGrpcAccountId(), INVALID_ACCOUNT_ID);
+			if (result.getRight() != OK) {
+				return result.getRight();
 			}
 		}
 
@@ -186,7 +188,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = asUsableAccountID(op.getProxyAccountID(), aliasManager);
+			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).getLeft();
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {

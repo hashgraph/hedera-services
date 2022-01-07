@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -167,8 +167,6 @@ class MerkleTopicUpdateTransitionLogicTest {
 	void syntaxCheckWithValidAliasedAutoRenewAccount() throws Throwable {
 		givenExistingTopicWithAdminKey();
 		givenValidTransactionWithAliasedAutoRenewAccount();
-		given(accountStore.getAccountNumFromAlias(ALIASED_ACCOUNT.getAlias(), ALIASED_ACCOUNT.getAccountNum()))
-				.willReturn(MISC_ACCOUNT.getAccountNum());
 
 		subject.doStateTransition();
 
@@ -506,7 +504,9 @@ class MerkleTopicUpdateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISSING_ACCOUNT)
 		);
-		given(validator.queryableAccountStatus(MISSING_ACCOUNT, accounts)).willReturn(INVALID_ACCOUNT_ID);
+		given(ledger.lookUpAccountId(MISSING_ACCOUNT, INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(Pair.of(MISSING_ACCOUNT, INVALID_AUTORENEW_ACCOUNT));
+
 	}
 
 	private void givenTransactionWithAutoRenewAccountClearingAdminKey() {
@@ -517,6 +517,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(ledger.lookUpAccountId(MISC_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(Pair.of(MISC_ACCOUNT, OK));
 	}
 
 	private void givenTransactionWithAutoRenewAccountNotClearingAdminKey() {
@@ -526,22 +527,23 @@ class MerkleTopicUpdateTransitionLogicTest {
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
+		given(ledger.lookUpAccountId(MISC_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(Pair.of(MISC_ACCOUNT, OK));
 	}
 
 	private void givenTransactionClearingAutoRenewAccount() {
+		final var account = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(0).build();
 		givenTransaction(
-				getBasicValidTransactionBodyBuilder()
-						.setAutoRenewAccount(
-								AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(0).build())
+				getBasicValidTransactionBodyBuilder().setAutoRenewAccount(account)
 		);
+		given(ledger.lookUpAccountId(account, INVALID_AUTORENEW_ACCOUNT)).willReturn(Pair.of(account, OK));
 	}
 
 	private void givenTransactionChangingAutoRenewAccountWithAliasId() {
+		final var account = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("pretend")).build();
 		givenTransaction(
-				getBasicValidTransactionBodyBuilder()
-						.setAutoRenewAccount(
-								AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("pretend")).build())
+				getBasicValidTransactionBodyBuilder().setAutoRenewAccount(account)
 		);
+		given(ledger.lookUpAccountId(account, INVALID_AUTORENEW_ACCOUNT)).willReturn(Pair.of(MISC_ACCOUNT, OK));
 	}
 
 	private void givenTransactionClearingKeys() {
@@ -557,6 +559,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 
 	private void givenValidTransactionWithAliasedAutoRenewAccount() {
 		givenValidTransactionWithAllOptions(ALIASED_ACCOUNT);
+		given(ledger.lookUpAccountId(ALIASED_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(Pair.of(MISC_ACCOUNT, OK));
 	}
 
 	private void givenValidTransactionWithAllOptions() {
@@ -577,6 +580,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(updatedSubmitKey)).willReturn(true);
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+		given(ledger.lookUpAccountId(autoRenewAccount, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				Pair.of(autoRenewAccount, OK));
 	}
 
 	private void givenTransactionWithInvalidMemo() {

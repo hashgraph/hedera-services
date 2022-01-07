@@ -46,27 +46,26 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
-public class GetAccountInfoAnswer implements AnswerService {
+public class GetAccountInfoAnswer extends CryptoAccountLookUp implements AnswerService {
 	private final OptionValidator optionValidator;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
+		super(aliasManager);
 		this.optionValidator = optionValidator;
-		this.aliasManager = aliasManager;
 	}
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		AccountID id = query.getCryptoGetInfo().getAccountID();
-		var entityNum = id.getAlias().isEmpty() ?
-				EntityNum.fromAccountId(id) :
-				aliasManager.lookupIdBy(id.getAlias());
+		AccountID id = lookUpAccountID(query.getCryptoGetInfo().getAccountID());
+		var entityNum = EntityNum.fromAccountId(id);
+
 		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
 	}
 
 	@Override
-	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity,
+			final long cost) {
 		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
 		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
@@ -78,7 +77,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager);
+				var optionalInfo = view.infoForAccount(id, getAliasManager());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
