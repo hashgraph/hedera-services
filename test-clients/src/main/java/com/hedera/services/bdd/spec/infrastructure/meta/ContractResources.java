@@ -615,7 +615,10 @@ public class ContractResources {
 			"\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"" +
 			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-	public static final String MINT_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"}],\"name\":\"mintTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String MINT_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\"," +
+			"\"type\":\"uint64\"},{\"internalType\":\"bytes[]\",\"name\":\"metadata\",\"type\":\"bytes[]\"}]," +
+			"\"name\":\"mintTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String ASSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"associateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String DISSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"dissociateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

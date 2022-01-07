@@ -156,7 +156,7 @@ class BurnPrecompilesTest {
 	void nftBurnFailurePathWorks() {
 		givenNonfungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr, senderAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -171,7 +171,7 @@ class BurnPrecompilesTest {
 		givenNonfungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -195,7 +195,7 @@ class BurnPrecompilesTest {
 		givenFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -254,6 +254,7 @@ class BurnPrecompilesTest {
 			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
+	private static final Address senderAddr = Address.ALTBN128_PAIRING;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
 			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
