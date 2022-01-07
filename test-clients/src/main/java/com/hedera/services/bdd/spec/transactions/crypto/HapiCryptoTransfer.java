@@ -481,7 +481,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				String account = spec.registry().getAccountIdName(accountAmount.getAccountID());
 				boolean isPayer = (accountAmount.getAmount() < 0L);
 				if (isPayer || spec.registry().isSigRequired(account)) {
-					partyKeys.add(spec.registry().getKey(account));
+					if (!accountAmount.getAccountID().getAlias().isEmpty() && accountAmount.getAccountID().getAccountNum() == 0)
+					{
+						partyKeys.add(spec.registry().getKey(accountAmount.getAccountID().getAlias().toStringUtf8()));
+					} else {
+						partyKeys.add(spec.registry().getKey(account));
+					}
 				}
 			});
 			return partyKeys;
