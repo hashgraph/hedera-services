@@ -24,6 +24,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -35,6 +36,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 /**
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
@@ -50,6 +53,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private final FeeExemptions feeExemptions;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AliasManager aliasManager;
 
 	private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	private long nodeFee;
@@ -68,12 +72,14 @@ public class NarratedLedgerCharging implements NarratedCharging {
 			NodeInfo nodeInfo,
 			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.nodeInfo = nodeInfo;
 		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -88,7 +94,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
-		this.grpcPayerId = accessor.getPayer();
+		this.grpcPayerId = lookUpAccountID(accessor.getPayer());
 		this.payerId = EntityNum.fromAccountId(grpcPayerId);
 		this.totalOfferedFee = accessor.getOfferedFee();
 
@@ -206,5 +212,14 @@ public class NarratedLedgerCharging implements NarratedCharging {
 					+ " is missing!");
 		}
 		effPayerStartingBalance = payerAccount.getBalance();
+	}
+
+	private AccountID lookUpAccountID(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			return id.toGrpcAccountId();
+		} else {
+			return idOrAlias;
+		}
 	}
 }

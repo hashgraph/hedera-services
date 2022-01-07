@@ -110,7 +110,7 @@ public interface OptionValidator {
 	}
 
 	default boolean isPlausibleAccount(AccountID id) {
-		return id.getAccountNum() > 0 &&
+		return (id.getAccountNum() > 0 || !id.getAlias().isEmpty()) &&
 				id.getRealmNum() >= 0 &&
 				id.getShardNum() >= 0;
 	}

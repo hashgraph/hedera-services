@@ -24,6 +24,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -69,12 +70,14 @@ class NarratedLedgerChargingTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private AliasManager aliasManager;
 
 	private NarratedLedgerCharging subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts);
+		subject = new NarratedLedgerCharging(nodeInfo, feeExemptions, dynamicProperties, () -> accounts, aliasManager);
 		subject.setLedger(ledger);
 	}
 

@@ -64,10 +64,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -142,21 +142,21 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.hasChildRecordCount(2)
 				)
 				.then(
-//						scheduleCreate("validScheduleWithAlias",
-//								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender1", 1)))
-//								.designatingPayerAlias("payerAlias")
-//								.payingWithAlias("schedulingAlias"),
-//						getScheduleInfo("validScheduleWithAlias").logged(),
+						scheduleCreate("validScheduleWithAlias",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender1", 1)))
+								.designatingPayerAlias("payerAlias")
+								.payingWithAlias("schedulingAlias"),
+						getScheduleInfo("validScheduleWithAlias").logged(),
 						scheduleCreate("validScheduleWithAlias",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
 								.designatingPayerAlias("invalidAlias")
 								.payingWithAlias("schedulingAlias")
-								.hasKnownStatus(INVALID_ALIAS_KEY)
-//						scheduleCreate("validScheduleWithAlias",
-//								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
-//								.designatingPayerAlias("payerAlias")
-//								.payingWithAlias("invalidAlias")
-//								.hasKnownStatus(PAYER_ACCOUNT_NOT_FOUND)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						scheduleCreate("validScheduleWithAlias",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
+								.designatingPayerAlias("payerAlias")
+								.payingWithAlias("invalidAlias")
+								.hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 

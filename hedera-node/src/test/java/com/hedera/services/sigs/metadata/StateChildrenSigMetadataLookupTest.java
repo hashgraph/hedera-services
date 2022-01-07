@@ -240,7 +240,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(stateChildren.accounts()).willReturn(accounts);
 
 		final var linkedRefs = new LinkedRefs();
-		final var result = subject.accountSigningMetaFor(unknownAccount, linkedRefs);
+		final var result = subject.aliasableAccountSigningMetaFor(unknownAccount, linkedRefs);
 
 		assertEquals(unknownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertEquals(MISSING_ACCOUNT, result.failureIfAny());

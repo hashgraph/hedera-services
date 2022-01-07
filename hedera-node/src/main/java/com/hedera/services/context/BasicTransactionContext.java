@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -106,6 +108,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private final HbarCentExchange exchange;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	BasicTransactionContext(
@@ -115,7 +118,8 @@ public class BasicTransactionContext implements TransactionContext {
 			final HbarCentExchange exchange,
 			final EntityCreator creator,
 			final SideEffectsTracker sideEffectsTracker,
-			final EntityIdSource ids
+			final EntityIdSource ids,
+			final AliasManager aliasManager
 	) {
 		this.ids = ids;
 		this.accounts = accounts;
@@ -124,6 +128,7 @@ public class BasicTransactionContext implements TransactionContext {
 		this.exchange = exchange;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.creator = creator;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -157,7 +162,7 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? accounts.get().get(fromAccountId(accessor.getPayer())).getAccountKey()
+				? accounts.get().get(fromAccountId(lookUpAccountID(accessor.getPayer()))).getAccountKey()
 				: EMPTY_KEY;
 	}
 
@@ -166,7 +171,7 @@ public class BasicTransactionContext implements TransactionContext {
 		if (!isPayerSigKnownActive) {
 			throw new IllegalStateException("No active payer!");
 		}
-		return accessor().getPayer();
+		return lookUpAccountID(accessor().getPayer());
 	}
 
 	@Override
@@ -330,5 +335,14 @@ public class BasicTransactionContext implements TransactionContext {
 
 	long getNonThresholdFeeChargedToPayer() {
 		return otherNonThresholdFees;
+	}
+
+	private AccountID lookUpAccountID(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
+			return id.toGrpcAccountId();
+		} else {
+			return idOrAlias;
+		}
 	}
 }

@@ -138,12 +138,6 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(final AccountID id,
-			LinkedRefs linkedRefs) {
-		return accountSigMetaLookup.safeLookup(id);
-	}
-
-	@Override
 	public SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
 			final TopicID id,
 			final @Nullable LinkedRefs linkedRefs
