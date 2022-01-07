@@ -102,12 +102,12 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
 
 			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
-			if (result.getResponse() != OK) {
-				txnCtx.setStatus(result.getResponse());
+			if (result.response() != OK) {
+				txnCtx.setStatus(result.response());
 				return;
 			}
 
-			final var target = result.getAliasedId();
+			final var target = result.aliasedId();
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
@@ -168,8 +168,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
 			final var result = ledger.lookUpAccountId(proxy.toGrpcAccountId(), INVALID_ACCOUNT_ID);
-			if (result.getResponse() != OK) {
-				return result.getResponse();
+			if (result.response() != OK) {
+				return result.response();
 			}
 		}
 
@@ -188,7 +188,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).getAliasedId();
+			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).aliasedId();
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {

@@ -146,11 +146,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasuryLookUp = tokenStore.lookUpAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-			if (newTreasuryLookUp.getResponse() != OK) {
-				txnCtx.setStatus(newTreasuryLookUp.getResponse());
+			if (newTreasuryLookUp.response() != OK) {
+				txnCtx.setStatus(newTreasuryLookUp.response());
 				return;
 			}
-			if (!tokenStore.associationExists(newTreasuryLookUp.getAliasedId(), id)) {
+			if (!tokenStore.associationExists(newTreasuryLookUp.aliasedId(), id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
@@ -162,18 +162,18 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					return;
 				}
 			}
-			if (!newTreasuryLookUp.getAliasedId().equals(existingTreasury)) {
+			if (!newTreasuryLookUp.aliasedId().equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
-				outcome = prepNewTreasury(id, token, newTreasuryLookUp.getAliasedId());
+				outcome = prepNewTreasury(id, token, newTreasuryLookUp.aliasedId());
 				if (outcome != OK) {
 					abortWith(outcome);
 					return;
 				}
 				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
-				newTreasury = newTreasuryLookUp.getAliasedId();
+				newTreasury = newTreasuryLookUp.aliasedId();
 			}
 		}
 
@@ -262,8 +262,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasAutoRenewAccount()) {
 			final var newAutoRenewAccountLookUp = tokenStore.lookUpAccountId(
 					op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (newAutoRenewAccountLookUp.getResponse() != OK) {
-				return newAutoRenewAccountLookUp.getResponse();
+			if (newAutoRenewAccountLookUp.response() != OK) {
+				return newAutoRenewAccountLookUp.response();
 			}
 			if (token.hasAutoRenewAccount()) {
 				final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();

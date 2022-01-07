@@ -153,10 +153,10 @@ public class QueryFeeCheck {
 
 
 		final var result = aliasManager.lookUpAccountID(payerAccountId, INVALID_PAYER_ACCOUNT_ID);
-		if (result.getResponse() != OK) {
-			return result.getResponse();
+		if (result.response() != OK) {
+			return result.response();
 		}
-		AccountID transactionPayer = result.getAliasedId();
+		AccountID transactionPayer = result.aliasedId();
 
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
@@ -167,10 +167,10 @@ public class QueryFeeCheck {
 		for (AccountAmount accountAmount : transfers) {
 			final var amountValidation = aliasManager.lookUpAccountID(accountAmount.getAccountID(),
 					INVALID_PAYER_ACCOUNT_ID);
-			if (amountValidation.getResponse() != OK) {
-				return amountValidation.getResponse();
+			if (amountValidation.response() != OK) {
+				return amountValidation.response();
 			}
-			var id = amountValidation.getAliasedId();
+			var id = amountValidation.aliasedId();
 
 			long amount = accountAmount.getAmount();
 

@@ -30,12 +30,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -87,19 +84,12 @@ public abstract class HederaStore {
 	public AliasLookup lookUpAccountId(
 			final AccountID grpcId,
 			final AliasManager aliasManager,
-			final ResponseCodeEnum invalidAccountID) {
-		AccountID id;
-		if (isAlias(grpcId)) {
-			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
-			if (accountNum == MISSING_NUM) {
-				return new AliasLookup(grpcId, INVALID_ALIAS_KEY);
-			}
-			id = accountNum.toGrpcAccountId();
-		} else {
-			id = grpcId;
+			final ResponseCodeEnum response) {
+		var result = aliasManager.lookUpAccountID(grpcId, response);
+		if (result.response() != OK) {
+			return result;
 		}
-
-		var validity = usableOrElse(id, invalidAccountID);
-		return new AliasLookup(id, validity);
+		var validity = usableOrElse(result.aliasedId(), response);
+		return AliasLookup.of(result.aliasedId(), validity);
 	}
 }

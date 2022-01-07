@@ -98,11 +98,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
 			final var result = ledger.lookUpAccountId(
 					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID);
-			if (result.getResponse() != OK) {
-				txnCtx.setStatus(result.getResponse());
+			if (result.response() != OK) {
+				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID sponsor = result.getAliasedId();
+			AccountID sponsor = result.aliasedId();
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
@@ -136,7 +136,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
 			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID);
-			customizer.proxy(EntityId.fromGrpcAccountId(result.getAliasedId()));
+			customizer.proxy(EntityId.fromGrpcAccountId(result.aliasedId()));
 		}
 		return customizer;
 	}
@@ -192,7 +192,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 		//  should we also check if proxy accountID is valid and exists in address book ?
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).getResponse();
+			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).response();
 			if (result != OK) {
 				return result;
 			}

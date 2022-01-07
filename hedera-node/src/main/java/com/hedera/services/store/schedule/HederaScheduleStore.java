@@ -137,23 +137,23 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (schedule.hasExplicitPayer()) {
 			final var grpcPayer = buildAccountId(schedule.payer(), schedule.getPayerAlias());
 			final var schedulePayerLookUp = lookUpAccountId(grpcPayer, INVALID_SCHEDULE_PAYER_ID);
-			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.getAliasedId()));
+			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.aliasedId()));
 
-			if (schedulePayerLookUp.getResponse() != OK) {
-				return failure(schedulePayerLookUp.getResponse());
+			if (schedulePayerLookUp.response() != OK) {
+				return failure(schedulePayerLookUp.response());
 			}
 		}
 
 		final var grpcSchedulingAccount = buildAccountId(schedule.schedulingAccount(),
 				schedule.getSchedulingAccountAlias());
 		final var schedulingAccountLookup = lookUpAccountId(grpcSchedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.getAliasedId()));
+		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.aliasedId()));
 
-		if (schedulingAccountLookup.getResponse() != OK) {
-			return failure(schedulingAccountLookup.getResponse());
+		if (schedulingAccountLookup.response() != OK) {
+			return failure(schedulingAccountLookup.response());
 		}
 
-		pendingId = ids.newScheduleId(schedulingAccountLookup.getAliasedId());
+		pendingId = ids.newScheduleId(schedulingAccountLookup.aliasedId());
 		pendingCreation = schedule;
 
 		return success(pendingId);

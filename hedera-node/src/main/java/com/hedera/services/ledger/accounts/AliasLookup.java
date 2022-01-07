@@ -25,23 +25,7 @@ package com.hedera.services.ledger.accounts;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public class AliasLookup {
-	private AccountID aliasedId;
-	private ResponseCodeEnum response;
-
-	public AliasLookup(final AccountID aliasedId, final ResponseCodeEnum response) {
-		this.aliasedId = aliasedId;
-		this.response = response;
-	}
-
-	public AccountID getAliasedId() {
-		return aliasedId;
-	}
-
-	public ResponseCodeEnum getResponse() {
-		return response;
-	}
-
+public record AliasLookup(AccountID aliasedId, ResponseCodeEnum response) {
 	public static AliasLookup of(final AccountID aliasedId, final ResponseCodeEnum response) {
 		return new AliasLookup(aliasedId, response);
 	}

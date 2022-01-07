@@ -514,13 +514,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var isExpiryOnly = affectsExpiryAtMost(changes);
 
 		final var autoRenewAccountLookup = checkNewAutoRenewAccount(changes);
-		validity = autoRenewAccountLookup.getResponse();
+		validity = autoRenewAccountLookup.response();
 		if (validity != OK) {
 			return validity;
 		}
 
 		final var treasuryAccountLookUp = checkNewTreasuryAccount(changes);
-		validity = treasuryAccountLookUp.getResponse();
+		validity = treasuryAccountLookUp.response();
 		if (validity != OK) {
 			return validity;
 		}
@@ -562,7 +562,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			updateAdminKeyIfAppropriate(token, changes);
-			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.getAliasedId());
+			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.aliasedId());
 			updateAutoRenewPeriodIfAppropriate(token, changes);
 
 			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
@@ -575,7 +575,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateTokenSymbolIfAppropriate(token, changes);
 			updateTokenNameIfAppropriate(token, changes);
-			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.getAliasedId(), tId);
+			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.aliasedId(), tId);
 			updateMemoIfAppropriate(token, changes);
 			updateExpiryIfAppropriate(token, changes);
 		});
