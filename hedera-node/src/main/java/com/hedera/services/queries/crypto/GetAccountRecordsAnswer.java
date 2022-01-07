@@ -36,7 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -82,7 +82,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
-			final var accountID = getUsableAccountID(op.getAccountID(), aliasManager);
+			final var accountID = isAlias(op.getAccountID()) ?
+					aliasManager.lookupIdBy(op.getAccountID().getAlias()).toGrpcAccountId()
+					: op.getAccountID();
 
 			if (type == COST_ANSWER) {
 				response.setAccountID(accountID);
@@ -102,7 +104,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var id = query.getCryptoGetAccountRecords().getAccountID();
-		final var accountID = getUsableAccountID(id, aliasManager);
+		final var accountID = isAlias(id) ?
+				aliasManager.lookupIdBy(id.getAlias()).toGrpcAccountId()
+				: id;
 
 		return optionValidator.queryableAccountStatus(accountID, view.accounts());
 	}

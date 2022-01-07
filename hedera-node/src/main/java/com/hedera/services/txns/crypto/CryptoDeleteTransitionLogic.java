@@ -23,9 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -39,7 +38,6 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.utils.MiscUtils.getUsableAccountID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -67,19 +65,16 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public CryptoDeleteTransitionLogic(
 			final HederaLedger ledger,
 			final SigImpactHistorian sigImpactHistorian,
-			final TransactionContext txnCtx,
-			final AliasManager aliasManager
+			final TransactionContext txnCtx
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -87,12 +82,25 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			AccountID id = getUsableAccountID(op.getDeleteAccountID(), aliasManager);
+			var result = ledger.lookUpAccountId(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
+			if (result.getRight() != OK) {
+				txnCtx.setStatus(result.getRight());
+				return;
+			}
+			AccountID id = result.getLeft();
+
 			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
 			}
-			AccountID beneficiary = getUsableAccountID(op.getTransferAccountID(), aliasManager);
+
+			result = ledger.lookUpAccountId(op.getTransferAccountID(), INVALID_ACCOUNT_ID);
+			if (result.getRight() != OK) {
+				txnCtx.setStatus(result.getRight());
+				return;
+			}
+			AccountID beneficiary = result.getLeft();
+
 			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 				return;

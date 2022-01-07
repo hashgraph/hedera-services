@@ -132,11 +132,6 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isExistingAliasedID(final AccountID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		throw new UnsupportedOperationException();
 	}

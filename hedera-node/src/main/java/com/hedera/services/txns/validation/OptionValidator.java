@@ -89,8 +89,6 @@ public interface OptionValidator {
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
-	boolean isExistingAliasedID(AccountID id);
-
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
 	}

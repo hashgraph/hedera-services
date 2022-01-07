@@ -30,13 +30,11 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,6 +46,7 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -82,7 +81,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 
 class CryptoUpdateTransitionLogicTest {
@@ -109,7 +107,6 @@ class CryptoUpdateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
-	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -120,15 +117,13 @@ class CryptoUpdateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
-		aliasManager = mock(AliasManager.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties,
-				aliasManager);
-		willCallRealMethod().given(validator).isExistingAliasedID(any());
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
+		given(ledger.lookUpAccountId(TARGET, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
 	}
 
 	@Test
@@ -412,8 +407,7 @@ class CryptoUpdateTransitionLogicTest {
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
 						.setAccountIDToUpdate(aliasAccountPayer))
 				.build();
-		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias()))
-				.willReturn(EntityNum.fromAccountId(TARGET));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -431,10 +425,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(aliasAccountPayer)
 						.setProxyAccountID(aliasedProxyID))
 				.build();
-		given(aliasManager.lookupIdBy(aliasAccountPayer.getAlias()))
-				.willReturn(EntityNum.fromAccountId(TARGET));
-		given(aliasManager.lookupIdBy(aliasedProxyID.getAlias()))
-				.willReturn(EntityNum.fromAccountId(PROXY));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -519,6 +511,7 @@ class CryptoUpdateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
+		given(ledger.lookUpAccountId(PROXY, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
 	}
 
 	private TransactionID ourTxnId() {

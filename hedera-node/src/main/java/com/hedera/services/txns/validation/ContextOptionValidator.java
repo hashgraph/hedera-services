@@ -226,12 +226,6 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isExistingAliasedID(final AccountID id) {
-		return !(!id.getAlias().isEmpty() && id.getAccountNum() == 0 &&
-				aliasManager.lookupIdBy(id.getAlias()).equals(EntityNum.MISSING_NUM));
-	}
-
-	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		return tokenStringCheck(
 				symbol,
