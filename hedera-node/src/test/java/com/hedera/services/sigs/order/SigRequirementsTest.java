@@ -369,7 +369,7 @@ class SigRequirementsTest {
 	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
 	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers, aliasManager);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
@@ -2802,7 +2802,7 @@ class SigRequirementsTest {
 								() -> topics,
 								DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
 								DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
-				signatureWaivers, aliasManager);
+				signatureWaivers);
 	}
 
 	@SuppressWarnings("unchecked")

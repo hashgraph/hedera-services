@@ -21,6 +21,7 @@ package com.hedera.services.store.tokens;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
@@ -28,7 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -76,7 +76,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
-	Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
+	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum response);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

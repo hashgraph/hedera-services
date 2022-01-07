@@ -229,7 +229,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum isValidTransactionID(final AccountID txnId, final HederaLedger ledger) {
-		return ledger.lookUpAccountId(txnId, INVALID_PAYER_ACCOUNT_ID).getRight();
+		return ledger.lookUpAccountId(txnId, INVALID_PAYER_ACCOUNT_ID).getResponse();
 	}
 
 	@Override

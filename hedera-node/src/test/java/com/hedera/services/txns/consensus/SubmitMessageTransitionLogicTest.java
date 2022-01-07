@@ -23,9 +23,10 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -69,6 +70,7 @@ class SubmitMessageTransitionLogicTest {
 	private SubmitMessageTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private GlobalDynamicProperties globalDynamicProperties;
+	private AliasManager aliasManager;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	@BeforeEach
@@ -82,7 +84,9 @@ class SubmitMessageTransitionLogicTest {
 		topics.clear();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
+		aliasManager = mock(AliasManager.class);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties,
+				aliasManager);
 	}
 
 	@Test
@@ -148,7 +152,6 @@ class SubmitMessageTransitionLogicTest {
 		assertUnchangedTopics();
 		verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
 	}
-
 
 
 	@Test

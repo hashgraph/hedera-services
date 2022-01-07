@@ -22,13 +22,13 @@ package com.hedera.services.store;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
 
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -84,27 +84,22 @@ public abstract class HederaStore {
 		}
 	}
 
-	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(
+	public AliasLookup lookUpAccountId(
 			final AccountID grpcId,
 			final AliasManager aliasManager,
 			final ResponseCodeEnum invalidAccountID) {
-		var newAccountId = AccountID.getDefaultInstance();
+		AccountID id;
 		if (isAlias(grpcId)) {
 			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
 			if (accountNum == MISSING_NUM) {
-				return Pair.of(grpcId, INVALID_ALIAS_KEY);
+				return new AliasLookup(grpcId, INVALID_ALIAS_KEY);
 			}
-			newAccountId = AccountID.newBuilder()
-					.setShardNum(grpcId.getShardNum())
-					.setRealmNum(grpcId.getRealmNum())
-					.setAccountNum(accountNum.longValue())
-					.build();
+			id = accountNum.toGrpcAccountId();
 		} else {
-			newAccountId = grpcId;
+			id = grpcId;
 		}
 
-		var validity = usableOrElse(newAccountId, invalidAccountID);
-
-		return Pair.of(newAccountId, validity);
+		var validity = usableOrElse(id, invalidAccountID);
+		return new AliasLookup(id, validity);
 	}
 }

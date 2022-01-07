@@ -22,6 +22,7 @@ package com.hedera.services.store.schedule;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -136,22 +137,23 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (schedule.hasExplicitPayer()) {
 			final var grpcPayer = buildAccountId(schedule.payer(), schedule.getPayerAlias());
 			final var schedulePayerLookUp = lookUpAccountId(grpcPayer, INVALID_SCHEDULE_PAYER_ID);
-			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.getLeft()));
+			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.getAliasedId()));
 
-			if (schedulePayerLookUp.getRight() != OK) {
-				return failure(schedulePayerLookUp.getRight());
+			if (schedulePayerLookUp.getResponse() != OK) {
+				return failure(schedulePayerLookUp.getResponse());
 			}
 		}
 
-		final var grpcSchedulingAccount = buildAccountId(schedule.schedulingAccount(), schedule.getSchedulingAccountAlias());
+		final var grpcSchedulingAccount = buildAccountId(schedule.schedulingAccount(),
+				schedule.getSchedulingAccountAlias());
 		final var schedulingAccountLookup = lookUpAccountId(grpcSchedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.getLeft()));
+		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.getAliasedId()));
 
-		if (schedulingAccountLookup.getRight() != OK) {
-			return failure(schedulingAccountLookup.getRight());
+		if (schedulingAccountLookup.getResponse() != OK) {
+			return failure(schedulingAccountLookup.getResponse());
 		}
 
-		pendingId = ids.newScheduleId(schedulingAccountLookup.getLeft());
+		pendingId = ids.newScheduleId(schedulingAccountLookup.getAliasedId());
 		pendingCreation = schedule;
 
 		return success(pendingId);
@@ -244,7 +246,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	@Override
-	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
+	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
 		return lookUpAccountId(grpcId, aliasManager, invalidAccountID);
 	}
 

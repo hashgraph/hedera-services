@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -433,8 +434,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
-		return lookUpAccountId(grpcId, aliasManager, invalidAccountID);
+	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum response) {
+		return lookUpAccountId(grpcId, aliasManager, response);
 	}
 
 	public void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId) {
@@ -513,13 +514,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var isExpiryOnly = affectsExpiryAtMost(changes);
 
 		final var autoRenewAccountLookup = checkNewAutoRenewAccount(changes);
-		validity = autoRenewAccountLookup.getRight();
+		validity = autoRenewAccountLookup.getResponse();
 		if (validity != OK) {
 			return validity;
 		}
 
 		final var treasuryAccountLookUp = checkNewTreasuryAccount(changes);
-		validity = treasuryAccountLookUp.getRight();
+		validity = treasuryAccountLookUp.getResponse();
 		if (validity != OK) {
 			return validity;
 		}
@@ -561,7 +562,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			updateAdminKeyIfAppropriate(token, changes);
-			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.getLeft());
+			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.getAliasedId());
 			updateAutoRenewPeriodIfAppropriate(token, changes);
 
 			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
@@ -574,25 +575,25 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateTokenSymbolIfAppropriate(token, changes);
 			updateTokenNameIfAppropriate(token, changes);
-			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.getLeft(), tId);
+			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.getAliasedId(), tId);
 			updateMemoIfAppropriate(token, changes);
 			updateExpiryIfAppropriate(token, changes);
 		});
 		return appliedValidity.get();
 	}
 
-	private Pair<AccountID, ResponseCodeEnum> checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
+	private AliasLookup checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
 			return lookUpAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		}
-		return Pair.of(AccountID.getDefaultInstance(), OK);
+		return new AliasLookup(AccountID.getDefaultInstance(), OK);
 	}
 
-	private Pair<AccountID, ResponseCodeEnum> checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
+	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
 			return lookUpAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		}
-		return Pair.of(AccountID.getDefaultInstance(), OK);
+		return new AliasLookup(AccountID.getDefaultInstance(), OK);
 	}
 
 	private void processExpiry(

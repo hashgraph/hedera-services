@@ -105,7 +105,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
 		final var senderId = Id.fromGrpcAccount(
-				hederaLedger.lookUpAccountId(grpcSender, INVALID_PAYER_ACCOUNT_ID).getLeft());
+				hederaLedger.lookUpAccountId(grpcSender, INVALID_PAYER_ACCOUNT_ID).getAliasedId());
 
 		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
 		var key = op.hasAdminKey()

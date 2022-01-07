@@ -78,7 +78,7 @@ class SigVerifierRegressionTest {
 	private AliasManager aliasManager;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers, aliasManager);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
@@ -206,7 +206,7 @@ class SigVerifierRegressionTest {
 		aliasManager = mock(AliasManager.class);
 		keyOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				mockSignatureWaivers, aliasManager);
+				mockSignatureWaivers);
 		final var nodeInfo = mock(NodeInfo.class);
 		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);

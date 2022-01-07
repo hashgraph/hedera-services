@@ -39,8 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -152,17 +150,13 @@ public class QueryFeeCheck {
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
 		final var payerAccountId = txn.getTransactionID().getAccountID();
-		
-		AccountID transactionPayer;
-		if (isAlias(payerAccountId)) {
-			final var payerId = aliasManager.lookupIdBy(payerAccountId.getAlias());
-			if (payerId == MISSING_NUM) {
-				return INVALID_PAYER_ACCOUNT_ID;
-			}
-			transactionPayer = payerId.toGrpcAccountId();
-		} else {
-			transactionPayer = payerAccountId;
+
+
+		final var result = aliasManager.lookUpAccountID(payerAccountId, INVALID_PAYER_ACCOUNT_ID);
+		if (result.getResponse() != OK) {
+			return result.getResponse();
 		}
+		AccountID transactionPayer = result.getAliasedId();
 
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
@@ -171,7 +165,13 @@ public class QueryFeeCheck {
 		final var currentAccounts = accounts.get();
 		ResponseCodeEnum status;
 		for (AccountAmount accountAmount : transfers) {
-			var id = accountAmount.getAccountID();
+			final var amountValidation = aliasManager.lookUpAccountID(accountAmount.getAccountID(),
+					INVALID_PAYER_ACCOUNT_ID);
+			if (amountValidation.getResponse() != OK) {
+				return amountValidation.getResponse();
+			}
+			var id = amountValidation.getAliasedId();
+
 			long amount = accountAmount.getAmount();
 
 			if (amount < 0) {

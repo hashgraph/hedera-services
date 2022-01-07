@@ -23,6 +23,8 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +34,7 @@ import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
@@ -62,7 +65,8 @@ public class AliasManager {
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		aliases.clear();
@@ -110,5 +114,21 @@ public class AliasManager {
 
 	public boolean contains(final ByteString alias) {
 		return aliases.containsKey(alias);
+	}
+
+	public AliasLookup lookUpAccountID(
+			final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		AccountID id;
+		if (isAlias(grpcId)) {
+			var accountNum = lookupIdBy(grpcId.getAlias());
+			if (accountNum == MISSING_NUM) {
+				return new AliasLookup(grpcId, errResponse);
+			}
+			id = accountNum.toGrpcAccountId();
+		} else {
+			id = grpcId;
+		}
+
+		return new AliasLookup(id, errResponse);
 	}
 }

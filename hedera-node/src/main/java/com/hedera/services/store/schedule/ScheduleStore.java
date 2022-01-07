@@ -20,6 +20,7 @@ package com.hedera.services.store.schedule;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -40,14 +41,18 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ScheduleID MISSING_SCHEDULE = ScheduleID.getDefaultInstance();
 
 	void apply(ScheduleID id, Consumer<MerkleSchedule> change);
+
 	ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime);
 
 	CreationResult<ScheduleID> createProvisionally(MerkleSchedule candidate, RichInstant consensusTime);
 
 	Pair<ScheduleID, MerkleSchedule> lookupSchedule(byte[] bodyBytes);
+
 	ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime);
+
 	void expire(EntityId id);
-	Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
+
+	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum invalidAccountID);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

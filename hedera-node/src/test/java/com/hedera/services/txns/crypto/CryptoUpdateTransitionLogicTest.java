@@ -30,6 +30,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -46,7 +47,6 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -123,7 +123,7 @@ class CryptoUpdateTransitionLogicTest {
 		withRubberstampingValidator();
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
-		given(ledger.lookUpAccountId(TARGET, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
+		given(ledger.lookUpAccountId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
 	}
 
 	@Test
@@ -407,7 +407,7 @@ class CryptoUpdateTransitionLogicTest {
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
 						.setAccountIDToUpdate(aliasAccountPayer))
 				.build();
-		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -425,8 +425,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(aliasAccountPayer)
 						.setProxyAccountID(aliasedProxyID))
 				.build();
-		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(TARGET, OK));
-		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -511,7 +511,7 @@ class CryptoUpdateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
-		given(ledger.lookUpAccountId(PROXY, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
+		given(ledger.lookUpAccountId(PROXY, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
 	}
 
 	private TransactionID ourTxnId() {

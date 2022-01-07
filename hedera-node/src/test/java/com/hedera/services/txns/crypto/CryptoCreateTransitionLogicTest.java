@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -40,7 +41,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -260,8 +260,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void worksWithValidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PROXY, OK));
-		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(Pair.of(PAYER, OK));
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
 		subject.doStateTransition();
@@ -273,9 +273,9 @@ class CryptoCreateTransitionLogicTest {
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(
-				Pair.of(aliasedProxyID, INVALID_ALIAS_KEY));
+				AliasLookup.of(aliasedProxyID, INVALID_ALIAS_KEY));
 		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
-				Pair.of(aliasAccountPayer, INVALID_ALIAS_KEY));
+				AliasLookup.of(aliasAccountPayer, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();
 
@@ -380,9 +380,9 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(Pair.of(proxy, OK));
+		given(ledger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
 		given(ledger.lookUpAccountId(cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID))
-				.willReturn(Pair.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
+				.willReturn(AliasLookup.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
 	}
 
 	private TransactionID ourTxnId() {
