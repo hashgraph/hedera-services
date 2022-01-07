@@ -33,7 +33,7 @@ public class CryptoAccountLookUp {
 	private final AliasManager aliasManager;
 
 	@Inject
-	CryptoAccountLookUp(AliasManager aliasManager) {
+	public CryptoAccountLookUp(AliasManager aliasManager) {
 		this.aliasManager = aliasManager;
 	}
 

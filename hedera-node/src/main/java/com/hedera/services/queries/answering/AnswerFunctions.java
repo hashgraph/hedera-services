@@ -22,6 +22,7 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.queries.crypto.CryptoAccountLookUp;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
@@ -35,22 +36,17 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-
 
 @Singleton
-public class AnswerFunctions {
-	private final AliasManager aliasManager;
+public class AnswerFunctions extends CryptoAccountLookUp {
 
 	@Inject
 	public AnswerFunctions(final AliasManager aliasManager) {
-		this.aliasManager = aliasManager;
+		super(aliasManager);
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var id = isAlias(op.getAccountID()) ?
-				aliasManager.lookupIdBy(op.getAccountID().getAlias()).toGrpcAccountId()
-				: op.getAccountID();
+		final var id = lookUpAccountID(op.getAccountID());
 		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
