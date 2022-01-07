@@ -166,7 +166,7 @@ class MintPrecompilesTest {
 	void mintFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr, senderAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -183,7 +183,7 @@ class MintPrecompilesTest {
 	void mintRandomFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
+		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
 
 		// when:
 		final var result = subject.computeMintToken(pretendArguments, frame);
@@ -197,7 +197,7 @@ class MintPrecompilesTest {
 		givenNonFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -276,7 +276,7 @@ class MintPrecompilesTest {
 	}
 
 	private void givenFungibleCollaborators() {
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -301,6 +301,7 @@ class MintPrecompilesTest {
 			MintWrapper.forFungible(fungible, amount);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
+	private static final Address senderAddr = Address.ALTBN128_PAIRING;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");

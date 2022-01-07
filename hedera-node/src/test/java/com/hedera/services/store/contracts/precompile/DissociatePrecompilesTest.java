@@ -158,7 +158,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
 
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
@@ -178,7 +178,7 @@ class DissociatePrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -210,7 +210,7 @@ class DissociatePrecompilesTest {
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -257,6 +257,7 @@ class DissociatePrecompilesTest {
 			Dissociation.singleDissociation(account, nonFungible);
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
+	private static final Address senderAddr = Address.ALTBN128_PAIRING;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }

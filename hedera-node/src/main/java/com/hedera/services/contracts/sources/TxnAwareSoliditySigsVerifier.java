@@ -66,17 +66,18 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	@Override
-	public boolean hasActiveKey(final Id accountId, final Address recipient, final Address contract) {
+	public boolean hasActiveKey(final Id accountId, final Address recipient, final Address contract,
+								final Address sender) {
 		final var entityNum = accountId.asEntityNum();
 		final var account = accounts.get().get(entityNum);
 		if (account == null) {
 			throw new IllegalArgumentException("Cannot test key activation for missing account " + accountId);
 		}
-		return isActiveInFrame(account.getAccountKey(), recipient, contract);
+		return isActiveInFrame(account.getAccountKey(), recipient, contract, sender);
 	}
 
 	@Override
-	public boolean hasActiveSupplyKey(Id tokenId, Address recipient, Address contract) {
+	public boolean hasActiveSupplyKey(Id tokenId, Address recipient, Address contract, final Address sender) {
 		final var entityNum = tokenId.asEntityNum();
 		final var token = tokens.get().get(entityNum);
 		if (token == null) {
@@ -87,14 +88,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			throw new IllegalArgumentException(
 					"Cannot test supply key activation, as token " + tokenId + " does not have one");
 		}
-		return isActiveInFrame(token.getSupplyKey(), recipient, contract);
+		return isActiveInFrame(token.getSupplyKey(), recipient, contract, sender);
 	}
 
 	@Override
 	public boolean hasActiveKeyOrNoReceiverSigReq(
 			final Address target,
 			final Address recipient,
-			final Address contract
+			final Address contract,
+			final Address sender
 	) {
 		final var accountId = accountParsedFromSolidityAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
@@ -102,14 +104,16 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		}
 		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
 		if (requiredKey.isPresent()) {
-			return isActiveInFrame(requiredKey.get(), recipient, contract);
+			return isActiveInFrame(requiredKey.get(), recipient, contract, sender);
 		} else {
 			return true;
 		}
 	}
 
-	BiPredicate<JKey, TransactionSignature> validityTestFor(final Address recipient, final Address contract) {
-		final var activeId = contractParsedFromSolidityAddress(recipient);
+	BiPredicate<JKey, TransactionSignature> validityTestFor(final Address recipient, final Address contract,
+															final Address sender) {
+		final var senderId = contractParsedFromSolidityAddress(sender);
+//		final var activeId = contractParsedFromSolidityAddress(recipient);
 		final var isDelegateCall = !contract.equals(recipient);
 
 		/* Note that when this observer is used directly above in isActive(), it will be called
@@ -118,10 +122,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		return (key, sig) -> {
 			if (key.hasDelegatableContractId()) {
 				final var controllingId = key.getDelegatableContractIdKey().getContractID();
-				return controllingId.equals(activeId);
+				return controllingId.equals(senderId);
 			} else if (key.hasContractID()) {
 				final var controllingId = key.getContractIDKey().getContractID();
-				return controllingId.equals(activeId) && !isDelegateCall;
+				return controllingId.equals(senderId) && !isDelegateCall;
 			} else {
 				/* Otherwise delegate to the cryptographic validity test */
 				return cryptoValidity.test(key, sig);
@@ -136,8 +140,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 				.map(MerkleAccount::getAccountKey);
 	}
 
-	private boolean isActiveInFrame(final JKey key, final Address recipient, final Address contract) {
+	private boolean isActiveInFrame(final JKey key, final Address recipient, final Address contract, final Address sender) {
 		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
-		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract));
+		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract, sender));
 	}
 }

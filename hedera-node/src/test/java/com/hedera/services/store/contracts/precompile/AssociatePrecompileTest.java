@@ -155,7 +155,7 @@ class AssociatePrecompileTest {
 		givenFrameContext();
 		given(decoder.decodeAssociation(pretendArguments)).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
 				.willReturn(false);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -175,7 +175,7 @@ class AssociatePrecompileTest {
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -205,7 +205,7 @@ class AssociatePrecompileTest {
 				.willReturn(multiAssociateOp);
 		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -252,6 +252,7 @@ class AssociatePrecompileTest {
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	private static final Address recipientAddress = Address.ALTBN128_ADD;
 	private static final Address contractAddress = Address.ALTBN128_MUL;
+	private static final Address senderAddress = Address.ALTBN128_PAIRING;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 

@@ -278,6 +278,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	) {
 		final var contract = frame.getContractAddress();
 		final var recipient = frame.getRecipientAddress();
+		final var sender = frame.getSenderAddress();
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
@@ -286,7 +287,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ExpirableTxnRecord.Builder childRecord;
 		try {
 			synthBody = precompile.body(input);
-			childRecord = precompile.run(recipient, contract, ledgers);
+			childRecord = precompile.run(recipient, contract, sender, ledgers);
 
 			if (precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
 				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
@@ -399,7 +400,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface Precompile {
 		TransactionBody.Builder body(final Bytes input);
 
-		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final WorldLedgers ledgers);
+		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final Address sender,
+									   final WorldLedgers ledgers);
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -409,13 +411,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public ExpirableTxnRecord.Builder run(
 				final Address recipient,
 				final Address contract,
+				final Address sender,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract, sender);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -454,13 +457,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public ExpirableTxnRecord.Builder run(
 				final Address recipient,
 				final Address contract,
+				final Address sender,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract, sender);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -505,13 +509,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public ExpirableTxnRecord.Builder run(
 				final Address recipient,
 				final Address contract,
+				final Address sender,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(mintOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract, sender);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -602,6 +607,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public ExpirableTxnRecord.Builder run(
 				final Address recipient,
 				final Address contract,
+				final Address sender,
 				final WorldLedgers ledgers
 		) {
 			var changes = constructBalanceChanges(transferOp);
@@ -641,7 +647,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var units = change.units();
 				if (change.isForNft() || units < 0) {
 					final var hasSenderSig = sigsVerifier.hasActiveKey(
-							change.getAccount(), recipient, contract);
+							change.getAccount(), recipient, contract, sender);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
 				if (i >= numExplicitChanges) {
@@ -651,10 +657,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
 					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
+							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract, sender);
 				} else if (units > 0) {
 					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-									change.getAccount().asEvmAddress(), recipient, contract);
+									change.getAccount().asEvmAddress(), recipient, contract, sender);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
@@ -678,13 +684,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public ExpirableTxnRecord.Builder run(
 				final Address recipient,
 				final Address contract,
+				final Address sender,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(burnOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract, sender);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
