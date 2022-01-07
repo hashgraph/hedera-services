@@ -36,12 +36,4 @@ public record NftId(long shard, long realm, long num, long serialNo) {
 	public static NftId withDefaultShardRealm(final long num, final long serialNo) {
 		return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
 	}
-
-	@Override
-	public int hashCode() {
-		int result = Long.hashCode(shard);
-		result = 31 * result + Long.hashCode(realm);
-		result = 31 * result + Long.hashCode(num);
-		return 31 * result + Long.hashCode(serialNo);
-	}
 }

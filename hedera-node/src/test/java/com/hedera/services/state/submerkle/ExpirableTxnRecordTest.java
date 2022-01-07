@@ -273,7 +273,6 @@ class ExpirableTxnRecordTest {
 		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
 		subject.setAlias(MISSING_ALIAS);
-
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -359,7 +358,6 @@ class ExpirableTxnRecordTest {
 		given(fin.readBoolean()).willReturn(true);
 		given(fin.readByteArray(Integer.MAX_VALUE))
 				.willReturn(subject.getAlias().toByteArray());
-
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);
@@ -411,7 +409,6 @@ class ExpirableTxnRecordTest {
 				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
 		given(fin.readByteArray(Integer.MAX_VALUE))
 				.willReturn(subject.getAlias().toByteArray());
-
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);

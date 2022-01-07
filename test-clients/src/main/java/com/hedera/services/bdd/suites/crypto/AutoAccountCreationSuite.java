@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -67,7 +68,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoAccountCreationSuite.class);
 
 	public static void main(String... args) {
-		new AutoAccountCreationSuite().runSuiteSync();
+		new AutoAccountCreationSuite().runSuiteAsync();
+	}
+
+	@Override
+	public boolean canRunAsync() {
+		return true;
 	}
 
 	@Override
@@ -103,21 +109,40 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CanGetBalanceAndInfoViaAlias")
 				.given(
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
 						newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
 						newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape)
 				).when(
-						cryptoTransfer(
-								tinyBarsFromAccountToAlias(GENESIS, ed25519SourceKey, ONE_HUNDRED_HBARS),
+						sortedCryptoTransfer(
+								tinyBarsFromAccountToAlias("civilian", ed25519SourceKey, ONE_HUNDRED_HBARS),
 								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
 						)
+								/* Sort the transfer list so the accounts are created in a predictable order (the
+								* serialized bytes of an Ed25519 are always lexicographically prior to the serialized
+								* bytes of a secp256k1 key, so now the first child record will _always_ be for the
+								* ed25519 auto-creation). */
 								.payingWith(GENESIS)
 								.via(autoCreation)
 				).then(
-						getTxnRecord(autoCreation).andAllChildRecords().logged(),
-						getAliasedAccountBalance(ed25519SourceKey),
-						getAliasedAccountBalance(secp256k1SourceKey),
-						getAliasedAccountInfo(ed25519SourceKey).hasExpectedAliasKey(),
-						getAliasedAccountInfo(secp256k1SourceKey).hasExpectedAliasKey()
+						getTxnRecord(autoCreation).andAllChildRecords()
+								.hasAliasInChildRecord(ed25519SourceKey, 0)
+								.hasAliasInChildRecord(secp256k1SourceKey, 1).logged(),
+						getAliasedAccountBalance(ed25519SourceKey)
+								.hasExpectedAccountID()
+								.logged(),
+						getAliasedAccountBalance(secp256k1SourceKey)
+								.hasExpectedAccountID()
+								.logged(),
+						getAliasedAccountInfo(ed25519SourceKey)
+								.hasExpectedAliasKey()
+								.hasExpectedAccountID()
+								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
+								.logged(),
+						getAliasedAccountInfo(secp256k1SourceKey)
+								.hasExpectedAliasKey()
+								.hasExpectedAccountID()
+								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5))
+								.logged()
 				);
 	}
 
@@ -133,13 +158,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				).when(
 						/* auto account is created */
 						cryptoTransfer(
-								tinyBarsFromToWithAlias("payer", "validAlias",
-										ONE_HUNDRED_HBARS)).via(
-								"transferTxn")
+								tinyBarsFromToWithAlias("payer", "validAlias", ONE_HUNDRED_HBARS)
+						).via("transferTxn")
 				).then(
 						/* get transaction record and validate the child record has alias bytes as expected */
-						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
-								1).hasAliasInChildRecord("validAlias", 0).logged(),
+						getTxnRecord("transferTxn")
+								.andAllChildRecords()
+								.hasChildRecordCount(1)
+								.hasAliasInChildRecord("validAlias", 0),
 						getAccountInfo("payer").has(
 								accountWith()
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
@@ -153,7 +179,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 												.autoRenew(THREE_MONTHS_IN_SECONDS)
 												.receiverSigReq(false)
 												.memo(AUTO_MEMO))
-								.logged()
 				);
 	}
 
@@ -187,7 +212,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-		return defaultHapiSpec("deleteAutoCreatedAccount")
+		return defaultHapiSpec("AutoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
 				.given(
 						newKeyNamed("alias"),
 						newKeyNamed("alias2"),

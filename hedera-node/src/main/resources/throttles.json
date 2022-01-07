@@ -51,16 +51,22 @@
             "burstPeriod": 15,
             "throttleGroups": [
                 {
-                    "opsPerSec": 2,
-                    "operations": [ "CryptoCreate" ]
-                },
-                {
                     "opsPerSec": 5,
                     "operations": [ "ConsensusCreateTopic" ]
                 },
                 {
                     "opsPerSec": 100,
                     "operations": [ "TokenCreate", "TokenAssociateToAccount", "ScheduleCreate" ]
+                }
+            ]
+        },
+        {
+            "name": "AccountCreationLimits",
+            "burstPeriod": 15,
+            "throttleGroups": [
+                {
+                    "opsPerSec": 2,
+                    "operations": [ "CryptoCreate" ]
                 }
             ]
         },

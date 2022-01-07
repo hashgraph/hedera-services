@@ -20,9 +20,11 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -47,6 +49,7 @@ import java.util.List;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -54,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class RationalizationTest {
@@ -76,19 +80,22 @@ class RationalizationTest {
 	private PubKeyToSigBytes pkToSigFn;
 	@Mock
 	private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private LinkedRefs linkedRefs;
 
 	private Rationalization subject;
 
 	@BeforeEach
 	void setUp() {
-		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
-
-		subject = new Rationalization(syncVerifier, keyOrderer, sigFactory);
+		subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory);
 	}
 
 	@Test
 	void resetWorks() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+
 		final List<TransactionSignature> mockSigs = new ArrayList<>();
 		final JKey fake = new JEd25519Key("FAKE".getBytes(StandardCharsets.UTF_8));
 
@@ -111,7 +118,7 @@ class RationalizationTest {
 		// then:
 		assertSame(txnAccessor, subject.getTxnAccessor());
 		assertSame(syncVerifier, subject.getSyncVerifier());
-		assertSame(keyOrderer, subject.getKeyOrderer());
+		assertSame(keyOrderer, subject.getSigReqs());
 		assertSame(pkToSigFn, subject.getPkToSigFn());
 		assertSame(mockSigs, subject.getTxnSigs());
 		// and:
@@ -129,8 +136,23 @@ class RationalizationTest {
 	}
 
 	@Test
+	void doesNothingIfLinkedRefsAvailableAndUnchanged() {
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(txnAccessor.getExpandedSigStatus()).willReturn(KEY_PREFIX_MISMATCH);
+		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
+		subject.setVerifiedSync(true);
+
+		subject.performFor(txnAccessor);
+
+		verifyNoMoreInteractions(txnAccessor);
+		assertEquals(KEY_PREFIX_MISMATCH, subject.finalStatus());
+		assertFalse(subject.usedSyncVerification());
+	}
+
+	@Test
 	void setsUnavailableMetaIfCannotListPayerKey() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);
@@ -149,7 +171,9 @@ class RationalizationTest {
 
 	@Test
 	void propagatesFailureIfCouldNotExpandOthersKeys() {
-		// setup:
+		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
+		given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
+		given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
 		ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
 		given(txnAccessor.getTxn()).willReturn(txn);

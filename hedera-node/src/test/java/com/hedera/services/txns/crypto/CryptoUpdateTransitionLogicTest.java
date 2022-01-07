@@ -27,6 +27,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -98,6 +99,7 @@ class CryptoUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private OptionValidator validator;
 	private TransactionBody cryptoUpdateTxn;
+	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
@@ -113,10 +115,11 @@ class CryptoUpdateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoUpdateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
+		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -128,6 +131,7 @@ class CryptoUpdateTransitionLogicTest {
 
 		verify(ledger).customize(argThat(TARGET::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(TARGET.getAccountNum());
 		final var changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
 		assertEquals(EntityId.fromGrpcAccountId(PROXY), changes.get(AccountProperty.PROXY));

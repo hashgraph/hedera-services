@@ -33,7 +33,7 @@ import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SignedStateSigReqs;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -67,11 +67,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -80,6 +79,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class ServicesAppTest {
 	private final long selfId = 123;
+	private final String accountMemo = "0.0.3";
 	private final NodeId selfNodeId = new NodeId(false, selfId);
 
 	@Mock
@@ -112,12 +112,6 @@ class ServicesAppTest {
 		final var logDirVal = "data/recordStreams";
 		final var nodeProps = new ScreenedNodeFileProps();
 
-		given(address.getStake()).willReturn(123_456_789L);
-		given(addressBook.getAddress(selfId)).willReturn(address);
-		given(initialState.addressBook()).willReturn(addressBook);
-		given(initialState.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-		given(runningHash.getHash()).willReturn(hash);
 		given(platform.getCryptography()).willReturn(cryptography);
 		given(platform.getSelfId()).willReturn(selfNodeId);
 		if (!nodeProps.containsProperty(logDirKey)) {
@@ -127,8 +121,9 @@ class ServicesAppTest {
 		}
 
 		subject = DaggerServicesApp.builder()
+				.staticAccountMemo(accountMemo)
 				.bootstrapProps(props)
-				.initialState(initialState)
+				.initialHash(EMPTY_HASH)
 				.platform(platform)
 				.selfId(selfId)
 				.build();
@@ -139,8 +134,8 @@ class ServicesAppTest {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
+		assertThat(subject.latestSignedState(), instanceOf(StateAccessor.class));
 		assertThat(subject.expansionHelper(), instanceOf(ExpansionHelper.class));
-		assertThat(subject.retryingSigReqs(), instanceOf(SigRequirements.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
@@ -166,10 +161,9 @@ class ServicesAppTest {
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
 		assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
 		assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
+		assertThat(subject.signedStateSigReqs(), instanceOf(SignedStateSigReqs.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());
-		assertSame(subject.nodeAddress(), address);
-		assertEquals(STAKED_NODE, subject.nodeType());
 	}
 }

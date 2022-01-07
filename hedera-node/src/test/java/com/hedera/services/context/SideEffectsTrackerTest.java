@@ -124,12 +124,12 @@ class SideEffectsTrackerTest {
 
 		subject.trackAutoCreation(createdAutoAccount, alias);
 
-		assertTrue(subject.hasAutoCreation());
-		assertEquals(createdAutoAccount, subject.getAutoCreatedAccountId());
-		assertEquals(alias, subject.getAutoCreatedAccountAlias());
+		assertTrue(subject.hasTrackedAutoCreation());
+		assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
+		assertEquals(alias, subject.getNewAccountAlias());
 
 		subject.reset();
-		assertFalse(subject.hasAutoCreation());
+		assertFalse(subject.hasTrackedAutoCreation());
 	}
 
 	@Test

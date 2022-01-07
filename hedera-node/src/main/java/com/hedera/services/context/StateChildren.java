@@ -4,14 +4,14 @@ package com.hedera.services.context;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,168 +40,46 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
-import java.util.Objects;
+import java.time.Instant;
 
-/**
- * Manages the state of the services. This gets updated in {@link com.hedera.services.ServicesState} callbacks
- * on a regular interval. The intention of this class is to avoid making repetitive calls to get the state when
- * we know it has not yet been updated.
- */
-public class StateChildren {
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
-	private MerkleNetworkContext networkCtx;
-	private AddressBook addressBook;
-	private MerkleSpecialFiles specialFiles;
-	private RecordsRunningHashLeaf runningHashLeaf;
+public interface StateChildren {
+	Instant signedAt();
 
-	public MerkleMap<EntityNum, MerkleAccount> getAccounts() {
-		Objects.requireNonNull(accounts);
-		return accounts;
+	default boolean isSignedAfter(final StateChildren children) {
+		return signedAt().isAfter(children.signedAt());
 	}
 
-	public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {
-		this.accounts = accounts;
+	default boolean isSigned() {
+		return signedAt().isAfter(Instant.EPOCH);
 	}
 
-	public MerkleMap<EntityNum, MerkleTopic> getTopics() {
-		Objects.requireNonNull(topics);
-		return topics;
-	}
+	MerkleMap<EntityNum, MerkleAccount> accounts();
 
-	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
-		this.topics = topics;
-	}
+	MerkleMap<EntityNum, MerkleTopic> topics();
 
-	public MerkleMap<EntityNum, MerkleToken> getTokens() {
-		Objects.requireNonNull(tokens);
-		return tokens;
-	}
+	MerkleMap<EntityNum, MerkleToken> tokens();
 
-	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
-		this.tokens = tokens;
-	}
+	MerkleMap<EntityNum, MerkleSchedule> schedules();
 
-	public MerkleMap<EntityNum, MerkleSchedule> getSchedules() {
-		Objects.requireNonNull(schedules);
-		return schedules;
-	}
+	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
 
-	public void setSchedules(MerkleMap<EntityNum, MerkleSchedule> schedules) {
-		this.schedules = schedules;
-	}
+	VirtualMap<ContractKey, ContractValue> contractStorage();
 
-	public VirtualMap<VirtualBlobKey, VirtualBlobValue> getStorage() {
-		Objects.requireNonNull(storage);
-		return storage;
-	}
+	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 
-	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
-		this.storage = storage;
-	}
+	MerkleNetworkContext networkCtx();
 
-	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
-		this.contractStorage = contractStorage;
-	}
+	AddressBook addressBook();
 
-	public VirtualMap<ContractKey, ContractValue> getContractStorage() {
-		Objects.requireNonNull(contractStorage);
-		return contractStorage;
-	}
+	MerkleSpecialFiles specialFiles();
 
-	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> getTokenAssociations() {
-		Objects.requireNonNull(tokenAssociations);
-		return tokenAssociations;
-	}
+	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
 
-	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
-		this.tokenAssociations = tokenAssociations;
-	}
+	FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations();
 
-	public MerkleNetworkContext getNetworkCtx() {
-		Objects.requireNonNull(networkCtx);
-		return networkCtx;
-	}
+	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations();
 
-	public void setNetworkCtx(MerkleNetworkContext networkCtx) {
-		this.networkCtx = networkCtx;
-	}
+	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations();
 
-	public AddressBook getAddressBook() {
-		Objects.requireNonNull(addressBook);
-		return addressBook;
-	}
-
-	public void setAddressBook(AddressBook addressBook) {
-		this.addressBook = addressBook;
-	}
-
-	public MerkleSpecialFiles getSpecialFiles() {
-		Objects.requireNonNull(specialFiles);
-		return specialFiles;
-	}
-
-	public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
-		this.specialFiles = specialFiles;
-	}
-
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> getUniqueTokens() {
-		Objects.requireNonNull(uniqueTokens);
-		return uniqueTokens;
-	}
-
-	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
-		this.uniqueTokens = uniqueTokens;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
-		Objects.requireNonNull(uniqueTokenAssociations);
-		return uniqueTokenAssociations;
-	}
-
-	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
-		Objects.requireNonNull(uniqueOwnershipAssociations);
-		return uniqueOwnershipAssociations;
-	}
-
-	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations
-	) {
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipTreasuryAssociations() {
-		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
-		return uniqueOwnershipTreasuryAssociations;
-	}
-
-	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations
-	) {
-		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
-	}
-
-	public RecordsRunningHashLeaf getRunningHashLeaf() {
-		Objects.requireNonNull(runningHashLeaf);
-		return runningHashLeaf;
-	}
-
-	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
-		this.runningHashLeaf = runningHashLeaf;
-	}
+	RecordsRunningHashLeaf runningHashLeaf();
 }
-
-
