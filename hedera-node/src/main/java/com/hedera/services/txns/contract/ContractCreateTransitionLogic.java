@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -54,7 +54,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 public class ContractCreateTransitionLogic implements TransitionLogic {
@@ -100,7 +102,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		var op = contractCreateTxn.getContractCreateInstance();
-		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
+
+		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
+		final var senderId = Id.fromGrpcAccount(
+				hederaLedger.lookUpAccountId(grpcSender, INVALID_PAYER_ACCOUNT_ID).getLeft());
+
 		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
@@ -183,6 +189,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
+		}
+		if (validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(), hederaLedger) != OK) {
+			return INVALID_PAYER_ACCOUNT_ID;
 		}
 
 		return validator.memoCheck(op.getMemo());

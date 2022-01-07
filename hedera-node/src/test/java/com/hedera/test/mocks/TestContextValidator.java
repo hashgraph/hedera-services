@@ -20,6 +20,7 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -128,6 +129,11 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum isValidTransactionID(final AccountID txnId, final HederaLedger ledger) {
 		throw new UnsupportedOperationException();
 	}
 

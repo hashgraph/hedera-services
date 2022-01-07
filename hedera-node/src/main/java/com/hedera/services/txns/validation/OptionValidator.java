@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -89,6 +90,8 @@ public interface OptionValidator {
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
+	ResponseCodeEnum isValidTransactionID(AccountID txnId, HederaLedger ledger);
+
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
 	}
@@ -110,7 +113,7 @@ public interface OptionValidator {
 	}
 
 	default boolean isPlausibleAccount(final AccountID id) {
-		return id.getAccountNum() > 0 &&
+		return (id.getAccountNum() > 0 || !id.getAlias().isEmpty()) &&
 				id.getRealmNum() >= 0 &&
 				id.getShardNum() >= 0;
 	}

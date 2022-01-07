@@ -21,6 +21,7 @@ package com.hedera.services.txns.auth;
  */
 
 import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -37,6 +38,7 @@ import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -52,12 +54,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 @Singleton
 public class SystemOpPolicies {
 	private final EntityNumbers entityNums;
+	private final AliasManager aliasManager;
 
 	private final EnumMap<HederaFunctionality, Function<TransactionBody, SystemOpAuthorization>> functionPolicies;
 
 	@Inject
-	public SystemOpPolicies(final EntityNumbers entityNums) {
+	public SystemOpPolicies(final EntityNumbers entityNums, final AliasManager aliasManager) {
 		this.entityNums = entityNums;
+		this.aliasManager = aliasManager;
 
 		functionPolicies = new EnumMap<>(HederaFunctionality.class);
 
@@ -206,7 +210,9 @@ public class SystemOpPolicies {
 	}
 
 	private long payerFor(final TransactionBody txn) {
-		return txn.getTransactionID().getAccountID().getAccountNum();
+		final var accountId = txn.getTransactionID().getAccountID();
+		return isAlias(accountId) ?
+				aliasManager.lookupIdBy(accountId.getAlias()).longValue() : accountId.getAccountNum();
 	}
 
 	boolean canPerformNonCryptoUpdate(final long payer, final long nonAccountSystemEntity) {

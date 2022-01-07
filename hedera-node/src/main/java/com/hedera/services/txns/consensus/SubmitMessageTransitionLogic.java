@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,10 @@ package com.hedera.services.txns.consensus;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -41,6 +42,7 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
@@ -57,18 +59,21 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
+	private final TokenStore tokenStore;
 
 	@Inject
 	public SubmitMessageTransitionLogic(
 			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext,
-			GlobalDynamicProperties globalDynamicProperties
+			GlobalDynamicProperties globalDynamicProperties,
+			TokenStore tokenStore
 	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
 		this.globalDynamicProperties = globalDynamicProperties;
+		this.tokenStore = tokenStore;
 	}
 
 	@Override
@@ -81,7 +86,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		if(op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed() ) {
+		if (op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed()) {
 			transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
 			return;
 		}
@@ -113,8 +118,13 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
+			final var result = tokenStore.lookUpAccountId(transactionBody.getTransactionID().getAccountID(),
+					INVALID_PAYER_ACCOUNT_ID);
+			if (result.getRight() != OK) {
+				transactionContext.setStatus(result.getRight());
+			}
 			mutableTopic.updateRunningHashAndSequenceNumber(
-					transactionBody.getTransactionID().getAccountID(),
+					result.getLeft(),
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());

@@ -131,7 +131,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 
 		ledger = mock(HederaLedger.class);
 		subject = new TopicUpdateTransitionLogic(
-				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian, accountStore);
+				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian);
 	}
 
 	@Test

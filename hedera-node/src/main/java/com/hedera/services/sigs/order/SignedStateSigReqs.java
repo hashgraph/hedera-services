@@ -61,8 +61,7 @@ public class SignedStateSigReqs {
 	private final StateAccessor latestSignedState;
 	private final SignatureWaivers signatureWaivers;
 
-	private SigReqsFactory sigReqsFactory = (sigMetaLookup, signatureWaivers1) -> new SigRequirements(sigMetaLookup,
-			signatureWaivers1);
+	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
 	private StateChildren signedChildren = new MutableStateChildren();

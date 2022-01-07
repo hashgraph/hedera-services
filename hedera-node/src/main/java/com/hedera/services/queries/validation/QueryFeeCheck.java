@@ -22,7 +22,7 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -53,19 +54,19 @@ public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final AccountStore accountStore;
+	private final TokenStore tokenStore;
 
 	@Inject
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			AccountStore accountStore
+			TokenStore tokenStore
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -148,8 +149,13 @@ public class QueryFeeCheck {
 	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-		AccountID payerId = txn.getTransactionID().getAccountID();
-		AccountID transactionPayer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());
+		final var result = tokenStore.lookUpAccountId(txn.getTransactionID().getAccountID(), INVALID_PAYER_ACCOUNT_ID);
+
+		if (result.getRight() != OK) {
+			return result.getRight();
+		}
+
+		AccountID transactionPayer = result.getLeft();
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
 		long transactionFee = txn.getTransactionFee();
