@@ -20,11 +20,11 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.MutableStateChildren;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,6 +54,7 @@ import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -61,8 +62,10 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 class GetAccountRecordsAnswerTest {
 	private static final long fee = 1_234L;
@@ -107,6 +110,9 @@ class GetAccountRecordsAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookUpAccountID(asAccount(target), INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(asAccount(target), OK));
+
 
 		subject = new GetAccountRecordsAnswer(new AnswerFunctions(aliasManager), optionValidator, aliasManager);
 	}
@@ -138,7 +144,6 @@ class GetAccountRecordsAnswerTest {
 	@Test
 	void getsTheAccountRecords() {
 		final var query = validQuery(ANSWER_ONLY, fee, target);
-
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);
@@ -186,10 +191,10 @@ class GetAccountRecordsAnswerTest {
 	@Test
 	void worksWithAlias() {
 		final var alias = "aaa";
-		final var query = validQueryWithAlias(ANSWER_ONLY, fee, "aaa");
-		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias)))
-				.willReturn(EntityNum.fromAccountId(asAccount(target)));
-
+		final var query = validQueryWithAlias(ANSWER_ONLY, fee, alias);
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias))).willReturn(
+				EntityNum.fromAccountId(asAccount(target)));
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);

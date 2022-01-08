@@ -60,9 +60,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -84,8 +84,10 @@ public class BasicTransactionContext implements TransactionContext {
 
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -162,7 +164,9 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? accounts.get().get(fromAccountId(lookUpAccountID(accessor.getPayer()))).getAccountKey()
+				? accounts.get().get(
+				fromAccountId(aliasManager.lookUpAccountID(accessor.getPayer(), INVALID_PAYER_ACCOUNT_ID)
+						.aliasedId())).getAccountKey()
 				: EMPTY_KEY;
 	}
 
@@ -171,7 +175,7 @@ public class BasicTransactionContext implements TransactionContext {
 		if (!isPayerSigKnownActive) {
 			throw new IllegalStateException("No active payer!");
 		}
-		return lookUpAccountID(accessor().getPayer());
+		return aliasManager.lookUpAccountID(accessor().getPayer(), INVALID_PAYER_ACCOUNT_ID).aliasedId();
 	}
 
 	@Override
@@ -335,14 +339,5 @@ public class BasicTransactionContext implements TransactionContext {
 
 	long getNonThresholdFeeChargedToPayer() {
 		return otherNonThresholdFees;
-	}
-
-	private AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
-		}
 	}
 }

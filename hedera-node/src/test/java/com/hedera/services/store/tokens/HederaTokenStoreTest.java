@@ -96,12 +96,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -295,8 +295,7 @@ class HederaTokenStoreTest {
 		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookupIdBy(aliasT)).willReturn(new EntityNum(1));
-		given(aliasManager.lookupIdBy(aliasA)).willReturn(new EntityNum(6));
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
@@ -910,7 +909,7 @@ class HederaTokenStoreTest {
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		assertEquals(INVALID_ALIAS_KEY, outcome);
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
 	}
 
 	@Test
@@ -920,7 +919,7 @@ class HederaTokenStoreTest {
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		assertEquals(INVALID_ALIAS_KEY, outcome);
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, outcome);
 	}
 
 	@Test

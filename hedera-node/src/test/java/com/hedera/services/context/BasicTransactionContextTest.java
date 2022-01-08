@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -84,6 +85,8 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -98,10 +101,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -192,6 +196,7 @@ class BasicTransactionContextTest {
 	@Test
 	void returnsPayerIfSigActive() {
 		given(accessor.getPayer()).willReturn(payer);
+		given(aliasManager.lookUpAccountID(payer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -211,6 +216,7 @@ class BasicTransactionContextTest {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -301,6 +307,7 @@ class BasicTransactionContextTest {
 	@Test
 	void effectivePayerIsActiveIfVerified() {
 		given(accessor.getPayer()).willReturn(payer);
+		given(aliasManager.lookUpAccountID(payer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();

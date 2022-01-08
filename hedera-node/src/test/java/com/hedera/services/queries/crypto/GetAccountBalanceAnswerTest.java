@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -236,6 +237,8 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(id, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(id, OK));
 
 		// when:
 		Response response = subject.responseGiven(query, view, PLATFORM_NOT_ACTIVE);
@@ -258,6 +261,8 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(id, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(id, OK));
 		// and:
 		given(optionValidator.queryableAccountStatus(id, accounts))
 				.willReturn(ACCOUNT_DELETED);
@@ -275,7 +280,8 @@ class GetAccountBalanceAnswerTest {
 				.setAlias(ByteString.copyFromUtf8("nope"))
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
-		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
+		given(aliasManager.lookUpAccountID(aliasId, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(wellKnownId.toGrpcAccountId(), OK));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -310,7 +316,8 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-
+		given(aliasManager.lookUpAccountID(id, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(id, OK));
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
 		ResponseCodeEnum status = response.getCryptogetAccountBalance()

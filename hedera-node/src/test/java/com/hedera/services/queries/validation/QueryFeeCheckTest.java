@@ -46,14 +46,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 class QueryFeeCheckTest {
 	private static final long payerExpiry = 1_234_567L;
@@ -349,7 +352,7 @@ class QueryFeeCheckTest {
 
 		assertEquals(aRichAlias, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, invalidAlias));
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, subject.validateQueryPaymentTransfers(body));
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
@@ -364,6 +367,7 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 
 		assertEquals(aRich, body.getTransactionID().getAccountID());
 		assertFalse(checkPayerInTransferList(body, aRich));
@@ -382,6 +386,8 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+
 
 		assertEquals(aBroke, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, aBroke));
@@ -400,6 +406,7 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(Long.MAX_VALUE)
 				.build();
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
@@ -456,6 +463,8 @@ class QueryFeeCheckTest {
 	}
 
 	private TransactionBody getPaymentTxnBody(final long amount, final TransferList.Builder transferList) {
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+
 		final var transList = (transferList != null)
 				? transferList
 				: TransferList.newBuilder()
@@ -471,6 +480,7 @@ class QueryFeeCheckTest {
 
 	private TransactionBody getPaymentTxnBodyWithAlias(final long amount, final TransferList.Builder transferList,
 			final AccountID payer, final AccountID sender) {
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 		final var transList = (transferList != null)
 				? transferList
 				: TransferList.newBuilder()

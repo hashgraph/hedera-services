@@ -586,14 +586,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (changes.hasAutoRenewAccount()) {
 			return lookUpAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		}
-		return new AliasLookup(AccountID.getDefaultInstance(), OK);
+		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}
 
 	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
 			return lookUpAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		}
-		return new AliasLookup(AccountID.getDefaultInstance(), OK);
+		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}
 
 	private void processExpiry(

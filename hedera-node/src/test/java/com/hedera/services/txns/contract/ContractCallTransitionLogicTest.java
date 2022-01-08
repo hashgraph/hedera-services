@@ -126,6 +126,8 @@ class ContractCallTransitionLogicTest {
 				senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
+		given(accountStore.getAccountNumFromAlias(senderAccount.getAlias(), senderAccount.getId().num()))
+				.willReturn(senderAccount.getId().num());
 		// when:
 		subject.doStateTransition();
 
@@ -162,6 +164,8 @@ class ContractCallTransitionLogicTest {
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persist()).willReturn(List.of(target));
+		given(accountStore.getAccountNumFromAlias(senderAccount.getAlias(), senderAccount.getId().num()))
+				.willReturn(senderAccount.getId().num());
 		// when:
 		subject.doStateTransition();
 
@@ -213,6 +217,8 @@ class ContractCallTransitionLogicTest {
 		// and:
 		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(
 				Bytes.EMPTY.toArray());
+		given(accountStore.getAccountNumFromAlias(senderAccount.getAlias(), senderAccount.getId().num()))
+				.willReturn(senderAccount.getId().num());
 
 		// when:
 		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());

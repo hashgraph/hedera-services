@@ -37,6 +37,7 @@ import java.util.Map;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart, reconnect.
@@ -122,13 +123,13 @@ public class AliasManager {
 		if (isAlias(grpcId)) {
 			var accountNum = lookupIdBy(grpcId.getAlias());
 			if (accountNum == MISSING_NUM) {
-				return new AliasLookup(grpcId, errResponse);
+				return AliasLookup.of(grpcId, errResponse);
 			}
 			id = accountNum.toGrpcAccountId();
 		} else {
 			id = grpcId;
 		}
 
-		return new AliasLookup(id, errResponse);
+		return AliasLookup.of(id, OK);
 	}
 }

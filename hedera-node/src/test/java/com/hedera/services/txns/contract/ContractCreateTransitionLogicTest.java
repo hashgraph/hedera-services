@@ -26,8 +26,9 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -67,6 +68,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -123,6 +125,10 @@ class ContractCreateTransitionLogicTest {
 	private final Instant consensusTime = Instant.now();
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
+
+	private final AccountID senderAccountId = senderAccount.getId().asGrpcAccount();
+
+	private final AccountID aliasPayer = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
 	private TransactionBody contractCreateTxn;
 
 	@BeforeEach
@@ -147,8 +153,21 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+		given(validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(),
+				hederaLedger)).willReturn(OK);
+
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void validationFailsWithInvalidAliasPayer() {
+		givenInvalidTxnCtx(aliasPayer);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(validator.isValidTransactionID(aliasPayer, hederaLedger)).willReturn(INVALID_PAYER_ACCOUNT_ID);
+
+		// expect:
+		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -248,6 +267,8 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -324,6 +345,8 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -376,6 +399,8 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -398,7 +423,9 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given (worldState.persist()).willReturn(secondaryCreations);
+		given(worldState.persist()).willReturn(secondaryCreations);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
@@ -439,6 +466,9 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(),
+				hederaLedger)).willReturn(OK);
+
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 
 		// expect:
@@ -452,6 +482,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -467,6 +499,8 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -493,6 +527,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
 				new InvalidTransactionException(SERIALIZATION_FAILED));
+		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -516,6 +552,19 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx(true);
 	}
 
+	private void givenInvalidTxnCtx(AccountID aliasPayer) {
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnIdWithAlias(aliasPayer))
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+	}
+
 	private void givenValidTxnCtx(boolean rememberAutoRenew) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
@@ -534,6 +583,14 @@ class ContractCreateTransitionLogicTest {
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
 				.setAccountID(senderAccount.getId().asGrpcAccount())
+				.setTransactionValidStart(
+						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+				.build();
+	}
+
+	private TransactionID ourTxnIdWithAlias(AccountID alias) {
+		return TransactionID.newBuilder()
+				.setAccountID(alias)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();

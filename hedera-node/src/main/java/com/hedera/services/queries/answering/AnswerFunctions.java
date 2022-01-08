@@ -22,12 +22,12 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.queries.crypto.CryptoAccountLookUp;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -38,15 +38,16 @@ import java.util.Optional;
 
 
 @Singleton
-public class AnswerFunctions extends CryptoAccountLookUp {
+public class AnswerFunctions {
+	private final AliasManager aliasManager;
 
 	@Inject
 	public AnswerFunctions(final AliasManager aliasManager) {
-		super(aliasManager);
+		this.aliasManager = aliasManager;
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var id = lookUpAccountID(op.getAccountID());
+		final var id = aliasManager.lookUpAccountID(op.getAccountID(), ResponseCodeEnum.INVALID_ACCOUNT_ID).aliasedId();
 		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
