@@ -188,9 +188,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(final SwirldTransaction platformTxn) {
 		try {
 			final var app = metadata.app();
-			final var sigReqs = app.signedStateSigReqs().getBestAvailable();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
-			app.expansionHelper().expandIn(accessor, sigReqs, accessor.getPkToSigsFn());
+			app.sigReqsManager().expandSigsInto(accessor);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {

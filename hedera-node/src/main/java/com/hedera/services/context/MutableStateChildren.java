@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -218,6 +219,28 @@ public class MutableStateChildren implements StateChildren {
 
 	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
 		this.runningHashLeaf = runningHashLeaf;
+	}
+
+	public void updateFrom(final ServicesState signedState, final Instant signingTime) {
+		signedAt = signingTime;
+		updateFrom(signedState);
+	}
+
+	public void updateFrom(final ServicesState state) {
+		accounts = state.accounts();
+		topics = state.topics();
+		storage = state.storage();
+		tokens = state.tokens();
+		tokenAssociations = state.tokenAssociations();
+		schedules = state.scheduleTxs();
+		networkCtx = state.networkCtx();
+		addressBook = state.addressBook();
+		specialFiles = state.specialFiles();
+		uniqueTokens = state.uniqueTokens();
+		uniqueTokenAssociations = state.uniqueTokenAssociations();
+		uniqueOwnershipAssociations = state.uniqueOwnershipAssociations();
+		uniqueOwnershipTreasuryAssociations = state.uniqueTreasuryOwnershipAssociations();
+		runningHashLeaf = state.runningHashLeaf();
 	}
 }
 

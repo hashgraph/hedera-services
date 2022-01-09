@@ -41,8 +41,8 @@ import java.time.Instant;
 public interface StateChildren {
 	Instant signedAt();
 
-	default boolean isSignedAfter(final StateChildren children) {
-		return signedAt().isAfter(children.signedAt());
+	default boolean wereSignedBefore(final Instant consensusTime) {
+		return signedAt().isBefore(consensusTime);
 	}
 
 	default boolean isSigned() {

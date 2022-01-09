@@ -45,8 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
@@ -89,19 +87,6 @@ class StateAccessorTest {
 	void setUp() {
 		subject = new StateAccessor();
 		subject.updateChildrenFrom(state);
-	}
-
-	@Test
-	void childrenGetReplacedAsExpected() {
-		givenStateWithMockChildren();
-		subject.updateChildrenFrom(state);
-		final var currentChildren = subject.children();
-
-		subject.replaceChildrenFrom(state, signedAt);
-
-		assertNotSame(currentChildren, subject.children());
-		assertEquals(signedAt, subject.children().signedAt());
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.updateChildrenFrom(state));
 	}
 
 	@Test

@@ -94,6 +94,8 @@ public class Rationalization {
 			}
 		}
 
+		System.out.println("Have to perform rationalization 🥲");
+
 		resetFor(txnAccessor);
 		execute();
 	}
