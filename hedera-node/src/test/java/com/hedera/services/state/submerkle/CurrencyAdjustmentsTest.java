@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,6 +60,7 @@ class CurrencyAdjustmentsTest {
 	private static final TransferList grpcAdjustments = TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
 	private static final TransferList otherGrpcAdjustments =
 			TxnUtils.withAdjustments(a, aAmount * 2, b, bAmount * 2, c, cAmount * 2);
+	private final AliasManager aliasManager = new AliasManager();
 
 	private CurrencyAdjustments subject;
 
@@ -71,7 +73,7 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void equalsWork() {
-		var expectedAmounts = new long[] {1, 2, 3};
+		var expectedAmounts = new long[] { 1, 2, 3 };
 		var expectedParties = List.of(EntityId.fromGrpcAccountId(IdUtils.asAccount("0.0.1")));
 
 		final var sameButDifferent = subject;
@@ -97,8 +99,8 @@ class CurrencyAdjustmentsTest {
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments);
-		final var three = CurrencyAdjustments.fromGrpc(grpcAdjustments);
+		final var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments, aliasManager);
+		final var three = CurrencyAdjustments.fromGrpc(grpcAdjustments, aliasManager);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -116,7 +118,7 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void factoryWorks() {
-		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments));
+		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments, aliasManager));
 	}
 
 	@Test

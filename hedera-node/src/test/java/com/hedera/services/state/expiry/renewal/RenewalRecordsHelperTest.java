@@ -21,11 +21,12 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -71,12 +72,15 @@ class RenewalRecordsHelperTest {
 	private RecordStreamManager recordStreamManager;
 	@Mock
 	private Consumer<RunningHash> updateRunningHash;
+	@Mock
+	private AliasManager aliasManager;
 
 	private RenewalRecordsHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalRecordsHelper(recordStreamManager, new MockGlobalDynamicProps(), updateRunningHash);
+		subject = new RenewalRecordsHelper(recordStreamManager, new MockGlobalDynamicProps(), updateRunningHash,
+				aliasManager);
 	}
 
 	@Test

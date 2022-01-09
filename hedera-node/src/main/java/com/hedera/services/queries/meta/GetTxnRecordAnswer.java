@@ -21,12 +21,12 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -52,6 +52,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 	private final RecordCache recordCache;
 	private final AnswerFunctions answerFunctions;
 	private final OptionValidator optionValidator;
+	private final AliasManager aliasManager;
 
 	public static final String PRIORITY_RECORD_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_priorityRecord";
@@ -64,11 +65,13 @@ public class GetTxnRecordAnswer implements AnswerService {
 	public GetTxnRecordAnswer(
 			final RecordCache recordCache,
 			final OptionValidator optionValidator,
-			final AnswerFunctions answerFunctions
+			final AnswerFunctions answerFunctions,
+			final AliasManager aliasManager
 	) {
 		this.recordCache = recordCache;
 		this.answerFunctions = answerFunctions;
 		this.optionValidator = optionValidator;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -179,12 +182,13 @@ public class GetTxnRecordAnswer implements AnswerService {
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var txnId = query.getTransactionGetRecord().getTransactionID();
 		final var fallbackId = txnId.getAccountID();
+		final var validation = aliasManager.lookUpAccountID(fallbackId, INVALID_ACCOUNT_ID);
 
-		if (fallbackId.equals(AccountID.getDefaultInstance())) {
+		if (validation.response() != OK) {
 			return INVALID_ACCOUNT_ID;
 		}
 
-		return optionValidator.queryableAccountStatus(fallbackId, view.accounts());
+		return optionValidator.queryableAccountStatus(validation.aliasedId(), view.accounts());
 	}
 
 	@Override

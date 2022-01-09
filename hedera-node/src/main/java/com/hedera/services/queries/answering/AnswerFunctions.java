@@ -64,9 +64,10 @@ public class AnswerFunctions {
 			return Optional.of(expirableTxnRecord.asGrpc());
 		} else {
 			try {
-				final var id = txnId.getAccountID();
+				final var id = aliasManager.lookUpAccountID(txnId.getAccountID(),
+						ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID).aliasedId();
 				final var account = view.accounts().get(EntityNum.fromAccountId(id));
-				final var searchableId = TxnId.fromGrpc(txnId);
+				final var searchableId = TxnId.fromGrpc(txnId, aliasManager);
 				return account.recordList()
 						.stream()
 						.filter(r -> r.getTxnId().equals(searchableId))

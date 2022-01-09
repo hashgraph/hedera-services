@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -123,11 +124,11 @@ public class CurrencyAdjustments implements SelfSerializable {
 		return grpc.build();
 	}
 
-	public static CurrencyAdjustments fromGrpc(TransferList grpc) {
-		return fromGrpc(grpc.getAccountAmountsList());
+	public static CurrencyAdjustments fromGrpc(TransferList grpc, AliasManager aliasManager) {
+		return fromGrpc(grpc.getAccountAmountsList(), aliasManager);
 	}
 
-	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments) {
+	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments, AliasManager aliasManager) {
 		final var pojo = new CurrencyAdjustments();
 		final int n = adjustments.size();
 		if (n > 0) {
@@ -136,7 +137,8 @@ public class CurrencyAdjustments implements SelfSerializable {
 			for (var i = 0; i < n; i++) {
 				final var adjustment = adjustments.get(i);
 				amounts[i] = adjustment.getAmount();
-				accounts.add(EntityId.fromGrpcAccountId(adjustment.getAccountID()));
+				accounts.add(
+						EntityId.fromGrpcAccountId(aliasManager.lookUpAccountID(adjustment.getAccountID()).aliasedId()));
 			}
 			pojo.hbars = amounts;
 			pojo.accountIds = accounts;

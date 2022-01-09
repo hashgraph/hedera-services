@@ -171,7 +171,18 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
-	/* --- Helpers --- */
+//	/* --- Helpers --- */
+//	public static EntityId fromGrpcAccountId(AccountID id, AliasManager aliasManager) {
+//		if (id == null) {
+//			return MISSING_ENTITY_ID;
+//		}
+//		final var result = aliasManager.lookUpAccountID(id);
+//		if (result.response() != OK) {
+//			return MISSING_ENTITY_ID;
+//		}
+//		return new EntityId(id.getShardNum(), id.getRealmNum(), result.aliasedId().getAccountNum());
+//	}
+
 	public static EntityId fromGrpcAccountId(AccountID id) {
 		if (id == null) {
 			return MISSING_ENTITY_ID;

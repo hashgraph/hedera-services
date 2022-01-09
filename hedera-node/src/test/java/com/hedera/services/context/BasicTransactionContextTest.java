@@ -631,7 +631,7 @@ class BasicTransactionContextTest {
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
-						transfersList) : null)
+						transfersList, aliasManager) : null)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setNewTokenAssociations(newTokenAssociations);
 
@@ -639,7 +639,7 @@ class BasicTransactionContextTest {
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
 		for (TokenTransferList tokenTransfers : tokenTransferList) {
 			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList(), aliasManager));
 		}
 
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);

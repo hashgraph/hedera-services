@@ -19,6 +19,8 @@ package com.hedera.services.state.submerkle;
  * limitations under the License.
  * ‍
  */
+
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -33,6 +35,7 @@ import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecordTestHelper {
 	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {
+		AliasManager aliasManager = new AliasManager();
 		List<EntityId> tokens = NO_TOKENS;
 		List<CurrencyAdjustments> tokenAdjustments = null;
 		List<NftAdjustments> nftTokenAdjustments = null;
@@ -44,24 +47,25 @@ public class ExpirableTxnRecordTestHelper {
 			nftTokenAdjustments = new ArrayList<>();
 			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList(), aliasManager));
 				nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
 			}
 		}
 
-		return createExpiryTxnRecordFrom(record, tokens, tokenAdjustments, nftTokenAdjustments);
+		return createExpiryTxnRecordFrom(record, tokens, tokenAdjustments, nftTokenAdjustments, aliasManager);
 	}
 
 	private static ExpirableTxnRecord createExpiryTxnRecordFrom(final TransactionRecord record,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments,
-			final List<NftAdjustments> nftTokenAdjustments) {
+			final List<NftAdjustments> nftTokenAdjustments,
+			final AliasManager aliasManager) {
 
 		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
 				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
 				: null;
 		final var newTokenAssociations =
-				 record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
+				record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
 		final var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -70,7 +74,8 @@ public class ExpirableTxnRecordTestHelper {
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
 				.setTransferList(
-						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList(),
+								aliasManager) : null)
 				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
 						record.getContractCallResult()) : null)
 				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(

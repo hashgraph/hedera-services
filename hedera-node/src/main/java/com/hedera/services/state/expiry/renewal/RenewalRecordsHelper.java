@@ -21,16 +21,18 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
@@ -54,6 +56,7 @@ public class RenewalRecordsHelper {
 	private final RecordStreamManager recordStreamManager;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Consumer<RunningHash> updateRunningHash;
+	private final AliasManager aliasManager;
 
 	private int consensusNanosIncr = 0;
 	private Instant cycleStart = null;
@@ -63,11 +66,13 @@ public class RenewalRecordsHelper {
 	public RenewalRecordsHelper(
 			final RecordStreamManager recordStreamManager,
 			final GlobalDynamicProperties dynamicProperties,
-			final Consumer<RunningHash> updateRunningHash
+			final Consumer<RunningHash> updateRunningHash,
+			final AliasManager aliasManager
 	) {
 		this.updateRunningHash = updateRunningHash;
 		this.recordStreamManager = recordStreamManager;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	public void beginRenewalCycle(final Instant now) {
@@ -137,12 +142,15 @@ public class RenewalRecordsHelper {
 
 	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
-		final var id = EntityId.fromGrpcAccountId(accountId);
+		final var lookedUpResult = aliasManager.lookUpAccountID(accountId, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+		final var accountID = lookedUpResult.aliasedId();
+		final var id = EntityId.fromGrpcAccountId(accountID);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 
 		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
-		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountID), MISSING_INSTANT, false,
+				USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(txnId)
 				.setReceipt(receipt)

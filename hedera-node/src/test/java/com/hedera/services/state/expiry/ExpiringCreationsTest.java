@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -96,6 +97,8 @@ class ExpiringCreationsTest {
 	private TxnAccessor accessor;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private AliasManager aliasManager;
 
 	private static final AccountID payer = asAccount("0.0.2");
 	private static final AccountID created = asAccount("1.0.2");
@@ -132,7 +135,7 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts);
+		subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> accounts, aliasManager);
 		subject.setLedger(ledger);
 
 		expectedRecord = record;
@@ -146,7 +149,7 @@ class ExpiringCreationsTest {
 	void createsSuccessfulSyntheticRecordAsExpected() {
 		setupTracker();
 		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
-		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments, aliasManager));
 
 		final var record = subject.createSuccessfulSyntheticRecord(
 				customFeesCharged,
@@ -242,7 +245,7 @@ class ExpiringCreationsTest {
 		setupTracker();
 		setupAccessorForNonTriggeredTxn();
 		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
-		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments, aliasManager));
 
 		given(sideEffectsTracker.hasTrackedNewTokenId()).willReturn(true);
 		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(newTokenId);

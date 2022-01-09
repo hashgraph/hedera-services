@@ -87,6 +87,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private String txn;
 	private boolean scheduled = false;
 	private boolean assertNothing = false;
+	private boolean assertPayerIDAsNum = false;
 	private boolean useDefaultTxnId = false;
 	private boolean requestDuplicates = false;
 	private boolean shouldBeTransferFree = false;
@@ -114,11 +115,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
+	private String aliasPayer;
 
 	private static record ExpectedChildInfo(String aliasingKey) {
 	}
 
-	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
+	private Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -184,6 +186,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
 		requestChildRecords = true;
 		childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasPayerAliasNum(String alias) {
+		assertPayerIDAsNum = true;
+		aliasPayer = alias;
 		return this;
 	}
 
@@ -358,6 +366,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			return;
 		}
 		final var actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+		assertTransactionIDAccountID(spec, actualRecord);
 		assertPriority(spec, actualRecord);
 		if (scheduled || assertOnlyPriority) {
 			return;
@@ -425,6 +434,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					final var literalKey = spec.registry().getKey(expectations.aliasingKey());
 					assertEquals(literalKey.toByteString().toStringUtf8(), childRecord.getAlias().toStringUtf8());
 				}
+			}
+		}
+	}
+
+	private void assertTransactionIDAccountID(final HapiApiSpec spec,
+			final TransactionRecord actualRecord) {
+		final var accountNum = actualRecord.getTransactionID().getAccountID().getAccountNum();
+		if (accountNum == 0) {
+			Assertions.fail("AccountID is invalid in the TransactionID of txnRecord");
+		}
+		if (assertPayerIDAsNum) {
+			final var savedId = spec.registry().getAccountID(
+					spec.registry().getKey(aliasPayer).toByteString().toStringUtf8());
+			if (accountNum != savedId.getAccountNum()) {
+				Assertions.fail("AccountID is not equal to corresponding aliasPayer in the TransactionID of txnRecord");
 			}
 		}
 	}
@@ -632,7 +656,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	@Override
-	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+	protected long costOnlyNodePayment(HapiApiSpec spec) {
 		return spec.fees().forOp(
 				HederaFunctionality.TransactionGetRecord,
 				cryptoFees.getCostTransactionRecordQueryFeeMatrices());

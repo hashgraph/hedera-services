@@ -250,7 +250,8 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setScheduledTxnId(final TransactionID txnId) {
-		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
+		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId,
+				aliasManager)));
 	}
 
 	@Override
