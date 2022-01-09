@@ -153,6 +153,7 @@ class ServicesStateTest {
 	@Test
 	void logsSummaryAsExpectedWithAppAvailable() {
 		// setup:
+		final var consTime = Instant.ofEpochSecond(1_234_567L);
 		subject.setMetadata(metadata);
 
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
@@ -160,6 +161,7 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consTime);
 		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
 		// when:
@@ -168,6 +170,7 @@ class ServicesStateTest {
 		// then:
 		verify(hashLogger).logHashesFor(subject);
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+		assertEquals(consTime, subject.getTimeOfLastHandledTxn());
 	}
 
 	@Test

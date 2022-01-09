@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -119,11 +119,12 @@ class SigsReqsManagerTest {
 
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
-				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {}))
-				.willReturn(new AutoCloseableWrapper<>(nextSignedState, () -> {}));
-		given(platform.getLastSignedStateTimestamp())
-				.willReturn(signedAt)
-				.willReturn(signedAt.plusSeconds(2));
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}))
+				.willReturn(new AutoCloseableWrapper<>(nextSignedState, () -> {
+				}));
+		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
+		given(nextSignedState.getTimeOfLastHandledTxn()).willReturn(nextLastHandleTime);
 		given(lookupsFactory.from(
 				eq(fileNumbers), eq(aliasManager), captor.capture(), eq(TOKEN_META_TRANSFORM)))
 				.willReturn(lookup);
@@ -136,11 +137,12 @@ class SigsReqsManagerTest {
 		subject.expandSigsInto(accessor);
 
 		verify(sigReqsFactory).from(lookup, signatureWaivers);
-		verify(expansionHelper, times(3)).expandIn(accessor,signedStateSigReqs, pubKeyToSigBytes);
+		verify(expansionHelper, times(3)).expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
 		final var capturedStateChildren = captor.getValue();
-		assertEquals(signedAt.plusSeconds(2), capturedStateChildren.signedAt());
+		assertEquals(nextLastHandleTime, capturedStateChildren.signedAt());
 	}
 
-	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
+	private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);
+	private static final Instant nextLastHandleTime = lastHandleTime.plusSeconds(2);
 	private static final MutableStateChildren workingChildren = new MutableStateChildren();
 }

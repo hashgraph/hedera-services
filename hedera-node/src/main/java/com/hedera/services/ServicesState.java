@@ -246,6 +246,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return parseAccount(memo);
 	}
 
+	public Instant getTimeOfLastHandledTxn() {
+		return networkCtx().consensusTimeOfLastHandledTxn();
+	}
+
 	public void logSummary() {
 		String ctxSummary;
 		if (metadata != null) {
