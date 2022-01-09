@@ -126,6 +126,9 @@ public class SigsReqsManager {
 			final var signedState = wrapper.get();
 			if (signedState != null) {
 				final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
+				if (earliestSigningTime == null) {
+					return false;
+				}
 				if (signedChildren.wereSignedBefore(earliestSigningTime)) {
 					/* Since event intake is single-threaded, there's no risk of another thread
 					* getting inconsistent results while we are updating the signed state children. */

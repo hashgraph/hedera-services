@@ -114,6 +114,24 @@ class SigsReqsManagerTest {
 	}
 
 	@Test
+	void usesWorkingStateLookupIfLastHandleTimeIsNull() {
+		given(workingState.children()).willReturn(workingChildren);
+		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
+				.willReturn(lookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}));
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
 	void usesLatestSignedStateChildrenIfChanged() {
 		final ArgumentCaptor<StateChildren> captor = ArgumentCaptor.forClass(StateChildren.class);
 
