@@ -40,6 +40,9 @@ import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.merkle.exceptions.ArchivedException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -60,6 +63,8 @@ import java.util.function.Function;
  */
 @Singleton
 public class SigsReqsManager {
+	private static final Logger log = LogManager.getLogger(SigsReqsManager.class);
+
 	/* The token-to-signing-metadata transformation used to construct SigRequirements instances */
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
 			TokenMetaUtils::signingMetaFrom;
@@ -101,6 +106,9 @@ public class SigsReqsManager {
 		this.dynamicProperties = dynamicProperties;
 	}
 
+	private long numExpansions = 0;
+	private long numArchivedExceptions = 0;
+
 	/**
 	 * Uses the "best available" implementation of {@link SigRequirements} to expand the
 	 * signatures linked to the given transaction; prefers the implementation backed by
@@ -110,6 +118,7 @@ public class SigsReqsManager {
 	 * 		a transaction that needs linked signatures expanded
 	 */
 	public void expandSigsInto(final PlatformTxnAccessor accessor) {
+		numExpansions++;
 		if (dynamicProperties.expandSigsFromLastSignedState() && tryExpandFromSignedState(accessor)) {
 			return;
 		}
@@ -125,21 +134,34 @@ public class SigsReqsManager {
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
 			final var signedState = wrapper.get();
 			if (signedState != null) {
-				final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
-				if (earliestSigningTime == null) {
-					return false;
-				}
-				if (signedChildren.wereSignedBefore(earliestSigningTime)) {
-					/* Since event intake is single-threaded, there's no risk of another thread
-					* getting inconsistent results while we are updating the signed state children. */
-					signedChildren.updateFrom(signedState, earliestSigningTime);
-					ensureSignedStateSigReqs();
-				}
-				expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
-				return true;
+				return tryToExpand(signedState, accessor);
 			}
 		}
 		return false;
+	}
+
+	private boolean tryToExpand(final ServicesState signedState, final PlatformTxnAccessor accessor) {
+		final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
+		if (earliestSigningTime == null) {
+			return false;
+		}
+		if (signedChildren.wereSignedBefore(earliestSigningTime)) {
+			/* Since event intake is single-threaded, there's no risk of another thread
+			 * getting inconsistent results while we are updating the signed state children. */
+			signedChildren.updateFrom(signedState, earliestSigningTime);
+			ensureSignedStateSigReqs();
+		}
+		try {
+			expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
+			return true;
+		} catch (final ArchivedException ignore) {
+			/* Because Platform#getLastCompleteSwirldState() only _weakly_ reserves the signed state
+			it returns the ServicesState from, there is no guarantee this ServicesState will not be
+			archived by the time we are ready to use it. */
+			numArchivedExceptions++;
+			log.warn("{} / {} expansions hit an ArchivedException so far", numArchivedExceptions, numExpansions);
+			return false;
+		}
 	}
 
 	private void ensureWorkingStateSigReqs() {
@@ -181,5 +203,9 @@ public class SigsReqsManager {
 
 	void setLookupsFactory(final StateChildrenLookupsFactory lookupsFactory) {
 		this.lookupsFactory = lookupsFactory;
+	}
+
+	MutableStateChildren getSignedChildren() {
+		return signedChildren;
 	}
 }

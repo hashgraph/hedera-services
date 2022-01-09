@@ -33,6 +33,7 @@ import com.hedera.services.state.StateAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
+import com.swirlds.common.merkle.exceptions.ArchivedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,8 @@ import static com.hedera.services.sigs.order.SigsReqsManager.TOKEN_META_TRANSFOR
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -65,6 +68,8 @@ class SigsReqsManagerTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private SigMetadataLookup lookup;
+	@Mock
+	private SigMetadataLookup failingLookup;
 	@Mock
 	private SigRequirements workingStateSigReqs;
 	@Mock
@@ -96,11 +101,42 @@ class SigsReqsManagerTest {
 	}
 
 	@Test
+	void usesWorkingStateLookupIfSignedStateIsArchivable() {
+		given(workingState.children()).willReturn(workingChildren);
+		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
+				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, aliasManager, subject.getSignedChildren(), TOKEN_META_TRANSFORM))
+				.willReturn(failingLookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(sigReqsFactory.from(failingLookup, signatureWaivers)).willReturn(signedStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}));
+		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
+
+		willThrow(ArchivedException.class).given(expansionHelper)
+				.expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
+		willDoNothing().given(expansionHelper)
+				.expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
 	void usesWorkingStateLookupIfNoSignedState() {
 		given(workingState.children()).willReturn(workingChildren);
 		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
 				.willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(null, () -> {
+				}));
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
 
@@ -123,6 +159,20 @@ class SigsReqsManagerTest {
 		given(platform.getLastCompleteSwirldState())
 				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
 				}));
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
+	void usesWorkingStateLookupIfPropertiesInsist() {
+		given(workingState.children()).willReturn(workingChildren);
+		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
+				.willReturn(lookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
 
