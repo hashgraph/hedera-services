@@ -51,6 +51,7 @@ import java.math.BigInteger;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -205,7 +206,7 @@ class StaticEntityAccessTest {
 	void fetchWithValueWorks() {
 		given(blobs.get(blobKey)).willReturn(blobVal);
 
-		final var blobBytes = subject.fetchCode(id);
+		final var blobBytes = subject.fetchCodeIfPresent(id);
 
 		final var expectedVal = Bytes.of(blobVal.getData());
 		assertEquals(expectedVal, blobBytes);
@@ -213,8 +214,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void fetchWithoutValueReturnsNull() {
-		final var blobBytes = subject.fetchCode(id);
-		assertEquals(Bytes.EMPTY, blobBytes);
+		assertNull(subject.fetchCodeIfPresent(id));
 	}
 
 	@Test

@@ -208,7 +208,7 @@ class HederaWorldStateTest {
 		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.isDeleted(any())).willReturn(false);
-		given(entityAccess.fetchCode(any())).willReturn(Bytes.EMPTY);
+		given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
 		given(entityAccess.getStorage(any(), any())).willReturn(UInt256.ZERO);
 
 		final var acc = subject.get(Address.RIPEMD160);

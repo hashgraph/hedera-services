@@ -207,7 +207,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return codeCache.get(address).getBytes();
+			return codeCache.getIfPresent(address).getBytes();
 		}
 
 		public EntityId getProxyAccount() {
@@ -225,7 +225,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return codeCache.get(address).getCodeHash();
+			return codeCache.getIfPresent(address).getCodeHash();
 		}
 
 		@Override
