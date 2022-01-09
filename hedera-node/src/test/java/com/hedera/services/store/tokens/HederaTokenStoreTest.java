@@ -295,6 +295,7 @@ class HederaTokenStoreTest {
 		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 
 		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(newTreasuryWithAlias.getAlias())).willReturn(EntityNum.fromAccountId(newTreasury));
 		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
 
 		sideEffectsTracker = new SideEffectsTracker();
