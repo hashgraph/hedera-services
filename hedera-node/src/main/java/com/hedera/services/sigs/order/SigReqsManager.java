@@ -62,8 +62,8 @@ import java.util.function.Function;
  * necessary step of re-expanding signatures in {@link Rationalization#performFor(TxnAccessor)}.
  */
 @Singleton
-public class SigsReqsManager {
-	private static final Logger log = LogManager.getLogger(SigsReqsManager.class);
+public class SigReqsManager {
+	private static final Logger log = LogManager.getLogger(SigReqsManager.class);
 
 	/* The token-to-signing-metadata transformation used to construct SigRequirements instances */
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
@@ -88,7 +88,7 @@ public class SigsReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigsReqsManager(
+	public SigReqsManager(
 			final Platform platform,
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
@@ -159,6 +159,8 @@ public class SigsReqsManager {
 			it returns the ServicesState from, there is no guarantee this ServicesState will not be
 			archived by the time we are ready to use it. */
 			numArchivedExceptions++;
+			System.out.println(numArchivedExceptions + " / " + numArchivedExceptions
+					+ " expansions hit an ArchivedException so far");
 			log.warn("{} / {} expansions hit an ArchivedException so far", numArchivedExceptions, numExpansions);
 			return false;
 		}

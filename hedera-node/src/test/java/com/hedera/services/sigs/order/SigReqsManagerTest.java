@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.sigs.order.SigsReqsManager.TOKEN_META_TRANSFORM;
+import static com.hedera.services.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
-class SigsReqsManagerTest {
+class SigReqsManagerTest {
 	@Mock
 	private Platform platform;
 	@Mock
@@ -75,9 +75,9 @@ class SigsReqsManagerTest {
 	@Mock
 	private SigRequirements signedStateSigReqs;
 	@Mock
-	private SigsReqsManager.SigReqsFactory sigReqsFactory;
+	private SigReqsManager.SigReqsFactory sigReqsFactory;
 	@Mock
-	private SigsReqsManager.StateChildrenLookupsFactory lookupsFactory;
+	private SigReqsManager.StateChildrenLookupsFactory lookupsFactory;
 	@Mock
 	private ExpansionHelper expansionHelper;
 	@Mock
@@ -89,11 +89,11 @@ class SigsReqsManagerTest {
 	@Mock
 	private ServicesState nextSignedState;
 
-	private SigsReqsManager subject;
+	private SigReqsManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SigsReqsManager(
+		subject = new SigReqsManager(
 				platform,
 				fileNumbers, aliasManager, expansionHelper,
 				signatureWaivers, workingState, dynamicProperties);

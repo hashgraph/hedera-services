@@ -22,7 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
-import com.hedera.services.sigs.order.SigsReqsManager;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -125,7 +125,7 @@ class ServicesStateTest {
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private SigsReqsManager sigsReqsManager;
+	private SigReqsManager sigReqsManager;
 	@Mock
 	private StateAccessor workingState;
 	@Mock
@@ -248,14 +248,14 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.sigReqsManager()).willReturn(sigsReqsManager);
+		given(app.sigReqsManager()).willReturn(sigReqsManager);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
 		// when:
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(sigsReqsManager).expandSigsInto(txnAccessor);
+		verify(sigReqsManager).expandSigsInto(txnAccessor);
 	}
 
 	@Test

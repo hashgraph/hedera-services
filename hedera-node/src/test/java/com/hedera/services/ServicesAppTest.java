@@ -32,7 +32,7 @@ import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.sigs.order.SigsReqsManager;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -154,7 +154,7 @@ class ServicesAppTest {
 		assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
 		assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
-		assertThat(subject.sigReqsManager(), instanceOf(SigsReqsManager.class));
+		assertThat(subject.sigReqsManager(), instanceOf(SigReqsManager.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());
