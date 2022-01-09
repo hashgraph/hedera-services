@@ -122,14 +122,14 @@ public class SigsReqsManager {
 	}
 
 	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
+		final var earliestSigningTime = platform.getLastSignedStateTimestamp();
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
 			final var signedState = wrapper.get();
 			if (signedState != null) {
-				final var signingTime = platform.getLastSignedStateTimestamp();
-				if (signedChildren.wereSignedBefore(signingTime)) {
+				if (signedChildren.wereSignedBefore(earliestSigningTime)) {
 					/* Since event intake is single-threaded, there's no risk of another thread
 					* getting inconsistent results while we are updating the signed state children. */
-					signedChildren.updateFrom(signedState, signingTime);
+					signedChildren.updateFrom(signedState, earliestSigningTime);
 					ensureSignedStateSigReqs();
 				}
 				expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
