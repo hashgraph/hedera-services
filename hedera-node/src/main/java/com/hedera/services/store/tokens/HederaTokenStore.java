@@ -705,13 +705,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private void updateTreasuryIfAppropriate(final MerkleToken token,
 			final AccountID newTreasury,
 			final TokenID tId) {
-		if (!newTreasury.equals(AccountID.getDefaultInstance())) {
-			if (!newTreasury.equals(token.treasury().toGrpcAccountId())) {
-				final var treasuryId = fromGrpcAccountId(newTreasury);
-				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
-				token.setTreasury(treasuryId);
-				addKnownTreasury(newTreasury, tId);
-			}
+		if (!newTreasury.equals(AccountID.getDefaultInstance()) && !newTreasury.equals(
+				token.treasury().toGrpcAccountId())) {
+			final var treasuryId = fromGrpcAccountId(newTreasury);
+			removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
+			token.setTreasury(treasuryId);
+			addKnownTreasury(newTreasury, tId);
 		}
 	}
 

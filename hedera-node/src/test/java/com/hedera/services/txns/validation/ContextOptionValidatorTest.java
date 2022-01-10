@@ -26,7 +26,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -126,7 +125,6 @@ class ContextOptionValidatorTest {
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
-	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -161,10 +159,9 @@ class ContextOptionValidatorTest {
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
-		aliasManager = mock(AliasManager.class);
 
 		subject = new ContextOptionValidator(
-				nodeInfo, properties, txnCtx, dynamicProperties, aliasManager);
+				nodeInfo, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {

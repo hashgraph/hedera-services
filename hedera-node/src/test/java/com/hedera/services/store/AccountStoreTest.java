@@ -241,9 +241,11 @@ class AccountStoreTest {
 	@Test
 	void failsWhenGivenAnInvalidAlias() {
 		given(aliasManager.lookupIdBy(validAlias.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		final var alias = validAlias.getAlias();
+		final var num = validAlias.getAccountNum();
 
 		var ex = assertThrows(InvalidTransactionException.class,
-				() -> subject.getAccountNumFromAlias(validAlias.getAlias(), validAlias.getAccountNum()));
+				() -> subject.getAccountNumFromAlias(alias, num));
 		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
 	}
 

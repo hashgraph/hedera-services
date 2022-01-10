@@ -27,7 +27,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
@@ -69,7 +68,6 @@ public class ContextOptionValidator implements OptionValidator {
 	private final NodeInfo nodeInfo;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final AliasManager aliasManager;
 
 	private AccountID nodeAccount;
 
@@ -78,14 +76,12 @@ public class ContextOptionValidator implements OptionValidator {
 			NodeInfo nodeInfo,
 			@CompositeProps PropertySource properties,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			AliasManager aliasManager
+			GlobalDynamicProperties dynamicProperties
 	) {
 		maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
 		this.txnCtx = txnCtx;
 		this.nodeInfo = nodeInfo;
 		this.dynamicProperties = dynamicProperties;
-		this.aliasManager = aliasManager;
 	}
 
 	@Override
