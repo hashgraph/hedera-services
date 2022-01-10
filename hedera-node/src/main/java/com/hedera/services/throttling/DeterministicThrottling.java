@@ -251,41 +251,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			final Instant now
 	) {
 		final var scheduledFunction = scheduledFunctionOf(scheduled);
-		if (scheduledFunction == CryptoTransfer) {
-			final var txn = scheduled.getCryptoTransfer();
-			if (usesAliases(txn)) {
-				final var resolver = new AliasResolver();
-				resolver.resolve(txn, aliasManager);
-				final var numAutoCreations = resolver.perceivedAutoCreations();
-				if (numAutoCreations > 0) {
-					return shouldThrottleAutoCreations(numAutoCreations, now);
-				}
-			}
-		}
-		return !manager.allReqsMetAt(now);
-	}
-
-	private boolean shouldThrottleTransfer(
-			final ThrottleReqsManager manager,
-			final int numAutoCreations,
-			final Instant now
-	) {
-		return (numAutoCreations == 0)
-				? !manager.allReqsMetAt(now)
-				: shouldThrottleAutoCreations(numAutoCreations, now);
-	}
-
-	private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
-		final var manager = functionReqs.get(CryptoCreate);
-		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
-	}
-
-	private boolean shouldThrottleScheduleCreate(
-			final ThrottleReqsManager manager,
-			final SchedulableTransactionBody scheduled,
-			final Instant now
-	) {
-		final var scheduledFunction = scheduledFunctionOf(scheduled);
 		if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
 			final var txn = scheduled.getCryptoTransfer();
 			if (usesAliases(txn)) {
@@ -314,7 +279,6 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		final var manager = functionReqs.get(CryptoCreate);
 		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
 	}
-
 
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
 		final var numNfts = op.getMetadataCount();

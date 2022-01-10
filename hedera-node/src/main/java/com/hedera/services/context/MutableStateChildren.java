@@ -242,6 +242,7 @@ public class MutableStateChildren implements StateChildren {
 		accounts = null;
 		topics = null;
 		storage = null;
+		contractStorage = null;
 		tokens = null;
 		tokenAssociations = null;
 		schedules = null;
@@ -264,6 +265,7 @@ public class MutableStateChildren implements StateChildren {
 		accounts = state.accounts();
 		topics = state.topics();
 		storage = state.storage();
+		contractStorage = state.contractStorage();
 		tokens = state.tokens();
 		tokenAssociations = state.tokenAssociations();
 		schedules = state.scheduleTxs();

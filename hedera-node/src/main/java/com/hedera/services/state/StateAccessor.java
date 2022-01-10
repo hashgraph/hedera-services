@@ -128,22 +128,4 @@ public class StateAccessor {
 	public StateChildren children() {
 		return children;
 	}
-
-	private static void mapStateOnto(final ServicesState state, final MutableStateChildren children) {
-		children.setAccounts(state.accounts());
-		children.setTopics(state.topics());
-		children.setStorage(state.storage());
-		children.setContractStorage(state.contractStorage());
-		children.setTokens(state.tokens());
-		children.setTokenAssociations(state.tokenAssociations());
-		children.setSchedules(state.scheduleTxs());
-		children.setNetworkCtx(state.networkCtx());
-		children.setAddressBook(state.addressBook());
-		children.setSpecialFiles(state.specialFiles());
-		children.setUniqueTokens(state.uniqueTokens());
-		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-		children.setRunningHashLeaf(state.runningHashLeaf());
-	}
 }

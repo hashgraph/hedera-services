@@ -266,7 +266,6 @@ class ServicesMainTest {
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
-		given(app.latestSignedState()).willReturn(latestSignedState);
 		given(currentPlatformStatus.get()).willReturn(MAINTENANCE);
 		// and:
 		subject.init(platform, nodeId);
@@ -276,7 +275,6 @@ class ServicesMainTest {
 
 		// then:
 		verify(signedState).logSummary();
-		verify(latestSignedState).replaceChildrenFrom(signedState, consensusNow);
 	}
 
 	@Test
@@ -285,7 +283,6 @@ class ServicesMainTest {
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
-		given(app.latestSignedState()).willReturn(latestSignedState);
 		given(app.nodeId()).willReturn(nodeId);
 		given(balancesExporter.isTimeToExport(consensusNow)).willReturn(true);
 		given(currentPlatformStatus.get()).willReturn(ACTIVE);

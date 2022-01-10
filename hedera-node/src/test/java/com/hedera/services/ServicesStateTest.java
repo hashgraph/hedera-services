@@ -22,7 +22,6 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
-import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
@@ -37,7 +36,6 @@ import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -143,8 +141,6 @@ class ServicesStateTest {
 	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
 	private PrefetchProcessor prefetchProcessor;
-	@Mock
-	private CodeCache codeCache;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -277,8 +273,6 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
-		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
 
 		// when:
@@ -297,7 +291,6 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 

@@ -95,8 +95,6 @@ public class ServicesMain implements SwirldMain {
 		if (balancesExporter.isTimeToExport(consensusTime)) {
 			balancesExporter.exportBalancesFrom(servicesState, consensusTime, app.nodeId());
 		}
-
-		app.latestSignedState().replaceChildrenFrom(servicesState, consensusTime);
 	}
 
 	@Override
