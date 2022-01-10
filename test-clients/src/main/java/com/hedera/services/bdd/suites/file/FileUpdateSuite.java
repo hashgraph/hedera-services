@@ -36,7 +36,6 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -178,7 +177,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)
 						),
-						getAliasedAccountInfo(aliasKey)
+						getAccountInfo(aliasKey)
 				);
 	}
 
