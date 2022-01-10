@@ -66,8 +66,10 @@ class TxnAwareSoliditySigsVerifierTest {
 	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
 	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 	private static final Address PRETEND_SENDER_ADDR = Address.ALTBN128_PAIRING;
-	private final Id tokenId = new Id(0, 0, 666);
-	private final Id accountId = new Id(0, 0, 1234);
+	private static final Id tokenId = new Id(0, 0, 666);
+	private static final Id accountId = new Id(0, 0, 1234);
+	private static final Address PRETEND_TOKEN_ADDR = tokenId.asEvmAddress();
+	private static final Address PRETEND_ACCOUNT_ADDR = accountId.asEvmAddress();
 	private final AccountID payer = IdUtils.asAccount("0.0.2");
 	private final AccountID sigRequired = IdUtils.asAccount("0.0.555");
 	private final AccountID smartContract = IdUtils.asAccount("0.0.666");
@@ -110,7 +112,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(tokens.get(tokenId.asEntityNum())).willReturn(null);
 
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+				subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
 	}
 
 	@Test
@@ -121,7 +123,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(token.hasSupplyKey()).willReturn(false);
 
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+				subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
 	}
 
 	@Test
@@ -134,7 +136,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveSupplyKey(tokenId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+		final var verdict = subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
 
 		assertTrue(verdict);
 	}
@@ -144,7 +146,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accounts.get(accountId.asEntityNum())).willReturn(null);
 
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveKey(accountId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+				subject.hasActiveKey(PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
 	}
 
 	@Test
@@ -155,7 +157,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveKey(accountId, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+		final var verdict = subject.hasActiveKey(PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
 
 		assertTrue(verdict);
 	}
@@ -217,7 +219,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void createsValidityTestThatOnlyAcceptsContractIdKeyWhenBothRecipientAndContractAreActive() {
 		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
-		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_RECIPIENT_ADDR);
+		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 
@@ -235,7 +237,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void createsValidityTestThatAcceptsDelegateContractIdKeyWithJustRecipientActive() {
 		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
-		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_RECIPIENT_ADDR);
+		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JDelegatableContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 

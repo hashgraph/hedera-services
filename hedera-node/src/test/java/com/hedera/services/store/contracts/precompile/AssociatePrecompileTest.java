@@ -64,6 +64,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
@@ -115,6 +117,12 @@ class AssociatePrecompileTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private MessageFrame parentFrame;
+	@Mock
+	private Deque<MessageFrame> frameDeque;
+	@Mock
+	private Iterator<MessageFrame> dequeIterator;
+	@Mock
 	private AbstractLedgerWorldUpdater worldUpdater;
 	@Mock
 	private WorldLedgers wrappedLedgers;
@@ -155,7 +163,8 @@ class AssociatePrecompileTest {
 		givenFrameContext();
 		given(decoder.decodeAssociation(pretendArguments)).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
+				recipientAddress))
 				.willReturn(false);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -175,7 +184,8 @@ class AssociatePrecompileTest {
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
+						recipientAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -205,7 +215,8 @@ class AssociatePrecompileTest {
 				.willReturn(multiAssociateOp);
 		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId), recipientAddress, contractAddress, senderAddress))
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
+				recipientAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -228,8 +239,14 @@ class AssociatePrecompileTest {
 	}
 
 	private void givenFrameContext() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddress);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -252,8 +269,7 @@ class AssociatePrecompileTest {
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	private static final Address recipientAddress = Address.ALTBN128_ADD;
 	private static final Address contractAddress = Address.ALTBN128_MUL;
-	private static final Address senderAddress = Address.ALTBN128_PAIRING;
+	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-
 }

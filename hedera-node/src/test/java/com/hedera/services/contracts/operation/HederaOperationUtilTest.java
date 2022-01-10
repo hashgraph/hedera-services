@@ -239,6 +239,7 @@ class HederaOperationUtilTest {
 		final var mockTarget = Address.ZERO;
 		given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 		given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_PAIRING);
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
@@ -308,5 +309,6 @@ class HederaOperationUtilTest {
 	private void givenFrameAddresses() {
 		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);
 		given(messageFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDR);
+		given(messageFrame.getSenderAddress()).willReturn(PRETEND_SENDER_ADDR);
 	}
 }
