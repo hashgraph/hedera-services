@@ -24,27 +24,32 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_CHILD_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.GET_CHILD_RESULT_ABI;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountRecords;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -52,21 +57,26 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenAssociateAliased;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.tokenDissociateAliased;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -91,8 +101,8 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 				cryptoWithAliasTxnPayer(),
 				consensusWithAliasAsPayer(),
 				schedulesWithAliasAsPayer(),
-//				tokensWithAliasAsPayer()
-// 				contractsWithAliasAsPayer(),
+				tokensWithAliasAsPayer(),
+				contractsWithAliasAsPayer()
 		});
 	}
 
@@ -139,54 +149,117 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 	private HapiApiSpec tokensWithAliasAsPayer() {
 		final var alias = "alias";
 		final var autoCreation = "autoCreation";
-		final var token = "token";
-		final var civilian = "civilian";
-		final var adminKey = "adminKey";
-		final var supplyKey = "supplyKey";
 		return defaultHapiSpec("tokensWithAliasAsPayer")
 				.given(
+						newKeyNamed("key").shape(SIMPLE),
+						newKeyNamed("adminKey").shape(listOf(3)),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("supplyKey"),
+						newKeyNamed("wipeKey"),
+						cryptoCreate(TOKEN_TREASURY)
+								.key("key")
+								.balance(1_000 * ONE_HBAR),
+						cryptoCreate("autoRenewAccount")
+								.key("adminKey")
+								.balance(0L),
+						cryptoCreate("testAccountA")
+								.key("adminKey"),
+
 						newKeyNamed(alias),
-						newKeyNamed(adminKey),
-						newKeyNamed(supplyKey),
-						cryptoCreate(civilian).key(supplyKey),
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS)).via(
 								autoCreation),
 						getTxnRecord(autoCreation).hasChildRecordCount(1)
-				).when(
-						tokenCreate(token)
-								.adminKey("adminKey")
+				)
+				.when(
+						tokenCreate("primary")
 								.treasury(TOKEN_TREASURY)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.kycKey("adminKey")
-								.freezeKey("adminKey")
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
+								.adminKey("adminKey")
 								.payingWith(alias)
-								.via("tokenCreateTxn"),
-						tokenAssociateAliased(alias, token).payingWith(alias).via("tokenAssociationTxn"),
-						tokenUpdate(token).entityMemo("new-entity-memo").payingWith(alias).via("tokenUpdateTxn"),
-						mintToken(token, 100).payingWith(alias).signedBy(supplyKey).via("mintTokenTxn"),
-						burnToken(token, 100).payingWith(alias).via("burnTokenTxn"),
-						getAliasedAccountInfo(alias).hasToken(relationshipWith(token)).logged(),
-						tokenFreeze(token, alias).signedBy("adminKey", TOKEN_TREASURY).payingWith(alias).via(
-								"freezeTxn"),
-						tokenUnfreeze(token, alias).payingWith("adminKey").signedBy("adminKey", TOKEN_TREASURY).via(
-								"unfreezeTxn"),
-						wipeTokenAccount(token, alias, 1L).payingWith(alias).fee(ONE_HBAR).via("wipeTokenTxn"),
-
-						tokenDissociateAliased(alias, token).payingWith(alias).via("tokenDissociateTxn"),
-						getTokenInfo(token).payingWith(alias).logged()
-
+								.via("TokenCreate").logged(),
+						tokenUpdate("primary")
+								.payingWith(alias)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.via("TokenUpdate"),
+						tokenCreate("testToken")
+								.name("testCoin")
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.initialSupply(500)
+								.decimals(1)
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.kycKey("kycKey")
+								.supplyKey("supplyKey")
+								.wipeKey("wipeKey"),
+						mintToken("testToken", 1)
+								.blankMemo()
+								.payingWith(alias)
+								.via("MintToken"),
+						burnToken("testToken", 1)
+								.blankMemo()
+								.payingWith(alias)
+								.via("BurnToken"),
+						tokenAssociate("testAccountA", "testToken")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenAssociation"),
+						revokeTokenKyc("testToken", "testAccountA")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenRevokeKyc"),
+						grantTokenKyc("testToken", "testAccountA")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenGrantKyc"),
+						tokenFreeze("testToken", "testAccountA")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenFreeze"),
+						tokenUnfreeze("testToken", "testAccountA")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenUnFreeze"),
+						cryptoTransfer(moving(1, "testToken")
+								.between(TOKEN_TREASURY, "testAccountA"))
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenTransfer"),
+						wipeTokenAccount("testToken", "testAccountA", 1)
+								.payingWith(alias)
+								.blankMemo()
+								.via("TokenWipe"),
+						tokenDissociate("testAccountA", "testToken")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenDissociation"),
+						getTokenInfo("testToken")
+								.payingWith(alias)
+								.via("TokenGetInfo").logged(),
+						tokenDelete("testToken")
+								.blankMemo()
+								.payingWith(alias)
+								.via("TokenDelete")
 				)
 				.then(
-						getTxnRecord("tokenCreateTxn").payingWith(alias).hasPayerAliasNum(alias).logged(),
-						getTxnRecord("tokenAssociationTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("tokenUpdateTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("mintTokenTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("burnTokenTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("freezeTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("unfreezeTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("wipeTokenTxn").hasPayerAliasNum(alias).logged(),
-						getTxnRecord("tokenDissociateTxn").hasPayerAliasNum(alias).logged(),
-						getReceipt("burnTokenTxn").payingWith(alias).logged()
+						getTxnRecord("TokenCreate").payingWith(alias).hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenUpdate").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("MintToken").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("BurnToken").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenAssociation").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenRevokeKyc").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenGrantKyc").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenFreeze").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenUnFreeze").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenTransfer").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenWipe").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenDissociation").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenDelete").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("TokenGetInfo").hasPayerAliasNum(alias).logged(),
+						getReceipt("TokenDelete").payingWith(alias).logged()
 				);
 	}
 
@@ -250,14 +323,61 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 						newKeyNamed(alias),
 						newKeyNamed("adminKey"),
 						cryptoTransfer(tinyBarsFromToWithAlias(GENESIS, alias, ONE_HUNDRED_HBARS)).via(autoCreation),
-						getTxnRecord(autoCreation).hasChildRecordCount(1)
+						getTxnRecord(autoCreation).hasChildRecordCount(1),
+
+						newKeyNamed("key").shape(SIMPLE),
+						cryptoCreate("payer")
+								.key("key")
+								.balance(10_000_000_000L),
+						fileCreate("contractFile")
+								.payingWith("payer")
+								.fromResource("contract/bytecodes/CreateTrivial.bin")
 				).when(
-						contractCreate("contract").adminKey("adminKey").memo("memo").payingWith(alias).via(
-								"createContractTxn"),
-						contractUpdate("contract").newMemo("secondMemo").payingWith(alias).via("updateContractTxn"),
-						getContractInfo("contract").has(contractWith().memo("secondMemo")).payingWith(alias)
+						contractCreate("testContract")
+								.bytecode("contractFile")
+								.adminKey("key")
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS - 1)
+								.gas(30000)
+								.payingWith(alias)
+								.hasKnownStatus(SUCCESS)
+								.via("ContractCreate"),
+						contractUpdate("testContract")
+								.payingWith(alias)
+								.newKey("key")
+								.newMemo("testContract")
+								.via("ContractUpdate"),
+						contractCall("testContract", CREATE_CHILD_ABI)
+								.payingWith(alias)
+								.gas(100000)
+								.via("ContractCall"),
+						getContractInfo("testContract")
+								.payingWith(alias)
+								.via("GetContractInfo").logged(),
+						contractCallLocal("testContract", GET_CHILD_RESULT_ABI)
+								.payingWith(alias)
+								.nodePayment(100_000_000)
+								.gas(50000)
+								.via("ContractCallLocal"),
+						getContractBytecode("testContract")
+								.payingWith(alias)
+								.via("GetContractByteCode"),
+						getContractRecords("testContract")
+								.payingWith(alias)
+								.logged()
+								.via("GetContractRecords"),
+						contractDelete("testContract")
+								.payingWith(alias)
+								.via("ContractDelete")
 
 				).then(
+						getTxnRecord("ContractCreate").payingWith(alias).hasPayerAliasNum(alias).logged(),
+						getTxnRecord("ContractUpdate").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("ContractCall").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("GetContractInfo").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("ContractCallLocal").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("GetContractByteCode").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("GetContractRecords").hasPayerAliasNum(alias).logged(),
+						getTxnRecord("ContractDelete").hasPayerAliasNum(alias).logged()
 				);
 	}
 
