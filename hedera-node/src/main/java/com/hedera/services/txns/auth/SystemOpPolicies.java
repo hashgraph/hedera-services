@@ -38,7 +38,6 @@ import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
 import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -211,8 +210,7 @@ public class SystemOpPolicies {
 
 	private long payerFor(final TransactionBody txn) {
 		final var accountId = txn.getTransactionID().getAccountID();
-		return isAlias(accountId) ?
-				aliasManager.lookupIdBy(accountId.getAlias()).longValue() : accountId.getAccountNum();
+		return aliasManager.lookUpPayerAccountID(accountId).resolvedId().getAccountNum();
 	}
 
 	boolean canPerformNonCryptoUpdate(final long payer, final long nonAccountSystemEntity) {

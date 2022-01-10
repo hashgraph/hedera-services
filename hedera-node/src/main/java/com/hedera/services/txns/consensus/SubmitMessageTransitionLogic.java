@@ -41,11 +41,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
@@ -66,11 +63,11 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 	@Inject
 	public SubmitMessageTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext,
-			GlobalDynamicProperties globalDynamicProperties,
-			AliasManager aliasManager
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final OptionValidator validator,
+			final TransactionContext transactionContext,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final AliasManager aliasManager
 	) {
 		this.topics = topics;
 		this.validator = validator;
@@ -121,17 +118,12 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
-			AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
-			AccountID payer;
-			if (isAlias(payerAccountId)) {
-				final var payerId = aliasManager.lookupIdBy(payerAccountId.getAlias());
-				if (payerId == MISSING_NUM) {
-					transactionContext.setStatus(INVALID_PAYER_ACCOUNT_ID);
-				}
-				payer = payerId.toGrpcAccountId();
-			} else {
-				payer = payerAccountId;
+			final AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
+			final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
+			if (result.response() != OK) {
+				transactionContext.setStatus(result.response());
 			}
+			final AccountID payer = result.resolvedId();
 
 			mutableTopic.updateRunningHashAndSequenceNumber(
 					payer,
