@@ -100,7 +100,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -215,7 +214,8 @@ class BasicTransactionContextTest {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
-		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(
+				AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -325,7 +325,6 @@ class BasicTransactionContextTest {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
@@ -537,6 +536,8 @@ class BasicTransactionContextTest {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
+		given(aliasManager.lookUpPayerAccountID(txnId.getAccountID())).willReturn(
+				AliasLookup.of(txnId.getAccountID(), OK));
 
 		// when:
 		subject.setCreated(scheduleCreated);
@@ -631,7 +632,7 @@ class BasicTransactionContextTest {
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
-						transfersList, aliasManager) : null)
+						transfersList) : null)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setNewTokenAssociations(newTokenAssociations);
 
@@ -639,7 +640,7 @@ class BasicTransactionContextTest {
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
 		for (TokenTransferList tokenTransfers : tokenTransferList) {
 			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList(), aliasManager));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 		}
 
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);

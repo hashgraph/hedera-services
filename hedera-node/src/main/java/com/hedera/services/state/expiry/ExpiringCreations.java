@@ -164,15 +164,12 @@ public class ExpiringCreations implements EntityCreator {
 			Arrays.setAll(rawSerials, serialNoList::get);
 			receiptBuilder.setSerialNumbers(rawSerials);
 		}
-		if (!sideEffectsTracker.getNetTrackedHbarChanges().getAccountAmountsList().isEmpty()) {
-
-		}
 
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
 				.setTransferList(
-						CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges(), aliasManager))
+						CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
@@ -214,7 +211,7 @@ public class ExpiringCreations implements EntityCreator {
 		final List<NftAdjustments> nftTokenAdjustments = new ArrayList<>();
 		for (final var tokenTransfer : tokenTransferList) {
 			tokens.add(EntityId.fromGrpcTokenId(tokenTransfer.getToken()));
-			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfer.getTransfersList(), aliasManager));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfer.getTransfersList()));
 			nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfer.getNftTransfersList()));
 		}
 		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);

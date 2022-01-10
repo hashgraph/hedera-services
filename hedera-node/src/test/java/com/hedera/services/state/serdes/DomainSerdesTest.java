@@ -21,7 +21,6 @@ package com.hedera.services.state.serdes;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -403,7 +402,7 @@ public class DomainSerdesTest {
 				.setTransferList(CurrencyAdjustments.fromGrpc(withAdjustments(
 						asAccount("0.0.2"), -4L,
 						asAccount("0.0.1001"), 2L,
-						asAccount("0.0.1002"), 2L), new AliasManager()))
+						asAccount("0.0.1002"), 2L)))
 				.setContractCallResult(SolidityFnResult.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("1.2.3"))
 						.setErrorMessage("Couldn't figure it out!")
@@ -426,7 +425,7 @@ public class DomainSerdesTest {
 				.setTransferList(CurrencyAdjustments.fromGrpc(withAdjustments(
 						asAccount("0.0.2"), -6L,
 						asAccount("0.0.1001"), 3L,
-						asAccount("0.0.1002"), 3L), new AliasManager()))
+						asAccount("0.0.1002"), 3L)))
 				.setContractCallResult(SolidityFnResult.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("4.3.2"))
 						.setErrorMessage("Couldn't figure it out immediately!")

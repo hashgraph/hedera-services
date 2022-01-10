@@ -93,7 +93,7 @@ class TxnAwareRecordsHistorianTest {
 			a, -1_000L, b, 500L, c, 501L, d, -1L);
 	final private ExpirableTxnRecord.Builder finalRecord = ExpirableTxnRecord.newBuilder()
 			.setTxnId(TxnId.fromGrpc(txnIdA))
-			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers, aliasManager))
+			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
 			.setMemo("This is different!")
 			.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
 	final private ExpirableTxnRecord.Builder jFinalRecord = finalRecord;

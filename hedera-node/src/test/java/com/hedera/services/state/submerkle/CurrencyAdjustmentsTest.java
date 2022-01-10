@@ -99,8 +99,8 @@ class CurrencyAdjustmentsTest {
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments, aliasManager);
-		final var three = CurrencyAdjustments.fromGrpc(grpcAdjustments, aliasManager);
+		final var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments);
+		final var three = CurrencyAdjustments.fromGrpc(grpcAdjustments);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -118,7 +118,7 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void factoryWorks() {
-		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments, aliasManager));
+		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments));
 	}
 
 	@Test

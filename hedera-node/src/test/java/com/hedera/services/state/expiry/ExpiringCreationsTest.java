@@ -149,7 +149,7 @@ class ExpiringCreationsTest {
 	void createsSuccessfulSyntheticRecordAsExpected() {
 		setupTracker();
 		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
-		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments, aliasManager));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
 
 		final var record = subject.createSuccessfulSyntheticRecord(
 				customFeesCharged,
@@ -245,7 +245,7 @@ class ExpiringCreationsTest {
 		setupTracker();
 		setupAccessorForNonTriggeredTxn();
 		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
-		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments, aliasManager));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
 
 		given(sideEffectsTracker.hasTrackedNewTokenId()).willReturn(true);
 		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(newTokenId);

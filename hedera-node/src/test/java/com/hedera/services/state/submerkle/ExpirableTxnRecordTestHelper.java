@@ -47,7 +47,7 @@ public class ExpirableTxnRecordTestHelper {
 			nftTokenAdjustments = new ArrayList<>();
 			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList(), aliasManager));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 				nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
 			}
 		}
@@ -74,8 +74,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
 				.setTransferList(
-						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList(),
-								aliasManager) : null)
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
 				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
 						record.getContractCallResult()) : null)
 				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
