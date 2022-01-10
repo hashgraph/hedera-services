@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -52,11 +53,13 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,6 +106,8 @@ class RenewalRecordsHelperTest {
 				RenewalHelperTest.ttlOf(bToken, from, secondTo, bBalance));
 		final var rso = expectedRso(
 				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
+		given(aliasManager.lookUpPayerAccountID(keyId.toGrpcAccountId()))
+				.willReturn(AliasLookup.of(keyId.toGrpcAccountId(), OK));
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
@@ -121,6 +126,8 @@ class RenewalRecordsHelperTest {
 		final var renewalTime = instantNow.plusNanos(1);
 		final var rso = expectedRso(
 				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding), 1);
+		given(aliasManager.lookUpPayerAccountID(keyId.toGrpcAccountId()))
+				.willReturn(AliasLookup.of(keyId.toGrpcAccountId(), OK));
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);

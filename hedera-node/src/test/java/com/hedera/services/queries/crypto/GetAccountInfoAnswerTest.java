@@ -295,7 +295,7 @@ class GetAccountInfoAnswerTest {
 
 		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(
 				ACCOUNT_DELETED);
-		given(aliasManager.lookUpPayerAccountID(payerId)).willReturn(AliasLookup.of(payerId, OK));
+		given(aliasManager.lookUpAccountID(payerId)).willReturn(AliasLookup.of(payerId, OK));
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);

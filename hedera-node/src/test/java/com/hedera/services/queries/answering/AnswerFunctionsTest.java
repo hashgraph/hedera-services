@@ -23,6 +23,7 @@ package com.hedera.services.queries.answering;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -45,6 +46,7 @@ import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -125,6 +127,8 @@ class AnswerFunctionsTest {
 	void findsInPayerAccountIfPresentThere() {
 		final var validQuery = txnRecordQuery(targetTxnId);
 		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(null);
+		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID()))
+				.willReturn(AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
 

@@ -54,7 +54,6 @@ import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -62,10 +61,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.willCallRealMethod;
 
 class GetAccountRecordsAnswerTest {
 	private static final long fee = 1_234L;
@@ -192,7 +189,8 @@ class GetAccountRecordsAnswerTest {
 		final var query = validQueryWithAlias(ANSWER_ONLY, fee, alias);
 		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias))).willReturn(
 				EntityNum.fromAccountId(asAccount(target)));
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
+		given(aliasManager.lookUpAccountID(asAccountWithAlias(alias))).willReturn(AliasLookup.of(asAccount(target),
+				OK));
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);

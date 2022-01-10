@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,6 +62,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -175,6 +177,8 @@ class ExpiringCreationsTest {
 		final var payerAccount = new MerkleAccount();
 		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
+		given(aliasManager.lookUpPayerAccountID(effPayer))
+				.willReturn(AliasLookup.of(effPayer, OK));
 
 		final var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
 
@@ -187,6 +191,8 @@ class ExpiringCreationsTest {
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
 		given(accessor.getHash()).willReturn(hash);
+		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var builder = subject.createInvalidFailureRecord(accessor, timestamp);
 		final var actualRecord = builder.build();
@@ -202,6 +208,8 @@ class ExpiringCreationsTest {
 
 		given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
 		given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
+		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,
@@ -219,6 +227,8 @@ class ExpiringCreationsTest {
 	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
 		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
+		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,
@@ -251,6 +261,8 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(newTokenId);
 		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
 		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
+		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,
