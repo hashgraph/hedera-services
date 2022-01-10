@@ -65,6 +65,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
@@ -94,6 +96,12 @@ class DissociatePrecompilesTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
+	@Mock
+	private MessageFrame parentFrame;
+	@Mock
+	private Deque<MessageFrame> frameDeque;
+	@Mock
+	private Iterator<MessageFrame> dequeIterator;
 	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
@@ -158,7 +166,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
 
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr))
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
@@ -178,7 +186,7 @@ class DissociatePrecompilesTest {
 		givenFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -210,7 +218,7 @@ class DissociatePrecompilesTest {
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr, senderAddr))
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -233,8 +241,15 @@ class DissociatePrecompilesTest {
 	}
 
 	private void givenFrameContext() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
-		given(frame.getRecipientAddress()).willReturn(recipientAddr);
+		given(frame.getRecipientAddress()).willReturn(contractAddr);
+		given(frame.getSenderAddress()).willReturn(senderAddr);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -258,6 +273,8 @@ class DissociatePrecompilesTest {
 	private static final Address recipientAddr = Address.ALTBN128_ADD;
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Address senderAddr = Address.ALTBN128_PAIRING;
+	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+	private static final Address accountAddr = accountId.asEvmAddress();
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }

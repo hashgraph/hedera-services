@@ -327,7 +327,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var innerContract = "mintContract";
 		final var outerContract = "transferContract";
 		final var nestedTransferTxn = "nestedTransferTxn";
-		final var revisedKey = KeyShape.threshOf(1, SIMPLE, CONTRACT);
 
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
@@ -359,7 +358,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
 														.gas(300_000),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(revisedKey.signedWith(sigs(ON,
+												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
 												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
 												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),

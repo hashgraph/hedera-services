@@ -71,6 +71,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -106,6 +108,12 @@ class TransferPrecompilesTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
+	@Mock
+	private MessageFrame parentFrame;
+	@Mock
+	private Deque<MessageFrame> frameDeque;
+	@Mock
+	private Iterator<MessageFrame> dequeIterator;
 	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
@@ -393,13 +401,13 @@ class TransferPrecompilesTest {
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 		verify(sigsVerifier)
-				.hasActiveKey(senderId, recipientAddr, contractAddr, senderAddr);
+				.hasActiveKey(senderId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr);
 		verify(sigsVerifier)
-				.hasActiveKeyOrNoReceiverSigReq(receiverId.asEvmAddress(), recipientAddr, contractAddr, senderAddr);
+				.hasActiveKeyOrNoReceiverSigReq(receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr);
 		verify(sigsVerifier)
-				.hasActiveKey(receiverId, recipientAddr, contractAddr, senderAddr);
+				.hasActiveKey(receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr);
 		verify(sigsVerifier, never())
-				.hasActiveKeyOrNoReceiverSigReq(asTypedSolidityAddress(feeCollector), recipientAddr, contractAddr, senderAddr);
+				.hasActiveKeyOrNoReceiverSigReq(asTypedSolidityAddress(feeCollector), recipientAddr, contractAddr, recipientAddr);
 	}
 
 	@Test
@@ -505,7 +513,13 @@ class TransferPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -585,6 +599,7 @@ class TransferPrecompilesTest {
 			);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
 	private static final Address senderAddr = Address.ALTBN128_PAIRING;
+	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 
 	private static final List<BalanceChange> tokenTransferChanges = List.of(
