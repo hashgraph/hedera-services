@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -56,9 +57,9 @@ public class MutableStateChildren implements StateChildren {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
 	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
@@ -234,6 +235,47 @@ public class MutableStateChildren implements StateChildren {
 	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
 		this.runningHashLeaf = runningHashLeaf;
 	}
+
+	@Override
+	public void nullOutRefs() {
+		signedAt = Instant.EPOCH;
+		accounts = null;
+		topics = null;
+		storage = null;
+		contractStorage = null;
+		tokens = null;
+		tokenAssociations = null;
+		schedules = null;
+		networkCtx = null;
+		addressBook = null;
+		specialFiles = null;
+		uniqueTokens = null;
+		uniqueTokenAssociations = null;
+		uniqueOwnershipAssociations = null;
+		uniqueOwnershipTreasuryAssociations = null;
+		runningHashLeaf = null;
+	}
+
+	public void updateFrom(final ServicesState signedState, final Instant signingTime) {
+		signedAt = signingTime;
+		updateFrom(signedState);
+	}
+
+	public void updateFrom(final ServicesState state) {
+		accounts = state.accounts();
+		topics = state.topics();
+		storage = state.storage();
+		contractStorage = state.contractStorage();
+		tokens = state.tokens();
+		tokenAssociations = state.tokenAssociations();
+		schedules = state.scheduleTxs();
+		networkCtx = state.networkCtx();
+		addressBook = state.addressBook();
+		specialFiles = state.specialFiles();
+		uniqueTokens = state.uniqueTokens();
+		uniqueTokenAssociations = state.uniqueTokenAssociations();
+		uniqueOwnershipAssociations = state.uniqueOwnershipAssociations();
+		uniqueOwnershipTreasuryAssociations = state.uniqueTreasuryOwnershipAssociations();
+		runningHashLeaf = state.runningHashLeaf();
+	}
 }
-
-

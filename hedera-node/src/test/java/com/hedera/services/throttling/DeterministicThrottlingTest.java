@@ -75,6 +75,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -85,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
@@ -126,14 +128,17 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleQuery(CryptoGetAccountBalance, consensusNow, query);
+		var noAns = subject.shouldThrottleQuery(CryptoGetAccountBalance, consensusNow, query);
+		subject.shouldThrottleQuery(GetVersionInfo, consensusNow.plusNanos(1), query);
+		var yesAns = subject.shouldThrottleQuery(GetVersionInfo, consensusNow.plusNanos(2), query);
 		var throttlesNow = subject.activeThrottlesFor(CryptoGetAccountBalance);
 		// and:
 		var dNow = throttlesNow.get(0);
 
 		// then:
-		assertFalse(ans);
-		assertEquals(BucketThrottle.capacityUnitsPerTxn(), dNow.used());
+		assertFalse(noAns);
+		assertTrue(yesAns);
+		assertEquals(10999999990000L, dNow.used());
 	}
 
 	@Test
@@ -145,17 +150,23 @@ class DeterministicThrottlingTest {
 		subject.rebuildFor(defs);
 
 		final var accessor = scheduling(scheduledSubmit);
-		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 150; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 
 		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
 		final var aNow = throttlesNow.get(0);
 
-		assertFalse(ans);
-		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(149999992500000L, aNow.used());
 	}
 
 	@Test
 	void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations() throws IOException {
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		final var scheduledXferNoAliases = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
 				.build();
@@ -173,9 +184,62 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoCreationDisabled() throws IOException {
+		final var alias = aPrimitiveKey.toByteString();
+		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(-1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.3333")))
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(+1_000_000_000)
+										.setAccountID(AccountID.newBuilder().setAlias(alias)))))
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferWithAutoCreation);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases() throws IOException {
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+						.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(-1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.3333")))
+								.addAccountAmounts(AccountAmount.newBuilder()
+										.setAmount(+1_000_000_000)
+										.setAccountID(IdUtils.asAccount("0.0.4444")))))
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduling(scheduledXferWithAutoCreation);
+		final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
 	void usesCryptoCreateThrottleForCryptoTransferWithAutoCreation() throws IOException {
 		final var alias = aPrimitiveKey.toByteString();
 		given(aliasManager.lookupIdBy(alias)).willReturn(MISSING_NUM);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
 						.setTransfers(TransferList.newBuilder()
@@ -202,6 +266,7 @@ class DeterministicThrottlingTest {
 	@Test
 	void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation() throws IOException {
 		final var alias = aPrimitiveKey.toByteString();
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.fromLong(1_234L));
 		final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
@@ -276,13 +341,18 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 3000; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		var aNow = throttlesNow.get(0);
 
 		// then:
-		assertFalse(ans);
-		assertEquals(10 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(29999955000000000L, aNow.used());
 	}
 
 	@Test
@@ -296,14 +366,19 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 400; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 		var throttlesNow = subject.activeThrottlesFor(TokenMint);
 		// and:
 		var aNow = throttlesNow.get(0);
 
 		// then:
-		assertFalse(ans);
-		assertEquals(75 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(29999994000000000L, aNow.used());
 	}
 
 	@Test
@@ -316,16 +391,21 @@ class DeterministicThrottlingTest {
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 12; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
 		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
 		var bNow = throttlesNow.get(1);
 
 		// then:
-		assertFalse(ans);
-		assertEquals(2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-		assertEquals(BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+		assertEquals(24999999820000000L, aNow.used());
+		assertEquals(9999999940000L, bNow.used());
 	}
 
 	@Test
@@ -333,6 +413,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		givenFunction(CryptoTransfer);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		given(accessor.getNumAutoCreations()).willReturn(0);
 		subject.rebuildFor(defs);
 
@@ -343,11 +424,31 @@ class DeterministicThrottlingTest {
 	}
 
 	@Test
+	void reusesNumAutoCreationsIfNotCounted() throws IOException {
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(CryptoTransfer);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+		given(accessor.areAutoCreationsCounted()).willReturn(true);
+		given(accessor.getNumAutoCreations()).willReturn(0);
+		subject.rebuildFor(defs);
+
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		boolean subsequentAns = false;
+		for (int i = 1; i <= 10000; i++) {
+			subsequentAns = subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i));
+		}
+
+		verify(accessor, never()).countAutoCreationsWith(aliasManager);
+		assertFalse(firstAns);
+		assertTrue(subsequentAns);
+	}
+
+	@Test
 	void cryptoTransfersWithNoAutoAccountCreationsAreThrottledAsExpected() throws IOException {
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
 		givenFunction(CryptoTransfer);
-		given(accessor.getNumAutoCreations()).willReturn(0);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -361,6 +462,7 @@ class DeterministicThrottlingTest {
 
 		givenFunction(CryptoTransfer);
 		given(accessor.getNumAutoCreations()).willReturn(1);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -374,6 +476,7 @@ class DeterministicThrottlingTest {
 
 		givenFunction(CryptoTransfer);
 		given(accessor.getNumAutoCreations()).willReturn(10);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -387,6 +490,7 @@ class DeterministicThrottlingTest {
 
 		givenFunction(CryptoTransfer);
 		given(accessor.getNumAutoCreations()).willReturn(1);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 		subject.rebuildFor(defs);
 
 		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
@@ -483,16 +587,11 @@ class DeterministicThrottlingTest {
 	void logsAsExpected() throws IOException {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-
-		var desired = "Resolved throttles (after splitting capacity 2 ways) - \n" +
-				"  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n" +
-				"  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n" +
-				"  CryptoGetAccountBalance: min{500000.00 tps (D)}\n" +
-				"  CryptoTransfer: min{5000.00 tps (A)}\n" +
-				"  TokenAssociateToAccount: min{50.00 tps (C)}\n" +
-				"  TokenCreate: min{50.00 tps (C)}\n" +
-				"  TokenMint: min{1500.00 tps (A)}\n" +
-				"  TransactionGetReceipt: min{500000.00 tps (D)}";
+		final var desired = "Resolved throttles (after splitting capacity 2 ways) - \n  ContractCall: min{6.00 tps (A)" +
+				", 5.00 tps (B)}\n  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n  CryptoGetAccountBalance: " +
+				"min{5.00 tps (D)}\n  CryptoTransfer: min{5000.00 tps (A)}\n  GetVersionInfo: min{0.50 tps (D)}\n  " +
+				"TokenAssociateToAccount: min{50.00 tps (C)}\n  TokenCreate: min{50.00 tps (C)}\n  TokenMint: " +
+				"min{1500.00 tps (A)}\n  TransactionGetReceipt: min{5.00 tps (D)}";
 
 		// when:
 		subject.rebuildFor(defs);
@@ -581,7 +680,7 @@ class DeterministicThrottlingTest {
 				DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
 				DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
 				DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
-				DeterministicThrottle.withMtpsAndBurstPeriod(500_000_000, 4));
+				DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
 
 		// when:
 		subject.rebuildFor(defs);
@@ -641,6 +740,15 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow));
+	}
+
+	@Test
+	void shouldRejectWithInsufficientCapacity() {
+		subject.setFunctionReqs(reqsManager());
+
+		givenFunction(CryptoTransfer);
+
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test

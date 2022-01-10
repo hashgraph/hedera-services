@@ -140,7 +140,7 @@ class ExpiryManagerTest {
 		// then:
 		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
 		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
-		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
+		assertEquals(secondThen, liveTxnHistories.get(newTxnId).allDuplicateRecords().get(0).getExpiry());
 	}
 
 	@Test

@@ -153,6 +153,7 @@ public class RenewalHelper {
 		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
 			sigImpactHistorian.markAliasChanged(lastClassifiedAccount.getAlias());
 		}
+
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
 		sigImpactHistorian.markEntityChanged(lastClassifiedEntityId.longValue());
 
