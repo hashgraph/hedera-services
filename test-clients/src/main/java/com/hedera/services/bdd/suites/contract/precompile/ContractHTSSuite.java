@@ -521,6 +521,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													.between(TOKEN_TREASURY, ACCOUNT)));
 								})
 				).when(
+						getAccountBalance(CONTRACT).hasTinyBars(0),
 						withOpContext(
 								(spec, opLog) -> {
 									final var token = asAddress(spec.registry().getTokenID(A_TOKEN));
@@ -552,18 +553,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -10L)
-														.including(A_TOKEN, RECEIVER, 5L)
-														.including(A_TOKEN, SECOND_RECEIVER, 5L)
-										),
-								recordWith()
-										.status(SUCCESS)
-										.tokenTransfers(
-												changingFungibleBalances()
-														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
-														.including(FEE_TOKEN, ACCOUNT, 100L)
+														.including(A_TOKEN, RECEIVER, 10L)
 										)),
-						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
-						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
+						getAccountBalance(CONTRACT).hasTinyBars(0),
+						getAccountBalance(FEE_COLLECTOR).hasTinyBars(1000000100)
 				);
 	}
 
