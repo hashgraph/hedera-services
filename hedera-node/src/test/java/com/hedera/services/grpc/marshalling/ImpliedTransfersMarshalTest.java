@@ -61,6 +61,7 @@ import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -126,7 +127,7 @@ class ImpliedTransfersMarshalTest {
 		given(aliasResolver.resolutions()).willReturn(mockAliases);
 
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
+				propsWithAutoCreation, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
 
 		final var result = subject.unmarshalFromGrpc(op);
 
@@ -144,7 +145,24 @@ class ImpliedTransfersMarshalTest {
 		given(aliasResolver.resolutions()).willReturn(mockAliases);
 
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
+				propsWithAutoCreation, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
+
+		final var result = subject.unmarshalFromGrpc(op);
+
+		assertEquals(result.getMeta(), expectedMeta);
+	}
+
+	@Test
+	void rejectsAutoCreationIfNotEnabled() {
+		setupHbarOnlyFixture();
+		setupPropsWithAutoCreationEnabled(false);
+
+		given(aliasCheck.test(op)).willReturn(true);
+		given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+		given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+
+		final var expectedMeta = new ImpliedTransfersMeta(
+				propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
 
 		final var result = subject.unmarshalFromGrpc(op);
 
@@ -157,7 +175,7 @@ class ImpliedTransfersMarshalTest {
 		setupProps();
 
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, Collections.emptyList(), NO_ALIASES);
+				propsWithAutoCreation, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, Collections.emptyList(), NO_ALIASES);
 
 		givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
@@ -177,7 +195,7 @@ class ImpliedTransfersMarshalTest {
 
 		final var expectedChanges = expNonFeeChanges(false);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList(), mockAliases, 1);
+		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), mockAliases, 1);
 
 		givenValidity(OK);
 
@@ -208,7 +226,7 @@ class ImpliedTransfersMarshalTest {
 		expectedChanges.add(changingHbar(adjustFrom(a, -100)));
 		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100)));
 
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, Collections.emptyList(), NO_ALIASES);
+		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), NO_ALIASES);
 
 		givenValidity(OK);
 
@@ -229,16 +247,18 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, mockFinalMeta, NO_ALIASES);
+		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, mockFinalMeta, NO_ALIASES);
 
 		givenValidity(OK);
 		// and:
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
-		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(
+				propsWithAutoCreation)))
 				.willReturn(OK);
-		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(
+				propsWithAutoCreation)))
 				.willReturn(OK);
 		// and:
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
@@ -259,14 +279,15 @@ class ImpliedTransfersMarshalTest {
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta, NO_ALIASES);
+				propsWithAutoCreation, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta, NO_ALIASES);
 
 		givenValidity(OK);
 		// and:
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
-		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(
+				propsWithAutoCreation)))
 				.willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
 		// and:
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
@@ -279,17 +300,22 @@ class ImpliedTransfersMarshalTest {
 	}
 
 	private void givenValidity(ResponseCodeEnum s) {
-		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props))
+		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), propsWithAutoCreation))
 				.willReturn(s);
 	}
 
 	private void setupProps() {
+		setupPropsWithAutoCreationEnabled(true);
+	}
+
+	private void setupPropsWithAutoCreationEnabled(final boolean flag) {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(flag);
 	}
 
 	private void setupFullFixture() {
@@ -356,13 +382,22 @@ class ImpliedTransfersMarshalTest {
 	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
 	private final boolean areNftsEnabled = true;
-	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
+	private final ImpliedTransfersMeta.ValidationProps propsWithAutoCreation = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
 			maxExplicitOwnershipChanges,
 			maxFeeNesting,
 			maxBalanceChanges,
-			areNftsEnabled);
+			areNftsEnabled,
+			true);
+	private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation = new ImpliedTransfersMeta.ValidationProps(
+			maxExplicitHbarAdjusts,
+			maxExplicitTokenAdjusts,
+			maxExplicitOwnershipChanges,
+			maxFeeNesting,
+			maxBalanceChanges,
+			areNftsEnabled,
+			false);
 
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");
