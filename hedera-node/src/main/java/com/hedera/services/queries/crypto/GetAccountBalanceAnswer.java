@@ -122,7 +122,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			if (result.response() != OK) {
 				return result.response();
 			}
-			final var effId = result.aliasedId();
+			final var effId = result.resolvedId();
 			return optionValidator.queryableAccountStatus(effId, accounts);
 		} else {
 			return INVALID_ACCOUNT_ID;
@@ -133,7 +133,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return asAccount(op.getContractID());
 		} else {
-			return aliasManager.lookUpAccountID(op.getAccountID()).aliasedId();
+			return aliasManager.lookUpAccountID(op.getAccountID()).resolvedId();
 		}
 	}
 

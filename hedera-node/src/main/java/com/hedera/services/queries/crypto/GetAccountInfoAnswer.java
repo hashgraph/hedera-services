@@ -42,7 +42,6 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -63,7 +62,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 		if (result.response() != OK) {
 			return result.response();
 		}
-		AccountID id = result.aliasedId();
+		AccountID id = result.resolvedId();
 		var entityNum = EntityNum.fromAccountId(id);
 
 		return optionValidator.queryableAccountStatus(entityNum, view.accounts());

@@ -139,7 +139,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 				amounts[i] = adjustment.getAmount();
 				accounts.add(
 						EntityId.fromGrpcAccountId(
-								aliasManager.lookUpPayerAccountID(adjustment.getAccountID()).aliasedId()));
+								aliasManager.lookUpPayerAccountID(adjustment.getAccountID()).resolvedId()));
 			}
 			pojo.hbars = amounts;
 			pojo.accountIds = accounts;

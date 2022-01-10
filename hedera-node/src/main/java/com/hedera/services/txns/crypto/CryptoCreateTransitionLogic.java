@@ -102,7 +102,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID sponsor = result.aliasedId();
+			AccountID sponsor = result.resolvedId();
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
@@ -136,7 +136,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
 			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID);
-			customizer.proxy(EntityId.fromGrpcAccountId(result.aliasedId()));
+			customizer.proxy(EntityId.fromGrpcAccountId(result.resolvedId()));
 		}
 		return customizer;
 	}

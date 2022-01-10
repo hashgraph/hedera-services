@@ -562,7 +562,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			updateAdminKeyIfAppropriate(token, changes);
-			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.aliasedId());
+			updateAutoRenewAccountIfAppropriate(token, autoRenewAccountLookup.resolvedId());
 			updateAutoRenewPeriodIfAppropriate(token, changes);
 
 			updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
@@ -575,7 +575,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateTokenSymbolIfAppropriate(token, changes);
 			updateTokenNameIfAppropriate(token, changes);
-			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.aliasedId(), tId);
+			updateTreasuryIfAppropriate(token, treasuryAccountLookUp.resolvedId(), tId);
 			updateMemoIfAppropriate(token, changes);
 			updateExpiryIfAppropriate(token, changes);
 		});

@@ -27,7 +27,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -47,7 +46,7 @@ public class AnswerFunctions {
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var id = aliasManager.lookUpAccountID(op.getAccountID()).aliasedId();
+		final var id = aliasManager.lookUpAccountID(op.getAccountID()).resolvedId();
 		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
@@ -64,7 +63,7 @@ public class AnswerFunctions {
 			return Optional.of(expirableTxnRecord.asGrpc());
 		} else {
 			try {
-				final var id = aliasManager.lookUpPayerAccountID(txnId.getAccountID()).aliasedId();
+				final var id = aliasManager.lookUpPayerAccountID(txnId.getAccountID()).resolvedId();
 				final var account = view.accounts().get(EntityNum.fromAccountId(id));
 				final var searchableId = TxnId.fromGrpc(txnId, aliasManager);
 				return account.recordList()

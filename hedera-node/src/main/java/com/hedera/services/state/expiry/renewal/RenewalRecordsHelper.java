@@ -32,7 +32,6 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
@@ -143,7 +142,7 @@ public class RenewalRecordsHelper {
 	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
 		final var lookedUpResult = aliasManager.lookUpPayerAccountID(accountId);
-		final var accountID = lookedUpResult.aliasedId();
+		final var accountID = lookedUpResult.resolvedId();
 		final var id = EntityId.fromGrpcAccountId(accountID);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);

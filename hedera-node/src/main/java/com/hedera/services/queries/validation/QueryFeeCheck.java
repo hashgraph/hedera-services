@@ -45,8 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -126,7 +124,7 @@ public class QueryFeeCheck {
 			return lookupResult.response();
 		}
 
-		var id = lookupResult.aliasedId();
+		var id = lookupResult.resolvedId();
 		var key = fromAccountId(id);
 		long amount = adjustment.getAmount();
 
@@ -162,7 +160,7 @@ public class QueryFeeCheck {
 		if (result.response() != OK) {
 			return result.response();
 		}
-		AccountID transactionPayer = result.aliasedId();
+		AccountID transactionPayer = result.resolvedId();
 
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
@@ -175,7 +173,7 @@ public class QueryFeeCheck {
 			if (amountValidation.response() != OK) {
 				return amountValidation.response();
 			}
-			var id = amountValidation.aliasedId();
+			var id = amountValidation.resolvedId();
 
 			long amount = accountAmount.getAmount();
 

@@ -87,7 +87,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID id = result.aliasedId();
+			AccountID id = result.resolvedId();
 
 			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
@@ -99,7 +99,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID beneficiary = result.aliasedId();
+			AccountID beneficiary = result.resolvedId();
 
 			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);

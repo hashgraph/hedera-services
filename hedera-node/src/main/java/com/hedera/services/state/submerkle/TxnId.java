@@ -152,7 +152,7 @@ public class TxnId implements SelfSerializable {
 	/* --- Helpers --- */
 	public static TxnId fromGrpc(final TransactionID grpc, final AliasManager aliasManager) {
 		return new TxnId(
-				EntityId.fromGrpcAccountId(aliasManager.lookUpPayerAccountID(grpc.getAccountID()).aliasedId()),
+				EntityId.fromGrpcAccountId(aliasManager.lookUpPayerAccountID(grpc.getAccountID()).resolvedId()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
 				grpc.getScheduled(),
 				grpc.getNonce());

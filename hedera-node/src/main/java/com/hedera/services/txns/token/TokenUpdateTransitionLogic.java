@@ -150,7 +150,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(newTreasuryLookUp.response());
 				return;
 			}
-			if (!tokenStore.associationExists(newTreasuryLookUp.aliasedId(), id)) {
+			if (!tokenStore.associationExists(newTreasuryLookUp.resolvedId(), id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
@@ -162,18 +162,18 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					return;
 				}
 			}
-			if (!newTreasuryLookUp.aliasedId().equals(existingTreasury)) {
+			if (!newTreasuryLookUp.resolvedId().equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
-				outcome = prepNewTreasury(id, token, newTreasuryLookUp.aliasedId());
+				outcome = prepNewTreasury(id, token, newTreasuryLookUp.resolvedId());
 				if (outcome != OK) {
 					abortWith(outcome);
 					return;
 				}
 				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
-				newTreasury = newTreasuryLookUp.aliasedId();
+				newTreasury = newTreasuryLookUp.resolvedId();
 			}
 		}
 
