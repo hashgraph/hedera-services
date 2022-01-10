@@ -68,10 +68,8 @@ public class TokenSigningMetadata {
 		final var customFees = token.customFeeSchedule();
 		if (!customFees.isEmpty()) {
 			for (var fee : customFees) {
-				if (fee.getFeeType() != FcCustomFee.FeeType.ROYALTY_FEE) {
-					continue;
-				}
-				if (fee.getRoyaltyFeeSpec().fallbackFee() != null) {
+				if (fee.getFeeType() != FcCustomFee.FeeType.ROYALTY_FEE &&
+						fee.getRoyaltyFeeSpec().fallbackFee() != null) {
 					hasRoyaltyWithFallback = true;
 					break;
 				}

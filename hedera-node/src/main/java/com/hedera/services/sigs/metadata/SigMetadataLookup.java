@@ -46,16 +46,16 @@ public interface SigMetadataLookup {
 	Function<
 			TokenStore,
 			Function<TokenID, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
-		TokenID id;
-		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
+		TokenID id = tokenStore.resolve(ref);
+		return TokenStore.MISSING_TOKEN.equals(id)
 				? failure(MISSING_TOKEN)
 				: new SafeLookupResult<>(from(tokenStore.get(id)));
 	};
 	Function<
 			ScheduleStore,
 			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>> SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
-		ScheduleID id;
-		return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
+		ScheduleID id = scheduleStore.resolve(ref);
+		return ScheduleStore.MISSING_SCHEDULE.equals(id)
 				? failure(MISSING_SCHEDULE)
 				: new SafeLookupResult<>(from(scheduleStore.get(id)));
 	};
