@@ -126,14 +126,14 @@ class AliasManagerTest {
 
 		final var resultA = subject.lookUpAccountID(aId);
 		final var resultB = subject.lookUpAccountID(bId);
-		assertEquals(a.longValue(), resultA.aliasedId().getAccountNum());
+		assertEquals(a.longValue(), resultA.resolvedId().getAccountNum());
 		assertEquals(OK, resultA.response());
-		assertEquals(b.longValue(), resultB.aliasedId().getAccountNum());
+		assertEquals(b.longValue(), resultB.resolvedId().getAccountNum());
 		assertEquals(OK, resultB.response());
 
 
 		final var invalidResult = subject.lookUpAccountID(invalidId);
-		assertEquals(invalidId, invalidResult.aliasedId());
+		assertEquals(invalidId, invalidResult.resolvedId());
 		assertEquals(INVALID_ACCOUNT_ID, invalidResult.response());
 
 		assertTrue(subject.contains(aliasA));

@@ -89,7 +89,7 @@ public abstract class HederaStore {
 		if (result.response() != OK) {
 			return result;
 		}
-		var validity = usableOrElse(result.aliasedId(), response);
-		return AliasLookup.of(result.aliasedId(), validity);
+		var validity = usableOrElse(result.resolvedId(), response);
+		return AliasLookup.of(result.resolvedId(), validity);
 	}
 }

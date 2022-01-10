@@ -137,7 +137,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (schedule.hasExplicitPayer()) {
 			final var grpcPayer = buildAccountId(schedule.payer(), schedule.getPayerAlias());
 			final var schedulePayerLookUp = lookUpAccountId(grpcPayer, INVALID_SCHEDULE_PAYER_ID);
-			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.aliasedId()));
+			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.resolvedId()));
 
 			if (schedulePayerLookUp.response() != OK) {
 				return failure(schedulePayerLookUp.response());
@@ -147,13 +147,13 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		final var grpcSchedulingAccount = buildAccountId(schedule.schedulingAccount(),
 				schedule.getSchedulingAccountAlias());
 		final var schedulingAccountLookup = lookUpAccountId(grpcSchedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID);
-		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.aliasedId()));
+		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.resolvedId()));
 
 		if (schedulingAccountLookup.response() != OK) {
 			return failure(schedulingAccountLookup.response());
 		}
 
-		pendingId = ids.newScheduleId(schedulingAccountLookup.aliasedId());
+		pendingId = ids.newScheduleId(schedulingAccountLookup.resolvedId());
 		pendingCreation = schedule;
 
 		return success(pendingId);
@@ -246,8 +246,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	@Override
-	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum invalidAccountID) {
-		return lookUpAccountId(grpcId, aliasManager, invalidAccountID);
+	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum errResponse) {
+		return lookUpAccountId(grpcId, aliasManager, errResponse);
 	}
 
 	private AccountID buildAccountId(EntityId entityId, ByteString alias) {

@@ -36,6 +36,7 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,16 +44,19 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -105,7 +109,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 				optimisticSpecialFileUpdate(),
 				notTooManyFeeScheduleCanBeCreated(),
 				numAccountsAllowedIsDynamic(),
-				associateHasExpectedSemantics()
+				associateHasExpectedSemantics(),
+				autoCreationIsDynamic(),
 		});
 	}
 
@@ -157,6 +162,25 @@ public class FileUpdateSuite extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec autoCreationIsDynamic() {
+		final var aliasKey = "autoCreationKey";
+
+		return defaultHapiSpec("AutoCreationIsDynamic")
+				.given(
+						newKeyNamed(aliasKey),
+						overriding("autoCreation.enabled", "false")
+				).when(
+						cryptoTransfer(
+								tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)
+						).hasKnownStatus(NOT_SUPPORTED)
+				).then(
+						overriding("autoCreation.enabled", "true"),
+						cryptoTransfer(
+								tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)
+						),
+						getAliasedAccountInfo(aliasKey)
+				);
+	}
 
 	public HapiApiSpec numAccountsAllowedIsDynamic() {
 		final int MONOGAMOUS_NETWORK = 1;

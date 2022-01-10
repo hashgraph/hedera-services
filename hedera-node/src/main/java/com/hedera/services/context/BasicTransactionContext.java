@@ -62,7 +62,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -165,7 +164,7 @@ public class BasicTransactionContext implements TransactionContext {
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
 				? accounts.get().get(
-				fromAccountId(aliasManager.lookUpPayerAccountID(accessor.getPayer()).aliasedId())).getAccountKey()
+				fromAccountId(aliasManager.lookUpPayerAccountID(accessor.getPayer()).resolvedId())).getAccountKey()
 				: EMPTY_KEY;
 	}
 
@@ -174,7 +173,7 @@ public class BasicTransactionContext implements TransactionContext {
 		if (!isPayerSigKnownActive) {
 			throw new IllegalStateException("No active payer!");
 		}
-		return aliasManager.lookUpPayerAccountID(accessor().getPayer()).aliasedId();
+		return aliasManager.lookUpPayerAccountID(accessor().getPayer()).resolvedId();
 	}
 
 	@Override

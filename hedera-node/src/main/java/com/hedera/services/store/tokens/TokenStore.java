@@ -76,7 +76,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
-	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum response);
+	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

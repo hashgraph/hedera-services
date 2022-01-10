@@ -46,6 +46,7 @@ import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ImpliedTransfersMarshal {
@@ -89,13 +90,16 @@ public class ImpliedTransfersMarshal {
 		if (aliasCheck.test(op)) {
 			final var aliasResolver = aliasResolverFactory.get();
 			op = aliasResolver.resolve(op, aliasManager);
+			numAutoCreations = aliasResolver.perceivedAutoCreations();
+			if (numAutoCreations > 0 && !props.isAutoCreationEnabled()) {
+				return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
+			}
 			if (aliasResolver.perceivedMissingAliases() > 0) {
 				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
 			} else if (aliasResolver.perceivedInvalidCreations() > 0) {
 				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ALIAS_KEY);
 			} else {
 				resolvedAliases = aliasResolver.resolutions();
-				numAutoCreations = aliasResolver.perceivedAutoCreations();
 			}
 		}
 
@@ -177,6 +181,7 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.maxNftTransfersLen(),
 				dynamicProperties.maxCustomFeeDepth(),
 				dynamicProperties.maxXferBalanceChanges(),
-				dynamicProperties.areNftsEnabled());
+				dynamicProperties.areNftsEnabled(),
+				dynamicProperties.isAutoCreationEnabled());
 	}
 }

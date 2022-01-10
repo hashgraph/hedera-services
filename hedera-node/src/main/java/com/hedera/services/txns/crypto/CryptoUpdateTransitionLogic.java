@@ -107,7 +107,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			final var target = result.aliasedId();
+			final var target = result.resolvedId();
 			final var customizer = asCustomizer(op);
 
 			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
@@ -188,7 +188,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).aliasedId();
+			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).resolvedId();
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
