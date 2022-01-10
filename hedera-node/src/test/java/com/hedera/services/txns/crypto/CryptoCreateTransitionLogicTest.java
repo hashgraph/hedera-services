@@ -58,7 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -196,6 +195,7 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		given(validator.isValidTransactionID(cryptoCreateTxn.getTransactionID().getAccountID(), ledger)).willReturn(OK);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -273,13 +273,12 @@ class CryptoCreateTransitionLogicTest {
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(
-				AliasLookup.of(aliasedProxyID, INVALID_ALIAS_KEY));
+				AliasLookup.of(aliasedProxyID, INVALID_ACCOUNT_ID));
 		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
-				AliasLookup.of(aliasAccountPayer, INVALID_ALIAS_KEY));
+				AliasLookup.of(PAYER, OK));
+		given(validator.isValidTransactionID(cryptoCreateTxn.getTransactionID().getAccountID(), ledger)).willReturn(OK);
 
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+		assertEquals(INVALID_ACCOUNT_ID, subject.validate(cryptoCreateTxn));
 	}
 
 	private Key unmappableKey() {

@@ -26,6 +26,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -38,6 +40,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -69,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
@@ -122,6 +126,7 @@ class ContextOptionValidatorTest {
 	private HFileMeta attr;
 	private HFileMeta deletedAttr;
 	private StateView view;
+	private HederaLedger ledger;
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
@@ -131,6 +136,7 @@ class ContextOptionValidatorTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
 		accounts = mock(MerkleMap.class);
+		ledger = mock(HederaLedger.class);
 		given(accounts.get(EntityNum.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(EntityNum.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
@@ -169,6 +175,33 @@ class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	private TransactionBody buildValidTransaction() {
+		final var creationOp = CryptoCreateTransactionBody.getDefaultInstance();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(Instant.now().getEpochSecond()))
+						.setAccountID(a))
+				.setCryptoCreateAccount(creationOp)
+				.build();
+	}
+
+	@Test
+	void validatesTransactionAccountID() {
+		final var txn = buildValidTransaction();
+		given(ledger.lookUpAccountId(a, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(a, OK));
+		assertEquals(OK, subject.isValidTransactionID(txn.getTransactionID().getAccountID(), ledger));
+	}
+
+	@Test
+	void validatesInvalidTransactionAccountID() {
+		final var txn = buildValidTransaction();
+		given(ledger.lookUpAccountId(a, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(a, INVALID_PAYER_ACCOUNT_ID));
+		assertEquals(INVALID_PAYER_ACCOUNT_ID,
+				subject.isValidTransactionID(txn.getTransactionID().getAccountID(), ledger));
 	}
 
 	@Test

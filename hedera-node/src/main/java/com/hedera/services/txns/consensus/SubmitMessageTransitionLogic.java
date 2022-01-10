@@ -99,12 +99,24 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 		if (op.hasChunkInfo()) {
 			var chunkInfo = op.getChunkInfo();
+
 			if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
 				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
 				return;
 			}
-			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
-					transactionBody.getTransactionID().getAccountID())) {
+
+			final var chunkAccountIDLookup = aliasManager.lookUpPayerAccountID(
+					chunkInfo.getInitialTransactionID().getAccountID());
+			final var transactionIDLookup = aliasManager.lookUpPayerAccountID(
+					transactionBody.getTransactionID().getAccountID());
+			if (chunkAccountIDLookup.response() != OK) {
+				transactionContext.setStatus(chunkAccountIDLookup.response());
+			}
+			if (transactionIDLookup.response() != OK) {
+				transactionContext.setStatus(transactionIDLookup.response());
+			}
+
+			if (!chunkAccountIDLookup.resolvedId().equals(transactionIDLookup.resolvedId())) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}

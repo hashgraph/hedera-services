@@ -23,6 +23,7 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -109,6 +110,8 @@ class SubmitMessageTransitionLogicTest {
 	void followsHappyPath() {
 		// given:
 		givenValidTransactionContext();
+		given(aliasManager.lookUpPayerAccountID(transactionBody.getTransactionID().getAccountID()))
+				.willReturn(AliasLookup.of(transactionBody.getTransactionID().getAccountID(), OK));
 
 		// when:
 		subject.doStateTransition();
@@ -187,6 +190,9 @@ class SubmitMessageTransitionLogicTest {
 				.setAccountNum(payer.getAccountNum() + 1)
 				.build();
 		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
+		given(aliasManager.lookUpPayerAccountID(initialTransactionPayer)).willReturn(
+				AliasLookup.of(initialTransactionPayer, OK));
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -199,6 +205,7 @@ class SubmitMessageTransitionLogicTest {
 	void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
 		// given:
 		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -211,6 +218,7 @@ class SubmitMessageTransitionLogicTest {
 	void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -223,6 +231,7 @@ class SubmitMessageTransitionLogicTest {
 	void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(1, 1, defaultTxnId());
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
