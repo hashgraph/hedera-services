@@ -119,7 +119,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						ocToken(),
 						contractTransferToSigReqAccountWithKeySucceeds(),
 						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsed(),
+						minChargeIsTXGasUsedByContractCall(),
 						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
 						HSCS_EVM_006_ContractHBarTransferToAccount(),
 						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
@@ -942,8 +942,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByContractCall() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)

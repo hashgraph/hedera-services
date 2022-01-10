@@ -621,8 +621,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByContractCreate() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCreate")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
