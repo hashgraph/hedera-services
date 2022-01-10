@@ -45,14 +45,6 @@ import java.time.Instant;
 public interface StateChildren {
 	Instant signedAt();
 
-	default boolean isSignedAfter(final StateChildren children) {
-		return signedAt().isAfter(children.signedAt());
-	}
-
-	default boolean isSigned() {
-		return signedAt().isAfter(Instant.EPOCH);
-	}
-
 	MerkleMap<EntityNum, MerkleAccount> accounts();
 
 	MerkleMap<EntityNum, MerkleTopic> topics();
@@ -82,4 +74,6 @@ public interface StateChildren {
 	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations();
 
 	RecordsRunningHashLeaf runningHashLeaf();
+
+	void nullOutRefs();
 }

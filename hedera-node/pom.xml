@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.hedera.hashgraph</groupId>
@@ -188,17 +189,17 @@
 							<target>
 								<delete includeemptydirs="true" quiet="false">
 									<fileset dir="${project.basedir}">
-										<include name="*.csv" />
-										<include name="settingsUsed.txt" />
-										<include name="data/accountBalances/**/*" />
-										<include name="data/config/*.bin" />
-										<include name="data/onboard/*.csv" />
-										<include name="data/onboard/exchangeRate.txt" />
-										<include name="data/onboard/exportedAccount.txt" />
-										<include name="data/onboard/feeSchedule.txt" />
-										<include name="data/recordstreams/**/*" />
-										<include name="data/saved/**/*" />
-										<include name="output/**/*" />
+										<include name="*.csv"/>
+										<include name="settingsUsed.txt"/>
+										<include name="data/accountBalances/**/*"/>
+										<include name="data/config/*.bin"/>
+										<include name="data/onboard/*.csv"/>
+										<include name="data/onboard/exchangeRate.txt"/>
+										<include name="data/onboard/exportedAccount.txt"/>
+										<include name="data/onboard/feeSchedule.txt"/>
+										<include name="data/recordstreams/**/*"/>
+										<include name="data/saved/**/*"/>
+										<include name="output/**/*"/>
 									</fileset>
 								</delete>
 							</target>
@@ -209,7 +210,7 @@
 						<id>empty-swirlds-jar-for-old-build-scripts</id>
 						<configuration>
 							<target>
-								<touch file="swirlds.jar" />
+								<touch file="swirlds.jar"/>
 							</target>
 						</configuration>
 						<goals>
@@ -389,13 +390,15 @@
 								<id>ensure-node-properties</id>
 								<configuration>
 									<target>
-										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+										<taskdef resource="net/sf/antcontrib/antlib.xml"
+												 classpathref="maven.dependency.classpath"/>
 										<if>
 											<not>
-												<available file="data/config/node.properties" />
+												<available file="data/config/node.properties"/>
 											</not>
 											<then>
-												<copy file="configuration/dev/node.properties" tofile="data/config/node.properties" />
+												<copy file="configuration/dev/node.properties"
+													  tofile="data/config/node.properties"/>
 											</then>
 										</if>
 									</target>
@@ -409,13 +412,15 @@
 								<id>ensure-application-properties</id>
 								<configuration>
 									<target>
-										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+										<taskdef resource="net/sf/antcontrib/antlib.xml"
+												 classpathref="maven.dependency.classpath"/>
 										<if>
 											<not>
-												<available file="data/config/api-permission.properties" />
+												<available file="data/config/api-permission.properties"/>
 											</not>
 											<then>
-												<copy file="configuration/dev/api-permission.properties" tofile="data/config/api-permission.properties" />
+												<copy file="configuration/dev/api-permission.properties"
+													  tofile="data/config/api-permission.properties"/>
 											</then>
 										</if>
 									</target>
@@ -429,13 +434,15 @@
 								<id>ensure-api-permission-properties</id>
 								<configuration>
 									<target>
-										<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.dependency.classpath" />
+										<taskdef resource="net/sf/antcontrib/antlib.xml"
+												 classpathref="maven.dependency.classpath"/>
 										<if>
 											<not>
-												<available file="data/config/application.properties" />
+												<available file="data/config/application.properties"/>
 											</not>
 											<then>
-												<copy file="configuration/dev/application.properties" tofile="data/config/application.properties" />
+												<copy file="configuration/dev/application.properties"
+													  tofile="data/config/application.properties"/>
 											</then>
 										</if>
 									</target>

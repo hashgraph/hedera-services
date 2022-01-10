@@ -109,10 +109,17 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else if (function == CryptoTransfer) {
-			if (!accessor.areAutoCreationsCounted()) {
-				accessor.countAutoCreationsWith(aliasManager);
+			if (dynamicProperties.isAutoCreationEnabled()) {
+				if (!accessor.areAutoCreationsCounted()) {
+					accessor.countAutoCreationsWith(aliasManager);
+				}
+				return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
+			} else {
+				/* Since auto-creation is disabled, if this transfer does attempt one, it will
+				resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
+				CryptoCreate throttle bucket. */
+				return !manager.allReqsMetAt(now);
 			}
-			return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
 		} else if (function == ScheduleCreate) {
 			final var scheduled = accessor.getTxn().getScheduleCreate().getScheduledTransactionBody();
 			return shouldThrottleScheduleCreate(manager, scheduled, now);
@@ -272,6 +279,42 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		final var manager = functionReqs.get(CryptoCreate);
 		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
 	}
+
+	private boolean shouldThrottleScheduleCreate(
+			final ThrottleReqsManager manager,
+			final SchedulableTransactionBody scheduled,
+			final Instant now
+	) {
+		final var scheduledFunction = scheduledFunctionOf(scheduled);
+		if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
+			final var txn = scheduled.getCryptoTransfer();
+			if (usesAliases(txn)) {
+				final var resolver = new AliasResolver();
+				resolver.resolve(txn, aliasManager);
+				final var numAutoCreations = resolver.perceivedAutoCreations();
+				if (numAutoCreations > 0) {
+					return shouldThrottleAutoCreations(numAutoCreations, now);
+				}
+			}
+		}
+		return !manager.allReqsMetAt(now);
+	}
+
+	private boolean shouldThrottleTransfer(
+			final ThrottleReqsManager manager,
+			final int numAutoCreations,
+			final Instant now
+	) {
+		return (numAutoCreations == 0)
+				? !manager.allReqsMetAt(now)
+				: shouldThrottleAutoCreations(numAutoCreations, now);
+	}
+
+	private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
+		final var manager = functionReqs.get(CryptoCreate);
+		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
+	}
+
 
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
 		final var numNfts = op.getMetadataCount();

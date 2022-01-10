@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -49,9 +50,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,16 +98,8 @@ class StateAccessorTest {
 	}
 
 	@Test
-	void childrenGetReplacedAsExpected() {
-		givenStateWithMockChildren();
-		subject.updateChildrenFrom(state);
-		final var currentChildren = subject.children();
-
-		subject.replaceChildrenFrom(state, signedAt);
-
-		assertNotSame(currentChildren, subject.children());
-		assertEquals(signedAt, subject.children().signedAt());
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.updateChildrenFrom(state));
+	void childrenNonNull() {
+		Assertions.assertNotNull(subject.children());
 	}
 
 	@Test
@@ -117,6 +109,18 @@ class StateAccessorTest {
 		subject.updateChildrenFrom(state);
 
 		assertChildrenAreExpectedMocks();
+	}
+
+	@Test
+	void nullsOutChildrenAsExpected() {
+		final var anInstant = Instant.ofEpochSecond(1_234_567L, 890);
+		givenStateWithMockChildren();
+		((MutableStateChildren) subject.children()).updateFrom(state, anInstant);
+
+		subject.children().nullOutRefs();
+
+		assertChildrenAreNull();
+		assertSame(Instant.EPOCH, subject.children().signedAt());
 	}
 
 	private void assertChildrenAreExpectedMocks() {
@@ -155,10 +159,22 @@ class StateAccessorTest {
 		given(state.contractStorage()).willReturn(contractStorage);
 	}
 
-	@Test
-	void childrenNonNull() {
-		// expect:
-		Assertions.assertNotNull(subject.children());
+	private void assertChildrenAreNull() {
+		assertThrows(NullPointerException.class, subject::accounts);
+		assertThrows(NullPointerException.class, subject::storage);
+		assertThrows(NullPointerException.class, subject::contractStorage);
+		assertThrows(NullPointerException.class, subject::topics);
+		assertThrows(NullPointerException.class, subject::tokens);
+		assertThrows(NullPointerException.class, subject::tokenAssociations);
+		assertThrows(NullPointerException.class, subject::schedules);
+		assertThrows(NullPointerException.class, subject::networkCtx);
+		assertThrows(NullPointerException.class, subject::addressBook);
+		assertThrows(NullPointerException.class, subject::specialFiles);
+		assertThrows(NullPointerException.class, subject::uniqueTokens);
+		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
+		assertThrows(NullPointerException.class, subject::runningHashLeaf);
 	}
 
 	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);

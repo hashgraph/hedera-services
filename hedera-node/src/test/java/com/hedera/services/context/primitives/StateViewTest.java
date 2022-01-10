@@ -698,6 +698,18 @@ class StateViewTest {
 	}
 
 	@Test
+	void infoForMissingAccountWithAlias() {
+		EntityNum mockedEntityNum = mock(EntityNum.class);
+
+		given(aliasManager.lookupIdBy(any())).willReturn(mockedEntityNum);
+		given(contracts.get(mockedEntityNum)).willReturn(null);
+
+		final var actualResponse = subject.infoForAccount(accountWithAlias, aliasManager);
+		assertEquals(Optional.empty(), actualResponse);
+
+	}
+
+	@Test
 	void getTopics() {
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);

@@ -32,8 +32,7 @@ import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
-import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.order.SignedStateSigReqs;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -134,8 +133,6 @@ class ServicesAppTest {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
 		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
-		assertThat(subject.latestSignedState(), instanceOf(StateAccessor.class));
-		assertThat(subject.expansionHelper(), instanceOf(ExpansionHelper.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
@@ -161,7 +158,7 @@ class ServicesAppTest {
 		assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
 		assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
 		assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
-		assertThat(subject.signedStateSigReqs(), instanceOf(SignedStateSigReqs.class));
+		assertThat(subject.sigReqsManager(), instanceOf(SigReqsManager.class));
 		assertSame(subject.nodeId(), selfNodeId);
 		assertSame(subject.pause(), SLEEPING_PAUSE);
 		assertTrue(subject.consoleOut().isEmpty());

@@ -229,13 +229,6 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	@LatestSignedState
-	public static StateAccessor provideLatestSignedState() {
-		return new StateAccessor();
-	}
-
-	@Provides
-	@Singleton
 	public static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
 			@WorkingState StateAccessor accessor
 	) {
