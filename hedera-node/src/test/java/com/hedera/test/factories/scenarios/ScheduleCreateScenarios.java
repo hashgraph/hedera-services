@@ -41,16 +41,6 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	SCHEDULE_CREATE_NOT_IN_WHITELIST {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedScheduleCreate()
-							.missingAdmin()
-							.creating(newSignedTokenMint().minting(KNOWN_TOKEN_IMMUTABLE).get())
-							.get()
-			));
-		}
-	},
 	SCHEDULE_CREATE_NONSENSE {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(

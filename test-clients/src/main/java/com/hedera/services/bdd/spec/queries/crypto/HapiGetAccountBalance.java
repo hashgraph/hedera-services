@@ -51,7 +51,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -73,6 +72,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	private String aliasKeySource = null;
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+	private boolean assertAccountIDIsNotAlias = false;
 
 	List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
@@ -134,6 +134,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		return this;
 	}
 
+	public HapiGetAccountBalance hasExpectedAccountID() {
+		assertAccountIDIsNotAlias = true;
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.CryptoGetAccountBalance;
@@ -146,10 +151,18 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
-		long actual = response.getCryptogetAccountBalance().getBalance();
+		final var balanceResponse = response.getCryptogetAccountBalance();
+		long actual = balanceResponse.getBalance();
 		if (verboseLoggingOn) {
 			log.info("Explicit token balances: " + response.getCryptogetAccountBalance().getTokenBalancesList());
 		}
+
+		if (assertAccountIDIsNotAlias) {
+			final var expectedID = spec.registry().getAccountID(
+					spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8());
+			Assertions.assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
+		}
+
 		if (expectedCondition.isPresent()) {
 			Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
 			Optional<String> failure = condition.apply(actual);

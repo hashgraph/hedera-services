@@ -428,6 +428,7 @@ public class TypedTokenStore {
 		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
 
 		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
+
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 

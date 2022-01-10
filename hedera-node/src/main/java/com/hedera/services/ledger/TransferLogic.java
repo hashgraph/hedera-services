@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
@@ -78,7 +79,7 @@ public class TransferLogic {
 			final UniqueTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
-			final AutoCreationLogic autoCreationLogic,
+			final @Nullable AutoCreationLogic autoCreationLogic,
 			final AccountRecordsHistorian recordsHistorian
 	) {
 		this.tokenStore = tokenStore;
@@ -100,7 +101,11 @@ public class TransferLogic {
 		for (var change : changes) {
 			if (change.isForHbar()) {
 				if (change.hasNonEmptyAlias()) {
-					final var result = autoCreationLogic.createFromTrigger(change);
+					if (autoCreationLogic == null) {
+						throw new IllegalStateException(
+								"Cannot auto-create account from " + change + " with null autoCreationLogic");
+					}
+					final var result = autoCreationLogic.create(change, accountsLedger);
 					validity = result.getKey();
 					autoCreationFee += result.getValue();
 				} else {
@@ -122,7 +127,7 @@ public class TransferLogic {
 			}
 		} else {
 			dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
-			if (autoCreationLogic.reclaimPendingAliases()) {
+			if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
 				accountsLedger.undoCreations();
 			}
 			throw new InvalidTransactionException(validity);

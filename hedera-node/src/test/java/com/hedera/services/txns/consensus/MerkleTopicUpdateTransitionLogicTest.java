@@ -20,9 +20,11 @@ package com.hedera.services.txns.consensus;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -97,6 +99,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private TransactionContext transactionContext;
 	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
+	private SigImpactHistorian sigImpactHistorian;
 	private OptionValidator validator;
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
@@ -120,9 +123,11 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.memoCheck("")).willReturn(OK);
 		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
 		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		ledger = mock(HederaLedger.class);
-		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext, ledger);
+		subject = new TopicUpdateTransitionLogic(
+				() -> accounts, () -> topics, validator, transactionContext, ledger, sigImpactHistorian);
 	}
 
 	@Test
@@ -173,6 +178,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		assertEquals(VALID_AUTORENEW_PERIOD_SECONDS, topic.getAutoRenewDurationSeconds());
 		assertEquals(EntityId.fromGrpcAccountId(MISC_ACCOUNT), topic.getAutoRenewAccountId());
 		assertEquals(updatedExpirationTime.getEpochSecond(), topic.getExpirationTimestamp().getSeconds());
+		verify(sigImpactHistorian).markEntityChanged(TOPIC_ID.getTopicNum());
 	}
 
 	@Test
@@ -316,7 +322,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void failsOnInvalidTopic() throws Throwable {
+	void failsOnInvalidTopic() {
 		// given:
 		givenValidTransactionInvalidTopic();
 
@@ -382,7 +388,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void clearsAutoRenewAccount() throws Throwable {
+	void clearsAutoRenewAccountIfCorrectSentinelUsed() throws Throwable {
 		// given:
 		givenExistingTopicWithAutoRenewAccount();
 		givenTransactionClearingAutoRenewAccount();
@@ -394,6 +400,21 @@ class MerkleTopicUpdateTransitionLogicTest {
 		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
 		verify(transactionContext).setStatus(SUCCESS);
 		assertFalse(topic.hasAutoRenewAccountId());
+	}
+
+	@Test
+	void doesntClearAutoRenewAccountIfSentinelWithAliasUsed() throws Throwable {
+		// given:
+		givenExistingTopicWithAutoRenewAccount();
+		givenTransactionChangingAutoRenewAccountWithAliasId();
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		var topic = topics.get(EntityNum.fromTopicId(TOPIC_ID));
+		verify(transactionContext).setStatus(INVALID_AUTORENEW_ACCOUNT);
+		assertTrue(topic.hasAutoRenewAccountId());
 	}
 
 	private void assertTopicNotUpdated(MerkleTopic originalMerkleTopic, MerkleTopic originalMerkleTopicClone) {
@@ -487,6 +508,14 @@ class MerkleTopicUpdateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(
 								AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(0).build())
+		);
+	}
+
+	private void givenTransactionChangingAutoRenewAccountWithAliasId() {
+		givenTransaction(
+				getBasicValidTransactionBodyBuilder()
+						.setAutoRenewAccount(
+								AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("pretend")).build())
 		);
 	}
 

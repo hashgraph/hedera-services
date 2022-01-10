@@ -55,6 +55,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -87,16 +88,24 @@ class TransferLogicTest {
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		subject = new TransferLogic(
-				accountsLedger,
-				nftsLedger,
-				tokenRelsLedger,
-				tokenStore,
-				sideEffectsTracker,
-				tokenViewsManager,
-				dynamicProperties,
-				TEST_VALIDATOR,
-				autoCreationLogic,
-				recordsHistorian);
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				autoCreationLogic, recordsHistorian);
+	}
+
+	@Test
+	void throwsIseOnNonEmptyAliasWithNullAutoCreationLogic() {
+		final var firstAmount = 1_000L;
+		final var firstAlias = ByteString.copyFromUtf8("fake");
+		final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
+
+		subject = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				null, recordsHistorian);
+
+		final var triggerList = List.of(inappropriateTrigger);
+		assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));
 	}
 
 	@Test
@@ -106,7 +115,8 @@ class TransferLogicTest {
 		final var firstAlias = ByteString.copyFromUtf8("fake");
 		final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
 
-		given(autoCreationLogic.createFromTrigger(failingTrigger)).willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
+		given(autoCreationLogic.create(failingTrigger, accountsLedger))
+				.willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
 		accountsLedger.begin();
 		accountsLedger.create(mockCreation);
 		given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
@@ -129,7 +139,7 @@ class TransferLogicTest {
 
 		final var firstTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
 		final var secondTrigger = BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount));
-		given(autoCreationLogic.createFromTrigger(firstTrigger)).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(firstTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(firstNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(firstNewAccount);
@@ -137,7 +147,7 @@ class TransferLogicTest {
 			change.setNewBalance(change.units());
 			return Pair.of(OK, autoFee);
 		});
-		given(autoCreationLogic.createFromTrigger(secondTrigger)).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(secondTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(secondNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(secondNewAccount);

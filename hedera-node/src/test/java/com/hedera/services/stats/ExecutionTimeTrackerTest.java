@@ -71,7 +71,6 @@ class ExecutionTimeTrackerTest {
 	@Test
 	void tracksAtMostConfigured() {
 		final var busyNanos = 5_000_000;
-		final var epsilonNanos = 2_500_000;
 
 		given(nodeLocalProperties.numExecutionTimesToTrack()).willReturn(1);
 		withImpliedSubject();
@@ -82,9 +81,6 @@ class ExecutionTimeTrackerTest {
 		subject.start();
 		stayBusyFor(busyNanos);
 		subject.stop();
-
-		final var aNanos = subject.getExecNanosIfPresentFor(aTxnId);
-		assertTrue(Math.abs(aNanos - busyNanos) < epsilonNanos);
 
 		given(accessor.getTxnId()).willReturn(bTxnId);
 		subject.start();

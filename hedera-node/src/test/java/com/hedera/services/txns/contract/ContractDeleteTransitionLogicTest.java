@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -67,6 +68,7 @@ class ContractDeleteTransitionLogicTest {
 	private TransactionBody contractDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private SigImpactHistorian sigImpactHistorian;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractDeleteTransitionLogic subject;
 
@@ -81,8 +83,10 @@ class ContractDeleteTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 		ledger = mock(HederaLedger.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
-		subject = new ContractDeleteTransitionLogic(ledger, delegate, validator, txnCtx, () -> contracts);
+		subject = new ContractDeleteTransitionLogic(
+				ledger, delegate, validator, sigImpactHistorian, txnCtx, () -> contracts);
 	}
 
 	@Test
@@ -145,6 +149,7 @@ class ContractDeleteTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 

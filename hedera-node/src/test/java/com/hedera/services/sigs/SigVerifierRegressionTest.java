@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
@@ -36,10 +36,8 @@ import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -52,7 +50,6 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.test.CiConditions.isInCircleCi;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
@@ -68,21 +65,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.mockito.BDDMockito.anyDouble;
-import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 
 class SigVerifierRegressionTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier precheckVerifier;
 	private SigRequirements keyOrder;
-	private SigRequirements retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private MiscRunningAvgs runningAvgs;
-	private MiscSpeedometers speedometers;
 	private AliasManager aliasManager;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
@@ -176,9 +168,6 @@ class SigVerifierRegressionTest {
 		// expect:
 		assertThrows(InvalidAccountIDException.class,
 				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
-		verify(runningAvgs).recordAccountLookupRetries(anyInt());
-		verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
-		verify(speedometers).cycleAccountLookupRetries();
 	}
 
 	@Test
@@ -212,26 +201,17 @@ class SigVerifierRegressionTest {
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
-		final int MN = 10;
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
-		runningAvgs = mock(MiscRunningAvgs.class);
-		speedometers = mock(MiscSpeedometers.class);
 		aliasManager = mock(AliasManager.class);
 		keyOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
-		retryingKeyOrder =
-				new SigRequirements(
-						defaultLookupsPlusAccountRetriesFor(
-								null, aliasManager, () -> accounts, () -> null, ref -> null, ref -> null,
-								MN, MN, runningAvgs, speedometers),
-						new MockGlobalDynamicProps(),
-						mockSignatureWaivers);
-		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
+		final var nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
+		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
+		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
 	}
 }

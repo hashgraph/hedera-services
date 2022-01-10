@@ -13,13 +13,11 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt install sudo;
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt install -y apt-utils;
-            sudo rm -f /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            python3 -m pip install --upgrade pip;
+            apt update -y;
+            apt install -y net-tools;
+            apt install -y apt-utils;
+            rm -f /usr/bin/python3;
+            ln -s /usr/bin/python3.7 /usr/bin/python3;
             python3 -m pip -q install matplotlib;
             python3 -m pip install awscli;
       - run:
@@ -651,7 +649,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
@@ -665,11 +663,11 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 5 * * 6"
+          cron: "5 2 * * 4"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -687,11 +685,11 @@ workflows:
   GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C:
     triggers:
       - schedule:
-          cron: "0 2 * * 3"
+          cron: "0 23 * * 4"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -710,11 +708,11 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 10 * * 6"
+          cron: "5 7 * * 4"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -733,11 +731,11 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 15 * * 6"
+          cron: "5 12 * * 4"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -756,11 +754,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 9 * * *"
+          cron: "30 2 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -781,7 +779,7 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "58 3 * * *"
+          cron: "58 0 * * *"
           filters:
             branches:
               only:
@@ -809,11 +807,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 9 * * *"
+          cron: "45 2 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -835,7 +833,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-18N-1C:
     triggers:
           - schedule:
-              cron: "0 23,8 * * *"
+              cron: "0 20 * * *"
               filters:
                 branches:
                   only:
@@ -861,11 +859,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 10 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -884,11 +882,11 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "0 3 * * *"
+          cron: "0 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -907,11 +905,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "15 3 * * *"
+          cron: "15 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -930,11 +928,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 3 * * *"
+          cron: "30 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -953,11 +951,11 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "45 3 * * *"
+          cron: "45 0 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -973,14 +971,37 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-4N-2C:
+  GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "0 1 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_4C/CryptoInvalidAccounts
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 19 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -999,11 +1020,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "45 22 * * *"
+          cron: "45 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1022,11 +1043,11 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "15 22 * * *"
+          cron: "15 19 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1045,11 +1066,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "15 23 * * *"
+          cron: "15 20 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1068,11 +1089,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "30 23 * * *"
+          cron: "30 20 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1091,11 +1112,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 10 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1115,11 +1136,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 9 * * *"
+          cron: "40 2 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1139,11 +1160,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "40 11 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1162,11 +1183,11 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 9 * * *"
+          cron: "0 2 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1185,11 +1206,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "55 10 * * *"
+          cron: "55 3 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1208,11 +1229,11 @@ workflows:
   GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "0 10 * * 2"
+          cron: "0 3 * * 4"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1231,11 +1252,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 11 * * *"
+          cron: "35 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1254,11 +1275,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
-          cron: "40 8 * * *"
+          cron: "40 1 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1278,11 +1299,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "30 8 * * *"
+          cron: "30 1 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1301,11 +1322,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 11 * * *"
+          cron: "15 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1324,11 +1345,11 @@ workflows:
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 11 * * *"
+          cron: "25 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1347,11 +1368,11 @@ workflows:
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 8 * * *"
+          cron: "25 5 * * *"
           filters:
             branches:
               only:
-                - master
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1370,11 +1391,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "25 12 * * *"
+          cron: "25 5 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - hts-contracts
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1482,8 +1503,8 @@ jobs:
       - run:
           name: Upload codecov
           command: |
-            apt-get update
-            apt-get install -y curl
+            apt update -y
+            apt install -y curl
             bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
@@ -1506,9 +1527,9 @@ jobs:
           name: Install tools for Sonar scan
           command: |
             export DEBIAN_FRONTEND=noninteractive
-            apt-get update && \
-            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
-            apt-get install -y jq libjq1 libonig4 curl && \
+            apt update -y && \
+            apt install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt install -y jq libjq1 libonig4 curl && \
             echo | cpan && \
             cpan install CPAN && \
             cpan install Mozilla::CA && \

@@ -82,7 +82,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hedera.services.txns.crypto.UnusableAutoCreation.UNUSABLE_AUTO_CREATION;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -191,7 +190,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -236,7 +235,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -279,7 +278,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -323,7 +322,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -372,7 +371,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -424,7 +423,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -467,7 +466,7 @@ class TransferPrecompilesTest {
 				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
-				UNUSABLE_AUTO_CREATION,
+				null,
 				recordsHistorian
 		)).willReturn(transferLogic);
 		given(decoder.decodeTransferToken(pretendArguments)).willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));

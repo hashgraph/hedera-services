@@ -24,7 +24,6 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.KeyActivationCharacteristics;
@@ -68,8 +67,8 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
@@ -96,7 +95,6 @@ class SigOpsRegressionTest {
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
 	private List<TransactionSignature> expectedSigs;
-	private ResponseCodeEnum actualStatus;
 	private ResponseCodeEnum expectedErrorStatus;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements signingOrder;
@@ -138,11 +136,21 @@ class SigOpsRegressionTest {
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
 		// when:
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
 		// then:
-		assertEquals(OK, actualStatus);
+		assertEquals(OK, platformTxn.getExpandedSigStatus());
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		final var sigMeta = platformTxn.getSigMeta();
+		assertTrue(sigMeta.couldRationalizePayer());
+		assertTrue(sigMeta.couldRationalizeOthers());
+		assertEquals(
+				DEFAULT_PAYER_KT.asKey(),
+				asKeyUnchecked(sigMeta.payerKey()));
+		assertEquals(1, sigMeta.othersReqSigs().size());
+		assertEquals(
+				List.of(CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asKey()),
+				List.of(asKeyUnchecked(sigMeta.othersReqSigs().get(0))));
 	}
 
 	@Test
@@ -151,24 +159,24 @@ class SigOpsRegressionTest {
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
 		// when:
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
 		// then:
 		statusMatches(expectedErrorStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertFalse(platformTxn.getSigMeta().couldRationalizePayer());
 	}
 
 	@Test
 	void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
-		// given:
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 
-		// when:
-		actualStatus = invokeExpansionScenario();
+		invokeExpansionScenario();
 
-		// then:
 		statusMatches(expectedErrorStatus);
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertTrue(platformTxn.getSigMeta().couldRationalizePayer());
+		assertFalse(platformTxn.getSigMeta().couldRationalizeOthers());
 	}
 
 	@Test
@@ -357,13 +365,12 @@ class SigOpsRegressionTest {
 	}
 
 	private void statusMatches(ResponseCodeEnum expectedStatus) {
-		assertEquals(expectedStatus, actualStatus);
+		assertEquals(expectedStatus, platformTxn.getExpandedSigStatus());
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, null, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
 		final var impliedKey = impliedOrdering.getPayerKey();
@@ -378,27 +385,20 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
 		return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
 	}
 
-	private ResponseCodeEnum invokeExpansionScenario() {
-		int MAGIC_NUMBER = 10;
+	private void invokeExpansionScenario() {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigMetadataLookup sigMetaLookups =
-				defaultLookupsPlusAccountRetriesFor(
-						hfsSigMetaLookup, aliasManager,
-						() -> accounts, () -> null, ref -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER,
-						runningAvgs, speedometers);
-		SigRequirements keyOrder = new SigRequirements(
-				sigMetaLookups,
-				new MockGlobalDynamicProps(),
-				mockSignatureWaivers);
+				defaultLookupsFor(
+						aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
+		SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
 		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
-		return expandIn(platformTxn, keyOrder, pkToSigFn);
+		expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
 	private Rationalization invokeRationalizationScenario() {
@@ -409,7 +409,6 @@ class SigOpsRegressionTest {
 				aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null);
 		SigRequirements keyOrder = new SigRequirements(
 				sigMetaLookups,
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 
 		// given:
@@ -433,7 +432,6 @@ class SigOpsRegressionTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		signingOrder = new SigRequirements(
 				defaultLookupsFor(aliasManager, hfsSigMetaLookup, () -> accounts, () -> null, ref -> null, ref -> null),
-				new MockGlobalDynamicProps(),
 				mockSignatureWaivers);
 		final var payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);

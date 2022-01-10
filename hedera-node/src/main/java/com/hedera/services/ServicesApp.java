@@ -23,8 +23,8 @@ package com.hedera.services;
 import com.hedera.services.context.ContextModule;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.annotations.BootstrapProps;
+import com.hedera.services.context.annotations.StaticAccountMemo;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -41,10 +41,8 @@ import com.hedera.services.ledger.LedgerModule;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
-import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.annotations.RetryingSigReqs;
-import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
@@ -73,10 +71,10 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.Address;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -116,29 +114,26 @@ public interface ServicesApp {
 	/* Needed by ServicesState */
 	HashLogger hashLogger();
 	ProcessLogic logic();
-	ExpansionHelper expansionHelper();
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
 	VirtualMapFactory virtualMapFactory();
+	SigReqsManager sigReqsManager();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
-	@RetryingSigReqs SigRequirements retryingSigReqs();
 	PrefetchProcessor prefetchProcessor();
 
 	/* Needed by ServicesMain */
 	Pause pause();
 	NodeId nodeId();
-	Address nodeAddress();
 	Platform platform();
 	NodeInfo nodeInfo();
 	SystemExits systemExits();
 	GrpcStarter grpcStarter();
 	UpgradeActions upgradeActions();
 	LedgerValidator ledgerValidator();
-	ServicesNodeType nodeType();
 	AccountsExporter accountsExporter();
 	BalancesExporter balancesExporter();
 	Supplier<Charset> nativeCharset();
@@ -159,13 +154,15 @@ public interface ServicesApp {
 	@Component.Builder
 	interface Builder {
 		@BindsInstance
+		Builder initialHash(Hash initialHash);
+		@BindsInstance
 		Builder platform(Platform platform);
 		@BindsInstance
 		Builder selfId(long selfId);
 		@BindsInstance
-		Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
+		Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
 		@BindsInstance
-		Builder initialState(ServicesState initialState);
+		Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 
 		ServicesApp build();
 	}

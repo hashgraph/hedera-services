@@ -90,6 +90,9 @@ public class GlobalDynamicProperties {
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
 	private long triggerTxnWindBackNanos;
+	private int changeHistorianMemorySecs;
+	private boolean autoCreationEnabled;
+	private boolean expandSigsFromLastSignedState;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -162,6 +165,9 @@ public class GlobalDynamicProperties {
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
 		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
+		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
+		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
+		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
 	}
 
 	public int maxTokensPerAccount() {
@@ -366,5 +372,17 @@ public class GlobalDynamicProperties {
 
 	public long triggerTxnWindBackNanos() {
 		return triggerTxnWindBackNanos;
+	}
+
+	public int changeHistorianMemorySecs() {
+		return changeHistorianMemorySecs;
+	}
+
+	public boolean isAutoCreationEnabled() {
+		return autoCreationEnabled;
+	}
+
+	public boolean expandSigsFromLastSignedState() {
+		return expandSigsFromLastSignedState;
 	}
 }

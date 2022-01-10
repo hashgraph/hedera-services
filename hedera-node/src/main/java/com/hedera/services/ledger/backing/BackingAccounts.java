@@ -27,14 +27,16 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.forEach;
 
 @Singleton
 public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+	private Set<AccountID> existingAccounts = new HashSet<>();
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
 
 	@Inject
@@ -44,34 +46,38 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 
 	@Override
 	public void rebuildFromSources() {
-		/* No-op. */
+		existingAccounts.clear();
+		final var curAccounts = delegate.get();
+		forEach(curAccounts, (id, account) -> existingAccounts.add(id.toGrpcAccountId()));
 	}
 
 	@Override
-	public MerkleAccount getRef(AccountID id) {
+	public MerkleAccount getRef(final AccountID id) {
 		return delegate.get().getForModify(fromAccountId(id));
 	}
 
 	@Override
-	public void put(AccountID id, MerkleAccount account) {
-		if (!delegate.get().containsKey(EntityNum.fromAccountId(id))) {
+	public void put(final AccountID id, final MerkleAccount account) {
+		if (!existingAccounts.contains(id)) {
 			delegate.get().put(fromAccountId(id), account);
+			existingAccounts.add(id);
 		}
 	}
 
 	@Override
-	public boolean contains(AccountID id) {
-		return delegate.get().containsKey(EntityNum.fromAccountId(id));
+	public boolean contains(final AccountID id) {
+		return existingAccounts.contains(id);
 	}
 
 	@Override
-	public void remove(AccountID id) {
+	public void remove(final AccountID id) {
+		existingAccounts.remove(id);
 		delegate.get().remove(fromAccountId(id));
 	}
 
 	@Override
 	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(EntityNum::toGrpcAccountId).collect(Collectors.toSet());
+		return existingAccounts;
 	}
 
 	@Override
@@ -82,5 +88,10 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	@Override
 	public MerkleAccount getImmutableRef(AccountID id) {
 		return delegate.get().get(fromAccountId(id));
+	}
+
+	/* ---  Only used for unit tests --- */
+	Set<AccountID> getExistingAccounts() {
+		return existingAccounts;
 	}
 }

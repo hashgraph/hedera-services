@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -47,7 +48,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,31 +93,37 @@ class StateAccessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateAccessor(state);
+		subject = new StateAccessor();
+		subject.updateChildrenFrom(state);
+	}
+
+	@Test
+	void childrenNonNull() {
+		Assertions.assertNotNull(subject.children());
 	}
 
 	@Test
 	void childrenGetUpdatedAsExpected() {
-		given(state.accounts()).willReturn(accounts);
-		given(state.storage()).willReturn(storage);
-		given(state.topics()).willReturn(topics);
-		given(state.tokens()).willReturn(tokens);
-		given(state.tokenAssociations()).willReturn(tokenAssociations);
-		given(state.scheduleTxs()).willReturn(scheduleTxs);
-		given(state.networkCtx()).willReturn(networkCtx);
-		given(state.addressBook()).willReturn(addressBook);
-		given(state.specialFiles()).willReturn(specialFiles);
-		given(state.uniqueTokens()).willReturn(uniqueTokens);
-		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
-		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
-		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
-		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(state.contractStorage()).willReturn(contractStorage);
+		givenStateWithMockChildren();
 
-		// when:
-		subject.updateFrom(state);
+		subject.updateChildrenFrom(state);
 
-		// then:
+		assertChildrenAreExpectedMocks();
+	}
+
+	@Test
+	void nullsOutChildrenAsExpected() {
+		final var anInstant = Instant.ofEpochSecond(1_234_567L, 890);
+		givenStateWithMockChildren();
+		((MutableStateChildren) subject.children()).updateFrom(state, anInstant);
+
+		subject.children().nullOutRefs();
+
+		assertChildrenAreNull();
+		assertSame(Instant.EPOCH, subject.children().signedAt());
+	}
+
+	private void assertChildrenAreExpectedMocks() {
 		assertSame(accounts, subject.accounts());
 		assertSame(storage, subject.storage());
 		assertSame(topics, subject.topics());
@@ -131,9 +141,41 @@ class StateAccessorTest {
 		assertSame(contractStorage, subject.contractStorage());
 	}
 
-	@Test
-	void childrenNonNull() {
-		// expect:
-		Assertions.assertNotNull(subject.children());
+	private void givenStateWithMockChildren() {
+		given(state.accounts()).willReturn(accounts);
+		given(state.storage()).willReturn(storage);
+		given(state.topics()).willReturn(topics);
+		given(state.tokens()).willReturn(tokens);
+		given(state.tokenAssociations()).willReturn(tokenAssociations);
+		given(state.scheduleTxs()).willReturn(scheduleTxs);
+		given(state.networkCtx()).willReturn(networkCtx);
+		given(state.addressBook()).willReturn(addressBook);
+		given(state.specialFiles()).willReturn(specialFiles);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
+		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
+		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
+		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
+		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.contractStorage()).willReturn(contractStorage);
 	}
+
+	private void assertChildrenAreNull() {
+		assertThrows(NullPointerException.class, subject::accounts);
+		assertThrows(NullPointerException.class, subject::storage);
+		assertThrows(NullPointerException.class, subject::contractStorage);
+		assertThrows(NullPointerException.class, subject::topics);
+		assertThrows(NullPointerException.class, subject::tokens);
+		assertThrows(NullPointerException.class, subject::tokenAssociations);
+		assertThrows(NullPointerException.class, subject::schedules);
+		assertThrows(NullPointerException.class, subject::networkCtx);
+		assertThrows(NullPointerException.class, subject::addressBook);
+		assertThrows(NullPointerException.class, subject::specialFiles);
+		assertThrows(NullPointerException.class, subject::uniqueTokens);
+		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
+		assertThrows(NullPointerException.class, subject::runningHashLeaf);
+	}
+
+	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }

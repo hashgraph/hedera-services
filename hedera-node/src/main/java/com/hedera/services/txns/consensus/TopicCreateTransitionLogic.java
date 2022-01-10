@@ -21,6 +21,7 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TopicStore;
@@ -56,6 +57,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 	private final TopicStore topicStore;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext transactionContext;
 
 	@Inject
@@ -63,6 +65,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 			final TopicStore topicStore,
 			final EntityIdSource entityIdSource,
 			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext transactionContext,
 			final AccountStore accountStore
 	) {
@@ -70,6 +73,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		this.topicStore = topicStore;
 		this.entityIdSource = entityIdSource;
 		this.validator = validator;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
 	}
 
@@ -111,6 +115,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the topic --- */
 		topicStore.persistNew(topic);
+		sigImpactHistorian.markEntityChanged(topicId.getTopicNum());
 	}
 
 	@Override

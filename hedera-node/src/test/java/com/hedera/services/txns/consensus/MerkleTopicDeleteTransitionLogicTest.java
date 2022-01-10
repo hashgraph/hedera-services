@@ -21,6 +21,7 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -55,7 +56,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class MerkleTopicDeleteTransitionLogicTest {
-	final private String TOPIC_ID = "8.6.75309";
+	final private String TOPIC_ID = "0.0.75309";
 	final private EntityNum topicFcKey = fromTopicId(asTopic(TOPIC_ID));
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
@@ -64,6 +65,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private OptionValidator validator;
 	private TopicDeleteTransitionLogic subject;
+	private SigImpactHistorian sigImpactHistorian;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	MerkleTopic deletableTopic;
@@ -76,9 +78,10 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 		topics.clear();
 
-		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
 	}
 
 	@Test
@@ -97,11 +100,11 @@ class MerkleTopicDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPath() throws Throwable {
+	void followsHappyPath() {
 		// setup:
 		givenMocksForHappyPath();
 		// and:
-		InOrder inOrder = inOrder(topics, deletableTopic, transactionContext);
+		InOrder inOrder = inOrder(topics, deletableTopic, transactionContext, sigImpactHistorian);
 
 		// when:
 		subject.doStateTransition();
@@ -109,6 +112,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		// then:
 		inOrder.verify(deletableTopic).setDeleted(true);
 		inOrder.verify(transactionContext).setStatus(SUCCESS);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(topicFcKey.longValue());
 	}
 
 	private void givenMocksForHappyPath() {
@@ -122,7 +126,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
 	}
 
 	@Test

@@ -21,7 +21,7 @@ package com.hedera.services.queries.meta;
  */
 
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -108,7 +108,7 @@ class GetTxnRecordAnswerTest {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,

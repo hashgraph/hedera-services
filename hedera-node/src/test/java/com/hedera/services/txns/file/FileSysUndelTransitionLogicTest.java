@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -83,6 +84,7 @@ class FileSysUndelTransitionLogicTest {
 	PlatformTxnAccessor accessor;
 
 	HederaFs hfs;
+	SigImpactHistorian sigImpactHistorian;
 	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
 
@@ -97,6 +99,7 @@ class FileSysUndelTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		oldExpiries = mock(Map.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(undeleted)).willReturn(true);
@@ -105,13 +108,13 @@ class FileSysUndelTransitionLogicTest {
 		given(hfs.getattr(undeleted)).willReturn(attr);
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 
-		subject = new FileSysUndelTransitionLogic(hfs, oldExpiries, txnCtx);
+		subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx);
 	}
 
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
+		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
 
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
 		// and:
@@ -126,6 +129,7 @@ class FileSysUndelTransitionLogicTest {
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
 		inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(deleted.getFileNum());
 	}
 
 	@Test
