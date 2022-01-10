@@ -123,8 +123,8 @@ public class StateView {
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
-	private final UniqTokenView uniqTokenView;
 	private final StateChildren stateChildren;
+	private final UniqTokenView uniqTokenView;
 
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;

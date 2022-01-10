@@ -200,6 +200,7 @@ public final class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"autoCreation.enabled",
 			"balances.exportDir.path",
 			"balances.exportEnabled",
 			"balances.exportPeriodSecs",
@@ -240,6 +241,7 @@ public final class BootstrapProperties implements PropertySource {
 			"rates.midnightCheckInterval",
 			"scheduling.whitelist",
 			"scheduling.triggerTxn.windBackNanos",
+			"sigs.expandFromLastSignedState",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
@@ -345,6 +347,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.transaction.maxValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidDuration", AS_LONG),
 			entry("hedera.transaction.minValidityBufferSecs", AS_INT),
+			entry("autoCreation.enabled", AS_BOOLEAN),
 			entry("autorenew.isEnabled", AS_BOOLEAN),
 			entry("autorenew.numberOfEntitiesToScan", AS_INT),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", AS_INT),
@@ -410,6 +413,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
+			entry("sigs.expandFromLastSignedState", AS_BOOLEAN),
 			entry("scheduling.whitelist", AS_FUNCTIONS),
 			entry("scheduling.triggerTxn.windBackNanos", AS_LONG),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
