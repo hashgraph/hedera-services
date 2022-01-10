@@ -145,12 +145,10 @@ public class SigReqsManager {
 		if (earliestSigningTime == null) {
 			return false;
 		}
-		if (signedChildren.wereSignedBefore(earliestSigningTime)) {
-			/* Since event intake is single-threaded, there's no risk of another thread
-			 * getting inconsistent results while we are updating the signed state children. */
-			signedChildren.updateFrom(signedState, earliestSigningTime);
-			ensureSignedStateSigReqs();
-		}
+		/* Since event intake is single-threaded, there's no risk of another thread
+		 * getting inconsistent results while we are updating the signed state children. */
+		signedChildren.updateFrom(signedState, earliestSigningTime);
+		ensureSignedStateSigReqs();
 		try {
 			expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 			return true;
