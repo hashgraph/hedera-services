@@ -41,20 +41,16 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -68,8 +64,18 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.Collections.singletonList;
@@ -80,8 +86,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class DissociatePrecompilesTest {
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-
+	@Mock
+	private Bytes pretendArguments;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -138,6 +144,8 @@ class DissociatePrecompilesTest {
 	private DissociationFactory dissociationFactory;
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private TokenDissociateTransactionBody transactionBody;
 
 	private HTSPrecompiledContract subject;
 
@@ -157,6 +165,7 @@ class DissociatePrecompilesTest {
 	@Test
 	void dissociateTokenFailurePathWorks() {
 		givenFrameContext();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
@@ -165,7 +174,8 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		final var result = subject.computeDissociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -177,6 +187,7 @@ class DissociatePrecompilesTest {
 	void dissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
@@ -192,7 +203,8 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		final var result = subject.computeDissociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -206,10 +218,14 @@ class DissociatePrecompilesTest {
 	void computeMultiDissociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
+
 		given(decoder.decodeMultipleDissociations(pretendArguments))
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
+		given(transactionBody.getTokensCount()).willReturn(1);
+		given(mockSynthBodyBuilder.getTokenDissociate()).willReturn(transactionBody);
 		given(sigsVerifier.hasActiveKey(accountId, recipientAddr, contractAddr))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
@@ -223,7 +239,8 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeDissociateTokens(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -247,16 +264,4 @@ class DissociatePrecompilesTest {
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
-
-	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final AccountID account = IdUtils.asAccount("0.0.3");
-	private static final Id accountId = Id.fromGrpcAccount(account);
-	private static final Dissociation dissociateToken =
-			Dissociation.singleDissociation(account, nonFungible);
-	private static final Dissociation multiDissociateOp =
-			Dissociation.singleDissociation(account, nonFungible);
-	private static final Address recipientAddr = Address.ALTBN128_ADD;
-	private static final Address contractAddr = Address.ALTBN128_MUL;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }

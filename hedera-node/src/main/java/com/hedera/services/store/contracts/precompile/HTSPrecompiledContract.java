@@ -104,10 +104,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of("Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
+	protected static final long DEFAULT_GAS_PRICE = 10_000L;
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -160,6 +162,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
+	private int functionId;
+	private Precompile precompile;
+	private TransactionBody.Builder transactionBody;
+
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -175,7 +181,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
-
 		this.decoder = decoder;
 		this.encoder = encoder;
 		this.sigsVerifier = sigsVerifier;
@@ -190,7 +195,68 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Gas gasRequirement(final Bytes input) {
-		return Gas.of(10_000); // revisit cost, this is arbitrary
+		this.precompile = null;
+		this.transactionBody = null;
+
+		this.functionId = input.getInt(0);
+
+		switch (functionId) {
+			case ABI_ID_CRYPTO_TRANSFER,
+					ABI_ID_TRANSFER_TOKENS,
+					ABI_ID_TRANSFER_TOKEN,
+					ABI_ID_TRANSFER_NFTS,
+					ABI_ID_TRANSFER_NFT -> {
+				this.precompile = new TransferPrecompile();
+				decodeInput(input);
+				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
+				/*-- 10K if only one transfer or 5K per index --*/
+				if(transfersCount <= 1) {
+					return Gas.of(DEFAULT_GAS_PRICE);
+				} else {
+					return Gas.of((DEFAULT_GAS_PRICE / 2) * transfersCount);
+				}
+			}
+			case ABI_ID_MINT_TOKEN -> {
+				this.precompile = new MintPrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				return Gas.of(DEFAULT_GAS_PRICE);
+			}
+			case ABI_ID_BURN_TOKEN -> {
+				this.precompile = new BurnPrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				return Gas.of(DEFAULT_GAS_PRICE);
+			}
+			case ABI_ID_ASSOCIATE_TOKENS -> {
+				this.precompile = new MultiAssociatePrecompile();
+				decodeInput(input);
+				/*-- 10K per index --*/
+				return Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenAssociate().getTokensCount());
+			}
+			case ABI_ID_ASSOCIATE_TOKEN -> {
+				this.precompile = new AssociatePrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				return Gas.of(DEFAULT_GAS_PRICE);
+			}
+			case ABI_ID_DISSOCIATE_TOKENS -> {
+				this.precompile = new MultiDissociatePrecompile();
+				decodeInput(input);
+				/*-- 10K per index --*/
+				return Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenDissociate().getTokensCount());
+			}
+			case ABI_ID_DISSOCIATE_TOKEN -> {
+				this.precompile = new DissociatePrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				return Gas.of(DEFAULT_GAS_PRICE);
+			}
+			default -> {
+				/*-- 10K --*/
+				return Gas.of(DEFAULT_GAS_PRICE);
+			}
+		}
 	}
 
 	@Override
@@ -199,54 +265,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
-
-		final var functionId = input.getInt(0);
-		return switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER,
-					ABI_ID_TRANSFER_TOKENS,
-					ABI_ID_TRANSFER_TOKEN,
-					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT -> computeTransfer(input, messageFrame);
-			case ABI_ID_MINT_TOKEN -> computeMintToken(input, messageFrame);
-			case ABI_ID_BURN_TOKEN -> computeBurnToken(input, messageFrame);
-			case ABI_ID_ASSOCIATE_TOKENS -> computeAssociateTokens(input, messageFrame);
-			case ABI_ID_ASSOCIATE_TOKEN -> computeAssociateToken(input, messageFrame);
-			case ABI_ID_DISSOCIATE_TOKENS -> computeDissociateTokens(input, messageFrame);
-			case ABI_ID_DISSOCIATE_TOKEN -> computeDissociateToken(input, messageFrame);
-			default -> null;
-		};
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransfer(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new TransferPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MintPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeBurnToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new BurnPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeAssociateTokens(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MultiAssociatePrecompile());
-	}
-
-	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new AssociatePrecompile());
-	}
-
-	protected Bytes computeDissociateTokens(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MultiDissociatePrecompile());
-	}
-
-	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new DissociatePrecompile());
+		if (this.precompile == null || this.transactionBody == null) {
+			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+			return null;
+		}
+		return computeInternal(messageFrame);
 	}
 
 	/* --- Helpers --- */
@@ -270,28 +293,34 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return UInt256.valueOf(status.getNumber());
 	}
 
+	private void decodeInput(Bytes input) {
+		this.transactionBody = TransactionBody.newBuilder();
+		try {
+			this.transactionBody = this.precompile.body(input);
+		} catch (Exception e) {
+			log.warn("Internal precompile failure", e);
+			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
+		}
+	}
+
 	@SuppressWarnings("rawtypes")
-	private Bytes computeInternal(
-			final MessageFrame frame,
-			final Bytes input,
-			final Precompile precompile
+	protected Bytes computeInternal(
+			final MessageFrame frame
 	) {
 		final var contract = frame.getContractAddress();
 		final var recipient = frame.getRecipientAddress();
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		TransactionBody.Builder synthBody = TransactionBody.newBuilder();
 		Bytes result = SUCCESS_RESULT;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			synthBody = precompile.body(input);
-			childRecord = precompile.run(recipient, contract, ledgers);
+			childRecord = this.precompile.run(recipient, contract, ledgers);
 
-			if (precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
+			if (this.precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
 				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
 						childRecord.getReceiptBuilder().getSerialNumbers());
-			} else if (precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder() != null) {
+			} else if (this.precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder() != null) {
 				result =
 						encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
 			}
@@ -311,7 +340,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var parentUpdater = updater.parentUpdater();
 		if (parentUpdater.isPresent()) {
 			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-			parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
+			parent.manageInProgressRecord(recordsHistorian, childRecord, this.transactionBody);
 		} else {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
@@ -431,7 +460,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class AssociatePrecompile extends AbstractAssociatePrecompile {
+	protected class AssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			associateOp = decoder.decodeAssociation(input);
@@ -439,7 +468,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
+	protected class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			associateOp = decoder.decodeMultipleAssociations(input);
@@ -476,7 +505,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class DissociatePrecompile extends AbstractDissociatePrecompile {
+	protected class DissociatePrecompile extends AbstractDissociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			dissociateOp = decoder.decodeDissociate(input);
@@ -484,7 +513,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
+	protected class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			dissociateOp = decoder.decodeMultipleDissociations(input);
@@ -492,7 +521,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MintPrecompile implements Precompile {
+	protected class MintPrecompile implements Precompile {
 		private MintWrapper mintOp;
 
 		@Override
@@ -532,12 +561,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class TransferPrecompile implements Precompile {
+	protected class TransferPrecompile implements Precompile {
 		private List<TokenTransferWrapper> transferOp;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			final var functionId = input.getInt(0);
 			transferOp = switch (functionId) {
 				case ABI_ID_CRYPTO_TRANSFER -> decoder.decodeCryptoTransfer(input);
 				case ABI_ID_TRANSFER_TOKENS -> decoder.decodeTransferTokens(input);
@@ -654,7 +682,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
 				} else if (units > 0) {
 					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-									change.getAccount().asEvmAddress(), recipient, contract);
+							change.getAccount().asEvmAddress(), recipient, contract);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
@@ -665,7 +693,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class BurnPrecompile implements Precompile {
+	protected class BurnPrecompile implements Precompile {
 		private BurnWrapper burnOp;
 
 		@Override
@@ -704,7 +732,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private static final AccountAmount aaWith(final AccountID account, final long amount) {
+	private static AccountAmount aaWith(final AccountID account, final long amount) {
 		return AccountAmount.newBuilder()
 				.setAccountID(account)
 				.setAmount(amount)
@@ -746,5 +774,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	void setAssociateLogicFactory(final AssociateLogicFactory associateLogicFactory) {
 		this.associateLogicFactory = associateLogicFactory;
+	}
+
+	public Precompile getPrecompile() {
+		return precompile;
 	}
 }
