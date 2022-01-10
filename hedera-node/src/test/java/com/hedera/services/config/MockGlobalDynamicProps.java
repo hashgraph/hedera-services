@@ -235,4 +235,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int changeHistorianMemorySecs() {
 		return 20;
 	}
+
+	@Override
+	public boolean isAutoCreationEnabled() {
+		return true;
+	}
 }

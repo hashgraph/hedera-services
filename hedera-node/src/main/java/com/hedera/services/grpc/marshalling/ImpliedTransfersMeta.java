@@ -113,7 +113,8 @@ public class ImpliedTransfersMeta {
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
 						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
 						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
-						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled()) &&
+						(validationProps.isAutoCreationEnabled == dynamicProperties.isAutoCreationEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
@@ -151,11 +152,18 @@ public class ImpliedTransfersMeta {
 				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
 				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
 				.add("areNftsEnabled", validationProps.areNftsEnabled)
+				.add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
 				.add("tokenFeeSchedules", customFeeMeta)
 				.toString();
 	}
 
-	public static record ValidationProps(int maxHbarAdjusts, int maxTokenAdjusts, int maxOwnershipChanges,
-										 int maxNestedCustomFees, int maxXferBalanceChanges, boolean areNftsEnabled) {
+	public static record ValidationProps(
+			int maxHbarAdjusts,
+			int maxTokenAdjusts,
+			int maxOwnershipChanges,
+			int maxNestedCustomFees,
+			int maxXferBalanceChanges,
+			boolean areNftsEnabled,
+			boolean isAutoCreationEnabled) {
 	}
 }
