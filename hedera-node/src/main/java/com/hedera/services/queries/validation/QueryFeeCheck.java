@@ -121,7 +121,12 @@ public class QueryFeeCheck {
 	}
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
-		var id = adjustment.getAccountID();
+		var lookupResult = aliasManager.lookUpAccountID(adjustment.getAccountID(), INVALID_ACCOUNT_ID);
+		if (lookupResult.response() != OK) {
+			return lookupResult.response();
+		}
+
+		var id = lookupResult.aliasedId();
 		var key = fromAccountId(id);
 		long amount = adjustment.getAmount();
 
