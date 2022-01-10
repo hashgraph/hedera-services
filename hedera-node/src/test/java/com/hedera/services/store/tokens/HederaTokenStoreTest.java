@@ -296,7 +296,7 @@ class HederaTokenStoreTest {
 
 		aliasManager = mock(AliasManager.class);
 		given(aliasManager.lookupIdBy(newTreasuryWithAlias.getAlias())).willReturn(EntityNum.fromAccountId(newTreasury));
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(

@@ -59,7 +59,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		final var result = aliasManager.lookUpAccountID(query.getCryptoGetInfo().getAccountID(), INVALID_ACCOUNT_ID);
+		final var result = aliasManager.lookUpAccountID(query.getCryptoGetInfo().getAccountID());
 		if (result.response() != OK) {
 			return result.response();
 		}

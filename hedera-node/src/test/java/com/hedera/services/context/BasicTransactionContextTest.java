@@ -85,7 +85,6 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -196,7 +195,7 @@ class BasicTransactionContextTest {
 	@Test
 	void returnsPayerIfSigActive() {
 		given(accessor.getPayer()).willReturn(payer);
-		given(aliasManager.lookUpAccountID(payer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -216,7 +215,7 @@ class BasicTransactionContextTest {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -307,7 +306,7 @@ class BasicTransactionContextTest {
 	@Test
 	void effectivePayerIsActiveIfVerified() {
 		given(accessor.getPayer()).willReturn(payer);
-		given(aliasManager.lookUpAccountID(payer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -326,6 +325,7 @@ class BasicTransactionContextTest {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);

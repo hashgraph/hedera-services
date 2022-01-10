@@ -112,8 +112,7 @@ class GetAccountRecordsResourceUsageTest {
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
-		given(aliasManager.lookUpAccountID(asAccount(a), ResponseCodeEnum.INVALID_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(asAccount(a), OK));
+		given(aliasManager.lookUpAccountID(asAccount(a))).willReturn(AliasLookup.of(asAccount(a), OK));
 
 		final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
 		final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);

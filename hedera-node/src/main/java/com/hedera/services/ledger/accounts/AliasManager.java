@@ -37,6 +37,7 @@ import java.util.Map;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -118,8 +119,12 @@ public class AliasManager {
 		return aliases.containsKey(alias);
 	}
 
-	public AliasLookup lookUpAccountID(final AccountID id) {
+	public AliasLookup lookUpPayerAccountID(final AccountID id) {
 		return lookUpAccountID(id, INVALID_PAYER_ACCOUNT_ID);
+	}
+
+	public AliasLookup lookUpAccountID(final AccountID id) {
+		return lookUpAccountID(id, INVALID_ACCOUNT_ID);
 	}
 
 	public AliasLookup lookUpAccountID(

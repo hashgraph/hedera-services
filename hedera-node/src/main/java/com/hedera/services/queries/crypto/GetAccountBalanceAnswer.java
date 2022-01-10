@@ -118,7 +118,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
 		} else if (op.hasAccountID()) {
-			final var result = aliasManager.lookUpAccountID(op.getAccountID(), INVALID_ACCOUNT_ID);
+			final var result = aliasManager.lookUpAccountID(op.getAccountID());
 			if (result.response() != OK) {
 				return result.response();
 			}
@@ -133,7 +133,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return asAccount(op.getContractID());
 		} else {
-			return aliasManager.lookUpAccountID(op.getAccountID(), INVALID_ACCOUNT_ID).aliasedId();
+			return aliasManager.lookUpAccountID(op.getAccountID()).aliasedId();
 		}
 	}
 

@@ -82,7 +82,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
-			final var accountID = aliasManager.lookUpAccountID(op.getAccountID(), INVALID_ACCOUNT_ID).aliasedId();
+			final var accountID = aliasManager.lookUpAccountID(op.getAccountID()).aliasedId();
 
 			if (type == COST_ANSWER) {
 				response.setAccountID(accountID);
@@ -101,8 +101,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		final var result = aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID(),
-				INVALID_ACCOUNT_ID);
+		final var result = aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID());
 		if (result.response() != OK) {
 			return result.response();
 		}

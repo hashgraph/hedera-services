@@ -95,7 +95,7 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		final var key = EntityNum.fromAccountId(aliasManager.lookUpAccountID(payer).aliasedId());
+		final var key = EntityNum.fromAccountId(aliasManager.lookUpPayerAccountID(payer).aliasedId());
 		addToState(key, expiringRecord);
 		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 
@@ -163,6 +163,9 @@ public class ExpiringCreations implements EntityCreator {
 			final var rawSerials = new long[serialNoList.size()];
 			Arrays.setAll(rawSerials, serialNoList::get);
 			receiptBuilder.setSerialNumbers(rawSerials);
+		}
+		if (!sideEffectsTracker.getNetTrackedHbarChanges().getAccountAmountsList().isEmpty()) {
+
 		}
 
 		final var baseRecord = ExpirableTxnRecord.newBuilder()

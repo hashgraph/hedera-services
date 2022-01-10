@@ -367,7 +367,8 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 		assertEquals(aRich, body.getTransactionID().getAccountID());
 		assertFalse(checkPayerInTransferList(body, aRich));
@@ -386,7 +387,8 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 
 		assertEquals(aBroke, body.getTransactionID().getAccountID());
@@ -406,7 +408,8 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(Long.MAX_VALUE)
 				.build();
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
@@ -463,7 +466,8 @@ class QueryFeeCheckTest {
 	}
 
 	private TransactionBody getPaymentTxnBody(final long amount, final TransferList.Builder transferList) {
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 		final var transList = (transferList != null)
 				? transferList
@@ -480,7 +484,8 @@ class QueryFeeCheckTest {
 
 	private TransactionBody getPaymentTxnBodyWithAlias(final long amount, final TransferList.Builder transferList,
 			final AccountID payer, final AccountID sender) {
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpPayerAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 		final var transList = (transferList != null)
 				? transferList
 				: TransferList.newBuilder()

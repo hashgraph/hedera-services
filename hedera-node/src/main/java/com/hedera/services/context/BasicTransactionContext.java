@@ -165,8 +165,7 @@ public class BasicTransactionContext implements TransactionContext {
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
 				? accounts.get().get(
-				fromAccountId(aliasManager.lookUpAccountID(accessor.getPayer(), INVALID_PAYER_ACCOUNT_ID)
-						.aliasedId())).getAccountKey()
+				fromAccountId(aliasManager.lookUpPayerAccountID(accessor.getPayer()).aliasedId())).getAccountKey()
 				: EMPTY_KEY;
 	}
 
@@ -175,7 +174,7 @@ public class BasicTransactionContext implements TransactionContext {
 		if (!isPayerSigKnownActive) {
 			throw new IllegalStateException("No active payer!");
 		}
-		return aliasManager.lookUpAccountID(accessor().getPayer(), INVALID_PAYER_ACCOUNT_ID).aliasedId();
+		return aliasManager.lookUpPayerAccountID(accessor().getPayer()).aliasedId();
 	}
 
 	@Override

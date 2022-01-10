@@ -142,15 +142,14 @@ public class RenewalRecordsHelper {
 
 	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
-		final var lookedUpResult = aliasManager.lookUpAccountID(accountId, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+		final var lookedUpResult = aliasManager.lookUpPayerAccountID(accountId);
 		final var accountID = lookedUpResult.aliasedId();
 		final var id = EntityId.fromGrpcAccountId(accountID);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 
 		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
-		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountID), MISSING_INSTANT, false,
-				USER_TRANSACTION_NONCE);
+		final var txnId = new TxnId(id, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(txnId)
 				.setReceipt(receipt)

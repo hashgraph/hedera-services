@@ -182,10 +182,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var txnId = query.getTransactionGetRecord().getTransactionID();
 		final var fallbackId = txnId.getAccountID();
-		final var validation = aliasManager.lookUpAccountID(fallbackId, INVALID_ACCOUNT_ID);
+		final var validation = aliasManager.lookUpAccountID(fallbackId);
 
 		if (validation.response() != OK) {
-			return INVALID_ACCOUNT_ID;
+			return validation.response();
 		}
 
 		return optionValidator.queryableAccountStatus(validation.aliasedId(), view.accounts());

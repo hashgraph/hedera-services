@@ -110,9 +110,7 @@ class GetAccountRecordsAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookUpAccountID(asAccount(target), INVALID_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(asAccount(target), OK));
-
+		given(aliasManager.lookUpAccountID(asAccount(target))).willReturn(AliasLookup.of(asAccount(target), OK));
 
 		subject = new GetAccountRecordsAnswer(new AnswerFunctions(aliasManager), optionValidator, aliasManager);
 	}
@@ -194,7 +192,7 @@ class GetAccountRecordsAnswerTest {
 		final var query = validQueryWithAlias(ANSWER_ONLY, fee, alias);
 		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias))).willReturn(
 				EntityNum.fromAccountId(asAccount(target)));
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any(), any());
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);
