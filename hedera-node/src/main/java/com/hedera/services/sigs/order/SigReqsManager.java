@@ -40,12 +40,10 @@ import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
-import com.swirlds.common.merkle.exceptions.ArchivedException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -60,12 +58,12 @@ import java.util.function.Function;
  * We prefer to lookup the Hedera keys from the latest signed state, since if the entities with those keys
  * are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can skip the otherwise
  * necessary step of re-expanding signatures in {@link Rationalization#performFor(TxnAccessor)}.
+ *
+ * This class is <b>NOT</b> thread-safe.
  */
 @Singleton
 public class SigReqsManager {
-	private static final Logger log = LogManager.getLogger(SigReqsManager.class);
-
-	/* The token-to-signing-metadata transformation used to construct SigRequirements instances */
+	/* The token-to-signing-metadata transformation used to construct instances of SigRequirements */
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
 			TokenMetaUtils::signingMetaFrom;
 
@@ -76,12 +74,12 @@ public class SigReqsManager {
 	private final ExpansionHelper expansionHelper;
 	private final SignatureWaivers signatureWaivers;
 	private final GlobalDynamicProperties dynamicProperties;
+	/* Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState() */
+	private final MutableStateChildren signedChildren = new MutableStateChildren();
 
 	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
-	/* Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState() */
-	private MutableStateChildren signedChildren = new MutableStateChildren();
 	/* Used to expand signatures when `sigs.expandFromLastSignedState=true` and a signed state is available */
 	private SigRequirements signedSigReqs;
 	/* Used to expand signatures when `sigs.expandFromLastSignedState=false` or no signed state is available */
@@ -106,65 +104,91 @@ public class SigReqsManager {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	private long numExpansions = 0;
-	private long numArchivedExceptions = 0;
-
 	/**
-	 * Uses the "best available" implementation of {@link SigRequirements} to expand the
-	 * signatures linked to the given transaction; prefers the implementation backed by
-	 * the latest signed state if available from {@link Platform#getLastCompleteSwirldState()}.
+	 * Uses the "best available" {@link SigRequirements} implementation to expand the platform
+	 * signatures linked to the given transaction; prefers the implementation backed by the latest
+	 * signed state as returned from {@link Platform#getLastCompleteSwirldState()}.
 	 *
 	 * @param accessor
 	 * 		a transaction that needs linked signatures expanded
 	 */
 	public void expandSigsInto(final PlatformTxnAccessor accessor) {
-		numExpansions++;
 		if (dynamicProperties.expandSigsFromLastSignedState() && tryExpandFromSignedState(accessor)) {
 			return;
 		}
 		expandFromWorkingState(accessor);
 	}
 
+	/**
+	 * Uses the working state to expand the platform signatures linked to the given transaction.
+	 *
+	 * @param accessor
+	 * 		the transaction to expand signatures for
+	 */
 	private void expandFromWorkingState(final PlatformTxnAccessor accessor) {
-		ensureWorkingStateSigReqs();
+		ensureWorkingStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, workingSigReqs, accessor.getPkToSigsFn());
 	}
 
+	/**
+	 * Gets the latest signed state from the platform and makes a best-effort attempt to use
+	 * it to expand the platform signatures linked to the given transaction.
+	 *
+	 * @param accessor
+	 * 		the transaction to expand signatures for
+	 * @return whether the expansion attempt succeeded
+	 */
 	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
 			final var signedState = wrapper.get();
-			if (signedState != null) {
-				return tryToExpand(signedState, accessor);
+			if (signedState == null) {
+				return false;
 			}
+			/* Since we can't get the enclosing platform SignedState, we don't know exactly
+			 * when this state was signed. So we just use, as a guaranteed lower bound, the
+			 * consensus time of its last-handled transaction. */
+			final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
+			if (earliestSigningTime == null) {
+				/* No transactions have been handled; abort now to avoid downstream NPE. */
+				return false;
+			}
+			return tryToExpand(signedState, earliestSigningTime, accessor);
 		}
-		return false;
 	}
 
-	private boolean tryToExpand(final ServicesState signedState, final PlatformTxnAccessor accessor) {
-		final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
-		if (earliestSigningTime == null) {
-			return false;
-		}
-		/* Since event intake is single-threaded, there's no risk of another thread
-		 * getting inconsistent results while we are updating the signed state children. */
-		signedChildren.updateFrom(signedState, earliestSigningTime);
-		ensureSignedStateSigReqs();
+	/**
+	 * Tries to expand the platform signatures linked to a transaction from a provided signed state that
+	 * cannot have been signed before the given consensus time. Returns whether the expansion attempt was
+	 * successful. (If this fails, we will next try to expand signatures from the working state.)
+	 *
+	 * @param signedState
+	 * 		the signed state to use for the expansion attempt
+	 * @param earliestSigningTime
+	 * 		the earliest consensus time at which the state could have been signed
+	 * @param accessor
+	 * 		the transaction to expand signatures for
+	 * @return whether the expansion attempt succeeded
+	 */
+	private boolean tryToExpand(
+			final ServicesState signedState,
+			final Instant earliestSigningTime,
+			final PlatformTxnAccessor accessor
+	) {
 		try {
+			/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
+			 * Because event intake is single-threaded, there's no risk of another thread getting
+			 * inconsistent results while we are doing this. */
+			signedChildren.updateFrom(signedState, earliestSigningTime);
+			ensureSignedStateSigReqsIsConstructed();
 			expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 			return true;
-		} catch (final ArchivedException ignore) {
-			/* Because Platform#getLastCompleteSwirldState() only _weakly_ reserves the signed state
-			it returns the ServicesState from, there is no guarantee this ServicesState will not be
-			archived by the time we are ready to use it. */
-			numArchivedExceptions++;
-			System.out.println(numArchivedExceptions + " / " + numArchivedExceptions
-					+ " expansions hit an ArchivedException so far");
-			log.warn("{} / {} expansions hit an ArchivedException so far", numArchivedExceptions, numExpansions);
-			return false;
+		} finally {
+			/* Make sure we don't hold references to any part of state that would otherwise be eligible for GC. */
+			signedChildren.nullOutRefs();
 		}
 	}
 
-	private void ensureWorkingStateSigReqs() {
+	private void ensureWorkingStateSigReqsIsConstructed() {
 		if (workingSigReqs == null) {
 			final var lookup = lookupsFactory.from(
 					fileNumbers, aliasManager, workingState.children(), TOKEN_META_TRANSFORM);
@@ -172,7 +196,7 @@ public class SigReqsManager {
 		}
 	}
 
-	private void ensureSignedStateSigReqs() {
+	private void ensureSignedStateSigReqsIsConstructed() {
 		if (signedSigReqs == null) {
 			final var lookup = lookupsFactory.from(
 					fileNumbers, aliasManager, signedChildren, TOKEN_META_TRANSFORM);

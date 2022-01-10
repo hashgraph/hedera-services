@@ -217,8 +217,28 @@ public class MutableStateChildren implements StateChildren {
 		return runningHashLeaf;
 	}
 
+
 	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
 		this.runningHashLeaf = runningHashLeaf;
+	}
+
+	@Override
+	public void nullOutRefs() {
+		signedAt = Instant.EPOCH;
+		accounts = null;
+		topics = null;
+		storage = null;
+		tokens = null;
+		tokenAssociations = null;
+		schedules = null;
+		networkCtx = null;
+		addressBook = null;
+		specialFiles = null;
+		uniqueTokens = null;
+		uniqueTokenAssociations = null;
+		uniqueOwnershipAssociations = null;
+		uniqueOwnershipTreasuryAssociations = null;
+		runningHashLeaf = null;
 	}
 
 	public void updateFrom(final ServicesState signedState, final Instant signingTime) {

@@ -33,7 +33,6 @@ import com.hedera.services.state.StateAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
-import com.swirlds.common.merkle.exceptions.ArchivedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,11 +43,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static com.hedera.services.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -98,33 +96,6 @@ class SigReqsManagerTest {
 				fileNumbers, aliasManager, expansionHelper,
 				signatureWaivers, workingState, dynamicProperties);
 		given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
-	}
-
-	@Test
-	void usesWorkingStateLookupIfSignedStateIsArchivable() {
-		given(workingState.children()).willReturn(workingChildren);
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
-		given(lookupsFactory.from(fileNumbers, aliasManager, subject.getSignedChildren(), TOKEN_META_TRANSFORM))
-				.willReturn(failingLookup);
-		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
-		given(sigReqsFactory.from(failingLookup, signatureWaivers)).willReturn(signedStateSigReqs);
-		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
-		given(platform.getLastCompleteSwirldState())
-				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
-				}));
-		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
-
-		willThrow(ArchivedException.class).given(expansionHelper)
-				.expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
-		willDoNothing().given(expansionHelper)
-				.expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
-		subject.setLookupsFactory(lookupsFactory);
-		subject.setSigReqsFactory(sigReqsFactory);
-
-		subject.expandSigsInto(accessor);
-
-		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
 	}
 
 	@Test
@@ -207,7 +178,8 @@ class SigReqsManagerTest {
 		verify(sigReqsFactory).from(lookup, signatureWaivers);
 		verify(expansionHelper, times(3)).expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
 		final var capturedStateChildren = captor.getValue();
-		assertEquals(nextLastHandleTime, capturedStateChildren.signedAt());
+		assertSame(Instant.EPOCH, capturedStateChildren.signedAt());
+		assertThrows(NullPointerException.class, capturedStateChildren::accounts);
 	}
 
 	private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);

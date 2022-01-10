@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -46,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,6 +100,18 @@ class StateAccessorTest {
 		assertChildrenAreExpectedMocks();
 	}
 
+	@Test
+	void nullsOutChildrenAsExpected() {
+		final var anInstant = Instant.ofEpochSecond(1_234_567L, 890);
+		givenStateWithMockChildren();
+		((MutableStateChildren) subject.children()).updateFrom(state, anInstant);
+
+		subject.children().nullOutRefs();
+
+		assertChildrenAreNull();
+		assertSame(Instant.EPOCH, subject.children().signedAt());
+	}
+
 	private void assertChildrenAreExpectedMocks() {
 		assertSame(accounts, subject.accounts());
 		assertSame(storage, subject.storage());
@@ -113,6 +127,23 @@ class StateAccessorTest {
 		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
 		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
+	}
+
+	private void assertChildrenAreNull() {
+		assertThrows(NullPointerException.class, subject::accounts);
+		assertThrows(NullPointerException.class, subject::storage);
+		assertThrows(NullPointerException.class, subject::topics);
+		assertThrows(NullPointerException.class, subject::tokens);
+		assertThrows(NullPointerException.class, subject::tokenAssociations);
+		assertThrows(NullPointerException.class, subject::schedules);
+		assertThrows(NullPointerException.class, subject::networkCtx);
+		assertThrows(NullPointerException.class, subject::addressBook);
+		assertThrows(NullPointerException.class, subject::specialFiles);
+		assertThrows(NullPointerException.class, subject::uniqueTokens);
+		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
+		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
+		assertThrows(NullPointerException.class, subject::runningHashLeaf);
 	}
 
 	private void givenStateWithMockChildren() {
