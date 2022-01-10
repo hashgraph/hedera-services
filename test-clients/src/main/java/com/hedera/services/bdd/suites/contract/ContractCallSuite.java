@@ -470,7 +470,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode")
+						contractCreate("fuse").bytecode("bytecode").gas(300_000)
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
