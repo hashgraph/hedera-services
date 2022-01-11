@@ -237,11 +237,6 @@ public class MutableStateChildren implements StateChildren {
 		this.runningHashLeaf = new WeakReference<>(runningHashLeaf);
 	}
 
-	public void updateFrom(final ServicesState signedState, final Instant signingTime) {
-		signedAt = signingTime;
-		updateFrom(signedState);
-	}
-
 	public void updateFromMaybeUninitializedState(final ServicesState state, final Instant signingTime) {
 		signedAt = signingTime;
 		updatePrimitiveChildrenFrom(state);
