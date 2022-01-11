@@ -659,6 +659,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
 		}
+
+		private AccountAmount aaWith(final AccountID account, final long amount) {
+			return AccountAmount.newBuilder()
+					.setAccountID(account)
+					.setAmount(amount)
+					.build();
+		}
 	}
 
 	private class BurnPrecompile implements Precompile {
@@ -699,18 +706,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
-	}
-
-	//TODO add javadoc
 	/**
+	 * We check the current frame properties to determine one of the following 3 cases:
 	 *
+	 *	1. We have a delegatecall to the precompile. We check the recipient address (address of the contract that
+	 * 	invoked the precompile)  of the current frame (precompile frame) against a Delegate Contract ID signature.
+	 *  2. We have a call to the precompile, but the contract that called the precompile has been invoked from a
+	 *  delegatecall. We check the sender address of the current frame (the address that made the delegatecall)
+	 *  against a Delegate Contract ID signature.
+	 *  3. All the rest cases. We check the sender address of the current frame against a Contract ID
+	 *  signature or a Delegate Contract ID signature.
+	 *
+	 * @param frame current frame
+	 * @param target the element to test for key activation
+	 * @param function the function which should be invoked for key validation
+	 * @return boolean value showing whether we have a valid key
 	 */
-	private boolean validateKey(final MessageFrame frame,final Address token,
+	private boolean validateKey(final MessageFrame frame,final Address target,
 									   final TetraFunction<Address, Address, Address, Address, Boolean> function) {
 		final var contract = frame.getContractAddress();
 		final var recipient = frame.getRecipientAddress();
@@ -721,12 +733,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var isParentFrameWithDelegateCall = parentFrame.isPresent() && isFrameWithDelegateCall(parentFrame.get());
 
 		if(isCurrentFrameWithDelegateCall) {
-			return function.apply(token, recipient, contract, recipient);
+			return function.apply(target, recipient, contract, recipient);
 		} else if(isParentFrameWithDelegateCall) {
 			final var recipientFromParent = parentFrame.get().getRecipientAddress();
-			return function.apply(token, recipientFromParent, contract, sender);
+			return function.apply(target, recipientFromParent, contract, sender);
 		} else {
-			return function.apply (token, recipient, contract, sender);
+			return function.apply (target, recipient, contract, sender);
 		}
 	}
 

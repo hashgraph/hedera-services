@@ -22,7 +22,6 @@ package com.hedera.services.contracts.sources;
  *
  */
 
-import com.hedera.services.store.models.Id;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface SoliditySigsVerifier {
