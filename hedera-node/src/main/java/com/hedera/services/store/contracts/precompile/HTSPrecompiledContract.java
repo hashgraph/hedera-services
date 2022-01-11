@@ -202,11 +202,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Gas gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
 
 		switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER,
-					ABI_ID_TRANSFER_TOKENS,
-					ABI_ID_TRANSFER_TOKEN,
-					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT -> {
+			case ABI_ID_CRYPTO_TRANSFER:
+			case ABI_ID_TRANSFER_TOKENS:
+			case ABI_ID_TRANSFER_TOKEN:
+			case ABI_ID_TRANSFER_NFTS:
+			case ABI_ID_TRANSFER_NFT: {
 				this.precompile = new TransferPrecompile();
 				decodeInput(input);
 				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
@@ -216,44 +216,51 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				} else {
 					gasRequirement = Gas.of((DEFAULT_GAS_PRICE / 2) * transfersCount);
 				}
+				break;
 			}
-			case ABI_ID_MINT_TOKEN -> {
+			case ABI_ID_MINT_TOKEN: {
 				this.precompile = new MintPrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
 				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				break;
 			}
-			case ABI_ID_BURN_TOKEN -> {
+			case ABI_ID_BURN_TOKEN: {
 				this.precompile = new BurnPrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
 				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				break;
 			}
-			case ABI_ID_ASSOCIATE_TOKENS -> {
+			case ABI_ID_ASSOCIATE_TOKENS: {
 				this.precompile = new MultiAssociatePrecompile();
 				decodeInput(input);
 				/*-- 10K per index --*/
 				gasRequirement = Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenAssociate().getTokensCount());
+				break;
 			}
-			case ABI_ID_ASSOCIATE_TOKEN -> {
+			case ABI_ID_ASSOCIATE_TOKEN: {
 				this.precompile = new AssociatePrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
 				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				break;
 			}
-			case ABI_ID_DISSOCIATE_TOKENS -> {
+			case ABI_ID_DISSOCIATE_TOKENS: {
 				this.precompile = new MultiDissociatePrecompile();
 				decodeInput(input);
 				/*-- 10K per index --*/
 				gasRequirement = Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenDissociate().getTokensCount());
+				break;
 			}
-			case ABI_ID_DISSOCIATE_TOKEN -> {
+			case ABI_ID_DISSOCIATE_TOKEN: {
 				this.precompile = new DissociatePrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
 				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				break;
 			}
-			default -> {}
+			default:
 		}
 		return gasRequirement;
 	}
