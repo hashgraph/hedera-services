@@ -174,18 +174,14 @@ public class SigReqsManager {
 			final Instant earliestSigningTime,
 			final PlatformTxnAccessor accessor
 	) {
-		try {
-			/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
-			 * Because event intake is single-threaded, there's no risk of another thread getting
-			 * inconsistent results while we are doing this. */
-			signedChildren.updateFrom(signedState, earliestSigningTime);
-			ensureSignedStateSigReqsIsConstructed();
-			expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
-			return true;
-		} finally {
-			/* Make sure we don't hold references to any part of state that would otherwise be eligible for GC. */
-			signedChildren.nullOutRefs();
-		}
+		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
+		 * Because event intake is single-threaded, there's no risk of another thread getting
+		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
+		 * uses weak references, so we won't keep this signed state from GC eligibility. */
+		signedChildren.updateFrom(signedState, earliestSigningTime);
+		ensureSignedStateSigReqsIsConstructed();
+		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
+		return true;
 	}
 
 	private void ensureWorkingStateSigReqsIsConstructed() {
@@ -227,9 +223,5 @@ public class SigReqsManager {
 
 	void setLookupsFactory(final StateChildrenLookupsFactory lookupsFactory) {
 		this.lookupsFactory = lookupsFactory;
-	}
-
-	MutableStateChildren getSignedChildren() {
-		return signedChildren;
 	}
 }
