@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -174,10 +175,12 @@ class SyntheticTxnFactoryTest {
 
 		given(impliedTransfers.isPureValidated(any())).willReturn(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-		Assertions.assertThrows(InvalidTransactionException.class, () ->
-						subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
+		final var transferList = Collections.singletonList(new TokenTransferWrapper(
 				List.of(nftExchange),
-				List.of(fungibleTransfer)))));
+				List.of(fungibleTransfer)));
+
+		TxnUtils.assertFailsWith(() -> subject.createCryptoTransfer(transferList),
+				ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 	}
 
 	private static final long serialNo = 100;
