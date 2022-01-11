@@ -35,6 +35,7 @@ import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
@@ -152,7 +153,13 @@ public class SigReqsManager {
 				/* No transactions have been handled; abort now to avoid downstream NPE. */
 				return false;
 			}
-			return tryToExpand(signedState, earliestSigningTime, accessor);
+			if (signedState.getStateVersion() != StateVersions.CURRENT_VERSION) {
+				/* We just upgraded and don't yet have a signed state from the current version. */
+				return false;
+			}
+
+			expandFromSignedState(signedState, earliestSigningTime, accessor);
+			return true;
 		}
 	}
 
@@ -167,25 +174,19 @@ public class SigReqsManager {
 	 * 		the earliest consensus time at which the state could have been signed
 	 * @param accessor
 	 * 		the transaction to expand signatures for
-	 * @return whether the expansion attempt succeeded
 	 */
-	private boolean tryToExpand(
+	private void expandFromSignedState(
 			final ServicesState signedState,
 			final Instant earliestSigningTime,
 			final PlatformTxnAccessor accessor
 	) {
-		try {
-			/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
-			 * Because event intake is single-threaded, there's no risk of another thread getting
-			 * inconsistent results while we are doing this. */
-			signedChildren.updateFrom(signedState, earliestSigningTime);
-			ensureSignedStateSigReqsIsConstructed();
-			expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
-			return true;
-		} finally {
-			/* Make sure we don't hold references to any part of state that would otherwise be eligible for GC. */
-			signedChildren.nullOutRefs();
-		}
+		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
+		 * Because event intake is single-threaded, there's no risk of another thread getting
+		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
+		 * uses weak references, so we won't keep this signed state from GC eligibility. */
+		signedChildren.updateFrom(signedState, earliestSigningTime);
+		ensureSignedStateSigReqsIsConstructed();
+		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}
 
 	private void ensureWorkingStateSigReqsIsConstructed() {
@@ -227,9 +228,5 @@ public class SigReqsManager {
 
 	void setLookupsFactory(final StateChildrenLookupsFactory lookupsFactory) {
 		this.lookupsFactory = lookupsFactory;
-	}
-
-	MutableStateChildren getSignedChildren() {
-		return signedChildren;
 	}
 }
