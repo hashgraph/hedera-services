@@ -21,11 +21,17 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,9 +40,20 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
+@ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
-	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfers;
+
+	private SyntheticTxnFactory subject = new SyntheticTxnFactory(impliedTransfers);
+
+	@BeforeEach
+	void setUp() {
+		subject = new SyntheticTxnFactory(impliedTransfers);
+	}
 
 	@Test
 	void createsExpectedCryptoCreate() {
@@ -129,6 +146,8 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedCryptoTransfer() {
 		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+
+		given(impliedTransfers.isPureValidated(any())).willReturn(ResponseCodeEnum.OK);
 
 		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				List.of(nftExchange),

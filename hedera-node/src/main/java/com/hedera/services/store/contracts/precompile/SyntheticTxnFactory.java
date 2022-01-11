@@ -20,6 +20,8 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -27,6 +29,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -45,8 +48,10 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
 public class SyntheticTxnFactory {
+	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Inject
-	public SyntheticTxnFactory() {
+	public SyntheticTxnFactory(ImpliedTransfersMarshal impliedTransfersMarshal) {
+		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
 
 	public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
@@ -86,19 +91,25 @@ public class SyntheticTxnFactory {
 						.setToken(nftExchange.getTokenType())
 						.addNftTransfers(nftExchange.nftTransfer()));
 			}
+			final var tokenTransferListBuilder = TokenTransferList.newBuilder();
 			for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-				final var tokenTransferListBuilder = TokenTransferList.newBuilder()
+				tokenTransferListBuilder
 						.setToken(fungibleTransfer.getDenomination());
-
 				if (fungibleTransfer.sender != null) {
 					tokenTransferListBuilder.addTransfers(fungibleTransfer.senderAdjustment());
 				}
 				if (fungibleTransfer.receiver != null) {
 					tokenTransferListBuilder.addTransfers(fungibleTransfer.receiverAdjustment());
 				}
-				builder.addTokenTransfers(tokenTransferListBuilder);
 			}
+			builder.addTokenTransfers(tokenTransferListBuilder);
 		}
+
+		final var validity = impliedTransfersMarshal.isPureValidated(builder.build());
+		if (validity != ResponseCodeEnum.OK) {
+			throw new InvalidTransactionException(validity);
+		}
+
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}
 
