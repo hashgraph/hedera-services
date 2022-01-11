@@ -199,7 +199,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.transactionBody = null;
 
 		this.functionId = input.getInt(0);
-		Gas gasRequirement;
+		Gas gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
 
 		switch (functionId) {
 			case ABI_ID_CRYPTO_TRANSFER,
@@ -253,7 +253,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				/*-- 10K --*/
 				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
 			}
-			default -> gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+			default -> {}
 		}
 		return gasRequirement;
 	}
