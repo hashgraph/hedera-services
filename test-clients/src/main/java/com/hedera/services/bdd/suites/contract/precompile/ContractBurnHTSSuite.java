@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_WITH_EVENT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -285,7 +286,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newKeyNamed("contractKey").shape(revisedKey.signedWith(sigs(ON, outerContract, innerContract))),
+												newKeyNamed("contractKey").shape(revisedKey.signedWith(sigs(ON,
+														innerContract, outerContract))),
 												tokenUpdate(TOKEN)
 														.supplyKey("contractKey"),
 												contractCall(outerContract, BURN_AFTER_NESTED_MINT_ABI,
