@@ -35,7 +35,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -89,7 +88,12 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		final var payerAccountId = lookUpAccountID(accessor.getPayer());
+		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
+		if (payerLookup.response() != OK) {
+			txnCtx.setStatus(payerLookup.response());
+		}
+
+		final var payerAccountId = payerLookup.resolvedId();
 		final var payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {
@@ -172,14 +176,5 @@ public final class AwareNodeDiligenceScreen {
 				submittingMember,
 				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
-	}
-
-	private AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
-		}
 	}
 }

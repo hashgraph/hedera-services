@@ -1078,6 +1078,16 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void delegatesLookUpAccountIDCorrectly() {
+		final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
+		given(aliasManager.lookUpAccountID(alias, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(treasury, OK));
+		final var result = subject.lookUpAccountId(alias, aliasManager, INVALID_ACCOUNT_ID);
+		assertEquals(OK, result.response());
+		assertEquals(treasury, result.resolvedId());
+	}
+
+	@Test
 	void throwsIfInvalidTreasury() {
 		subject.knownTreasuries.clear();
 

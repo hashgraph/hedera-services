@@ -54,6 +54,7 @@ import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -154,6 +155,30 @@ class GetAccountRecordsAnswerTest {
 		final var validity = subject.checkValidity(query, view);
 
 		assertEquals(ACCOUNT_DELETED, validity);
+	}
+
+	@Test
+	void validatesInvalidAccountID() {
+		final var query = validQuery(COST_ANSWER, fee, target);
+		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
+		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), INVALID_ACCOUNT_ID));
+
+		final var validity = subject.checkValidity(query, view);
+
+		assertEquals(INVALID_ACCOUNT_ID, validity);
+	}
+
+	@Test
+	void validatesAccountID() {
+		final var query = validQuery(COST_ANSWER, fee, target);
+		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
+		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), OK));
+
+		final var validity = subject.checkValidity(query, view);
+
+		assertEquals(OK, validity);
 	}
 
 	@Test

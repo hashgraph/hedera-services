@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -53,6 +54,7 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -69,7 +71,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class AwareNodeDiligenceScreenTest {
 	private static final long SUBMITTING_MEMBER = 2L;
 	private static final String PRETEND_MEMO = "ignored";
@@ -120,6 +122,8 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.submittingSwirldsMember()).willReturn(SUBMITTING_MEMBER);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
@@ -134,6 +138,8 @@ class AwareNodeDiligenceScreenTest {
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx).setStatus(INVALID_PAYER_SIGNATURE);
@@ -145,6 +151,8 @@ class AwareNodeDiligenceScreenTest {
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(NODE_DUPLICATE));
 		verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
@@ -157,6 +165,8 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx).setStatus(INVALID_TRANSACTION_DURATION);
@@ -171,6 +181,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(TRANSACTION_EXPIRED);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx).setStatus(TRANSACTION_EXPIRED);
@@ -187,6 +199,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx).setStatus(INVALID_ZERO_BYTE_IN_STRING);
@@ -203,6 +217,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(OK);
 		handleValidPayerAccount();
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		verify(txnCtx, never()).setStatus(any());
@@ -212,10 +228,24 @@ class AwareNodeDiligenceScreenTest {
 	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
 		verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+	}
+
+	@Test
+	void invalidPayerAccountIfAlias() throws InvalidProtocolBufferException {
+		givenHandleCtx(aNodeAccount, aNodeAccount);
+		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(payerAccountId))
+				.willReturn(AliasLookup.of(payerAccountId, INVALID_PAYER_ACCOUNT_ID));
+
+		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+
+		verify(txnCtx).setStatus(INVALID_PAYER_ACCOUNT_ID);
 	}
 
 	@Test
@@ -226,6 +256,8 @@ class AwareNodeDiligenceScreenTest {
 		given(payerAccountRef.isDeleted()).willReturn(true);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer()))
+				.willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 

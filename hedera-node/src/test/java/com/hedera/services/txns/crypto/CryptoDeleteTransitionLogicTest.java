@@ -274,6 +274,34 @@ class CryptoDeleteTransitionLogicTest {
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
+	@Test
+	void failsTransitionIfInvalidAccountID() {
+		AccountID aliasedTransfer = asAccountWithAlias("ccc");
+		givenDeleteTxnWithAlias(aliasedTransfer);
+
+		given(ledger.lookUpAccountId(aliasAccountTarget, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(aliasAccountTarget, INVALID_ACCOUNT_ID));
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(target, OK));
+
+		subject.doStateTransition();
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	void failsTransitionIfInvalidTransferAccountID() {
+		AccountID aliasedTransfer = asAccountWithAlias("ccc");
+		givenDeleteTxnWithAlias(aliasedTransfer);
+
+		given(ledger.lookUpAccountId(aliasAccountTarget, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(target, OK));
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(aliasedTransfer, INVALID_ACCOUNT_ID));
+
+		subject.doStateTransition();
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(payer);
 	}

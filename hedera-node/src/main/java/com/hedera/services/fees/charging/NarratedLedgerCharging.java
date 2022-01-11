@@ -37,8 +37,6 @@ import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-
 /**
  * Implements the {@link NarratedCharging} contract using a injected {@link HederaLedger}
  * to charge the requested fees.
@@ -94,7 +92,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
-		this.grpcPayerId = lookUpAccountID(accessor.getPayer());
+		this.grpcPayerId = aliasManager.lookUpPayerAccountID(accessor.getPayer()).resolvedId();
 		this.payerId = EntityNum.fromAccountId(grpcPayerId);
 		this.totalOfferedFee = accessor.getOfferedFee();
 
@@ -214,12 +212,11 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		effPayerStartingBalance = payerAccount.getBalance();
 	}
 
-	private AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
-		}
+	public AccountID getGrpcPayerId() {
+		return grpcPayerId;
+	}
+
+	public EntityNum getPayerId() {
+		return payerId;
 	}
 }
