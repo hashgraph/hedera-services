@@ -129,8 +129,9 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
-		Objects.requireNonNull(contractStorage);
-		return contractStorage;
+		final var refContractStorage = contractStorage.get();
+		Objects.requireNonNull(refContractStorage);
+		return refContractStorage;
 	}
 
 	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
