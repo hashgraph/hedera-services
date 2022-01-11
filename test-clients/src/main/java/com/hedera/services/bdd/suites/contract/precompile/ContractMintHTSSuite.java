@@ -107,17 +107,17 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-//				rollbackOnFailedMintAfterFungibleTransfer(),
-//				rollbackOnFailedAssociateAfterNonFungibleMint()
+				rollbackOnFailedMintAfterFungibleTransfer(),
+				rollbackOnFailedAssociateAfterNonFungibleMint()
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				helloWorldFungibleMint(),
-//				helloWorldNftMint(),
-//				happyPathFungibleTokenMint(),
-//				happyPathNonFungibleTokenMint(),
+				helloWorldFungibleMint(),
+				helloWorldNftMint(),
+				happyPathFungibleTokenMint(),
+				happyPathNonFungibleTokenMint(),
 				transferNftAfterNestedMint()
 		);
 	}
