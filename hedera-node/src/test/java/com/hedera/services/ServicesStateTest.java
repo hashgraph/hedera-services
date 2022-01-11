@@ -168,6 +168,7 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consTime);
 		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
@@ -178,6 +179,7 @@ class ServicesStateTest {
 		verify(hashLogger).logHashesFor(subject);
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
 		assertEquals(consTime, subject.getTimeOfLastHandledTxn());
+		assertEquals(StateVersions.CURRENT_VERSION, subject.getStateVersion());
 	}
 
 	@Test

@@ -286,6 +286,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return networkCtx().consensusTimeOfLastHandledTxn();
 	}
 
+	public int getStateVersion() {
+		return networkCtx().getStateVersion();
+	}
+
 	public void logSummary() {
 		String ctxSummary;
 		if (metadata != null) {
@@ -420,18 +424,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	int getDeserializedVersion() {
 		return deserializedVersion;
-	}
-
-	Platform getPlatformForDeferredInit() {
-		return platformForDeferredInit;
-	}
-
-	AddressBook getAddressBookForDeferredInit() {
-		return addressBookForDeferredInit;
-	}
-
-	SwirldDualState getDualStateForDeferredInit() {
-		return dualStateForDeferredInit;
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {

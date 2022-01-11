@@ -30,6 +30,7 @@ import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.StateAccessor;
+import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
@@ -66,8 +67,6 @@ class SigReqsManagerTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private SigMetadataLookup lookup;
-	@Mock
-	private SigMetadataLookup failingLookup;
 	@Mock
 	private SigRequirements workingStateSigReqs;
 	@Mock
@@ -139,6 +138,25 @@ class SigReqsManagerTest {
 	}
 
 	@Test
+	void usesWorkingStateLookupIfStateVersionIsDifferent() {
+		given(workingState.children()).willReturn(workingChildren);
+		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
+				.willReturn(lookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}));
+		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
 	void usesWorkingStateLookupIfPropertiesInsist() {
 		given(workingState.children()).willReturn(workingChildren);
 		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
@@ -162,6 +180,8 @@ class SigReqsManagerTest {
 				}))
 				.willReturn(new AutoCloseableWrapper<>(nextSignedState, () -> {
 				}));
+		given(firstSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		given(nextSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
 		given(nextSignedState.getTimeOfLastHandledTxn()).willReturn(nextLastHandleTime);
 		given(lookupsFactory.from(
@@ -178,8 +198,7 @@ class SigReqsManagerTest {
 		verify(sigReqsFactory).from(lookup, signatureWaivers);
 		verify(expansionHelper, times(3)).expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
 		final var capturedStateChildren = captor.getValue();
-		assertSame(Instant.EPOCH, capturedStateChildren.signedAt());
-		assertThrows(NullPointerException.class, capturedStateChildren::accounts);
+		assertSame(nextLastHandleTime, capturedStateChildren.signedAt());
 	}
 
 	private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);
