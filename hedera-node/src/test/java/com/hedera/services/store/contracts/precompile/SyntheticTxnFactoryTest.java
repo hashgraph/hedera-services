@@ -21,12 +21,14 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -163,6 +165,19 @@ class SyntheticTxnFactoryTest {
 		assertEquals(
 				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
 				expFungibleTransfer.getTransfersList());
+	}
+
+	@Test
+	void handlesImpureValidityInCryptoTransfer() {
+		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+
+		given(impliedTransfers.isPureValidated(any())).willReturn(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+		Assertions.assertThrows(InvalidTransactionException.class, () ->
+						subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
+				List.of(nftExchange),
+				List.of(fungibleTransfer)))));
 	}
 
 	private static final long serialNo = 100;
