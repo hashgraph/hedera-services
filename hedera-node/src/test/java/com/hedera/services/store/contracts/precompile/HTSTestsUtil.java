@@ -53,6 +53,9 @@ public class HTSTestsUtil {
 	public static final Id accountId = Id.fromGrpcAccount(account);
 	public static final Address recipientAddr = Address.ALTBN128_ADD;
 	public static final Address contractAddr = Address.ALTBN128_MUL;
+	public static final Address senderAddress = Address.ALTBN128_PAIRING;
+	public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+	public static final Address parentRecipientAddress = Address.BLS12_G1ADD;
 	public static final Dissociation dissociateToken =
 			Dissociation.singleDissociation(account, nonFungible);
 	public static final Dissociation multiDissociateOp =
@@ -92,6 +95,10 @@ public class HTSTestsUtil {
 			"0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
 	public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
+	public static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();
+	public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
+	public static final Address senderAddr = Address.ALTBN128_PAIRING;
+	public static final Address accountAddr = accountId.asEvmAddress();
 
 	public static final TokenTransferWrapper nftTransferList =
 			new TokenTransferWrapper(

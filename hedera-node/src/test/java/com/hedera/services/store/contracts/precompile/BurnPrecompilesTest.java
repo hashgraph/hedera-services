@@ -60,6 +60,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,9 +75,12 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.expirableTxnRecordBuilder;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
@@ -103,6 +108,12 @@ class BurnPrecompilesTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
+	@Mock
+	private MessageFrame parentFrame;
+	@Mock
+	private Deque<MessageFrame> frameDeque;
+	@Mock
+	private Iterator<MessageFrame> dequeIterator;
 	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
@@ -164,7 +175,7 @@ class BurnPrecompilesTest {
 	void nftBurnFailurePathWorks() {
 		givenNonfungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -180,7 +191,7 @@ class BurnPrecompilesTest {
 		givenNonfungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -205,7 +216,7 @@ class BurnPrecompilesTest {
 		givenFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -239,8 +250,14 @@ class BurnPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

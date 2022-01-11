@@ -62,6 +62,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
@@ -75,10 +77,13 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failIn
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWith10Supply;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.newMetadata;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -111,6 +116,12 @@ class MintPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
+	private MessageFrame parentFrame;
+	@Mock
+	private Deque<MessageFrame> frameDeque;
+	@Mock
+	private Iterator<MessageFrame> dequeIterator;
+	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
@@ -130,8 +141,6 @@ class MintPrecompilesTest {
 	private SideEffectsTracker sideEffects;
 	@Mock
 	private TransactionBody.Builder mockSynthBodyBuilder;
-	@Mock
-	private TokenMintTransactionBody tokenMintTransactionBody;
 	@Mock
 	private ExpirableTxnRecord.Builder mockRecordBuilder;
 	@Mock
@@ -173,7 +182,7 @@ class MintPrecompilesTest {
 	void mintFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr))
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -191,7 +200,7 @@ class MintPrecompilesTest {
 	void mintRandomFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
+		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
 
 		// when:
 		subject.gasRequirement(pretendArguments);
@@ -206,7 +215,7 @@ class MintPrecompilesTest {
 		givenNonFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -250,8 +259,6 @@ class MintPrecompilesTest {
 
 	@Test
 	void mintFailsWithMissingParentUpdater() {
-		given(frame.getContractAddress()).willReturn(contractAddr);
-		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -274,8 +281,14 @@ class MintPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -291,7 +304,7 @@ class MintPrecompilesTest {
 	}
 
 	private void givenFungibleCollaborators() {
-		given(sigsVerifier.hasActiveSupplyKey(fungibleId, recipientAddr, contractAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
