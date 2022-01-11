@@ -262,6 +262,7 @@ public class MutableStateChildren implements StateChildren {
 		accounts = new WeakReference<>(state.accounts());
 		topics = new WeakReference<>(state.topics());
 		storage = new WeakReference<>(state.storage());
+		contractStorage = new WeakReference<>(state.contractStorage());
 		tokens = new WeakReference<>(state.tokens());
 		tokenAssociations = new WeakReference<>(state.tokenAssociations());
 		schedules = new WeakReference<>(state.scheduleTxs());
