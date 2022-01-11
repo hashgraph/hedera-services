@@ -202,16 +202,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Gas gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
 
 		switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER:
-			case ABI_ID_TRANSFER_TOKENS:
-			case ABI_ID_TRANSFER_TOKEN:
-			case ABI_ID_TRANSFER_NFTS:
-			case ABI_ID_TRANSFER_NFT: {
+			case ABI_ID_CRYPTO_TRANSFER,
+					ABI_ID_TRANSFER_TOKENS,
+					ABI_ID_TRANSFER_TOKEN,
+					ABI_ID_TRANSFER_NFTS,
+					ABI_ID_TRANSFER_NFT: {
 				this.precompile = new TransferPrecompile();
 				decodeInput(input);
 				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
 				/*-- 10K if only one transfer or 5K per index --*/
-				if(transfersCount <= 1) {
+				if (transfersCount <= 1) {
 					gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
 				} else {
 					gasRequirement = Gas.of((DEFAULT_GAS_PRICE / 2) * transfersCount);
