@@ -426,6 +426,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return deserializedVersion;
 	}
 
+	Platform getPlatformForDeferredInit() {
+		return platformForDeferredInit;
+	}
+
+	AddressBook getAddressBookForDeferredInit() {
+		return addressBookForDeferredInit;
+	}
+
+	SwirldDualState getDualStateForDeferredInit() {
+		return dualStateForDeferredInit;
+	}
+
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
