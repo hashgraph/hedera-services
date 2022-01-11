@@ -61,7 +61,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -188,9 +188,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(final SwirldTransaction platformTxn) {
 		try {
 			final var app = metadata.app();
-			final var sigReqs = app.signedStateSigReqs().getBestAvailable();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
-			app.expansionHelper().expandIn(accessor, sigReqs, accessor.getPkToSigsFn());
+			app.sigReqsManager().expandSigsInto(accessor);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
@@ -245,6 +244,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return parseAccount(memo);
+	}
+
+	public Instant getTimeOfLastHandledTxn() {
+		return networkCtx().consensusTimeOfLastHandledTxn();
+	}
+
+	public int getStateVersion() {
+		return networkCtx().getStateVersion();
 	}
 
 	public void logSummary() {
@@ -396,7 +403,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	private MerkleNetworkContext genesisNetworkCtxWith(long seqStart) {
 		return new MerkleNetworkContext(
-				UNKNOWN_CONSENSUS_TIME,
+				NULL_CONSENSUS_TIME,
 				new SequenceNumber(seqStart),
 				seqStart - 1,
 				new ExchangeRates());
