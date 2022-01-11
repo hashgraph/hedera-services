@@ -1108,7 +1108,161 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
+  GCP-Daily-Services-VMerkle-Update-Ubuntu1804-4N-2C:
+    triggers:
+      - schedule:
+          cron: "00 21 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Ubuntu1804-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-VMerkle-Update-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 21 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/VMUpdateDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-VMerkle-Update-Restart-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 21 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/VMerkleUpdateRestart
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Restart-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-VMerkle-Update-Migration-7N-2C:
+    triggers:
+      - schedule:
+          cron: "45 21 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/7N_2C/VMUpdateMigration
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Migration-7N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-VMerkle-Update-Reconnect-4N-2C:
+    triggers:
+      - schedule:
+          cron: "00 22 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/VMerkleUpdateReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Reconnect-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-VMerkle-Update-Reconnect-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/VMerkleUpdateReconnectAbort
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Reconnect-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
 
+  GCP-Daily-Services-VMerkle-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 22 * * *"
+          filters:
+            branches:
+              only:
+                - hts-contracts
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/VMerkle-UpdateReconnectAbortDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-VMerkle-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
