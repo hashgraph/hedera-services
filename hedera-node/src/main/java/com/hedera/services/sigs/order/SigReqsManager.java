@@ -228,8 +228,4 @@ public class SigReqsManager {
 	void setLookupsFactory(final StateChildrenLookupsFactory lookupsFactory) {
 		this.lookupsFactory = lookupsFactory;
 	}
-
-	MutableStateChildren getSignedChildren() {
-		return signedChildren;
-	}
 }

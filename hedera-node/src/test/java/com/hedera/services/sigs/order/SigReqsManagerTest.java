@@ -67,8 +67,6 @@ class SigReqsManagerTest {
 	@Mock
 	private SigMetadataLookup lookup;
 	@Mock
-	private SigMetadataLookup failingLookup;
-	@Mock
 	private SigRequirements workingStateSigReqs;
 	@Mock
 	private SigRequirements signedStateSigReqs;

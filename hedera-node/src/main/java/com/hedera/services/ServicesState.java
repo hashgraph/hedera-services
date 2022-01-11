@@ -250,6 +250,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return networkCtx().consensusTimeOfLastHandledTxn();
 	}
 
+	public int getStateVersion() {
+		return networkCtx().getStateVersion();
+	}
+
 	public void logSummary() {
 		String ctxSummary;
 		if (metadata != null) {
