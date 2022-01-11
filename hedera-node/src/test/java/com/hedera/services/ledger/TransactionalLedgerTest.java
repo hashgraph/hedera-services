@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,7 +63,6 @@ import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
-
 @ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
 	private final Object[] things = { "a", "b", "c", "d" };
@@ -99,24 +98,6 @@ class TransactionalLedgerTest {
 		verify(commitObserver).newProperty(1L, OBJ, things);
 		verify(commitObserver).newProperty(1L, FLAG, true);
 		verifyNoMoreInteractions(commitObserver);
-	}
-
-	@Test
-	void canUndoCreations() {
-		subject.begin();
-
-		subject.create(2L);
-
-		subject.undoCreations();
-
-		subject.commit();
-
-		verify(backingAccounts, never()).put(any(), any());
-	}
-
-	@Test
-	void canUndoCreationsOnlyInTxn() {
-		assertThrows(IllegalStateException.class, subject::undoCreations);
 	}
 
 	@Test
@@ -353,7 +334,7 @@ class TransactionalLedgerTest {
 		subject.set(1L, LONG, 3L);
 
 		// when:
-		long value = (long)subject.get(1L, LONG);
+		long value = (long) subject.get(1L, LONG);
 
 		// then:
 		verify(backingAccounts, times(2)).contains(1L);
@@ -396,7 +377,7 @@ class TransactionalLedgerTest {
 		subject.set(2L, OBJ, things[2]);
 
 		// when:
-		boolean flag = (boolean)subject.get(2L, FLAG);
+		boolean flag = (boolean) subject.get(2L, FLAG);
 
 		// then:
 		assertFalse(flag);

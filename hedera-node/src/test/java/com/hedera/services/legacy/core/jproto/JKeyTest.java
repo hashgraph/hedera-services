@@ -99,13 +99,10 @@ class JKeyTest {
 
 		assertSame(mockEd25519.getEd25519(), mockEd25519.primitiveKeyIfPresent());
 		assertSame(mockSecp256k1.getECDSASecp256k1Key(), mockSecp256k1.primitiveKeyIfPresent());
-<<<<<<< HEAD
 		assertEquals(0, mockEd25519.getECDSASecp256k1Key().length);
 		assertEquals(0, mockSecp256k1.getEd25519().length);
 		assertEquals(0, mockSecp256k1.getECDSA384().length);
 		assertEquals(0, mockSecp256k1.getRSA3072().length);
-=======
->>>>>>> origin/master
 	}
 
 	@Test
