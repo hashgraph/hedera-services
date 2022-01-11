@@ -77,6 +77,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.autoRenewEnabled());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
+		assertFalse(subject.isAutoCreationEnabled());
+		assertFalse(subject.expandSigsFromLastSignedState());
 	}
 
 	@Test
@@ -189,6 +191,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.autoRenewEnabled());
 		assertFalse(subject.areNftsEnabled());
 		assertFalse(subject.shouldThrottleByGas());
+		assertTrue(subject.isAutoCreationEnabled());
+		assertTrue(subject.expandSigsFromLastSignedState());
 	}
 
 	@Test
@@ -325,6 +329,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
+		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
+		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
