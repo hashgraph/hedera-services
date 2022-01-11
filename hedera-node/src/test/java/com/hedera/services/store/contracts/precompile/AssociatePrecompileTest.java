@@ -208,6 +208,99 @@ class AssociatePrecompileTest {
 	}
 
 	@Test
+	void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
+		givenFrameContextWithDelegateCallFromParent();
+		givenLedgers();
+		given(decoder.decodeAssociation(pretendArguments))
+				.willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), parentRecipientAddress, contractAddress,
+				senderAddress))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+				.willReturn(associateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeAssociateToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
+		givenFrameContextWithEmptyMessageFrameStack();
+		givenLedgers();
+		given(decoder.decodeAssociation(pretendArguments))
+				.willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress,
+				senderAddress))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+				.willReturn(associateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeAssociateToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
+		givenFrameContextWithoutParentFrame();
+		givenLedgers();
+		given(decoder.decodeAssociation(pretendArguments))
+				.willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp))
+				.willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress,
+				senderAddress))
+				.willReturn(true);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
+				.willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(tokenStore);
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+				.willReturn(associateLogic);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+
+		// when:
+		final var result = subject.computeAssociateToken(pretendArguments, frame);
+
+		// then:
+		assertEquals(successResult, result);
+		verify(associateLogic).associate(Id.fromGrpcAccount(accountMerkleId), Collections.singletonList(tokenMerkleId));
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
 	void computeMultiAssociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
@@ -241,12 +334,36 @@ class AssociatePrecompileTest {
 	private void givenFrameContext() {
 		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
 		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
-		given(frame.getContractAddress()).willReturn(contractAddress);
+		givenCommonFrameContext();
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
-		given(frame.getMessageFrameStack()).willReturn(frameDeque);
-		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
 		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+	}
+
+	private void givenFrameContextWithDelegateCallFromParent() {
+		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getRecipientAddress()).willReturn(parentRecipientAddress);
+		givenCommonFrameContext();
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
+		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+	}
+
+	private void givenFrameContextWithEmptyMessageFrameStack() {
+		givenCommonFrameContext();
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(false);
+	}
+
+	private void givenFrameContextWithoutParentFrame() {
+		givenCommonFrameContext();
+		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true, false);
+	}
+
+	private void givenCommonFrameContext() {
+		given(frame.getContractAddress()).willReturn(contractAddress);
+		given(frame.getRecipientAddress()).willReturn(contractAddress);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(frame.getMessageFrameStack()).willReturn(frameDeque);
+		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -269,7 +386,9 @@ class AssociatePrecompileTest {
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	private static final Address recipientAddress = Address.ALTBN128_ADD;
 	private static final Address contractAddress = Address.ALTBN128_MUL;
+	private static final Address senderAddress = Address.ALTBN128_PAIRING;
 	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
+	private static final Address parentRecipientAddress = Address.BLS12_G1ADD;
 	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }
