@@ -318,7 +318,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 									contract,
 									SEND_THEN_REVERT_NESTED_SENDS_ABI,
 									sendArgs
-							).via(txn);
+							)
+									.gas(110_000)
+									.via(txn);
 							allRunFor(spec, op);
 						})
 				).then(
