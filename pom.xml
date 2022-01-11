@@ -145,7 +145,7 @@
 		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- Plugin custom properties -->
-		<maven-jar.version>3.2.0</maven-jar.version>
+		<maven-jar.version>3.2.1</maven-jar.version>
 		<maven-source.version>3.2.0</maven-source.version>
 		<maven-resources.version>3.2.0</maven-resources.version>
 		<maven-license.version>2.0.0</maven-license.version>
