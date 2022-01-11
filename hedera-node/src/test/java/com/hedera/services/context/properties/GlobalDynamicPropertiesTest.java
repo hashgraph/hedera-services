@@ -140,6 +140,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(47, subject.maxCustomFeeDepth());
 		assertEquals(48, subject.maxGasRefundPercentage());
 		assertEquals(52, subject.changeHistorianMemorySecs());
+		assertEquals(53, subject.maxAggregateContractKvPairs());
+		assertEquals(54, subject.maxIndividualContractKvPairs());
 	}
 
 	@Test
@@ -228,6 +230,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(48, subject.maxCustomFeeDepth());
 		assertEquals(49, subject.maxGasRefundPercentage());
 		assertEquals(53, subject.changeHistorianMemorySecs());
+		assertEquals(54, subject.maxAggregateContractKvPairs());
+		assertEquals(55, subject.maxIndividualContractKvPairs());
 	}
 
 	@Test
@@ -331,6 +335,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
 		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
+		given(properties.getIntProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52);
+		given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
