@@ -68,6 +68,4 @@ public interface StateChildren {
 	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations();
 
 	RecordsRunningHashLeaf runningHashLeaf();
-
-	void nullOutRefs();
 }

@@ -176,7 +176,7 @@ class SigReqsManagerTest {
 		verify(sigReqsFactory).from(lookup, signatureWaivers);
 		verify(expansionHelper, times(3)).expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
 		final var capturedStateChildren = captor.getValue();
-		assertSame(Instant.EPOCH, capturedStateChildren.signedAt());
+		assertSame(nextLastHandleTime, capturedStateChildren.signedAt());
 		assertThrows(NullPointerException.class, capturedStateChildren::accounts);
 	}
 
