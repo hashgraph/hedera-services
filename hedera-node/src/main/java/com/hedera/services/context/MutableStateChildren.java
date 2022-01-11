@@ -242,7 +242,22 @@ public class MutableStateChildren implements StateChildren {
 		updateFrom(signedState);
 	}
 
+	public void updateFromMaybeUninitializedState(final ServicesState state, final Instant signingTime) {
+		signedAt = signingTime;
+		updatePrimitiveChildrenFrom(state);
+		uniqueTokenAssociations = new WeakReference<>(null);
+		uniqueOwnershipAssociations = new WeakReference<>(null);
+		uniqueOwnershipTreasuryAssociations = new WeakReference<>(null);
+	}
+
 	public void updateFrom(final ServicesState state) {
+		updatePrimitiveChildrenFrom(state);
+		uniqueTokenAssociations = new WeakReference<>(state.uniqueTokenAssociations());
+		uniqueOwnershipAssociations = new WeakReference<>(state.uniqueOwnershipAssociations());
+		uniqueOwnershipTreasuryAssociations = new WeakReference<>(state.uniqueTreasuryOwnershipAssociations());
+	}
+
+	private void updatePrimitiveChildrenFrom(final ServicesState state) {
 		accounts = new WeakReference<>(state.accounts());
 		topics = new WeakReference<>(state.topics());
 		storage = new WeakReference<>(state.storage());
@@ -253,9 +268,6 @@ public class MutableStateChildren implements StateChildren {
 		addressBook = new WeakReference<>(state.addressBook());
 		specialFiles = new WeakReference<>(state.specialFiles());
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
-		uniqueTokenAssociations = new WeakReference<>(state.uniqueTokenAssociations());
-		uniqueOwnershipAssociations = new WeakReference<>(state.uniqueOwnershipAssociations());
-		uniqueOwnershipTreasuryAssociations = new WeakReference<>(state.uniqueTreasuryOwnershipAssociations());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 	}
 }

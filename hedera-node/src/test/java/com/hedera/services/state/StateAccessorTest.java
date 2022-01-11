@@ -162,6 +162,4 @@ class StateAccessorTest {
 		// expect:
 		Assertions.assertNotNull(subject.children());
 	}
-
-	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }
