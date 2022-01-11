@@ -20,15 +20,16 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -47,6 +48,7 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -107,7 +109,8 @@ class ContractUpdateTransitionLogicTest {
 		customizer = mock(HederaAccountCustomizer.class);
 
 		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(),
+				ledger))
 				.willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
 
 		// when:
@@ -124,7 +127,8 @@ class ContractUpdateTransitionLogicTest {
 		customizer = mock(HederaAccountCustomizer.class);
 
 		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(),
+				ledger))
 				.willReturn(Pair.of(Optional.of(customizer), OK));
 
 		// when:
@@ -165,7 +169,7 @@ class ContractUpdateTransitionLogicTest {
 
 	@Test
 	void acceptsOmittedAutoRenew() {
-		givenValidTxnCtx(false);
+		givenValidTxnCtx(false, proxy);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
@@ -179,6 +183,21 @@ class ContractUpdateTransitionLogicTest {
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
+	}
+
+	@Test
+	void abortsWithInvalidProxyAccountId() {
+		customizer = mock(HederaAccountCustomizer.class);
+		final var proxyId = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
+		givenValidTxnCtxWithProxy(proxyId);
+
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance(),
+				ledger)).willReturn(Pair.of(Optional.empty(), INVALID_ACCOUNT_ID));
+
+		subject.doStateTransition();
+
+		verify(ledger, never()).customize(targetId, customizer);
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test
@@ -203,10 +222,14 @@ class ContractUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
+		givenValidTxnCtx(true, proxy);
 	}
 
-	private void givenValidTxnCtx(boolean useAutoRenew) {
+	private void givenValidTxnCtxWithProxy(AccountID proxyId) {
+		givenValidTxnCtx(true, proxyId);
+	}
+
+	private void givenValidTxnCtx(boolean useAutoRenew, AccountID proxyId) {
 		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -214,7 +237,7 @@ class ContractUpdateTransitionLogicTest {
 						ContractUpdateTransactionBody.newBuilder()
 								.setMemo(memo)
 								.setContractID(target)
-								.setProxyAccountID(proxy));
+								.setProxyAccountID(proxyId));
 		if (useAutoRenew) {
 			op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
 			op.getContractUpdateInstanceBuilder().setMemoWrapper(StringValue.newBuilder().setValue(memo));

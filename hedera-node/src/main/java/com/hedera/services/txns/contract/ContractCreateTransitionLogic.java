@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -107,7 +108,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var senderId = Id.fromGrpcAccount(
 				hederaLedger.lookUpAccountId(grpcSender, INVALID_PAYER_ACCOUNT_ID).resolvedId());
 
-		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
+		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(
+				hederaLedger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).resolvedId()) :
+				Id.DEFAULT;
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
 				: STANDIN_CONTRACT_ID_KEY;
@@ -192,6 +195,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 		if (validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(), hederaLedger) != OK) {
 			return INVALID_PAYER_ACCOUNT_ID;
+		}
+		if (op.hasProxyAccountID()) {
+			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID(),
+					INVALID_ACCOUNT_ID).response();
+			if (result != OK) {
+				return result;
+			}
 		}
 
 		return validator.memoCheck(op.getMemo());

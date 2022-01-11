@@ -21,12 +21,12 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -43,6 +43,8 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -88,7 +90,13 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 			if (op.hasTransferAccountID()) {
 				final var receiver = op.getTransferAccountID();
-				if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
+				final var result = ledger.lookUpAccountId(receiver, INVALID_ACCOUNT_ID);
+				if (result.response() != OK) {
+					txnCtx.setStatus(INVALID_ACCOUNT_ID);
+					return;
+				}
+				final var receiverID = result.resolvedId();
+				if (ledger.exists(receiverID) && ledger.isDetached(receiverID)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
