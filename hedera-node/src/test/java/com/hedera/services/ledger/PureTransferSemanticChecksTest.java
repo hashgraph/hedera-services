@@ -22,17 +22,14 @@ package com.hedera.services.ledger;
 
 import com.google.protobuf.UInt32Value;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.apache.tuweni.units.bigints.UInt32;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -282,12 +279,32 @@ class PureTransferSemanticChecksTest {
 						.build());
 
 		given(tokenStore.get(aTid)).willReturn(tokenA);
-		given(tokenStore.get(aTid)).willReturn(tokenB);
 
 		assertFalse(transfers.isEmpty());
 		assertTrue(transfers.get(0).hasExpectedDecimals());
 		assertTrue(transfers.get(1).hasExpectedDecimals());
 		assertEquals(UNEXPECTED_TOKEN_DECIMALS, subject.validateTokenTransferSemantics(transfers));
+	}
+
+	@Test
+	void testsMatchWithDecimals(){
+		final var transfers = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.setExpectedDecimals(UInt32Value.of(4))
+						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(bTid)
+						.setExpectedDecimals(UInt32Value.of(2))
+						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build());
+
+		given(tokenStore.get(aTid)).willReturn(tokenA);
+		given(tokenStore.get(bTid)).willReturn(tokenB);
+
+		assertFalse(subject.matchesWithTokenDecimals(transfers.get(0)));
+		assertTrue(subject.matchesWithTokenDecimals(transfers.get(1)));
 	}
 
 	@Test

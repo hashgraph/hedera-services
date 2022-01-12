@@ -174,7 +174,7 @@ public class PureTransferSemanticChecks {
 			return INVALID_TOKEN_ID;
 		}
 
-		if (tokenTransfers.hasExpectedDecimals() && !isValidExpectedDecimals(tokenTransfers)) {
+		if (tokenTransfers.hasExpectedDecimals() && !matchesWithTokenDecimals(tokenTransfers)) {
 			return UNEXPECTED_TOKEN_DECIMALS;
 		}
 
@@ -231,7 +231,7 @@ public class PureTransferSemanticChecks {
 		return hbarAdjusts.size() <= maxHbarAdjusts;
 	}
 
-	boolean isValidExpectedDecimals(final TokenTransferList tokenTransfers) {
+	boolean matchesWithTokenDecimals(final TokenTransferList tokenTransfers) {
 		return tokenStore.get(tokenTransfers.getToken()).decimals() == tokenTransfers.getExpectedDecimals().getValue();
 	}
 }
