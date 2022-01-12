@@ -23,6 +23,7 @@ package com.hedera.services.state.virtual;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import org.apache.tuweni.units.bigints.UInt256;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,6 +46,10 @@ public class ContractValue implements VirtualValue {
 
 	private static final String IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR = "Tried to set value on immutable " +
 			"ContractValue";
+
+	public static ContractValue from(final UInt256 value) {
+		return new ContractValue(value.toArray());
+	}
 
 	/**
 	 * Construct a zero ContractValue
