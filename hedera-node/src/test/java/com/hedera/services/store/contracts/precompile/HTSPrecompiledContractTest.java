@@ -53,7 +53,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
@@ -107,11 +107,13 @@ class HTSPrecompiledContractTest {
 
 	@Test
 	void gasRequirementReturnsCorrectValueForInvalidInput() {
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
+
 		// when
 		var gas = subject.gasRequirement(input);
 
 		// then
-		assertEquals(Gas.of(10_000L), gas);
+		assertEquals(Gas.of(DEFAULT_GAS_PRICE), gas);
 	}
 
 	@Test
@@ -120,6 +122,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -135,6 +138,7 @@ class HTSPrecompiledContractTest {
 								.addTokenTransfers(TokenTransferList.newBuilder().build())
 								.addTokenTransfers(TokenTransferList.newBuilder().build())
 								.addTokenTransfers(TokenTransferList.newBuilder().build())));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of((DEFAULT_GAS_PRICE / 2) * 3), subject.gasRequirement(input));
@@ -146,6 +150,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -157,6 +162,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -168,6 +174,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -179,6 +186,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -189,6 +197,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -199,6 +208,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 		given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -213,6 +223,7 @@ class HTSPrecompiledContractTest {
 		builder.addAllTokens(multiDissociateOp.tokenIds());
 		given(syntheticTxnFactory.createAssociate(any()))
 				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -223,6 +234,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(any())).willReturn(associateOp);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -234,11 +246,11 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 		given(decoder.decodeMultipleDissociations(any())).willReturn(multiDissociateOp);
 		final var builder = TokenDissociateTransactionBody.newBuilder();
-
 		builder.setAccount(multiDissociateOp.accountId());
 		builder.addAllTokens(multiDissociateOp.tokenIds());
 		given(syntheticTxnFactory.createDissociate(any()))
 				.willReturn(TransactionBody.newBuilder().setTokenDissociate(builder));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -249,6 +261,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 		given(decoder.decodeDissociate(any())).willReturn(dissociateToken);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// then
 		assertEquals(Gas.of(DEFAULT_GAS_PRICE), subject.gasRequirement(input));
@@ -270,6 +283,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -284,6 +298,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -298,6 +313,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -312,6 +328,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -326,6 +343,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -339,6 +357,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -352,6 +371,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 		given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -369,6 +389,7 @@ class HTSPrecompiledContractTest {
 		builder.addAllTokens(multiDissociateOp.tokenIds());
 		given(syntheticTxnFactory.createAssociate(any()))
 				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -382,6 +403,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(any())).willReturn(associateOp);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -396,10 +418,10 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 		given(decoder.decodeMultipleDissociations(any())).willReturn(multiDissociateOp);
 		final var builder = TokenDissociateTransactionBody.newBuilder();
-
 		builder.setAccount(multiDissociateOp.accountId());
 		builder.addAllTokens(multiDissociateOp.tokenIds());
 		given(syntheticTxnFactory.createDissociate(any())).willReturn(TransactionBody.newBuilder().setTokenDissociate(builder));
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -413,6 +435,7 @@ class HTSPrecompiledContractTest {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 		given(decoder.decodeDissociate(any())).willReturn(dissociateToken);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);
@@ -425,6 +448,7 @@ class HTSPrecompiledContractTest {
 	void computeReturnsNullForWrongInput() {
 		// given
 		given(input.getInt(0)).willReturn(0x00000000);
+		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when
 		subject.gasRequirement(input);

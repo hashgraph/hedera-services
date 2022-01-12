@@ -41,7 +41,8 @@ import java.util.List;
 
 public class HTSTestsUtil {
 
-	public static final long amount = 1_234_567L;
+	public static final long AMOUNT = 1_234_567L;
+	public static final long DEFAULT_GAS_PRICE = 10_000L;
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
@@ -69,9 +70,9 @@ public class HTSTestsUtil {
 	public static final Id fungibleId = Id.fromGrpcToken(fungible);
 	public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
 	public static final BurnWrapper fungibleBurn =
-			BurnWrapper.forFungible(fungible, amount);
+			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
-			MintWrapper.forFungible(fungible, amount);
+			MintWrapper.forFungible(fungible, AMOUNT);
 
 	public static final Association multiAssociateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
@@ -109,21 +110,21 @@ public class HTSTestsUtil {
 
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
+					AMOUNT,
 					token,
 					sender,
 					receiver
 			);
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
+					AMOUNT,
 					token,
 					sender,
 					null
 			);
 	public static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
 			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
+					AMOUNT,
 					token,
 					null,
 					receiver
@@ -164,34 +165,34 @@ public class HTSTestsUtil {
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(amount).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(AMOUNT).build()
 			)
 	);
 	public static final List<BalanceChange> tokensTransferChanges = List.of(
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build()
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build()
 			)
 	);
 
@@ -199,7 +200,7 @@ public class HTSTestsUtil {
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(amount).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(AMOUNT).build()
 			)
 	);
 
@@ -213,9 +214,9 @@ public class HTSTestsUtil {
 			),
 			/* Simulate an assessed fallback fee */
 			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(-amount).build()),
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(-AMOUNT).build()),
 			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(+amount).build())
+					AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(+AMOUNT).build())
 	);
 
 	public static final List<BalanceChange> nftsTransferChanges = List.of(

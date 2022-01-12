@@ -110,7 +110,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
-	protected static final long DEFAULT_GAS_PRICE = 10_000L;
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -200,7 +199,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.transactionBody = null;
 
 		this.functionId = input.getInt(0);
-		Gas gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+		var defaultGasPrice = dynamicProperties.htsDefaultGasCost();
+		Gas gasRequirement = Gas.of(defaultGasPrice);
 
 		switch (functionId) {
 			case ABI_ID_CRYPTO_TRANSFER,
@@ -213,9 +213,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
 				/*-- 10K if only one transfer or 5K per index --*/
 				if (transfersCount <= 1) {
-					gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+					gasRequirement = Gas.of(defaultGasPrice);
 				} else {
-					gasRequirement = Gas.of((DEFAULT_GAS_PRICE / 2) * transfersCount);
+					gasRequirement = Gas.of((defaultGasPrice / 2) * transfersCount);
 				}
 				break;
 			}
@@ -223,42 +223,42 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				this.precompile = new MintPrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
-				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				gasRequirement = Gas.of(defaultGasPrice);
 				break;
 			}
 			case ABI_ID_BURN_TOKEN: {
 				this.precompile = new BurnPrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
-				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				gasRequirement = Gas.of(defaultGasPrice);
 				break;
 			}
 			case ABI_ID_ASSOCIATE_TOKENS: {
 				this.precompile = new MultiAssociatePrecompile();
 				decodeInput(input);
 				/*-- 10K per index --*/
-				gasRequirement = Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenAssociate().getTokensCount());
+				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenAssociate().getTokensCount());
 				break;
 			}
 			case ABI_ID_ASSOCIATE_TOKEN: {
 				this.precompile = new AssociatePrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
-				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				gasRequirement = Gas.of(defaultGasPrice);
 				break;
 			}
 			case ABI_ID_DISSOCIATE_TOKENS: {
 				this.precompile = new MultiDissociatePrecompile();
 				decodeInput(input);
 				/*-- 10K per index --*/
-				gasRequirement = Gas.of((DEFAULT_GAS_PRICE) * this.transactionBody.getTokenDissociate().getTokensCount());
+				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenDissociate().getTokensCount());
 				break;
 			}
 			case ABI_ID_DISSOCIATE_TOKEN: {
 				this.precompile = new DissociatePrecompile();
 				decodeInput(input);
 				/*-- 10K --*/
-				gasRequirement = Gas.of(DEFAULT_GAS_PRICE);
+				gasRequirement = Gas.of(defaultGasPrice);
 				break;
 			}
 			default:
