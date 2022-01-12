@@ -65,7 +65,7 @@ public class TopicGetInfoSuite extends HapiApiSuite {
 				.when()
 				.then(
 						getTopicInfo("testTopic")
-								.hasExpectedLedgerId("0x02")
+								.hasExpectedLedgerId("0x03")
 								.hasMemo("testmemo")
 								.hasAdminKey("adminKey")
 								.hasSubmitKey("submitKey")

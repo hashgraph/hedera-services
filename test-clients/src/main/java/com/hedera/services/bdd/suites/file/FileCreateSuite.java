@@ -93,7 +93,7 @@ public class FileCreateSuite extends HapiApiSuite {
 						fileCreate("memorable").entityMemo(memo)
 				).when().then(
 						getFileInfo("memorable")
-								.hasExpectedLedgerId("0x02")
+								.hasExpectedLedgerId("0x03")
 								.hasMemo(memo)
 				);
 	}

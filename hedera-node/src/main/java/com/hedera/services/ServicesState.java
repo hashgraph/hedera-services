@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -81,7 +82,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
+	private static final String DEFAULT_LEDGER_ID = "0x02";
 	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+
+	private static ByteString LEDGER_ID = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
@@ -276,6 +280,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	/* -- Getters and helpers -- */
+	public static ByteString getLedgerId() {
+		return LEDGER_ID;
+	}
+
 	public AccountID getAccountFromNodeId(NodeId nodeId) {
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
@@ -368,6 +376,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			SwirldDualState dualState
 	) {
 		final var selfId = platform.getSelfId().getId();
+
+		if (bootstrapProps.containsProperty("ledger.id")) {
+			LEDGER_ID = ByteString.copyFromUtf8(bootstrapProps.getStringProperty("ledger.id"));
+		}
 
 		ServicesApp app;
 		if (APPS.includes(selfId)) {

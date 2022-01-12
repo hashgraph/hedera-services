@@ -21,7 +21,7 @@ package com.hedera.services.store.tokens.views.utils;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -79,7 +79,7 @@ public final class GrpcUtils {
 		}
 
 		return TokenNftInfo.newBuilder()
-				.setLedgerId(StateView.getLedgerId())
+				.setLedgerId(ServicesState.getLedgerId())
 				.setNftID(nftId)
 				.setAccountID(effectiveOwner)
 				.setCreationTime(nft.getCreationTime().toGrpc())

@@ -163,6 +163,7 @@ class StateViewTest {
 	private final long autoRenewPeriod = 1_234_567;
 	private final String fileMemo = "Originally she thought";
 	private final String scheduleMemo = "For what but eye and ear";
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x02");
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -215,7 +216,7 @@ class StateViewTest {
 				expiry);
 
 		expectedImmutable = FileGetInfoResponse.FileInfo.newBuilder()
-				.setLedgerId(StateView.getLedgerId())
+				.setLedgerId(ledgerId)
 				.setDeleted(false)
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setFileID(target)
@@ -421,7 +422,7 @@ class StateViewTest {
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
@@ -437,7 +438,7 @@ class StateViewTest {
 		final var gotten = subject.infoForSchedule(scheduleId);
 		final var info = gotten.get();
 
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 		final var signatures = info.getSigners().getKeysList();
 		assertEquals(MiscUtils.asKeyUnchecked(mockEd25519Key), signatures.get(3));
@@ -478,7 +479,7 @@ class StateViewTest {
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
@@ -499,7 +500,7 @@ class StateViewTest {
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(PauseNotApplicable, info.getPauseStatus());
 		assertFalse(info.hasPauseKey());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
@@ -531,7 +532,7 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
@@ -560,7 +561,7 @@ class StateViewTest {
 		assertEquals(asSolidityAddressHex(asAccount(cid)), info.getContractAccountID());
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 		assertTrue(info.getDeleted());
 		assertEquals(expectedBytecode.length, info.getStorage());
 	}
@@ -631,7 +632,7 @@ class StateViewTest {
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
-				.setLedgerId(StateView.getLedgerId())
+				.setLedgerId(ledgerId)
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
@@ -658,7 +659,7 @@ class StateViewTest {
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
-				.setLedgerId(StateView.getLedgerId())
+				.setLedgerId(ledgerId)
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
@@ -885,7 +886,7 @@ class StateViewTest {
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
 		final var info = optionalNftInfo.get();
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(tokenAccountId, info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
@@ -898,7 +899,7 @@ class StateViewTest {
 
 		assertTrue(optionalNftInfo.isPresent());
 		final var info = optionalNftInfo.get();
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(nftOwnerId, info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());

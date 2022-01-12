@@ -196,6 +196,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat",
+			"ledger.id",
 			"tokens.nfts.areQueriesEnabled"
 	);
 
@@ -369,6 +370,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("fees.tokenTransferUsageMultiplier", AS_INT),
 			entry("fees.percentCongestionMultipliers", AS_CONGESTION_MULTIPLIERS),
 			entry("files.maxSizeKb", AS_INT),
+			entry("ledger.id", AS_STRING),
 			entry("ledger.changeHistorian.memorySecs", AS_INT),
 			entry("ledger.xferBalanceChanges.maxLen", AS_INT),
 			entry("ledger.fundingAccount", AS_LONG),

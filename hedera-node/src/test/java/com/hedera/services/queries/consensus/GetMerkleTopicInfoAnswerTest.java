@@ -80,6 +80,7 @@ class GetMerkleTopicInfoAnswerTest {
 	String idLit = "0.0.12345";
 	long expiry = 1_234_567L;
 	long duration = 55L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x02");
 	MerkleTopic merkleTopic;
 	private Transaction paymentTxn;
 
@@ -255,7 +256,7 @@ class GetMerkleTopicInfoAnswerTest {
 		assertEquals(merkleTopic.getAutoRenewAccountId().num(), info.getAutoRenewAccount().getAccountNum());
 		assertEquals(merkleTopic.getSequenceNumber(), info.getSequenceNumber());
 		assertEquals(merkleTopic.getMemo(), info.getMemo());
-		assertEquals(StateView.getLedgerId(), info.getLedgerId());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
