@@ -241,7 +241,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode").omitAdminKey().via(txn),
+						contractCreate("fuse").bytecode("bytecode").omitAdminKey().gas(300_000).via(txn),
 						withOpContext((spec, opLog) -> {
 							final var op = getTxnRecord(txn);
 							allRunFor(spec, op);
