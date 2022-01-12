@@ -147,7 +147,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingWithDecimals(10, fungibleType, 4)
 								.betweenWithDecimals(TOKEN_TREASURY, party))
 								.signedBy(DEFAULT_PAYER, party, TOKEN_TREASURY)
-								.hasPrecheck(UNEXPECTED_TOKEN_DECIMALS)
+								.hasKnownStatus(UNEXPECTED_TOKEN_DECIMALS)
 								.via("failedTxn"),
 						cryptoTransfer(movingWithDecimals(20, fungibleType, 2)
 								.betweenWithDecimals(TOKEN_TREASURY, party))

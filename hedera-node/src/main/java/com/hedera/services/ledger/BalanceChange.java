@@ -63,6 +63,7 @@ public class BalanceChange {
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
 	private ByteString alias;
+	private int expectedDecimals = -1;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -201,6 +202,19 @@ public class BalanceChange {
 		return codeForInsufficientBalance;
 	}
 
+	public boolean hasExpectedDecimals() {
+		return expectedDecimals != -1;
+	}
+
+	public int getExpectedDecimals() {
+		return expectedDecimals;
+	}
+
+	public BalanceChange setExpectedDecimals(final int expectedDecimals) {
+		this.expectedDecimals = expectedDecimals;
+		return this;
+	}
+
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
 	this model object is not used in hash-based collections, so the performance of these
 	methods doesn't matter. */
@@ -223,6 +237,7 @@ public class BalanceChange {
 					.add("account", account)
 					.add("alias", alias.toStringUtf8())
 					.add("units", units)
+					.add("expectedDecimals", expectedDecimals)
 					.toString();
 		} else {
 			return MoreObjects.toStringHelper(BalanceChange.class)
