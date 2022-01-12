@@ -27,7 +27,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -72,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
@@ -186,22 +184,6 @@ class ContextOptionValidatorTest {
 						.setAccountID(a))
 				.setCryptoCreateAccount(creationOp)
 				.build();
-	}
-
-	@Test
-	void validatesTransactionAccountID() {
-		final var txn = buildValidTransaction();
-		given(ledger.lookUpAccountId(a, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(a, OK));
-		assertEquals(OK, subject.isValidTransactionID(txn.getTransactionID().getAccountID(), ledger));
-	}
-
-	@Test
-	void validatesInvalidTransactionAccountID() {
-		final var txn = buildValidTransaction();
-		given(ledger.lookUpAccountId(a, INVALID_PAYER_ACCOUNT_ID)).willReturn(
-				AliasLookup.of(a, INVALID_PAYER_ACCOUNT_ID));
-		assertEquals(INVALID_PAYER_ACCOUNT_ID,
-				subject.isValidTransactionID(txn.getTransactionID().getAccountID(), ledger));
 	}
 
 	@Test

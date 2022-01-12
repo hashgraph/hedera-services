@@ -95,7 +95,7 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 
-		final var key = EntityNum.fromAccountId(aliasManager.lookUpPayerAccountID(payer).resolvedId());
+		final var key = EntityNum.fromAccountId(payer);
 		addToState(key, expiringRecord);
 		expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 

@@ -21,7 +21,6 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -89,8 +88,6 @@ public interface OptionValidator {
 	ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
 
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
-
-	ResponseCodeEnum isValidTransactionID(AccountID txnId, HederaLedger ledger);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
 		return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);

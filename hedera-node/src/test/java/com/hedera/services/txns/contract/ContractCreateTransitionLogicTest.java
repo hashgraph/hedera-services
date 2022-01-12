@@ -154,8 +154,6 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(),
-				hederaLedger)).willReturn(OK);
 		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(proxy, OK));
 
@@ -164,21 +162,10 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
-	void validationFailsWithInvalidAliasPayer() {
-		givenInvalidTxnCtx(aliasPayer, proxy);
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(validator.isValidTransactionID(aliasPayer, hederaLedger)).willReturn(INVALID_PAYER_ACCOUNT_ID);
-
-		// expect:
-		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.semanticCheck().apply(contractCreateTxn));
-	}
-
-	@Test
 	void validationFailsWithInvalidProxy() {
 		AccountID invalidProxy = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
 		givenInvalidTxnCtx(aliasPayer, invalidProxy);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(validator.isValidTransactionID(aliasPayer, hederaLedger)).willReturn(OK);
 		given(hederaLedger.lookUpAccountId(invalidProxy, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(invalidProxy, INVALID_ACCOUNT_ID));
 
@@ -542,8 +529,6 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(),
-				hederaLedger)).willReturn(OK);
 		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(proxy, OK));
 

@@ -91,7 +91,7 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenFreezeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(

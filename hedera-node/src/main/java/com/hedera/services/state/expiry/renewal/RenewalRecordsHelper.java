@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -55,7 +54,6 @@ public class RenewalRecordsHelper {
 	private final RecordStreamManager recordStreamManager;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Consumer<RunningHash> updateRunningHash;
-	private final AliasManager aliasManager;
 
 	private int consensusNanosIncr = 0;
 	private Instant cycleStart = null;
@@ -65,13 +63,11 @@ public class RenewalRecordsHelper {
 	public RenewalRecordsHelper(
 			final RecordStreamManager recordStreamManager,
 			final GlobalDynamicProperties dynamicProperties,
-			final Consumer<RunningHash> updateRunningHash,
-			final AliasManager aliasManager
+			final Consumer<RunningHash> updateRunningHash
 	) {
 		this.updateRunningHash = updateRunningHash;
 		this.recordStreamManager = recordStreamManager;
 		this.dynamicProperties = dynamicProperties;
-		this.aliasManager = aliasManager;
 	}
 
 	public void beginRenewalCycle(final Instant now) {
@@ -141,9 +137,7 @@ public class RenewalRecordsHelper {
 
 	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
-		final var lookedUpResult = aliasManager.lookUpPayerAccountID(accountId);
-		final var accountID = lookedUpResult.resolvedId();
-		final var id = EntityId.fromGrpcAccountId(accountID);
+		final var id = EntityId.fromGrpcAccountId(accountId);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 

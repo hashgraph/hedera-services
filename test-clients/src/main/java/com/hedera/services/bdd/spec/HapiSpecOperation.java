@@ -251,7 +251,7 @@ public abstract class HapiSpecOperation {
 				builder.clearTransactionID();
 			} else {
 				payer.ifPresent(payerId -> {
-					AccountID id = getIdWithAliasLookUp(payerId, spec, payerReferenceType);
+					AccountID id = getIdWithAliasLookUp(payerId, spec);
 					TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
 					builder.setTransactionID(txnId);
 				});

@@ -134,7 +134,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenAssociateTransactionBody opBody = spec
 				.txns()
 				.<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(

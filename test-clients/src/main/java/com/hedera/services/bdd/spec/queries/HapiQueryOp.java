@@ -320,7 +320,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 
 	private Consumer<TransactionBody.Builder> opDef(HapiApiSpec spec, long amount) throws Throwable {
-		AccountID payer = getIdWithAliasLookUp(effectivePayer(spec), spec, payerReferenceType);
+		AccountID payer = getIdWithAliasLookUp(effectivePayer(spec), spec);
 		TransferList transfers = asTransferList(
 				tinyBarsFromTo(
 						amount,

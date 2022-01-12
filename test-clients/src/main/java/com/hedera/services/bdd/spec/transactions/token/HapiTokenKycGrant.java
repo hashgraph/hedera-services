@@ -86,7 +86,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenGrantKycTransactionBody opBody = spec
 				.txns()
 				.<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(

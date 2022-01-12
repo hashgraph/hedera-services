@@ -145,7 +145,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 		txn = TransactionBody.parseFrom(txnBytes);
 		memo = txn.getMemo();
-		// should txnId accountID be parsed here ?
+		
 		txnId = txn.getTransactionID();
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();

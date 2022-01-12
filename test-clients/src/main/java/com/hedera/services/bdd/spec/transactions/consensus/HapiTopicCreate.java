@@ -157,7 +157,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 							topicMemo.ifPresent(b::setMemo);
 							submitKey.ifPresent(b::setSubmitKey);
 							autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(
-									getIdWithAliasLookUp(id, spec, autoRenewAccountIdRefType)));
+									getIdWithAliasLookUp(id, spec)));
 							autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
 							if (clearAutoRenewPeriod) {
 								b.clearAutoRenewPeriod();

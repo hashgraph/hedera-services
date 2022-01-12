@@ -177,8 +177,6 @@ class ExpiringCreationsTest {
 		final var payerAccount = new MerkleAccount();
 		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
-		given(aliasManager.lookUpPayerAccountID(effPayer))
-				.willReturn(AliasLookup.of(effPayer, OK));
 
 		final var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
 

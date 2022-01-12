@@ -193,14 +193,6 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void acceptsValidTxn() {
-		givenValidTxnCtx();
-		given(validator.isValidTransactionID(cryptoCreateTxn.getTransactionID().getAccountID(), ledger)).willReturn(OK);
-
-		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
-	}
-
-	@Test
 	void rejectsInvalidMaxAutomaticAssociations() {
 		givenInvalidMaxAutoAssociations();
 
@@ -276,7 +268,6 @@ class CryptoCreateTransitionLogicTest {
 				AliasLookup.of(aliasedProxyID, INVALID_ACCOUNT_ID));
 		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PAYER, OK));
-		given(validator.isValidTransactionID(cryptoCreateTxn.getTransactionID().getAccountID(), ledger)).willReturn(OK);
 
 		assertEquals(INVALID_ACCOUNT_ID, subject.validate(cryptoCreateTxn));
 	}

@@ -193,9 +193,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-		if (validator.isValidTransactionID(contractCreateTxn.getTransactionID().getAccountID(), hederaLedger) != OK) {
-			return INVALID_PAYER_ACCOUNT_ID;
-		}
+
 		if (op.hasProxyAccountID()) {
 			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID(),
 					INVALID_ACCOUNT_ID).response();

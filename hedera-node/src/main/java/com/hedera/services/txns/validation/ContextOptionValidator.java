@@ -26,7 +26,6 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
@@ -48,7 +47,6 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -221,11 +219,6 @@ public class ContextOptionValidator implements OptionValidator {
 		} catch (DecoderException e) {
 			throw new InvalidTransactionException(code);
 		}
-	}
-
-	@Override
-	public ResponseCodeEnum isValidTransactionID(final AccountID txnId, final HederaLedger ledger) {
-		return ledger.lookUpAccountId(txnId, INVALID_PAYER_ACCOUNT_ID).response();
 	}
 
 	@Override

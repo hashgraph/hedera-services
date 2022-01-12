@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
-import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -277,7 +276,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
 		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-		tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator );
+		tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator);
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
@@ -308,8 +307,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							feeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
 							pauseKey.ifPresent(k -> b.setPauseKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
-								var id = getIdWithAliasLookUp(autoRenewAccount.get(), spec,
-										autoRenewAccountIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME);
+								var id = getIdWithAliasLookUp(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
 								long secs = autoRenewPeriod.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds());
 								b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
@@ -318,8 +316,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> {
-								var treasuryId = getIdWithAliasLookUp(a, spec,
-										treasuryIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME);
+								var treasuryId = getIdWithAliasLookUp(a, spec);
 								b.setTreasury(treasuryId);
 							});
 							if (!feeScheduleSuppliers.isEmpty()) {
