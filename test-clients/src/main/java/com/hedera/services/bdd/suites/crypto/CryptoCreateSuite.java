@@ -84,7 +84,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountThresholdKeyWithInvalidThreshold(),
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
-				xferRequiresCrypto(),
 				maxAutoAssociationSpec(),
 				usdFeeAsExpected()
 		);
@@ -179,27 +178,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
 						validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
 						validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations)
-				);
-	}
-
-	private HapiApiSpec xferRequiresCrypto() {
-		return defaultHapiSpec("XferRequiresCrypto")
-				.given(
-						fileCreate("bytecode").path(ContractResources.MULTIPURPOSE_BYTECODE_PATH),
-						contractCreate("multiAdmin")
-								.bytecode("bytecode")
-								.balance(1_234),
-						contractCreate("multiNoAdmin")
-								.bytecode("bytecode")
-								.balance(1_234),
-						cryptoCreate("misc")
-				).when().then(
-						cryptoTransfer(tinyBarsFromTo("misc", "multiAdmin", 1))
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(tinyBarsFromTo("multiAdmin", "misc", 1))
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(tinyBarsFromTo("multiNoAdmin", "misc", 1))
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
 	}
 
