@@ -378,7 +378,10 @@ class ImpliedTransfersMarshalTest {
 		ans.add(changingHbar(adjustFrom(bModel, +50)));
 		ans.add(changingHbar(adjustFrom(cModel, +50)));
 		if (incTokens) {
-			ans.add(tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50).setExpectedDecimals(2));
+			final var adjustOne = tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50);
+			adjustOne.setExpectedDecimals(2);
+
+			ans.add(adjustOne);
 			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25));
 			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25));
 			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100));

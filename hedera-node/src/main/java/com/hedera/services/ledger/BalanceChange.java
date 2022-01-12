@@ -210,9 +210,8 @@ public class BalanceChange {
 		return expectedDecimals;
 	}
 
-	public BalanceChange setExpectedDecimals(final int expectedDecimals) {
+	public void setExpectedDecimals(final int expectedDecimals) {
 		this.expectedDecimals = expectedDecimals;
-		return this;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
