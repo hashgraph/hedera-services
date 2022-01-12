@@ -21,7 +21,6 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.math.BigInteger.ZERO;
 
 /**
@@ -61,17 +59,14 @@ import static java.math.BigInteger.ZERO;
  */
 @Singleton
 public class PureTransferSemanticChecks {
-	private final TokenStore tokenStore;
-
 	@Inject
-	public PureTransferSemanticChecks(final TokenStore tokenStore) {
-		this.tokenStore = tokenStore;
+	public PureTransferSemanticChecks() {
 	}
 
 	public ResponseCodeEnum fullPureValidation(
-			final TransferList hbarAdjustsWrapper,
-			final List<TokenTransferList> tokenAdjustsList,
-			final ImpliedTransfersMeta.ValidationProps validationProps
+			TransferList hbarAdjustsWrapper,
+			List<TokenTransferList> tokenAdjustsList,
+			ImpliedTransfersMeta.ValidationProps validationProps
 	) {
 		final var maxHbarAdjusts = validationProps.maxHbarAdjusts();
 		final var maxTokenAdjusts = validationProps.maxTokenAdjusts();
@@ -99,10 +94,10 @@ public class PureTransferSemanticChecks {
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(
-			final List<TokenTransferList> tokenTransfersList,
-			final int maxListLen,
-			final int maxOwnershipChanges,
-			final boolean areNftsEnabled
+			List<TokenTransferList> tokenTransfersList,
+			int maxListLen,
+			int maxOwnershipChanges,
+			boolean areNftsEnabled
 	) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {
@@ -148,7 +143,7 @@ public class PureTransferSemanticChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateTokenTransferSemantics(final List<TokenTransferList> tokenTransfersList) {
+	ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
 		if (tokenTransfersList.isEmpty()) {
 			return OK;
 		}
@@ -167,17 +162,12 @@ public class PureTransferSemanticChecks {
 	}
 
 	private ResponseCodeEnum validateScopedTransferSemantics(
-			final Set<TokenID> uniqueTokens,
-			final TokenTransferList tokenTransfers
+			Set<TokenID> uniqueTokens,
+			TokenTransferList tokenTransfers
 	) {
 		if (!tokenTransfers.hasToken()) {
 			return INVALID_TOKEN_ID;
 		}
-
-		if (tokenTransfers.hasExpectedDecimals() && !matchesWithTokenDecimals(tokenTransfers)) {
-			return UNEXPECTED_TOKEN_DECIMALS;
-		}
-
 		uniqueTokens.add(tokenTransfers.getToken());
 		final var ownershipChanges = tokenTransfers.getNftTransfersList();
 		for (var ownershipChange : ownershipChanges) {
@@ -204,7 +194,7 @@ public class PureTransferSemanticChecks {
 		return OK;
 	}
 
-	boolean hasRepeatedAccount(final List<AccountAmount> adjusts) {
+	boolean hasRepeatedAccount(List<AccountAmount> adjusts) {
 		final int n = adjusts.size();
 		if (n < 2) {
 			return false;
@@ -219,7 +209,7 @@ public class PureTransferSemanticChecks {
 		return false;
 	}
 
-	boolean isNetZeroAdjustment(final List<AccountAmount> adjusts) {
+	boolean isNetZeroAdjustment(List<AccountAmount> adjusts) {
 		var net = ZERO;
 		for (var adjust : adjusts) {
 			net = net.add(BigInteger.valueOf(adjust.getAmount()));
@@ -227,11 +217,7 @@ public class PureTransferSemanticChecks {
 		return net.equals(ZERO);
 	}
 
-	boolean isAcceptableSize(final List<AccountAmount> hbarAdjusts, final int maxHbarAdjusts) {
+	boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
 		return hbarAdjusts.size() <= maxHbarAdjusts;
-	}
-
-	boolean matchesWithTokenDecimals(final TokenTransferList tokenTransfers) {
-		return tokenStore.get(tokenTransfers.getToken()).decimals() == tokenTransfers.getExpectedDecimals().getValue();
 	}
 }

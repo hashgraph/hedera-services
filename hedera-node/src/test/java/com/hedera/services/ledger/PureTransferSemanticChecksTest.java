@@ -20,23 +20,15 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.google.protobuf.UInt32Value;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,7 +55,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
 class PureTransferSemanticChecksTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
@@ -84,20 +74,8 @@ class PureTransferSemanticChecksTest {
 	final private TokenID bTid = TokenID.newBuilder().setTokenNum(2_345L).build();
 	final private TokenID cTid = TokenID.newBuilder().setTokenNum(3_456L).build();
 	final private TokenID dTid = TokenID.newBuilder().setTokenNum(4_567L).build();
-	final private MerkleToken tokenA = new MerkleToken(1_234_567L, 1_000_000L, 2, "testTokenA", "testTokenA", false, false,
-			new EntityId(1, 2, 3));
-	final private MerkleToken tokenB = new MerkleToken(1_234_567L, 1_000_000L, 2, "testTokenB", "testTokenB", false, false,
-			new EntityId(1, 2, 3));
 
-	@Mock
-	private TokenStore tokenStore;
-
-	PureTransferSemanticChecks subject;
-
-	@BeforeEach
-	void setUp() {
-		subject = new PureTransferSemanticChecks(tokenStore);
-	}
+	PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
 
 	@Test
 	void preservesTraditionalResponseCodePriority() {
@@ -262,49 +240,6 @@ class PureTransferSemanticChecksTest {
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
 				.build()
 		)));
-	}
-
-	@Test
-	void checksExpectedDecimals(){
-		final var transfers = List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTid)
-						.setExpectedDecimals(UInt32Value.of(4))
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build(),
-				TokenTransferList.newBuilder()
-						.setToken(bTid)
-						.setExpectedDecimals(UInt32Value.of(2))
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build());
-
-		given(tokenStore.get(aTid)).willReturn(tokenA);
-
-		assertFalse(transfers.isEmpty());
-		assertTrue(transfers.get(0).hasExpectedDecimals());
-		assertTrue(transfers.get(1).hasExpectedDecimals());
-		assertEquals(UNEXPECTED_TOKEN_DECIMALS, subject.validateTokenTransferSemantics(transfers));
-	}
-
-	@Test
-	void testsMatchWithDecimals(){
-		final var transfers = List.of(
-				TokenTransferList.newBuilder()
-						.setToken(aTid)
-						.setExpectedDecimals(UInt32Value.of(4))
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build(),
-				TokenTransferList.newBuilder()
-						.setToken(bTid)
-						.setExpectedDecimals(UInt32Value.of(2))
-						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build());
-
-		given(tokenStore.get(aTid)).willReturn(tokenA);
-		given(tokenStore.get(bTid)).willReturn(tokenB);
-
-		assertFalse(subject.matchesWithTokenDecimals(transfers.get(0)));
-		assertTrue(subject.matchesWithTokenDecimals(transfers.get(1)));
 	}
 
 	@Test
