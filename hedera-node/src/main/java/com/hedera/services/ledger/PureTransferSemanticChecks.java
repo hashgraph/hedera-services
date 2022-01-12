@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.math.BigInteger.ZERO;
 
 /**
@@ -59,8 +61,11 @@ import static java.math.BigInteger.ZERO;
  */
 @Singleton
 public class PureTransferSemanticChecks {
+	private TokenStore tokenStore;
+
 	@Inject
-	public PureTransferSemanticChecks() {
+	public PureTransferSemanticChecks(TokenStore tokenStore) {
+		this.tokenStore = tokenStore;
 	}
 
 	public ResponseCodeEnum fullPureValidation(
@@ -168,6 +173,11 @@ public class PureTransferSemanticChecks {
 		if (!tokenTransfers.hasToken()) {
 			return INVALID_TOKEN_ID;
 		}
+
+		if (tokenTransfers.hasExpectedDecimals() && !isValidExpectedDecimals(tokenTransfers)) {
+			return UNEXPECTED_TOKEN_DECIMALS;
+		}
+
 		uniqueTokens.add(tokenTransfers.getToken());
 		final var ownershipChanges = tokenTransfers.getNftTransfersList();
 		for (var ownershipChange : ownershipChanges) {
@@ -219,5 +229,9 @@ public class PureTransferSemanticChecks {
 
 	boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
 		return hbarAdjusts.size() <= maxHbarAdjusts;
+	}
+
+	boolean isValidExpectedDecimals(final TokenTransferList tokenTransfers) {
+		return (tokenStore.get(tokenTransfers.getToken()).decimals() == tokenTransfers.getExpectedDecimals().getValue());
 	}
 }

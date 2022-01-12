@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -493,7 +494,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	private List<TokenTransferList> transfersFor(final HapiApiSpec spec) {
-		Map<TokenID, List<AccountAmount>> aggregated;
+		Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregated;
 		if (fullyAggregateTokenTransfers) {
 			aggregated = fullyAggregateTokenTransfersList(spec);
 		} else {
@@ -501,41 +502,55 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		}
 
 		return aggregated.entrySet().stream()
-				.map(entry -> TokenTransferList.newBuilder()
-						.setToken(entry.getKey())
-						.addAllTransfers(entry.getValue())
-						.build())
+				.map(entry -> {
+					final var builder = TokenTransferList.newBuilder()
+							.setToken(entry.getKey())
+							.addAllTransfers(entry.getValue().getRight());
+					if (entry.getValue().getLeft() > 0) {
+						builder.setExpectedDecimals(UInt32Value.of(entry.getValue().getLeft().intValue()));
+					}
+					return builder.build();
+				})
 				.collect(toList());
 	}
 
-	private Map<TokenID, List<AccountAmount>> aggregateOnTokenIds(final HapiApiSpec spec) {
-		return tokenAwareProviders.stream()
-				.filter(TokenMovement::isFungibleToken)
-				.map(p -> p.specializedFor(spec))
-				.collect(groupingBy(
-						TokenTransferList::getToken,
-						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
+	private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final HapiApiSpec spec) {
+		Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
+		for (TokenMovement xfer : tokenAwareProviders) {
+			if (xfer.isFungibleToken()) {
+				var list = xfer.specializedFor(spec);
+				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), list.getTransfersList()));
+			}
+		}
+		return map;
 	}
 
-	private Map<TokenID, List<AccountAmount>> fullyAggregateTokenTransfersList(final HapiApiSpec spec) {
-		return tokenAwareProviders.stream()
-				.filter(TokenMovement::isFungibleToken)
-				.map(p -> p.specializedFor(spec))
-				.collect(Collectors.toMap(
-						TokenTransferList::getToken,
-						TokenTransferList::getTransfersList,
-						(left, right) -> Stream.of(left, right).flatMap(Collection::stream).collect(toList())
-								.stream().collect(groupingBy(
-										AccountAmount::getAccountID,
-										summingLong(AccountAmount::getAmount))).entrySet().stream().map(
-										entry -> AccountAmount.newBuilder()
-												.setAccountID(entry.getKey())
-												.setAmount(entry.getValue())
-												.build()
-								).collect(toList()),
-						HashMap::new));
-	}
+	private Map<TokenID, Pair<Integer, List<AccountAmount>>> fullyAggregateTokenTransfersList(final HapiApiSpec spec) {
+		Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
+		for (TokenMovement xfer : tokenAwareProviders) {
+			List<AccountAmount> aaList = new ArrayList<>();
+			if (xfer.isFungibleToken()) {
+				var list = xfer.specializedFor(spec);
+				Map<AccountID, Long> aaMap = new HashMap<>();
+				for (var aa : list.getTransfersList()) {
+					if (aaMap.containsKey(aa.getAccountID())) {
+						aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
+					} else {
+						aaMap.put(aa.getAccountID(), aa.getAmount());
+					}
+				}
+				for (var entry : aaMap.entrySet()) {
+					aaList.add(AccountAmount.newBuilder()
+							.setAccountID(entry.getKey())
+							.setAmount(entry.getValue())
+							.build());
+				}
 
+				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), aaList));
+			}
+		}
+		return map;
+	}
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
 		var uniqueCount = tokenAwareProviders.stream()
