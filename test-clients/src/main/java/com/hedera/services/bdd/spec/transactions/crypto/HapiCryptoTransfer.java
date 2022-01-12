@@ -516,10 +516,20 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final HapiApiSpec spec) {
 		Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
-		for (TokenMovement xfer : tokenAwareProviders) {
-			if (xfer.isFungibleToken()) {
-				var list = xfer.specializedFor(spec);
-				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), list.getTransfersList()));
+		for (TokenMovement tm : tokenAwareProviders) {
+			if (tm.isFungibleToken()) {
+				var list = tm.specializedFor(spec);
+
+				if (map.containsKey(list.getToken())) {
+					var existingVal = map.get(list.getToken());
+					List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
+							.flatMap(Collection::stream)
+							.collect(Collectors.toList());
+
+					map.put(list.getToken(), Pair.of(existingVal.getLeft(), newList));
+				} else {
+					map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), list.getTransfersList()));
+				}
 			}
 		}
 		return map;
