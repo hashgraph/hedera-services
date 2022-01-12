@@ -23,6 +23,7 @@ package com.hedera.services.state.virtual;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import java.io.IOException;
@@ -99,6 +100,10 @@ public class ContractValue implements VirtualValue {
 	 */
 	public byte[] getValue() {
 		return uint256Value;
+	}
+
+	public UInt256 asUInt256() {
+		return UInt256.fromBytes(Bytes32.wrap(uint256Value));
 	}
 
 	/**

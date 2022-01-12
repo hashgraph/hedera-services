@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
@@ -61,6 +63,48 @@ class SizeLimitedStorageTest {
 	private Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
 	private Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+
+	private SizeLimitedStorage subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new SizeLimitedStorage(dynamicProperties, () -> accounts, () -> storage);
+	}
+
+	@Test
+	void updatesAreBufferedAndReturned() {
+		givenAccount(firstAccount, firstKvPairs);
+
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+
+		assertEquals(firstKvPairs + 1, subject.usageSoFar(firstAccount));
+		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
+	}
+
+	@Test
+	void unbufferedUpdatesAreReturnedDirectly() {
+		given(storage.get(firstAKey)).willReturn(aValue);
+
+		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
+		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, bLiteralKey));
+	}
+
+	@Test
+	void removedKeysAreRespected() {
+		givenAccount(firstAccount, firstKvPairs);
+		given(storage.get(firstAKey)).willReturn(aValue);
+		given(storage.containsKey(firstAKey)).willReturn(true);
+
+		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
+
+		subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
+		assertEquals(bLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
+		assertEquals(firstKvPairs, subject.usageSoFar(firstAccount));
+
+		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
+		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, aLiteralKey));
+		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
+	}
 
 	@Test
 	void incorporatesNewAddition() {
@@ -195,13 +239,22 @@ class SizeLimitedStorageTest {
 		assertEquals(removedKeys.get(firstAKey.getContractId()).first(), firstAKey);
 	}
 
+	/* --- Internal helpers --- */
+	private void givenAccount(final AccountID id, final int initialKvPairs) {
+		final var key = EntityNum.fromAccountId(id);
+		final var account = mock(MerkleAccount.class);
+		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
+		given(accounts.get(key)).willReturn(account);
+	}
+
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
-	private static final UInt256 aKeyValue = UInt256.fromHexString("0xaabbcc");
-	private static final UInt256 bKey = UInt256.fromHexString("0xbbccdd");
+	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");
+	private static final UInt256 bLiteralKey = UInt256.fromHexString("0xbbccdd");
 	private static final UInt256 aLiteralValue = UInt256.fromHexString("0x1234aa");
 	private static final UInt256 bLiteralValue = UInt256.fromHexString("0x1234bb");
-	private static final ContractKey firstAKey = ContractKey.from(firstAccount, aKeyValue);
+	private static final ContractKey firstAKey = ContractKey.from(firstAccount, aLiteralKey);
 	private static final ContractValue aValue = ContractValue.from(aLiteralValue);
 	private static final ContractValue bValue = ContractValue.from(bLiteralValue);
+	private static final int firstKvPairs = 5;
 }

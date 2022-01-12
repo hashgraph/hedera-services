@@ -34,21 +34,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 public class SizeLimitedStorage {
-	public static final ContractValue ZERO_VALUE = ContractValue.from(UInt256.ZERO);
+	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 
-	private Map<Long, Long> currentUsages = new HashMap<>();
-	private Map<Long, AtomicLong> usageDeltas = new HashMap<>();
+	private Map<Long, AtomicInteger> newUsages = new TreeMap<>();
 	private Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
 	private Map<ContractKey, ContractValue> newMappings = new HashMap<>();
@@ -72,11 +72,36 @@ public class SizeLimitedStorage {
 	}
 
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
-		throw new AssertionError("Not implemented");
+		final var contractKey = ContractKey.from(id, key);
+
+		final var zeroedOut = removedKeys.get(id.getAccountNum());
+		if (zeroedOut != null && zeroedOut.contains(contractKey)) {
+			return ZERO;
+		}
+
+		var effectiveValue = newMappings.get(contractKey);
+		if (effectiveValue == null) {
+			effectiveValue = storage.get().get(contractKey);
+		}
+		return (effectiveValue == null) ? ZERO : effectiveValue.asUInt256();
 	}
 
 	public void putStorage(final AccountID id, final UInt256 key, final UInt256 value) {
-		throw new AssertionError("Not implemented");
+		final var contractKey = ContractKey.from(id, key);
+		final var contractValue = virtualValueFrom(value);
+		final var kvCountImpact = incorporateKvImpact(
+				contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
+		if (kvCountImpact != 0) {
+			newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).getAndAdd(kvCountImpact);
+		}
+	}
+
+	private AtomicInteger kvPairsLookup(final Long num) {
+		final var account = accounts.get().get(EntityNum.fromLong(num));
+		if (account == null) {
+			throw new AssertionError("Not implemented");
+		}
+		return new AtomicInteger(account.getNumContractKvPairs());
 	}
 
 	static int incorporateKvImpact(
@@ -157,9 +182,14 @@ public class SizeLimitedStorage {
 		}
 	}
 
-	public static Function<Long, TreeSet<ContractKey>> TREE_SET_FACTORY = ignore -> new TreeSet<>();
+	static Function<Long, TreeSet<ContractKey>> TREE_SET_FACTORY = ignore -> new TreeSet<>();
 
-	private static ContractValue valueOf(final UInt256 evmWord) {
+	private static ContractValue virtualValueFrom(final UInt256 evmWord) {
 		return evmWord.isZero() ? ZERO_VALUE : ContractValue.from(evmWord);
+	}
+
+	/* --- Only used by unit tests --- */
+	int usageSoFar(final AccountID id) {
+		return newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).get();
 	}
 }
