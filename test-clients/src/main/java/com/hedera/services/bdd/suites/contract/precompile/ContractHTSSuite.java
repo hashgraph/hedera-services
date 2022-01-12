@@ -38,6 +38,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_DISTRIBUTE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
@@ -59,6 +60,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -487,7 +489,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
 						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
 						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate(FEE_COLLECTOR),
+						cryptoCreate(FEE_COLLECTOR).balance(0L),
 
 						fileCreate("bytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.HBAR_FEE_TRANSFER)),
@@ -504,6 +506,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 											spec,
 											contractCreate(CONTRACT, HBAR_FEE_TRANSFER_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
+													.balance(0L)
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(28_000));
@@ -529,7 +532,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
 									final var feeCollector = asAddress(spec.registry().getAccountID(FEE_COLLECTOR));
 
-									/* --- HSCS-PREC-009 --- */
+									/* --- HSCS-PREC-008 --- */
 									allRunFor(
 											spec,
 											contractCall(CONTRACT, HBAR_FEE_TRANSFER_DISTRIBUTE,
@@ -540,12 +543,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 													feeCollector
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(60_000)
 													.via("distributeTx")
-													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
 								})
-
 				).then(
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
@@ -554,9 +555,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -10L)
 														.including(A_TOKEN, RECEIVER, 10L)
-										)),
+										)
+										.transfers(including(tinyBarsFromTo(ACCOUNT, CONTRACT, 100L)))),
 						getAccountBalance(CONTRACT).hasTinyBars(0),
-						getAccountBalance(FEE_COLLECTOR).hasTinyBars(1000000100)
+						getAccountBalance(FEE_COLLECTOR).hasTinyBars(100)
 				);
 	}
 
