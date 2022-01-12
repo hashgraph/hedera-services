@@ -380,6 +380,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (bootstrapProps.containsProperty("ledger.id")) {
 			LEDGER_ID = ByteString.copyFromUtf8(bootstrapProps.getStringProperty("ledger.id"));
 		}
+		log.info("Ledger id is :{}", LEDGER_ID);
 
 		ServicesApp app;
 		if (APPS.includes(selfId)) {
