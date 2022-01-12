@@ -105,6 +105,7 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
+	private static final ByteString LEDGER_ID = ByteString.copyFromUtf8("0x02");
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
 	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
@@ -192,6 +193,7 @@ public class StateView {
 			}
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
+					.setLedgerId(LEDGER_ID)
 					.setTokenTypeValue(token.tokenType().ordinal())
 					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
@@ -266,6 +268,7 @@ public class StateView {
 			signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
 			var info = ScheduleInfo.newBuilder()
+					.setLedgerId(LEDGER_ID)
 					.setScheduleID(id)
 					.setScheduledTransactionBody(schedule.scheduledTxn())
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
@@ -320,6 +323,7 @@ public class StateView {
 		}
 
 		final var info = TokenNftInfo.newBuilder()
+				.setLedgerId(LEDGER_ID)
 				.setNftID(target)
 				.setAccountID(accountId)
 				.setCreationTime(targetNft.getCreationTime().toGrpc())
@@ -377,6 +381,7 @@ public class StateView {
 			return Optional.empty();
 		}
 		var info = FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(LEDGER_ID)
 				.setFileID(id)
 				.setMemo(attr.getMemo())
 				.setDeleted(attr.isDeleted())
@@ -399,6 +404,7 @@ public class StateView {
 
 		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(LEDGER_ID)
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(accountID)
 				.setAlias(account.getAlias())
@@ -456,6 +462,7 @@ public class StateView {
 		var mirrorId = asAccount(id);
 		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setLedgerId(LEDGER_ID)
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
@@ -571,5 +578,9 @@ public class StateView {
 
 	private static <K, V> FCOneToManyRelation<K, V> emptyFcotmr() {
 		return (FCOneToManyRelation<K, V>) EMPTY_FCOTMR;
+	}
+
+	public static ByteString getLedgerId() {
+		return LEDGER_ID;
 	}
 }

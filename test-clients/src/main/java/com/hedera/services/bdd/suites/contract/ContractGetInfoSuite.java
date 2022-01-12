@@ -64,6 +64,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 								.autoRenewSecs(555L)
 				).when().then(
 						getContractInfo("defaultContract")
+								.hasExpectedLedgerId("0x02")
 								.hasExpectedInfo()
 								.has(
 										contractWith()

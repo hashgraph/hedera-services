@@ -20,6 +20,7 @@ package com.hedera.services.queries.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,6 +70,7 @@ class GetScheduleInfoAnswerTest {
     private AccountID creatorAccount = asAccount("0.0.12346");
     private ScheduleID scheduleID = asSchedule("1.2.3");
     private long fee = 1_234L;
+    private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
     StateView view;
     OptionValidator optionValidator;
@@ -80,6 +82,7 @@ class GetScheduleInfoAnswerTest {
     @BeforeEach
     void setup() {
         info = ScheduleInfo.newBuilder()
+                .setLedgerId(ledgerId)
                 .setScheduleID(scheduleID)
                 .setPayerAccountID(payerAccount)
                 .setCreatorAccountID(creatorAccount)

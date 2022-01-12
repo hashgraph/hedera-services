@@ -160,6 +160,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						scheduleSign("validSchedule").alsoSigningWith("sender")
 				).then(
 						getScheduleInfo("validSchedule")
+								.hasExpectedLedgerId("0x02")
 								.hasScheduleId("validSchedule")
 								.hasRecordedScheduledTxn()
 								.hasSignatories("sender")

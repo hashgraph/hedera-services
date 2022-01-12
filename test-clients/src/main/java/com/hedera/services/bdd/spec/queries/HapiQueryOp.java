@@ -431,6 +431,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		return self();
 	}
 
+	public T hasExpectedLedgerId(String ledgerId) {
+		this.expectedLedgerId = ledgerId;
+		return self();
+	}
+
 	public T delayBy(long pauseMs) {
 		submitDelay = Optional.of(pauseMs);
 		return self();

@@ -881,7 +881,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								tinyBarsFromTo("payer", "payeeNoSigReq", 2_000L)
 						).via("transferTxn")
 				).then(
-						getAccountInfo("payer").has(accountWith().balance(initialBalance - 3_000L)),
+						getAccountInfo("payer")
+								.hasExpectedLedgerId("0x02")
+								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
 						getAccountInfo("payeeNoSigReq").has(accountWith().balance(initialBalance + 2_000L))
 				);

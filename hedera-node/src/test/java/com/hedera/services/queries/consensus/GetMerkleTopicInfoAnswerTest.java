@@ -255,6 +255,7 @@ class GetMerkleTopicInfoAnswerTest {
 		assertEquals(merkleTopic.getAutoRenewAccountId().num(), info.getAutoRenewAccount().getAccountNum());
 		assertEquals(merkleTopic.getSequenceNumber(), info.getSequenceNumber());
 		assertEquals(merkleTopic.getMemo(), info.getMemo());
+		assertEquals(StateView.getLedgerId(), info.getLedgerId());
 	}
 
 	@Test

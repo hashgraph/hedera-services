@@ -137,6 +137,7 @@ public class GetTopicInfoAnswer implements AnswerService {
 		info.setExpirationTime(merkleTopic.getExpirationTimestamp().toGrpc());
 		info.setSequenceNumber(merkleTopic.getSequenceNumber());
 		info.setRunningHash(ByteString.copyFrom(merkleTopic.getRunningHash()));
+		info.setLedgerId(view.getLedgerId());
 
 		return info;
 	}

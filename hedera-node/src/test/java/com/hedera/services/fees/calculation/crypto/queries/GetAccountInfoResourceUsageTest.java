@@ -57,12 +57,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class GetAccountInfoResourceUsageTest {
 	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+	private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private static final String a = "0.0.1234";
 	private static final long expiry = 1_234_567L;
 	private static final AccountID proxy = IdUtils.asAccount("0.0.75231");
@@ -93,6 +93,7 @@ class GetAccountInfoResourceUsageTest {
 	void usesEstimator() {
 		final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
 				.setProxyAccountID(proxy)
