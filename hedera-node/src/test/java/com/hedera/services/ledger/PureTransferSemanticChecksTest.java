@@ -26,6 +26,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -92,9 +93,9 @@ class PureTransferSemanticChecksTest {
 			new EntityId(1, 2, 3));
 
 	@Mock
-	private HederaTokenStore tokenStore;
+	private TokenStore tokenStore;
 
-	PureTransferSemanticChecks subject = new PureTransferSemanticChecks(tokenStore);
+	PureTransferSemanticChecks subject;
 
 	@BeforeEach
 	void setUp() {
@@ -112,8 +113,7 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(
-				OK);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
 		doCallRealMethod().when(subject)
@@ -169,8 +169,7 @@ class PureTransferSemanticChecksTest {
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(
-				OK);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
 		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -264,7 +263,7 @@ class PureTransferSemanticChecksTest {
 		assertEquals(INVALID_TOKEN_ID, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-						.build()
+				.build()
 		)));
 	}
 
@@ -304,6 +303,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void rejectsZeroAccountAmount() {
+		// expect:
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -314,6 +314,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void rejectsNonNetZeroScopedAccountAmounts() {
+		// expect:
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -325,6 +326,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void rejectsRepeatedAccountInScopedAdjusts() {
+		// expect:
 		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -351,6 +353,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void rejectsNftSelfTransfer() {
+		// expect:
 		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -364,6 +367,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void rejectsRepeatedTokens() {
+		// expect:
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -378,6 +382,7 @@ class PureTransferSemanticChecksTest {
 
 	@Test
 	void oksSaneTokenExchange() {
+		// expect:
 		assertEquals(OK, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)

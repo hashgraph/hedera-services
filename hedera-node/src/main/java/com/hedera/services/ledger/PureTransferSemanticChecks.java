@@ -61,17 +61,17 @@ import static java.math.BigInteger.ZERO;
  */
 @Singleton
 public class PureTransferSemanticChecks {
-	private TokenStore tokenStore;
+	private final TokenStore tokenStore;
 
 	@Inject
-	public PureTransferSemanticChecks(TokenStore tokenStore) {
+	public PureTransferSemanticChecks(final TokenStore tokenStore) {
 		this.tokenStore = tokenStore;
 	}
 
 	public ResponseCodeEnum fullPureValidation(
-			TransferList hbarAdjustsWrapper,
-			List<TokenTransferList> tokenAdjustsList,
-			ImpliedTransfersMeta.ValidationProps validationProps
+			final TransferList hbarAdjustsWrapper,
+			final List<TokenTransferList> tokenAdjustsList,
+			final ImpliedTransfersMeta.ValidationProps validationProps
 	) {
 		final var maxHbarAdjusts = validationProps.maxHbarAdjusts();
 		final var maxTokenAdjusts = validationProps.maxTokenAdjusts();
@@ -99,10 +99,10 @@ public class PureTransferSemanticChecks {
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(
-			List<TokenTransferList> tokenTransfersList,
-			int maxListLen,
-			int maxOwnershipChanges,
-			boolean areNftsEnabled
+			final List<TokenTransferList> tokenTransfersList,
+			final int maxListLen,
+			final int maxOwnershipChanges,
+			final boolean areNftsEnabled
 	) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {
@@ -148,7 +148,7 @@ public class PureTransferSemanticChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
+	ResponseCodeEnum validateTokenTransferSemantics(final List<TokenTransferList> tokenTransfersList) {
 		if (tokenTransfersList.isEmpty()) {
 			return OK;
 		}
@@ -167,8 +167,8 @@ public class PureTransferSemanticChecks {
 	}
 
 	private ResponseCodeEnum validateScopedTransferSemantics(
-			Set<TokenID> uniqueTokens,
-			TokenTransferList tokenTransfers
+			final Set<TokenID> uniqueTokens,
+			final TokenTransferList tokenTransfers
 	) {
 		if (!tokenTransfers.hasToken()) {
 			return INVALID_TOKEN_ID;
@@ -204,7 +204,7 @@ public class PureTransferSemanticChecks {
 		return OK;
 	}
 
-	boolean hasRepeatedAccount(List<AccountAmount> adjusts) {
+	boolean hasRepeatedAccount(final List<AccountAmount> adjusts) {
 		final int n = adjusts.size();
 		if (n < 2) {
 			return false;
@@ -219,7 +219,7 @@ public class PureTransferSemanticChecks {
 		return false;
 	}
 
-	boolean isNetZeroAdjustment(List<AccountAmount> adjusts) {
+	boolean isNetZeroAdjustment(final List<AccountAmount> adjusts) {
 		var net = ZERO;
 		for (var adjust : adjusts) {
 			net = net.add(BigInteger.valueOf(adjust.getAmount()));
@@ -227,11 +227,11 @@ public class PureTransferSemanticChecks {
 		return net.equals(ZERO);
 	}
 
-	boolean isAcceptableSize(List<AccountAmount> hbarAdjusts, int maxHbarAdjusts) {
+	boolean isAcceptableSize(final List<AccountAmount> hbarAdjusts, final int maxHbarAdjusts) {
 		return hbarAdjusts.size() <= maxHbarAdjusts;
 	}
 
 	boolean isValidExpectedDecimals(final TokenTransferList tokenTransfers) {
-		return (tokenStore.get(tokenTransfers.getToken()).decimals() == tokenTransfers.getExpectedDecimals().getValue());
+		return tokenStore.get(tokenTransfers.getToken()).decimals() == tokenTransfers.getExpectedDecimals().getValue();
 	}
 }

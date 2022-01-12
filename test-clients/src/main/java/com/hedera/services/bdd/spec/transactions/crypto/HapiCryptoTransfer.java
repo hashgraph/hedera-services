@@ -528,28 +528,31 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Map<TokenID, Pair<Integer, List<AccountAmount>>> fullyAggregateTokenTransfersList(final HapiApiSpec spec) {
 		Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
 		for (TokenMovement xfer : tokenAwareProviders) {
-			List<AccountAmount> aaList = new ArrayList<>();
 			if (xfer.isFungibleToken()) {
 				var list = xfer.specializedFor(spec);
-				Map<AccountID, Long> aaMap = new HashMap<>();
-				for (var aa : list.getTransfersList()) {
-					if (aaMap.containsKey(aa.getAccountID())) {
-						aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
-					} else {
-						aaMap.put(aa.getAccountID(), aa.getAmount());
-					}
-				}
-				for (var entry : aaMap.entrySet()) {
-					aaList.add(AccountAmount.newBuilder()
-							.setAccountID(entry.getKey())
-							.setAmount(entry.getValue())
-							.build());
-				}
-
-				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), aaList));
+				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), aggregateTransfers(list)));
 			}
 		}
 		return map;
+	}
+
+	private List<AccountAmount> aggregateTransfers(TokenTransferList list) {
+		List<AccountAmount> aaList = new ArrayList<>();
+		Map<AccountID, Long> aaMap = new HashMap<>();
+		for (var aa : list.getTransfersList()) {
+			if (aaMap.containsKey(aa.getAccountID())) {
+				aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
+			} else {
+				aaMap.put(aa.getAccountID(), aa.getAmount());
+			}
+		}
+		for (var entry : aaMap.entrySet()) {
+			aaList.add(AccountAmount.newBuilder()
+					.setAccountID(entry.getKey())
+					.setAmount(entry.getValue())
+					.build());
+		}
+		return aaList;
 	}
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
