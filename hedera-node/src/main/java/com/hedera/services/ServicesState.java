@@ -85,7 +85,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final String DEFAULT_LEDGER_ID = "0x02";
 	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
-	private static ByteString LEDGER_ID = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
+	private static ByteString ledgerId = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
@@ -281,7 +281,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* -- Getters and helpers -- */
 	public static ByteString getLedgerId() {
-		return LEDGER_ID;
+		return ledgerId;
+	}
+
+	public static void setLedgerId(ByteString id) {
+		ledgerId = id;
 	}
 
 	public AccountID getAccountFromNodeId(NodeId nodeId) {
@@ -378,9 +382,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var selfId = platform.getSelfId().getId();
 
 		if (bootstrapProps.containsProperty("ledger.id")) {
-			LEDGER_ID = ByteString.copyFromUtf8(bootstrapProps.getStringProperty("ledger.id"));
+			setLedgerId(ByteString.copyFromUtf8(bootstrapProps.getStringProperty("ledger.id")));
 		}
-		log.info("Ledger id is :{}", LEDGER_ID);
+		log.info("Ledger id is :{}", getLedgerId());
 
 		ServicesApp app;
 		if (APPS.includes(selfId)) {
