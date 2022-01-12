@@ -540,16 +540,26 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		for (TokenMovement xfer : tokenAwareProviders) {
 			if (xfer.isFungibleToken()) {
 				var list = xfer.specializedFor(spec);
-				map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), aggregateTransfers(list)));
+
+				if (map.containsKey(list.getToken())) {
+					var existingVal = map.get(list.getToken());
+					List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
+							.flatMap(Collection::stream)
+							.collect(Collectors.toList());
+
+					map.put(list.getToken(), Pair.of(existingVal.getLeft(), aggregateTransfers(newList)));
+				} else {
+					map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), aggregateTransfers(list.getTransfersList())));
+				}
 			}
 		}
 		return map;
 	}
 
-	private List<AccountAmount> aggregateTransfers(TokenTransferList list) {
+	private List<AccountAmount> aggregateTransfers(List<AccountAmount> list) {
 		List<AccountAmount> aaList = new ArrayList<>();
 		Map<AccountID, Long> aaMap = new HashMap<>();
-		for (var aa : list.getTransfersList()) {
+		for (var aa : list) {
 			if (aaMap.containsKey(aa.getAccountID())) {
 				aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
 			} else {
