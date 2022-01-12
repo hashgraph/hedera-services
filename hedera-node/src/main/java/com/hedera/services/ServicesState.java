@@ -82,7 +82,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final String DEFAULT_LEDGER_ID = "0x02";
+	private static final String DEFAULT_LEDGER_ID = "0x03";
 	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	private static ByteString ledgerId = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);

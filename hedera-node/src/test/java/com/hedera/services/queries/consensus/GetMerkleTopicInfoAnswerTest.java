@@ -80,7 +80,7 @@ class GetMerkleTopicInfoAnswerTest {
 	String idLit = "0.0.12345";
 	long expiry = 1_234_567L;
 	long duration = 55L;
-	private final ByteString ledgerId = ByteString.copyFromUtf8("0x02");
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 	MerkleTopic merkleTopic;
 	private Transaction paymentTxn;
 

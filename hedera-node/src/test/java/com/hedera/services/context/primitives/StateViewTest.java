@@ -163,7 +163,7 @@ class StateViewTest {
 	private final long autoRenewPeriod = 1_234_567;
 	private final String fileMemo = "Originally she thought";
 	private final String scheduleMemo = "For what but eye and ear";
-	private final ByteString ledgerId = ByteString.copyFromUtf8("0x02");
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
