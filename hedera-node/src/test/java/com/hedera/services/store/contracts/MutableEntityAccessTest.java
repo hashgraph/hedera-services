@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,7 +76,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class MutableEntityAccessTest {
@@ -394,16 +394,9 @@ class MutableEntityAccessTest {
 
 	@Test
 	void fetchesEmptyBytecode() {
-		// given:
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
-		// when:
-		final var result = subject.fetchCode(id);
-
-		// then:
-		assertEquals(Bytes.EMPTY, result);
-		// and:
-		verify(bytecodeStorage).get(expectedBytecodeKey);
+		assertNull(subject.fetchCodeIfPresent(id));
 	}
 
 	@Test
@@ -411,7 +404,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
-		final var result = subject.fetchCode(id);
+		final var result = subject.fetchCodeIfPresent(id);
 
 		assertEquals(bytecode, result);
 		verify(bytecodeStorage).get(expectedBytecodeKey);

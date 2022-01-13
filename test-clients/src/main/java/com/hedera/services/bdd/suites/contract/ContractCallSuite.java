@@ -111,31 +111,31 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						resultSizeAffectsFees(),
-//						payableSuccess(),
-//						depositSuccess(),
-//						depositDeleteSuccess(),
-//						multipleDepositSuccess(),
-//						payTestSelfDestructCall(),
-//						multipleSelfDestructsAreSafe(),
-//						smartContractInlineAssemblyCheck(),
-//						ocToken(),
-//						contractTransferToSigReqAccountWithKeySucceeds(),
-//						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//						minChargeIsTXGasUsed(),
-//						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-//						HSCS_EVM_006_ContractHBarTransferToAccount(),
-//						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-//						HSCS_EVM_010_MultiSignatureAccounts(),
-//						HSCS_EVM_010_ReceiverMustSignContractTx(),
-//						insufficientGas(),
-//						insufficientFee(),
-//						nonPayable(),
-//						invalidContract(),
-//						smartContractFailFirst(),
-//						contractTransferToSigReqAccountWithoutKeyFails(),
-//						callingDestructedContractReturnsStatusDeleted(),
-//						gasLimitOverMaxGasLimitFailsPrecheck(),
+						resultSizeAffectsFees(),
+						payableSuccess(),
+						depositSuccess(),
+						depositDeleteSuccess(),
+						multipleDepositSuccess(),
+						payTestSelfDestructCall(),
+						multipleSelfDestructsAreSafe(),
+						smartContractInlineAssemblyCheck(),
+						ocToken(),
+						contractTransferToSigReqAccountWithKeySucceeds(),
+						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+						minChargeIsTXGasUsedByContractCall(),
+						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+						HSCS_EVM_006_ContractHBarTransferToAccount(),
+						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+						HSCS_EVM_010_MultiSignatureAccounts(),
+						HSCS_EVM_010_ReceiverMustSignContractTx(),
+						insufficientGas(),
+						insufficientFee(),
+						nonPayable(),
+						invalidContract(),
+						smartContractFailFirst(),
+						contractTransferToSigReqAccountWithoutKeyFails(),
+						callingDestructedContractReturnsStatusDeleted(),
+						gasLimitOverMaxGasLimitFailsPrecheck(),
 						imapUserExercise(),
 				}
 		);
@@ -504,7 +504,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode")
+						contractCreate("fuse").bytecode("bytecode").gas(300_000)
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
@@ -976,8 +976,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByContractCall() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)

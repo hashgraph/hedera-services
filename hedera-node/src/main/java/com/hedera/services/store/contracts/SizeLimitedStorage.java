@@ -30,8 +30,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import javax.inject.Inject;
@@ -53,6 +51,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN
 import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
+/**
+ * Buffers a set of key/value changes to contract storage, and validates that their net effect will not cause
+ * any individual contract to exceed the limit set by {@link GlobalDynamicProperties#maxIndividualContractKvPairs()};
+ * or the aggregate storage to exceed {@link GlobalDynamicProperties#maxAggregateContractKvPairs()}.
+ *
+ * Note that writing {@link UInt256#ZERO} to a key removes it from the map; so it is possible for the net effect
+ * to actually reduce the number of key/value pairs used.
+ */
 @Singleton
 public class SizeLimitedStorage {
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);

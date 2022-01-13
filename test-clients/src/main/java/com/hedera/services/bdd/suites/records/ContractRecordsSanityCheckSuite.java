@@ -148,7 +148,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 														.map(a -> spec.registry().getContractId(a).getContractNum())
 														.toArray()
 											}
-										).via("txnFor" + name).sending(INIT_BALANCE_FN.apply(name))
+										).gas(120_000).via("txnFor" + name).sending(INIT_BALANCE_FN.apply(name))
 								).toArray(n -> new HapiSpecOperation[n]),
 						UtilVerbs.takeBalanceSnapshots(
 								Stream.of(Stream.of(altruists), Stream.of(CANONICAL_ACCOUNTS))

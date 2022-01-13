@@ -35,6 +35,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
@@ -60,6 +61,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
@@ -208,7 +211,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return codeCache.get(address).getBytes();
+			return getCodeInternal().getBytes();
 		}
 
 		public EntityId getProxyAccount() {
@@ -226,7 +229,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return codeCache.get(address).getCodeHash();
+			return getCodeInternal().getCodeHash();
 		}
 
 		@Override
@@ -291,6 +294,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		public AccountID getAccount() {
 			return account;
+		}
+
+		private Code getCodeInternal() {
+			final var code = codeCache.getIfPresent(address);
+			return (code == null) ? EMPTY_CODE : code;
 		}
 	}
 
@@ -361,16 +369,14 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountParsedFromSolidityAddress(address);
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var deletedBalance= entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
 
-				if (!entityAccess.isExtant(accountId)) {
-					wrapped.provisionalContractCreations.add(asContract(accountId));
-					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
-				}
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
 
@@ -386,6 +392,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 			trackingLedgers().commit();
 
 			wrapped.sponsorMap.putAll(sponsorMap);
+		}
+
+		private void ensureExistence(
+				final AccountID accountId,
+				final EntityAccess entityAccess,
+				final List<ContractID> provisionalContractCreations
+		) {
+			if (!entityAccess.isExtant(accountId)) {
+				provisionalContractCreations.add(asContract(accountId));
+				entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
+			}
 		}
 
 		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {

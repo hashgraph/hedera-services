@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -201,14 +202,33 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	void returnsEmptyCodeIfNotPresent() {
+		final var address = Address.RIPEMD160;
+		final var ripeAccountId = accountParsedFromSolidityAddress(address.toArrayUnsafe());
+		givenWellKnownAccountWithCode(ripeAccountId, null);
+
+		final var account = subject.get(address);
+
+		assertTrue(account.getCode().isEmpty());
+		assertFalse(account.hasCode());
+	}
+
+	@Test
+	void returnsExpectedCodeIfPresent() {
+		final var address = Address.RIPEMD160;
+		final var ripeAccountId = accountParsedFromSolidityAddress(address.toArrayUnsafe());
+		givenWellKnownAccountWithCode(ripeAccountId, code);
+
+		final var account = subject.get(address);
+
+		assertEquals(code, account.getCode());
+		assertTrue(account.hasCode());
+	}
+
+	@Test
 	void getsAsExpected() {
 		final var account = accountParsedFromSolidityAddress(Address.RIPEMD160.toArray());
-		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
-		given(entityAccess.getBalance(account)).willReturn(balance);
-		given(entityAccess.getAutoRenew(account)).willReturn(100L);
-		given(entityAccess.isExtant(any())).willReturn(true);
-		given(entityAccess.isDeleted(any())).willReturn(false);
-		given(entityAccess.fetchCode(any())).willReturn(Bytes.EMPTY);
+		givenWellKnownAccountWithCode(account, Bytes.EMPTY);
 		given(entityAccess.getStorage(any(), any())).willReturn(UInt256.ZERO);
 
 		final var acc = subject.get(Address.RIPEMD160);
@@ -228,6 +248,17 @@ class HederaWorldStateTest {
 		given(entityAccess.isDeleted(any())).willReturn(true);
 		nonExistent = subject.get(Address.RIPEMD160);
 		assertNull(nonExistent);
+	}
+
+	private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
+		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
+		given(entityAccess.getBalance(account)).willReturn(balance);
+		given(entityAccess.getAutoRenew(account)).willReturn(100L);
+		given(entityAccess.isExtant(any())).willReturn(true);
+		given(entityAccess.isDeleted(any())).willReturn(false);
+		if (bytecode != null) {
+			given(entityAccess.fetchCodeIfPresent(any())).willReturn(bytecode);
+		}
 	}
 
 	/*
@@ -360,6 +391,7 @@ class HederaWorldStateTest {
 		verify(entityAccess).flushStorage();
 		verify(worldLedgers).commit();
 		verify(entityAccess).recordNewKvUsageTo(any());
+		verify(entityAccess).spawn(any(), anyLong(), any());
 	}
 
 	@Test
@@ -383,7 +415,6 @@ class HederaWorldStateTest {
 		actualSubject.commit();
 
 		// then:
-		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).putStorage(accountID, storageKey, storageValue);
 		verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);

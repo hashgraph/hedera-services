@@ -12,9 +12,9 @@ contract TransferAndBurn is HederaTokenService {
     }
 
     function transferBurn(address _address, address _address2, uint64 amount, int64 serialNum, int64[] memory serialNumbers) public {
-        int response2 = HederaTokenService.burnToken(tokenAddress, amount, serialNumbers);
+        (int burnResponse, uint64 newTotalSupply) = HederaTokenService.burnToken(tokenAddress, amount, serialNumbers);
 
-        if (response2 != HederaResponseCodes.SUCCESS) {
+        if (burnResponse != HederaResponseCodes.SUCCESS) {
             revert ("Token burn failed");
         }
 

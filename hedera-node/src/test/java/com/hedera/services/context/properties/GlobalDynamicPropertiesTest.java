@@ -253,6 +253,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
+		assertEquals(54L, subject.htsDefaultGasCost());
 	}
 
 	@Test
@@ -333,6 +334,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
+		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i+52L);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
 		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
 		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);

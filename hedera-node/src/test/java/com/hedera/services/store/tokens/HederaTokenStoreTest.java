@@ -23,6 +23,7 @@ package com.hedera.services.store.tokens;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingTokens;
@@ -41,12 +42,14 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -56,6 +59,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -118,6 +122,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -134,6 +139,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -219,6 +225,7 @@ class HederaTokenStoreTest {
 		given(token.hasFeeScheduleKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(token.decimals()).willReturn(2);
 
 		nonfungibleToken = mock(MerkleToken.class);
 		given(nonfungibleToken.hasAdminKey()).willReturn(true);
@@ -260,7 +267,8 @@ class HederaTokenStoreTest {
 		given(backingTokens.getImmutableRef(misc)).willReturn(token);
 		given(backingTokens.getRef(nonfungible)).willReturn(nonfungibleToken);
 		given(backingTokens.getImmutableRef(tNft.tokenId())).willReturn(nonfungibleToken);
-		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
+		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(
+				EntityId.fromGrpcAccountId(primaryTreasury));
 		given(backingTokens.idSet()).willReturn(Set.of(created));
 
 		tokenRelsLedger = mock(TransactionalLedger.class);
@@ -1458,7 +1466,7 @@ class HederaTokenStoreTest {
 
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
-		verify(accountsLedger).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,4);
+		verify(accountsLedger).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 4);
 	}
 
 	@Test
@@ -1499,6 +1507,41 @@ class HederaTokenStoreTest {
 		assertNull(subject.pendingCreation);
 		assertTrue(subject.isKnownTreasury(treasury));
 		assertEquals(Set.of(created, misc), subject.knownTreasuries.get(treasury));
+	}
+
+	@Test
+	void adaptsBehaviorToFungibleType() {
+		final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa);
+		fungibleChange.setExpectedDecimals(2);
+
+		assertEquals(2, subject.get(misc).decimals());
+		assertEquals(2, fungibleChange.getExpectedDecimals());
+
+		final var result = subject.tryTokenChange(fungibleChange);
+		Assertions.assertEquals(OK, result);
+	}
+
+	@Test
+	void failsIfMismatchingDecimals() {
+		final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa);
+		assertFalse(fungibleChange.hasExpectedDecimals());
+
+		fungibleChange.setExpectedDecimals(4);
+
+		assertEquals(2, subject.get(misc).decimals());
+		assertEquals(4, fungibleChange.getExpectedDecimals());
+
+		final var result = subject.tryTokenChange(fungibleChange);
+		Assertions.assertEquals(UNEXPECTED_TOKEN_DECIMALS, result);
+	}
+
+	@Test
+	void decimalMatchingWorks() {
+		assertEquals(2, subject.get(misc).decimals());
+		assertTrue(subject.matchesTokenDecimals(misc, 2));
+		assertFalse(subject.matchesTokenDecimals(misc, 4));
 	}
 
 	TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {

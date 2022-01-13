@@ -89,6 +89,7 @@ public class GlobalDynamicProperties {
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
+	private long htsDefaultGasCost;
 	private long triggerTxnWindBackNanos;
 	private int changeHistorianMemorySecs;
 	private boolean autoCreationEnabled;
@@ -166,6 +167,7 @@ public class GlobalDynamicProperties {
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
 		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
 		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
@@ -373,6 +375,10 @@ public class GlobalDynamicProperties {
 	public long consensusThrottleGasLimit() {
 		return consensusThrottleMaxGasLimit;
         }
+
+	public long htsDefaultGasCost() {
+		return htsDefaultGasCost;
+	}
 
 	public long triggerTxnWindBackNanos() {
 		return triggerTxnWindBackNanos;

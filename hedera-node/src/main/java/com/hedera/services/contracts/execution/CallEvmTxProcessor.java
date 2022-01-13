@@ -23,18 +23,13 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -47,10 +42,11 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
-	private static final Logger logger = LogManager.getLogger(CallEvmTxProcessor.class);
-
 	private final CodeCache codeCache;
 
 	@Inject
@@ -96,24 +92,22 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
 	@Override
 	protected MessageFrame buildInitialFrame(
-			final  MessageFrame.Builder baseInitialFrame,
-			final  HederaWorldUpdater updater,
-			final  Address to,
-			final  Bytes payload
+			final MessageFrame.Builder baseInitialFrame,
+			final HederaWorldUpdater updater,
+			final Address to,
+			final Bytes payload
 	) {
-		try {
-			Code code = codeCache.get(to);
+		final var code = codeCache.getIfPresent(to);
+		/* The ContractCallTransitionLogic would have rejected a missing or deleted
+		* contract, so at this point we should have non-null bytecode available. */
+		validateTrue(code != null, FAIL_INVALID);
 
-			return baseInitialFrame
-					.type(MessageFrame.Type.MESSAGE_CALL)
-					.address(to)
-					.contract(to)
-					.inputData(payload)
-					.code(code)
-					.build();
-		} catch (RuntimeException e) {
-			logger.warn("Error fetching code from cache", e);
-			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
-		}
+		return baseInitialFrame
+				.type(MessageFrame.Type.MESSAGE_CALL)
+				.address(to)
+				.contract(to)
+				.inputData(payload)
+				.code(code)
+				.build();
 	}
 }

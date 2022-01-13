@@ -174,7 +174,7 @@ public final class HederaOperationUtil {
 		}
 
 		final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-				account.getAddress(), frame.getRecipientAddress(), frame.getContractAddress());
+				account.getAddress(), frame.getRecipientAddress(), frame.getContractAddress(), frame.getSenderAddress());
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)
