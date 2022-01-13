@@ -317,19 +317,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		Bytes result = SUCCESS_RESULT;
+		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
+
 		try {
 			childRecord = this.precompile.run(frame, ledgers);
-
-			if (this.precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
-				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
-						childRecord.getReceiptBuilder().getSerialNumbers());
-			} else if (this.precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder() != null) {
-				result =
-						encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
-			}
-
+			result = this.precompile.calculateResult(childRecord);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
@@ -435,6 +428,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		ExpirableTxnRecord.Builder run(final MessageFrame frame,
 									   final WorldLedgers ledgers);
+
+		default Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			return SUCCESS_RESULT;
+		}
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -562,6 +559,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			Bytes result = Precompile.super.calculateResult(childRecord);
+			if (childRecord.getReceiptBuilder() != null) {
+				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
+						childRecord.getReceiptBuilder().getSerialNumbers());
+			}
+			return result;
 		}
 	}
 
@@ -737,6 +744,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			Bytes result = Precompile.super.calculateResult(childRecord);
+			if (childRecord.getReceiptBuilder() != null) {
+				result = encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
+			}
+			return result;
 		}
 	}
 
