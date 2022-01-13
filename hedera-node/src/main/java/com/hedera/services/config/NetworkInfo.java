@@ -29,6 +29,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class NetworkInfo {
+	// Default the ledgerID to dev/preprod
 	private static final String DEFAULT_LEDGER_ID = "0x03";
 
 	private final PropertySource properties;
