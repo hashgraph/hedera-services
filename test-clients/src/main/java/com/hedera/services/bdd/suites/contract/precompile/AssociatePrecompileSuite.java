@@ -232,7 +232,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 																asAddress(vanillaTokenID.get()))
 												)
 														.payingWith(GENESIS)
-														.gas(2_000_000)
+														.gas(4_000_000)
 														.via("Invalid Abi Function call txn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("Invalid Abi Function call txn").andAllChildRecords().logged()

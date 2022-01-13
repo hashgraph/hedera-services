@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -49,16 +48,13 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -69,11 +65,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
@@ -83,10 +77,28 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChanges;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesSenderOnly;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
@@ -134,6 +146,8 @@ class TransferPrecompilesTest {
 	private SideEffectsTracker sideEffects;
 	@Mock
 	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private CryptoTransferTransactionBody cryptoTransferTransactionBody;
 	@Mock
 	private ExpirableTxnRecord.Builder mockRecordBuilder;
 	@Mock
@@ -183,6 +197,8 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
@@ -211,7 +227,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -228,6 +245,8 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments))
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
@@ -256,7 +275,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -272,6 +292,8 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 
@@ -299,7 +321,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -315,6 +338,8 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
@@ -343,7 +368,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -364,6 +390,8 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -392,7 +420,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -416,6 +445,8 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -444,7 +475,8 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -484,13 +516,18 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
+		given(syntheticTxnFactory.createCryptoTransfer(any()))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID))
 				.when(transferLogic)
 				.doZeroSum(tokenTransferChanges);
 
 		// when:
-		final var result = subject.computeTransfer(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertNotEquals(successResult, result);
@@ -502,14 +539,10 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferWithWrongInput() {
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(decoder.decodeTransferToken(pretendArguments)).willThrow(new IndexOutOfBoundsException());
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
-		final var result = subject.computeTransfer(pretendArguments, frame);
-		assertEquals(result, UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID.getNumber()));
+		assertThrows(InvalidTransactionException.class, () -> subject.gasRequirement(pretendArguments));
 	}
 
 	private void givenFrameContext() {
@@ -532,149 +565,4 @@ class TransferPrecompilesTest {
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
-
-	private static final long amount = 1L;
-	private static final TokenID token = IdUtils.asToken("0.0.1");
-	private static final AccountID sender = IdUtils.asAccount("0.0.2");
-	private static final AccountID receiver = IdUtils.asAccount("0.0.3");
-	private static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
-	private static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
-			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
-					token,
-					sender,
-					receiver
-			);
-	private static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
-			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
-					token,
-					sender,
-					null
-			);
-	private static final SyntheticTxnFactory.FungibleTokenTransfer transferReceiverOnly =
-			new SyntheticTxnFactory.FungibleTokenTransfer(
-					amount,
-					token,
-					null,
-					receiver
-			);
-	private static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
-			new ArrayList<>() {
-			},
-			List.of(transfer)
-	);
-	private static final TokenTransferWrapper tokensTransferList =
-			new TokenTransferWrapper(
-					new ArrayList<>() {
-					},
-					List.of(transfer, transfer)
-			);
-	private static final TokenTransferWrapper tokensTransferListSenderOnly =
-			new TokenTransferWrapper(
-					new ArrayList<>() {
-					},
-					List.of(transferSenderOnly, transferSenderOnly)
-			);
-	private static final TokenTransferWrapper tokensTransferListReceiverOnly =
-			new TokenTransferWrapper(
-					new ArrayList<>() {
-					},
-					List.of(transferReceiverOnly, transferReceiverOnly)
-			);
-	private static final TokenTransferWrapper nftTransferList =
-			new TokenTransferWrapper(
-					List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
-					new ArrayList<>() {
-					}
-			);
-	private static final TokenTransferWrapper nftsTransferList =
-			new TokenTransferWrapper(
-					List.of(
-							new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
-							new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)
-					),
-					new ArrayList<>() {
-					}
-			);
-	private static final Address contractAddr = Address.ALTBN128_MUL;
-	private static final Address senderAddr = Address.ALTBN128_PAIRING;
-	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-
-	private static final List<BalanceChange> tokenTransferChanges = List.of(
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
-			),
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(amount).build()
-			)
-	);
-
-	private static final List<BalanceChange> tokensTransferChanges = List.of(
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
-			),
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build()
-			),
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-amount).build()
-			),
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build()
-			)
-	);
-
-	private static final List<BalanceChange> tokensTransferChangesSenderOnly = List.of(
-			BalanceChange.changingFtUnits(
-					Id.fromGrpcToken(token),
-					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(amount).build()
-			)
-	);
-
-	private static final List<BalanceChange> nftTransferChanges = List.of(
-			BalanceChange.changingNftOwnership(
-					Id.fromGrpcToken(token),
-					token,
-					NftTransfer.newBuilder()
-							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
-							.build()
-			),
-			/* Simulate an assessed fallback fee */
-			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(-amount).build()),
-			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(+amount).build())
-	);
-
-	private static final List<BalanceChange> nftsTransferChanges = List.of(
-			BalanceChange.changingNftOwnership(
-					Id.fromGrpcToken(token),
-					token,
-					NftTransfer.newBuilder()
-							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
-							.build()
-			),
-			BalanceChange.changingNftOwnership(
-					Id.fromGrpcToken(token),
-					token,
-					NftTransfer.newBuilder()
-							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(2L)
-							.build()
-			)
-	);
 }

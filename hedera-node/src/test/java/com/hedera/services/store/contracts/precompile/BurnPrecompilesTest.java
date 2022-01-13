@@ -30,7 +30,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -42,20 +41,15 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -72,8 +66,24 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BURN_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.burnSuccessResultWith49Supply;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.expirableTxnRecordBuilder;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleBurn;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,8 +93,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class BurnPrecompilesTest {
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
 
+	@Mock
+	private Bytes pretendArguments;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -168,7 +179,8 @@ class BurnPrecompilesTest {
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
-		final var result = subject.computeBurnToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		assertEquals(invalidSigResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -190,7 +202,8 @@ class BurnPrecompilesTest {
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
-		final var result = subject.computeBurnToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		assertEquals(successResult, result);
 		verify(burnLogic).burn(nonFungibleId, 0, targetSerialNos);
@@ -214,10 +227,12 @@ class BurnPrecompilesTest {
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.getBurnSuccessfulResultFromReceipt(49)).willReturn(burnSuccessResultWith49Supply);
-		final var result = subject.computeBurnToken(pretendArguments, frame);
+
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		assertEquals(burnSuccessResultWith49Supply, result);
-		verify(burnLogic).burn(fungibleId, amount, List.of());
+		verify(burnLogic).burn(fungibleId, AMOUNT, List.of());
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
 	}
@@ -247,6 +262,7 @@ class BurnPrecompilesTest {
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 	}
 
 	private void givenLedgers() {
@@ -255,28 +271,4 @@ class BurnPrecompilesTest {
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
-
-	private static final long amount = 1_234_567L;
-	private static final TokenID nonFungible = IdUtils.asToken("0.0.777");
-	private static final TokenID fungible = IdUtils.asToken("0.0.888");
-	private static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
-	private static final Id fungibleId = Id.fromGrpcToken(fungible);
-	private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-	private static final BurnWrapper fungibleBurn =
-			BurnWrapper.forFungible(fungible, amount);
-	private static final BurnWrapper nonFungibleBurn =
-			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
-	private static final Address recipientAddr = Address.ALTBN128_ADD;
-	private static final Address contractAddr = Address.ALTBN128_MUL;
-	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
-	private static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();
-	private static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
-			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
-	private static final TxnReceipt.Builder receiptBuilder =
-			TxnReceipt.newBuilder().setNewTotalSupply(49).setStatus(ResponseCodeEnum.SUCCESS.name());
-	private static final ExpirableTxnRecord.Builder expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
-			.setReceiptBuilder(receiptBuilder);
 }

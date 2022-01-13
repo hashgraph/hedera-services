@@ -45,15 +45,12 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -69,8 +66,21 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentRecipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,6 +90,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class AssociatePrecompileTest {
+	@Mock
+	private Bytes pretendArguments;
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -139,10 +151,11 @@ class AssociatePrecompileTest {
 	@Mock
 	private ExpirableTxnRecord.Builder mockRecordBuilder;
 	@Mock
+	private TokenAssociateTransactionBody transactionBody;
+	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 
 	private HTSPrecompiledContract subject;
-
 
 	@BeforeEach
 	void setUp() {
@@ -161,6 +174,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenFailurePathWorks() {
 		// given:
 		givenFrameContext();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments)).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
@@ -169,7 +183,8 @@ class AssociatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -180,6 +195,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -198,7 +214,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -211,6 +228,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithDelegateCallFromParentFrame() {
 		givenFrameContextWithDelegateCallFromParent();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -229,7 +247,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -242,6 +261,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithEmptyMessageFrameStack() {
 		givenFrameContextWithEmptyMessageFrameStack();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -260,7 +280,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -273,6 +294,7 @@ class AssociatePrecompileTest {
 	void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
 		givenFrameContextWithoutParentFrame();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
@@ -291,7 +313,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateToken(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -304,10 +327,13 @@ class AssociatePrecompileTest {
 	void computeMultiAssociateTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 		given(decoder.decodeMultipleAssociations(pretendArguments))
 				.willReturn(multiAssociateOp);
 		given(syntheticTxnFactory.createAssociate(multiAssociateOp))
 				.willReturn(mockSynthBodyBuilder);
+		given(transactionBody.getTokensCount()).willReturn(1);
+		given(mockSynthBodyBuilder.getTokenAssociate()).willReturn(transactionBody);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
 				recipientAddress))
 				.willReturn(true);
@@ -322,7 +348,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		final var result = subject.computeAssociateTokens(pretendArguments, frame);
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -377,18 +404,4 @@ class AssociatePrecompileTest {
 		given(wrappedLedgers.tokens()).willReturn(tokens);
 	}
 
-	private static final Bytes pretendArguments = Bytes.fromBase64String("ABCDEF");
-	private static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
-	private static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
-	private static final Association associateOp =
-			Association.singleAssociation(accountMerkleId, tokenMerkleId);
-	private static final Association multiAssociateOp =
-			Association.singleAssociation(accountMerkleId, tokenMerkleId);
-	private static final Address recipientAddress = Address.ALTBN128_ADD;
-	private static final Address contractAddress = Address.ALTBN128_MUL;
-	private static final Address senderAddress = Address.ALTBN128_PAIRING;
-	private static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
-	private static final Address parentRecipientAddress = Address.BLS12_G1ADD;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-	private static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 }
