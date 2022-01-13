@@ -20,9 +20,8 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -47,28 +46,34 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
  */
 @Singleton
 public class CodeCache {
-    LoadingCache<BytesKey, Code> cache;
+    private final EntityAccess entityAccess;
+    private final Cache<BytesKey, Code> cache;
 
     @Inject
-    public CodeCache(NodeLocalProperties properties, EntityAccess entityAccess) {
+    public CodeCache(final NodeLocalProperties properties, final EntityAccess entityAccess) {
         this(properties.prefetchCodeCacheTtlSecs(), entityAccess);
     }
 
-    public CodeCache(int cacheTTL, EntityAccess entityAccess) {
-        CacheLoader<BytesKey, Code> loader = key -> {
-            final var acctId = accountParsedFromSolidityAddress(key.getArray());
-            var codeBytes = entityAccess.fetchCode(acctId);
-            return new Code(codeBytes, Hash.hash(codeBytes));
-        };
-
+    public CodeCache(final int cacheTTL, final EntityAccess entityAccess) {
+        this.entityAccess = entityAccess;
         this.cache = Caffeine.newBuilder()
                 .expireAfterAccess(cacheTTL, TimeUnit.SECONDS)
                 .softValues()
-                .build(loader);
+                .build();
     }
 
-    public Code get(Address address) {
-        return cache.get(new BytesKey(address.toArray()));
+    public Code getIfPresent(final Address address) {
+        final var cacheKey = new BytesKey(address.toArray());
+
+        var code = cache.getIfPresent(cacheKey);
+        if (code == null) {
+            final var bytecode = entityAccess.fetchCodeIfPresent(accountParsedFromSolidityAddress(address));
+            if (bytecode != null) {
+                code = new Code(bytecode, Hash.hash(bytecode));
+                cache.put(cacheKey, code);
+            }
+        }
+        return code;
     }
 
     public void invalidate(Address address) {
@@ -101,5 +106,10 @@ public class CodeCache {
         public int hashCode() {
             return Arrays.hashCode(array);
         }
+    }
+
+    /* --- Only used by unit tests --- */
+    Cache<BytesKey, Code> getCache() {
+        return cache;
     }
 }
