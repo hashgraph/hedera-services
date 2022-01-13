@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -28,6 +30,8 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import javax.inject.Inject;
@@ -40,7 +44,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
@@ -49,6 +55,8 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 @Singleton
 public class SizeLimitedStorage {
+	private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
+	
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
 	private final GlobalDynamicProperties dynamicProperties;
@@ -87,7 +95,16 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
-		commitNewUsages();
+	}
+
+	public void recordNewKvUsageTo(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		if (newUsages.isEmpty()) {
+			return;
+		}
+		newUsages.forEach((contractNum, kvPairs) -> {
+			final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
+			accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvPairs.get());
+		});
 	}
 
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
@@ -211,17 +228,6 @@ public class SizeLimitedStorage {
 				validateTrue(
 						newKvPairs.get() <= perContractMax,
 						MAX_CONTRACT_STORAGE_EXCEEDED));
-	}
-
-	private void commitNewUsages() {
-		if (newUsages.isEmpty()) {
-			return;
-		}
-		final var curAccounts = accounts.get();
-		newUsages.forEach((contractNum, kvPairs) -> {
-			final var mutableAccount = curAccounts.getForModify(fromLong(contractNum));
-			mutableAccount.setNumContractKvPairs(kvPairs.get());
-		});
 	}
 
 	private void commitPendingUpdates() {

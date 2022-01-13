@@ -26,8 +26,10 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -205,6 +207,11 @@ public class MutableEntityAccess implements EntityAccess {
 		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
 		final var bytes = bytecode.get().get(blobKey);
 		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	}
+
+	@Override
+	public void recordNewKvUsageTo(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		sizeLimitedStorage.recordNewKvUsageTo(accountsLedger);
 	}
 
 	private boolean isActiveContractOp() {

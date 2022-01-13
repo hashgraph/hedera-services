@@ -357,8 +357,9 @@ class HederaWorldStateTest {
 		updater.commit();
 
 		// then:
-		verify(worldLedgers).commit();
 		verify(entityAccess).flushStorage();
+		verify(worldLedgers).commit();
+		verify(entityAccess).recordNewKvUsageTo(any());
 	}
 
 	@Test

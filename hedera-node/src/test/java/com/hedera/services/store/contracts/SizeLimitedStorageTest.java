@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -43,6 +45,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.treeSetFactory;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.incorporateKvImpact;
@@ -65,6 +68,8 @@ class SizeLimitedStorageTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private VirtualMap<ContractKey, ContractValue> storage;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
@@ -79,10 +84,10 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void removesMappingsInOrder() {
-		final var firstMock = givenMutableAccount(firstAccount, firstKvPairs);
-		final var secondMock = givenMutableAccount(nextAccount, nextKvPairs);
+		givenAccount(firstAccount, firstKvPairs);
+		givenAccount(nextAccount, nextKvPairs);
 
-		InOrder inOrder = Mockito.inOrder(storage, accounts, firstMock, secondMock);
+		InOrder inOrder = Mockito.inOrder(storage, accounts, accountsLedger);
 
 		givenNoSizeLimits();
 		given(storage.containsKey(firstAKey)).willReturn(true);
@@ -94,15 +99,14 @@ class SizeLimitedStorageTest {
 		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
 
 		subject.validateAndCommit();
+		subject.recordNewKvUsageTo(accountsLedger);
 
 		inOrder.verify(storage).remove(firstAKey);
 		inOrder.verify(storage).remove(firstBKey);
 		inOrder.verify(storage).remove(nextAKey);
 		// and:
-		inOrder.verify(accounts).getForModify(EntityNum.fromLong(firstAccount.getAccountNum()));
-		inOrder.verify(firstMock).setNumContractKvPairs(firstKvPairs - 2);
-		inOrder.verify(accounts).getForModify(EntityNum.fromLong(nextAccount.getAccountNum()));
-		inOrder.verify(secondMock).setNumContractKvPairs(nextKvPairs - 1);
+		inOrder.verify(accountsLedger).set(firstAccount, NUM_CONTRACT_KV_PAIRS, firstKvPairs - 2);
+		inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
 	}
 
 	@Test
@@ -115,8 +119,8 @@ class SizeLimitedStorageTest {
 		InOrder inOrder = Mockito.inOrder(storage);
 
 		givenNoSizeLimits();
-		givenMutableAccount(firstAccount, firstKvPairs);
-		givenMutableAccount(nextAccount, nextKvPairs);
+		givenAccount(firstAccount, firstKvPairs);
+		givenAccount(nextAccount, nextKvPairs);
 
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -270,7 +274,7 @@ class SizeLimitedStorageTest {
 				storage);
 
 		assertEquals(0, kvImpact);
-		assertEquals(newMappings.get(firstAKey), bValue);
+		assertEquals(bValue, newMappings.get(firstAKey));
 	}
 
 	@Test
@@ -356,15 +360,6 @@ class SizeLimitedStorageTest {
 		final var account = mock(MerkleAccount.class);
 		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
 		given(accounts.get(key)).willReturn(account);
-	}
-
-	private MerkleAccount givenMutableAccount(final AccountID id, final int initialKvPairs) {
-		final var key = EntityNum.fromAccountId(id);
-		final var account = mock(MerkleAccount.class);
-		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
-		given(accounts.get(key)).willReturn(account);
-		given(accounts.getForModify(key)).willReturn(account);
-		return account;
 	}
 
 	private void givenContainedStorage(final ContractKey key, final ContractValue value) {

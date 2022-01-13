@@ -129,6 +129,13 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
+	void recordsViaSizeLimitedStorage() {
+		subject.recordNewKvUsageTo(accountsLedger);
+
+		verify(storage).recordNewKvUsageTo(accountsLedger);
+	}
+
+	@Test
 	void flushesAsExpected() {
 		subject.flushStorage();
 

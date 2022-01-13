@@ -379,6 +379,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				}
 			}
 
+			entityAccess.recordNewKvUsageTo(trackingAccounts());
 			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			this commit() persists all of that information without any additional use of the deletedAccounts
 			or updatedAccounts collections. */

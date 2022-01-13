@@ -24,7 +24,9 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -181,5 +183,10 @@ public class StaticEntityAccess implements EntityAccess {
 				.get(blobKey);
 
 		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	}
+
+	@Override
+	public void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		throw new UnsupportedOperationException();
 	}
 }
