@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_TRANSFER_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -71,13 +70,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class DelegatePrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DelegatePrecompileSuite.class);
-    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
+    private static final KeyShape SIMPLE_AND_DELEGATE_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
+            DELEGATE_CONTRACT);
+    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, DELEGATE_CONTRACT);
     private static final String TOKEN_TREASURY = "treasury";
     private static final String OUTER_CONTRACT = "Outer Contract";
     private static final String INNER_CONTRACT = "Inner Contract";
     private static final String ACCOUNT = "anybody";
     private static final String RECEIVER = "receiver";
     private static final String DELEGATE_KEY = "Delegate key";
+    private static final String SIMPLE_AND_DELEGATE_KEY_NAME = "Simple And Delegate key";
 
     public static void main(String... args) {
         new DelegatePrecompileSuite().runSuiteSync();
@@ -156,8 +158,8 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .gas(100_000),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
-                                                newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                                                newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME).shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
+                                                cryptoUpdate(ACCOUNT).key(SIMPLE_AND_DELEGATE_KEY_NAME),
 
                                                 contractCall(OUTER_CONTRACT, DELEGATE_TRANSFER_CALL_ABI,
                                                         asAddress(vanillaTokenTokenID.get()), asAddress(accountID.get()),
@@ -212,7 +214,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .bytecode(OUTER_CONTRACT)
                                                         .gas(100_000),
 
-                                                newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
+                                                newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 
                                                 contractCall(OUTER_CONTRACT, DELEGATE_BURN_CALL_ABI,
@@ -267,7 +269,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         .bytecode(OUTER_CONTRACT)
                                                         .gas(100_000),
 
-                                                newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
+                                                newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 
                                                 contractCall(OUTER_CONTRACT, DELEGATE_MINT_CALL_ABI,

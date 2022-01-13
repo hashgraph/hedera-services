@@ -78,7 +78,7 @@ public class LogsSuite extends HapiApiSuite {
 								recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(logWith().noTopics().longValue(15))
-										).gasUsed(1285))),
+										).gasUsed(22_285))),
 						UtilVerbs.resetAppPropertiesTo(
 								"src/main/resource/bootstrap.properties"));
 	}
@@ -96,7 +96,7 @@ public class LogsSuite extends HapiApiSuite {
 										List.of(
 												eventSignatureOf("Log1(uint256)"),
 												parsedToByteString(15))))
-								).gasUsed(1583))));
+								).gasUsed(22_583))));
 	}
 
 	private HapiApiSpec log2Works() {
@@ -114,7 +114,7 @@ public class LogsSuite extends HapiApiSuite {
 														eventSignatureOf("Log2(uint256,uint256)"),
 														parsedToByteString(1),
 														parsedToByteString(2))))
-										).gasUsed(2112))));
+										).gasUsed(23_112))));
 	}
 
 	private HapiApiSpec log3Works() {
@@ -133,7 +133,7 @@ public class LogsSuite extends HapiApiSuite {
 														parsedToByteString(1),
 														parsedToByteString(2),
 														parsedToByteString(3))))
-										).gasUsed(2638))));
+										).gasUsed(23_638))));
 	}
 
 	private HapiApiSpec log4Works() {
@@ -155,7 +155,6 @@ public class LogsSuite extends HapiApiSuite {
 																parsedToByteString(1),
 																parsedToByteString(2),
 																parsedToByteString(3))))
-										).gasUsed(3294))));
+										).gasUsed(24_294))));
 	}
-
 }

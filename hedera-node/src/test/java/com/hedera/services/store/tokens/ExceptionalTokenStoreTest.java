@@ -53,7 +53,8 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.revokeKyc(null, null));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.apply(null, token -> { }));
+				() -> NOOP_TOKEN_STORE.apply(null, token -> {
+				}));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.associate(null, null, false));
 		assertThrows(UnsupportedOperationException.class,
@@ -70,6 +71,8 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::isCreationPending);
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.matchesTokenDecimals(null, -1));
 		// and:
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setAccountsLedger(null));
 		assertDoesNotThrow(() -> NOOP_TOKEN_STORE.setHederaLedger(null));

@@ -55,7 +55,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -127,7 +127,6 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
 				mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.get(any())).willReturn(new Code());
 
 		var senderMutableAccount = mock(MutableAccount.class);
 
@@ -136,12 +135,10 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreate(any())).willReturn(evmAccount);
 		given(updater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
-		given(codeCache.get(any())).willThrow(new RuntimeException("oh no"));
-
 		assertFailsWith(() ->
 						callLocalEvmTxProcessor.execute(
 								sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime),
-				FAIL_INVALID);
+				INVALID_CONTRACT_ID);
 	}
 
 	@Test
@@ -155,7 +152,7 @@ class CallLocalEvmTxProcessorTest {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
 		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
-		given(codeCache.get(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(new Code());
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
 		final MessageFrame.Builder commonInitialFrame =
@@ -197,7 +194,7 @@ class CallLocalEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable()).willReturn(
 				mock(MutableAccount.class));
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.get(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(new Code());
 
 
 		var senderMutableAccount = mock(MutableAccount.class);
