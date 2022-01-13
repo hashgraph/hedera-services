@@ -54,9 +54,9 @@ class BalanceChangeTest {
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234, expectedDecimals=-1}";
 		final var tokenRepr = "BalanceChange{token=Id[shard=1, realm=2, num=3], account=Id[shard=1, realm=2, num=3], " +
-				"alias=, units=-1234}";
+				"alias=, units=-1234, expectedDecimals=-1}";
 		final var nftRepr = "BalanceChange{nft=Id[shard=1, realm=2, num=3], serialNo=1234, " +
 				"from=Id[shard=1, realm=2, num=3], to=Id[shard=2, realm=3, num=4]}";
 
@@ -159,5 +159,23 @@ class BalanceChangeTest {
 		subject.replaceAliasWith(created);
 		assertFalse(subject.hasNonEmptyAlias());
 		assertEquals(created, subject.accountId());
+	}
+
+	@Test
+	void settersAndGettersOfDecimalsWorks(){
+		final var created = new Id(1, 2, 3);
+		final var token = new Id(4, 5, 6);
+		final var subject = BalanceChange.changingFtUnits(token, token.asGrpcToken(),
+				AccountAmount.newBuilder()
+						.setAmount(1234)
+						.setAccountID(created.asGrpcAccount())
+						.build());
+		assertEquals(-1, subject.getExpectedDecimals());
+		assertFalse(subject.hasExpectedDecimals());
+
+		subject.setExpectedDecimals(2);
+
+		assertEquals(2, subject.getExpectedDecimals());
+		assertTrue(subject.hasExpectedDecimals());
 	}
 }

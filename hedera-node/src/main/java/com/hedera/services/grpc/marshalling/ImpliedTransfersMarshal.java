@@ -160,9 +160,18 @@ public class ImpliedTransfersMarshal {
 		for (var xfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = xfers.getToken();
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
+
+			boolean decimalsSet = false;
 			for (var aa : xfers.getTransfersList()) {
-				changes.add(changingFtUnits(tokenId, grpcTokenId, aa));
+				var change = changingFtUnits(tokenId, grpcTokenId, aa);
+				// set only for the first balance change of the token with expectedDecimals
+				if (xfers.hasExpectedDecimals() && !decimalsSet) {
+					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
+					decimalsSet = true;
+				}
+				changes.add(change);
 			}
+
 			for (var oc : xfers.getNftTransfersList()) {
 				if (ownershipChanges == null) {
 					ownershipChanges = new ArrayList<>();
