@@ -486,7 +486,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
-		return defaultHapiSpec("TokenTransferFromFeeCollector")
+		return defaultHapiSpec("tokenTransferFromFeeCollectorStaticNestedCall")
 				.given(
 						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
 						cryptoCreate(FEE_COLLECTOR),
@@ -526,14 +526,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(28_000));
+											.gas(110_000));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(28_000));
+													.gas(110_000));
 								})
 				).when(
 						withOpContext(
@@ -556,7 +556,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(110_000)
 													.via("distributeTx")
 													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
@@ -572,7 +572,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(110_000)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
@@ -587,7 +587,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(110_000)
 													.via("failingChildFrameTx")
 													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
@@ -646,7 +646,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(28_000));
+											.gas(100_000));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, HBAR_FEE_TRANSFER_CONSTRUCTOR, getNestedContractAddress(NESTED,
@@ -654,7 +654,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													.balance(0L)
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(28_000));
+													.gas(100_000));
 									allRunFor(spec,
 											tokenCreate(A_TOKEN)
 													.tokenType(TokenType.FUNGIBLE_COMMON)
@@ -688,7 +688,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													feeCollector
 											)
 													.payingWith(ACCOUNT)
-													.gas(60_000)
+													.gas(100_000)
 													.via("distributeTx")
 													.hasKnownStatus(SUCCESS));
 								})
