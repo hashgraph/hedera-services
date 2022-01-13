@@ -52,8 +52,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
@@ -83,6 +83,9 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -153,6 +156,8 @@ class TransferPrecompilesTest {
 	private DissociationFactory dissociationFactory;
 	@Mock
 	private ImpliedTransfersMeta impliedTransfersMeta;
+	@Mock
+	private CryptoTransferTransactionBody tnxBody;
 
 	private HTSPrecompiledContract subject;
 
@@ -175,6 +180,9 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
@@ -199,7 +207,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -220,6 +228,9 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments))
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
@@ -244,7 +255,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -264,6 +275,9 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 
@@ -287,7 +301,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -307,6 +321,9 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
@@ -331,7 +348,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when:
@@ -356,6 +373,9 @@ class TransferPrecompilesTest {
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -380,7 +400,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when:
@@ -408,6 +428,9 @@ class TransferPrecompilesTest {
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -432,7 +455,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when:
@@ -451,6 +474,12 @@ class TransferPrecompilesTest {
 	void transferFailsAndCatchesProperly() {
 		givenFrameContext();
 		givenLedgers();
+
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(OK);
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(any(), any(), any())).willReturn(true);
@@ -474,10 +503,10 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
-		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID))
+		doThrow(new InvalidTransactionException(FAIL_INVALID))
 				.when(transferLogic)
 				.doZeroSum(tokenTransferChanges);
 
@@ -501,7 +530,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
 		final var result = subject.computeTransfer(pretendArguments, frame);
-		assertEquals(result, UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID.getNumber()));
+		assertEquals(result, UInt256.valueOf(FAIL_INVALID.getNumber()));
 	}
 
 	private void givenFrameContext() {
@@ -584,7 +613,7 @@ class TransferPrecompilesTest {
 					}
 			);
 	private static final Address contractAddr = Address.ALTBN128_MUL;
-	private static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+	private static final Bytes successResult = UInt256.valueOf(SUCCESS_VALUE);
 
 	private static final List<BalanceChange> tokenTransferChanges = List.of(
 			BalanceChange.changingFtUnits(
