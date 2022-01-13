@@ -55,8 +55,6 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 @Singleton
 public class SizeLimitedStorage {
-	private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
-	
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
 	private final GlobalDynamicProperties dynamicProperties;
