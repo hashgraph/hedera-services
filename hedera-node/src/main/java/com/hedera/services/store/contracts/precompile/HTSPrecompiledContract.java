@@ -63,6 +63,7 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -534,6 +535,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private class TransferPrecompile implements Precompile {
 		private List<TokenTransferWrapper> transferOp;
+		private TransactionBody.Builder transactions;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -548,7 +550,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
 						FAIL_INVALID);
 			};
-			return syntheticTxnFactory.createCryptoTransfer(transferOp);
+			this.transactions = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			return transactions;
 		}
 
 		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
@@ -604,6 +607,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final Address contract,
 				final WorldLedgers ledgers
 		) {
+			CryptoTransferTransactionBody tnxBody = transactions.getCryptoTransfer().getDefaultInstanceForType();
+			final var validity = impliedTransfersMarshal.isPureValidated(tnxBody);
+			if (validity != ResponseCodeEnum.OK) {
+				throw new InvalidTransactionException(validity);
+			}
+
 			var changes = constructBalanceChanges(transferOp);
 			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
 			final var numExplicitChanges = changes.size();
@@ -654,7 +663,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
 				} else if (units > 0) {
 					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-									change.getAccount().asEvmAddress(), recipient, contract);
+							change.getAccount().asEvmAddress(), recipient, contract);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
