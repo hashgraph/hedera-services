@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.store.contracts.SizeLimitedStorage.TREE_SET_FACTORY;
+import static com.hedera.services.store.contracts.SizeLimitedStorage.treeSetFactory;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.incorporateKvImpact;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -201,11 +201,6 @@ class SizeLimitedStorageTest {
 		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
 	}
 
-	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
-		given(storage.get(key)).willReturn(value);
-		given(storage.containsKey(key)).willReturn(true);
-	}
-
 	@Test
 	void incorporatesNewAddition() {
 		final var kvImpact = incorporateKvImpact(
@@ -214,9 +209,9 @@ class SizeLimitedStorageTest {
 				storage);
 
 		assertEquals(1, kvImpact);
-		assertEquals(newMappings.get(firstAKey), aValue);
+		assertEquals(aValue, newMappings.get(firstAKey));
 		assertTrue(updatedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(updatedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, updatedKeys.get(firstAKey.getContractId()).first());
 	}
 
 	@Test
@@ -228,24 +223,24 @@ class SizeLimitedStorageTest {
 				storage);
 
 		assertEquals(0, kvImpact);
-		assertEquals(newMappings.get(firstAKey), aValue);
+		assertEquals(aValue, newMappings.get(firstAKey));
 		assertTrue(updatedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(updatedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, updatedKeys.get(firstAKey.getContractId()).first());
 	}
 
 	@Test
 	void incorporatesRecreatingUpdate() {
 		given(storage.containsKey(firstAKey)).willReturn(true);
-		removedKeys.computeIfAbsent(firstAKey.getContractId(), TREE_SET_FACTORY).add(firstAKey);
+		removedKeys.computeIfAbsent(firstAKey.getContractId(), treeSetFactory).add(firstAKey);
 		final var kvImpact = incorporateKvImpact(
 				firstAKey, aValue,
 				updatedKeys, removedKeys, newMappings,
 				storage);
 
 		assertEquals(1, kvImpact);
-		assertEquals(newMappings.get(firstAKey), aValue);
+		assertEquals(aValue, newMappings.get(firstAKey));
 		assertTrue(updatedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(updatedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, updatedKeys.get(firstAKey.getContractId()).first());
 		assertFalse(removedKeys.get(firstAKey.getContractId()).contains(firstAKey));
 	}
 
@@ -282,13 +277,13 @@ class SizeLimitedStorageTest {
 
 		assertEquals(-1, kvImpact);
 		assertTrue(removedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(removedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, removedKeys.get(firstAKey.getContractId()).first());
 	}
 
 	@Test
 	void incorporatesErasingPendingAndAlreadyPresent() {
 		given(storage.containsKey(firstAKey)).willReturn(true);
-		updatedKeys.computeIfAbsent(firstAKey.getContractId(), TREE_SET_FACTORY).add(firstAKey);
+		updatedKeys.computeIfAbsent(firstAKey.getContractId(), treeSetFactory).add(firstAKey);
 		newMappings.put(firstAKey, aValue);
 		final var kvImpact = incorporateKvImpact(
 				firstAKey, ZERO_VALUE,
@@ -297,14 +292,14 @@ class SizeLimitedStorageTest {
 
 		assertEquals(-1, kvImpact);
 		assertTrue(removedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(removedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, removedKeys.get(firstAKey.getContractId()).first());
 		assertTrue(updatedKeys.get(firstAKey.getContractId()).isEmpty());
 		assertFalse(newMappings.containsKey(firstAKey));
 	}
 
 	@Test
 	void incorporatesErasingPendingAndNotAlreadyPresent() {
-		updatedKeys.computeIfAbsent(firstAKey.getContractId(), TREE_SET_FACTORY).add(firstAKey);
+		updatedKeys.computeIfAbsent(firstAKey.getContractId(), treeSetFactory).add(firstAKey);
 		newMappings.put(firstAKey, aValue);
 		final var kvImpact = incorporateKvImpact(
 				firstAKey, ZERO_VALUE,
@@ -336,7 +331,7 @@ class SizeLimitedStorageTest {
 
 		assertEquals(-1, kvImpact);
 		assertTrue(removedKeys.containsKey(firstAKey.getContractId()));
-		assertEquals(removedKeys.get(firstAKey.getContractId()).first(), firstAKey);
+		assertEquals(firstAKey, removedKeys.get(firstAKey.getContractId()).first());
 	}
 
 	/* --- Internal helpers --- */
@@ -345,6 +340,11 @@ class SizeLimitedStorageTest {
 		final var account = mock(MerkleAccount.class);
 		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
 		given(accounts.get(key)).willReturn(account);
+	}
+
+	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
+		given(storage.get(key)).willReturn(value);
+		given(storage.containsKey(key)).willReturn(true);
 	}
 
 	private void givenNoSizeLimits() {

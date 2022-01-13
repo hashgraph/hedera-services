@@ -155,7 +155,7 @@ public class SizeLimitedStorage {
 			return 0;
 		} else {
 			/* Otherwise update the contract's change set. */
-			updatedKeys.computeIfAbsent(contractId, TREE_SET_FACTORY).add(key);
+			updatedKeys.computeIfAbsent(contractId, treeSetFactory).add(key);
 			/* And drop any pending removal, returning 1 since a pending removal implies we
 			 * were about to reduce the storage used by a mapping. */
 			final var scopedRemovals = removedKeys.get(contractId);
@@ -189,7 +189,7 @@ public class SizeLimitedStorage {
 			}
 			if (wasAlreadyPresent) {
 				/* If there was no extant mapping for this key, no reason to explicitly remove it when we commit. */
-				removedKeys.computeIfAbsent(key.getContractId(), TREE_SET_FACTORY).add(key);
+				removedKeys.computeIfAbsent(key.getContractId(), treeSetFactory).add(key);
 			}
 			/* But no matter what, relative to our existing change set, this removed one mapping. */
 			return -1;
@@ -227,7 +227,7 @@ public class SizeLimitedStorage {
 		removedKeys.forEach((id, zeroedOut) -> zeroedOut.forEach(curStorage::remove));
 	}
 
-	static Function<Long, TreeSet<ContractKey>> TREE_SET_FACTORY = ignore -> new TreeSet<>();
+	static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();
 
 	private static ContractValue virtualValueFrom(final UInt256 evmWord) {
 		return evmWord.isZero() ? ZERO_VALUE : ContractValue.from(evmWord);
