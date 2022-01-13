@@ -48,10 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -172,6 +169,4 @@ class StateAccessorTest {
 		// expect:
 		Assertions.assertNotNull(subject.children());
 	}
-
-	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }

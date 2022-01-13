@@ -75,8 +75,8 @@ public class CreateOperationSuite extends HapiApiSuite {
 				resetOnFactoryFailureAfterDeploymentWorks(),
 				resetOnStackedFactoryFailureWorks(),
 				inheritanceOfNestedCreatedContracts(),
-				factoryAndSelfDestructInConstructorContract(),
-				factoryQuickSelfDestructContract(),
+//				factoryAndSelfDestructInConstructorContract(),
+//				factoryQuickSelfDestructContract(),
 				contractCreateWithNewOpInConstructor(),
 				childContractStorageWorks()
 		);
@@ -91,6 +91,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 								.path(ContractResources.FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT),
 						contractCreate(CONTRACT)
 								.bytecode("bytecode")
+								.gas(4_000_000)
 								.balance(10)
 				)
 				.when(
@@ -114,6 +115,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 								.bytecode("bytecode"))
 				.when(
 						contractCall(CONTRACT, ContractResources.FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI)
+								.gas(4_000_000)
 								.via("callRecord"))
 				.then(
 						getTxnRecord("callRecord").hasPriority(
@@ -137,6 +139,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 				)
 				.when(
 						contractCall(CONTRACT, ContractResources.NESTED_CHILDREN_CALL_CREATE_ABI)
+								.gas(780_000)
 								.via("callRecord")
 				)
 				.then(
@@ -156,6 +159,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 						contractCreate("factoryContract").bytecode("factory")
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -180,10 +184,11 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("StackedFactoryWorks")
 				.given(
 						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory")
+						contractCreate("factoryContract").bytecode("factory").gas(200_000)
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_SUCCESS)
-								.via("stackedDeploymentSuccessTxn").gas(300_000)
+								.gas(1_000_000)
+								.via("stackedDeploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");
@@ -209,12 +214,14 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnFactoryFailureWorks")
 				.given(
 						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory")
+						contractCreate("factoryContract").bytecode("factory").gas(200_000)
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE)
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.gas(780_000)
 								.via("deploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -242,12 +249,14 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
 				.given(
 						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory")
+						contractCreate("factoryContract").bytecode("factory").gas(200_000)
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY)
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.gas(780_000)
 								.via("failureAfterDeploymentTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -275,12 +284,14 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
 				.given(
 						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory")
+						contractCreate("factoryContract").bytecode("factory").gas(200_000)
 				).when(
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE)
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+								.gas(780_000)
 								.via("stackedDeploymentFailureTxn"),
 						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -309,7 +320,8 @@ public class CreateOperationSuite extends HapiApiSuite {
 				.given(
 						fileCreate("AbandoningParentBytecode").path(ContractResources.ABANDONING_PARENT_BYTECODE_PATH)
 				).when().then(
-						contractCreate("AbandoningParent").bytecode("AbandoningParentBytecode").via("AbandoningParentTxn"),
+						contractCreate("AbandoningParent").bytecode("AbandoningParentBytecode")
+								.gas(4_000_000).via("AbandoningParentTxn"),
 						getContractInfo("AbandoningParent").saveToRegistry("AbandoningParentParentInfo").logged(),
 						getTxnRecord("AbandoningParentTxn")
 								.saveCreatedContractListToRegistry("AbandoningParent")
@@ -328,10 +340,12 @@ public class CreateOperationSuite extends HapiApiSuite {
 				).when(
 						contractCreate("firstContract")
 								.bytecode("createTrivialBytecode")
+								.gas(200_000)
 								.via("firstContractTxn")
 				).then(
 						assertionsHold((spec, ctxLog) -> {
 							var subop1 = contractCall("firstContract", ContractResources.CREATE_CHILD_ABI)
+									.gas(785_000)
 									.via("createContractTxn");
 
 							// First contract calls created contract and get an integer return value
