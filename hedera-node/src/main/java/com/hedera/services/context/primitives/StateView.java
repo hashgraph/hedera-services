@@ -456,8 +456,7 @@ public class StateView {
 		}
 
 		var mirrorId = asAccount(id);
-		final var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
-		final var storageSize = bytecodeSize + contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
+		final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())

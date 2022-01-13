@@ -324,7 +324,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setNumContractKvPairs(final int numContractKvPairs) {
-		/* The MerkleAccountState will throw a MutabilityException  */
+		/* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
 		state().setNumContractKvPairs(numContractKvPairs);
 	}
 

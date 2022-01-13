@@ -570,7 +570,7 @@ class DeterministicThrottlingTest {
 		subject.setConsensusThrottled(true);
 		subject.applyGasConfig();
 		// expect:
-		assertEquals(capacity / n, subject.gasLimitThrottle().getCapacity());
+		assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
 	}
 
 	@Test
@@ -580,7 +580,7 @@ class DeterministicThrottlingTest {
 		subject.setConsensusThrottled(false);
 		subject.applyGasConfig();
 		// expect:
-		assertEquals(capacity / n, subject.gasLimitThrottle().getCapacity());
+		assertEquals(capacity, subject.gasLimitThrottle().getCapacity());
 	}
 
 	@Test
@@ -607,8 +607,7 @@ class DeterministicThrottlingTest {
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
-		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
-				"\n  500 gas/sec (throttling ON)";
+		final var desired = "Resolved consensus gas throttle -\n  1000 gas/sec (throttling ON)";
 
 		// when:
 		subject.applyGasConfig();
@@ -623,8 +622,7 @@ class DeterministicThrottlingTest {
 		// setup:
 		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(capacity);
 
-		final var desired = "Resolved consensus gas throttle (after splitting capacity 2 ways) -" +
-				"\n  500 gas/sec (throttling OFF)";
+		final var desired = "Resolved consensus gas throttle -\n  1000 gas/sec (throttling OFF)";
 
 		// when:
 		subject.applyGasConfig();
@@ -642,8 +640,7 @@ class DeterministicThrottlingTest {
 		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
 
-		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
-				"\n  250 gas/sec (throttling ON)";
+		final var desired = "Resolved frontend gas throttle -\n  1000 gas/sec (throttling ON)";
 
 		// when:
 		subject.applyGasConfig();
@@ -660,13 +657,11 @@ class DeterministicThrottlingTest {
 		// setup:
 		given(dynamicProperties.frontendThrottleGasLimit()).willReturn(capacity);
 
-		final var desired = "Resolved frontend gas throttle (after splitting capacity 4 ways) -" +
-				"\n  250 gas/sec (throttling OFF)";
+		final var desired = "Resolved frontend gas throttle -\n  1000 gas/sec (throttling OFF)";
 
 		// when:
 		subject.applyGasConfig();
 
-		// then:
 		assertThat(logCaptor.infoLogs(), contains(desired));
 	}
 

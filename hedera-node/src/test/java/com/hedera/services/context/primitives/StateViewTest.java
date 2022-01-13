@@ -533,9 +533,7 @@ class StateViewTest {
 	void getsContractInfo() throws Exception {
 		final var target = EntityNum.fromContractId(cid);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
-		final var expectedTotalStorage = expectedBytecode.length +
-				StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+		final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
 
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
@@ -740,7 +738,6 @@ class StateViewTest {
 	void handlesNullKey() {
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 		contract.setAccountKey(null);
 

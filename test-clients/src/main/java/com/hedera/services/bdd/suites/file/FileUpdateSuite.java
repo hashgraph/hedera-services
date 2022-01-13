@@ -37,10 +37,13 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -68,7 +71,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -94,12 +99,19 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 public class FileUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
 
+	private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
+	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
+
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 	private static final String defaultMaxCustomFees =
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
 	private static final String defaultMaxTokenPerAccount =
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxPerAccount");
+	private static final String defaultMaxIndividualKvPairs =
+			HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
+	private static final String defaultMaxAggregateKvPairs =
+			HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -120,6 +132,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				autoCreationIsDynamic(),
+				kvLimitsEnforced(),
 		});
 	}
 
@@ -374,7 +387,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
 		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
@@ -389,7 +402,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec minChargeIsTXGasUsedByFileUpdate() {
 		return defaultHapiSpec("MinChargeIsTXGasUsedByFileUpdate")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
@@ -406,7 +419,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
-						UtilVerbs.overriding("contracts.maxGas", "100")
+						overriding("contracts.maxGas", "100")
 				).when().then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(101L)
 								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
@@ -414,6 +427,55 @@ public class FileUpdateSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec kvLimitsEnforced() {
+		final var initcode = "initcode";
+		final var contract = "imapUser";
+		final var gasToOffer = 4_000_000;
+
+		return defaultHapiSpec("KvLimitsEnforced")
+				.given(
+						fileCreate(initcode )
+								.path(IMAP_USER_BYTECODE_PATH),
+						/* This contract has 0 key/value mappings at creation */
+						contractCreate(contract)
+								.bytecode(initcode),
+						/* Now we update the per-contract limit to 10 mappings */
+						overriding(INDIVIDUAL_KV_LIMIT_PROP, "10")
+				).when(
+						/* The first call to insert adds 5 mappings */
+						contractCall(contract, IMAP_USER_INSERT, 1, 1).gas(gasToOffer),
+						/* Each subsequent call to adds 3 mappings; so 8 total after this */
+						contractCall(contract, IMAP_USER_INSERT, 2, 4).gas(gasToOffer),
+						/* And this one fails because 8 + 3 = 11 > 10 */
+						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
+								.gas(gasToOffer),
+						/* Confirm the storage size didn't change */
+						getContractInfo(contract).has(contractWith().numKvPairs(8)),
+						/* Now we update the per-contract limit to 1B mappings, but the aggregate limit to just 1 🤪 */
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
+										AGGREGATE_KV_LIMIT_PROP, "1")),
+						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
+								.gas(gasToOffer),
+						getContractInfo(contract).has(contractWith().numKvPairs(8))
+				).then(
+						/* Now restore the defaults and confirm we can use more storage */
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										INDIVIDUAL_KV_LIMIT_PROP, defaultMaxIndividualKvPairs,
+										AGGREGATE_KV_LIMIT_PROP, defaultMaxAggregateKvPairs)),
+						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.gas(gasToOffer),
+						contractCall(contract, IMAP_USER_INSERT, 4, 16)
+								.gas(gasToOffer),
+						getContractInfo(contract).has(contractWith().numKvPairs(14))
+				);
+	}
 
 	@Override
 	protected Logger getResultsLogger() {

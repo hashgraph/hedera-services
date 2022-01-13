@@ -100,7 +100,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.chainId", 1),
 			entry("contracts.throttle.throttleByGas", true),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
-			entry("contracts.frontendThrottleMaxGasLimit", 15000000L),
+			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("dev.onlyDefaultNodeListens", true),
