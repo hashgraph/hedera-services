@@ -21,6 +21,7 @@ package com.hedera.services.queries.consensus;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -86,6 +87,7 @@ class GetMerkleTopicInfoAnswerTest {
 
 	GetTopicInfoAnswer subject;
 	NodeLocalProperties nodeProps;
+	NetworkInfo networkInfo;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -109,11 +111,16 @@ class GetMerkleTopicInfoAnswerTest {
 		nodeProps = mock(NodeLocalProperties.class);
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setTopics(topics);
+
+		networkInfo = mock(NetworkInfo.class);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
 		view = new StateView(
 				null,
 				null,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				networkInfo);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);

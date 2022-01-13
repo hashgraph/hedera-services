@@ -74,11 +74,9 @@ class GrpcUtilsTest {
 	private final EntityId wildcard = EntityId.MISSING_ENTITY_ID;
 	private final EntityId nonTreasuryOwner = new EntityId(0, 0, 3);
 	private final EntityId treasury = new EntityId(0, 0, 4);
-	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 
 	private TokenNftInfo expectedNftInfo(final long serial, final EntityId owner) {
 		return TokenNftInfo.newBuilder()
-				.setLedgerId(ledgerId)
 				.setNftID(NftID.newBuilder()
 						.setTokenID(token)
 						.setSerialNumber(serial))

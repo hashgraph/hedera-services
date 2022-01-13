@@ -20,7 +20,6 @@ package com.hedera.services;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -69,10 +68,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -82,10 +81,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final String DEFAULT_LEDGER_ID = "0x03";
 	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-
-	private static ByteString ledgerId = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
 	private int deserializedVersion = CURRENT_VERSION;
@@ -280,14 +276,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	/* -- Getters and helpers -- */
-	public static ByteString getLedgerId() {
-		return ledgerId;
-	}
-
-	public static void setLedgerId(ByteString id) {
-		ledgerId = id;
-	}
-
 	public AccountID getAccountFromNodeId(NodeId nodeId) {
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
@@ -380,11 +368,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			SwirldDualState dualState
 	) {
 		final var selfId = platform.getSelfId().getId();
-
-		if (bootstrapProps.containsProperty("ledger.id")) {
-			setLedgerId(ByteString.copyFromUtf8(bootstrapProps.getStringProperty("ledger.id")));
-		}
-		log.info("Ledger id is :{}", getLedgerId());
 
 		ServicesApp app;
 		if (APPS.includes(selfId)) {

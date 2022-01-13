@@ -21,7 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ServicesState;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
@@ -51,6 +51,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
@@ -71,6 +72,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -120,12 +122,13 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
 	private final UniqTokenView uniqTokenView;
+	private final NetworkInfo networkInfo;
 
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
@@ -135,11 +138,13 @@ public class StateView {
 			@Nullable TokenStore tokenStore,
 			@Nullable ScheduleStore scheduleStore,
 			@Nullable StateChildren stateChildren,
-			UniqTokenViewFactory uniqTokenViewFactory
+			UniqTokenViewFactory uniqTokenViewFactory,
+			NetworkInfo networkInfo
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.stateChildren = stateChildren;
+		this.networkInfo = networkInfo;
 
 		this.uniqTokenView = uniqTokenViewFactory.viewFor(
 				tokenStore,
@@ -193,7 +198,7 @@ public class StateView {
 			}
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
-					.setLedgerId(ServicesState.getLedgerId())
+					.setLedgerId(networkInfo.ledgerId())
 					.setTokenTypeValue(token.tokenType().ordinal())
 					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
@@ -252,6 +257,35 @@ public class StateView {
 		}
 	}
 
+	public Optional<ConsensusTopicInfo> infoForTopic(TopicID topicID) {
+
+		MerkleTopic merkleTopic = topics().get(EntityNum.fromTopicId(topicID));
+		if (merkleTopic == null) {
+			return Optional.empty();
+		}
+
+		ConsensusTopicInfo.Builder info = ConsensusTopicInfo.newBuilder();
+		if (merkleTopic.hasMemo()) {
+			info.setMemo(merkleTopic.getMemo());
+		}
+		if (merkleTopic.hasAdminKey()) {
+			info.setAdminKey(asKeyUnchecked(merkleTopic.getAdminKey()));
+		}
+		if (merkleTopic.hasSubmitKey()) {
+			info.setSubmitKey(asKeyUnchecked(merkleTopic.getSubmitKey()));
+		}
+		info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
+		if (merkleTopic.hasAutoRenewAccountId()) {
+			info.setAutoRenewAccount(asAccount(merkleTopic.getAutoRenewAccountId()));
+		}
+		info.setExpirationTime(merkleTopic.getExpirationTimestamp().toGrpc());
+		info.setSequenceNumber(merkleTopic.getSequenceNumber());
+		info.setRunningHash(ByteString.copyFrom(merkleTopic.getRunningHash()));
+		info.setLedgerId(networkInfo.ledgerId());
+
+		return Optional.of(info.build());
+	}
+
 	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
 		if (scheduleStore == null) {
 			return Optional.empty();
@@ -268,7 +302,7 @@ public class StateView {
 			signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
 			var info = ScheduleInfo.newBuilder()
-					.setLedgerId(ServicesState.getLedgerId())
+					.setLedgerId(networkInfo.ledgerId())
 					.setScheduleID(id)
 					.setScheduledTransactionBody(schedule.scheduledTxn())
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
@@ -323,7 +357,7 @@ public class StateView {
 		}
 
 		final var info = TokenNftInfo.newBuilder()
-				.setLedgerId(ServicesState.getLedgerId())
+				.setLedgerId(networkInfo.ledgerId())
 				.setNftID(target)
 				.setAccountID(accountId)
 				.setCreationTime(targetNft.getCreationTime().toGrpc())
@@ -381,7 +415,7 @@ public class StateView {
 			return Optional.empty();
 		}
 		var info = FileGetInfoResponse.FileInfo.newBuilder()
-				.setLedgerId(ServicesState.getLedgerId())
+				.setLedgerId(networkInfo.ledgerId())
 				.setFileID(id)
 				.setMemo(attr.getMemo())
 				.setDeleted(attr.isDeleted())
@@ -404,7 +438,7 @@ public class StateView {
 
 		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
-				.setLedgerId(ServicesState.getLedgerId())
+				.setLedgerId(networkInfo.ledgerId())
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(accountID)
 				.setAlias(account.getAlias())
@@ -441,6 +475,7 @@ public class StateView {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.ownedAssociations(aid, start, end);
+		addLedgerIdToTokenNftInfoList(answer);
 		return Optional.of(answer);
 	}
 
@@ -449,6 +484,7 @@ public class StateView {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.typedAssociations(tid, start, end);
+		addLedgerIdToTokenNftInfoList(answer);
 		return Optional.of(answer);
 	}
 
@@ -462,7 +498,7 @@ public class StateView {
 		var mirrorId = asAccount(id);
 		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
-				.setLedgerId(ServicesState.getLedgerId())
+				.setLedgerId(networkInfo.ledgerId())
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
@@ -532,6 +568,10 @@ public class StateView {
 
 	UniqTokenView uniqTokenView() {
 		return uniqTokenView;
+	}
+
+	private void addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
+		tokenNftInfoList.forEach(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build());
 	}
 
 	private TokenFreezeStatus tfsFor(boolean flag) {
