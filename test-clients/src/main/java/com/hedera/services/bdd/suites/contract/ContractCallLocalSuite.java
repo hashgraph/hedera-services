@@ -79,7 +79,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
@@ -142,7 +142,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCreate("parentDelegate")
 								.bytecode("parentDelegateBytecode")
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
@@ -162,7 +162,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
 						cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)

@@ -140,7 +140,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(28_000))),
+														.gas(100_000))),
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
@@ -215,7 +215,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(28_000))),
+														.gas(100_000))),
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
@@ -276,7 +276,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode(outerContract)
 														.via("creationTx")
-														.gas(28_000))),
+														.gas(100_000))),
 						getTxnRecord("creationTx").logged()
 
 				)
@@ -348,7 +348,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 														.payingWith(bob)
 														.bytecode("bytecode")
-														.gas(28_000))),
+														.gas(100_000))),
 						tokenAssociate(ALICE, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
 						tokenAssociate(theContract, tokenWithHbarFee),

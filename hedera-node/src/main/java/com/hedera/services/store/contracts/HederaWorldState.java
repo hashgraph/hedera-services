@@ -35,12 +35,14 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -58,7 +60,10 @@ import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
@@ -207,7 +212,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return codeCache.get(address).getBytes();
+			return getCodeInternal().getBytes();
 		}
 
 		public EntityId getProxyAccount() {
@@ -225,7 +230,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return codeCache.get(address).getCodeHash();
+			return getCodeInternal().getCodeHash();
 		}
 
 		@Override
@@ -290,6 +295,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		public AccountID getAccount() {
 			return account;
+		}
+
+		private Code getCodeInternal() {
+			final var code = codeCache.getIfPresent(address);
+			return (code == null) ? EMPTY_CODE : code;
 		}
 	}
 
