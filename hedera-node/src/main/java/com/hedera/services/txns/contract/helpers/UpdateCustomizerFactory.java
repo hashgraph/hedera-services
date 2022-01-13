@@ -38,7 +38,6 @@ import java.util.Optional;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -65,9 +64,9 @@ public class UpdateCustomizerFactory {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID(), INVALID_ACCOUNT_ID);
+			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID());
 			if (result.response() != OK) {
-				return Pair.of(Optional.empty(), INVALID_ACCOUNT_ID);
+				return Pair.of(Optional.empty(), result.response());
 			}
 			customizer.proxy(fromGrpcAccountId(result.resolvedId()));
 		}

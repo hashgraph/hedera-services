@@ -252,8 +252,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void worksWithValidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(AliasLookup.of(PAYER, OK));
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
 		subject.doStateTransition();
@@ -264,9 +264,9 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(
 				AliasLookup.of(aliasedProxyID, INVALID_ACCOUNT_ID));
-		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
 		assertEquals(INVALID_ACCOUNT_ID, subject.validate(cryptoCreateTxn));
@@ -370,9 +370,9 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
-		given(ledger.lookUpAccountId(cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
+		given(ledger.lookUpAccountId(proxy)).willReturn(AliasLookup.of(proxy, OK));
+		given(ledger.lookUpAccountId(cryptoCreateTxn.getTransactionID().getAccountID())).willReturn(
+				AliasLookup.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
 	}
 
 	private TransactionID ourTxnId() {

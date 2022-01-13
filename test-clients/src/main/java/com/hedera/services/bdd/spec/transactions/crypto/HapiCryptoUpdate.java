@@ -245,7 +245,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
+		final var lookupAccount = referenceType == ReferenceType.ALIAS_KEY_NAME ? aliasKeySource : account;
+		HapiGetAccountInfo subOp = getAccountInfo(lookupAccount).noLogging();
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {

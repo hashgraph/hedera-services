@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -96,7 +95,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
 			final var result = ledger.lookUpAccountId(
-					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_ACCOUNT_ID);
+					cryptoCreateTxn.getTransactionID().getAccountID());
 			AccountID sponsor = result.resolvedId();
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
@@ -128,7 +127,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID);
+			final var result = ledger.lookUpAccountId(op.getProxyAccountID());
 			customizer.proxy(EntityId.fromGrpcAccountId(result.resolvedId()));
 		}
 		return customizer;
@@ -185,7 +184,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 		//  should we also check if proxy accountID is valid and exists in address book ?
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_ACCOUNT_ID).response();
+			final var result = ledger.lookUpAccountId(op.getProxyAccountID()).response();
 			if (result != OK) {
 				return result;
 			}

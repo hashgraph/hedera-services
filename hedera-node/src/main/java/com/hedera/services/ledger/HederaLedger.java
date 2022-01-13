@@ -74,6 +74,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -484,6 +485,10 @@ public class HederaLedger {
 
 	public AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum response) {
 		return tokenStore.lookUpAccountId(grpcId, response);
+	}
+
+	public AliasLookup lookUpAccountId(final AccountID grpcId) {
+		return tokenStore.lookUpAccountId(grpcId, INVALID_ACCOUNT_ID);
 	}
 
 	public boolean isDeleted(AccountID id) {

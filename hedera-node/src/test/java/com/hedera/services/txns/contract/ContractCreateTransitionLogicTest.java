@@ -69,7 +69,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -154,7 +153,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// expect:
@@ -166,7 +165,7 @@ class ContractCreateTransitionLogicTest {
 		AccountID invalidProxy = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
 		givenInvalidTxnCtx(aliasPayer, invalidProxy);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(hederaLedger.lookUpAccountId(invalidProxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(invalidProxy)).willReturn(
 				AliasLookup.of(invalidProxy, INVALID_ACCOUNT_ID));
 
 		// expect:
@@ -270,9 +269,9 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// when:
@@ -350,9 +349,9 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// when:
@@ -406,9 +405,9 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// when:
@@ -433,7 +432,7 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(worldState.persist()).willReturn(secondaryCreations);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
 		final var result = TransactionProcessingResult
 				.successful(
@@ -457,7 +456,7 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// when:
@@ -479,9 +478,9 @@ class ContractCreateTransitionLogicTest {
 		senderId.setAlias(ByteString.copyFromUtf8("bbb"));
 		givenValidTxnCtxWithProxyAndSender(proxyId, senderId);
 
-		given(hederaLedger.lookUpAccountId(proxyId, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxyId)).willReturn(
 				AliasLookup.of(proxy, OK));
-		given(hederaLedger.lookUpAccountId(senderId.getId().asGrpcAccount(), INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderId.getId().asGrpcAccount())).willReturn(
 				AliasLookup.of(senderAccountId, OK));
 
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
@@ -529,7 +528,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
@@ -545,9 +544,9 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -564,9 +563,9 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 
 		// when:
@@ -594,9 +593,9 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
 				new InvalidTransactionException(SERIALIZATION_FAILED));
-		given(hederaLedger.lookUpAccountId(senderAccountId, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
-		given(hederaLedger.lookUpAccountId(proxy, INVALID_ACCOUNT_ID)).willReturn(
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
 				AliasLookup.of(proxy, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
