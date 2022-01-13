@@ -41,7 +41,6 @@ import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -107,7 +106,7 @@ public class GetTopicInfoAnswer implements AnswerService {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setTopicInfo(optionalInfo.get());
 				} else {
-					response.setHeader(answerOnlyHeader(FAIL_INVALID));
+					response.setHeader(answerOnlyHeader(INVALID_TOPIC_ID));
 				}
 			}
 		}

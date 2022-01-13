@@ -52,7 +52,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -275,7 +274,7 @@ class GetMerkleTopicInfoAnswerTest {
 		Response response = subject.responseGiven(query, view, OK, fee);
 
 		assertTrue(response.hasConsensusGetTopicInfo());
-		assertEquals(FAIL_INVALID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(INVALID_TOPIC_ID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
