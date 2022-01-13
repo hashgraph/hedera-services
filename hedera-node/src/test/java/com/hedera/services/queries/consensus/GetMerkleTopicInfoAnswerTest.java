@@ -52,6 +52,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -77,9 +78,9 @@ class GetMerkleTopicInfoAnswerTest {
 	String node = "0.0.3";
 	String payer = "0.0.12345";
 	String target = "3.2.1";
-	String missingTarget = "1.2.3";
 	String memo = "This was Mr. Bleaney's room...";
 	String idLit = "0.0.12345";
+	EntityNum key = EntityNum.fromTopicId(asTopic(target));
 	long expiry = 1_234_567L;
 	long duration = 55L;
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
@@ -106,7 +107,6 @@ class GetMerkleTopicInfoAnswerTest {
 				.get();
 		merkleTopic.setRunningHash(hash);
 		merkleTopic.setSequenceNumber(seqNo);
-		EntityNum key = EntityNum.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 
 		nodeProps = mock(NodeLocalProperties.class);
@@ -269,15 +269,13 @@ class GetMerkleTopicInfoAnswerTest {
 
 	@Test
 	void failsAsExpectedWhenFetchingMissingTopicInfo() throws Throwable {
-		// setup:
-		Query query = validQuery(ANSWER_ONLY, fee, missingTarget);
+		given(topics.get(key)).willReturn(null);
+		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
 		assertTrue(response.hasConsensusGetTopicInfo());
-		assertEquals(OK, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(FAIL_INVALID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
