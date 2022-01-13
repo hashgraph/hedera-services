@@ -533,6 +533,26 @@ class TransferPrecompilesTest {
 		assertEquals(result, UInt256.valueOf(FAIL_INVALID.getNumber()));
 	}
 
+	@Test
+	void pureValidationFails() {
+		givenFrameContext();
+
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(tnxBody);
+		given(mockSynthBodyBuilder.getCryptoTransfer().getDefaultInstanceForType()).willReturn(tnxBody);
+		given(impliedTransfersMarshal.isPureValidated(tnxBody)).willReturn(FAIL_INVALID);
+
+		given(decoder.decodeTransferToken(pretendArguments)).willReturn(Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
+
+		// when:
+		final var result = subject.computeTransfer(pretendArguments, frame);
+
+		// then:
+		assertEquals(result, UInt256.valueOf(FAIL_INVALID.getNumber()));
+	}
+
 	private void givenFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
