@@ -151,7 +151,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var address = contractId.asEvmAddress();
 
 		try {
-			codeCache.get(address);
+			codeCache.getIfPresent(address);
 		} catch(RuntimeException e) {
 			log.warn("Exception while attempting to pre-fetch code for {}", address);
 		}

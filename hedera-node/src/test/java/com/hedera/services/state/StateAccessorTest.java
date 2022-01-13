@@ -48,10 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,11 +95,6 @@ class StateAccessorTest {
 	}
 
 	@Test
-	void childrenNonNull() {
-		Assertions.assertNotNull(subject.children());
-	}
-
-	@Test
 	void childrenGetUpdatedAsExpected() {
 		givenStateWithMockChildren();
 
@@ -112,15 +104,28 @@ class StateAccessorTest {
 	}
 
 	@Test
-	void nullsOutChildrenAsExpected() {
-		final var anInstant = Instant.ofEpochSecond(1_234_567L, 890);
+	void settersWorkAsExpected() {
 		givenStateWithMockChildren();
-		((MutableStateChildren) subject.children()).updateFrom(state, anInstant);
 
-		subject.children().nullOutRefs();
+		final var mutableChildren = (MutableStateChildren) subject.children();
 
-		assertChildrenAreNull();
-		assertSame(Instant.EPOCH, subject.children().signedAt());
+		mutableChildren.setAccounts(state.accounts());
+		mutableChildren.setContractStorage(state.contractStorage());
+		mutableChildren.setStorage(state.storage());
+		mutableChildren.setTopics(state.topics());
+		mutableChildren.setTokens(state.tokens());
+		mutableChildren.setTokenAssociations(state.tokenAssociations());
+		mutableChildren.setSchedules(state.scheduleTxs());
+		mutableChildren.setNetworkCtx(state.networkCtx());
+		mutableChildren.setAddressBook(state.addressBook());
+		mutableChildren.setSpecialFiles(state.specialFiles());
+		mutableChildren.setUniqueTokens(state.uniqueTokens());
+		mutableChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		mutableChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		mutableChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		mutableChildren.setRunningHashLeaf(state.runningHashLeaf());
+
+		assertChildrenAreExpectedMocks();
 	}
 
 	private void assertChildrenAreExpectedMocks() {
@@ -159,23 +164,9 @@ class StateAccessorTest {
 		given(state.contractStorage()).willReturn(contractStorage);
 	}
 
-	private void assertChildrenAreNull() {
-		assertThrows(NullPointerException.class, subject::accounts);
-		assertThrows(NullPointerException.class, subject::storage);
-		assertThrows(NullPointerException.class, subject::contractStorage);
-		assertThrows(NullPointerException.class, subject::topics);
-		assertThrows(NullPointerException.class, subject::tokens);
-		assertThrows(NullPointerException.class, subject::tokenAssociations);
-		assertThrows(NullPointerException.class, subject::schedules);
-		assertThrows(NullPointerException.class, subject::networkCtx);
-		assertThrows(NullPointerException.class, subject::addressBook);
-		assertThrows(NullPointerException.class, subject::specialFiles);
-		assertThrows(NullPointerException.class, subject::uniqueTokens);
-		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
-		assertThrows(NullPointerException.class, subject::runningHashLeaf);
+	@Test
+	void childrenNonNull() {
+		// expect:
+		Assertions.assertNotNull(subject.children());
 	}
-
-	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }

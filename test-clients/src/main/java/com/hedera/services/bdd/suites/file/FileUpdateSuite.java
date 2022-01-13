@@ -116,7 +116,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				associateHasExpectedSemantics(),
 				notTooManyFeeScheduleCanBeCreated(),
 				numAccountsAllowedIsDynamic(),
-				minChargeIsTXGasUsed(),
+				minChargeIsTXGasUsedByFileUpdate(),
 				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				autoCreationIsDynamic(),
@@ -386,8 +386,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByFileUpdate() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByFileUpdate")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
@@ -396,7 +396,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
 				).then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
-								.has(resultWith().gasUsed(5451)),
+								.has(resultWith().gasUsed(26_451)),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

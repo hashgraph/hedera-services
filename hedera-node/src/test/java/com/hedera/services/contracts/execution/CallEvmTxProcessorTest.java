@@ -133,8 +133,6 @@ class CallEvmTxProcessorTest {
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(worldState.updater()).willReturn(updater);
 
-		given(codeCache.get(any())).willThrow(new RuntimeException("oh no"));
-
 		givenSenderWithBalance(350_000L);
 		assertFailsWith(() ->
 						callEvmTxProcessor.execute(
@@ -222,7 +220,7 @@ class CallEvmTxProcessorTest {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
 		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
-		given(codeCache.get(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(new Code());
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
 		final MessageFrame.Builder commonInitialFrame =
@@ -267,7 +265,7 @@ class CallEvmTxProcessorTest {
 
 		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 		given(worldState.updater()).willReturn(updater);
-		given(codeCache.get(any())).willReturn(new Code());
+		given(codeCache.getIfPresent(any())).willReturn(new Code());
 
 		given(gasCalculator.getSelfDestructRefundAmount()).willReturn(Gas.ZERO);
 		given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);

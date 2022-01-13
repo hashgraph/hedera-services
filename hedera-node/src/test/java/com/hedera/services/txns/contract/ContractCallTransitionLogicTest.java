@@ -185,7 +185,7 @@ class ContractCallTransitionLogicTest {
 		subject.preFetch(accessor);
 
 		// expect:
-		verify(codeCache).get(any(Address.class));
+		verify(codeCache).getIfPresent(any(Address.class));
 	}
 
 	@Test
@@ -196,13 +196,13 @@ class ContractCallTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getContractCall()).willReturn(ccTxnBody);
 		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
-		given(codeCache.get(any(Address.class))).willThrow(new RuntimeException("oh no"));
+		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
 
 		// when:
 		subject.preFetch(accessor);
 
 		// expect:
-		verify(codeCache).get(any(Address.class));
+		verify(codeCache).getIfPresent(any(Address.class));
 	}
 
 	@Test

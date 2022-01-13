@@ -47,6 +47,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 
@@ -205,10 +206,8 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public Bytes fetchCode(final AccountID id) {
-		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-		final var bytes = bytecode.get().get(blobKey);
-		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	public Bytes fetchCodeIfPresent(final AccountID id) {
+		return explicitCodeFetch(bytecode.get(), id);
 	}
 
 	private boolean isActiveContractOp() {
