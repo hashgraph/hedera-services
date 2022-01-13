@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -96,6 +97,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -191,6 +194,31 @@ class TransferPrecompilesTest {
 	}
 
 	@Test
+	void transferFailsFastGivenWrongSyntheticValidity() {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+
+		// when:
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
+	}
+
+	@Test
 	void transferTokenHappyPathWorks() {
 		givenFrameContext();
 		givenLedgers();
@@ -198,12 +226,12 @@ class TransferPrecompilesTest {
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -223,7 +251,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -250,8 +278,8 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments))
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -271,7 +299,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -296,8 +324,8 @@ class TransferPrecompilesTest {
 		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -317,7 +345,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
@@ -343,8 +371,8 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -364,7 +392,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when:
@@ -396,7 +424,7 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
-		hederaTokenStore.setAccountsLedger(accounts);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -416,7 +444,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when:
@@ -450,8 +478,8 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -471,7 +499,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when:
@@ -494,8 +522,8 @@ class TransferPrecompilesTest {
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		hederaTokenStore.setAccountsLedger(accounts);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -514,7 +542,7 @@ class TransferPrecompilesTest {
 				.willReturn(impliedTransfers);
 		given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
-		given(impliedTransfersMeta.code()).willReturn(ResponseCodeEnum.OK);
+		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(mockSynthBodyBuilder);

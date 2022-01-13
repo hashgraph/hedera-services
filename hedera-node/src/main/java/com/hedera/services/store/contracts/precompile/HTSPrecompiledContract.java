@@ -574,6 +574,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class TransferPrecompile implements Precompile {
 		private List<TokenTransferWrapper> transferOp;
+		private TransactionBody.Builder syntheticTxn;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -587,61 +588,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
 						FAIL_INVALID);
 			};
-			return syntheticTxnFactory.createCryptoTransfer(transferOp);
+			this.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			return syntheticTxn;
 		}
 
-		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
-			final List<BalanceChange> allChanges = new ArrayList<>();
-			for (final TokenTransferWrapper tokenTransferWrapper : transferOp) {
-				final List<BalanceChange> changes = new ArrayList<>();
-
-				for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-					if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
-						changes.addAll(List.of(
-								BalanceChange.changingFtUnits(
-										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)),
-								BalanceChange.changingFtUnits(
-										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount))));
-					} else if (fungibleTransfer.sender == null) {
-						changes.add(
-								BalanceChange.changingFtUnits(
-										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)));
-					} else {
-						changes.add(
-								BalanceChange.changingFtUnits(
-										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
-										fungibleTransfer.getDenomination(),
-										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount)));
-					}
-				}
-				if (changes.isEmpty()) {
-					for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
-						changes.add(
-								BalanceChange.changingNftOwnership(
-										Id.fromGrpcToken(nftExchange.getTokenType()),
-										nftExchange.getTokenType(),
-										nftExchange.nftTransfer()
-								)
-						);
-					}
-				}
-
-				allChanges.addAll(changes);
-			}
-			return allChanges;
-		}
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
+			final var op = syntheticTxn.getCryptoTransfer();
+			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op);
+			if (validity != ResponseCodeEnum.OK) {
+				throw new InvalidTransactionException(validity);
+			}
+
 			var changes = constructBalanceChanges(transferOp);
 			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
 			final var numExplicitChanges = changes.size();
@@ -691,7 +653,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					hasReceiverSigIfReq = validateKey(frame, asTypedSolidityAddress(change.counterPartyAccountId()),
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {
-					hasReceiverSigIfReq = validateKey(frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
+					hasReceiverSigIfReq = validateKey(
+                                            frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
@@ -699,6 +662,53 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			transferLogic.doZeroSum(changes);
 
 			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+		}
+
+		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
+			final List<BalanceChange> allChanges = new ArrayList<>();
+			for (final TokenTransferWrapper tokenTransferWrapper : transferOp) {
+				final List<BalanceChange> changes = new ArrayList<>();
+
+				for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
+					if (fungibleTransfer.sender != null && fungibleTransfer.receiver != null) {
+						changes.addAll(List.of(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)),
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount))));
+					} else if (fungibleTransfer.sender == null) {
+						changes.add(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										aaWith(fungibleTransfer.receiver, fungibleTransfer.amount)));
+					} else {
+						changes.add(
+								BalanceChange.changingFtUnits(
+										Id.fromGrpcToken(fungibleTransfer.getDenomination()),
+										fungibleTransfer.getDenomination(),
+										aaWith(fungibleTransfer.sender, -fungibleTransfer.amount)));
+					}
+				}
+				if (changes.isEmpty()) {
+					for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
+						changes.add(
+								BalanceChange.changingNftOwnership(
+										Id.fromGrpcToken(nftExchange.getTokenType()),
+										nftExchange.getTokenType(),
+										nftExchange.nftTransfer()
+								)
+						);
+					}
+				}
+
+				allChanges.addAll(changes);
+			}
+			return allChanges;
 		}
 
 		private AccountAmount aaWith(final AccountID account, final long amount) {
