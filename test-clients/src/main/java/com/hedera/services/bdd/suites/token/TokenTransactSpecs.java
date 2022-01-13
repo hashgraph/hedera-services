@@ -1030,6 +1030,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo"))
 								).logged(),
 						getAccountNftInfos("newTreasury", 0, 2)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo")),
 										newTokenNftInfo(B_TOKEN, 1, "newTreasury", copyFromUtf8("memo2"))

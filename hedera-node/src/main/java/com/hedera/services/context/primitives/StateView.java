@@ -90,6 +90,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -469,23 +470,25 @@ public class StateView {
 		return account.getNftsOwned();
 	}
 
-	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull final AccountID aid, final long start, final long end) {
+	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull final AccountID aid, final long start,
+			final long end) {
 		final var account = accounts().get(fromAccountId(aid));
 		if (account == null) {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.ownedAssociations(aid, start, end);
-		addLedgerIdToTokenNftInfoList(answer);
-		return Optional.of(answer);
+		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
+		return Optional.of(infoWithLedgerId);
 	}
 
-	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull final TokenID tid, final long start, final long end) {
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull final TokenID tid, final long start,
+			final long end) {
 		if (!tokenExists(tid)) {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.typedAssociations(tid, start, end);
-		addLedgerIdToTokenNftInfoList(answer);
-		return Optional.of(answer);
+		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
+		return Optional.of(infoWithLedgerId);
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(final ContractID id) {
@@ -570,8 +573,9 @@ public class StateView {
 		return uniqTokenView;
 	}
 
-	private void addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
-		tokenNftInfoList.forEach(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build());
+	private List<TokenNftInfo> addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
+		return tokenNftInfoList.stream().map(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build())
+				.collect(Collectors.toList());
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {
