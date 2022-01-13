@@ -23,18 +23,13 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -47,15 +42,16 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for
  * executing {@link com.hederahashgraph.api.proto.java.ContractCallLocal} queries
  */
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
-	private static final Logger logger = LogManager.getLogger(CallLocalEvmTxProcessor.class);
-
-	private CodeCache codeCache;
+	private final CodeCache codeCache;
 
 	@Inject
 	public CallLocalEvmTxProcessor(
@@ -109,18 +105,19 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Address to,
 			final Bytes payload
 	) {
-		try {
-			Code code = codeCache.get(to);
-			return baseInitialFrame
-					.type(MessageFrame.Type.MESSAGE_CALL)
-					.address(to)
-					.contract(to)
-					.inputData(payload)
-					.code(code)
-					.build();
-		} catch (RuntimeException e) {
-			logger.warn("Error fetching code from cache", e);
-			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
-		}
+		final var code = codeCache.getIfPresent(to);
+		/* It's possible we are racing the handleTransaction() thread, and the target contract's
+		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
+		 * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
+		 * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
+		validateTrue(code != null, INVALID_CONTRACT_ID);
+
+		return baseInitialFrame
+				.type(MessageFrame.Type.MESSAGE_CALL)
+				.address(to)
+				.contract(to)
+				.inputData(payload)
+				.code(code)
+				.build();
 	}
 }

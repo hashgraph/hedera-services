@@ -76,7 +76,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 		final var theAccount = "anybody";
 		final var theContract = "associateDissociateContract";
 		final var nestedContract = "NestedBurnContract";
-		return defaultHapiSpec("associateHappyPath")
+		return defaultHapiSpec("HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile")
 				.given(
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -100,7 +100,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
-														.gas(100000),
+														.gas(200_000),
 												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 										)

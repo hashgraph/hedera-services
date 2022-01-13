@@ -183,8 +183,13 @@ public class SigReqsManager {
 		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
 		 * Because event intake is single-threaded, there's no risk of another thread getting
 		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
-		 * uses weak references, so we won't keep this signed state from GC eligibility. */
-		signedChildren.updateFrom(signedState, earliestSigningTime);
+		 * uses weak references, so we won't keep this signed state from GC eligibility.
+		 *
+		 * We use the updateFromMaybeUninitializedState() variant here, because during a
+		 * reconnect the latest signed state may have never received an init() call. In that
+		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
+		 * problem for any existing SigRequirements code, however.) */
+		signedChildren.updateFromMaybeUninitializedState(signedState, earliestSigningTime);
 		ensureSignedStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}

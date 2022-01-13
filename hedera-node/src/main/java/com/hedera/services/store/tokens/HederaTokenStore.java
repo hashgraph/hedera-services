@@ -457,6 +457,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
+	public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
+		return get(tId).decimals() == expectedDecimals;
+	}
+
+	@Override
 	public void addKnownTreasury(final AccountID aId, final TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
