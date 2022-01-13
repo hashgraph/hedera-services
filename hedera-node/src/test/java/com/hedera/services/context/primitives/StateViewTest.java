@@ -135,6 +135,7 @@ import static org.mockito.BDDMockito.mock;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class StateViewTest {
+	private static final int wellKnownNumKvPairs = 144;
 	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
 	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	private final long expiry = 2_000_000L;
@@ -157,7 +158,6 @@ class StateViewTest {
 	private final ContractID cid = asContract("0.0.1");
 	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(),
 			cid.getContractNum());
-	private final ContractID notCid = asContract("0.0.3");
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
 	private final long autoRenewPeriod = 1_234_567;
@@ -234,6 +234,7 @@ class StateViewTest {
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
+				.numKvPairs(wellKnownNumKvPairs)
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("0.0.3"))
@@ -533,6 +534,8 @@ class StateViewTest {
 		final var target = EntityNum.fromContractId(cid);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		final var expectedTotalStorage = expectedBytecode.length +
+				StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
 
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
@@ -555,7 +558,7 @@ class StateViewTest {
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
 		assertTrue(info.getDeleted());
-		assertEquals(expectedBytecode.length, info.getStorage());
+		assertEquals(expectedTotalStorage, info.getStorage());
 	}
 
 	@Test

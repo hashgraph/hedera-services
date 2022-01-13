@@ -105,6 +105,8 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
+	/* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
+	public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
 	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
@@ -454,13 +456,14 @@ public class StateView {
 		}
 
 		var mirrorId = asAccount(id);
-		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
+		final var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
+		final var storageSize = bytecodeSize + contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
 		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
 				.setMemo(contract.getMemo())
-				.setStorage(bytecodeSize)
+				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))

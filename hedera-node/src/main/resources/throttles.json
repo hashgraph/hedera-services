@@ -27,7 +27,7 @@
                     "operations": [ "ScheduleSign" ]
                 },
                 {
-                    "opsPerSec": 1000,
+                    "opsPerSec": 350,
                     "operations": [ "ContractCall", "ContractCreate" ]
                 },
                 {

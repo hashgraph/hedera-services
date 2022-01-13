@@ -49,6 +49,7 @@ import static com.hedera.services.store.contracts.SizeLimitedStorage.incorporate
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,7 +79,10 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void removesMappingsInOrder() {
-		InOrder inOrder = Mockito.inOrder(storage);
+		final var firstMock = givenMutableAccount(firstAccount, firstKvPairs);
+		final var secondMock = givenMutableAccount(nextAccount, nextKvPairs);
+
+		InOrder inOrder = Mockito.inOrder(storage, accounts, firstMock, secondMock);
 
 		givenNoSizeLimits();
 		given(storage.containsKey(firstAKey)).willReturn(true);
@@ -94,6 +98,16 @@ class SizeLimitedStorageTest {
 		inOrder.verify(storage).remove(firstAKey);
 		inOrder.verify(storage).remove(firstBKey);
 		inOrder.verify(storage).remove(nextAKey);
+		// and:
+		inOrder.verify(accounts).getForModify(EntityNum.fromLong(firstAccount.getAccountNum()));
+		inOrder.verify(firstMock).setNumContractKvPairs(firstKvPairs - 2);
+		inOrder.verify(accounts).getForModify(EntityNum.fromLong(nextAccount.getAccountNum()));
+		inOrder.verify(secondMock).setNumContractKvPairs(nextKvPairs - 1);
+	}
+
+	@Test
+	void okToCommitNoChanges() {
+		assertDoesNotThrow(subject::validateAndCommit);
 	}
 
 	@Test
@@ -101,6 +115,8 @@ class SizeLimitedStorageTest {
 		InOrder inOrder = Mockito.inOrder(storage);
 
 		givenNoSizeLimits();
+		givenMutableAccount(firstAccount, firstKvPairs);
+		givenMutableAccount(nextAccount, nextKvPairs);
 
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
@@ -342,6 +358,15 @@ class SizeLimitedStorageTest {
 		given(accounts.get(key)).willReturn(account);
 	}
 
+	private MerkleAccount givenMutableAccount(final AccountID id, final int initialKvPairs) {
+		final var key = EntityNum.fromAccountId(id);
+		final var account = mock(MerkleAccount.class);
+		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
+		given(accounts.get(key)).willReturn(account);
+		given(accounts.getForModify(key)).willReturn(account);
+		return account;
+	}
+
 	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
 		given(storage.get(key)).willReturn(value);
 		given(storage.containsKey(key)).willReturn(true);
@@ -353,7 +378,9 @@ class SizeLimitedStorageTest {
 	}
 
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
+	private static final EntityNum firstAccountKey = EntityNum.fromAccountId(firstAccount);
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
+	private static final EntityNum nextAccountKey = EntityNum.fromAccountId(nextAccount);
 	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");
 	private static final UInt256 bLiteralKey = UInt256.fromHexString("0xbbccdd");
 	private static final UInt256 aLiteralValue = UInt256.fromHexString("0x1234aa");

@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static java.util.Objects.requireNonNull;
@@ -86,6 +87,7 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
+		commitNewUsages();
 	}
 
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
@@ -115,7 +117,7 @@ public class SizeLimitedStorage {
 	}
 
 	private AtomicInteger kvPairsLookup(final Long num) {
-		final var account = accounts.get().get(EntityNum.fromLong(num));
+		final var account = accounts.get().get(fromLong(num));
 		if (account == null) {
 			return new AtomicInteger(0);
 		}
@@ -209,6 +211,17 @@ public class SizeLimitedStorage {
 				validateTrue(
 						newKvPairs.get() <= perContractMax,
 						MAX_CONTRACT_STORAGE_EXCEEDED));
+	}
+
+	private void commitNewUsages() {
+		if (newUsages.isEmpty()) {
+			return;
+		}
+		final var curAccounts = accounts.get();
+		newUsages.forEach((contractNum, kvPairs) -> {
+			final var mutableAccount = curAccounts.getForModify(fromLong(contractNum));
+			mutableAccount.setNumContractKvPairs(kvPairs.get());
+		});
 	}
 
 	private void commitPendingUpdates() {

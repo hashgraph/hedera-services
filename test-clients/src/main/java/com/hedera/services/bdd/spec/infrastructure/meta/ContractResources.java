@@ -60,6 +60,7 @@ public class ContractResources {
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
+	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
 
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
 	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
@@ -99,6 +100,14 @@ public class ContractResources {
 	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
 	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
 	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
+
+	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +
+			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
+			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String IMAP_USER_REMOVE = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\",\"type" +
+			"\":\"uint256\"}],\"name\":\"remove\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\"," +
+			"\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
