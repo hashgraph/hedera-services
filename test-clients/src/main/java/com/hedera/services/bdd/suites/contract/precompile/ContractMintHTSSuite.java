@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -326,7 +327,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var innerContract = "mintContract";
 		final var outerContract = "transferContract";
 		final var nestedTransferTxn = "nestedTransferTxn";
-		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
@@ -357,9 +357,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														getNestedContractAddress(innerContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
-														.gas(100_000),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(revisedKey.signedWith(sigs(ON,
-														outerContract, innerContract))),
+														.gas(300_000),
+												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+														outerContract))),
 												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
 												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
