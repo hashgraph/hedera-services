@@ -57,6 +57,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -74,6 +75,7 @@ import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
 	private final String accountIdLit = "0.0.12345";
+	private final AccountID targetAlias = asAccountWithAlias("alias");
 	private final AccountID target = asAccount(accountIdLit);
 	private final String contractIdLit = "0.0.12346";
 	private final long balance = 1_234L;
@@ -270,6 +272,17 @@ class GetAccountBalanceAnswerTest {
 
 		// expect:
 		assertEquals(ACCOUNT_DELETED, status);
+	}
+
+	@Test
+	void validatesIfIdExistsIfAlias() {
+		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+				.setAccountID(targetAlias)
+				.build();
+		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(targetAlias)).willReturn(AliasLookup.of(targetAlias, INVALID_ACCOUNT_ID));
+		ResponseCodeEnum status = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test

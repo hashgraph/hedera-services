@@ -42,6 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -106,6 +108,32 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newMemo, mutableContract.getMemo());
 		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
 	}
+
+	@Test
+	void invalidProxyFails() {
+		final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
+
+		var mutableContract = MerkleAccountFactory.newContract()
+				.accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+				.get();
+		var op = ContractUpdateTransactionBody.newBuilder()
+				.setContractID(target)
+				.setAdminKey(newAdminKey)
+				.setAutoRenewPeriod(newAutoRenew)
+				.setProxyAccountID(newProxy)
+				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
+				.setExpirationTime(newExpiryTime)
+				.build();
+		
+		given(ledger.lookUpAccountId(newProxy, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(newProxy, INVALID_ACCOUNT_ID));
+
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
+
+		assertEquals(INVALID_ACCOUNT_ID, result.getRight());
+		assertEquals(Optional.empty(), result.getLeft());
+	}
+
 
 	@Test
 	void rejectsInvalidExpiryMakesExpectedChanges() {

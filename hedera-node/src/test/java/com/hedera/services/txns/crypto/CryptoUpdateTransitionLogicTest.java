@@ -265,6 +265,18 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void failsIfInvalidAccount() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
+		given(ledger.lookUpAccountId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET,
+				INVALID_ACCOUNT_ID));
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
 	void hasCorrectApplicability() {
 		givenTxnCtx();
 
@@ -527,13 +539,5 @@ class CryptoUpdateTransitionLogicTest {
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-	}
-
-	private TransactionID txnIdWithAlias() {
-		return TransactionID.newBuilder()
-				.setAccountID(aliasAccountPayer)
-				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
-				.build();
 	}
 }
