@@ -358,6 +358,7 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(worldLedgers).commit();
+		verify(entityAccess).flushStorage();
 	}
 
 	@Test

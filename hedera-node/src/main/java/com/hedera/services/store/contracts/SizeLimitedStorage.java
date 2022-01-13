@@ -30,6 +30,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -38,9 +40,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
+@Singleton
 public class SizeLimitedStorage {
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
@@ -48,11 +54,14 @@ public class SizeLimitedStorage {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 
-	private Map<Long, AtomicInteger> newUsages = new TreeMap<>();
-	private Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
-	private Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
-	private Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
+	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
+	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
+	private final Map<ContractKey, ContractValue> newMappings = new HashMap<>();
 
+	private long totalKvPairs;
+
+	@Inject
 	public SizeLimitedStorage(
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
@@ -63,12 +72,20 @@ public class SizeLimitedStorage {
 		this.storage = storage;
 	}
 
-	public void reset() {
-		throw new AssertionError("Not implemented");
+	public void beginSession() {
+		newUsages.clear();
+		updatedKeys.clear();
+		removedKeys.clear();
+		newMappings.clear();
+
+		totalKvPairs = storage.get().size();
 	}
 
-	public void commit() {
-		throw new AssertionError("Not implemented");
+	public void validateAndCommit() {
+		validatePendingSizeChanges();
+
+		commitPendingRemovals();
+		commitPendingUpdates();
 	}
 
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
@@ -93,13 +110,14 @@ public class SizeLimitedStorage {
 				contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
 		if (kvCountImpact != 0) {
 			newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).getAndAdd(kvCountImpact);
+			totalKvPairs += kvCountImpact;
 		}
 	}
 
 	private AtomicInteger kvPairsLookup(final Long num) {
 		final var account = accounts.get().get(EntityNum.fromLong(num));
 		if (account == null) {
-			throw new AssertionError("Not implemented");
+			return new AtomicInteger(0);
 		}
 		return new AtomicInteger(account.getNumContractKvPairs());
 	}
@@ -173,13 +191,40 @@ public class SizeLimitedStorage {
 				/* If there was no extant mapping for this key, no reason to explicitly remove it when we commit. */
 				removedKeys.computeIfAbsent(key.getContractId(), TREE_SET_FACTORY).add(key);
 			}
-			/* But no matter what, _relative to our existing change set_, this removed one mapping. */
+			/* But no matter what, relative to our existing change set, this removed one mapping. */
 			return -1;
 		} else {
 			/* If this key didn't have a mapping or a pending change, it doesn't affect the size,
 			 * and there is also no reason to explicitly remove it when we commit. */
 			return 0;
 		}
+	}
+
+	private void validatePendingSizeChanges() {
+		validateTrue(
+				totalKvPairs <= dynamicProperties.maxAggregateContractKvPairs(),
+				MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
+		final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
+		newUsages.forEach((id, newKvPairs) ->
+				validateTrue(
+						newKvPairs.get() <= perContractMax,
+						MAX_CONTRACT_STORAGE_EXCEEDED));
+	}
+
+	private void commitPendingUpdates() {
+		if (newMappings.isEmpty()) {
+			throw new AssertionError("Not implemented");
+		}
+		final var curStorage = storage.get();
+		updatedKeys.forEach((id, changeSet) -> changeSet.forEach(k -> curStorage.put(k, newMappings.get(k))));
+	}
+
+	private void commitPendingRemovals() {
+		if (removedKeys.isEmpty()) {
+			return;
+		}
+		final var curStorage = storage.get();
+		removedKeys.forEach((id, zeroedOut) -> zeroedOut.forEach(curStorage::remove));
 	}
 
 	static Function<Long, TreeSet<ContractKey>> TREE_SET_FACTORY = ignore -> new TreeSet<>();
@@ -191,5 +236,21 @@ public class SizeLimitedStorage {
 	/* --- Only used by unit tests --- */
 	int usageSoFar(final AccountID id) {
 		return newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).get();
+	}
+
+	Map<Long, AtomicInteger> getNewUsages() {
+		return newUsages;
+	}
+
+	Map<Long, TreeSet<ContractKey>> getUpdatedKeys() {
+		return updatedKeys;
+	}
+
+	Map<Long, TreeSet<ContractKey>> getRemovedKeys() {
+		return removedKeys;
+	}
+
+	Map<ContractKey, ContractValue> getNewMappings() {
+		return newMappings;
 	}
 }

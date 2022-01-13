@@ -165,6 +165,11 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public void flushStorage() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void storeCode(AccountID id, Bytes code) {
 		throw new UnsupportedOperationException();
 	}

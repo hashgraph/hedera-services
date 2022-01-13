@@ -95,7 +95,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.defaultLifetime", 7890000L),
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
-			entry("contracts.maxKvPairs.aggregate", 500_000_000),
+			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 1_000_000),
 			entry("contracts.chainId", 1),
 			entry("contracts.throttle.throttleByGas", true),

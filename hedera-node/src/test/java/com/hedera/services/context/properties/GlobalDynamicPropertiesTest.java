@@ -335,7 +335,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
 		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
-		given(properties.getIntProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52);
+		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
 		given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
 	}
 

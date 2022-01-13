@@ -408,7 +408,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.defaultLifetime", AS_LONG),
 			entry("contracts.maxGas", AS_INT),
-			entry("contracts.maxKvPairs.aggregate", AS_INT),
+			entry("contracts.maxKvPairs.aggregate", AS_LONG),
 			entry("contracts.maxKvPairs.individual", AS_INT),
 			entry("contracts.chainId", AS_INT),
 			entry("contracts.maxRefundPercentOfGasLimit", AS_INT),

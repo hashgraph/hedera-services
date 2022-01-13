@@ -33,7 +33,9 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
@@ -44,6 +46,9 @@ import java.util.TreeSet;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.TREE_SET_FACTORY;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.incorporateKvImpact;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,15 +65,83 @@ class SizeLimitedStorageTest {
 	@Mock
 	private VirtualMap<ContractKey, ContractValue> storage;
 
-	private Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
-	private Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
-	private Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
+	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
+	private final Map<ContractKey, ContractValue> newMappings = new HashMap<>();
 
 	private SizeLimitedStorage subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new SizeLimitedStorage(dynamicProperties, () -> accounts, () -> storage);
+	}
+
+	@Test
+	void removesMappingsInOrder() {
+		InOrder inOrder = Mockito.inOrder(storage);
+
+		givenNoSizeLimits();
+		given(storage.containsKey(firstAKey)).willReturn(true);
+		given(storage.containsKey(firstBKey)).willReturn(true);
+		given(storage.containsKey(nextAKey)).willReturn(true);
+
+		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
+		subject.putStorage(firstAccount, bLiteralKey, UInt256.ZERO);
+		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
+
+		subject.validateAndCommit();
+
+		inOrder.verify(storage).remove(firstAKey);
+		inOrder.verify(storage).remove(firstBKey);
+		inOrder.verify(storage).remove(nextAKey);
+	}
+
+	@Test
+	void commitsMappingsInOrder() {
+		InOrder inOrder = Mockito.inOrder(storage);
+
+		givenNoSizeLimits();
+
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+		subject.putStorage(nextAccount, aLiteralKey, aLiteralValue);
+
+		subject.validateAndCommit();
+
+		inOrder.verify(storage).put(firstAKey, aValue);
+		inOrder.verify(storage).put(firstBKey, bValue);
+		inOrder.verify(storage).put(nextAKey, aValue);
+	}
+
+	@Test
+	void validatesSingleContractStorage() {
+		givenAccount(firstAccount, firstKvPairs);
+		given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(firstKvPairs + 1);
+		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
+
+		subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
+		subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
+
+		assertFailsWith(subject::validateAndCommit, MAX_CONTRACT_STORAGE_EXCEEDED);
+	}
+
+	@Test
+	void validatesMaxContractStorage() {
+		final var maxKvPairs = (long) firstKvPairs + nextKvPairs;
+		givenAccount(firstAccount, firstKvPairs);
+		givenAccount(nextAccount, nextKvPairs);
+		given(storage.size()).willReturn(maxKvPairs);
+		given(storage.containsKey(firstAKey)).willReturn(false);
+		given(storage.containsKey(firstBKey)).willReturn(false);
+		given(storage.containsKey(nextAKey)).willReturn(true);
+		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(maxKvPairs);
+
+		subject.beginSession();
+		subject.putStorage(firstAccount, aLiteralKey, bLiteralValue);
+		subject.putStorage(firstAccount, bLiteralKey, aLiteralValue);
+		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
+
+		assertFailsWith(subject::validateAndCommit, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
 	}
 
 	@Test
@@ -82,7 +155,7 @@ class SizeLimitedStorageTest {
 	}
 
 	@Test
-	void unbufferedUpdatesAreReturnedDirectly() {
+	void unbufferedValuesAreReturnedDirectly() {
 		given(storage.get(firstAKey)).willReturn(aValue);
 
 		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
@@ -90,10 +163,32 @@ class SizeLimitedStorageTest {
 	}
 
 	@Test
+	void resetsPendingChangesAsExpected() {
+		given(storage.containsKey(firstAKey)).willReturn(true);
+		given(storage.containsKey(nextAKey)).willReturn(true);
+
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+		subject.putStorage(nextAccount, aLiteralKey, UInt256.ZERO);
+
+		subject.beginSession();
+
+		assertTrue(subject.getNewUsages().isEmpty());
+		assertTrue(subject.getNewMappings().isEmpty());
+		assertTrue(subject.getUpdatedKeys().isEmpty());
+		assertTrue(subject.getRemovedKeys().isEmpty());
+	}
+
+	@Test
+	void initialKvForNotYetCreatedAccountIsZero() {
+		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
+
+		assertEquals(1, subject.usageSoFar(firstAccount));
+	}
+
+	@Test
 	void removedKeysAreRespected() {
 		givenAccount(firstAccount, firstKvPairs);
-		given(storage.get(firstAKey)).willReturn(aValue);
-		given(storage.containsKey(firstAKey)).willReturn(true);
+		givenContainedStorage(firstAKey, aValue);
 
 		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
 
@@ -104,6 +199,11 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
 		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, aLiteralKey));
 		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
+	}
+
+	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
+		given(storage.get(key)).willReturn(value);
+		given(storage.containsKey(key)).willReturn(true);
 	}
 
 	@Test
@@ -247,6 +347,11 @@ class SizeLimitedStorageTest {
 		given(accounts.get(key)).willReturn(account);
 	}
 
+	private void givenNoSizeLimits() {
+		given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(Integer.MAX_VALUE);
+		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
+	}
+
 	private static final AccountID firstAccount = IdUtils.asAccount("0.0.1234");
 	private static final AccountID nextAccount = IdUtils.asAccount("0.0.2345");
 	private static final UInt256 aLiteralKey = UInt256.fromHexString("0xaabbcc");
@@ -254,7 +359,10 @@ class SizeLimitedStorageTest {
 	private static final UInt256 aLiteralValue = UInt256.fromHexString("0x1234aa");
 	private static final UInt256 bLiteralValue = UInt256.fromHexString("0x1234bb");
 	private static final ContractKey firstAKey = ContractKey.from(firstAccount, aLiteralKey);
+	private static final ContractKey firstBKey = ContractKey.from(firstAccount, bLiteralKey);
+	private static final ContractKey nextAKey = ContractKey.from(nextAccount, aLiteralKey);
 	private static final ContractValue aValue = ContractValue.from(aLiteralValue);
 	private static final ContractValue bValue = ContractValue.from(bLiteralValue);
 	private static final int firstKvPairs = 5;
+	private static final int nextKvPairs = 6;
 }
