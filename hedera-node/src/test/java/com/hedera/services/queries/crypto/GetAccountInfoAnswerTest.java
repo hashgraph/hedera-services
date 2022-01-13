@@ -319,6 +319,18 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	void failsWithInvalidAliasLookup() throws Throwable {
+		EntityNum entityNum = EntityNum.fromAccountId(payerId);
+		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
+
+		given(aliasManager.lookUpAccountID(any())).willReturn(
+				AliasLookup.of(entityNum.toGrpcAccountId(), INVALID_ACCOUNT_ID));
+
+		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, validity);
+	}
+
+	@Test
 	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee, target);

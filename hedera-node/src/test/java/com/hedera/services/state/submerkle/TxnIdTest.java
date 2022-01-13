@@ -20,6 +20,8 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasLookup;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,12 +30,16 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.util.function.Supplier;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,9 +51,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+@ExtendWith(MockitoExtension.class)
 class TxnIdTest {
 	private static final int nonce = 123;
 	private final AccountID payer = IdUtils.asAccount("0.0.75231");
+	private final AccountID payerWithAlias = IdUtils.asAccountWithAlias("alias");
 	private final EntityId fcPayer = EntityId.fromGrpcAccountId(payer);
 	private final Timestamp validStart = Timestamp.newBuilder()
 			.setSeconds(1_234_567L)
@@ -58,6 +66,9 @@ class TxnIdTest {
 	private DomainSerdes serdes;
 	private SerializableDataInputStream din;
 	private SerializableDataOutputStream dout;
+
+	@Mock
+	AliasManager aliasManager;
 
 	TxnId subject;
 
@@ -266,6 +277,13 @@ class TxnIdTest {
 		assertEquals(TxnId.RELEASE_0210_VERSION, subject.getVersion());
 	}
 
+	@Test
+	void fromGrpcReadsAccountIDFromAliasManager() {
+		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
+		var subject = TxnId.fromGrpc(baseWithAlias().build(), aliasManager);
+		assertEquals(EntityId.fromGrpcAccountId(payer), subject.getPayerAccount());
+	}
+
 	private TxnId unscheduledSubject() {
 		return TxnId.fromGrpc(base().build());
 	}
@@ -286,6 +304,13 @@ class TxnIdTest {
 	private TransactionID.Builder base() {
 		return TransactionID.newBuilder()
 				.setAccountID(payer)
+				.setNonce(nonce)
+				.setTransactionValidStart(validStart);
+	}
+
+	private TransactionID.Builder baseWithAlias() {
+		return TransactionID.newBuilder()
+				.setAccountID(payerWithAlias)
 				.setNonce(nonce)
 				.setTransactionValidStart(validStart);
 	}

@@ -296,6 +296,7 @@ public class TxnReceipt implements SelfSerializable {
 	}
 
 	/* ---  Helpers --- */
+	// All these to look up in aliasManager ?
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
 		final var effRates = grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
