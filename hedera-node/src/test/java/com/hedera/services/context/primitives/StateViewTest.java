@@ -87,7 +87,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -928,14 +927,18 @@ class StateViewTest {
 	@Test
 	void infoForAccountNftsWorks() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
-		final List<TokenNftInfo> mockInfo = new ArrayList<>();
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		var info = TokenNftInfo.newBuilder();
+		var expectedInfo = List.of(info.setLedgerId(networkInfo.ledgerId()).build());
+		final List<TokenNftInfo> mockInfo = List.of(info.build());
 
 		given(uniqTokenView.ownedAssociations(tokenAccountId, 3L, 4L)).willReturn(mockInfo);
 
 		final var result = subject.infoForAccountNfts(tokenAccountId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
-		assertSame(mockInfo, result.get());
+		assertEquals(expectedInfo, result.get());
 	}
 
 	@Test
@@ -946,14 +949,18 @@ class StateViewTest {
 
 	@Test
 	void infoForTokenNftsWorks() {
-		final List<TokenNftInfo> mockInfo = new ArrayList<>();
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		var info = TokenNftInfo.newBuilder();
+		var expectedInfo = List.of(info.setLedgerId(networkInfo.ledgerId()).build());
+		final List<TokenNftInfo> mockInfo = List.of(info.build());
 
 		given(uniqTokenView.typedAssociations(nftTokenId, 3L, 4L)).willReturn(mockInfo);
 
 		final var result = subject.infosForTokenNfts(nftTokenId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
-		assertSame(mockInfo, result.get());
+		assertEquals(expectedInfo, result.get());
 	}
 
 	@Test
