@@ -104,7 +104,7 @@ public class ImpliedTransfersMarshal {
 			}
 		}
 
-		final var validity = isPureValidated(op);
+		final var validity = validityWithCurrentProps(op);
 		if (validity != OK) {
 			return ImpliedTransfers.invalid(props, validity);
 		}
@@ -125,7 +125,7 @@ public class ImpliedTransfersMarshal {
 		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
 	}
 
-	public ResponseCodeEnum isPureValidated(CryptoTransferTransactionBody op) {
+	public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
 		return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps());
 	}
 
@@ -165,9 +165,18 @@ public class ImpliedTransfersMarshal {
 		for (var xfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = xfers.getToken();
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
+
+			boolean decimalsSet = false;
 			for (var aa : xfers.getTransfersList()) {
-				changes.add(changingFtUnits(tokenId, grpcTokenId, aa));
+				var change = changingFtUnits(tokenId, grpcTokenId, aa);
+				// set only for the first balance change of the token with expectedDecimals
+				if (xfers.hasExpectedDecimals() && !decimalsSet) {
+					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
+					decimalsSet = true;
+				}
+				changes.add(change);
 			}
+
 			for (var oc : xfers.getNftTransfersList()) {
 				if (ownershipChanges == null) {
 					ownershipChanges = new ArrayList<>();

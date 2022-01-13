@@ -151,4 +151,9 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public boolean matchesTokenDecimals(final TokenID tId, final int expectedDecimals) {
+		throw new UnsupportedOperationException();
+	}
 }

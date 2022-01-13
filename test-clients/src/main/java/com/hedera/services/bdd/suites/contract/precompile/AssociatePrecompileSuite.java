@@ -67,8 +67,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -156,8 +158,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Function call with less than four bytes fails within single contract call")
 				.given(
-						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT).path(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_GRACEFULLY_FAILING_CONTRACT,
+								extractByteCode(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -198,8 +202,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Invalid Abi Call Gracefully Fails Within Single Contract Call")
 				.given(
-						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT).path(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_GRACEFULLY_FAILING_CONTRACT,
+								extractByteCode(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -226,7 +232,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 																asAddress(vanillaTokenID.get()))
 												)
 														.payingWith(GENESIS)
-														.gas(2_000_000)
+														.gas(4_000_000)
 														.via("Invalid Abi Function call txn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("Invalid Abi Function call txn").andAllChildRecords().logged()
@@ -249,8 +255,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT).path(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_GRACEFULLY_FAILING_CONTRACT,
+								extractByteCode(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -290,8 +298,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("NonSupportedAbiCallGracefullyFails")
 				.given(
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -334,8 +344,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
 				.given(
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -377,8 +389,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithContractKeyFails")
 				.given(
-						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT)
+								.exposingCreatedIdTo(accountID::set),
+						fileCreate(INNER_CONTRACT),
+						updateLargeFile(ACCOUNT, INNER_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						fileCreate(OUTER_CONTRACT),
+						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
+								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
 						contractCreate(INNER_CONTRACT)
 								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
@@ -386,9 +404,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -423,8 +439,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks")
 				.given(
-						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT)
+								.exposingCreatedIdTo(accountID::set),
+						fileCreate(INNER_CONTRACT),
+						updateLargeFile(ACCOUNT, INNER_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						fileCreate(OUTER_CONTRACT),
+						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
+								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
 						contractCreate(INNER_CONTRACT)
 								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
@@ -432,9 +454,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set)
+								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
+
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -469,13 +490,17 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("StaticCallForAssociatePrecompileFails")
 				.given(
-						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
+						cryptoCreate(ACCOUNT)
+								.exposingCreatedIdTo(accountID::set),
+						fileCreate(INNER_CONTRACT),
+						updateLargeFile(ACCOUNT, INNER_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						fileCreate(OUTER_CONTRACT),
+						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
+								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
 						contractCreate(INNER_CONTRACT)
 								.bytecode(INNER_CONTRACT)
 								.gas(100_000),
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -517,10 +542,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(FREEZE_KEY),
 						newKeyNamed(KYC_KEY),
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -583,14 +610,18 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("nestedAssociateWorksAsExpected")
 				.given(
-						fileCreate(INNER_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
-						fileCreate(OUTER_CONTRACT).path(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT),
-						contractCreate(INNER_CONTRACT)
-								.bytecode(INNER_CONTRACT)
-								.gas(100_000),
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
+						fileCreate(INNER_CONTRACT),
+						updateLargeFile(ACCOUNT, INNER_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						fileCreate(OUTER_CONTRACT),
+						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
+								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
+						contractCreate(INNER_CONTRACT)
+								.bytecode(INNER_CONTRACT)
+								.gas(100_000),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -628,8 +659,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleVanilla")
 				.given(
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -681,8 +714,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleFrozen")
 				.given(
 						newKeyNamed(FREEZE_KEY),
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FROZEN_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -737,8 +772,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleWithKYC")
 				.given(
 						newKeyNamed(KYC_KEY),
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(KYC_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -790,8 +827,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleVanilla")
 				.given(
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
@@ -844,8 +883,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen")
 				.given(
 						newKeyNamed(FREEZE_KEY),
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FROZEN_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
@@ -900,8 +941,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC")
 				.given(
 						newKeyNamed(KYC_KEY),
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(KYC_TOKEN)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
@@ -955,8 +998,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
 				.given(
-						fileCreate(THE_CONTRACT).path(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)

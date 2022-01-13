@@ -13,7 +13,7 @@ contract NestedBurn is HederaTokenService {
         mintTokenContract = MintTokenContract(_mintTokenContractAddress);
     }
 
-   function BurnAfterNestedMint(uint64 amount, address tokenAddress, int64[] memory serialNumbers) public {
+   function burnAfterNestedMint(uint64 amount, address tokenAddress, int64[] memory serialNumbers) public {
        mintTokenContract.mintToken(amount, tokenAddress);
 
         (int response, uint64 newTotalSupply) = HederaTokenService.burnToken(tokenAddress, amount, serialNumbers);
