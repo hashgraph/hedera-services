@@ -27,8 +27,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
@@ -77,6 +77,7 @@ class GetMerkleTopicInfoAnswerTest {
 	String node = "0.0.3";
 	String payer = "0.0.12345";
 	String target = "3.2.1";
+	String missingTarget = "1.2.3";
 	String memo = "This was Mr. Bleaney's room...";
 	String idLit = "0.0.12345";
 	long expiry = 1_234_567L;
@@ -264,6 +265,19 @@ class GetMerkleTopicInfoAnswerTest {
 		assertEquals(merkleTopic.getSequenceNumber(), info.getSequenceNumber());
 		assertEquals(merkleTopic.getMemo(), info.getMemo());
 		assertEquals(ledgerId, info.getLedgerId());
+	}
+
+	@Test
+	void failsAsExpectedWhenFetchingMissingTopicInfo() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, missingTarget);
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasConsensusGetTopicInfo());
+		assertEquals(OK, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test

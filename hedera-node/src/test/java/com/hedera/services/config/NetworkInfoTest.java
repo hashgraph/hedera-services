@@ -20,33 +20,44 @@ package com.hedera.services.config;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
-class HederaNumbersTest {
+@ExtendWith(MockitoExtension.class)
+public class NetworkInfoTest {
+
+	@Mock
 	PropertySource properties;
-	HederaNumbers subject;
+
+	NetworkInfo subject;
 
 	@BeforeEach
-	private void setup() {
-		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(123L);
-		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
-
-		subject = new HederaNumbers(properties);
+	void setUp() {
+		subject = new NetworkInfo(properties);
 	}
 
 	@Test
-	void hasExpectedNumbers() {
-		// expect:
-		assertEquals(1L, subject.shard());
-		assertEquals(2L, subject.realm());
-		assertEquals(123L, subject.numReservedSystemEntities());
+	void getsDefaultLedgerIdWhenMissingProperty() {
+		given(properties.containsProperty("ledger.id")).willReturn(false);
+
+		assertEquals(ByteString.copyFromUtf8("0x03"), subject.ledgerId());
+	}
+
+	@Test
+	void getsLedgerIdFromProperties() {
+		final var ledgerId = "0xff";
+		final var ledgerID = ByteString.copyFromUtf8(ledgerId);
+		given(properties.containsProperty("ledger.id")).willReturn(true);
+		given(properties.getStringProperty("ledger.id")).willReturn(ledgerId);
+
+		assertEquals(ledgerID, subject.ledgerId());
 	}
 }
