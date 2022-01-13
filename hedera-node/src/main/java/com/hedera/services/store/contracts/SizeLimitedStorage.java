@@ -213,7 +213,7 @@ public class SizeLimitedStorage {
 
 	private void commitPendingUpdates() {
 		if (newMappings.isEmpty()) {
-			throw new AssertionError("Not implemented");
+			return;
 		}
 		final var curStorage = storage.get();
 		updatedKeys.forEach((id, changeSet) -> changeSet.forEach(k -> curStorage.put(k, newMappings.get(k))));
