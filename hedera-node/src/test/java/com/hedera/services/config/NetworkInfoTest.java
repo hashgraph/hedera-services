@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class NetworkInfoTest {
+class NetworkInfoTest {
 
 	@Mock
 	PropertySource properties;
