@@ -29,7 +29,8 @@ import javax.inject.Singleton;
 
 @Singleton
 public class NetworkInfo {
-	private final String defaultLedgerId = "0x03";
+	private static final String DEFAULT_LEDGER_ID = "0x03";
+
 	private final PropertySource properties;
 	private ByteString ledgerId;
 
@@ -43,7 +44,7 @@ public class NetworkInfo {
 			if (properties.containsProperty("ledger.id")) {
 				ledgerId = ByteString.copyFromUtf8(properties.getStringProperty("ledger.id"));
 			} else {
-				ledgerId = ByteString.copyFromUtf8(defaultLedgerId);
+				ledgerId = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
 			}
 		}
 		return ledgerId;
