@@ -574,8 +574,9 @@ public class StateView {
 	}
 
 	private List<TokenNftInfo> addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
-		return tokenNftInfoList.stream().map(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build())
-				.collect(Collectors.toList());
+		return tokenNftInfoList.stream()
+				.map(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build())
+				.toList();
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {
