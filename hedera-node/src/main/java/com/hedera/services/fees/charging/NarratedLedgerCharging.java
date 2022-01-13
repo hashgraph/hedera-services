@@ -215,8 +215,4 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	public AccountID getGrpcPayerId() {
 		return grpcPayerId;
 	}
-
-	public EntityNum getPayerId() {
-		return payerId;
-	}
 }

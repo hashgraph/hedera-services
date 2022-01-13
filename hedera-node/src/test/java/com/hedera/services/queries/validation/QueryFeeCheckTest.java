@@ -341,6 +341,16 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
+	void adjustmentAccountValidated() {
+		given(aliasManager.lookUpAccountID(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
+		final var adjustment = adjustmentWith(invalidAlias, aLot);
+
+		final var status = subject.adjustmentPlausibility(adjustment);
+
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
 	void validateQueryPaymentSucceedsWithAliasPayer() {
 		final long amount = 8;
 		final var body = getPaymentTxnBodyWithAlias(amount, null, aRichAlias, aRichAlias);

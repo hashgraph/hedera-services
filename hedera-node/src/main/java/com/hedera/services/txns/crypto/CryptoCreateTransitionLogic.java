@@ -23,7 +23,6 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -107,8 +106,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
-		} catch (MissingAccountException ex) {
-			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (InsufficientFundsException ife) {
 			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
 		} catch (Exception e) {

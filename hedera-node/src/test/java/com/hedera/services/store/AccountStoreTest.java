@@ -249,6 +249,12 @@ class AccountStoreTest {
 		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
 	}
 
+	@Test
+	void considersAccountNumAsPriority() {
+		assertEquals(validAccountWithAlias.getAccountNum(), subject.
+				getAccountNumFromAlias(validAccountWithAlias.getAlias(), validAccountWithAlias.getAccountNum()));
+	}
+
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
 		given(accounts.get(anId)).willReturn(anAccount);
 	}
@@ -300,6 +306,10 @@ class AccountStoreTest {
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);
 	private final AccountID validAlias = IdUtils.asAccountWithAlias("aaa");
+	private final AccountID validAccountWithAlias = AccountID.newBuilder()
+			.setShardNum(0).setRealmNum(0).setAccountNum(20)
+			.setAlias(ByteString.copyFromUtf8("alias"))
+			.build();
 
 	private MerkleAccount miscMerkleAccount;
 }
