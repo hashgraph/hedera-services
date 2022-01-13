@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFTS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
@@ -128,7 +129,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 				depositAndWithdrawFungibleTokens(),
 				transferNft(),
 				transferMultipleNfts(),
-				tokenTransferFromFeeCollector()
+				tokenTransferFromFeeCollector(),
+				tokenTransferFromFeeCollectorStaticNestedCall()
 		);
 	}
 
@@ -438,6 +440,149 @@ public class ContractHTSSuite extends HapiApiSuite {
 											)
 													.payingWith(ACCOUNT)
 													.gas(110_000)
+													.via("failingChildFrameTx")
+													.alsoSigningWithFullPrefix(RECEIVER)
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+								})
+
+				).then(
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -10L)
+														.including(A_TOKEN, RECEIVER, 5L)
+														.including(A_TOKEN, SECOND_RECEIVER, 5L)
+										),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+														.including(FEE_TOKEN, ACCOUNT, 100L)
+										)),
+
+						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INVALID_SIGNATURE)),
+
+						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.status(INSUFFICIENT_TOKEN_BALANCE)),
+
+						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
+						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
+				);
+	}
+
+	private HapiApiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
+		return defaultHapiSpec("TokenTransferFromFeeCollector")
+				.given(
+						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+						cryptoCreate(FEE_COLLECTOR),
+						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
+						cryptoCreate(SECOND_RECEIVER),
+						cryptoCreate(TOKEN_TREASURY),
+
+						tokenCreate(FEE_TOKEN)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+
+						tokenAssociate(FEE_COLLECTOR, FEE_TOKEN),
+
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(100L, FEE_TOKEN, FEE_COLLECTOR)),
+
+						tokenAssociate(ACCOUNT, A_TOKEN),
+						tokenAssociate(RECEIVER, A_TOKEN),
+						tokenAssociate(SECOND_RECEIVER, A_TOKEN),
+
+						cryptoTransfer(moving(TOTAL_SUPPLY, FEE_TOKEN)
+								.between(TOKEN_TREASURY, ACCOUNT)),
+						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
+								.between(TOKEN_TREASURY, ACCOUNT)),
+
+						fileCreate("bytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
+						withOpContext(
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(28_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(28_000));
+								})
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
+
+									final var accounts = List.of(sender, receiver1, receiver2);
+									final var amounts = List.of(-10L, 5L, 5L);
+
+									/* --- HSCS-PREC-009 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("distributeTx")
+													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
+													.hasKnownStatus(SUCCESS));
+
+									/* --- HSCS-PREC-018 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
+													.via("missingSignatureTx")
+													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+
+									/* --- HSCS-PREC-023 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL,
+													asAddress(spec.registry().getTokenID(A_TOKEN)),
+													asAddress(spec.registry().getTokenID(FEE_TOKEN)),
+													accounts.toArray(),
+													amounts.toArray(),
+													asAddress(spec.registry().getAccountID(RECEIVER))
+											)
+													.payingWith(ACCOUNT)
+													.gas(48_000)
 													.via("failingChildFrameTx")
 													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));

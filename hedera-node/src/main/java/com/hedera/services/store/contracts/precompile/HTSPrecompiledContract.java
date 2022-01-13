@@ -84,6 +84,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -276,8 +277,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Bytes input,
 			final Precompile precompile
 	) {
-		final var contract = frame.getContractAddress();
-		final var recipient = frame.getRecipientAddress();
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
@@ -286,7 +285,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ExpirableTxnRecord.Builder childRecord;
 		try {
 			synthBody = precompile.body(input);
-			childRecord = precompile.run(recipient, contract, ledgers);
+			childRecord = precompile.run(frame, ledgers);
 
 			if (precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
 				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
@@ -399,7 +398,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface Precompile {
 		TransactionBody.Builder body(final Bytes input);
 
-		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final WorldLedgers ledgers);
+		ExpirableTxnRecord.Builder run(final MessageFrame frame,
+									   final WorldLedgers ledgers);
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -407,15 +407,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			accountId.asEvmAddress();
+			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -452,15 +452,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			final var hasRequiredSigs =  validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -503,15 +502,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(mintOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -600,8 +598,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			var changes = constructBalanceChanges(transferOp);
@@ -636,12 +633,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validator,
 					null,
 					recordsHistorian);
+
 			for (int i = 0, n = changes.size(); i < n; i++) {
 				final var change = changes.get(i);
 				final var units = change.units();
 				if (change.isForNft() || units < 0) {
-					final var hasSenderSig = sigsVerifier.hasActiveKey(
-							change.getAccount(), recipient, contract);
+					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
 				if (i >= numExplicitChanges) {
@@ -650,11 +647,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
-					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
+					hasReceiverSigIfReq = validateKey(frame, asTypedSolidityAddress(change.counterPartyAccountId()),
+							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {
-					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-									change.getAccount().asEvmAddress(), recipient, contract);
+					hasReceiverSigIfReq = validateKey(frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
@@ -662,6 +658,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			transferLogic.doZeroSum(changes);
 
 			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+		}
+
+		private AccountAmount aaWith(final AccountID account, final long amount) {
+			return AccountAmount.newBuilder()
+					.setAccountID(account)
+					.setAmount(amount)
+					.build();
 		}
 	}
 
@@ -676,15 +679,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(burnOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -704,11 +706,70 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private static final AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
+	/**
+	 * We check the current frame properties to determine one of the following 3 cases:
+	 *
+	 *	1. We have a delegatecall to the precompile. We check the recipient address (address of the contract that
+	 * 	invoked the precompile)  of the current frame (precompile frame) against a Delegate Contract ID signature.
+	 *  2. We have a call to the precompile, but the contract that called the precompile has been invoked from a
+	 *  delegatecall. We check the sender address of the current frame (the address that made the delegatecall)
+	 *  against a Delegate Contract ID signature.
+	 *  3. All the rest cases. We check the sender address of the current frame against a Contract ID
+	 *  signature or a Delegate Contract ID signature.
+	 *
+	 * @param frame current frame
+	 * @param target the element to test for key activation
+	 * @param function the function which should be invoked for key validation
+	 * @return boolean value showing whether we have a valid key
+	 */
+	private boolean validateKey(final MessageFrame frame,final Address target,
+									   final TetraFunction<Address, Address, Address, Address, Boolean> function) {
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		final var sender = frame.getSenderAddress();
+
+		final var parentFrame = getParentFrame(frame);
+		final var isCurrentFrameWithDelegateCall = isFrameWithDelegateCall(frame);
+		final var isParentFrameWithDelegateCall = parentFrame.isPresent() && isFrameWithDelegateCall(parentFrame.get());
+
+		if(isCurrentFrameWithDelegateCall) {
+			return function.apply(target, recipient, contract, recipient);
+		} else if(isParentFrameWithDelegateCall) {
+			final var recipientFromParent = parentFrame.get().getRecipientAddress();
+			return function.apply(target, recipientFromParent, contract, sender);
+		} else {
+			return function.apply (target, recipient, contract, sender);
+		}
+	}
+
+	@FunctionalInterface
+	private interface TetraFunction<S, T, U, V, R> {
+		R apply(S s, T t, U u, V v);
+	}
+
+	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {
+		final var it = currentFrame.getMessageFrameStack().descendingIterator();
+
+		if(it.hasNext()) {
+			it.next();
+		} else {
+			return Optional.empty();
+		}
+
+		MessageFrame parentFrame;
+		if(it.hasNext()) {
+			parentFrame = it.next();
+		} else {
+			return Optional.empty();
+		}
+
+		return Optional.of(parentFrame);
+	}
+
+	private boolean isFrameWithDelegateCall(final MessageFrame frame) {
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		return !contract.equals(recipient);
 	}
 
 	/* --- Only used by unit tests --- */

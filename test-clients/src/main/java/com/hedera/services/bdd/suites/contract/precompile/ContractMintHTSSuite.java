@@ -51,7 +51,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -73,19 +72,21 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
-	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
+	private static final KeyShape SIMPLE_AND_DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
 			DELEGATE_CONTRACT);
-	private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
+	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, DELEGATE_CONTRACT);
+	private static final String DELEGATE_CONTRACT_KEY_NAME = "delegateContractKey";
+	private static final String SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME = "simpleAndDelegateContractKey";
 
 	public static void main(String... args) {
 		new ContractMintHTSSuite().runSuiteAsync();
@@ -326,7 +327,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var innerContract = "mintContract";
 		final var outerContract = "transferContract";
 		final var nestedTransferTxn = "nestedTransferTxn";
-		final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
@@ -357,10 +357,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														getNestedContractAddress(innerContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
-														.gas(100_000),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(revisedKey.signedWith(sigs(ON,
-														outerContract, innerContract))),
-												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
+														.gas(300_000),
+												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(outerContract))),
+												newKeyNamed(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME).shape(SIMPLE_AND_DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
+												cryptoUpdate(TOKEN_TREASURY).key(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME),
 												tokenUpdate(nonFungibleToken).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
 														ContractResources.NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI,
@@ -416,9 +416,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(fungibleToken)))
 														.bytecode(theContract)
 														.gas(100_000L),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+												newKeyNamed(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME).shape(SIMPLE_AND_DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														theContract))),
-												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
+												cryptoUpdate(theAccount).key(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(theContract,
 														ContractResources.REVERT_AFTER_FAILED_MINT,
 														asAddress(spec.registry().getAccountID(theAccount)),
@@ -474,9 +474,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
 														.gas(100_000L),
-												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+												newKeyNamed(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME).shape(SIMPLE_AND_DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
-												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
+												cryptoUpdate(theAccount).key(SIMPLE_AND_DELEGATE_CONTRACT_KEY_NAME),
 												contractCall(outerContract,
 														ContractResources.REVERT_MINT_AFTER_FAILED_ASSOCIATE,
 														asAddress(spec.registry().getAccountID(theAccount)),

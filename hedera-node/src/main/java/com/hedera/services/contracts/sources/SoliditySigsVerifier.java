@@ -22,7 +22,6 @@ package com.hedera.services.contracts.sources;
  *
  */
 
-import com.hedera.services.store.models.Id;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface SoliditySigsVerifier {
@@ -37,12 +36,13 @@ public interface SoliditySigsVerifier {
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
 	 *
-	 * @param accountId the account to test for key activation
+	 * @param account the address of the account to test for key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param contractToBeChecked the address of the contract that should be signed in the key
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveKey(Id accountId, Address recipient, Address contract);
+	boolean hasActiveKey(Address account, Address recipient, Address contract, Address contractToBeChecked);
 
 	/**
 	 * Determines if the target account <b>either</b> has no receiver sig requirement; or an active key given
@@ -58,9 +58,11 @@ public interface SoliditySigsVerifier {
 	 * @param target the account to test for receiver sig requirement and key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param contractToBeChecked the address of the contract that should be signed in the key
 	 * @return false if the account requires a receiver sig but has no active key; true otherwise
 	 */
-	boolean hasActiveKeyOrNoReceiverSigReq(Address target, Address recipient, Address contract);
+	boolean hasActiveKeyOrNoReceiverSigReq(Address target, Address recipient, Address contract,
+										   Address contractToBeChecked);
 
 	/**
 	 * Determines if the target token has an active supply key given the cryptographic signatures from the
@@ -73,10 +75,11 @@ public interface SoliditySigsVerifier {
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
 	 *
-	 * @param tokenId the id of the token to test for supply key activation
+	 * @param token the address of the token to test for supply key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param contractToBeChecked the address of the contract that should be signed in the key
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveSupplyKey(Id tokenId, Address recipient, Address contract);
+	boolean hasActiveSupplyKey(Address token, Address recipient, Address contract, Address contractToBeChecked);
 }

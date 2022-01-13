@@ -127,14 +127,14 @@ class HederaCallOperationTest {
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);
 
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(false);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(false);
 		var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), invalidSignaturesRes.getHaltReason());
 	}
