@@ -84,5 +84,12 @@ public interface EntityAccess {
 	/* --- Bytecode access --- */
 	void storeCode(AccountID id, Bytes code);
 
-	Bytes fetchCode(AccountID id);
+	/**
+	 * Returns the bytecode for the contract with the given account id; or null
+	 * if there is no byte present for this contract.
+	 *
+	 * @param id the account id of the target contract
+	 * @return the target contract's bytecode, or null if it is not present
+	 */
+	Bytes fetchCodeIfPresent(AccountID id);
 }
