@@ -121,7 +121,7 @@ class HederaStaticCallOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(addressValidator.test(any(), any())).willReturn(true);
 

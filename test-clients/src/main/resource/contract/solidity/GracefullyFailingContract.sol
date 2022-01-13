@@ -5,16 +5,16 @@ import "./HederaTokenService.sol";
 
 contract GracefullyFailingContract is HederaTokenService {
 
-    function performNonExistingServiceFunctionCall(address sender, address tokenAddress) public {
+    function performNonExistingServiceFunctionCall(address sender, address token) public {
         precompileAddress.delegatecall(abi.encodeWithSelector(FakeHederaTokenService.fakeFunction.selector, address(this)));
 
-        int firstSuccessResponse = HederaTokenService.associateToken(sender, tokenAddress);
+        int firstSuccessResponse = HederaTokenService.associateToken(sender, token);
 
         if (firstSuccessResponse != HederaResponseCodes.SUCCESS) {
             revert ("Associate Failed");
         }
 
-        int secondSuccessResponse = HederaTokenService.dissociateToken(sender, tokenAddress);
+        int secondSuccessResponse = HederaTokenService.dissociateToken(sender, token);
 
         if (secondSuccessResponse != HederaResponseCodes.SUCCESS) {
             revert ("Dissociate Failed");
@@ -36,12 +36,33 @@ contract GracefullyFailingContract is HederaTokenService {
             revert ("Multiple Dissociations Failed");
         }
     }
+
+    function performLessThanFourBytesFunctionCall(address sender, address token) public {
+        precompileAddress.delegatecall(abi.encode("0xcdcd"));
+
+        int firstSuccessResponse = HederaTokenService.associateToken(sender, token);
+
+        if (firstSuccessResponse != HederaResponseCodes.SUCCESS) {
+            revert ("Associate Failed");
+        }
+
+        int secondSuccessResponse = HederaTokenService.dissociateToken(sender, token);
+
+        if (secondSuccessResponse != HederaResponseCodes.SUCCESS) {
+            revert ("Dissociate Failed");
+        }
+    }
+
+    function performInvalidlyFormattedSingleFunctionCall(address sender) public {
+        (bool success, bytes memory result) =
+        precompileAddress.delegatecall(abi.encodeWithSelector(FakeHederaTokenService.associateTokens.selector, sender));
+        if (!success) {
+            revert("Invalidly Formatted Single Function Call failed!");
+        }
+    }
 }
 
 interface FakeHederaTokenService {
-    function fakeFunction(address account) external;
-    function associateTokens(address account) external returns (int responseCode);
+    function fakeFunction(address sender) external;
+    function associateTokens(address sender) external returns (int responseCode);
 }
-
-
-

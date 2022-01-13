@@ -55,6 +55,7 @@ import static org.mockito.BDDMockito.verify;
 class HederaOperationUtilTest {
 	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
 	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
+	private static final Address PRETEND_SENDER_ADDR = Address.ALTBN128_PAIRING;
 
 	@Mock
 	private MessageFrame messageFrame;
@@ -238,11 +239,12 @@ class HederaOperationUtilTest {
 		final var mockTarget = Address.ZERO;
 		given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 		given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_PAIRING);
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(mockTarget, Address.ALTBN128_ADD, Address.ALTBN128_MUL))
+				.hasActiveKeyOrNoReceiverSigReq(mockTarget, Address.ALTBN128_ADD, Address.ALTBN128_MUL, Address.ALTBN128_PAIRING))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
 
@@ -262,7 +264,8 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR
+				, PRETEND_SENDER_ADDR);
 		verify(gasSupplier).get();
 		verify(executionSupplier, never()).get();
 	}
@@ -276,7 +279,7 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR))
+				.hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR))
 				.willReturn(true);
 		given(executionSupplier.get())
 				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
@@ -297,7 +300,8 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR
+				, PRETEND_SENDER_ADDR);
 		verify(gasSupplier, never()).get();
 		verify(executionSupplier).get();
 	}
@@ -305,5 +309,6 @@ class HederaOperationUtilTest {
 	private void givenFrameAddresses() {
 		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);
 		given(messageFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDR);
+		given(messageFrame.getSenderAddress()).willReturn(PRETEND_SENDER_ADDR);
 	}
 }
