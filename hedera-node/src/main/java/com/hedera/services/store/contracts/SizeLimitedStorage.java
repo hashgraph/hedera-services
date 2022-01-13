@@ -52,19 +52,22 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 /**
- * Buffers a set of key/value changes to contract storage, and validates that their net effect will not cause
- * any individual contract to exceed the limit set by {@link GlobalDynamicProperties#maxIndividualContractKvPairs()};
- * or the aggregate storage to exceed {@link GlobalDynamicProperties#maxAggregateContractKvPairs()}.
+ * Buffers a set of changes to the key/value pairs in contract storage into a <i>session</i>, and validates that their net
+ * effect will not cause any individual contract to exceed the limit set by {@link GlobalDynamicProperties#maxIndividualContractKvPairs()};
+ * nor the aggregate storage to exceed {@link GlobalDynamicProperties#maxAggregateContractKvPairs()}.
  *
- * Note that writing {@link UInt256#ZERO} to a key removes it from the map; so it is possible for the net effect
- * to actually reduce the number of key/value pairs used.
+ * Note that writing {@link UInt256#ZERO} to a key removes it from the map; so it is possible for a change to decrease
+ * the number of key/value pairs used.
  */
 @Singleton
 public class SizeLimitedStorage {
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
+	/* Used to get the key/value storage limits */
 	private final GlobalDynamicProperties dynamicProperties;
+	/* Used to look up the initial key/value counts for the contracts involved in a change set */
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	/* Used to both read and write key/value pairs throughout the lifecycle of a change set */
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
@@ -85,15 +88,24 @@ public class SizeLimitedStorage {
 		this.storage = storage;
 	}
 
+	/**
+	 * Clears all buffers and prepares for a new change-set of key/value pairs.
+	 */
 	public void beginSession() {
 		newUsages.clear();
 		updatedKeys.clear();
 		removedKeys.clear();
 		newMappings.clear();
-
+		/* We will update this count as changes are buffered throughout the session. */
 		totalKvPairs = storage.get().size();
 	}
 
+	/**
+	 * Validates that the pending key/value changes will not exceed any storage limits, and then
+	 * commits them to the underlying data source.
+	 *
+	 * @throws com.hedera.services.exceptions.InvalidTransactionException if a storage limit is exceeded
+	 */
 	public void validateAndCommit() {
 		validatePendingSizeChanges();
 
@@ -101,6 +113,11 @@ public class SizeLimitedStorage {
 		commitPendingUpdates();
 	}
 
+	/**
+	 * Records the new key/value counts of any contracts whose storage changed in this session.
+	 *
+	 * @param accountsLedger the ledger to use to record the new counts
+	 */
 	public void recordNewKvUsageTo(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		if (newUsages.isEmpty()) {
 			return;
@@ -111,6 +128,14 @@ public class SizeLimitedStorage {
 		});
 	}
 
+	/**
+	 * Returns the requested storage value for the given contract, <i>taking into account</i> all
+	 * changes buffered so far in the session.
+	 *
+	 * @param id the contract of interest
+	 * @param key the key of the desired storage value
+	 * @return the value if it exists, zero if it does not
+	 */
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
 		final var contractKey = ContractKey.from(id, key);
 
@@ -126,6 +151,14 @@ public class SizeLimitedStorage {
 		return (effectiveValue == null) ? ZERO : effectiveValue.asUInt256();
 	}
 
+	/**
+	 * Adds a pending key/value storage change to the current session, but <i>does not</i> commit
+	 * it to the underlying data source.
+	 *
+	 * @param id the contract of interest
+	 * @param key the key of the storage value to be changed
+	 * @param value the desired storage value
+	 */
 	public void putStorage(final AccountID id, final UInt256 key, final UInt256 value) {
 		final var contractKey = ContractKey.from(id, key);
 		final var contractValue = virtualValueFrom(value);
@@ -145,6 +178,25 @@ public class SizeLimitedStorage {
 		return new AtomicInteger(account.getNumContractKvPairs());
 	}
 
+	/**
+	 * Given as input,
+	 * <ul>
+	 *     <li>Dynamic data structures that reflect the key/value changes in this session so far; and,</li>
+	 *     <li>A {@link VirtualMap} data source for the key/value storage; and,</li>
+	 *     <li>A new {@code key}/{@code value} mapping;</li>
+	 * </ul>
+	 * this method incorporates the new key/value mapping into the dynamic data structures, and returns
+	 * the impact that this change had on the total count of key/value pairs; <i>taking into account</i>
+	 * all changes buffered so far in the session.
+	 *
+	 * @param key the key of the storage value to be changed
+	 * @param value the desired storage value
+	 * @param updatedKeys the keys updated so far in this session
+	 * @param removedKeys the keys removed (that is, zeroed out) so far this session
+	 * @param newMappings the net new key/value mappings from this session
+	 * @param storage the data source for key/value storage
+	 * @return the impact this change has on total key/value pairs count
+	 */
 	static int incorporateKvImpact(
 			final ContractKey key,
 			final ContractValue value,
