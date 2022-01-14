@@ -129,19 +129,19 @@ public class FileUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				vanillaUpdateSucceeds(),
-//				updateFeesCompatibleWithCreates(),
-//				apiPermissionsChangeDynamically(),
-//				cannotUpdateExpirationPastMaxLifetime(),
-//				optimisticSpecialFileUpdate(),
-//				associateHasExpectedSemantics(),
-//				notTooManyFeeScheduleCanBeCreated(),
-//				numAccountsAllowedIsDynamic(),
-//				minChargeIsTXGasUsedByFileUpdate(),
-//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//				gasLimitOverMaxGasLimitFailsPrecheck(),
-//				autoCreationIsDynamic(),
-//				kvLimitsEnforced(),
+				vanillaUpdateSucceeds(),
+				updateFeesCompatibleWithCreates(),
+				apiPermissionsChangeDynamically(),
+				cannotUpdateExpirationPastMaxLifetime(),
+				optimisticSpecialFileUpdate(),
+				associateHasExpectedSemantics(),
+				notTooManyFeeScheduleCanBeCreated(),
+				numAccountsAllowedIsDynamic(),
+				minChargeIsTXGasUsedByFileUpdate(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				autoCreationIsDynamic(),
+				kvLimitsEnforced(),
 				serviceFeeRefundedIfConsGasExhausted(),
 		});
 	}
