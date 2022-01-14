@@ -46,12 +46,14 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.cryptoUpdateAliased;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -104,22 +106,22 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						updateWithUniqueSigs(),
-						updateWithOverlappingSigs(),
-						updateWithOneEffectiveSig(),
-						canUpdateMemo(),
-						updateFailsWithInsufficientSigs(),
-						cannotSetThresholdNegative(),
-						updateWithEmptyKeyFails(),
-						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateFailsWithContractKey(),
-						updateFailsWithOverlyLongLifetime(),
-						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected(),
+//						updateWithUniqueSigs(),
+//						updateWithOverlappingSigs(),
+//						updateWithOneEffectiveSig(),
+//						canUpdateMemo(),
+//						updateFailsWithInsufficientSigs(),
+//						cannotSetThresholdNegative(),
+//						updateWithEmptyKeyFails(),
+//						updateFailsIfMissingSigs(),
+//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+//						updateFailsWithContractKey(),
+//						updateFailsWithOverlyLongLifetime(),
+//						updateFailsWithInvalidMaxAutoAssociations(),
+//						usdFeeAsExpected(),
 						canUpdateUsingAlias(),
-						canUpdateProxyUsingAlias(),
-						failsWhenInvalidAlias()
+//						canUpdateProxyUsingAlias(),
+//						failsWhenInvalidAlias()
 				}
 		);
 	}
@@ -127,15 +129,15 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec failsWhenInvalidAlias() {
 		String alias = "alias";
 		String memo = "Second";
-		return defaultHapiSpec("CanUpdateMemo")
+		return defaultHapiSpec("failsWhenInvalidAlias")
 				.given(
 						newKeyNamed(alias)
 				).when(
-						cryptoUpdate(alias)
+						cryptoUpdateAliased(alias)
 								.entityMemo(memo)
 								.hasPrecheck(INVALID_ACCOUNT_ID)
 				).then(
-						getAccountInfo(alias)
+						getAliasedAccountInfo(alias)
 								.has(accountWith().memo(memo))
 				);
 	}
@@ -144,7 +146,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		String alias = "alias";
 		String proxyAlias = "proxyAlias";
 		String memo = "MEMO";
-		return defaultHapiSpec("CanUpdateMemo")
+		return defaultHapiSpec("canUpdateProxyUsingAlias")
 				.given(
 						newKeyNamed(alias),
 						newKeyNamed(proxyAlias),
@@ -155,11 +157,11 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				).when(
 						getAccountInfo(alias)
 								.has(accountWith().memo("auto-created account")),
-						cryptoUpdate(alias)
+						cryptoUpdateAliased(alias)
 								.newProxy(proxyAlias)
 								.hasKnownStatus(SUCCESS)
 				).then(
-						getAccountInfo(alias)
+						getAliasedAccountInfo(alias)
 								.has(accountWith().memo(memo))
 				);
 	}
@@ -167,20 +169,21 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec canUpdateUsingAlias() {
 		String alias = "alias";
 		String memo = "Second";
-		return defaultHapiSpec("CanUpdateMemo")
+		return defaultHapiSpec("canUpdateUsingAlias")
 				.given(
 						newKeyNamed(alias),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
 								.via("transferTxn")
 				).when(
-						getAccountInfo(alias)
+						getAliasedAccountInfo(alias)
 								.has(accountWith().memo("auto-created account")),
-						cryptoUpdate(alias)
+						cryptoUpdateAliased(alias)
+								.key(alias)
 								.entityMemo(memo)
-								.hasKnownStatus(SUCCESS)
+								.hasKnownStatus(SUCCESS).logged()
 				).then(
-						getAccountInfo(alias)
+						getAliasedAccountInfo(alias)
 								.has(accountWith().memo(memo))
 				);
 	}

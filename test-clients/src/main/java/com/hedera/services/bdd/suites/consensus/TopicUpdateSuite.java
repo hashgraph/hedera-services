@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -71,18 +71,18 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						validateMultipleFields(),
-//						topicUpdateSigReqsEnforcedAtConsensus(),
-//						updateSubmitKeyToDiffKey(),
-//						updateAdminKeyToDiffKey(),
-//						updateAdminKeyToEmpty(),
-//						updateMultipleFields(),
-//						expirationTimestampIsValidated(),
-//						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-//						clearingAdminKeyWhenAutoRenewAccountPresent(),
-//						feeAsExpected(),
-//						updateExpiryOnTopicWithNoAdminKey(),
-//						updateToMissingTopicFails(),
+						validateMultipleFields(),
+						topicUpdateSigReqsEnforcedAtConsensus(),
+						updateSubmitKeyToDiffKey(),
+						updateAdminKeyToDiffKey(),
+						updateAdminKeyToEmpty(),
+						updateMultipleFields(),
+						expirationTimestampIsValidated(),
+						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
+						clearingAdminKeyWhenAutoRenewAccountPresent(),
+						feeAsExpected(),
+						updateExpiryOnTopicWithNoAdminKey(),
+						updateToMissingTopicFails(),
 						autoRenewAccountUpdateWorksWithAlias(),
 						invalidAutoRenewAccountUpdateFailsWithAlias()
 				}
@@ -390,11 +390,9 @@ public class TopicUpdateSuite extends HapiApiSuite {
 				.when(
 						updateTopic("testTopic")
 								.autoRenewAccountIdWithAlias(alias)
-								.hasKnownStatus(INVALID_ALIAS_KEY)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				)
-				.then(
-						getTopicInfo("testTopic")
-								.hasAutoRenewAccountWithAlias("autoRenewAccount").logged());
+				.then();
 	}
 
 	private HapiApiSpec autoRenewAccountUpdateWorksWithAlias() {

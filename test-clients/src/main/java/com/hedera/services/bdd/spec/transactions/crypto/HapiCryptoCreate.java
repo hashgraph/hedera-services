@@ -221,7 +221,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-//							proxy.ifPresent(b::setProxyAccountID);
+							proxy.ifPresent(b::setProxyAccountID);
 							entityMemo.ifPresent(b::setMemo);
 							sendThresh.ifPresent(b::setSendRecordThreshold);
 							receiveThresh.ifPresent(b::setReceiveRecordThreshold);
