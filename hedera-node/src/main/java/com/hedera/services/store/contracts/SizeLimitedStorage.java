@@ -254,7 +254,7 @@ public class SizeLimitedStorage {
 		final var wasAlreadyPresent = storage.containsKey(key);
 		if (hasPendingUpdate || wasAlreadyPresent) {
 			if (hasPendingUpdate) {
-				/* We need to drop any pending removal from our auxiliary data structures. */
+				/* We need to drop any pending update from our auxiliary data structures. */
 				final var scopedAdditions = updatedKeys.get(contractId);
 				requireNonNull(scopedAdditions,
 						() -> "A new mapping " + key + " -> " + newMappings.get(key)
