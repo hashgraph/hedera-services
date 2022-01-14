@@ -71,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
@@ -101,6 +102,12 @@ class ImpliedTransfersMarshalTest {
 	private AliasResolver aliasResolver;
 	@Mock
 	private Predicate<CryptoTransferTransactionBody> aliasCheck;
+	@Mock
+	private CryptoTransferTransactionBody cryptoTransferTransactionBody;
+	@Mock
+	private TransferList hbarAdjustsWrapper;
+	@Mock
+	private TokenTransferList tokenAdjustsList;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -184,6 +191,18 @@ class ImpliedTransfersMarshalTest {
 		final var result = subject.unmarshalFromGrpc(op);
 
 		assertEquals(result.getMeta(), expectedMeta);
+	}
+	
+	@Test
+	void callsCorrectValidationMethod() {
+		given(cryptoTransferTransactionBody.getTransfers()).willReturn(hbarAdjustsWrapper);
+		given(cryptoTransferTransactionBody.getTokenTransfersList()).willReturn(List.of(tokenAdjustsList));
+		// when
+		subject.validityWithCurrentProps(cryptoTransferTransactionBody, true);
+
+		// then
+		verify(xferChecks).fullPureValidation(hbarAdjustsWrapper, List.of(tokenAdjustsList),
+				subject.currentProps(), true);
 	}
 
 	@Test
@@ -312,8 +331,8 @@ class ImpliedTransfersMarshalTest {
 	}
 
 	private void givenValidity(ResponseCodeEnum s) {
-		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), propsWithAutoCreation))
-				.willReturn(s);
+		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(),
+				propsWithAutoCreation, true)).willReturn(s);
 	}
 
 	private void setupProps() {

@@ -79,25 +79,29 @@ public class SyntheticTxnFactory {
 			final List<TokenTransferWrapper> tokenTransferWrappers
 	) {
 		final var builder = CryptoTransferTransactionBody.newBuilder();
-
+		boolean hasTokenTransfers = false;
 		for (final TokenTransferWrapper tokenTransferWrapper : tokenTransferWrappers) {
+			/*- changes inside a tokenTransferWrapper are always related to the same token -*/
 			for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
 				builder.addTokenTransfers(TokenTransferList.newBuilder()
 						.setToken(nftExchange.getTokenType())
 						.addNftTransfers(nftExchange.nftTransfer()));
 			}
+			final var tokenTransferListBuilder = TokenTransferList.newBuilder();
 			for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-				final var tokenTransferListBuilder = TokenTransferList.newBuilder()
-						.setToken(fungibleTransfer.getDenomination());
-
+				hasTokenTransfers = true;
+				tokenTransferListBuilder.setToken(fungibleTransfer.getDenomination());
 				if (fungibleTransfer.sender != null) {
 					tokenTransferListBuilder.addTransfers(fungibleTransfer.senderAdjustment());
 				}
 				if (fungibleTransfer.receiver != null) {
 					tokenTransferListBuilder.addTransfers(fungibleTransfer.receiverAdjustment());
 				}
+			}
+			if (hasTokenTransfers) {
 				builder.addTokenTransfers(tokenTransferListBuilder);
 			}
+			hasTokenTransfers = false;
 		}
 		return TransactionBody.newBuilder().setCryptoTransfer(builder);
 	}

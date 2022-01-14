@@ -220,10 +220,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											cryptoUpdate(RECEIVER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
 													tokenTransferList().forToken(token).withAccountAmounts(
-															accountAmount(sender, -30L),
-															accountAmount(sender, -20L),
+															accountAmount(sender, -50L),
 															accountAmount(receiver, 30L),
-															accountAmount(receiver2, 20L)).build()).payingWith(GENESIS)
+															accountAmount(receiver2, 20L)).build())
+													.gas(200_000L)
+													.payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),

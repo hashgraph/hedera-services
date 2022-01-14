@@ -68,6 +68,15 @@ public class PureTransferSemanticChecks {
 			List<TokenTransferList> tokenAdjustsList,
 			ImpliedTransfersMeta.ValidationProps validationProps
 	) {
+		return fullPureValidation(hbarAdjustsWrapper, tokenAdjustsList, validationProps, true);
+	}
+
+	public ResponseCodeEnum fullPureValidation(
+			TransferList hbarAdjustsWrapper,
+			List<TokenTransferList> tokenAdjustsList,
+			ImpliedTransfersMeta.ValidationProps validationProps,
+			boolean validateRepeatableIds
+	) {
 		final var maxHbarAdjusts = validationProps.maxHbarAdjusts();
 		final var maxTokenAdjusts = validationProps.maxTokenAdjusts();
 		final var maxOwnershipChanges = validationProps.maxOwnershipChanges();
@@ -75,7 +84,7 @@ public class PureTransferSemanticChecks {
 
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();
 
-		if (hasRepeatedAccount(hbarAdjusts)) {
+		if (validateRepeatableIds && hasRepeatedAccount(hbarAdjusts)) {
 			return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 		}
 		if (!isNetZeroAdjustment(hbarAdjusts)) {
@@ -90,7 +99,7 @@ public class PureTransferSemanticChecks {
 		if (tokenValidity != OK) {
 			return tokenValidity;
 		}
-		return validateTokenTransferSemantics(tokenAdjustsList);
+		return validateTokenTransferSemantics(tokenAdjustsList, validateRepeatableIds);
 	}
 
 	ResponseCodeEnum validateTokenTransferSyntax(
@@ -143,7 +152,8 @@ public class PureTransferSemanticChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList) {
+	ResponseCodeEnum validateTokenTransferSemantics(List<TokenTransferList> tokenTransfersList,
+													boolean validateRepeatableIds) {
 		if (tokenTransfersList.isEmpty()) {
 			return OK;
 		}
@@ -155,7 +165,7 @@ public class PureTransferSemanticChecks {
 				return validity;
 			}
 		}
-		if (uniqueTokens.size() < tokenTransfersList.size()) {
+		if (validateRepeatableIds && uniqueTokens.size() < tokenTransfersList.size()) {
 			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 		}
 		return OK;
