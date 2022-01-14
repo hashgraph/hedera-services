@@ -20,6 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
@@ -195,13 +196,15 @@ public abstract class StateModule {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
@@ -210,13 +213,15 @@ public abstract class StateModule {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return () -> new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides

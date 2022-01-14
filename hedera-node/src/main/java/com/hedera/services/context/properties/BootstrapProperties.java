@@ -196,6 +196,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat",
+			"ledger.id",
 			"tokens.nfts.areQueriesEnabled"
 	);
 

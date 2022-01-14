@@ -97,7 +97,8 @@ class GetAccountRecordsAnswerTest {
 				null,
 				null,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		optionValidator = mock(OptionValidator.class);
 

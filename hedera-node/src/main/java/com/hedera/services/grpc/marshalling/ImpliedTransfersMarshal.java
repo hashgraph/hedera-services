@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +104,7 @@ public class ImpliedTransfersMarshal {
 			}
 		}
 
-		final var validity = checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props);
+		final var validity = validityWithCurrentProps(op);
 		if (validity != OK) {
 			return ImpliedTransfers.invalid(props, validity);
 		}
@@ -122,6 +123,10 @@ public class ImpliedTransfersMarshal {
 		appendToken(op, changes);
 
 		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
+	}
+
+	public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
+		return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps());
 	}
 
 	public ImpliedTransfers assessCustomFeesAndValidate(

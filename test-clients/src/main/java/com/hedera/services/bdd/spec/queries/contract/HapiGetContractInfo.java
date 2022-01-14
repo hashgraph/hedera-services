@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -121,15 +122,16 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
 		if (expectations.isPresent()) {
-			ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
 			ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
 			rethrowSummaryError(log, "Bad contract info!", errors);
 		}
-		var actualTokenRels = response.getContractGetInfo().getContractInfo().getTokenRelationshipsList();
+		var actualTokenRels = actualInfo.getTokenRelationshipsList();
 		assertExpectedRels(contract, relationships, actualTokenRels, spec);
 		assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	@Override

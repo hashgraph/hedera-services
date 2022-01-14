@@ -111,6 +111,7 @@ public abstract class HapiSpecOperation {
 	protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
 	protected boolean useRandomNode = false;
 	protected boolean unavailableNode = false;
+	protected String expectedLedgerId = "0x03";
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
