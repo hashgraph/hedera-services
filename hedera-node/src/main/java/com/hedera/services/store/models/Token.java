@@ -250,7 +250,7 @@ public class Token {
 			final var uniqueToken = loadedUniqueTokens.get(serialNum);
 			validateTrue(uniqueToken != null, FAIL_INVALID);
 
-			final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
+			final var treasuryIsOwner = uniqueToken.getOwner().equals(treasuryId);
 			validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasuryId));

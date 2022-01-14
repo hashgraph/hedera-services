@@ -74,7 +74,7 @@ class TokenTest {
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id id = new Id(1, 2, 3);
-	private final Id treasuryId = new Id(0, 0, 0);
+	private final Id treasuryId = new Id(0, 0, 1337);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
@@ -603,7 +603,7 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=Id[shard=1, realm=2, num=3], type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id[shard=0, realm=0, num=0], expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+				"treasury=Account{id=Id[shard=0, realm=0, num=1337], expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=}, autoRenewAccount=null, " +
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
 				"pauseKey=<N/A>, paused=false}";
