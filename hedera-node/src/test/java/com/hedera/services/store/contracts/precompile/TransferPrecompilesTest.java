@@ -205,7 +205,7 @@ class TransferPrecompilesTest {
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
 		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false))
 				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
@@ -226,7 +226,7 @@ class TransferPrecompilesTest {
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
@@ -278,7 +278,7 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments))
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
@@ -324,7 +324,7 @@ class TransferPrecompilesTest {
 		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
@@ -371,7 +371,7 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
@@ -424,7 +424,7 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
 
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
@@ -478,7 +478,7 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
@@ -522,7 +522,7 @@ class TransferPrecompilesTest {
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
-		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody,false)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
 				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens

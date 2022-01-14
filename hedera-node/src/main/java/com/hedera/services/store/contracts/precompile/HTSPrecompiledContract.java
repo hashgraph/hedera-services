@@ -599,7 +599,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final WorldLedgers ledgers
 		) {
 			final var op = syntheticTxn.getCryptoTransfer();
-			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op);
+			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op, false);
 			if (validity != ResponseCodeEnum.OK) {
 				throw new InvalidTransactionException(validity);
 			}

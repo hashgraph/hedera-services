@@ -89,20 +89,20 @@ class PureTransferSemanticChecksTest {
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
-		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
+		given(subject.validateTokenTransferSemantics(tokenAdjusts, true)).willReturn(OK);
 		// and:
 		doCallRealMethod().when(subject)
-				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// then:
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
 		inOrder.verify(subject).validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
-		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
+		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts, true);
 		// and:
 		assertEquals(OK, result);
 	}
@@ -121,10 +121,10 @@ class PureTransferSemanticChecksTest {
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 		// and:
 		doCallRealMethod().when(subject)
-				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+				.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -145,12 +145,12 @@ class PureTransferSemanticChecksTest {
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
 		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
-		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+		given(subject.validateTokenTransferSemantics(tokenAdjusts, true)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
-		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// when:
-		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps, true);
 
 		// then:
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, result);
@@ -229,7 +229,7 @@ class PureTransferSemanticChecksTest {
 	@Test
 	void tokenSemanticsOkForEmpty() {
 		// expect:
-		assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList()));
+		assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList(), true));
 	}
 
 	@Test
@@ -239,7 +239,7 @@ class PureTransferSemanticChecksTest {
 				TokenTransferList.newBuilder()
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
 				.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -250,7 +250,7 @@ class PureTransferSemanticChecksTest {
 						.setToken(aTid)
 						.addTransfers(AccountAmount.newBuilder().setAmount(123).build())
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -261,7 +261,7 @@ class PureTransferSemanticChecksTest {
 						.setToken(aTid)
 						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(0).build())
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -273,7 +273,7 @@ class PureTransferSemanticChecksTest {
 						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
 						.addTransfers(AccountAmount.newBuilder().setAccountID(b).setAmount(2).build())
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -285,7 +285,7 @@ class PureTransferSemanticChecksTest {
 						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
 						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(1).build())
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -314,7 +314,7 @@ class PureTransferSemanticChecksTest {
 								.setReceiverAccountID(a)
 								.setSerialNumber(123L))
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -329,7 +329,7 @@ class PureTransferSemanticChecksTest {
 						.setToken(aTid)
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
@@ -351,7 +351,7 @@ class PureTransferSemanticChecksTest {
 								.setReceiverAccountID(b)
 								.setSerialNumber(123L))
 						.build()
-		)));
+		), true));
 	}
 
 	@Test
