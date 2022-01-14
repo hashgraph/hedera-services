@@ -66,6 +66,7 @@ class GetAccountNftInfosAnswerTest {
 	Transaction paymentTxn;
 	StateView view;
 	private long fee = 1_234L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
 	String node = "0.0.3";
 	String payer = "0.0.1";
@@ -86,12 +87,15 @@ class GetAccountNftInfosAnswerTest {
 
 		accountNftInfos = new ArrayList<>(List.of(
 				TokenNftInfo.newBuilder()
+						.setLedgerId(ledgerId)
 						.setMetadata(ByteString.copyFromUtf8("stuff1"))
 						.build(),
 				TokenNftInfo.newBuilder()
+						.setLedgerId(ledgerId)
 						.setMetadata(ByteString.copyFromUtf8("stuff2"))
 						.build(),
 				TokenNftInfo.newBuilder()
+						.setLedgerId(ledgerId)
 						.setMetadata(ByteString.copyFromUtf8("stuff3"))
 						.build()
 		));

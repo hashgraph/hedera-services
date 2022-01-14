@@ -21,6 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
@@ -50,6 +51,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
@@ -70,6 +72,7 @@ import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -119,26 +122,29 @@ public class StateView {
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
 	public static final StateView EMPTY_VIEW = new StateView(
-			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
 
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
 	private final UniqTokenView uniqTokenView;
+	private final NetworkInfo networkInfo;
 
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
 
 	public StateView(
-			@Nullable TokenStore tokenStore,
-			@Nullable ScheduleStore scheduleStore,
-			@Nullable StateChildren stateChildren,
-			UniqTokenViewFactory uniqTokenViewFactory
+			@Nullable final TokenStore tokenStore,
+			@Nullable final ScheduleStore scheduleStore,
+			@Nullable final StateChildren stateChildren,
+			final UniqTokenViewFactory uniqTokenViewFactory,
+			final NetworkInfo networkInfo
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.stateChildren = stateChildren;
+		this.networkInfo = networkInfo;
 
 		this.uniqTokenView = uniqTokenViewFactory.viewFor(
 				tokenStore,
@@ -155,11 +161,11 @@ public class StateView {
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 	}
 
-	public Optional<HFileMeta> attrOf(FileID id) {
+	public Optional<HFileMeta> attrOf(final FileID id) {
 		return Optional.ofNullable(fileAttrs.get(id));
 	}
 
-	public Optional<byte[]> contentsOf(FileID id) {
+	public Optional<byte[]> contentsOf(final FileID id) {
 		if (stateChildren == null) {
 			return Optional.empty();
 		}
@@ -171,17 +177,17 @@ public class StateView {
 		}
 	}
 
-	public Optional<byte[]> bytecodeOf(ContractID id) {
+	public Optional<byte[]> bytecodeOf(final ContractID id) {
 		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
 	}
 
-	public Optional<MerkleToken> tokenWith(TokenID id) {
+	public Optional<MerkleToken> tokenWith(final TokenID id) {
 		return tokenStore == null || !tokenStore.exists(id)
 				? Optional.empty()
 				: Optional.of(tokenStore.get(id));
 	}
 
-	public Optional<TokenInfo> infoForToken(TokenID tokenID) {
+	public Optional<TokenInfo> infoForToken(final TokenID tokenID) {
 		if (tokenStore == null) {
 			return Optional.empty();
 		}
@@ -190,8 +196,9 @@ public class StateView {
 			if (id == MISSING_TOKEN) {
 				return Optional.empty();
 			}
-			var token = tokenStore.get(id);
-			var info = TokenInfo.newBuilder()
+			final var token = tokenStore.get(id);
+			final var info = TokenInfo.newBuilder()
+					.setLedgerId(networkInfo.ledgerId())
 					.setTokenTypeValue(token.tokenType().ordinal())
 					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
@@ -205,29 +212,29 @@ public class StateView {
 					.setDecimals(token.decimals())
 					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
 
-			var adminCandidate = token.adminKey();
+			final var adminCandidate = token.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
 
-			var freezeCandidate = token.freezeKey();
+			final var freezeCandidate = token.freezeKey();
 			freezeCandidate.ifPresentOrElse(k -> {
 				info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
 				info.setFreezeKey(asKeyUnchecked(k));
 			}, () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
 
-			var kycCandidate = token.kycKey();
+			final var kycCandidate = token.kycKey();
 			kycCandidate.ifPresentOrElse(k -> {
 				info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
 				info.setKycKey(asKeyUnchecked(k));
 			}, () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
 
-			var supplyCandidate = token.supplyKey();
+			final var supplyCandidate = token.supplyKey();
 			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
-			var wipeCandidate = token.wipeKey();
+			final var wipeCandidate = token.wipeKey();
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
-			var feeScheduleCandidate = token.feeScheduleKey();
+			final var feeScheduleCandidate = token.feeScheduleKey();
 			feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
 
-			var pauseCandidate = token.pauseKey();
+			final var pauseCandidate = token.pauseKey();
 			pauseCandidate.ifPresentOrElse(k -> {
 				info.setPauseKey(asKeyUnchecked(k));
 				info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
@@ -250,22 +257,52 @@ public class StateView {
 		}
 	}
 
-	public Optional<ScheduleInfo> infoForSchedule(ScheduleID scheduleID) {
+	public Optional<ConsensusTopicInfo> infoForTopic(final TopicID topicID) {
+
+		final var merkleTopic = topics().get(EntityNum.fromTopicId(topicID));
+		if (merkleTopic == null) {
+			return Optional.empty();
+		}
+
+		final var info = ConsensusTopicInfo.newBuilder();
+		if (merkleTopic.hasMemo()) {
+			info.setMemo(merkleTopic.getMemo());
+		}
+		if (merkleTopic.hasAdminKey()) {
+			info.setAdminKey(asKeyUnchecked(merkleTopic.getAdminKey()));
+		}
+		if (merkleTopic.hasSubmitKey()) {
+			info.setSubmitKey(asKeyUnchecked(merkleTopic.getSubmitKey()));
+		}
+		info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
+		if (merkleTopic.hasAutoRenewAccountId()) {
+			info.setAutoRenewAccount(asAccount(merkleTopic.getAutoRenewAccountId()));
+		}
+		info.setExpirationTime(merkleTopic.getExpirationTimestamp().toGrpc());
+		info.setSequenceNumber(merkleTopic.getSequenceNumber());
+		info.setRunningHash(ByteString.copyFrom(merkleTopic.getRunningHash()));
+		info.setLedgerId(networkInfo.ledgerId());
+
+		return Optional.of(info.build());
+	}
+
+	public Optional<ScheduleInfo> infoForSchedule(final ScheduleID scheduleID) {
 		if (scheduleStore == null) {
 			return Optional.empty();
 		}
 		try {
-			var id = scheduleStore.resolve(scheduleID);
+			final var id = scheduleStore.resolve(scheduleID);
 			if (id == MISSING_SCHEDULE) {
 				return Optional.empty();
 			}
-			var schedule = scheduleStore.get(id);
-			var signatories = schedule.signatories();
-			var signatoriesList = KeyList.newBuilder();
+			final var schedule = scheduleStore.get(id);
+			final var signatories = schedule.signatories();
+			final var signatoriesList = KeyList.newBuilder();
 
 			signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
-			var info = ScheduleInfo.newBuilder()
+			final var info = ScheduleInfo.newBuilder()
+					.setLedgerId(networkInfo.ledgerId())
 					.setScheduleID(id)
 					.setScheduledTransactionBody(schedule.scheduledTxn())
 					.setScheduledTransactionID(schedule.scheduledTransactionId())
@@ -280,7 +317,7 @@ public class StateView {
 				info.setExecutionTime(schedule.executionTime());
 			}
 
-			var adminCandidate = schedule.adminKey();
+			final var adminCandidate = schedule.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
 
 			return Optional.of(info.build());
@@ -301,7 +338,7 @@ public class StateView {
 		}
 	}
 
-	public Optional<TokenNftInfo> infoForNft(NftID target) {
+	public Optional<TokenNftInfo> infoForNft(final NftID target) {
 		final var currentNfts = uniqueTokens();
 		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
 		final var targetKey = EntityNumPair.fromLongs(tokenId.longValue(), target.getSerialNumber());
@@ -320,6 +357,7 @@ public class StateView {
 		}
 
 		final var info = TokenNftInfo.newBuilder()
+				.setLedgerId(networkInfo.ledgerId())
 				.setNftID(target)
 				.setAccountID(accountId)
 				.setCreationTime(targetNft.getCreationTime().toGrpc())
@@ -328,22 +366,22 @@ public class StateView {
 		return Optional.of(info);
 	}
 
-	public boolean nftExists(NftID id) {
+	public boolean nftExists(final NftID id) {
 		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
 		final var key = EntityNumPair.fromLongs(tokenNum.longValue(), id.getSerialNumber());
 		return uniqueTokens().containsKey(key);
 	}
 
-	public Optional<TokenType> tokenType(TokenID tokenID) {
+	public Optional<TokenType> tokenType(final TokenID tokenID) {
 		if (tokenStore == null) {
 			return Optional.empty();
 		}
 		try {
-			var id = tokenStore.resolve(tokenID);
+			final var id = tokenStore.resolve(tokenID);
 			if (id == MISSING_TOKEN) {
 				return Optional.empty();
 			}
-			var token = tokenStore.get(id);
+			final var token = tokenStore.get(id);
 			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
 		} catch (Exception unexpected) {
 			log.warn(
@@ -354,15 +392,15 @@ public class StateView {
 		}
 	}
 
-	public boolean tokenExists(TokenID id) {
+	public boolean tokenExists(final TokenID id) {
 		return tokenStore != null && tokenStore.resolve(id) != MISSING_TOKEN;
 	}
 
-	public boolean scheduleExists(ScheduleID id) {
+	public boolean scheduleExists(final ScheduleID id) {
 		return scheduleStore != null && scheduleStore.resolve(id) != MISSING_SCHEDULE;
 	}
 
-	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
+	public Optional<FileGetInfoResponse.FileInfo> infoForFile(final FileID id) {
 		try {
 			return getFileInfo(id);
 		} catch (NullPointerException e) {
@@ -371,12 +409,13 @@ public class StateView {
 		}
 	}
 
-	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) {
-		var attr = fileAttrs.get(id);
+	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(final FileID id) {
+		final var attr = fileAttrs.get(id);
 		if (attr == null) {
 			return Optional.empty();
 		}
-		var info = FileGetInfoResponse.FileInfo.newBuilder()
+		final var info = FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(networkInfo.ledgerId())
 				.setFileID(id)
 				.setMemo(attr.getMemo())
 				.setDeleted(attr.isDeleted())
@@ -388,7 +427,7 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(AccountID id, AliasManager aliasManager) {
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id, final AliasManager aliasManager) {
 		final var accountEntityNum = id.getAlias().isEmpty() 
                       ? fromAccountId(id) 
                       : aliasManager.lookupIdBy(id.getAlias());
@@ -398,7 +437,8 @@ public class StateView {
 		}
 
 		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
-		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(networkInfo.ledgerId())
 				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(accountID)
 				.setAlias(account.getAlias())
@@ -422,40 +462,45 @@ public class StateView {
 	}
 
 	public long numNftsOwnedBy(AccountID target) {
-		var account = accounts().get(fromAccountId(target));
+		final var account = accounts().get(fromAccountId(target));
 		if (account == null) {
 			return 0L;
 		}
 		return account.getNftsOwned();
 	}
 
-	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull AccountID aid, long start, long end) {
-		var account = accounts().get(fromAccountId(aid));
+	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull final AccountID aid, final long start,
+			final long end) {
+		final var account = accounts().get(fromAccountId(aid));
 		if (account == null) {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.ownedAssociations(aid, start, end);
-		return Optional.of(answer);
+		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
+		return Optional.of(infoWithLedgerId);
 	}
 
-	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull TokenID tid, long start, long end) {
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull final TokenID tid, final long start,
+			final long end) {
 		if (!tokenExists(tid)) {
 			return Optional.empty();
 		}
 		final var answer = uniqTokenView.typedAssociations(tid, start, end);
-		return Optional.of(answer);
+		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
+		return Optional.of(infoWithLedgerId);
 	}
 
-	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {
+	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(final ContractID id) {
 		final var contractId = fromContractId(id);
-		var contract = contracts().get(contractId);
+		final var contract = contracts().get(contractId);
 		if (contract == null) {
 			return Optional.empty();
 		}
 
-		var mirrorId = asAccount(id);
-		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
-		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
+		final var mirrorId = asAccount(id);
+		final var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
+		final var info = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setLedgerId(networkInfo.ledgerId())
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
 				.setContractID(id)
@@ -465,13 +510,13 @@ public class StateView {
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
 				.setContractAccountID(asSolidityAddressHex(mirrorId));
-		var tokenRels = tokenRelsFn.apply(this, contractId);
+		final var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
 
 		try {
-			var adminKey = JKey.mapJKey(contract.getAccountKey());
+			final var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
 		}
@@ -527,27 +572,33 @@ public class StateView {
 		return uniqTokenView;
 	}
 
-	private TokenFreezeStatus tfsFor(boolean flag) {
+	private List<TokenNftInfo> addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
+		return tokenNftInfoList.stream()
+				.map(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build())
+				.toList();
+	}
+
+	private TokenFreezeStatus tfsFor(final boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
 
-	private TokenKycStatus tksFor(boolean flag) {
+	private TokenKycStatus tksFor(final boolean flag) {
 		return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
 	}
 
-	private TokenPauseStatus tokenPauseStatusOf(boolean flag) {
+	private TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
 	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
-		var account = view.accounts().get(id);
-		List<TokenRelationship> relationships = new ArrayList<>();
-		var tokenIds = account.tokens().asTokenIds();
+		final var account = view.accounts().get(id);
+		final List<TokenRelationship> relationships = new ArrayList<>();
+		final var tokenIds = account.tokens().asTokenIds();
 		for (TokenID tId : tokenIds) {
-			var optionalToken = view.tokenWith(tId);
-			var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
-			var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);
-			var relationship = view.tokenAssociations().get(relKey);
+			final var optionalToken = view.tokenWith(tId);
+			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
+			final var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);
+			final var relationship = view.tokenAssociations().get(relKey);
 			relationships.add(new RawTokenRelationship(
 					relationship.getBalance(),
 					tId.getShardNum(),

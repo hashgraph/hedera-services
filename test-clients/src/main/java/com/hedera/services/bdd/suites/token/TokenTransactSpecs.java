@@ -599,6 +599,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
 						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
 						getAccountNftInfos(theAccount, 0, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN,
 												2, theAccount, copyFromUtf8("matter"))),
@@ -969,7 +970,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(A_TOKEN, 0),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 1),
-						getTokenInfo(A_TOKEN),
+						getTokenInfo(A_TOKEN)
+								.hasExpectedLedgerId("0x03"),
 						getTokenNftInfo(A_TOKEN, 1)
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
@@ -1017,15 +1019,18 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance("newTreasury")
 								.hasTokenBalance(B_TOKEN, 1),
 						getTokenNftInfo(A_TOKEN, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
 								.hasTokenID(A_TOKEN)
 								.hasAccountID("newTreasury"),
 						getTokenNftInfos(A_TOKEN, 0, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo"))
 								).logged(),
 						getAccountNftInfos("newTreasury", 0, 2)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo")),
 										newTokenNftInfo(B_TOKEN, 1, "newTreasury", copyFromUtf8("memo2"))

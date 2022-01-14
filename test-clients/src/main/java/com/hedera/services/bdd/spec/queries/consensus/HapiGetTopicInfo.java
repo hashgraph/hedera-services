@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.consensus;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -174,6 +176,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), info.getLedgerId());
 	}
 
 	@Override

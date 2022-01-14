@@ -68,10 +68,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
