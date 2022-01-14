@@ -58,6 +58,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -245,8 +246,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		final var lookupAccount = referenceType == ReferenceType.ALIAS_KEY_NAME ? aliasKeySource : account;
-		HapiGetAccountInfo subOp = getAccountInfo(lookupAccount).noLogging();
+		HapiGetAccountInfo subOp;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			subOp = getAliasedAccountInfo(aliasKeySource).noLogging();
+		} else {
+			subOp = getAccountInfo(account).noLogging();
+		}
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {
