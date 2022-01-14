@@ -790,6 +790,13 @@ public class ContractResources {
 			"\"type\": \"address[]\" }, { \"internalType\": \"int64[]\", \"name\": \"amounts\", \"type\": \"int64[]\" } ], " +
 			"\"name\": \"safeTokensTransfer\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
+	public static final String SAFE_NFTS_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"sender\", " +
+			"\"type\": \"address[]\" }, { \"internalType\": \"address[]\", \"name\": \"receiver\", " +
+			"\"type\": \"address[]\" }, { \"internalType\": \"int64[]\", \"name\": \"serialNumber\", " +
+			"\"type\": \"int64[]\" } ], \"name\": \"safeNFTsTransfer\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static final String NON_SUPPORTED_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
 			"\"type\": \"address\" } ], \"name\": \"nonSupportedFunction\", \"outputs\": [], \"stateMutability\": " +

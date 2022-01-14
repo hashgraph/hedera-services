@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_DISSOCIATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFTS_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFT_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKENS_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKEN_TRANSFER_ABI;
@@ -76,14 +77,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final String THE_CONTRACT = "Safe Operations Contract";
 	private static final String ACCOUNT = "anybody";
 	private static final String SECOND_ACCOUNT = "anybody2";
-	private static final String FROZEN_TOKEN = "Frozen token";
-	private static final String UNFROZEN_TOKEN = "Unfrozen token";
 	private static final String MULTI_KEY = "Multi key";
 	private static final String FREEZE_KEY = "Freeze key";
-	private static final TokenID DUMMY_ID = TokenID.newBuilder().build();
 	public static final String DEFAULT_GAS_COST = "10000";
 	public static final String FULL_GAS_REFUND = "100";
 	public static final String ZERO_GAS_COST = "0";
+	public static final String HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
+	public static final String MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
+	public static final String BOOTSTRAP_PROPERTIES = "src/main/resource/bootstrap.properties";
 
 	public static void main(String... args) {
 		new DynamicGasCostSuite().runSuiteSync();
@@ -115,15 +116,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-//				mintDynamicGasCostPrecompile(),
-//				burnDynamicGasCostPrecompile(),
-//				associateDynamicGasCostPrecompile(),
-//				dissociateDynamicGasCostPrecompile(),
-//				multipleAssociateDynamicGasCostPrecompile(),
-//				multipleDissociateDynamicGasCostPrecompile(),
-//				nftTransferDynamicGasCostPrecompile(),
-//				tokenTransferDynamicGasCostPrecompile(),
-				tokensTransferDynamicGasCostPrecompile()
+				mintDynamicGasCostPrecompile(),
+				burnDynamicGasCostPrecompile(),
+				associateDynamicGasCostPrecompile(),
+				dissociateDynamicGasCostPrecompile(),
+				multipleAssociateDynamicGasCostPrecompile(),
+				multipleDissociateDynamicGasCostPrecompile(),
+				nftTransferDynamicGasCostPrecompile(),
+				tokenTransferDynamicGasCostPrecompile(),
+				tokensTransferDynamicGasCostPrecompile(),
+				nftsTransferDynamicGasCostPrecompile()
 		);
 	}
 
@@ -161,22 +163,22 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("mintDynamicGasZeroCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("mintDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -222,15 +224,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("burnDynamicGasZeroCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												mintToken(VANILLA_TOKEN, amount),
 												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
 														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
@@ -238,7 +240,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.via("burnDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -278,21 +280,21 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_ASSOCIATE_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("associateDynamicGasZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												tokenDissociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(THE_CONTRACT, SAFE_ASSOCIATE_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("associateDynamicGasDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -335,21 +337,21 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												spec,
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_DISSOCIATE_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("dissociateZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(THE_CONTRACT, SAFE_DISSOCIATE_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("dissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -399,8 +401,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_MULTIPLE_ASSOCIATE_ABI,
 														asAddress(accountID.get()),
 														List.of(
@@ -409,7 +411,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleAssociateZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												tokenDissociate(ACCOUNT, VANILLA_TOKEN, KNOWABLE_TOKEN),
 												contractCall(THE_CONTRACT, SAFE_MULTIPLE_ASSOCIATE_ABI,
 														asAddress(accountID.get()),
@@ -419,7 +421,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleAssociateDefaultCostTxn")
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -473,8 +475,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												spec,
 												tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_MULTIPLE_DISSOCIATE_ABI,
 														asAddress(accountID.get()), List.of(
 																asAddress(vanillaTokenID.get()),
@@ -482,7 +484,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleDissociateZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
 												contractCall(THE_CONTRACT, SAFE_MULTIPLE_DISSOCIATE_ABI,
 														asAddress(accountID.get()), List.of(
@@ -491,7 +493,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via("multipleDissociateDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -544,8 +546,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_NFT_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
@@ -555,7 +557,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftTransferZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												contractCall(THE_CONTRACT, SAFE_NFT_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
@@ -565,7 +567,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("nftTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -618,8 +620,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_TOKEN_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
@@ -629,7 +631,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokenTransferZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												contractCall(THE_CONTRACT, SAFE_TOKEN_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														asAddress(treasuryID.get()),
@@ -639,7 +641,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokenTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -697,8 +699,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", ZERO_GAS_COST),
-												UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", FULL_GAS_REFUND),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_TOKENS_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get()),
@@ -710,7 +712,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokensTransferZeroCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.overriding("contracts.precompile.htsDefaultGasCost", DEFAULT_GAS_COST),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												contractCall(THE_CONTRACT, SAFE_TOKENS_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get()),
@@ -722,7 +724,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.via("tokensTransferDefaultCostTxn")
 														.hasKnownStatus(SUCCESS),
-												UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
 										)
 						)
 				).then(
@@ -737,7 +739,89 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									.getContractCallResult().getGasUsed();
 							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("tokensTransferDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							assertEquals(15_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
+							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
+						})
+				);
+	}
+
+	public HapiApiSpec nftsTransferDynamicGasCostPrecompile() {
+		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+		final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
+		final AtomicReference<AccountID> treasuryID = new AtomicReference<>();
+
+		return defaultHapiSpec("NftsTransferDynamicGasCostPrecompile")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(10 * ONE_HUNDRED_HBARS)
+								.exposingCreatedIdTo(accountID::set),
+						cryptoCreate(SECOND_ACCOUNT)
+								.exposingCreatedIdTo(secondAccountID::set),
+						fileCreate(THE_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						cryptoCreate(TOKEN_TREASURY)
+								.balance(0L)
+								.exposingCreatedIdTo(treasuryID::set),
+						tokenCreate(VANILLA_TOKEN)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.initialSupply(0)
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+						mintToken(VANILLA_TOKEN,
+								List.of(metadata("firstMemo"),
+										metadata("secondMemo"),
+										metadata("thirdMemo"),
+										metadata("fourthMemo")
+								)),
+						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY)
+				)
+				.when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
+												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
+												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
+														asAddress(vanillaTokenID.get()),
+														List.of(asAddress(treasuryID.get())),
+														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
+														List.of(1L, 2L))
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.via("nftsTransferZeroCostTxn")
+														.hasKnownStatus(SUCCESS),
+												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
+												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
+														asAddress(vanillaTokenID.get()),
+														List.of(asAddress(treasuryID.get())),
+														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
+														List.of(3L, 4L))
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.via("nftsTransferDefaultCostTxn")
+														.hasKnownStatus(SUCCESS),
+												UtilVerbs.resetAppPropertiesTo(BOOTSTRAP_PROPERTIES)
+										)
+						)
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var zeroCostTxnRecord =
+									getTxnRecord("nftsTransferZeroCostTxn").saveTxnRecordToRegistry("nftsTransferZeroCostTxnRec");
+							final var defaultCostTxnRecord =
+									getTxnRecord("nftsTransferDefaultCostTxn").saveTxnRecordToRegistry("nftsTransferDefaultCostTxnRec");
+							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("nftsTransferZeroCostTxnRec")
+									.getContractCallResult().getGasUsed();
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("nftsTransferDefaultCostTxnRec")
+									.getContractCallResult().getGasUsed();
+							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
 				);
 	}
