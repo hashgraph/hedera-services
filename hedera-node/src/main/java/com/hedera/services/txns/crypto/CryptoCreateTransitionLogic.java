@@ -100,6 +100,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
+
+			if (op.hasProxyAccountID()) {
+				final var proxyValidation = ledger.lookUpAccountId(op.getProxyAccountID()).response();
+				if (proxyValidation != OK) {
+					txnCtx.setStatus(proxyValidation);
+					return;
+				}
+			}
+
 			final var created = ledger.create(sponsor, balance, asCustomizer(op));
 			sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
@@ -180,14 +189,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-		}
-
-		//  should we also check if proxy accountID is valid and exists in address book ?
-		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID()).response();
-			if (result != OK) {
-				return result;
-			}
 		}
 
 		return OK;

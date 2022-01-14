@@ -216,17 +216,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
 		initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
 
-		if (proxyReferenceType == ReferenceType.ALIAS_KEY_NAME) {
-			proxy = Optional.of(AccountID.newBuilder()
-					.setAlias(spec.registry().getKey(proxyAlias.get()).toByteString())
-					.build());
-		}
 		CryptoCreateTransactionBody opBody = spec
 				.txns()
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-							proxy.ifPresent(b::setProxyAccountID);
+//							proxy.ifPresent(b::setProxyAccountID);
 							entityMemo.ifPresent(b::setMemo);
 							sendThresh.ifPresent(b::setSendRecordThreshold);
 							receiveThresh.ifPresent(b::setReceiveRecordThreshold);

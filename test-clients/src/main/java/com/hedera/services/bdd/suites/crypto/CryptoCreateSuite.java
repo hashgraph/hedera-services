@@ -72,7 +72,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				negativeTests(),
+//				negativeTests(),
 				positiveTests()
 		);
 	}
@@ -126,7 +126,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						getTxnRecord("proxyCreation").andAllChildRecords().hasChildRecordCount(1)
 				).then(
 						cryptoCreate("accountWithAliasProxy")
-								.proxyWithAlias(alias)
+//								.proxyWithAlias(alias)
 								.hasKnownStatus(SUCCESS)
 				);
 	}
