@@ -12,7 +12,9 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// Initiates a Token Transfer
     /// @param tokenTransfers the list of transfers to do
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function cryptoTransfer(IHederaTokenService.TokenTransferList[] memory tokenTransfers) internal returns (int responseCode) {
+    function cryptoTransfer(IHederaTokenService.TokenTransferList[] memory tokenTransfers) internal
+        returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.cryptoTransfer.selector, tokenTransfers));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -30,18 +32,18 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
     /// @return serialNumbers If the token is an NFT the newly generate serial numbers, otherwise empty.
     function mintToken(address token, uint64 amount, bytes[] memory metadata) internal
-        returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers)
+        returns (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers)
     {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector,
             token, amount, metadata));
         (responseCode, newTotalSupply, serialNumbers) =
             success
-                ? abi.decode(result, (int32, uint64, int[]))
-                : (HederaResponseCodes.UNKNOWN, 0, new int[](0));
+                ? abi.decode(result, (int32, uint64, int64[]))
+                : (HederaResponseCodes.UNKNOWN, 0, new int64[](0));
     }
 
-    /// Burns an amount fo teh token from the define treasury account
+    /// Burns an amount of the token from the defined treasury account
     /// @param token The token for which to burn tokens. If token does not exist, transaction results in
     ///              INVALID_TOKEN_ID
     /// @param amount  Applicable to tokens of type FUNGIBLE_COMMON. The amount to burn from the Treasury Account.
@@ -134,7 +136,9 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param token The ID of the token as a solidity address
     /// @param accountIds account to do a transfer to/from
     /// @param amounts The amount from the accountId at the same index
-    function transferTokens(address token, address[] memory accountIds, int64[] memory amounts) internal returns (int responseCode) {
+    function transferTokens(address token, address[] memory accountIds, int64[] memory amounts) internal
+        returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferTokens.selector,
             token, accountIds, amounts));
@@ -146,7 +150,9 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param sender the sender of an nft
     /// @param receiver the receiver of the nft sent by the same index at sender
     /// @param serialNumber the serial number of the nft sent by the same index at sender
-    function transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) internal returns (int responseCode) {
+    function transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber)
+        internal returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFTs.selector,
             token, sender, receiver, serialNumber));
@@ -160,7 +166,9 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param sender The sender for the transaction
     /// @param receiver The receiver of the transaction
     /// @param amount Non-negative value to send. a negative value will result in a failure.
-    function transferToken(address token, address sender, address receiver, int64 amount) internal returns (int responseCode) {
+    function transferToken(address token, address sender, address receiver, int64 amount) internal
+        returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferToken.selector,
             token, sender, receiver, amount));
@@ -173,11 +181,13 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param token The token to transfer to/from
     /// @param sender The sender for the transaction
     /// @param receiver The receiver of the transaction
-    /// @param serialNum The serial number of the NFT to transfer.
-    function transferNFT(address token, address sender, address receiver, int64 serialNum) internal returns (int responseCode) {
+    /// @param serialNumber The serial number of the NFT to transfer.
+    function transferNFT(address token, address sender, address receiver, int64 serialNumber) internal
+        returns (int responseCode)
+    {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFT.selector,
-            token, sender, receiver, serialNum));
+            token, sender, receiver, serialNumber));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 }
