@@ -23,6 +23,7 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -292,7 +293,9 @@ class GetAccountInfoAnswerTest {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(ACCOUNT_DELETED);
+		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(
+				ACCOUNT_DELETED);
+		given(aliasManager.lookUpAccountID(payerId)).willReturn(AliasLookup.of(payerId, OK));
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -305,14 +308,26 @@ class GetAccountInfoAnswerTest {
 	void usesValidatorOnAccountWithAlias() throws Throwable {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
-		
-		given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
+
+		given(aliasManager.lookUpAccountID(any())).willReturn(AliasLookup.of(entityNum.toGrpcAccountId(), OK));
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
 		assertEquals(INVALID_ACCOUNT_ID, validity);
 
+	}
+
+	@Test
+	void failsWithInvalidAliasLookup() throws Throwable {
+		EntityNum entityNum = EntityNum.fromAccountId(payerId);
+		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
+
+		given(aliasManager.lookUpAccountID(any())).willReturn(
+				AliasLookup.of(entityNum.toGrpcAccountId(), INVALID_ACCOUNT_ID));
+
+		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, validity);
 	}
 
 	@Test

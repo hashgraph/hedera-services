@@ -167,7 +167,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 							newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
 							newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
 							newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(
-									getIdWithAliasLookUp(id, spec, newAutoRenewAccountRefType)));
+									getIdWithAliasLookUp(id, spec)));
 						});
 		return b -> b.setConsensusUpdateTopic(opBody);
 	}

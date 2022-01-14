@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATI
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -157,6 +159,12 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.isDeleted(genesis);
 
 		verify(accountsLedger).get(genesis, IS_DELETED);
+	}
+
+	@Test
+	void delegatesLookUpAccountIDCorrectly() {
+		subject.lookUpAccountId(genesis, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+		verify(tokenStore).lookUpAccountId(genesis, INVALID_ACCOUNT_ID);
 	}
 
 	@Test

@@ -9,9 +9,9 @@ package com.hedera.services.txns.contract.helpers;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,8 @@ package com.hedera.services.txns.contract.helpers;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -40,11 +42,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,6 +71,8 @@ class UpdateCustomizerFactoryTest {
 
 	@Mock
 	private OptionValidator optionValidator;
+	@Mock
+	private HederaLedger ledger;
 
 	@Test
 	void makesExpectedChanges() {
@@ -86,9 +94,10 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
+		given(ledger.lookUpAccountId(newProxy)).willReturn(AliasLookup.of(newProxy, OK));
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 		// and when:
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
@@ -99,6 +108,32 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newMemo, mutableContract.getMemo());
 		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
 	}
+
+	@Test
+	void invalidProxyFails() {
+		final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
+
+		var mutableContract = MerkleAccountFactory.newContract()
+				.accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+				.get();
+		var op = ContractUpdateTransactionBody.newBuilder()
+				.setContractID(target)
+				.setAdminKey(newAdminKey)
+				.setAutoRenewPeriod(newAutoRenew)
+				.setProxyAccountID(newProxy)
+				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
+				.setExpirationTime(newExpiryTime)
+				.build();
+
+		given(ledger.lookUpAccountId(newProxy)).willReturn(
+				AliasLookup.of(newProxy, INVALID_ACCOUNT_ID));
+
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
+
+		assertEquals(INVALID_ACCOUNT_ID, result.getRight());
+		assertEquals(Optional.empty(), result.getLeft());
+	}
+
 
 	@Test
 	void rejectsInvalidExpiryMakesExpectedChanges() {
@@ -115,7 +150,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -135,7 +170,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 		// and when:
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
@@ -155,7 +190,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -174,7 +209,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -197,7 +232,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, optionValidator, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -212,11 +247,11 @@ class UpdateCustomizerFactoryTest {
 				.get();
 		// and:
 		var op = ContractUpdateTransactionBody.newBuilder()
-						.setProxyAccountID(IdUtils.asAccount("0.0.1234"))
-						.build();
+				.setProxyAccountID(IdUtils.asAccount("0.0.1234"))
+				.build();
 
 		// when:
-		var result = subject.customizerFor(immutableContract, optionValidator, op);
+		var result = subject.customizerFor(immutableContract, optionValidator, op, ledger);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());

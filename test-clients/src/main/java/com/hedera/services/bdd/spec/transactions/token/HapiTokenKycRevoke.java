@@ -86,7 +86,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenRevokeKycTransactionBody opBody = spec
 				.txns()
 				.<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(

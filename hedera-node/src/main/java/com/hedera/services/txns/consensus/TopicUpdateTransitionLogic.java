@@ -27,7 +27,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.AccountStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -73,7 +72,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private final AccountStore accountStore;
 
 	@Inject
 	public TopicUpdateTransitionLogic(
@@ -82,8 +80,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			final OptionValidator validator,
 			final TransactionContext transactionContext,
 			final HederaLedger ledger,
-			final SigImpactHistorian sigImpactHistorian,
-			final AccountStore accountStore
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.accounts = accounts;
 		this.ledger = ledger;
@@ -91,7 +88,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		this.validator = validator;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
-		this.accountStore = accountStore;
 	}
 
 	@Override
@@ -209,11 +205,11 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-		if (result.getRight() != OK) {
-			transactionContext.setStatus(result.getRight());
+		if (result.response() != OK) {
+			transactionContext.setStatus(result.response());
 			return false;
 		}
-		var newAutoRenewAccount = result.getLeft();
+		var newAutoRenewAccount = result.resolvedId();
 
 		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -240,7 +236,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 				topic.setAutoRenewAccountId(null);
 			} else {
 				final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(result.getLeft()));
+				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(result.resolvedId()));
 			}
 		}
 	}

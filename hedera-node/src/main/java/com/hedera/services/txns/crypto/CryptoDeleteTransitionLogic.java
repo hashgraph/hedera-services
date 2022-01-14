@@ -82,24 +82,24 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			var result = ledger.lookUpAccountId(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
-			if (result.getRight() != OK) {
-				txnCtx.setStatus(result.getRight());
+			var result = ledger.lookUpAccountId(op.getDeleteAccountID());
+			if (result.response() != OK) {
+				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID id = result.getLeft();
+			AccountID id = result.resolvedId();
 
 			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
 			}
 
-			result = ledger.lookUpAccountId(op.getTransferAccountID(), INVALID_ACCOUNT_ID);
-			if (result.getRight() != OK) {
-				txnCtx.setStatus(result.getRight());
+			result = ledger.lookUpAccountId(op.getTransferAccountID());
+			if (result.response() != OK) {
+				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID beneficiary = result.getLeft();
+			AccountID beneficiary = result.resolvedId();
 
 			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);

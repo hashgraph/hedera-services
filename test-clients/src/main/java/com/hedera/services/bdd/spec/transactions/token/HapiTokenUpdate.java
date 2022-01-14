@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -265,8 +264,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							} else {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							}
-							newTreasury.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec,
-									treasuryIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME)));
+							newTreasury.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
@@ -277,8 +275,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							}
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							newPauseKey.ifPresent(k -> b.setPauseKey(spec.registry().getKey(k)));
-							autoRenewAccount.ifPresent(a -> b.setAutoRenewAccount(getIdWithAliasLookUp(a, spec,
-									autoRenewAccountIsAlias ? ReferenceType.ALIAS_KEY_NAME : ReferenceType.REGISTRY_NAME)));
+							autoRenewAccount.ifPresent(a -> b.setAutoRenewAccount(getIdWithAliasLookUp(a, spec)));
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));

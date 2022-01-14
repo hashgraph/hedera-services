@@ -26,6 +26,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -77,7 +78,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -96,12 +96,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -295,8 +295,8 @@ class HederaTokenStoreTest {
 		uniqTokenViewsManager = mock(UniqTokenViewsManager.class);
 
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookupIdBy(aliasT)).willReturn(new EntityNum(1));
-		given(aliasManager.lookupIdBy(aliasA)).willReturn(new EntityNum(6));
+		given(aliasManager.lookupIdBy(newTreasuryWithAlias.getAlias())).willReturn(EntityNum.fromAccountId(newTreasury));
+		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
@@ -896,6 +896,8 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
+		given(aliasManager.lookUpAccountID(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(AliasLookup.of(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT));
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
@@ -905,22 +907,24 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidNewAutoRenewAlias() {
-		given(aliasManager.lookupIdBy(aliasA)).willReturn(MISSING_NUM);
+		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT));
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		assertEquals(INVALID_ALIAS_KEY, outcome);
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
 	}
 
 	@Test
 	void updateRejectsInvalidNewTreasuryAlias() {
-		given(aliasManager.lookupIdBy(aliasT)).willReturn(MISSING_NUM);
+		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
 		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		assertEquals(INVALID_ALIAS_KEY, outcome);
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, outcome);
 	}
 
 	@Test
@@ -989,6 +993,8 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsZeroTokenBalanceKey() {
+		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasury, OK));
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(nonfungible);
 		givenUpdateTarget(ALL_KEYS, nonfungibleToken);
@@ -1072,6 +1078,16 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void delegatesLookUpAccountIDCorrectly() {
+		final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
+		given(aliasManager.lookUpAccountID(alias, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(treasury, OK));
+		final var result = subject.lookUpAccountId(alias, aliasManager, INVALID_ACCOUNT_ID);
+		assertEquals(OK, result.response());
+		assertEquals(treasury, result.resolvedId());
+	}
+
+	@Test
 	void throwsIfInvalidTreasury() {
 		subject.knownTreasuries.clear();
 
@@ -1080,6 +1096,8 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
+		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
@@ -1113,6 +1131,8 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksForEverythingWithNewExpiry() {
+		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
@@ -1142,6 +1162,10 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksForEverythingWithAliasAndNewExpiry() {
+		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasury, OK));
+		given(aliasManager.lookUpAccountID(treasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(treasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
@@ -1216,6 +1240,11 @@ class HederaTokenStoreTest {
 	void updateHappyPathWorksWithNewAutoRenewAccount() {
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
+		given(aliasManager.lookUpAccountID(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+				AliasLookup.of(newAutoRenewAccount, OK));
+		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
+				AliasLookup.of(newTreasury, OK));
+
 		final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true, false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);

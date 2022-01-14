@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
@@ -149,6 +150,14 @@ public class TxnId implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
+	public static TxnId fromGrpc(final TransactionID grpc, final AliasManager aliasManager) {
+		return new TxnId(
+				EntityId.fromGrpcAccountId(aliasManager.lookUpPayerAccountID(grpc.getAccountID()).resolvedId()),
+				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
+				grpc.getScheduled(),
+				grpc.getNonce());
+	}
+
 	public static TxnId fromGrpc(final TransactionID grpc) {
 		return new TxnId(
 				EntityId.fromGrpcAccountId(grpc.getAccountID()),

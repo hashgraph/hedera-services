@@ -101,7 +101,7 @@ class SigOpsRegressionTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers, aliasManager);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	static boolean otherPartySigsAreActive(
@@ -119,11 +119,13 @@ class SigOpsRegressionTest {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(
+				accessor.getPlatformTxn().getSignatures());
 
 		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
+			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID,
+					characteristics)) {
 				return false;
 			}
 		}

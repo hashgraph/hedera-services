@@ -26,7 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -39,6 +39,7 @@ import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -123,16 +124,17 @@ class ContextOptionValidatorTest {
 	private HFileMeta attr;
 	private HFileMeta deletedAttr;
 	private StateView view;
+	private HederaLedger ledger;
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
-	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
 		accounts = mock(MerkleMap.class);
+		ledger = mock(HederaLedger.class);
 		given(accounts.get(EntityNum.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(EntityNum.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
@@ -161,16 +163,26 @@ class ContextOptionValidatorTest {
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
-		aliasManager = mock(AliasManager.class);
 
 		subject = new ContextOptionValidator(
-				nodeInfo, properties, txnCtx, dynamicProperties, aliasManager);
+				nodeInfo, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
 		return FileGetInfoResponse.FileInfo.newBuilder()
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
+				.build();
+	}
+
+	private TransactionBody buildValidTransaction() {
+		final var creationOp = CryptoCreateTransactionBody.getDefaultInstance();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(Instant.now().getEpochSecond()))
+						.setAccountID(a))
+				.setCryptoCreateAccount(creationOp)
 				.build();
 	}
 

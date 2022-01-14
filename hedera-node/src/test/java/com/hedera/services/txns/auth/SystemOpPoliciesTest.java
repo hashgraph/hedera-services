@@ -23,6 +23,7 @@ package com.hedera.services.txns.auth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SystemOpPoliciesTest {
-	SystemOpPolicies subject = new SystemOpPolicies(new MockEntityNumbers());
+	SystemOpPolicies subject = new SystemOpPolicies(new MockEntityNumbers(), new AliasManager());
 
 	@Test
 	void treasuryCanUpdateAllNonAccountEntities() {

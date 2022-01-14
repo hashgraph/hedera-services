@@ -26,8 +26,9 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -67,6 +68,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -123,6 +125,10 @@ class ContractCreateTransitionLogicTest {
 	private final Instant consensusTime = Instant.now();
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
+
+	private final AccountID senderAccountId = senderAccount.getId().asGrpcAccount();
+
+	private final AccountID aliasPayer = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
 	private TransactionBody contractCreateTxn;
 
 	@BeforeEach
@@ -147,13 +153,28 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
+
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
+	void validationFailsWithInvalidProxy() {
+		AccountID invalidProxy = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
+		givenInvalidTxnCtx(aliasPayer, invalidProxy);
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(hederaLedger.lookUpAccountId(invalidProxy)).willReturn(
+				AliasLookup.of(invalidProxy, INVALID_ACCOUNT_ID));
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
 	void rejectsInvalidAutoRenew() {
-		givenValidTxnCtx(false);
+		givenValidTxnCtx(false, proxy, senderAccount);
 
 		// expect:
 		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(contractCreateTxn));
@@ -248,6 +269,10 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -324,6 +349,10 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -376,6 +405,10 @@ class ContractCreateTransitionLogicTest {
 				txnCtx.consensusTime(),
 				expiry))
 				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -398,7 +431,64 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given (worldState.persist()).willReturn(secondaryCreations);
+		given(worldState.persist()).willReturn(secondaryCreations);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		final var result = TransactionProcessingResult
+				.successful(
+						null,
+						1234L,
+						0L,
+						124L,
+						Bytes.EMPTY,
+						contractAccount.getId().asEvmAddress());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		var expiry = RequestBuilder.getExpirationTime(consensusTime,
+				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(new String(bytecode)),
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(recordServices).externaliseEvmCreateTransaction(result);
+		verify(worldState, never()).reclaimContractId();
+		verify(txnCtx).setCreated(contractAccount.getId().asGrpcContract());
+	}
+
+	@Test
+	void looksUpProxyIDWhenAliasIsGiven() {
+		AccountID proxyId = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
+		Account senderId = new Account(new Id(0, 0, 0));
+		senderId.setAlias(ByteString.copyFromUtf8("bbb"));
+		givenValidTxnCtxWithProxyAndSender(proxyId, senderId);
+
+		given(hederaLedger.lookUpAccountId(proxyId)).willReturn(
+				AliasLookup.of(proxy, OK));
+		given(hederaLedger.lookUpAccountId(senderId.getId().asGrpcAccount())).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
 		final var result = TransactionProcessingResult
 				.successful(
 						null,
@@ -427,7 +517,6 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
-		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 		verify(worldState, never()).reclaimContractId();
@@ -439,6 +528,9 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
+
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 
 		// expect:
@@ -452,6 +544,10 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -467,6 +563,10 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -493,6 +593,10 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
 				new InvalidTransactionException(SERIALIZATION_FAILED));
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
+				AliasLookup.of(proxy, OK));
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 
@@ -513,10 +617,27 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(true);
+		givenValidTxnCtx(true, proxy, senderAccount);
 	}
 
-	private void givenValidTxnCtx(boolean rememberAutoRenew) {
+	private void givenValidTxnCtxWithProxyAndSender(AccountID proxy, Account sender) {
+		givenValidTxnCtx(true, proxy, sender);
+	}
+
+	private void givenInvalidTxnCtx(AccountID aliasPayer, AccountID proxy) {
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnIdWithAlias(aliasPayer))
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+	}
+
+	private void givenValidTxnCtx(boolean rememberAutoRenew, AccountID proxy, Account sender) {
 		var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
@@ -526,14 +647,26 @@ class ContractCreateTransitionLogicTest {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod));
 		}
 		var txn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
+				.setTransactionID(ourTxnId(sender))
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 	}
 
 	private TransactionID ourTxnId() {
+		return ourTxnId(senderAccount);
+	}
+
+	private TransactionID ourTxnId(Account sender) {
 		return TransactionID.newBuilder()
-				.setAccountID(senderAccount.getId().asGrpcAccount())
+				.setAccountID(sender.getId().asGrpcAccount())
+				.setTransactionValidStart(
+						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+				.build();
+	}
+
+	private TransactionID ourTxnIdWithAlias(AccountID alias) {
+		return TransactionID.newBuilder()
+				.setAccountID(alias)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();

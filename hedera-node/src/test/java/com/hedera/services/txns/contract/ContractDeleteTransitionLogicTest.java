@@ -21,11 +21,12 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -44,6 +45,7 @@ import java.time.Instant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -103,7 +105,7 @@ class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 		given(ledger.exists(transfer)).willReturn(true);
 		given(ledger.isDetached(transfer)).willReturn(true);
-
+		given(ledger.lookUpAccountId(transfer)).willReturn(AliasLookup.of(transfer, OK));
 		// when:
 		subject.doStateTransition();
 
@@ -124,7 +126,7 @@ class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(deleteRec);
-
+		given(ledger.lookUpAccountId(transfer)).willReturn(AliasLookup.of(transfer, OK));
 		// when:
 		subject.doStateTransition();
 
@@ -144,6 +146,7 @@ class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(updateRec);
+		given(ledger.lookUpAccountId(transfer)).willReturn(AliasLookup.of(transfer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -182,6 +185,24 @@ class ContractDeleteTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
+
+	@Test
+	void failsWithImproperTransferID() {
+		TransactionRecord updateRec = TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder()
+						.setStatus(SUCCESS)
+						.build())
+				.build();
+
+		givenValidTxnCtx();
+		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(updateRec);
+		given(ledger.lookUpAccountId(transfer)).willReturn(
+				AliasLookup.of(transfer, INVALID_ACCOUNT_ID));
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	private void givenValidTxnCtx() {

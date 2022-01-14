@@ -87,7 +87,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenDissociateTransactionBody opBody = spec
 				.txns()
 				.<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(

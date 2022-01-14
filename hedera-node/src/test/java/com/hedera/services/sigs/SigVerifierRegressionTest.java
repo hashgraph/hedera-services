@@ -78,7 +78,7 @@ class SigVerifierRegressionTest {
 	private AliasManager aliasManager;
 
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers, aliasManager);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test

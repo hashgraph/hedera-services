@@ -25,6 +25,7 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
@@ -38,12 +39,10 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,10 +96,10 @@ class TokenUpdateTransitionLogicTest {
 	private final AccountID newAutoRenewWithAlias = AccountID.newBuilder().setAlias(validAliasA).build();
 	private final AccountID newTreasuryWithAlias = AccountID.newBuilder().setAlias(validAliasT).build();
 	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
-	private final Pair<AccountID, ResponseCodeEnum> oldAutoRenewLookup = Pair.of(oldAutoRenew, OK);
-	private final Pair<AccountID, ResponseCodeEnum> oldTreasuryLookup = Pair.of(oldTreasury, OK);
-	private final Pair<AccountID, ResponseCodeEnum> newAutoRenewLookup = Pair.of(newAutoRenew, OK);
-	private final Pair<AccountID, ResponseCodeEnum> newTreasuryLookup = Pair.of(newTreasury, OK);
+	private final AliasLookup oldAutoRenewLookup = AliasLookup.of(oldAutoRenew, OK);
+	private final AliasLookup oldTreasuryLookup = AliasLookup.of(oldTreasury, OK);
+	private final AliasLookup newAutoRenewLookup = AliasLookup.of(newAutoRenew, OK);
+	private final AliasLookup newTreasuryLookup = AliasLookup.of(newTreasury, OK);
 	private String symbol = "SYMBOL";
 	private String name = "Name";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
@@ -140,7 +139,8 @@ class TokenUpdateTransitionLogicTest {
 		given(store.lookUpAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
 		given(store.lookUpAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
 		given(store.lookUpAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT)).willReturn(newAutoRenewLookup);
-		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(newTreasuryLookup);
+		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
+				newTreasuryLookup);
 		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
@@ -233,7 +233,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
-				Pair.of(newTreasury, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+				new AliasLookup(newTreasury, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
 
@@ -273,7 +273,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newAutoRenew, INVALID_AUTORENEW_ACCOUNT)).willReturn(
-				Pair.of(newAutoRenew, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+				new AliasLookup(newAutoRenew, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		subject.doStateTransition();
 
@@ -396,7 +396,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtxWithAlias(true);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
-				.willReturn(Pair.of(newTreasury, INVALID_ALIAS_KEY));
+				.willReturn(AliasLookup.of(newTreasury, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();
 
@@ -409,7 +409,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtxWithAlias(false);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT))
-				.willReturn(Pair.of(newAutoRenew, INVALID_ALIAS_KEY));
+				.willReturn(AliasLookup.of(newAutoRenew, INVALID_ALIAS_KEY));
 
 		subject.doStateTransition();
 
@@ -611,7 +611,7 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtx(withNewTreasury, false, true);
 	}
 
-	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury,boolean useAlias) {
+	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury, boolean useAlias) {
 		final var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)

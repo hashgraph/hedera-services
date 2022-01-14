@@ -24,6 +24,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -85,6 +87,7 @@ class NarratedLedgerChargingTest {
 	void chargesNoFeesToExemptPayer() {
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
 		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 
 		// when:
@@ -99,7 +102,6 @@ class NarratedLedgerChargingTest {
 	@Test
 	void chargesAllFeesToPayerAsExpected() {
 		givenSetupToChargePayer(nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
-
 		// expect:
 		assertTrue(subject.canPayerAffordAllFees());
 		assertTrue(subject.isPayerWillingToCoverAllFees());
@@ -165,6 +167,8 @@ class NarratedLedgerChargingTest {
 		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+
 		// and given:
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -177,6 +181,7 @@ class NarratedLedgerChargingTest {
 	@Test
 	void detectsLackOfWillingness() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -191,6 +196,7 @@ class NarratedLedgerChargingTest {
 	void exemptPayerNeedsNoAbility() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -205,11 +211,13 @@ class NarratedLedgerChargingTest {
 	void exemptPayerNeedsNoWillingness() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 
 		// expect:
+		assertEquals(grpcPayerId, subject.getGrpcPayerId());
 		assertTrue(subject.isPayerWillingToCoverAllFees());
 		assertTrue(subject.isPayerWillingToCoverNetworkFee());
 		assertTrue(subject.isPayerWillingToCoverServiceFee());
@@ -225,6 +233,7 @@ class NarratedLedgerChargingTest {
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(accessor.getOfferedFee()).willReturn(totalOfferedFee);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}
@@ -238,6 +247,7 @@ class NarratedLedgerChargingTest {
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}

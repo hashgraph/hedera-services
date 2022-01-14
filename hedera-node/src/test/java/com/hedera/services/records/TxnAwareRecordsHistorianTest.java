@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
@@ -81,6 +82,7 @@ class TxnAwareRecordsHistorianTest {
 	final int payerRecordTtl = 180;
 	final long payerExpiry = topLevelNow.getEpochSecond() + payerRecordTtl;
 	final private AccountID d = asAccount("0.0.4444");
+	final private AliasManager aliasManager = new AliasManager();
 	final private TransactionID txnIdA = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder()
 					.setSeconds(nows)

@@ -20,12 +20,12 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -252,6 +252,7 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
@@ -265,6 +266,7 @@ import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT
 import static com.hedera.test.factories.txns.FileCreateFactory.DEFAULT_WACL_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -272,9 +274,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -359,7 +363,7 @@ class SigRequirementsTest {
 
 	private HederaFs hfs;
 	private TokenStore tokenStore;
-	private AliasManager aliasManager;
+	private AliasManager aliasManager = new AliasManager();
 	private FileNumbers fileNumbers = new MockFileNumbers();
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
@@ -369,7 +373,7 @@ class SigRequirementsTest {
 	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
 	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
 	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers, aliasManager);
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
@@ -506,11 +510,12 @@ class SigRequirementsTest {
 	@Test
 	void getsNftOwnerChangeUsingAlias() throws Throwable {
 		setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
+		given(aliasManager.lookupIdBy(FIRST_TOKEN_SENDER_ALIAS.getAlias()))
+				.willReturn(EntityNum.fromAccountId(FIRST_TOKEN_SENDER));
 
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
+		assertThat(sanityRestored(summary.getOrderedKeys()),
 				contains(FIRST_TOKEN_SENDER_KT.asKey()));
 	}
 
@@ -733,7 +738,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
 	}
 
@@ -938,6 +943,8 @@ class SigRequirementsTest {
 	void getsFileAppendProtected() throws Throwable {
 		// given:
 		setupFor(SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER);
+		given(aliasManager.lookUpPayerAccountID(txn.getTransactionID().getAccountID()))
+				.willReturn(AliasLookup.of(txn.getTransactionID().getAccountID(), OK));
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1069,7 +1076,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(MISC_FILE_WACL_KT.asKey()));
 	}
 
@@ -1635,7 +1642,8 @@ class SigRequirementsTest {
 	@Test
 	void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
-		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO,
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -2783,14 +2791,17 @@ class SigRequirementsTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(CURRENTLY_UNUSED_ALIAS)))
-				.willReturn(EntityNum.MISSING_NUM);
-		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS)))
-				.willReturn(EntityNum.fromAccountId(NO_RECEIVER_SIG));
-		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS)))
-				.willReturn(EntityNum.fromAccountId(RECEIVER_SIG));
-		given(aliasManager.lookupIdBy(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS))
-				.willReturn(EntityNum.fromAccountId(FIRST_TOKEN_SENDER));
+		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS)))
+				.willReturn(AliasLookup.of(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS), INVALID_PAYER_ACCOUNT_ID));
+		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(NO_RECEIVER_SIG_ALIAS)))
+				.willReturn(AliasLookup.of(NO_RECEIVER_SIG, OK));
+		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(RECEIVER_SIG_ALIAS)))
+				.willReturn(AliasLookup.of(RECEIVER_SIG, OK));
+		given(aliasManager.lookUpPayerAccountID(
+				asAccountWithAlias(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8())))
+				.willReturn(AliasLookup.of(FIRST_TOKEN_SENDER, OK));
+		given(aliasManager.lookUpPayerAccountID(txn.getTransactionID().getAccountID()))
+				.willReturn(AliasLookup.of(txn.getTransactionID().getAccountID(), OK));
 
 		subject = new SigRequirements(
 				sigMetaLookup.orElse(

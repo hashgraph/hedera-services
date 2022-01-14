@@ -186,7 +186,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 							}
 							entityMemo.ifPresent(b::setMemo);
 							payerAccountID.ifPresent(a -> {
-								var payer = getIdWithAliasLookUp(a, spec, designatedPayerReferenceType);
+								var payer = getIdWithAliasLookUp(a, spec);
 								b.setPayerAccountID(payer);
 							});
 						}

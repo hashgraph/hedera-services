@@ -21,9 +21,11 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.ledger.accounts.AliasLookup;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -39,11 +41,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,6 +67,8 @@ class QueryFeeCheckTest {
 	private static final AccountID aDetached = asAccount("0.0.75231");
 	private static final AccountID aQueryPayer = asAccount("0.0.13258");
 	private static final AccountID aTestPayer = asAccount("0.0.13259");
+	private static final AccountID aRichAlias = asAccountWithAlias("pretend");
+	private static final AccountID invalidAlias = asAccountWithAlias("invalid");
 	private static final TransactionID txnId = TransactionID.newBuilder().setAccountID(aRich).build();
 	private static final long feeRequired = 1234L;
 	private static final long aLittle = 2L;
@@ -79,6 +86,7 @@ class QueryFeeCheckTest {
 	private OptionValidator validator;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private AliasManager aliasManager;
 
 	private QueryFeeCheck subject;
 
@@ -115,7 +123,19 @@ class QueryFeeCheckTest {
 
 		validator = mock(OptionValidator.class);
 
-		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts);
+		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(aRichAlias.getAlias())).willReturn(EntityNum.fromAccountId(aRich));
+		given(aliasManager.lookupIdBy(invalidAlias.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		given(aliasManager.lookUpPayerAccountID(invalidAlias)).willReturn(
+				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
+		given(aliasManager.lookUpPayerAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
+		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccountID(aQueryPayer)).willReturn(AliasLookup.of(aQueryPayer, OK));
+		given(aliasManager.lookUpAccountID(aTestPayer)).willReturn(AliasLookup.of(aTestPayer, OK));
+
+		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts, aliasManager);
 	}
 
 	@Test
@@ -225,6 +245,9 @@ class QueryFeeCheckTest {
 
 	@Test
 	void catchesBadEntry() {
+		given(aliasManager.lookUpAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
+		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
 		assertEquals(
 				ACCOUNT_ID_DOES_NOT_EXIST,
 				subject.transfersPlausibility(
@@ -245,6 +268,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void nonexistentSenderHasNoBalance() {
+		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
 		final var adjustment = adjustmentWith(aMissing, -aLittle);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
@@ -263,6 +287,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void detachedPayerRejectedWithRefinement() {
+		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		final var adjustment = adjustmentWith(aDetached, -aLot);
 
@@ -273,6 +298,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void cannotBeDetachedIfNoAutoRenew() {
+		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		dynamicProps.disableAutoRenew();
 		final var adjustment = adjustmentWith(aDetached, -aLot);
@@ -284,6 +310,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void noLongerDetachedWithNonzeroBalance() {
+		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		given(detached.getBalance()).willReturn(1L);
 		final var adjustment = adjustmentWith(aDetached, -aLot);
@@ -295,6 +322,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void missingReceiverRejected() {
+		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
 		final var adjustment = adjustmentWith(aMissing, aLot);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
@@ -313,8 +341,50 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
+	void adjustmentAccountValidated() {
+		given(aliasManager.lookUpAccountID(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
+		final var adjustment = adjustmentWith(invalidAlias, aLot);
+
+		final var status = subject.adjustmentPlausibility(adjustment);
+
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void validateQueryPaymentSucceedsWithAliasPayer() {
+		final long amount = 8;
+		final var body = getPaymentTxnBodyWithAlias(amount, null, aRichAlias, aRichAlias);
+
+		assertEquals(aRichAlias, body.getTransactionID().getAccountID());
+		assertTrue(checkPayerInTransferList(body, aRichAlias));
+		assertEquals(OK, subject.validateQueryPaymentTransfers(body));
+	}
+
+	@Test
+	void validateQueryPaymentFailsWithInvalidAliasPayer() {
+		final long amount = 8;
+		final var body = getPaymentTxnBodyWithAlias(amount, null, invalidAlias, aRichAlias);
+
+		assertEquals(invalidAlias, body.getTransactionID().getAccountID());
+		assertTrue(checkPayerInTransferList(body, aRichAlias));
+		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.validateQueryPaymentTransfers(body));
+	}
+
+	@Test
+	void validateQueryPaymentFailsWithValidAliasPayerInvalidSender() {
+		final long amount = 8;
+		final var body = getPaymentTxnBodyWithAlias(amount, null, aRichAlias, invalidAlias);
+
+		assertEquals(aRichAlias, body.getTransactionID().getAccountID());
+		assertTrue(checkPayerInTransferList(body, invalidAlias));
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateQueryPaymentTransfers(body));
+	}
+
+	@Test
 	void paymentFailsWithQueryPayerBalance() {
 		final long amount = 5000L;
+		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
@@ -333,6 +403,9 @@ class QueryFeeCheckTest {
 	@Test
 	void paymentFailsWithBrokenPayer() {
 		final long amount = 5000L;
+		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpPayerAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
@@ -351,6 +424,10 @@ class QueryFeeCheckTest {
 	@Test
 	void paymentFailsWithInsufficientPayerBalance() {
 		final long amount = 5000L;
+		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpPayerAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
+
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
@@ -367,6 +444,8 @@ class QueryFeeCheckTest {
 	@Test
 	void queryPaymentMultiPayerMultiNodeSucceeds() {
 		final long amount = 200L;
+		given(aliasManager.lookUpAccountID(anotherNode)).willReturn(AliasLookup.of(anotherNode, OK));
+
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
@@ -427,6 +506,31 @@ class QueryFeeCheckTest {
 				.setNodeAccountID(aNode)
 				.setTransactionFee(feeRequired)
 				.build();
+	}
+
+	private TransactionBody getPaymentTxnBodyWithAlias(final long amount, final TransferList.Builder transferList,
+			final AccountID payer, final AccountID sender) {
+		given(aliasManager.lookUpPayerAccountID(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpPayerAccountID(invalidAlias)).willReturn(
+				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
+		given(aliasManager.lookUpAccountID(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccountID(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
+
+		final var transList = (transferList != null)
+				? transferList
+				: TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(sender).setAmount(-1 * amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+		return TransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+				.setTransactionID(getTxnIdWithAlias(payer))
+				.setNodeAccountID(aNode)
+				.setTransactionFee(feeRequired)
+				.build();
+	}
+
+	private final TransactionID getTxnIdWithAlias(final AccountID payer) {
+		return TransactionID.newBuilder().setAccountID(payer).build();
 	}
 
 	private boolean checkPayerInTransferList(final TransactionBody body, final AccountID payer) {

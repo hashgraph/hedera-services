@@ -62,7 +62,9 @@ public class CallLocalExecutor {
 	/**
 	 * Executes the specified {@link ContractCallLocalQuery} through a static call. Parses the result from the
 	 * {@link CallLocalEvmTxProcessor} and sets the appropriate {@link com.hederahashgraph.api.proto.java.ResponseCode}
-	 * @param op the query to asnwer
+	 *
+	 * @param op
+	 * 		the query to asnwer
 	 * @return {@link ContractCallLocalResponse} result of the execution
 	 */
 	public ContractCallLocalResponse execute(ContractCallLocalQuery op) {
@@ -70,7 +72,11 @@ public class CallLocalExecutor {
 		try {
 			TransactionBody body =
 					SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-			final var senderId = Id.fromGrpcAccount(body.getTransactionID().getAccountID());
+			final var grpcSender = body.getTransactionID().getAccountID();
+			final long senderAccountNum = accountStore.getAccountNumFromAlias(grpcSender.getAlias(),
+					grpcSender.getAccountNum());
+			final var senderId = new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
+
 			final var contractId = Id.fromGrpcContract(op.getContractID());
 
 			/* --- Load the model objects --- */

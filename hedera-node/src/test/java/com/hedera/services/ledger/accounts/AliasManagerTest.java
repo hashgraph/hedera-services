@@ -23,12 +23,15 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,5 +103,39 @@ class AliasManagerTest {
 
 		assertTrue(subject.forgetAliasIfPresent(withNum, liveAccounts));
 		assertEquals(0, subject.getAliases().size());
+	}
+
+	@Test
+	void looksUpAccountIds() {
+		EntityNum a = new EntityNum(1);
+		EntityNum b = new EntityNum(2);
+		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
+		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
+		AccountID aId = AccountID.newBuilder().setAlias(aliasA).build();
+		AccountID bId = AccountID.newBuilder().setAlias(aliasB).build();
+		AccountID invalidId = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("dummy")).build();
+		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
+			put(aliasA, a);
+			put(aliasB, b);
+		}};
+
+		assertTrue(subject.getAliases().isEmpty());
+
+		subject.setAliases(expectedMap);
+		assertEquals(expectedMap, subject.getAliases());
+
+		final var resultA = subject.lookUpAccountID(aId);
+		final var resultB = subject.lookUpAccountID(bId);
+		assertEquals(a.longValue(), resultA.resolvedId().getAccountNum());
+		assertEquals(OK, resultA.response());
+		assertEquals(b.longValue(), resultB.resolvedId().getAccountNum());
+		assertEquals(OK, resultB.response());
+
+
+		final var invalidResult = subject.lookUpAccountID(invalidId);
+		assertEquals(invalidId, invalidResult.resolvedId());
+		assertEquals(INVALID_ACCOUNT_ID, invalidResult.response());
+
+		assertTrue(subject.contains(aliasA));
 	}
 }

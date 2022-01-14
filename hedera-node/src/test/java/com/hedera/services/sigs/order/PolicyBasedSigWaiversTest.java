@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.sigs.order;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,8 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PolicyBasedSigWaiversTest {
 	private final EntityNumbers entityNumbers = new MockEntityNumbers();
+	private final AliasManager aliasManager = new AliasManager();
 
-	private final SystemOpPolicies opPolicies = new SystemOpPolicies(entityNumbers);
+	private final SystemOpPolicies opPolicies = new SystemOpPolicies(entityNumbers, aliasManager);
 
 	private PolicyBasedSigWaivers subject;
 

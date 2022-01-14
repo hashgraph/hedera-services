@@ -20,11 +20,11 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.MutableStateChildren;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,6 +54,7 @@ import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -107,6 +108,7 @@ class GetAccountRecordsAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookUpAccountID(asAccount(target))).willReturn(AliasLookup.of(asAccount(target), OK));
 
 		subject = new GetAccountRecordsAnswer(new AnswerFunctions(aliasManager), optionValidator, aliasManager);
 	}
@@ -138,7 +140,6 @@ class GetAccountRecordsAnswerTest {
 	@Test
 	void getsTheAccountRecords() {
 		final var query = validQuery(ANSWER_ONLY, fee, target);
-
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);
@@ -154,6 +155,30 @@ class GetAccountRecordsAnswerTest {
 		final var validity = subject.checkValidity(query, view);
 
 		assertEquals(ACCOUNT_DELETED, validity);
+	}
+
+	@Test
+	void validatesInvalidAccountID() {
+		final var query = validQuery(COST_ANSWER, fee, target);
+		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
+		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), INVALID_ACCOUNT_ID));
+
+		final var validity = subject.checkValidity(query, view);
+
+		assertEquals(INVALID_ACCOUNT_ID, validity);
+	}
+
+	@Test
+	void validatesAccountID() {
+		final var query = validQuery(COST_ANSWER, fee, target);
+		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
+		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), OK));
+
+		final var validity = subject.checkValidity(query, view);
+
+		assertEquals(OK, validity);
 	}
 
 	@Test
@@ -186,10 +211,11 @@ class GetAccountRecordsAnswerTest {
 	@Test
 	void worksWithAlias() {
 		final var alias = "aaa";
-		final var query = validQueryWithAlias(ANSWER_ONLY, fee, "aaa");
-		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias)))
-				.willReturn(EntityNum.fromAccountId(asAccount(target)));
-
+		final var query = validQueryWithAlias(ANSWER_ONLY, fee, alias);
+		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias))).willReturn(
+				EntityNum.fromAccountId(asAccount(target)));
+		given(aliasManager.lookUpAccountID(asAccountWithAlias(alias))).willReturn(AliasLookup.of(asAccount(target),
+				OK));
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);

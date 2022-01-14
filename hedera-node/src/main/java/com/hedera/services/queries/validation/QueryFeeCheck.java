@@ -21,9 +21,10 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -52,16 +53,19 @@ public class QueryFeeCheck {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public QueryFeeCheck(
 			OptionValidator validator,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -115,7 +119,12 @@ public class QueryFeeCheck {
 	}
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
-		var id = adjustment.getAccountID();
+		var lookupResult = aliasManager.lookUpAccountID(adjustment.getAccountID());
+		if (lookupResult.response() != OK) {
+			return lookupResult.response();
+		}
+
+		var id = lookupResult.resolvedId();
 		var key = fromAccountId(id);
 		long amount = adjustment.getAmount();
 
@@ -139,11 +148,20 @@ public class QueryFeeCheck {
 	 * Validate each payer has enough balance that is needed for transfer.
 	 * If one of the payer for query is also paying transactionFee validate the payer has balance to pay both
 	 *
-	 * @param txn the transaction body to validate
+	 * @param txn
+	 * 		the transaction body to validate
 	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-		AccountID transactionPayer = txn.getTransactionID().getAccountID();
+		final var payerAccountId = txn.getTransactionID().getAccountID();
+
+
+		final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
+		if (result.response() != OK) {
+			return result.response();
+		}
+		AccountID transactionPayer = result.resolvedId();
+
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
 		long transactionFee = txn.getTransactionFee();
@@ -151,7 +169,12 @@ public class QueryFeeCheck {
 		final var currentAccounts = accounts.get();
 		ResponseCodeEnum status;
 		for (AccountAmount accountAmount : transfers) {
-			var id = accountAmount.getAccountID();
+			final var amountValidation = aliasManager.lookUpAccountID(accountAmount.getAccountID());
+			if (amountValidation.response() != OK) {
+				return amountValidation.response();
+			}
+			var id = amountValidation.resolvedId();
+
 			long amount = accountAmount.getAmount();
 
 			if (amount < 0) {

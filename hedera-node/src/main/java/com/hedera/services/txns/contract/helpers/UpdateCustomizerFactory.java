@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract.helpers;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -46,7 +47,8 @@ public class UpdateCustomizerFactory {
 	public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
 			MerkleAccount contract,
 			OptionValidator validator,
-			ContractUpdateTransactionBody updateOp
+			ContractUpdateTransactionBody updateOp,
+			HederaLedger ledger
 	) {
 		if (!onlyAffectsExpiry(updateOp) && !isMutable(contract)) {
 			return Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT);
@@ -62,7 +64,11 @@ public class UpdateCustomizerFactory {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
-			customizer.proxy(fromGrpcAccountId(updateOp.getProxyAccountID()));
+			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID());
+			if (result.response() != OK) {
+				return Pair.of(Optional.empty(), result.response());
+			}
+			customizer.proxy(fromGrpcAccountId(result.resolvedId()));
 		}
 		if (updateOp.hasAutoRenewPeriod()) {
 			customizer.autoRenewPeriod(updateOp.getAutoRenewPeriod().getSeconds());

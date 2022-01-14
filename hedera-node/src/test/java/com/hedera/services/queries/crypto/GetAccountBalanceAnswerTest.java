@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -56,6 +57,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -73,6 +75,7 @@ import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
 	private final String accountIdLit = "0.0.12345";
+	private final AccountID targetAlias = asAccountWithAlias("alias");
 	private final AccountID target = asAccount(accountIdLit);
 	private final String contractIdLit = "0.0.12346";
 	private final long balance = 1_234L;
@@ -236,6 +239,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
 
 		// when:
 		Response response = subject.responseGiven(query, view, PLATFORM_NOT_ACTIVE);
@@ -258,6 +262,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
 		// and:
 		given(optionValidator.queryableAccountStatus(id, accounts))
 				.willReturn(ACCOUNT_DELETED);
@@ -270,12 +275,23 @@ class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
+	void validatesIfIdExistsIfAlias() {
+		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+				.setAccountID(targetAlias)
+				.build();
+		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		given(aliasManager.lookUpAccountID(targetAlias)).willReturn(AliasLookup.of(targetAlias, INVALID_ACCOUNT_ID));
+		ResponseCodeEnum status = subject.checkValidity(query, view);
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
 	void resolvesAliasIfExtant() {
 		final var aliasId = AccountID.newBuilder()
 				.setAlias(ByteString.copyFromUtf8("nope"))
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
-		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
+		given(aliasManager.lookUpAccountID(aliasId)).willReturn(AliasLookup.of(wellKnownId.toGrpcAccountId(), OK));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -310,7 +326,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-
+		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
 		ResponseCodeEnum status = response.getCryptogetAccountBalance()

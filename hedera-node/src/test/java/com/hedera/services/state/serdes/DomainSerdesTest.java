@@ -9,9 +9,9 @@ package com.hedera.services.state.serdes;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -179,7 +179,7 @@ public class DomainSerdesTest {
 		var writer = mock(IoWritingConsumer.class);
 
 		// when:
-		subject.writeNullable(null, out, (IoWritingConsumer<? extends Object>)writer);
+		subject.writeNullable(null, out, (IoWritingConsumer<? extends Object>) writer);
 
 		// then:
 		verify(out).writeBoolean(false);
@@ -300,7 +300,7 @@ public class DomainSerdesTest {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
-		var reader = (IoReadingFunction<EntityId>)mock(IoReadingFunction.class);
+		var reader = (IoReadingFunction<EntityId>) mock(IoReadingFunction.class);
 		var data = new EntityId(1L, 2L, 3L);
 
 		given(in.readBoolean()).willReturn(true);
@@ -364,7 +364,7 @@ public class DomainSerdesTest {
 	@Test
 	void idSerdesWork() throws Exception {
 		// given:
-		EntityId idIn = new EntityId(1,2, 3);
+		EntityId idIn = new EntityId(1, 2, 3);
 
 		// when:
 		byte[] repr = serOutcome(out -> subject.serializeId(idIn, out));
@@ -423,7 +423,7 @@ public class DomainSerdesTest {
 				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(7_777_777_777L)))
 				.setFee(556L)
 				.setTransferList(CurrencyAdjustments.fromGrpc(withAdjustments(
-						asAccount("0.0.2"),-6L,
+						asAccount("0.0.2"), -6L,
 						asAccount("0.0.1001"), 3L,
 						asAccount("0.0.1002"), 3L)))
 				.setContractCallResult(SolidityFnResult.fromGrpc(ContractFunctionResult.newBuilder()

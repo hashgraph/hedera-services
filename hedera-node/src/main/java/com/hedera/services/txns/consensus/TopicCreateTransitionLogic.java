@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -81,18 +82,25 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final var transactionBody = transactionContext.accessor().getTxn();
-		final var payerAccountId = transactionBody.getTransactionID().getAccountID();
+		final var payerId = transactionBody.getTransactionID().getAccountID();
 		final var op = transactionBody.getConsensusCreateTopic();
 		final var submitKey = op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
 		final var memo = op.getMemo();
 		final var autoRenewPeriod = op.getAutoRenewPeriod();
-		final var autoRenewGrpc = op.getAutoRenewAccount();
-		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewGrpc.getAlias(),
-				autoRenewGrpc.getAccountNum());
-		final var autoRenewAccountId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
+		final var autoRenewId = op.getAutoRenewAccount();
 
 		/* --- Validate --- */
+		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewId.getAlias(),
+				autoRenewId.getAccountNum());
+		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
+
+		final var payer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());
+		final var payerAccountId = AccountID.newBuilder()
+				.setShardNum(payerId.getShardNum())
+				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
+				.build();
+
 		final var memoValidationResult = validator.memoCheck(memo);
 		validateTrue(OK == memoValidationResult, memoValidationResult);
 		validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);

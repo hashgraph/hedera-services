@@ -21,7 +21,6 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
@@ -35,7 +34,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -57,19 +55,16 @@ public final class AwareNodeDiligenceScreen {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public AwareNodeDiligenceScreen(
 			final OptionValidator validator,
 			final TransactionContext txnCtx,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final AliasManager aliasManager
+			final BackingStore<AccountID, MerkleAccount> backingAccounts
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.backingAccounts = backingAccounts;
-		this.aliasManager = aliasManager;
 	}
 
 	public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
@@ -89,7 +84,7 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		final var payerAccountId = lookUpAccountID(accessor.getPayer());
+		final var payerAccountId = txnCtx.activePayer();
 		final var payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {
@@ -172,14 +167,5 @@ public final class AwareNodeDiligenceScreen {
 				submittingMember,
 				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
-	}
-
-	private AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
-		}
 	}
 }

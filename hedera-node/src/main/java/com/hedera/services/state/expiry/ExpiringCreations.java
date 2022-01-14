@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,18 +62,21 @@ public class ExpiringCreations implements EntityCreator {
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public ExpiringCreations(
 			final ExpiryManager expiries,
 			final NarratedCharging narratedCharging,
 			final GlobalDynamicProperties dynamicProperties,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.expiries = expiries;
 		this.narratedCharging = narratedCharging;
 		this.dynamicProperties = dynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -132,7 +136,7 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord
 				.setFee(fee)
 				.setTxnHash(hash)
-				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId(), aliasManager))
 				.setConsensusTime(RichInstant.fromJava(consensusTime));
 
 		if (accessor.isTriggeredTxn()) {
@@ -164,11 +168,13 @@ public class ExpiringCreations implements EntityCreator {
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
-				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
+				.setTransferList(
+						CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
-			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+			receiptBuilder.setAccountId(
+					EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
 			baseRecord.setAlias(sideEffectsTracker.getNewAccountAlias());
 		}
 
@@ -188,7 +194,7 @@ public class ExpiringCreations implements EntityCreator {
 		final var txnId = accessor.getTxnId();
 
 		return ExpirableTxnRecord.newBuilder()
-				.setTxnId(TxnId.fromGrpc(txnId))
+				.setTxnId(TxnId.fromGrpc(txnId, aliasManager))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getMemo())
 				.setTxnHash(accessor.getHash())

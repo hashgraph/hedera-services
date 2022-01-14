@@ -27,9 +27,9 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
@@ -142,7 +142,7 @@ public class RenewalRecordsHelper {
 		receipt.setAccountId(id);
 
 		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
-		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+		final var txnId = new TxnId(id, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(txnId)
 				.setReceipt(receipt)

@@ -241,10 +241,20 @@ class AccountStoreTest {
 	@Test
 	void failsWhenGivenAnInvalidAlias() {
 		given(aliasManager.lookupIdBy(validAlias.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		final var alias = validAlias.getAlias();
+		final var num = validAlias.getAccountNum();
 
 		var ex = assertThrows(InvalidTransactionException.class,
-				() -> subject.getAccountNumFromAlias(validAlias.getAlias(), validAlias.getAccountNum()));
+				() -> subject.getAccountNumFromAlias(alias, num));
 		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+	}
+
+	@Test
+	void considersAccountNumAsPriority() {
+		final var validAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAlias(
+				ByteString.copyFromUtf8("alias")).setAccountNum(10).build();
+		assertEquals(validAccount.getAccountNum(), subject.
+				getAccountNumFromAlias(validAccount.getAlias(), validAccount.getAccountNum()));
 	}
 
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {

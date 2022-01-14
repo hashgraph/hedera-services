@@ -178,8 +178,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		submitKey.ifPresent(exp ->
 				assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
 		autoRenewAccount.ifPresent(exp ->
-				assertEquals(getIdWithAliasLookUp(exp, spec,
-						autoRenewAccountRefType), info.getAutoRenewAccount(), "Bad auto-renew account!"));
+				assertEquals(getIdWithAliasLookUp(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}

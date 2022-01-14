@@ -95,8 +95,7 @@ public class SigRequirements {
 
 	public SigRequirements(
 			final SigMetadataLookup sigMetaLookup,
-			final SignatureWaivers signatureWaivers
-	) {
+			final SignatureWaivers signatureWaivers) {
 		this.sigMetaLookup = sigMetaLookup;
 		this.signatureWaivers = signatureWaivers;
 	}

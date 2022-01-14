@@ -20,8 +20,6 @@ package com.hedera.services.bdd.spec.queries;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -97,10 +95,5 @@ public class QueryUtils {
 
 	public static String asGetter(String field) {
 		return "get" + field.substring(0, 1).toUpperCase() + field.substring(1);
-	}
-
-	public static AccountID lookUpAccountWithAlias(HapiApiSpec spec, String aliasKey) {
-		final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
-		return spec.registry().getAccountID(lookedUpKey);
 	}
 }

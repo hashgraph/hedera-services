@@ -22,6 +22,7 @@ package com.hedera.services.store.tokens;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -30,7 +31,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -109,8 +109,8 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(final AccountID grpcId,
-			final ResponseCodeEnum invalidAccountID) {
+	public AliasLookup lookUpAccountId(final AccountID grpcId,
+			final ResponseCodeEnum response) {
 		throw new UnsupportedOperationException();
 	}
 

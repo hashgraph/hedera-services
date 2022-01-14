@@ -20,33 +20,13 @@
  *
  */
 
-package com.hedera.services.queries.crypto;
+package com.hedera.services.ledger.accounts;
 
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import javax.inject.Inject;
-
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-
-public class CryptoAccountLookUp {
-	private final AliasManager aliasManager;
-
-	@Inject
-	public CryptoAccountLookUp(AliasManager aliasManager) {
-		this.aliasManager = aliasManager;
-	}
-
-	protected AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
-		}
-	}
-
-	protected AliasManager getAliasManager() {
-		return aliasManager;
+public record AliasLookup(AccountID resolvedId, ResponseCodeEnum response) {
+	public static AliasLookup of(final AccountID resolvedId, final ResponseCodeEnum response) {
+		return new AliasLookup(resolvedId, response);
 	}
 }

@@ -24,11 +24,13 @@ package com.hedera.services.queries.meta;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -102,6 +104,7 @@ class GetTxnRecordAnswerTest {
 
 	private GetTxnRecordAnswer subject;
 	private NodeLocalProperties nodeProps;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
@@ -118,8 +121,9 @@ class GetTxnRecordAnswerTest {
 				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
+		aliasManager = mock(AliasManager.class);
 
-		subject = new GetTxnRecordAnswer(recordCache, optionValidator, answerFunctions);
+		subject = new GetTxnRecordAnswer(recordCache, optionValidator, answerFunctions, aliasManager);
 	}
 
 	@Test
@@ -302,6 +306,8 @@ class GetTxnRecordAnswerTest {
 	void syntaxCheckPrioritizesAccountStatus() {
 		final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
+		given(aliasManager.lookUpAccountID(targetTxnId.getAccountID())).willReturn(
+				AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 		final var validity = subject.checkValidity(query, view);
 
@@ -310,7 +316,11 @@ class GetTxnRecordAnswerTest {
 
 	@Test
 	void syntaxCheckShortCircuitsOnDefaultAccountID() {
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(Query.getDefaultInstance(), view));
+		final var query = Query.getDefaultInstance();
+		given(aliasManager.lookUpAccountID(query.getTransactionGetRecord().getTransactionID().getAccountID()))
+				.willReturn(AliasLookup.of(query.getTransactionGetRecord().getTransactionID().getAccountID(),
+						INVALID_ACCOUNT_ID));
+		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(query, view));
 	}
 
 	@Test
@@ -319,6 +329,9 @@ class GetTxnRecordAnswerTest {
 		final var query = queryOf(op);
 		given(answerFunctions.txnRecord(recordCache, view, op)).willReturn(Optional.of(cachedTargetRecord));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
+		given(aliasManager.lookUpAccountID(targetTxnId.getAccountID())).willReturn(
+				AliasLookup.of(targetTxnId.getAccountID(), OK));
+
 
 		final var validity = subject.checkValidity(query, view);
 

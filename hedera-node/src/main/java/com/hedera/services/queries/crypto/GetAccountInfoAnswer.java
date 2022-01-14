@@ -46,18 +46,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
-public class GetAccountInfoAnswer extends CryptoAccountLookUp implements AnswerService {
+public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
-		super(aliasManager);
+		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
 	}
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		AccountID id = lookUpAccountID(query.getCryptoGetInfo().getAccountID());
+		final var result = aliasManager.lookUpAccountID(query.getCryptoGetInfo().getAccountID());
+		if (result.response() != OK) {
+			return result.response();
+		}
+		AccountID id = result.resolvedId();
 		var entityNum = EntityNum.fromAccountId(id);
 
 		return optionValidator.queryableAccountStatus(entityNum, view.accounts());
@@ -77,7 +82,7 @@ public class GetAccountInfoAnswer extends CryptoAccountLookUp implements AnswerS
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, getAliasManager());
+				var optionalInfo = view.infoForAccount(id, aliasManager);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());

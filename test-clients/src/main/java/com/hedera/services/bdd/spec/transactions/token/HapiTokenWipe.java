@@ -121,7 +121,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		AccountID aId = getIdWithAliasLookUp(account, spec, referenceType);
+		AccountID aId = getIdWithAliasLookUp(account, spec);
 		TokenWipeAccountTransactionBody opBody = spec
 				.txns()
 				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(

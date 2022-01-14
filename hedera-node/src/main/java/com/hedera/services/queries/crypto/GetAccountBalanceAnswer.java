@@ -50,12 +50,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class GetAccountBalanceAnswer extends CryptoAccountLookUp implements AnswerService {
+public class GetAccountBalanceAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
-		super(aliasManager);
+		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
 	}
 
@@ -117,7 +118,11 @@ public class GetAccountBalanceAnswer extends CryptoAccountLookUp implements Answ
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
 		} else if (op.hasAccountID()) {
-			final var effId = lookUpAccountID(op.getAccountID());
+			final var result = aliasManager.lookUpAccountID(op.getAccountID());
+			if (result.response() != OK) {
+				return result.response();
+			}
+			final var effId = result.resolvedId();
 			return optionValidator.queryableAccountStatus(effId, accounts);
 		} else {
 			return INVALID_ACCOUNT_ID;
@@ -128,7 +133,7 @@ public class GetAccountBalanceAnswer extends CryptoAccountLookUp implements Answ
 		if (op.hasContractID()) {
 			return asAccount(op.getContractID());
 		} else {
-			return lookUpAccountID(op.getAccountID());
+			return aliasManager.lookUpAccountID(op.getAccountID()).resolvedId();
 		}
 	}
 

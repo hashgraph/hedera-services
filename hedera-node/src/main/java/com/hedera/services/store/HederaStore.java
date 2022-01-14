@@ -22,20 +22,17 @@ package com.hedera.services.store;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
 
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -84,27 +81,15 @@ public abstract class HederaStore {
 		}
 	}
 
-	public Pair<AccountID, ResponseCodeEnum> lookUpAccountId(
+	public AliasLookup lookUpAccountId(
 			final AccountID grpcId,
 			final AliasManager aliasManager,
-			final ResponseCodeEnum invalidAccountID) {
-		var newAccountId = AccountID.getDefaultInstance();
-		if (isAlias(grpcId)) {
-			var accountNum = aliasManager.lookupIdBy(grpcId.getAlias());
-			if (accountNum == MISSING_NUM) {
-				return Pair.of(grpcId, INVALID_ALIAS_KEY);
-			}
-			newAccountId = AccountID.newBuilder()
-					.setShardNum(grpcId.getShardNum())
-					.setRealmNum(grpcId.getRealmNum())
-					.setAccountNum(accountNum.longValue())
-					.build();
-		} else {
-			newAccountId = grpcId;
+			final ResponseCodeEnum response) {
+		var result = aliasManager.lookUpAccountID(grpcId, response);
+		if (result.response() != OK) {
+			return result;
 		}
-
-		var validity = usableOrElse(newAccountId, invalidAccountID);
-
-		return Pair.of(newAccountId, validity);
+		var validity = usableOrElse(result.resolvedId(), response);
+		return AliasLookup.of(result.resolvedId(), validity);
 	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -46,6 +48,7 @@ import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,6 +112,7 @@ class GetAccountRecordsResourceUsageTest {
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(someRecords, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
+		given(aliasManager.lookUpAccountID(asAccount(a))).willReturn(AliasLookup.of(asAccount(a), OK));
 
 		final var costAnswerEstimate = subject.usageGiven(costAnswerQuery, view);
 		final var answerOnlyEstimate = subject.usageGiven(answerOnlyQuery, view);

@@ -131,6 +131,7 @@ public enum TestContextValidator implements OptionValidator {
 		throw new UnsupportedOperationException();
 	}
 
+
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		throw new UnsupportedOperationException();

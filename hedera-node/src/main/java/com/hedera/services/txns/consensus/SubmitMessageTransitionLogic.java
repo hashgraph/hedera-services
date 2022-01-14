@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,12 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -57,18 +59,21 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final GlobalDynamicProperties globalDynamicProperties;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public SubmitMessageTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext,
-			GlobalDynamicProperties globalDynamicProperties
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final OptionValidator validator,
+			final TransactionContext transactionContext,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final AliasManager aliasManager
 	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
 		this.globalDynamicProperties = globalDynamicProperties;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -81,7 +86,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		if(op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed() ) {
+		if (op.getMessage().size() > globalDynamicProperties.messageMaxBytesAllowed()) {
 			transactionContext.setStatus(MESSAGE_SIZE_TOO_LARGE);
 			return;
 		}
@@ -94,12 +99,24 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 		if (op.hasChunkInfo()) {
 			var chunkInfo = op.getChunkInfo();
+
 			if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
 				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
 				return;
 			}
-			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
-					transactionBody.getTransactionID().getAccountID())) {
+
+			final var chunkAccountIDLookup = aliasManager.lookUpPayerAccountID(
+					chunkInfo.getInitialTransactionID().getAccountID());
+			final var transactionIDLookup = aliasManager.lookUpPayerAccountID(
+					transactionBody.getTransactionID().getAccountID());
+			if (chunkAccountIDLookup.response() != OK) {
+				transactionContext.setStatus(chunkAccountIDLookup.response());
+			}
+			if (transactionIDLookup.response() != OK) {
+				transactionContext.setStatus(transactionIDLookup.response());
+			}
+
+			if (!chunkAccountIDLookup.resolvedId().equals(transactionIDLookup.resolvedId())) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}
@@ -113,8 +130,15 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
+			final AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
+			final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
+			if (result.response() != OK) {
+				transactionContext.setStatus(result.response());
+			}
+			final AccountID payer = result.resolvedId();
+
 			mutableTopic.updateRunningHashAndSequenceNumber(
-					transactionBody.getTransactionID().getAccountID(),
+					payer,
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());

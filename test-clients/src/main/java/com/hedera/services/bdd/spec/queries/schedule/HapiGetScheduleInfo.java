@@ -148,12 +148,16 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				"Wrong scheduled transaction id!"));
 
 		expectedCreatorAccountID.ifPresent(s -> Assertions.assertEquals(
-				TxnUtils.asId(s, spec),
+				!TxnUtils.asIdForKeyLookUp(s, spec).getAlias().isEmpty() ?
+						spec.registry().getAccountID(spec.registry().getKey(s).toByteString().toStringUtf8()) :
+						TxnUtils.asIdForKeyLookUp(s, spec),
 				actualInfo.getCreatorAccountID(),
 				"Wrong schedule creator account ID!"));
 
 		expectedPayerAccountID.ifPresent(s -> Assertions.assertEquals(
-				TxnUtils.asId(s, spec),
+				!TxnUtils.asIdForKeyLookUp(s, spec).getAlias().isEmpty() ?
+						spec.registry().getAccountID(spec.registry().getKey(s).toByteString().toStringUtf8()) :
+						TxnUtils.asIdForKeyLookUp(s, spec),
 				actualInfo.getPayerAccountID(),
 				"Wrong schedule payer account ID!"));
 
