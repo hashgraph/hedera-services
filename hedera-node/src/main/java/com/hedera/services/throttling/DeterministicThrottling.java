@@ -197,27 +197,26 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public void applyGasConfig() {
-		final var n = capacitySplitSource.getAsInt();
-		long splitCapacity;
+		long capacity;
 		if (consensusThrottled) {
 			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 				return;
 			} else {
-				splitCapacity = dynamicProperties.consensusThrottleGasLimit() / n;
+				capacity = dynamicProperties.consensusThrottleGasLimit();
 			}
 		} else {
 			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 				return;
 			} else {
-				splitCapacity = dynamicProperties.frontendThrottleGasLimit() / n;
+				capacity = dynamicProperties.frontendThrottleGasLimit();
 			}
 		}
-		gasThrottle = new GasLimitDeterministicThrottle(splitCapacity);
+		gasThrottle = new GasLimitDeterministicThrottle(capacity);
 		final var configDesc = "Resolved " +
 				(consensusThrottled ? "consensus" : "frontend") +
-				" gas throttle (after splitting capacity " + n + " ways) -\n  " +
+				" gas throttle -\n  " +
 				gasThrottle.getCapacity() +
 				" gas/sec (throttling " +
 				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +

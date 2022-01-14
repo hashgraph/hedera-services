@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -387,7 +388,10 @@ class HederaWorldStateTest {
 		updater.commit();
 
 		// then:
+		verify(entityAccess).flushStorage();
 		verify(worldLedgers).commit();
+		verify(entityAccess).recordNewKvUsageTo(any());
+		verify(entityAccess).spawn(any(), anyLong(), any());
 	}
 
 	@Test
@@ -411,7 +415,6 @@ class HederaWorldStateTest {
 		actualSubject.commit();
 
 		// then:
-		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).isExtant(accountID);
 		verify(entityAccess).putStorage(accountID, storageKey, storageValue);
 		verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);

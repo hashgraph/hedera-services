@@ -24,7 +24,9 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -166,6 +168,11 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public void flushStorage() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void storeCode(AccountID id, Bytes code) {
 		throw new UnsupportedOperationException();
 	}
@@ -182,5 +189,10 @@ public class StaticEntityAccess implements EntityAccess {
 		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(id.getAccountNum()));
 		final var value = bytecode.get(key);
 		return (value != null) ? Bytes.of(value.getData()) : null;
+	}
+
+	@Override
+	public void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		throw new UnsupportedOperationException();
 	}
 }

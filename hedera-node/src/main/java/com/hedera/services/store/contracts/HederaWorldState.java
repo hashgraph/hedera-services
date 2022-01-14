@@ -49,7 +49,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -361,6 +360,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
 
+			commitSizeLimitedStorageTo(entityAccess);
+
 			/* Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
 			 * needed to make sure the record's ℏ transfer list is constructed properly---the
 			 * finishing call to trackingLedgers().commits() at the end of this method will persist
@@ -368,41 +369,54 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountParsedFromSolidityAddress(address);
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var deletedBalance= entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
 
-				if (!entityAccess.isExtant(accountId)) {
-					wrapped.provisionalContractCreations.add(asContract(accountId));
-					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
-				}
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
 
-				/* Note that we don't have the equivalent of an account-scoped storage  trie, so we can't
-				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
-				 * this in our global state expiration implementation.) */
-				final Map<UInt256, UInt256> updatedStorage = updatedAccount.getUpdatedStorage();
-				if (!updatedStorage.isEmpty()) {
-					final TreeSet<Map.Entry<UInt256, UInt256>> entries = new TreeSet<>(Map.Entry.comparingByKey());
-					entries.addAll(updatedStorage.entrySet());
-					for (final var entry : entries) {
-						entityAccess.putStorage(accountId, entry.getKey(), entry.getValue());
-					}
-				}
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}
 
+			entityAccess.recordNewKvUsageTo(trackingAccounts());
 			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			this commit() persists all of that information without any additional use of the deletedAccounts
 			or updatedAccounts collections. */
 			trackingLedgers().commit();
 
 			wrapped.sponsorMap.putAll(sponsorMap);
+		}
+
+		private void ensureExistence(
+				final AccountID accountId,
+				final EntityAccess entityAccess,
+				final List<ContractID> provisionalContractCreations
+		) {
+			if (!entityAccess.isExtant(accountId)) {
+				provisionalContractCreations.add(asContract(accountId));
+				entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
+			}
+		}
+
+		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
+			for (final var updatedAccount : getUpdatedAccounts()) {
+				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
+				/* Note that we don't have the equivalent of an account-scoped storage trie, so we can't
+				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
+				 * this in our global state expiration implementation.) */
+				final var kvUpdates = updatedAccount.getUpdatedStorage();
+				if (!kvUpdates.isEmpty()) {
+					kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
+				}
+			}
+			entityAccess.flushStorage();
 		}
 
 		@Override

@@ -94,6 +94,8 @@ public class GlobalDynamicProperties {
 	private int changeHistorianMemorySecs;
 	private boolean autoCreationEnabled;
 	private boolean expandSigsFromLastSignedState;
+	private long maxAggregateContractKvPairs;
+	private int maxIndividualContractKvPairs;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -170,6 +172,8 @@ public class GlobalDynamicProperties {
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
 		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
 		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
+		maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
+		maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
 	}
 
 	public int maxTokensPerAccount() {
@@ -390,5 +394,13 @@ public class GlobalDynamicProperties {
 
 	public boolean expandSigsFromLastSignedState() {
 		return expandSigsFromLastSignedState;
+	}
+
+	public long maxAggregateContractKvPairs() {
+		return maxAggregateContractKvPairs;
+	}
+
+	public int maxIndividualContractKvPairs() {
+		return maxIndividualContractKvPairs;
 	}
 }
