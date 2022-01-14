@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_NON_EXISTING_FUNCTION_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
@@ -85,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
@@ -132,7 +134,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
 				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
 				invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-				functionCallWithLessThanFourBytesFailsWithinSingleContractCall()
+				functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+				invalidSingleAbiCallConsumesAllProvidedGas()
 		);
 	}
 
@@ -1041,6 +1044,43 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
+	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+
+		return defaultHapiSpec("Invalid Single Abi Call Consumes All Provided Gas")
+				.given(
+						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						updateLargeFile(ACCOUNT, THE_GRACEFULLY_FAILING_CONTRACT,
+								extractByteCode(ContractResources.GRACEFULLY_FAILING_CONTRACT_BIN))
+				).when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
+														.bytecode(THE_GRACEFULLY_FAILING_CONTRACT)
+														.gas(100_000),
+												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_GRACEFULLY_FAILING_CONTRACT))),
+												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT, PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI, asAddress(accountID.get()))
+														.payingWith(GENESIS)
+														.gas(2_000_000)
+														.via("Invalid Single Abi Call txn")
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												getTxnRecord("Invalid Single Abi Call txn").saveTxnRecordToRegistry("Invalid Single Abi Call txn").logged()
+										)
+						)
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var gasUsed = spec.registry().getTransactionRecord("Invalid Single Abi Call txn")
+									.getContractCallResult().getGasUsed();
+							assertEquals(1969323, gasUsed);
+						})
 				);
 	}
 

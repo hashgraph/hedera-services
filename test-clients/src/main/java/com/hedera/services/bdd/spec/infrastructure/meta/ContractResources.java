@@ -860,6 +860,11 @@ public class ContractResources {
 			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"performNonExistingServiceFunctionCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
+	public static final String PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI = "{ \"inputs\": [ " +
+			"{ \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" } ], " +
+			"\"name\": \"performInvalidlyFormattedSingleFunctionCall\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static final String PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI = "{ \"inputs\": [ { \"internalType\": " +
 			"\"address\", \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
 			"\"tokens\", \"type\": \"address[]\" } ], \"name\": \"performInvalidlyFormattedFunctionCall\", \"outputs\": " +
