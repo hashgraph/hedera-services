@@ -105,30 +105,30 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						symbolChanges(),
-						standardImmutabilitySemanticsHold(),
-						validAutoRenewWorks(),
-						tooLongNameCheckHolds(),
-						tooLongSymbolCheckHolds(),
-						nameChanges(),
-						keysChange(),
-						validatesAlreadyDeletedToken(),
-						treasuryEvolves(),
-						deletedAutoRenewAccountCheckHolds(),
-						renewalPeriodCheckHolds(),
-						invalidTreasuryCheckHolds(),
-						newTreasuryMustSign(),
-						newTreasuryMustBeAssociated(),
-						tokensCanBeMadeImmutableWithEmptyKeyList(),
-						updateNftTreasuryHappyPath(),
-						updateTokenTreasuryRequiresZeroTokenBalance(),
-						validatesMissingAdminKey(),
-						validatesMissingRef(),
-						validatesNewExpiry(),
-						/* HIP-18 */
-						canUpdateFeeScheduleKeyWithAdmin(),
-						updateUniqueTreasuryWithNfts(),
-						updateHappyPath(),
+//						symbolChanges(),
+//						standardImmutabilitySemanticsHold(),
+//						validAutoRenewWorks(),
+//						tooLongNameCheckHolds(),
+//						tooLongSymbolCheckHolds(),
+//						nameChanges(),
+//						keysChange(),
+//						validatesAlreadyDeletedToken(),
+//						treasuryEvolves(),
+//						deletedAutoRenewAccountCheckHolds(),
+//						renewalPeriodCheckHolds(),
+//						invalidTreasuryCheckHolds(),
+//						newTreasuryMustSign(),
+//						newTreasuryMustBeAssociated(),
+//						tokensCanBeMadeImmutableWithEmptyKeyList(),
+//						updateNftTreasuryHappyPath(),
+//						updateTokenTreasuryRequiresZeroTokenBalance(),
+//						validatesMissingAdminKey(),
+//						validatesMissingRef(),
+//						validatesNewExpiry(),
+//						/* HIP-18 */
+//						canUpdateFeeScheduleKeyWithAdmin(),
+//						updateUniqueTreasuryWithNfts(),
+//						updateHappyPath(),
 						/* HIP-32 */
 						updateWithAliasWorks()
 				}
@@ -149,7 +149,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				.when(
 						getTxnRecord("autoCreate")
 								.hasAliasInChildRecord("autoRenewAlias", 0)
-								.hasAliasInChildRecord("treasuryAlias", 1),
+								.hasAliasInChildRecord("treasuryAlias", 1).logged(),
 						tokenCreate("tokenA")
 								.adminKey("adminKey")
 								.treasury(DEFAULT_PAYER)
@@ -720,7 +720,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.logged(),
 						getTokenNftInfos("primary", 0, 1)
 								.hasNfts(
-										newTokenNftInfo("primary", 1, "newTokenTreasury", ByteString.copyFromUtf8("memo1"))
+										newTokenNftInfo("primary", 1, "newTokenTreasury",
+												ByteString.copyFromUtf8("memo1"))
 								)
 								.logged(),
 						getTxnRecord("tokenUpdateTxn").logged()
