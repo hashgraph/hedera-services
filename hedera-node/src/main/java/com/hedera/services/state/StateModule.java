@@ -28,7 +28,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.NftsByOwner;
 import com.hedera.services.state.annotations.NftsByType;
 import com.hedera.services.state.annotations.TreasuryNftsByType;
@@ -217,13 +216,6 @@ public abstract class StateModule {
 	@Singleton
 	@WorkingState
 	public static StateAccessor provideWorkingState() {
-		return new StateAccessor();
-	}
-
-	@Provides
-	@Singleton
-	@LatestSignedState
-	public static StateAccessor provideLatestSignedState() {
 		return new StateAccessor();
 	}
 

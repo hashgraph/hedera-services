@@ -22,10 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
-import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.order.SignedStateSigReqs;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -124,17 +121,11 @@ class ServicesStateTest {
 	@Mock
 	private ProcessLogic logic;
 	@Mock
-	private ExpansionHelper expansionHelper;
-	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private SigRequirements expandKeyOrder;
-	@Mock
-	private SignedStateSigReqs signedStateSigReqs;
-	@Mock
-	private PubKeyToSigBytes pubKeyToSigBytes;
+	private SigReqsManager sigReqsManager;
 	@Mock
 	private StateAccessor workingState;
 	@Mock
@@ -162,6 +153,7 @@ class ServicesStateTest {
 	@Test
 	void logsSummaryAsExpectedWithAppAvailable() {
 		// setup:
+		final var consTime = Instant.ofEpochSecond(1_234_567L);
 		subject.setMetadata(metadata);
 
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
@@ -169,6 +161,8 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consTime);
 		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
 		// when:
@@ -177,6 +171,8 @@ class ServicesStateTest {
 		// then:
 		verify(hashLogger).logHashesFor(subject);
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+		assertEquals(consTime, subject.getTimeOfLastHandledTxn());
+		assertEquals(StateVersions.CURRENT_VERSION, subject.getStateVersion());
 	}
 
 	@Test
@@ -253,18 +249,15 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
-		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
-		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
-		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
+		given(app.sigReqsManager()).willReturn(sigReqsManager);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
 		// when:
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(expansionHelper).expandIn(txnAccessor, expandKeyOrder, pubKeyToSigBytes);
+		verify(sigReqsManager).expandSigsInto(txnAccessor);
 	}
 
 	@Test
@@ -274,8 +267,6 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
-		given(signedStateSigReqs.getBestAvailable()).willReturn(expandKeyOrder);
 		given(expandHandleSpan.track(transaction)).willThrow(InvalidProtocolBufferException.class);
 
 		// when:
@@ -293,8 +284,6 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
-		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.signedStateSigReqs()).willReturn(signedStateSigReqs);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 

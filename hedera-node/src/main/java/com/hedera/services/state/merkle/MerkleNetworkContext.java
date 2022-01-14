@@ -67,7 +67,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final Instant UNKNOWN_CONSENSUS_TIME = null;
+	public static final Instant NULL_CONSENSUS_TIME = null;
 
 	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
@@ -77,7 +77,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
 	private Instant lastMidnightBoundaryCheck = null;
-	private Instant consensusTimeOfLastHandledTxn = UNKNOWN_CONSENSUS_TIME;
+	private Instant consensusTimeOfLastHandledTxn = NULL_CONSENSUS_TIME;
 	private SequenceNumber seqNo;
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;

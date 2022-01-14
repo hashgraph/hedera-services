@@ -594,6 +594,7 @@ public class UtilVerbs {
 					final var newPosition = position + bytesThisAppend;
 					final var appendSubOp = fileAppend(fileName)
 							.content(contents.substring(position, newPosition).toByteArray())
+							.fee(ONE_HUNDRED_HBARS)
 							.noLogging()
 							.payingWith(payer)
 							.signedBy(payer)

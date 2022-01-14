@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -45,8 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
@@ -92,23 +91,34 @@ class StateAccessorTest {
 	}
 
 	@Test
-	void childrenGetReplacedAsExpected() {
-		givenStateWithMockChildren();
-		subject.updateChildrenFrom(state);
-		final var currentChildren = subject.children();
-
-		subject.replaceChildrenFrom(state, signedAt);
-
-		assertNotSame(currentChildren, subject.children());
-		assertEquals(signedAt, subject.children().signedAt());
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.updateChildrenFrom(state));
-	}
-
-	@Test
 	void childrenGetUpdatedAsExpected() {
 		givenStateWithMockChildren();
 
 		subject.updateChildrenFrom(state);
+
+		assertChildrenAreExpectedMocks();
+	}
+
+	@Test
+	void settersWorkAsExpected() {
+		givenStateWithMockChildren();
+
+		final var mutableChildren = (MutableStateChildren) subject.children();
+
+		mutableChildren.setAccounts(state.accounts());
+		mutableChildren.setStorage(state.storage());
+		mutableChildren.setTopics(state.topics());
+		mutableChildren.setTokens(state.tokens());
+		mutableChildren.setTokenAssociations(state.tokenAssociations());
+		mutableChildren.setSchedules(state.scheduleTxs());
+		mutableChildren.setNetworkCtx(state.networkCtx());
+		mutableChildren.setAddressBook(state.addressBook());
+		mutableChildren.setSpecialFiles(state.specialFiles());
+		mutableChildren.setUniqueTokens(state.uniqueTokens());
+		mutableChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		mutableChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		mutableChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		mutableChildren.setRunningHashLeaf(state.runningHashLeaf());
 
 		assertChildrenAreExpectedMocks();
 	}
@@ -152,6 +162,4 @@ class StateAccessorTest {
 		// expect:
 		Assertions.assertNotNull(subject.children());
 	}
-
-	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
 }

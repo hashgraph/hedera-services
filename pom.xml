@@ -145,7 +145,7 @@
 		<maven.compiler.target>17</maven.compiler.target>
 
 		<!-- Plugin custom properties -->
-		<maven-jar.version>3.2.0</maven-jar.version>
+		<maven-jar.version>3.2.1</maven-jar.version>
 		<maven-source.version>3.2.0</maven-source.version>
 		<maven-resources.version>3.2.0</maven-resources.version>
 		<maven-license.version>2.0.0</maven-license.version>
@@ -207,7 +207,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.0.0-M4</version>
+				<version>3.0.0-M5</version>
 				<configuration>
 					<releaseProfiles>release</releaseProfiles>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
@@ -580,7 +580,7 @@
 		<dependency>
 			<groupId>com.cedarsoftware</groupId>
 			<artifactId>java-util</artifactId>
-			<version>1.66.0</version>
+			<version>1.67.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tuweni</groupId>

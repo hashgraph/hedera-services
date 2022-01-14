@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
@@ -36,6 +37,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 
+import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -47,20 +49,20 @@ import java.util.Objects;
  * methods {@code init()}, {@code copy()}, and {@code handleTransaction()}.
  */
 public class MutableStateChildren implements StateChildren {
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
-	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-	private MerkleMap<String, MerkleOptionalBlob> storage;
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations;
-	private MerkleNetworkContext networkCtx;
-	private AddressBook addressBook;
-	private MerkleSpecialFiles specialFiles;
-	private RecordsRunningHashLeaf runningHashLeaf;
+	private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
+	private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
+	private WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private WeakReference<MerkleMap<String, MerkleOptionalBlob>> storage;
+	private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueTokenAssociations;
+	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipAssociations;
+	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipTreasuryAssociations;
+	private WeakReference<MerkleNetworkContext> networkCtx;
+	private WeakReference<AddressBook> addressBook;
+	private WeakReference<MerkleSpecialFiles> specialFiles;
+	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
 	private Instant signedAt = Instant.EPOCH;
 
 	public MutableStateChildren() {
@@ -78,146 +80,190 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		Objects.requireNonNull(accounts);
-		return accounts;
+		final var refAccounts = accounts.get();
+		Objects.requireNonNull(refAccounts);
+		return refAccounts;
 	}
 
 	public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {
-		this.accounts = accounts;
+		this.accounts = new WeakReference<>(accounts);
 	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		Objects.requireNonNull(topics);
-		return topics;
+		final var refTopics = topics.get();
+		Objects.requireNonNull(refTopics);
+		return refTopics;
 	}
 
 	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
-		this.topics = topics;
+		this.topics = new WeakReference<>(topics);
 	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
-		Objects.requireNonNull(tokens);
-		return tokens;
+		final var refTokens = tokens.get();
+		Objects.requireNonNull(refTokens);
+		return refTokens;
 	}
 
 	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
-		this.tokens = tokens;
+		this.tokens = new WeakReference<>(tokens);
 	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
-		Objects.requireNonNull(schedules);
-		return schedules;
+		final var refSchedules = schedules.get();
+		Objects.requireNonNull(refSchedules);
+		return refSchedules;
 	}
 
 	public void setSchedules(MerkleMap<EntityNum, MerkleSchedule> schedules) {
-		this.schedules = schedules;
+		this.schedules = new WeakReference<>(schedules);
 	}
 
 	@Override
 	public MerkleMap<String, MerkleOptionalBlob> storage() {
-		Objects.requireNonNull(storage);
-		return storage;
+		final var refStorage = storage.get();
+		Objects.requireNonNull(refStorage);
+		return refStorage;
 	}
 
 	public void setStorage(MerkleMap<String, MerkleOptionalBlob> storage) {
-		this.storage = storage;
+		this.storage = new WeakReference<>(storage);
 	}
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		Objects.requireNonNull(tokenAssociations);
-		return tokenAssociations;
+		final var refTokenAssociations = tokenAssociations.get();
+		Objects.requireNonNull(refTokenAssociations);
+		return refTokenAssociations;
 	}
 
 	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
-		this.tokenAssociations = tokenAssociations;
+		this.tokenAssociations = new WeakReference<>(tokenAssociations);
 	}
 
 	@Override
 	public MerkleNetworkContext networkCtx() {
-		Objects.requireNonNull(networkCtx);
-		return networkCtx;
+		final var refNetworkCtx = networkCtx.get();
+		Objects.requireNonNull(refNetworkCtx);
+		return refNetworkCtx;
 	}
 
 	public void setNetworkCtx(MerkleNetworkContext networkCtx) {
-		this.networkCtx = networkCtx;
+		this.networkCtx = new WeakReference<>(networkCtx);
 	}
 
 	@Override
 	public AddressBook addressBook() {
-		Objects.requireNonNull(addressBook);
-		return addressBook;
+		final var refAddressBook = addressBook.get();
+		Objects.requireNonNull(refAddressBook);
+		return refAddressBook;
 	}
 
 	public void setAddressBook(AddressBook addressBook) {
-		this.addressBook = addressBook;
+		this.addressBook = new WeakReference<>(addressBook);
 	}
 
 	@Override
 	public MerkleSpecialFiles specialFiles() {
-		Objects.requireNonNull(specialFiles);
-		return specialFiles;
+		final var refSpecialFiles = specialFiles.get();
+		Objects.requireNonNull(refSpecialFiles);
+		return refSpecialFiles;
 	}
 
 	public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
-		this.specialFiles = specialFiles;
+		this.specialFiles = new WeakReference<>(specialFiles);
 	}
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		Objects.requireNonNull(uniqueTokens);
-		return uniqueTokens;
+		final var refUniqueTokens = uniqueTokens.get();
+		Objects.requireNonNull(refUniqueTokens);
+		return refUniqueTokens;
 	}
 
 	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
-		this.uniqueTokens = uniqueTokens;
+		this.uniqueTokens = new WeakReference<>(uniqueTokens);
 	}
 
 	@Override
 	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		Objects.requireNonNull(uniqueTokenAssociations);
-		return uniqueTokenAssociations;
+		final var refUniqueTokenAssociations = uniqueTokenAssociations.get();
+		Objects.requireNonNull(refUniqueTokenAssociations);
+		return refUniqueTokenAssociations;
 	}
 
 	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
+		this.uniqueTokenAssociations = new WeakReference<>(uniqueTokenAssociations);
 	}
 
 	@Override
 	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		Objects.requireNonNull(uniqueOwnershipAssociations);
-		return uniqueOwnershipAssociations;
+		final var refUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
+		Objects.requireNonNull(refUniqueOwnershipAssociations);
+		return refUniqueOwnershipAssociations;
 	}
 
 	public void setUniqueOwnershipAssociations(
 			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations
 	) {
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
+		this.uniqueOwnershipAssociations = new WeakReference<>(uniqueOwnershipAssociations);
 	}
 
 	@Override
 	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
-		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations);
-		return uniqueOwnershipTreasuryAssociations;
+		final var refUniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations.get();
+		Objects.requireNonNull(refUniqueOwnershipTreasuryAssociations);
+		return refUniqueOwnershipTreasuryAssociations;
 	}
 
 	public void setUniqueOwnershipTreasuryAssociations(
 			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations
 	) {
-		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
+		this.uniqueOwnershipTreasuryAssociations = new WeakReference<>(uniqueOwnershipTreasuryAssociations);
 	}
 
 	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
-		Objects.requireNonNull(runningHashLeaf);
-		return runningHashLeaf;
+		final var refRunningHashLeaf = runningHashLeaf.get();
+		Objects.requireNonNull(refRunningHashLeaf);
+		return refRunningHashLeaf;
 	}
 
+
 	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
-		this.runningHashLeaf = runningHashLeaf;
+		this.runningHashLeaf = new WeakReference<>(runningHashLeaf);
+	}
+
+	public void updateFromMaybeUninitializedState(final ServicesState state, final Instant signingTime) {
+		signedAt = signingTime;
+		updatePrimitiveChildrenFrom(state);
+		uniqueTokenAssociations = new WeakReference<>(null);
+		uniqueOwnershipAssociations = new WeakReference<>(null);
+		uniqueOwnershipTreasuryAssociations = new WeakReference<>(null);
+	}
+
+	public void updateFrom(final ServicesState state) {
+		updatePrimitiveChildrenFrom(state);
+		uniqueTokenAssociations = new WeakReference<>(state.uniqueTokenAssociations());
+		uniqueOwnershipAssociations = new WeakReference<>(state.uniqueOwnershipAssociations());
+		uniqueOwnershipTreasuryAssociations = new WeakReference<>(state.uniqueTreasuryOwnershipAssociations());
+	}
+
+	private void updatePrimitiveChildrenFrom(final ServicesState state) {
+		accounts = new WeakReference<>(state.accounts());
+		topics = new WeakReference<>(state.topics());
+		storage = new WeakReference<>(state.storage());
+		tokens = new WeakReference<>(state.tokens());
+		tokenAssociations = new WeakReference<>(state.tokenAssociations());
+		schedules = new WeakReference<>(state.scheduleTxs());
+		networkCtx = new WeakReference<>(state.networkCtx());
+		addressBook = new WeakReference<>(state.addressBook());
+		specialFiles = new WeakReference<>(state.specialFiles());
+		uniqueTokens = new WeakReference<>(state.uniqueTokens());
+		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 	}
 }
 

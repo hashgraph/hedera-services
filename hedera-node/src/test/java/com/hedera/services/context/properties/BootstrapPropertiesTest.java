@@ -173,6 +173,7 @@ class BootstrapPropertiesTest {
 					TokenBurn,
 					ConsensusSubmitMessage)),
 			entry("scheduling.triggerTxn.windBackNanos", 11L),
+			entry("sigs.expandFromLastSignedState", true),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),
