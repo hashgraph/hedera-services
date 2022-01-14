@@ -302,7 +302,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.bytecode(initcode)
 								.gas(100_000L)
 								.payingWith(civilian)
-								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get()))
+								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get())
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
 				);
 	}
 
