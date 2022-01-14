@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.core.CommonUtils;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -51,6 +52,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_BURN_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_TRANSFER_CALL_ABI;
+import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ORDINARY_CALL;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_TOKEN_ORDINARY_CALL;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_DISSOCIATE;
@@ -79,9 +83,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
@@ -92,6 +98,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -135,7 +142,9 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 				HSCS_KEY_3(),
 				HSCS_KEY_5(),
                 HSCS_KEY_6(),
-                HSCS_KEY_7()
+                HSCS_KEY_7(),
+				HSCS_KEY_8(),
+				HSCS_KEY_10()
         );
     }
 
@@ -189,6 +198,18 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 transferWithKeyAsPartOf2OfXThreshold()
         );
     }
+
+	List<HapiApiSpec> HSCS_KEY_8() {
+		return List.of(
+				HSCS_KEY_BURN_TOKEN_WITH_FULL_PREFIX_AND_PARTIAL_PREFIX_KEYS()
+		);
+	}
+
+	List<HapiApiSpec> HSCS_KEY_10() {
+		return List.of(
+				HSCS_KEY_MIXED_FRAMES_SCENARIOS()
+		);
+	}
 
     private HapiApiSpec burnWithKeyAsPartOf1OfXThreshold() {
         final var theContract = "burn token";
@@ -1089,6 +1110,60 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 );
     }
 
+	private HapiApiSpec HSCS_KEY_BURN_TOKEN_WITH_FULL_PREFIX_AND_PARTIAL_PREFIX_KEYS() {
+		final var theAccount = "anybody";
+		final var burnContractByteCode = "burnContractByteCode";
+		final var amount = 99L;
+		final var fungibleToken = "fungibleToken";
+		final var multiKey = "purpose";
+		final var theContract = "mintContract";
+		final var firstBurnTxn = "firstBurnTxn";
+		final var secondBurnTxn = "secondBurnTxn";
+
+		final AtomicLong fungibleNum = new AtomicLong();
+
+		return defaultHapiSpec("HSCS_KEY_BURN_TOKEN_WITH_FULL_PREFIX_AND_PARTIAL_PREFIX_KEYS")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(burnContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, burnContractByteCode, extractByteCode(ContractResources.ORDINARY_CALLS_CONTRACT)),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(theContract)
+								.bytecode(burnContractByteCode).payingWith(theAccount)
+								.gas(300_000L))
+				).then(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(theContract, BURN_TOKEN_ORDINARY_CALL,
+														asAddress(spec.registry().getTokenID(fungibleToken)),
+														1, new ArrayList<Long>())
+														.via(firstBurnTxn).payingWith(theAccount).
+														signedBy(multiKey).
+														signedBy(theAccount).
+														hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												contractCall(theContract, BURN_TOKEN_ORDINARY_CALL,
+														asAddress(spec.registry().getTokenID(fungibleToken)),
+														1, new ArrayList<Long>())
+														.via(secondBurnTxn).payingWith(theAccount)
+														.alsoSigningWithFullPrefix(multiKey)
+														.hasKnownStatus(SUCCESS))),
+						getTxnRecord(firstBurnTxn).andAllChildRecords().logged(),
+						getTxnRecord(secondBurnTxn).andAllChildRecords().logged(),
+						getTokenInfo(fungibleToken).hasTotalSupply(amount),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
+				);
+	}
 
     private HapiApiSpec callForAssociateWithDelegateContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1405,16 +1480,265 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 );
     }
 
-    @NotNull
-    private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-        return CommonUtils.calculateSolidityAddress(
-                (int) spec.registry().getContractId(outerContract).getShardNum(),
-                spec.registry().getContractId(outerContract).getRealmNum(),
-                spec.registry().getContractId(outerContract).getContractNum());
-    }
+	private HapiApiSpec HSCS_KEY_MIXED_FRAMES_SCENARIOS() {
+		final var theAccount = "theAccount";
+		final var fungibleToken = "fungibleToken";
+		final var innerContract = "MixedMintTokenContract";
+		final var outerContract = "MixedFramesScenarios";
+		final var multiKey = "purpose";
+		final var delegateContractDelegateContractShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT,
+				DELEGATE_CONTRACT);
+		final var contractDelegateContractShape = KeyShape.threshOf(1, SIMPLE, KeyShape.CONTRACT, DELEGATE_CONTRACT);
+		final var delegateContractDelegateContractKey = "delegateContractDelegateContractKey";
+		final var contractDelegateContractKey = "contractDelegateContractKey";
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+		return defaultHapiSpec("HSCS_KEY_MIXED_FRAMES_SCENARIOS")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(50L)
+								.supplyKey(multiKey)
+								.adminKey(multiKey)
+								.treasury(TOKEN_TREASURY),
+						fileCreate(innerContract).payingWith(theAccount),
+						updateLargeFile(theAccount, innerContract, extractByteCode(ContractResources.MIXED_MINT_TOKEN_CONTRACT)),
+						fileCreate(outerContract).payingWith(theAccount),
+						updateLargeFile(theAccount, outerContract, extractByteCode(ContractResources.MIXED_FRAMES_SCENARIOS)),
+						contractCreate(innerContract)
+								.bytecode(innerContract)
+								.gas(100_000),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(outerContract, ContractResources.MIXED_FRAMES_SCENARIOS_CONS_ABI,
+														getNestedContractAddress(innerContract, spec))
+														.payingWith(theAccount)
+														.bytecode(outerContract)
+														.via("creationTx")
+														.gas(100_000))),
+						getTxnRecord("creationTx").logged()
+				)
+				.when(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												newKeyNamed(delegateContractDelegateContractKey).shape(delegateContractDelegateContractShape.signedWith(sigs(ON,
+														innerContract, outerContract))),
+												tokenUpdate(fungibleToken)
+														.supplyKey(delegateContractDelegateContractKey).logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via("burnCallAfterNestedMintCallWithPrecompileCall").logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via(
+																"burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall").logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via(
+																"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall").logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via(
+																"burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall").logged()
+										)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												newKeyNamed(contractDelegateContractKey).shape(contractDelegateContractShape.signedWith(sigs(ON,
+														innerContract, outerContract))),
+												tokenUpdate(fungibleToken)
+														.supplyKey(contractDelegateContractKey).logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via("burnDelegateCallAfterNestedMintCallWithPrecompileCall").logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via(
+																"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall").logged(),
+												contractCall(outerContract,
+														ContractResources.BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via(
+																"burnCallAfterNestedMintDelegateCallWithPrecompileCall").logged()
+
+										)),
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												newKeyNamed(contractDelegateContractKey).shape(contractDelegateContractShape.signedWith(sigs(ON,
+														outerContract, innerContract))),
+												tokenUpdate(fungibleToken)
+														.supplyKey(contractDelegateContractKey).logged(),
+												contractCall(outerContract, ContractResources.BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+														1, asAddress(spec.registry().getTokenID(fungibleToken)))
+														.payingWith(theAccount)
+														.via("burnCallAfterNestedMintCallWithPrecompileDelegateCall").logged()
+										)),
+						childRecordsCheck("burnCallAfterNestedMintCallWithPrecompileCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnDelegateCallAfterNestedMintCallWithPrecompileCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnCallAfterNestedMintDelegateCallWithPrecompileCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnCallAfterNestedMintCallWithPrecompileDelegateCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						),
+						childRecordsCheck("burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall", SUCCESS, recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, 1)
+										)
+										.newTotalSupply(51),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(fungibleToken, TOKEN_TREASURY, -1)
+										)
+										.newTotalSupply(50)
+						)
+				)
+				.then(
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 50)
+				);
+	}
+
+	private HapiApiSpec HSCS_KEY_2_TRANSFER() {
+		return defaultHapiSpec("HSCS_KEY_2_TRANSFER")
+				.given(
+				).when(
+				).then(
+				);
+	}
+
+	@NotNull
+	private String getNestedContractAddress(String contract, HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(contract).getShardNum(),
+				spec.registry().getContractId(contract).getRealmNum(),
+				spec.registry().getContractId(contract).getContractNum());
+	}
+
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 }
