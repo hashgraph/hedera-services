@@ -98,8 +98,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> HSCS_KEY_1() {
 		return List.of(
-//				HSCS_KEY_TRANSFER_NFT()
-//				HSCS_KEY_MINT_TOKEN(),
+				HSCS_KEY_TRANSFER_NFT(),
+				HSCS_KEY_MINT_TOKEN()
 		);
 	}
 
@@ -123,8 +123,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(mintContractByteCode)
-								.path(ContractResources.ORDINARY_CALLS_CONTRACT).payingWith(theAccount),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode, extractByteCode(ContractResources.ORDINARY_CALLS_CONTRACT)),
 						tokenCreate(fungibleToken)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(0)

@@ -20,23 +20,19 @@ package com.hedera.services.queries.consensus;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
-import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 
@@ -44,8 +40,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -107,38 +101,17 @@ public class GetTopicInfoAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				ConsensusTopicInfo.Builder info = infoBuilder(op, view);
-				response.setHeader(answerOnlyHeader(OK));
-				response.setTopicInfo(info);
+				var optionalInfo = view.infoForTopic(op.getTopicID());
+				if (optionalInfo.isPresent()){
+					response.setHeader(answerOnlyHeader(OK));
+					response.setTopicInfo(optionalInfo.get());
+				} else {
+					response.setHeader(answerOnlyHeader(INVALID_TOPIC_ID));
+				}
 			}
 		}
 
 		return Response.newBuilder().setConsensusGetTopicInfo(response).build();
-	}
-
-	private static ConsensusTopicInfo.Builder infoBuilder(ConsensusGetTopicInfoQuery op, StateView view) {
-
-		TopicID id = op.getTopicID();
-		MerkleTopic merkleTopic = view.topics().get(EntityNum.fromTopicId(id));
-		ConsensusTopicInfo.Builder info = ConsensusTopicInfo.newBuilder();
-		if (merkleTopic.hasMemo()) {
-			info.setMemo(merkleTopic.getMemo());
-		}
-		if (merkleTopic.hasAdminKey()) {
-			info.setAdminKey(asKeyUnchecked(merkleTopic.getAdminKey()));
-		}
-		if (merkleTopic.hasSubmitKey()) {
-			info.setSubmitKey(asKeyUnchecked(merkleTopic.getSubmitKey()));
-		}
-		info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
-		if (merkleTopic.hasAutoRenewAccountId()) {
-			info.setAutoRenewAccount(asAccount(merkleTopic.getAutoRenewAccountId()));
-		}
-		info.setExpirationTime(merkleTopic.getExpirationTimestamp().toGrpc());
-		info.setSequenceNumber(merkleTopic.getSequenceNumber());
-		info.setRunningHash(ByteString.copyFrom(merkleTopic.getRunningHash()));
-
-		return info;
 	}
 
 	@Override

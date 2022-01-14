@@ -24,7 +24,9 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -43,6 +45,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 public class StaticEntityAccess implements EntityAccess {
@@ -50,7 +53,7 @@ public class StaticEntityAccess implements EntityAccess {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
 	private final VirtualMap<ContractKey, ContractValue> storage;
-	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
+	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
 	public StaticEntityAccess(
 			final StateView stateView,
@@ -60,7 +63,7 @@ public class StaticEntityAccess implements EntityAccess {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 
-		this.blobs = stateView.storage();
+		this.bytecode = stateView.storage();
 		this.storage = stateView.contractStorage();
 		this.accounts = stateView.accounts();
 	}
@@ -165,16 +168,31 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public void flushStorage() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void storeCode(AccountID id, Bytes code) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Bytes fetchCode(AccountID id) {
-		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-		var bytes = blobs
-				.get(blobKey);
+	public Bytes fetchCodeIfPresent(final AccountID id) {
+		return explicitCodeFetch(bytecode, id);
+	}
 
-		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	static Bytes explicitCodeFetch(
+			final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode,
+			final AccountID id
+	) {
+		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(id.getAccountNum()));
+		final var value = bytecode.get(key);
+		return (value != null) ? Bytes.of(value.getData()) : null;
+	}
+
+	@Override
+	public void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		throw new UnsupportedOperationException();
 	}
 }

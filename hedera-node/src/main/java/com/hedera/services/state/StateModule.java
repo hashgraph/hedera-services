@@ -20,6 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
@@ -27,7 +28,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.NftsByOwner;
 import com.hedera.services.state.annotations.NftsByType;
 import com.hedera.services.state.annotations.TreasuryNftsByType;
@@ -196,13 +196,15 @@ public abstract class StateModule {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
@@ -211,26 +213,21 @@ public abstract class StateModule {
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return () -> new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
 	@Singleton
 	@WorkingState
 	public static StateAccessor provideWorkingState() {
-		return new StateAccessor();
-	}
-
-	@Provides
-	@Singleton
-	@LatestSignedState
-	public static StateAccessor provideLatestSignedState() {
 		return new StateAccessor();
 	}
 

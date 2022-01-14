@@ -13,7 +13,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param tokenTransfers the list of transfers to do
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function cryptoTransfer(IHederaTokenService.TokenTransferList[] memory tokenTransfers) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.cryptoTransfer.selector, tokenTransfers));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
@@ -32,7 +32,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function mintToken(address token, uint64 amount, bytes[] memory metadata) internal
         returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers)
     {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector,
             token, amount, metadata));
         (responseCode, newTotalSupply, serialNumbers) =
@@ -53,7 +53,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     function burnToken(address token, uint64 amount, int64[] memory serialNumbers) internal
         returns (int responseCode, uint64 newTotalSupply)
     {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.burnToken.selector,
             token, amount, serialNumbers));
         (responseCode, newTotalSupply) =
@@ -80,14 +80,14 @@ abstract contract HederaTokenService is HederaResponseCodes {
     ///               token type
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function associateTokens(address account, address[] memory tokens) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.associateTokens.selector,
             account, tokens));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
     function associateToken(address account, address token) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.associateToken.selector,
             account, token));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -112,14 +112,14 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param tokens The tokens to be dissociated from the provided account.
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     function dissociateTokens(address account, address[] memory tokens) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.dissociateTokens.selector,
             account, tokens));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
     function dissociateToken(address account, address token) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.dissociateToken.selector,
             account, token));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -135,7 +135,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param accountIds account to do a transfer to/from
     /// @param amounts The amount from the accountId at the same index
     function transferTokens(address token, address[] memory accountIds, int64[] memory amounts) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferTokens.selector,
             token, accountIds, amounts));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -147,7 +147,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param receiver the receiver of the nft sent by the same index at sender
     /// @param serialNumber the serial number of the nft sent by the same index at sender
     function transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFTs.selector,
             token, sender, receiver, serialNumber));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -161,7 +161,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param receiver The receiver of the transaction
     /// @param amount Non-negative value to send. a negative value will result in a failure.
     function transferToken(address token, address sender, address receiver, int64 amount) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferToken.selector,
             token, sender, receiver, amount));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
@@ -175,7 +175,7 @@ abstract contract HederaTokenService is HederaResponseCodes {
     /// @param receiver The receiver of the transaction
     /// @param serialNum The serial number of the NFT to transfer.
     function transferNFT(address token, address sender, address receiver, int64 serialNum) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFT.selector,
             token, sender, receiver, serialNum));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;

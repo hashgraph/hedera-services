@@ -23,7 +23,7 @@ package com.hedera.services.contracts;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV19;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;
@@ -40,8 +40,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.StoresModule;
@@ -49,6 +47,7 @@ import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
+import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -109,11 +108,11 @@ public abstract class ContractsModule {
 	public static EntityAccess provideMutableEntityAccess(
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
+			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
-		return new MutableEntityAccess(ledger, txnCtx, tokensLedger, storage, bytecode);
+		return new MutableEntityAccess(ledger, txnCtx, storage, tokensLedger, bytecode);
 	}
 
 	@Provides
@@ -125,7 +124,7 @@ public abstract class ContractsModule {
 
 	@Binds
 	@Singleton
-	public abstract GasCalculator bindHederaGasCalculatorV19(GasCalculatorHederaV19 gasCalculator);
+	public abstract GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
 
 	@Binds
 	@Singleton

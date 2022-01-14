@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.file.queries;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
@@ -46,12 +47,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class GetFileContentsResourceUsageTest {
+	private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private static final FileID target = asFile("0.0.123");
 	private StateView view;
 	private FileFeeBuilder usageEstimator;
 	private GetFileContentsResourceUsage subject;
 	private static final long fileSize = 1_234;
 	private static final FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
+			.setLedgerId(ledgerId)
 			.setSize(fileSize)
 			.build();
 

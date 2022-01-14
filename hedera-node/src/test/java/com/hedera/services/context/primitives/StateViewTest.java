@@ -21,6 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -86,7 +87,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -135,6 +135,7 @@ import static org.mockito.BDDMockito.mock;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class StateViewTest {
+	private static final int wellKnownNumKvPairs = 144;
 	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
 	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
 	private final long expiry = 2_000_000L;
@@ -157,12 +158,12 @@ class StateViewTest {
 	private final ContractID cid = asContract("0.0.1");
 	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(),
 			cid.getContractNum());
-	private final ContractID notCid = asContract("0.0.3");
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
 	private final long autoRenewPeriod = 1_234_567;
 	private final String fileMemo = "Originally she thought";
 	private final String scheduleMemo = "For what but eye and ear";
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -184,6 +185,7 @@ class StateViewTest {
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
+	private NetworkInfo networkInfo;
 
 	private MerkleToken token;
 	private MerkleSchedule schedule;
@@ -215,6 +217,7 @@ class StateViewTest {
 				expiry);
 
 		expectedImmutable = FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setDeleted(false)
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setFileID(target)
@@ -234,6 +237,7 @@ class StateViewTest {
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
+				.numKvPairs(wellKnownNumKvPairs)
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("0.0.3"))
@@ -322,11 +326,14 @@ class StateViewTest {
 
 		given(uniqTokenViewFactory.viewFor(any(), any(), any(), any(), any(), any())).willReturn(uniqTokenView);
 
+		networkInfo = mock(NetworkInfo.class);
+
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
 				children,
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -399,6 +406,7 @@ class StateViewTest {
 	void getsScheduleInfoForDeleted() {
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
 
@@ -420,6 +428,7 @@ class StateViewTest {
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
@@ -428,6 +437,7 @@ class StateViewTest {
 		final var mockSecp256k1Key = new JECDSASecp256k1Key("012345678901234567890123456789012".getBytes());
 		given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
 		given(scheduleStore.get(scheduleId)).willReturn(schedule);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 		schedule.witnessValidSignature(mockEd25519Key.primitiveKeyIfPresent());
 		schedule.witnessValidSignature(mockSecp256k1Key.primitiveKeyIfPresent());
 
@@ -435,6 +445,7 @@ class StateViewTest {
 		final var gotten = subject.infoForSchedule(scheduleId);
 		final var info = gotten.get();
 
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 		final var signatures = info.getSigners().getKeysList();
 		assertEquals(MiscUtils.asKeyUnchecked(mockEd25519Key), signatures.get(3));
@@ -461,6 +472,7 @@ class StateViewTest {
 	void getsTokenInfoMinusFreezeIfMissing() {
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.get(tokenId)).willReturn(token);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		token.setFreezeKey(MerkleToken.UNUSED_KEY);
 
@@ -475,12 +487,14 @@ class StateViewTest {
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
 	void getsTokenInfoMinusPauseIfMissing() {
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.get(tokenId)).willReturn(token);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		token.setPauseKey(MerkleToken.UNUSED_KEY);
 
@@ -495,12 +509,14 @@ class StateViewTest {
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(PauseNotApplicable, info.getPauseStatus());
 		assertFalse(info.hasPauseKey());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
 	void getsTokenInfo() {
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.get(tokenId)).willReturn(token);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 		final var miscKey = MISC_ACCOUNT_KT.asKey();
 
 		final var info = subject.infoForToken(tokenId).get();
@@ -526,13 +542,15 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
+		assertEquals(ledgerId, info.getLedgerId());
 	}
 
 	@Test
 	void getsContractInfo() throws Exception {
 		final var target = EntityNum.fromContractId(cid);
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
@@ -554,8 +572,9 @@ class StateViewTest {
 		assertEquals(asSolidityAddressHex(asAccount(cid)), info.getContractAccountID());
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
+		assertEquals(ledgerId, info.getLedgerId());
 		assertTrue(info.getDeleted());
-		assertEquals(expectedBytecode.length, info.getStorage());
+		assertEquals(expectedTotalStorage, info.getStorage());
 	}
 
 	@Test
@@ -622,8 +641,10 @@ class StateViewTest {
 	void infoForAccount() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
@@ -648,8 +669,10 @@ class StateViewTest {
 		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
 				.setAccountID(tokenAccountId)
 				.setAlias(tokenAccount.getAlias())
@@ -703,7 +726,7 @@ class StateViewTest {
 		children.setTopics(topics);
 
 		subject = new StateView(
-				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
 
 		final var actualTopics = subject.topics();
 
@@ -717,7 +740,7 @@ class StateViewTest {
 		children.setStorage(storage);
 
 		subject = new StateView(
-				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				null, null, children, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
 
 		final var actualStorage = subject.storage();
 		final var actualContractStorage = subject.contractStorage();
@@ -736,8 +759,7 @@ class StateViewTest {
 	@Test
 	void handlesNullKey() {
 		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 		contract.setAccountKey(null);
 
@@ -778,6 +800,7 @@ class StateViewTest {
 	void assemblesFileInfo() {
 		given(attrs.get(target)).willReturn(metadata);
 		given(contents.get(target)).willReturn(data);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var info = subject.infoForFile(target);
 
@@ -789,6 +812,7 @@ class StateViewTest {
 	void assemblesFileInfoForImmutable() {
 		given(attrs.get(target)).willReturn(immutableMetadata);
 		given(contents.get(target)).willReturn(data);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var info = subject.infoForFile(target);
 
@@ -805,6 +829,7 @@ class StateViewTest {
 		metadata.setDeleted(true);
 
 		given(attrs.get(target)).willReturn(metadata);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var info = subject.infoForFile(target);
 
@@ -872,10 +897,12 @@ class StateViewTest {
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
 		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
 		final var info = optionalNftInfo.get();
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(tokenAccountId, info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
@@ -884,10 +911,13 @@ class StateViewTest {
 
 	@Test
 	void getNftsAsExpected() {
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
 		assertTrue(optionalNftInfo.isPresent());
 		final var info = optionalNftInfo.get();
+		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(nftOwnerId, info.getAccountID());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
@@ -897,14 +927,18 @@ class StateViewTest {
 	@Test
 	void infoForAccountNftsWorks() {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
-		final List<TokenNftInfo> mockInfo = new ArrayList<>();
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		var info = TokenNftInfo.newBuilder();
+		var expectedInfo = List.of(info.setLedgerId(networkInfo.ledgerId()).build());
+		final List<TokenNftInfo> mockInfo = List.of(info.build());
 
 		given(uniqTokenView.ownedAssociations(tokenAccountId, 3L, 4L)).willReturn(mockInfo);
 
 		final var result = subject.infoForAccountNfts(tokenAccountId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
-		assertSame(mockInfo, result.get());
+		assertEquals(expectedInfo, result.get());
 	}
 
 	@Test
@@ -915,14 +949,18 @@ class StateViewTest {
 
 	@Test
 	void infoForTokenNftsWorks() {
-		final List<TokenNftInfo> mockInfo = new ArrayList<>();
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		var info = TokenNftInfo.newBuilder();
+		var expectedInfo = List.of(info.setLedgerId(networkInfo.ledgerId()).build());
+		final List<TokenNftInfo> mockInfo = List.of(info.build());
 
 		given(uniqTokenView.typedAssociations(nftTokenId, 3L, 4L)).willReturn(mockInfo);
 
 		final var result = subject.infosForTokenNfts(nftTokenId, 3L, 4L);
 
 		assertFalse(result.isEmpty());
-		assertSame(mockInfo, result.get());
+		assertEquals(expectedInfo, result.get());
 	}
 
 	@Test
@@ -934,7 +972,7 @@ class StateViewTest {
 
 	@Test
 	void viewAdaptToNullChildren() {
-		subject = new StateView(null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+		subject = new StateView(null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
 
 		assertSame(EMPTY_UNIQUE_TOKEN_VIEW, subject.uniqTokenView());
 		assertSame(StateView.EMPTY_FCOTMR, subject.treasuryNftsByType());

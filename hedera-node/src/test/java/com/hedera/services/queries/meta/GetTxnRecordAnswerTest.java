@@ -114,7 +114,8 @@ class GetTxnRecordAnswerTest {
 				null,
 				null,
 				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 

@@ -240,5 +240,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	public void setThrottleByGas(boolean throttleByGas) {
 		this.throttleByGas = throttleByGas;
+        }
+
+	@Override
+	public boolean isAutoCreationEnabled() {
+		return true;
 	}
 }

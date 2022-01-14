@@ -60,6 +60,7 @@ public class ContractResources {
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
+	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
 
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
 	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
@@ -99,6 +100,14 @@ public class ContractResources {
 	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
 	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
 	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
+
+	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +
+			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
+			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String IMAP_USER_REMOVE = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\",\"type" +
+			"\":\"uint256\"}],\"name\":\"remove\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\"," +
+			"\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
@@ -615,7 +624,10 @@ public class ContractResources {
 			"\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"" +
 			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-	public static final String MINT_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\",\"type\":\"uint64\"},{\"internalType\":\"bytes\",\"name\":\"metadata\",\"type\":\"bytes\"}],\"name\":\"mintTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String MINT_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"amount\"," +
+			"\"type\":\"uint64\"},{\"internalType\":\"bytes[]\",\"name\":\"metadata\",\"type\":\"bytes[]\"}]," +
+			"\"name\":\"mintTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String ASSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"associateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String DISSOCIATE_TOKEN_ORDINARY_CALL = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"dissociateTokenCall\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"responseCode\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
@@ -694,6 +706,8 @@ public class ContractResources {
 	public static final String VERSATILE_TRANSFERS_NFTS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"sender\",\"type\": \"address[]\"},{\"internalType\": \"address[]\",\"name\": \"receiver\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumber\",\"type\": \"int64[]\"}],\"name\": \"transferNfts\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String VERSATILE_TRANSFERS_NFT = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"receiver\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}],\"name\": \"transferNft\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String VERSATILE_TRANSFERS_DISTRIBUTE = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"feeTokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"},{\"internalType\": \"address\",\"name\": \"feeCollector\",\"type\": \"address\"}],\"name\": \"feeDistributionAfterTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL = "{\"inputs\": [{\"internalType\": " +
+			"\"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"feeTokenAddress\",\"type\": \"address\"},{\"internalType\": \"address[]\",\"name\": \"accounts\",\"type\": \"address[]\"},{\"internalType\": \"int64[]\",\"name\": \"amounts\",\"type\": \"int64[]\"},{\"internalType\": \"address\",\"name\": \"feeCollector\",\"type\": \"address\"}],\"name\": \"feeDistributionAfterTransferStaticNestedCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}, {\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +

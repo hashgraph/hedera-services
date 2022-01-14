@@ -20,6 +20,7 @@ package com.hedera.services.queries.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -65,6 +66,7 @@ class GetTokenInfoAnswerTest {
 	private String payer = "0.0.12345";
 	private TokenID tokenId = asToken("1.2.3");
 	private long fee = 1_234L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
 	StateView view;
 	OptionValidator optionValidator;
@@ -76,6 +78,7 @@ class GetTokenInfoAnswerTest {
 	@BeforeEach
 	void setup() {
 		info = TokenInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setTokenId(tokenId)
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.build();

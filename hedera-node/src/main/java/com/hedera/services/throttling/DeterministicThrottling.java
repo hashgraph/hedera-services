@@ -109,10 +109,17 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
 		} else if (function == CryptoTransfer) {
-			if (!accessor.areAutoCreationsCounted()) {
-				accessor.countAutoCreationsWith(aliasManager);
+			if (dynamicProperties.isAutoCreationEnabled()) {
+				if (!accessor.areAutoCreationsCounted()) {
+					accessor.countAutoCreationsWith(aliasManager);
+				}
+				return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
+			} else {
+				/* Since auto-creation is disabled, if this transfer does attempt one, it will
+				resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
+				CryptoCreate throttle bucket. */
+				return !manager.allReqsMetAt(now);
 			}
-			return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
 		} else if (function == ScheduleCreate) {
 			final var scheduled = accessor.getTxn().getScheduleCreate().getScheduledTransactionBody();
 			return shouldThrottleScheduleCreate(manager, scheduled, now);
@@ -190,27 +197,26 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	@Override
 	public void applyGasConfig() {
-		final var n = capacitySplitSource.getAsInt();
-		long splitCapacity;
+		long capacity;
 		if (consensusThrottled) {
 			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
 				return;
 			} else {
-				splitCapacity = dynamicProperties.consensusThrottleGasLimit() / n;
+				capacity = dynamicProperties.consensusThrottleGasLimit();
 			}
 		} else {
 			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
 				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
 				return;
 			} else {
-				splitCapacity = dynamicProperties.frontendThrottleGasLimit() / n;
+				capacity = dynamicProperties.frontendThrottleGasLimit();
 			}
 		}
-		gasThrottle = new GasLimitDeterministicThrottle(splitCapacity);
+		gasThrottle = new GasLimitDeterministicThrottle(capacity);
 		final var configDesc = "Resolved " +
 				(consensusThrottled ? "consensus" : "frontend") +
-				" gas throttle (after splitting capacity " + n + " ways) -\n  " +
+				" gas throttle -\n  " +
 				gasThrottle.getCapacity() +
 				" gas/sec (throttling " +
 				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +
@@ -244,7 +250,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			final Instant now
 	) {
 		final var scheduledFunction = scheduledFunctionOf(scheduled);
-		if (scheduledFunction == CryptoTransfer) {
+		if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
 			final var txn = scheduled.getCryptoTransfer();
 			if (usesAliases(txn)) {
 				final var resolver = new AliasResolver();

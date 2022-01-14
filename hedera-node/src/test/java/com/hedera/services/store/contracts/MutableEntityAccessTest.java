@@ -35,8 +35,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -70,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,17 +77,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class MutableEntityAccessTest {
 	@Mock
 	private HederaLedger ledger;
 	@Mock
-	private Supplier<VirtualMap<ContractKey, ContractValue>> supplierContractStorage;
-	@Mock
 	private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
-	@Mock
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
 	@Mock
@@ -103,6 +97,8 @@ class MutableEntityAccessTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private TxnAccessor accessor;
+	@Mock
+	private SizeLimitedStorage storage;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -116,9 +112,7 @@ class MutableEntityAccessTest {
 	private static final JKey key = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 
 	private final UInt256 contractStorageKey = UInt256.ONE;
-	private final ContractKey expectedContractKey = new ContractKey(id.getAccountNum(), contractStorageKey.toArray());
 	private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
-	private final ContractValue expectedContractValue = new ContractValue(contractStorageValue.toArray());
 
 	private final Bytes bytecode = Bytes.of("contract-code".getBytes());
 	private final VirtualBlobKey expectedBytecodeKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE,
@@ -131,7 +125,21 @@ class MutableEntityAccessTest {
 		given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 		given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-		subject = new MutableEntityAccess(ledger, txnCtx, tokensLedger, supplierContractStorage, supplierBytecode);
+		subject = new MutableEntityAccess(ledger, txnCtx, storage, tokensLedger, supplierBytecode);
+	}
+
+	@Test
+	void recordsViaSizeLimitedStorage() {
+		subject.recordNewKvUsageTo(accountsLedger);
+
+		verify(storage).recordNewKvUsageTo(accountsLedger);
+	}
+
+	@Test
+	void flushesAsExpected() {
+		subject.flushStorage();
+
+		verify(storage).validateAndCommit();
 	}
 
 	@Test
@@ -184,6 +192,7 @@ class MutableEntityAccessTest {
 
 		verify(tokensLedger).rollback();
 		verify(tokensLedger).begin();
+		verify(storage).beginSession();
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Tokens ledger had to be rolled back")));
@@ -353,57 +362,22 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void putsZeroContractStorageValue() {
-		// given:
-		given(supplierContractStorage.get()).willReturn(contractStorage);
-
-		// when:
-		subject.putStorage(id, contractStorageKey, UInt256.ZERO);
-
-		// then:
-		verify(contractStorage).put(expectedContractKey, new ContractValue());
-	}
-
-	@Test
 	void putsNonZeroContractStorageValue() {
-		// given:
-		given(supplierContractStorage.get()).willReturn(contractStorage);
-
-		// when:
 		subject.putStorage(id, contractStorageKey, contractStorageValue);
 
-		// then:
-		verify(contractStorage).put(expectedContractKey, expectedContractValue);
+		verify(storage).putStorage(id, contractStorageKey, contractStorageValue);
 	}
 
 	@Test
-	void getsZeroContractStorageValue() {
-		// given:
-		given(supplierContractStorage.get()).willReturn(contractStorage);
-
-		// when:
-		final var result = subject.getStorage(id, contractStorageKey);
-
-		// then:
-		assertEquals(UInt256.ZERO, result);
+	void getsExpectedContractStorageValue() {
 		// and:
-		verify(contractStorage).get(expectedContractKey);
-	}
-
-	@Test
-	void getsNonZeroContractStorageValue() {
-		// given:
-		given(supplierContractStorage.get()).willReturn(contractStorage);
-		// and:
-		given(contractStorage.get(expectedContractKey)).willReturn(expectedContractValue);
+		given(storage.getStorage(id, contractStorageKey)).willReturn(UInt256.MAX_VALUE);
 
 		// when:
 		final var result = subject.getStorage(id, contractStorageKey);
 
 		// then:
 		assertEquals(UInt256.MAX_VALUE, result);
-		// and:
-		verify(contractStorage).get(expectedContractKey);
 	}
 
 	@Test
@@ -420,16 +394,9 @@ class MutableEntityAccessTest {
 
 	@Test
 	void fetchesEmptyBytecode() {
-		// given:
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 
-		// when:
-		final var result = subject.fetchCode(id);
-
-		// then:
-		assertEquals(Bytes.EMPTY, result);
-		// and:
-		verify(bytecodeStorage).get(expectedBytecodeKey);
+		assertNull(subject.fetchCodeIfPresent(id));
 	}
 
 	@Test
@@ -437,7 +404,7 @@ class MutableEntityAccessTest {
 		given(supplierBytecode.get()).willReturn(bytecodeStorage);
 		given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
-		final var result = subject.fetchCode(id);
+		final var result = subject.fetchCodeIfPresent(id);
 
 		assertEquals(bytecode, result);
 		verify(bytecodeStorage).get(expectedBytecodeKey);

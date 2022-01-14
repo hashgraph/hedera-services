@@ -89,8 +89,13 @@ public class GlobalDynamicProperties {
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
+	private long htsDefaultGasCost;
 	private long triggerTxnWindBackNanos;
 	private int changeHistorianMemorySecs;
+	private boolean autoCreationEnabled;
+	private boolean expandSigsFromLastSignedState;
+	private long maxAggregateContractKvPairs;
+	private int maxIndividualContractKvPairs;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -162,8 +167,13 @@ public class GlobalDynamicProperties {
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
 		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
+		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
+		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
+		maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
+		maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
 	}
 
 	public int maxTokensPerAccount() {
@@ -366,11 +376,31 @@ public class GlobalDynamicProperties {
 		return consensusThrottleMaxGasLimit;
         }
 
+	public long htsDefaultGasCost() {
+		return htsDefaultGasCost;
+	}
+
 	public long triggerTxnWindBackNanos() {
 		return triggerTxnWindBackNanos;
 	}
 
 	public int changeHistorianMemorySecs() {
 		return changeHistorianMemorySecs;
+	}
+
+	public boolean isAutoCreationEnabled() {
+		return autoCreationEnabled;
+	}
+
+	public boolean expandSigsFromLastSignedState() {
+		return expandSigsFromLastSignedState;
+	}
+
+	public long maxAggregateContractKvPairs() {
+		return maxAggregateContractKvPairs;
+	}
+
+	public int maxIndividualContractKvPairs() {
+		return maxIndividualContractKvPairs;
 	}
 }

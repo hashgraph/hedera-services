@@ -84,6 +84,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -104,6 +105,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of("Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
@@ -160,6 +162,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
 
+	private int functionId;
+	private Precompile precompile;
+	private TransactionBody.Builder transactionBody;
+
 	@Inject
 	public HTSPrecompiledContract(
 			final OptionValidator validator,
@@ -175,7 +181,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ImpliedTransfersMarshal impliedTransfersMarshal
 	) {
 		super("HTS", gasCalculator);
-
 		this.decoder = decoder;
 		this.encoder = encoder;
 		this.sigsVerifier = sigsVerifier;
@@ -190,7 +195,75 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Gas gasRequirement(final Bytes input) {
-		return Gas.of(10_000); // revisit cost, this is arbitrary
+		this.precompile = null;
+		this.transactionBody = null;
+
+		this.functionId = input.getInt(0);
+		var defaultGasPrice = dynamicProperties.htsDefaultGasCost();
+		Gas gasRequirement = Gas.of(defaultGasPrice);
+
+		switch (functionId) {
+			case ABI_ID_CRYPTO_TRANSFER,
+					ABI_ID_TRANSFER_TOKENS,
+					ABI_ID_TRANSFER_TOKEN,
+					ABI_ID_TRANSFER_NFTS,
+					ABI_ID_TRANSFER_NFT: {
+				this.precompile = new TransferPrecompile();
+				decodeInput(input);
+				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
+				/*-- 10K if only one transfer or 5K per index --*/
+				if (transfersCount <= 1) {
+					gasRequirement = Gas.of(defaultGasPrice);
+				} else {
+					gasRequirement = Gas.of((defaultGasPrice / 2) * transfersCount);
+				}
+				break;
+			}
+			case ABI_ID_MINT_TOKEN: {
+				this.precompile = new MintPrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				gasRequirement = Gas.of(defaultGasPrice);
+				break;
+			}
+			case ABI_ID_BURN_TOKEN: {
+				this.precompile = new BurnPrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				gasRequirement = Gas.of(defaultGasPrice);
+				break;
+			}
+			case ABI_ID_ASSOCIATE_TOKENS: {
+				this.precompile = new MultiAssociatePrecompile();
+				decodeInput(input);
+				/*-- 10K per index --*/
+				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenAssociate().getTokensCount());
+				break;
+			}
+			case ABI_ID_ASSOCIATE_TOKEN: {
+				this.precompile = new AssociatePrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				gasRequirement = Gas.of(defaultGasPrice);
+				break;
+			}
+			case ABI_ID_DISSOCIATE_TOKENS: {
+				this.precompile = new MultiDissociatePrecompile();
+				decodeInput(input);
+				/*-- 10K per index --*/
+				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenDissociate().getTokensCount());
+				break;
+			}
+			case ABI_ID_DISSOCIATE_TOKEN: {
+				this.precompile = new DissociatePrecompile();
+				decodeInput(input);
+				/*-- 10K --*/
+				gasRequirement = Gas.of(defaultGasPrice);
+				break;
+			}
+			default:
+		}
+		return gasRequirement;
 	}
 
 	@Override
@@ -199,54 +272,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
-
-		final var functionId = input.getInt(0);
-		return switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER,
-					ABI_ID_TRANSFER_TOKENS,
-					ABI_ID_TRANSFER_TOKEN,
-					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT -> computeTransfer(input, messageFrame);
-			case ABI_ID_MINT_TOKEN -> computeMintToken(input, messageFrame);
-			case ABI_ID_BURN_TOKEN -> computeBurnToken(input, messageFrame);
-			case ABI_ID_ASSOCIATE_TOKENS -> computeAssociateTokens(input, messageFrame);
-			case ABI_ID_ASSOCIATE_TOKEN -> computeAssociateToken(input, messageFrame);
-			case ABI_ID_DISSOCIATE_TOKENS -> computeDissociateTokens(input, messageFrame);
-			case ABI_ID_DISSOCIATE_TOKEN -> computeDissociateToken(input, messageFrame);
-			default -> null;
-		};
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeTransfer(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new TransferPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeMintToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MintPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeBurnToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new BurnPrecompile());
-	}
-
-	@SuppressWarnings("unused")
-	protected Bytes computeAssociateTokens(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MultiAssociatePrecompile());
-	}
-
-	protected Bytes computeAssociateToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new AssociatePrecompile());
-	}
-
-	protected Bytes computeDissociateTokens(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new MultiDissociatePrecompile());
-	}
-
-	protected Bytes computeDissociateToken(final Bytes input, final MessageFrame frame) {
-		return computeInternal(frame, input, new DissociatePrecompile());
+		if (this.precompile == null || this.transactionBody == null) {
+			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+			return null;
+		}
+		return computeInternal(messageFrame);
 	}
 
 	/* --- Helpers --- */
@@ -270,32 +300,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return UInt256.valueOf(status.getNumber());
 	}
 
+	private void decodeInput(Bytes input) {
+		this.transactionBody = TransactionBody.newBuilder();
+		try {
+			this.transactionBody = this.precompile.body(input);
+		} catch (Exception e) {
+			log.warn("Internal precompile failure", e);
+			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
+		}
+	}
+
 	@SuppressWarnings("rawtypes")
-	private Bytes computeInternal(
-			final MessageFrame frame,
-			final Bytes input,
-			final Precompile precompile
+	protected Bytes computeInternal(
+			final MessageFrame frame
 	) {
-		final var contract = frame.getContractAddress();
-		final var recipient = frame.getRecipientAddress();
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
-		TransactionBody.Builder synthBody = TransactionBody.newBuilder();
-		Bytes result = SUCCESS_RESULT;
+		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
+
 		try {
-			synthBody = precompile.body(input);
-			childRecord = precompile.run(recipient, contract, ledgers);
-
-			if (precompile instanceof MintPrecompile && childRecord.getReceiptBuilder() != null) {
-				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
-						childRecord.getReceiptBuilder().getSerialNumbers());
-			} else if (precompile instanceof BurnPrecompile && childRecord.getReceiptBuilder() != null) {
-				result =
-						encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
-			}
-
+			childRecord = this.precompile.run(frame, ledgers);
+			result = this.precompile.calculateResult(childRecord);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
@@ -311,7 +338,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var parentUpdater = updater.parentUpdater();
 		if (parentUpdater.isPresent()) {
 			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-			parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody);
+			parent.manageInProgressRecord(recordsHistorian, childRecord, this.transactionBody);
 		} else {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
@@ -399,7 +426,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface Precompile {
 		TransactionBody.Builder body(final Bytes input);
 
-		ExpirableTxnRecord.Builder run(final Address recipient, final Address contract, final WorldLedgers ledgers);
+		ExpirableTxnRecord.Builder run(final MessageFrame frame,
+									   final WorldLedgers ledgers);
+
+		default Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			return SUCCESS_RESULT;
+		}
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -407,15 +439,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			accountId.asEvmAddress();
+			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -431,7 +463,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class AssociatePrecompile extends AbstractAssociatePrecompile {
+	protected class AssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			associateOp = decoder.decodeAssociation(input);
@@ -439,7 +471,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
+	protected class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			associateOp = decoder.decodeMultipleAssociations(input);
@@ -452,15 +484,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs = sigsVerifier.hasActiveKey(accountId, recipient, contract);
+			final var hasRequiredSigs =  validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -476,7 +507,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class DissociatePrecompile extends AbstractDissociatePrecompile {
+	protected class DissociatePrecompile extends AbstractDissociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			dissociateOp = decoder.decodeDissociate(input);
@@ -484,7 +515,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
+	protected class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			dissociateOp = decoder.decodeMultipleDissociations(input);
@@ -492,7 +523,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private class MintPrecompile implements Precompile {
+	protected class MintPrecompile implements Precompile {
 		private MintWrapper mintOp;
 
 		@Override
@@ -503,15 +534,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(mintOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -530,14 +560,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
+
+		@Override
+		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			Bytes result = Precompile.super.calculateResult(childRecord);
+			if (childRecord.getReceiptBuilder() != null) {
+				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
+						childRecord.getReceiptBuilder().getSerialNumbers());
+			}
+			return result;
+		}
 	}
 
-	private class TransferPrecompile implements Precompile {
+	protected class TransferPrecompile implements Precompile {
 		private List<TokenTransferWrapper> transferOp;
+		private TransactionBody.Builder syntheticTxn;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			final var functionId = input.getInt(0);
 			transferOp = switch (functionId) {
 				case ABI_ID_CRYPTO_TRANSFER -> decoder.decodeCryptoTransfer(input);
 				case ABI_ID_TRANSFER_TOKENS -> decoder.decodeTransferTokens(input);
@@ -548,7 +588,80 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
 						FAIL_INVALID);
 			};
-			return syntheticTxnFactory.createCryptoTransfer(transferOp);
+			this.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			return syntheticTxn;
+		}
+
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final MessageFrame frame,
+				final WorldLedgers ledgers
+		) {
+			final var op = syntheticTxn.getCryptoTransfer();
+			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op);
+			if (validity != ResponseCodeEnum.OK) {
+				throw new InvalidTransactionException(validity);
+			}
+
+			var changes = constructBalanceChanges(transferOp);
+			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
+			final var numExplicitChanges = changes.size();
+
+			final var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
+					0,
+					0,
+					changes,
+					NO_ALIASES,
+					impliedTransfersMarshal.currentProps());
+			final var assessmentStatus = validated.getMeta().code();
+			validateTrue(assessmentStatus == OK, assessmentStatus);
+			changes = validated.getAllBalanceChanges();
+
+			final var sideEffects = sideEffectsFactory.get();
+			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			hederaTokenStore.setAccountsLedger(ledgers.accounts());
+
+			final var transferLogic = transferLogicFactory.newLogic(
+					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					validator,
+					null,
+					recordsHistorian);
+
+			for (int i = 0, n = changes.size(); i < n; i++) {
+				final var change = changes.get(i);
+				final var units = change.units();
+				if (change.isForNft() || units < 0) {
+					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey);
+					validateTrue(hasSenderSig, INVALID_SIGNATURE);
+				}
+				if (i >= numExplicitChanges) {
+					/* Ignore receiver sig requirements for custom fee payments (which are never NFT transfers) */
+					continue;
+				}
+				var hasReceiverSigIfReq = true;
+				if (change.isForNft()) {
+					hasReceiverSigIfReq = validateKey(frame, asTypedSolidityAddress(change.counterPartyAccountId()),
+							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
+				} else if (units > 0) {
+					hasReceiverSigIfReq = validateKey(
+                                            frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
+				}
+				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
+			}
+
+			transferLogic.doZeroSum(changes);
+
+			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
 		}
 
 		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
@@ -598,74 +711,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return allChanges;
 		}
 
-		@Override
-		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
-				final WorldLedgers ledgers
-		) {
-			var changes = constructBalanceChanges(transferOp);
-			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
-			final var numExplicitChanges = changes.size();
-
-			final var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
-					0,
-					0,
-					changes,
-					NO_ALIASES,
-					impliedTransfersMarshal.currentProps());
-			final var assessmentStatus = validated.getMeta().code();
-			validateTrue(assessmentStatus == OK, assessmentStatus);
-			changes = validated.getAllBalanceChanges();
-
-			final var sideEffects = sideEffectsFactory.get();
-			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-					ids,
-					validator,
-					sideEffects,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
-			hederaTokenStore.setAccountsLedger(ledgers.accounts());
-
-			final var transferLogic = transferLogicFactory.newLogic(
-					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
-					sideEffects,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					validator,
-					null,
-					recordsHistorian);
-			for (int i = 0, n = changes.size(); i < n; i++) {
-				final var change = changes.get(i);
-				final var units = change.units();
-				if (change.isForNft() || units < 0) {
-					final var hasSenderSig = sigsVerifier.hasActiveKey(
-							change.getAccount(), recipient, contract);
-					validateTrue(hasSenderSig, INVALID_SIGNATURE);
-				}
-				if (i >= numExplicitChanges) {
-					/* Ignore receiver sig requirements for custom fee payments (which are never NFT transfers) */
-					continue;
-				}
-				var hasReceiverSigIfReq = true;
-				if (change.isForNft()) {
-					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-							asTypedSolidityAddress(change.counterPartyAccountId()), recipient, contract);
-				} else if (units > 0) {
-					hasReceiverSigIfReq = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-									change.getAccount().asEvmAddress(), recipient, contract);
-				}
-				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
-			}
-
-			transferLogic.doZeroSum(changes);
-
-			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+		private AccountAmount aaWith(final AccountID account, final long amount) {
+			return AccountAmount.newBuilder()
+					.setAccountID(account)
+					.setAmount(amount)
+					.build();
 		}
 	}
 
-	private class BurnPrecompile implements Precompile {
+	protected class BurnPrecompile implements Precompile {
 		private BurnWrapper burnOp;
 
 		@Override
@@ -676,15 +730,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final Address recipient,
-				final Address contract,
+				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
 			Objects.requireNonNull(burnOp);
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
-			final var hasRequiredSigs = sigsVerifier.hasActiveSupplyKey(tokenId, recipient, contract);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -702,13 +755,81 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
+
+		@Override
+		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			Bytes result = Precompile.super.calculateResult(childRecord);
+			if (childRecord.getReceiptBuilder() != null) {
+				result = encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
+			}
+			return result;
+		}
 	}
 
-	private static final AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
+	/**
+	 * We check the current frame properties to determine one of the following 3 cases:
+	 *
+	 *	1. We have a delegatecall to the precompile. We check the recipient address (address of the contract that
+	 * 	invoked the precompile)  of the current frame (precompile frame) against a Delegate Contract ID signature.
+	 *  2. We have a call to the precompile, but the contract that called the precompile has been invoked from a
+	 *  delegatecall. We check the sender address of the current frame (the address that made the delegatecall)
+	 *  against a Delegate Contract ID signature.
+	 *  3. All the rest cases. We check the sender address of the current frame against a Contract ID
+	 *  signature or a Delegate Contract ID signature.
+	 *
+	 * @param frame current frame
+	 * @param target the element to test for key activation
+	 * @param function the function which should be invoked for key validation
+	 * @return boolean value showing whether we have a valid key
+	 */
+	private boolean validateKey(final MessageFrame frame,final Address target,
+									   final TetraFunction<Address, Address, Address, Address, Boolean> function) {
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		final var sender = frame.getSenderAddress();
+
+		final var parentFrame = getParentFrame(frame);
+		final var isCurrentFrameWithDelegateCall = isFrameWithDelegateCall(frame);
+		final var isParentFrameWithDelegateCall = parentFrame.isPresent() && isFrameWithDelegateCall(parentFrame.get());
+
+		if(isCurrentFrameWithDelegateCall) {
+			return function.apply(target, recipient, contract, recipient);
+		} else if(isParentFrameWithDelegateCall) {
+			final var recipientFromParent = parentFrame.get().getRecipientAddress();
+			return function.apply(target, recipientFromParent, contract, sender);
+		} else {
+			return function.apply (target, recipient, contract, sender);
+		}
+	}
+
+	@FunctionalInterface
+	private interface TetraFunction<S, T, U, V, R> {
+		R apply(S s, T t, U u, V v);
+	}
+
+	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {
+		final var it = currentFrame.getMessageFrameStack().descendingIterator();
+
+		if(it.hasNext()) {
+			it.next();
+		} else {
+			return Optional.empty();
+		}
+
+		MessageFrame parentFrame;
+		if(it.hasNext()) {
+			parentFrame = it.next();
+		} else {
+			return Optional.empty();
+		}
+
+		return Optional.of(parentFrame);
+	}
+
+	private boolean isFrameWithDelegateCall(final MessageFrame frame) {
+		final var contract = frame.getContractAddress();
+		final var recipient = frame.getRecipientAddress();
+		return !contract.equals(recipient);
 	}
 
 	/* --- Only used by unit tests --- */
@@ -746,5 +867,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	void setAssociateLogicFactory(final AssociateLogicFactory associateLogicFactory) {
 		this.associateLogicFactory = associateLogicFactory;
+	}
+
+	public Precompile getPrecompile() {
+		return precompile;
 	}
 }

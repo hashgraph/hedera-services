@@ -56,6 +56,9 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
@@ -119,7 +122,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						ocToken(),
 						contractTransferToSigReqAccountWithKeySucceeds(),
 						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsed(),
+						minChargeIsTXGasUsedByContractCall(),
 						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
 						HSCS_EVM_006_ContractHBarTransferToAccount(),
 						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
@@ -133,8 +136,39 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractTransferToSigReqAccountWithoutKeyFails(),
 						callingDestructedContractReturnsStatusDeleted(),
 						gasLimitOverMaxGasLimitFailsPrecheck(),
+						imapUserExercise(),
 				}
 		);
+	}
+
+	private HapiApiSpec imapUserExercise() {
+		final var initcode = "initcode";
+		final var contract = "imapUser";
+		final var insert1To4 = "insert1To10";
+		final var insert2To8 = "insert2To8";
+		final var insert3To16 = "insert3To16";
+		final var remove2 = "remove2";
+		final var gasToOffer = 4_000_000;
+
+		return defaultHapiSpec("ImapUserExercise")
+				.given(
+						fileCreate(initcode).path(IMAP_USER_BYTECODE_PATH),
+						contractCreate(contract)
+								.bytecode(initcode)
+				).when().then(
+						contractCall(contract, IMAP_USER_INSERT, 1, 4)
+								.gas(gasToOffer)
+								.via(insert1To4),
+						contractCall(contract, IMAP_USER_INSERT, 2, 8)
+								.gas(gasToOffer)
+								.via(insert2To8),
+						contractCall(contract, IMAP_USER_INSERT, 3, 16)
+								.gas(gasToOffer)
+								.via(insert3To16),
+						contractCall(contract, IMAP_USER_REMOVE, 2)
+								.gas(gasToOffer)
+								.via(remove2)
+				);
 	}
 
 	HapiApiSpec ocToken() {
@@ -470,7 +504,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode")
+						contractCreate("fuse").bytecode("bytecode").gas(300_000)
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
@@ -942,8 +976,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByContractCall() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)

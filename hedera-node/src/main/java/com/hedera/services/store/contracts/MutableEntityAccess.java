@@ -26,12 +26,12 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,13 +40,13 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 
@@ -57,7 +57,7 @@ public class MutableEntityAccess implements EntityAccess {
 	private final HederaLedger ledger;
 	private final WorldLedgers worldLedgers;
 	private final TransactionContext txnCtx;
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
+	private final SizeLimitedStorage sizeLimitedStorage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
@@ -65,15 +65,15 @@ public class MutableEntityAccess implements EntityAccess {
 	public MutableEntityAccess(
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
+			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
-		this.storage = storage;
 		this.bytecode = bytecode;
 		this.tokensLedger = tokensLedger;
+		this.sizeLimitedStorage = sizeLimitedStorage;
 
 		this.worldLedgers = new WorldLedgers(
 				ledger.getTokenRelsLedger(),
@@ -92,6 +92,7 @@ public class MutableEntityAccess implements EntityAccess {
 	@Override
 	public void begin() {
 		if (isActiveContractOp()) {
+			sizeLimitedStorage.beginSession();
 			if (tokensLedger.isInTransaction()) {
 				tokensLedger.rollback();
 				log.warn("Tokens ledger had to be rolled back before beginning contract op; " +
@@ -182,19 +183,17 @@ public class MutableEntityAccess implements EntityAccess {
 
 	@Override
 	public void putStorage(final AccountID id, final UInt256 key, final UInt256 value) {
-		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
-		if (value.isZero()) {
-			storage.get().put(contractKey, new ContractValue());
-		} else {
-			storage.get().put(contractKey, new ContractValue(value.toArray()));
-		}
+		sizeLimitedStorage.putStorage(id, key, value);
 	}
 
 	@Override
 	public UInt256 getStorage(final AccountID id, final UInt256 key) {
-		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
-		final var contractValue = storage.get().get(contractKey);
-		return contractValue == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(contractValue.getValue()));
+		return sizeLimitedStorage.getStorage(id, key);
+	}
+
+	@Override
+	public void flushStorage() {
+		sizeLimitedStorage.validateAndCommit();
 	}
 
 	@Override
@@ -205,10 +204,13 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public Bytes fetchCode(final AccountID id) {
-		final var blobKey = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-		final var bytes = bytecode.get().get(blobKey);
-		return bytes == null ? Bytes.EMPTY : Bytes.of(bytes.getData());
+	public Bytes fetchCodeIfPresent(final AccountID id) {
+		return explicitCodeFetch(bytecode.get(), id);
+	}
+
+	@Override
+	public void recordNewKvUsageTo(final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		sizeLimitedStorage.recordNewKvUsageTo(accountsLedger);
 	}
 
 	private boolean isActiveContractOp() {

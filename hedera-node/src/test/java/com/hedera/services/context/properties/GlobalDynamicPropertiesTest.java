@@ -77,6 +77,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.autoRenewEnabled());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
+		assertFalse(subject.isAutoCreationEnabled());
+		assertFalse(subject.expandSigsFromLastSignedState());
 	}
 
 	@Test
@@ -138,6 +140,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(47, subject.maxCustomFeeDepth());
 		assertEquals(48, subject.maxGasRefundPercentage());
 		assertEquals(52, subject.changeHistorianMemorySecs());
+		assertEquals(53, subject.maxAggregateContractKvPairs());
+		assertEquals(54, subject.maxIndividualContractKvPairs());
 	}
 
 	@Test
@@ -189,6 +193,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.autoRenewEnabled());
 		assertFalse(subject.areNftsEnabled());
 		assertFalse(subject.shouldThrottleByGas());
+		assertTrue(subject.isAutoCreationEnabled());
+		assertTrue(subject.expandSigsFromLastSignedState());
 	}
 
 	@Test
@@ -224,6 +230,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(48, subject.maxCustomFeeDepth());
 		assertEquals(49, subject.maxGasRefundPercentage());
 		assertEquals(53, subject.changeHistorianMemorySecs());
+		assertEquals(54, subject.maxAggregateContractKvPairs());
+		assertEquals(55, subject.maxIndividualContractKvPairs());
 	}
 
 	@Test
@@ -245,6 +253,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
+		assertEquals(54L, subject.htsDefaultGasCost());
 	}
 
 	@Test
@@ -325,6 +334,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
+		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i+52L);
+		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
+		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
+		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
+		given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

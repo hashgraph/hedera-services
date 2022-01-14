@@ -27,6 +27,7 @@ import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -93,6 +94,8 @@ class NetworkCtxManagerTest {
 	private TxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
+	@Mock
+	private NarratedCharging narratedCharging;
 
 	private NetworkCtxManager subject;
 
@@ -111,7 +114,8 @@ class NetworkCtxManagerTest {
 				handleThrottling,
 				() -> networkCtx,
 				txnCtx,
-				runningAvgs);
+				runningAvgs,
+				narratedCharging);
 	}
 
 	@Test
@@ -197,6 +201,7 @@ class NetworkCtxManagerTest {
 		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
 		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
 		verify(feeMultiplierSource).updateMultiplier(any());
+		verify(narratedCharging).refundPayerServiceFee();
 	}
 
 	@Test

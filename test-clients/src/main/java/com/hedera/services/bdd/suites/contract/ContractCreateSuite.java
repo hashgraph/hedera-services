@@ -241,7 +241,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode").omitAdminKey().via(txn),
+						contractCreate("fuse").bytecode("bytecode").omitAdminKey().gas(300_000).via(txn),
 						withOpContext((spec, opLog) -> {
 							final var op = getTxnRecord(txn);
 							allRunFor(spec, op);
@@ -318,7 +318,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 									contract,
 									SEND_THEN_REVERT_NESTED_SENDS_ABI,
 									sendArgs
-							).via(txn);
+							)
+									.gas(110_000)
+									.via(txn);
 							allRunFor(spec, op);
 						})
 				).then(
@@ -621,8 +623,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsed() {
-		return defaultHapiSpec("MinChargeIsTXGasUsed")
+	private HapiApiSpec minChargeIsTXGasUsedByContractCreate() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCreate")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)

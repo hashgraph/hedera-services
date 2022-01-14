@@ -12,7 +12,7 @@ maxEventQueueForCons,                          1000
 maxOutgoingSyncs,                              8
 numConnections,                                1000
 reconnect.active,                              1
-reconnect.asyncInputStreamTimeoutMilliseconds, 60000
+reconnect.asyncStreamTimeoutMilliseconds, 60000
 reconnect.reconnectWindowSeconds,              -1
 showDbStats,                                   0
 showInternalStats,                             1

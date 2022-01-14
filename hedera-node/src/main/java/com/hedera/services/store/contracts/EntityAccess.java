@@ -22,8 +22,11 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
@@ -77,12 +80,23 @@ public interface EntityAccess {
 	boolean isExtant(AccountID id);
 
 	/* --- Storage access --- */
+	void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
+
 	void putStorage(AccountID id, UInt256 key, UInt256 value);
 
 	UInt256 getStorage(AccountID id, UInt256 key);
 
+	void flushStorage();
+
 	/* --- Bytecode access --- */
 	void storeCode(AccountID id, Bytes code);
 
-	Bytes fetchCode(AccountID id);
+	/**
+	 * Returns the bytecode for the contract with the given account id; or null
+	 * if there is no byte present for this contract.
+	 *
+	 * @param id the account id of the target contract
+	 * @return the target contract's bytecode, or null if it is not present
+	 */
+	Bytes fetchCodeIfPresent(AccountID id);
 }
