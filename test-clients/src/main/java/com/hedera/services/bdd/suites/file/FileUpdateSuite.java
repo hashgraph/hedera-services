@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -67,7 +68,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -83,6 +87,8 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy FileServiceIT test class after
@@ -101,6 +107,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 	private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
 	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
+	private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.consensusThrottleMaxGasLimit";
 
 	private static final long defaultMaxLifetime =
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
@@ -112,6 +119,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 			HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
 	private static final String defaultMaxAggregateKvPairs =
 			HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
+	private static final String defaultMaxConsGasLimit = HapiSpecSetup.getDefaultNodeProps()
+			.get("contracts.consensusThrottleMaxGasLimit");
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -133,9 +142,9 @@ public class FileUpdateSuite extends HapiApiSuite {
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				autoCreationIsDynamic(),
 				kvLimitsEnforced(),
+				serviceFeeRefundedIfConsGasExhausted(),
 		});
 	}
-
 
 	private HapiApiSpec associateHasExpectedSemantics() {
 		return defaultHapiSpec("AssociateHasExpectedSemantics")
@@ -161,7 +170,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 								"tokens.maxPerAccount", "" + 1000
 						)).payingWith(ADDRESS_BOOK_CONTROL),
 						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN)
+						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN,
+								TokenAssociationSpecs.VANILLA_TOKEN)
 				).then(
 						getAccountInfo("misc")
 								.hasToken(
@@ -434,7 +444,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("KvLimitsEnforced")
 				.given(
-						fileCreate(initcode )
+						fileCreate(initcode)
 								.path(IMAP_USER_BYTECODE_PATH),
 						/* This contract has 0 key/value mappings at creation */
 						contractCreate(contract)
@@ -474,6 +484,62 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCall(contract, IMAP_USER_INSERT, 4, 16)
 								.gas(gasToOffer),
 						getContractInfo(contract).has(contractWith().numKvPairs(14))
+				);
+	}
+
+	private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
+		final var initcode = "initcode";
+		final var contract = "imapUser";
+		final var gasToOffer = 4_000_000;
+		final var civilian = "payer";
+		final var unrefundedTxn = "unrefundedTxn";
+		final var refundedTxn = "refundedTxn";
+
+		return defaultHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
+				.given(
+						cryptoCreate(civilian),
+						fileCreate(initcode)
+								.path(IMAP_USER_BYTECODE_PATH),
+						/* This contract has 0 key/value mappings at creation */
+						contractCreate(contract)
+								.bytecode(initcode),
+						contractCall(contract, IMAP_USER_INSERT, 1, 4)
+								.payingWith(civilian)
+								.gas(gasToOffer)
+								.via(unrefundedTxn),
+						/* Now we update the per-contract limit to 10 mappings */
+						overriding(CONSENSUS_GAS_THROTTLE_PROP, "1")
+				).when(
+						usableTxnIdNamed(refundedTxn).payerId(civilian),
+						contractCall(contract, IMAP_USER_INSERT, 2, 4)
+								.payingWith(civilian)
+								.gas(gasToOffer)
+								.hasAnyStatusAtAll()
+								.deferStatusResolution(),
+						uncheckedSubmit(
+								contractCall(contract, IMAP_USER_INSERT, 3, 4)
+										.signedBy(civilian)
+										.gas(gasToOffer)
+										.txnId(refundedTxn)
+						)
+								.payingWith(GENESIS)
+				).then(
+						overriding(CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit),
+						withOpContext((spec, opLog) -> {
+							final var unrefundedOp = getTxnRecord(unrefundedTxn);
+							final var refundedOp = getTxnRecord(refundedTxn)
+									.assertingNothingAboutHashes();
+							allRunFor(spec, refundedOp, unrefundedOp);
+							assertEquals(
+									CONSENSUS_GAS_EXHAUSTED,
+									refundedOp.getResponseRecord().getReceipt().getStatus());
+							final var origFee = unrefundedOp.getResponseRecord().getTransactionFee();
+							final var feeSansRefund = refundedOp.getResponseRecord().getTransactionFee();
+							assertTrue(
+									feeSansRefund < origFee,
+									"Expected service fee to be refunded, but sans fee "
+											+ feeSansRefund + " was not less than " + origFee);
+						})
 				);
 	}
 
