@@ -450,14 +450,23 @@ public class FileUpdateSuite extends HapiApiSuite {
 						contractCreate(contract)
 								.bytecode(initcode),
 						/* Now we update the per-contract limit to 10 mappings */
-						overriding(INDIVIDUAL_KV_LIMIT_PROP, "10")
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										INDIVIDUAL_KV_LIMIT_PROP, "10",
+										CONSENSUS_GAS_THROTTLE_PROP, "100_000_000"))
 				).when(
 						/* The first call to insert adds 5 mappings */
-						contractCall(contract, IMAP_USER_INSERT, 1, 1).gas(gasToOffer),
+						contractCall(contract, IMAP_USER_INSERT, 1, 1)
+								.payingWith(GENESIS)
+								.gas(gasToOffer),
 						/* Each subsequent call to adds 3 mappings; so 8 total after this */
-						contractCall(contract, IMAP_USER_INSERT, 2, 4).gas(gasToOffer),
+						contractCall(contract, IMAP_USER_INSERT, 2, 4)
+								.payingWith(GENESIS)
+								.gas(gasToOffer),
 						/* And this one fails because 8 + 3 = 11 > 10 */
 						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.payingWith(GENESIS)
 								.hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
 								.gas(gasToOffer),
 						/* Confirm the storage size didn't change */
@@ -469,6 +478,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 										INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
 										AGGREGATE_KV_LIMIT_PROP, "1")),
 						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.payingWith(GENESIS)
 								.hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
 								.gas(gasToOffer),
 						getContractInfo(contract).has(contractWith().numKvPairs(8))
@@ -478,10 +488,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										INDIVIDUAL_KV_LIMIT_PROP, defaultMaxIndividualKvPairs,
-										AGGREGATE_KV_LIMIT_PROP, defaultMaxAggregateKvPairs)),
+										AGGREGATE_KV_LIMIT_PROP, defaultMaxAggregateKvPairs,
+										CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit)),
 						contractCall(contract, IMAP_USER_INSERT, 3, 9)
+								.payingWith(GENESIS)
 								.gas(gasToOffer),
 						contractCall(contract, IMAP_USER_INSERT, 4, 16)
+								.payingWith(GENESIS)
 								.gas(gasToOffer),
 						getContractInfo(contract).has(contractWith().numKvPairs(14))
 				);

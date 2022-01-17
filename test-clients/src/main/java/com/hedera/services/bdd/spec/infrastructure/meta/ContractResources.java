@@ -87,6 +87,7 @@ public class ContractResources {
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String SAFE_OPERATIONS_CONTRACT = bytecodePath("SafeOperationsContract");
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("MintContract");
 	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
@@ -788,6 +789,63 @@ public class ContractResources {
 			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
 
+	public static final String SAFE_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
+			" \"type\": \"address\" }, { \"internalType\": \"uint64\", \"name\": \"amount\", \"type\": \"uint64\" }, " +
+			"{ \"internalType\": \"bytes[]\", \"name\": \"metadata\", \"type\": \"bytes[]\" } ], " +
+			"\"name\": \"safeTokenMint\", \"outputs\": [ { \"internalType\": \"uint64\", \"name\": \"newTotalSupply\", " +
+			"\"type\": \"uint64\" }, { \"internalType\": \"int256[]\", \"name\": \"serialNumbers\", " +
+			"\"type\": \"int256[]\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_BURN_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
+			" \"type\": \"address\" }, { \"internalType\": \"uint64\", \"name\": \"amount\", \"type\": \"uint64\" }, " +
+			"{ \"internalType\": \"int64[]\", \"name\": \"serialNumbers\", \"type\": \"int64[]\" } ], " +
+			"\"name\": \"safeTokenBurn\", \"outputs\": [ { \"internalType\": \"uint64\", \"name\": \"newTotalSupply\", " +
+			"\"type\": \"uint64\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_ASSOCIATE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
+			"\"type\": \"address\" } ], \"name\": \"safeTokenAssociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_DISSOCIATE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
+			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
+			"\"type\": \"address\" } ], \"name\": \"safeTokenDissociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_MULTIPLE_ASSOCIATE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"tokens\", " +
+			"\"type\": \"address[]\" } ], \"name\": \"safeTokensAssociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_MULTIPLE_DISSOCIATE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"tokens\", " +
+			"\"type\": \"address[]\" } ], \"name\": \"safeTokensDissociate\", \"outputs\": [], \"stateMutability\": " +
+			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_NFT_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"sender\", " +
+			"\"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"receiver\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"int64\", \"name\": \"serialNum\", \"type\": \"int64\" } ], " +
+			"\"name\": \"safeNFTTransfer\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_TOKEN_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
+			" \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"address\", \"name\": \"receiver\", \"type\": \"address\" }, " +
+			"{ \"internalType\": \"int64\", \"name\": \"amount\", \"type\": \"int64\" } ], " +
+			"\"name\": \"safeTokenTransfer\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_TOKENS_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"accountIds\", " +
+			"\"type\": \"address[]\" }, { \"internalType\": \"int64[]\", \"name\": \"amounts\", \"type\": \"int64[]\" } ], " +
+			"\"name\": \"safeTokensTransfer\", \"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String SAFE_NFTS_TRANSFER_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": \"sender\", " +
+			"\"type\": \"address[]\" }, { \"internalType\": \"address[]\", \"name\": \"receiver\", " +
+			"\"type\": \"address[]\" }, { \"internalType\": \"int64[]\", \"name\": \"serialNumber\", " +
+			"\"type\": \"int64[]\" } ], \"name\": \"safeNFTsTransfer\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
 	public static final String NON_SUPPORTED_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": " +
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
 			"\"type\": \"address\" } ], \"name\": \"nonSupportedFunction\", \"outputs\": [], \"stateMutability\": " +
@@ -850,6 +908,11 @@ public class ContractResources {
 			"\"address\", \"name\": \"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": " +
 			"\"tokenAddress\", \"type\": \"address\" } ], \"name\": \"performNonExistingServiceFunctionCall\", " +
 			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI = "{ \"inputs\": [ " +
+			"{ \"internalType\": \"address\", \"name\": \"sender\", \"type\": \"address\" } ], " +
+			"\"name\": \"performInvalidlyFormattedSingleFunctionCall\", \"outputs\": [], " +
+			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static final String PERFORM_INVALIDLY_FORMATTED_FUNCTION_CALL_ABI = "{ \"inputs\": [ { \"internalType\": " +
 			"\"address\", \"name\": \"account\", \"type\": \"address\" }, { \"internalType\": \"address[]\", \"name\": " +
