@@ -259,7 +259,7 @@ public class SyntheticTxnFactory {
 		}
 	}
 
-	private static boolean areSameBuilder(final NftTransfer.Builder a, final NftTransfer.Builder b) {
+	static boolean areSameBuilder(final NftTransfer.Builder a, final NftTransfer.Builder b) {
 		return a.getSerialNumber() == b.getSerialNumber()
 				&& a.getSenderAccountID().equals(b.getSenderAccountID())
 				&& a.getReceiverAccountID().equals(b.getReceiverAccountID());

@@ -34,6 +34,7 @@ import java.util.List;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SyntheticTxnFactoryTest {
@@ -281,6 +282,20 @@ class SyntheticTxnFactoryTest {
 				repeatedExchange.asGrpc(),
 				newExchange.asGrpc()
 		), transfers);
+	}
+
+	@Test
+	void distinguishesDifferentExchangeBuilders() {
+		final var subject = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b)
+				.asGrpc().toBuilder();
+
+		final var differentSerialNo = new SyntheticTxnFactory.NftExchange(2L, nonFungible, a, b);
+		final var differentSender = new SyntheticTxnFactory.NftExchange(1L, nonFungible, c, b);
+		final var differentReceiver = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, c);
+
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSerialNo.asGrpc().toBuilder()));
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentReceiver.asGrpc().toBuilder()));
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
 	}
 
 	private AccountAmount aaWith(final AccountID account, final long amount) {
