@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import java.util.List;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SyntheticTxnFactoryTest {
@@ -127,23 +129,180 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransfer() {
-		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+
+		final var result = subject.createCryptoTransfer(
+				List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
+		final var txnBody = result.build();
+
+		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+		final var expFungibleTransfer = tokenTransfers.get(0);
+		assertEquals(fungible, expFungibleTransfer.getToken());
+		assertEquals(
+				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
+				expFungibleTransfer.getTransfersList());
+	}
+
+	@Test
+	void acceptsEmptyWrappers() {
+		final var result = subject.createCryptoTransfer(List.of());
+
+		final var txnBody = result.build();
+		assertEquals(0, txnBody.getCryptoTransfer().getTokenTransfersCount());
+	}
+
+	@Test
+	void mergesRepeatedTokenIds() {
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+		final var nonFungibleTransfer = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
+
+		final var result = subject.createCryptoTransfer(
+				List.of(
+						new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+						new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+						new TokenTransferWrapper(List.of(nonFungibleTransfer), Collections.emptyList())));
+
+		final var txnBody = result.build();
+
+		final var finalTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+		assertEquals(2, finalTransfers.size());
+		final var mergedFungible = finalTransfers.get(0);
+		assertEquals(fungible, mergedFungible.getToken());
+		assertEquals(
+				List.of(
+						aaWith(b, -2 * secondAmount),
+						aaWith(a, +2 * secondAmount)),
+				mergedFungible.getTransfersList());
+	}
+
+	@Test
+	void createsExpectedCryptoTransferForNFTTransfer() {
+		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 
 		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
 				List.of(nftExchange),
-				List.of(fungibleTransfer))));
+				Collections.emptyList())));
 		final var txnBody = result.build();
 
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
 		final var expNftTransfer = tokenTransfers.get(0);
 		assertEquals(nonFungible, expNftTransfer.getToken());
-		assertEquals(List.of(nftExchange.nftTransfer()), expNftTransfer.getNftTransfersList());
-		final var expFungibleTransfer = tokenTransfers.get(1);
+		assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
+		assertEquals(1, tokenTransfers.size());
+	}
+
+	@Test
+	void createsExpectedCryptoTransferForFungibleTransfer() {
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+
+		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
+				Collections.emptyList(),
+				List.of(fungibleTransfer))));
+		final var txnBody = result.build();
+
+		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+		final var expFungibleTransfer = tokenTransfers.get(0);
 		assertEquals(fungible, expFungibleTransfer.getToken());
 		assertEquals(
 				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
 				expFungibleTransfer.getTransfersList());
+		assertEquals(1, tokenTransfers.size());
+	}
+
+	@Test
+	void createsExpectedCryptoTransfersForMultipleTransferWrappers() {
+		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
+		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
+
+		final var result = subject.createCryptoTransfer(
+				List.of(
+						new TokenTransferWrapper(
+								Collections.emptyList(),
+								List.of(fungibleTransfer)),
+						new TokenTransferWrapper(
+								List.of(nftExchange),
+								Collections.emptyList())));
+		final var txnBody = result.build();
+
+		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+
+		final var expFungibleTransfer = tokenTransfers.get(0);
+		assertEquals(fungible, expFungibleTransfer.getToken());
+		assertEquals(
+				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
+				expFungibleTransfer.getTransfersList());
+
+		final var expNftTransfer = tokenTransfers.get(1);
+		assertEquals(nonFungible, expNftTransfer.getToken());
+		assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
+	}
+
+	@Test
+	void mergesFungibleTransfersAsExpected() {
+		final var source = new TokenTransferWrapper(
+				Collections.emptyList(),
+				List.of(
+						new SyntheticTxnFactory.FungibleTokenTransfer(1, fungible, a, b)
+				)).asGrpcBuilder();
+		final var target = new TokenTransferWrapper(
+				Collections.emptyList(),
+				List.of(
+						new SyntheticTxnFactory.FungibleTokenTransfer(2, fungible, b, c)
+				)).asGrpcBuilder();
+
+		SyntheticTxnFactory.mergeTokenTransfers(target, source);
+
+		assertEquals(fungible, target.getToken());
+		final var transfers = target.getTransfersList();
+		assertEquals(List.of(
+				aaWith(b, -1),
+				aaWith(c, +2),
+				aaWith(a, -1)
+		), transfers);
+	}
+
+	@Test
+	void mergesNftExchangesAsExpected() {
+		final var repeatedExchange = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
+		final var newExchange = new SyntheticTxnFactory.NftExchange(2L, nonFungible, a, b);
+		final var source = new TokenTransferWrapper(
+				List.of(repeatedExchange, newExchange),
+				Collections.emptyList()
+		).asGrpcBuilder();
+		final var target = new TokenTransferWrapper(
+				List.of(repeatedExchange),
+				Collections.emptyList()
+		).asGrpcBuilder();
+
+		SyntheticTxnFactory.mergeTokenTransfers(target, source);
+
+		assertEquals(nonFungible, target.getToken());
+		final var transfers = target.getNftTransfersList();
+		assertEquals(List.of(
+				repeatedExchange.asGrpc(),
+				newExchange.asGrpc()
+		), transfers);
+	}
+
+	@Test
+	void distinguishesDifferentExchangeBuilders() {
+		final var subject = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b)
+				.asGrpc().toBuilder();
+
+		final var differentSerialNo = new SyntheticTxnFactory.NftExchange(2L, nonFungible, a, b);
+		final var differentSender = new SyntheticTxnFactory.NftExchange(1L, nonFungible, c, b);
+		final var differentReceiver = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, c);
+
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSerialNo.asGrpc().toBuilder()));
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentReceiver.asGrpc().toBuilder()));
+		assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+	}
+
+	private AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.build();
 	}
 
 	private static final long serialNo = 100;
