@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -67,6 +68,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoTransferHTSSuite extends HapiApiSuite {
@@ -94,25 +96,98 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
+		return List.of(new HapiApiSpec[] {
+//						nonNestedCryptoTransferForFungibleToken(),
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+//						nonNestedCryptoTransferForNonFungibleToken(),
+//						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+//						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+						repeatedTokenIdsAreAutomaticallyConsolidated()
+				}
 		);
 	}
 
-	List<HapiApiSpec> negativeSpecs() {
-		return List.of();
-	}
+	private HapiApiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
+		final var initcode = "cryptoTransferFileByteCode";
+		final var transferGateway = "cryptoTransferContract";
+		final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
+		final var senderStartBalance = 200L;
+		final var receiverStartBalance = 0L;
+		final var toSendEachTuple = 50L;
 
-	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
-				nonNestedCryptoTransferForFungibleToken(),
-				nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-				nonNestedCryptoTransferForNonFungibleToken(),
-				nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-				nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-				nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens()
-		);
+		return defaultHapiSpec("RepeatedTokenIdsAreAutomaticallyConsolidated")
+				.given(
+						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECEIVER)
+								.balance(2 * ONE_HUNDRED_HBARS)
+								.receiverSigRequired(true),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(FUNGIBLE_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate(initcode),
+						updateLargeFile(SENDER, initcode,
+								extractByteCode(ContractResources.CRYPTO_TRANSFER_CONTRACT)),
+						tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
+						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER))
+				).when(
+						contractCreate(transferGateway, CRYPTO_TRANSFER_CONS_ABI)
+								.bytecode(initcode)
+								.payingWith(GENESIS)
+								.gas(300_000L)
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+							final var sender = spec.registry().getAccountID(SENDER);
+							final var receiver = spec.registry().getAccountID(RECEIVER);
+							allRunFor(
+									spec,
+									newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+											DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+													transferGateway))),
+									cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
+									cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
+									contractCall(transferGateway, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST, Tuple.singleton(
+											new Tuple[] {
+													tokenTransferList()
+															.forToken(token)
+															.isSingleList(false)
+															.withAccountAmounts(
+																	accountAmount(sender, -toSendEachTuple),
+																	accountAmount(receiver, toSendEachTuple)
+															).build(),
+													tokenTransferList()
+															.forToken(token)
+															.isSingleList(false)
+															.withAccountAmounts(
+																	accountAmount(sender, -toSendEachTuple),
+																	accountAmount(receiver, toSendEachTuple)
+															).build()
+											}
+									))
+											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+											.payingWith(GENESIS)
+											.via(repeatedIdsPrecompileXferTxn)
+											.gas(1_000_000L));
+						}),
+						getTxnRecord(repeatedIdsPrecompileXferTxn)
+								.andAllChildRecords()
+								.logged(),
+						getAccountBalance(RECEIVER)
+								.hasTokenBalance(FUNGIBLE_TOKEN, receiverStartBalance + 2 * toSendEachTuple),
+						getAccountBalance(SENDER)
+								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - 2 * toSendEachTuple),
+						childRecordsCheck(repeatedIdsPrecompileXferTxn, SUCCESS, recordWith()
+								.status(SUCCESS)
+								.tokenTransfers(
+										SomeFungibleTransfers.changingFungibleBalances()
+												.including(FUNGIBLE_TOKEN, SENDER, -2 * toSendEachTuple)
+												.including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple)
+								))
+				);
 	}
 
 	private HapiApiSpec nonNestedCryptoTransferForFungibleToken() {
@@ -149,13 +224,16 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var amountToBeSent = 50L;
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
-													tokenTransferList().forToken(token).withAccountAmounts(accountAmount(sender, -amountToBeSent),
-															accountAmount(receiver, amountToBeSent)).build()).payingWith(GENESIS)
+													tokenTransferList().forToken(token).withAccountAmounts(
+															accountAmount(sender, -amountToBeSent),
+															accountAmount(receiver, amountToBeSent)).build()).payingWith(
+													GENESIS)
 													.via(cryptoTransferTxn).gas(1_000_000L));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
@@ -213,8 +291,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var receiver2 = spec.registry().getAccountID(RECEIVER2);
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER2).key(DELEGATE_CONTRACT_KEY_NAME),
@@ -274,7 +353,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(SENDER, List.of(NFT_TOKEN)),
 						mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER)
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(
+								SENDER)
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
@@ -288,13 +369,15 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var receiver = spec.registry().getAccountID(RECEIVER);
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
 													tokenTransferList().forToken(token).
-															withNftTransfers(nftTransfer(sender, receiver, 1L)).build()).payingWith(GENESIS)
+															withNftTransfers(nftTransfer(sender, receiver,
+																	1L)).build()).payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
@@ -344,8 +427,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
 						tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(SENDER2)
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(
+								SENDER),
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(
+								SENDER2)
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
@@ -361,8 +448,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var receiver2 = spec.registry().getAccountID(RECEIVER2);
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(SENDER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
@@ -372,7 +460,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 															withNftTransfers(
 																	nftTransfer(sender, receiver, 1L),
 																	nftTransfer(sender2, receiver2, 2L))
-																	.build()).payingWith(GENESIS)
+															.build()).payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
@@ -432,7 +520,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER2)).payingWith(SENDER2)
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER2)).payingWith(
+								SENDER2)
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
@@ -449,22 +539,27 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var nonFungibleTokenReceiver = spec.registry().getAccountID(RECEIVER2);
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(SENDER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
 													tokenTransferLists().withTokenTransferList(
-															tokenTransferList().isSingleList(false).forToken(fungibleToken).
+															tokenTransferList().isSingleList(false).forToken(
+																	fungibleToken).
 																	withAccountAmounts(
 																			accountAmount(fungibleTokenSender, -45L),
-																			accountAmount(fungibleTokenReceiver, 45L)).build(),
-															tokenTransferList().isSingleList(false).forToken(nonFungibleToken).
+																			accountAmount(fungibleTokenReceiver,
+																					45L)).build(),
+															tokenTransferList().isSingleList(false).forToken(
+																	nonFungibleToken).
 																	withNftTransfers(
 																			nftTransfer(nonFungibleTokenSender,
-																					nonFungibleTokenReceiver, 1L)).build())
+																					nonFungibleTokenReceiver,
+																					1L)).build())
 															.build()).payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),
@@ -530,8 +625,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER2, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER),
 						cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER2)).payingWith(SENDER2),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER),
-						cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(SENDER2)
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(
+								SENDER),
+						cryptoTransfer(
+								TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(
+								SENDER2)
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
@@ -548,25 +647,29 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									final var secondReceiver = spec.registry().getAccountID(RECEIVER2);
 									allRunFor(
 											spec,
-											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
-													theContract))),
+											newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(
+													DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
+															theContract))),
 											cryptoUpdate(SENDER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(SENDER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER).key(DELEGATE_CONTRACT_KEY_NAME),
 											cryptoUpdate(RECEIVER2).key(DELEGATE_CONTRACT_KEY_NAME),
 											contractCall(theContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST,
 													tokenTransferLists().withTokenTransferList(
-																	tokenTransferList().isSingleList(false).forToken(fungibleToken).
-																			withAccountAmounts(
-																					accountAmount(firstSender, -45L),
-																					accountAmount(firstReceiver, 45L),
-																					accountAmount(secondSender, -32L),
-																					accountAmount(secondReceiver, 32L)).build(),
-																	tokenTransferList().isSingleList(false).forToken(nonFungibleToken).
-																			withNftTransfers(
-																					nftTransfer(firstSender, firstReceiver, 1L),
-																					nftTransfer(secondSender, secondReceiver, 2L)).
-																			build())
+															tokenTransferList().isSingleList(false).forToken(
+																	fungibleToken).
+																	withAccountAmounts(
+																			accountAmount(firstSender, -45L),
+																			accountAmount(firstReceiver, 45L),
+																			accountAmount(secondSender, -32L),
+																			accountAmount(secondReceiver, 32L)).build(),
+															tokenTransferList().isSingleList(false).forToken(
+																	nonFungibleToken).
+																	withNftTransfers(
+																			nftTransfer(firstSender, firstReceiver, 1L),
+																			nftTransfer(secondSender, secondReceiver,
+																					2L)).
+																	build())
 															.build()).payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),

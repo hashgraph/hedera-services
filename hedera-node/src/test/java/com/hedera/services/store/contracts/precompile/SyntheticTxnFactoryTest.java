@@ -127,19 +127,14 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedCryptoTransfer() {
-		final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 		final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, fungible, b, a);
 
-		final var result = subject.createCryptoTransfer(Collections.singletonList(new TokenTransferWrapper(
-				List.of(nftExchange),
-				List.of(fungibleTransfer))));
+		final var result = subject.createCryptoTransfer(
+				List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
 		final var txnBody = result.build();
 
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
-		final var expNftTransfer = tokenTransfers.get(0);
-		assertEquals(nonFungible, expNftTransfer.getToken());
-		assertEquals(List.of(nftExchange.nftTransfer()), expNftTransfer.getNftTransfersList());
-		final var expFungibleTransfer = tokenTransfers.get(1);
+		final var expFungibleTransfer = tokenTransfers.get(0);
 		assertEquals(fungible, expFungibleTransfer.getToken());
 		assertEquals(
 				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
@@ -158,7 +153,7 @@ class SyntheticTxnFactoryTest {
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
 		final var expNftTransfer = tokenTransfers.get(0);
 		assertEquals(nonFungible, expNftTransfer.getToken());
-		assertEquals(List.of(nftExchange.nftTransfer()), expNftTransfer.getNftTransfersList());
+		assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
 		assertEquals(1, tokenTransfers.size());
 	}
 
@@ -188,15 +183,11 @@ class SyntheticTxnFactoryTest {
 		final var result = subject.createCryptoTransfer(
 				List.of(
 						new TokenTransferWrapper(
-								Collections.EMPTY_LIST,
+								Collections.emptyList(),
 								List.of(fungibleTransfer)),
 						new TokenTransferWrapper(
 								List.of(nftExchange),
-								Collections.EMPTY_LIST),
-						new TokenTransferWrapper(
-								List.of(nftExchange),
-								List.of(fungibleTransfer))
-				));
+								Collections.emptyList())));
 		final var txnBody = result.build();
 
 		final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
@@ -209,17 +200,7 @@ class SyntheticTxnFactoryTest {
 
 		final var expNftTransfer = tokenTransfers.get(1);
 		assertEquals(nonFungible, expNftTransfer.getToken());
-		assertEquals(List.of(nftExchange.nftTransfer()), expNftTransfer.getNftTransfersList());
-
-		final var expNftTransfer2 = tokenTransfers.get(2);
-		assertEquals(nonFungible, expNftTransfer2.getToken());
-		assertEquals(List.of(nftExchange.nftTransfer()), expNftTransfer2.getNftTransfersList());
-
-		final var expFungibleTransfer2 = tokenTransfers.get(3);
-		assertEquals(fungible, expFungibleTransfer2.getToken());
-		assertEquals(
-				List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
-				expFungibleTransfer2.getTransfersList());
+		assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
 	}
 
 	private static final long serialNo = 100;

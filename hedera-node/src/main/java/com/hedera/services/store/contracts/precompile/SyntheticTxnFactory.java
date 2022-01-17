@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -78,32 +77,11 @@ public class SyntheticTxnFactory {
 	public TransactionBody.Builder createCryptoTransfer(
 			final List<TokenTransferWrapper> tokenTransferWrappers
 	) {
-		final var builder = CryptoTransferTransactionBody.newBuilder();
-		boolean hasTokenTransfers = false;
-		for (final TokenTransferWrapper tokenTransferWrapper : tokenTransferWrappers) {
-			/*- changes inside a tokenTransferWrapper are always related to the same token -*/
-			for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
-				builder.addTokenTransfers(TokenTransferList.newBuilder()
-						.setToken(nftExchange.getTokenType())
-						.addNftTransfers(nftExchange.nftTransfer()));
-			}
-			final var tokenTransferListBuilder = TokenTransferList.newBuilder();
-			for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-				hasTokenTransfers = true;
-				tokenTransferListBuilder.setToken(fungibleTransfer.getDenomination());
-				if (fungibleTransfer.sender != null) {
-					tokenTransferListBuilder.addTransfers(fungibleTransfer.senderAdjustment());
-				}
-				if (fungibleTransfer.receiver != null) {
-					tokenTransferListBuilder.addTransfers(fungibleTransfer.receiverAdjustment());
-				}
-			}
-			if (hasTokenTransfers) {
-				builder.addTokenTransfers(tokenTransferListBuilder);
-			}
-			hasTokenTransfers = false;
+		final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+		for (final TokenTransferWrapper wrapper : tokenTransferWrappers) {
+			opBuilder.addTokenTransfers(wrapper.asGrpcBuilder());
 		}
-		return TransactionBody.newBuilder().setCryptoTransfer(builder);
+		return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
 	}
 
 	public TransactionBody.Builder createAssociate(final Association association) {
@@ -180,7 +158,7 @@ public class SyntheticTxnFactory {
 			this.receiver = receiver;
 		}
 
-		public NftTransfer nftTransfer() {
+		public NftTransfer asGrpc() {
 			return NftTransfer.newBuilder()
 					.setSenderAccountID(sender)
 					.setReceiverAccountID(receiver)
