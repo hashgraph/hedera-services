@@ -71,7 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
@@ -193,18 +192,6 @@ class ImpliedTransfersMarshalTest {
 		assertEquals(result.getMeta(), expectedMeta);
 	}
 	
-	@Test
-	void callsCorrectValidationMethod() {
-		given(cryptoTransferTransactionBody.getTransfers()).willReturn(hbarAdjustsWrapper);
-		given(cryptoTransferTransactionBody.getTokenTransfersList()).willReturn(List.of(tokenAdjustsList));
-		// when
-		subject.validityWithCurrentProps(cryptoTransferTransactionBody, true);
-
-		// then
-		verify(xferChecks).fullPureValidation(hbarAdjustsWrapper, List.of(tokenAdjustsList),
-				subject.currentProps(), true);
-	}
-
 	@Test
 	void getsHbarOnly() {
 		setupHbarOnlyFixture();
@@ -331,8 +318,8 @@ class ImpliedTransfersMarshalTest {
 	}
 
 	private void givenValidity(ResponseCodeEnum s) {
-		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(),
-				propsWithAutoCreation, true)).willReturn(s);
+		given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), propsWithAutoCreation))
+				.willReturn(s);
 	}
 
 	private void setupProps() {

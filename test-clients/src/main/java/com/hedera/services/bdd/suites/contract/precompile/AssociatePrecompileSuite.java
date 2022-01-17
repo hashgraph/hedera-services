@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DELEGATE_ASSOCIATE_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
@@ -49,8 +48,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM_NON_EXISTING_FUNCTION_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_ASSOCIATE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.STATIC_ASSOCIATE_CALL_ABI;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -74,24 +71,20 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
 	private static final long TOTAL_SUPPLY = 1_000;
-	private static final KeyShape CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, CONTRACT);
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 	private static final String TOKEN_TREASURY = "treasury";
 	private static final String OUTER_CONTRACT = "Nested Associate/Dissociate Contract";
@@ -104,7 +97,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final String COCONUT_TOKEN = "Coconut token";
 	private static final String KYC_TOKEN = "KYC token";
 	private static final String TOKEN = "Token";
-	private static final String CONTRACT_KEY = "Contract key";
 	private static final String DELEGATE_KEY = "Delegate key";
 	private static final String FREEZE_KEY = "Freeze key";
 	private static final String KYC_KEY = "KYC key";
@@ -128,8 +120,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				delegateCallForAssociatePrecompileSignedWithContractKeyFails(),
-				staticCallForAssociatePrecompileFails(),
 				nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
 				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
 				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
@@ -141,15 +131,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks(),
 				multipleAssociatePrecompileWithSignatureWorksForFungible(),
 				nestedAssociateWorksAsExpected(),
-				associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
-				associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
-				associatePrecompileWithDelegateContractKeyForFungibleWithKYC(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleVanilla(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleFrozen(),
-				associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC(),
 				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
@@ -385,154 +368,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-	/* -- HSCS-KEY-1 from HTS Precompile Test Plan -- */
-	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithContractKeyFails")
-				.given(
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set),
-						fileCreate(INNER_CONTRACT),
-						updateLargeFile(ACCOUNT, INNER_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						fileCreate(OUTER_CONTRACT),
-						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
-								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
-						contractCreate(INNER_CONTRACT)
-								.bytecode(INNER_CONTRACT)
-								.gas(100_000),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT)
-														.gas(100_000),
-												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
-												contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("delegateAssociateCallWithContractKeyTxn")
-														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-														.gas(5_000_000),
-												getTxnRecord("delegateAssociateCallWithContractKeyTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("delegateAssociateCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
-				);
-	}
-
-	/* -- HSCS-KEY-3 from HTS Precompile Test Plan -- */
-	private HapiApiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("DelegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks")
-				.given(
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set),
-						fileCreate(INNER_CONTRACT),
-						updateLargeFile(ACCOUNT, INNER_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						fileCreate(OUTER_CONTRACT),
-						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
-								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
-						contractCreate(INNER_CONTRACT)
-								.bytecode(INNER_CONTRACT)
-								.gas(100_000),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
-
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT)
-														.gas(100_000),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("delegateAssociateCallWithDelegateContractKeyTxn")
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-														.gas(5_000_000),
-												getTxnRecord("delegateAssociateCallWithDelegateContractKeyTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("delegateAssociateCallWithDelegateContractKeyTxn", SUCCESS, recordWith()
-								.status(SUCCESS)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
-				);
-	}
-
-	/* -- HSCS-KEY-5 from HTS Precompile Test Plan -- */
-	private HapiApiSpec staticCallForAssociatePrecompileFails() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("StaticCallForAssociatePrecompileFails")
-				.given(
-						cryptoCreate(ACCOUNT)
-								.exposingCreatedIdTo(accountID::set),
-						fileCreate(INNER_CONTRACT),
-						updateLargeFile(ACCOUNT, INNER_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						fileCreate(OUTER_CONTRACT),
-						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
-								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
-						contractCreate(INNER_CONTRACT)
-								.bytecode(INNER_CONTRACT)
-								.gas(100_000),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT)
-														.gas(100_000),
-												contractCall(OUTER_CONTRACT, STATIC_ASSOCIATE_CALL_ABI,
-														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
-														.payingWith(ACCOUNT)
-														.via("staticAssociateCallTxn")
-														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-														.gas(5_000_000),
-												getTxnRecord("staticAssociateCallTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						emptyChildRecordsCheck("staticAssociateCallTxn", CONTRACT_REVERT_EXECUTED),
-						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
-				);
-	}
-
 	/* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
 	private HapiApiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
 		final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -652,344 +487,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								recordWith().status(SUCCESS),
 								recordWith().status(SUCCESS)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleVanilla")
-				.given(
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaTokenAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("vanillaTokenAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaTokenAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaTokenSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("vanillaTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("vanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("vanillaTokenSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleFrozen")
-				.given(
-						newKeyNamed(FREEZE_KEY),
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(FROZEN_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.initialSupply(TOTAL_SUPPLY)
-								.freezeKey(FREEZE_KEY)
-								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenTokenAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("frozenTokenAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenTokenAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("frozenTokenAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenTokenSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("frozenTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("frozenTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("frozenTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("frozenTokenSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen))
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForFungibleWithKYC")
-				.given(
-						newKeyNamed(KYC_KEY),
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(KYC_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.kycKey(KYC_KEY)
-								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycTokenAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("kycTokenAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycTokenAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("kycTokenAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycTokenSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("kycTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("kycTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("kycTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("kycTokenSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked))
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleVanilla")
-				.given(
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.treasury(TOKEN_TREASURY)
-								.initialSupply(0)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaNFTAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("vanillaNFTAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaNFTAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("vanillaNFTAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaNFTSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("vanillaNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("vanillaNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("vanillaNFTAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("vanillaNFTSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen")
-				.given(
-						newKeyNamed(FREEZE_KEY),
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(FROZEN_TOKEN)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.treasury(TOKEN_TREASURY)
-								.initialSupply(0)
-								.freezeKey(FREEZE_KEY)
-								.freezeDefault(true)
-								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenNFTAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("frozenNFTAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenNFTAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("frozenNFTAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(frozenTokenID.get()))
-														.payingWith(GENESIS)
-														.via("frozenNFTSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("frozenNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("frozenNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("frozenNFTAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("frozenNFTSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen))
-				);
-	}
-
-	/* -- HSCS-KEY-4 from HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC")
-				.given(
-						newKeyNamed(KYC_KEY),
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(KYC_TOKEN)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.treasury(TOKEN_TREASURY)
-								.initialSupply(0)
-								.kycKey(KYC_KEY)
-								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycNFTAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("kycNFTAssociateFailsTxn").andAllChildRecords().logged(),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycNFTAssociateTxn")
-														.hasKnownStatus(SUCCESS),
-												getTxnRecord("kycNFTAssociateTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(kycTokenID.get()))
-														.payingWith(GENESIS)
-														.via("kycNFTSecondAssociateFailsTxn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("kycNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
-										)
-						)
-				).then(
-						childRecordsCheck("kycNFTAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(INVALID_SIGNATURE)),
-						childRecordsCheck("kycNFTAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("kycNFTSecondAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked))
 				);
 	}
 

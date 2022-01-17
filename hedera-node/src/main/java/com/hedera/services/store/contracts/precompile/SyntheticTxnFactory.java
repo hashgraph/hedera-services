@@ -37,7 +37,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -75,35 +78,38 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
-	public TransactionBody.Builder createCryptoTransfer(
-			final List<TokenTransferWrapper> tokenTransferWrappers
-	) {
-		final var builder = CryptoTransferTransactionBody.newBuilder();
-		boolean hasTokenTransfers = false;
-		for (final TokenTransferWrapper tokenTransferWrapper : tokenTransferWrappers) {
-			/*- changes inside a tokenTransferWrapper are always related to the same token -*/
-			for (final var nftExchange : tokenTransferWrapper.nftExchanges()) {
-				builder.addTokenTransfers(TokenTransferList.newBuilder()
-						.setToken(nftExchange.getTokenType())
-						.addNftTransfers(nftExchange.nftTransfer()));
-			}
-			final var tokenTransferListBuilder = TokenTransferList.newBuilder();
-			for (final var fungibleTransfer : tokenTransferWrapper.fungibleTransfers()) {
-				hasTokenTransfers = true;
-				tokenTransferListBuilder.setToken(fungibleTransfer.getDenomination());
-				if (fungibleTransfer.sender != null) {
-					tokenTransferListBuilder.addTransfers(fungibleTransfer.senderAdjustment());
+	/**
+	 * Given a list of {@link TokenTransferWrapper}s, where each wrapper gives changes scoped to a particular
+	 * {@link TokenID}, returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
+	 * consolidates the wrappers.
+	 *
+	 * If two wrappers both refer to the same token, their transfer lists are merged as specified in the
+	 * {@link SyntheticTxnFactory#mergeTokenTransfers(TokenTransferList.Builder, TokenTransferList.Builder)}
+	 * helper method.
+	 *
+	 * @param wrappers
+	 * 		the wrappers to consolidate in a synthetic transaction
+	 * @return the synthetic transaction
+	 */
+	public TransactionBody.Builder createCryptoTransfer(final List<TokenTransferWrapper> wrappers) {
+		final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+		if (wrappers.size() == 1) {
+			opBuilder.addTokenTransfers(wrappers.get(0).asGrpcBuilder());
+		} else if (wrappers.size() > 1) {
+			final List<TokenTransferList.Builder> builders = new ArrayList<>();
+			final Map<TokenID, TokenTransferList.Builder> listBuilders = new HashMap<>();
+			for (final TokenTransferWrapper wrapper : wrappers) {
+				final var builder = wrapper.asGrpcBuilder();
+				final var merged = listBuilders.merge(
+						builder.getToken(), builder, SyntheticTxnFactory::mergeTokenTransfers);
+				/* If merge() returns a builder other than the one we just created, it is already in the list */
+				if (merged == builder) {
+					builders.add(builder);
 				}
-				if (fungibleTransfer.receiver != null) {
-					tokenTransferListBuilder.addTransfers(fungibleTransfer.receiverAdjustment());
-				}
 			}
-			if (hasTokenTransfers) {
-				builder.addTokenTransfers(tokenTransferListBuilder);
-			}
-			hasTokenTransfers = false;
+			builders.forEach(opBuilder::addTokenTransfers);
 		}
-		return TransactionBody.newBuilder().setCryptoTransfer(builder);
+		return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
 	}
 
 	public TransactionBody.Builder createAssociate(final Association association) {
@@ -180,7 +186,7 @@ public class SyntheticTxnFactory {
 			this.receiver = receiver;
 		}
 
-		public NftTransfer nftTransfer() {
+		public NftTransfer asGrpc() {
 			return NftTransfer.newBuilder()
 					.setSenderAccountID(sender)
 					.setReceiverAccountID(receiver)
@@ -191,5 +197,71 @@ public class SyntheticTxnFactory {
 		public TokenID getTokenType() {
 			return tokenType;
 		}
+	}
+
+	/**
+	 * Merges the fungible and non-fungible transfers from one token transfer list into another. (Of course,
+	 * at most one of these merges can be sensible; a token cannot be both fungible _and_ non-fungible.)
+	 *
+	 * Fungible transfers are "merged" by summing up all the amount fields for each unique account id that
+	 * appears in either list.  NFT exchanges are "merged" by checking that each exchange from either list
+	 * appears at most once.
+	 *
+	 * @param to
+	 * 		the builder to merge source transfers into
+	 * @param from
+	 * 		a source of fungible transfers and NFT exchanges
+	 * @return the consolidated target builder
+	 */
+	static TokenTransferList.Builder mergeTokenTransfers(
+			final TokenTransferList.Builder to,
+			final TokenTransferList.Builder from
+	) {
+		mergeFungible(from, to);
+		mergeNonFungible(from, to);
+		return to;
+	}
+
+	private static void mergeFungible(final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
+		for (int i = 0, n = from.getTransfersCount(); i < n; i++) {
+			final var transfer = from.getTransfers(i);
+			final var targetId = transfer.getAccountID();
+			var merged = false;
+			for (int j = 0, m = to.getTransfersCount(); j < m; j++) {
+				final var transferBuilder = to.getTransfersBuilder(j);
+				if (targetId.equals(transferBuilder.getAccountID())) {
+					final var prevAmount = transferBuilder.getAmount();
+					transferBuilder.setAmount(prevAmount + transfer.getAmount());
+					merged = true;
+					break;
+				}
+			}
+			if (!merged) {
+				to.addTransfers(transfer);
+			}
+		}
+	}
+
+	private static void mergeNonFungible(final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
+		for (int i = 0, n = from.getNftTransfersCount(); i < n; i++) {
+			final var fromExchange = from.getNftTransfersBuilder(i);
+			var alreadyPresent = false;
+			for (int j = 0, m = to.getNftTransfersCount(); j < m; j++) {
+				final var toExchange = to.getNftTransfersBuilder(j);
+				if (areSameBuilder(fromExchange, toExchange)) {
+					alreadyPresent = true;
+					break;
+				}
+			}
+			if (!alreadyPresent) {
+				to.addNftTransfers(fromExchange);
+			}
+		}
+	}
+
+	static boolean areSameBuilder(final NftTransfer.Builder a, final NftTransfer.Builder b) {
+		return a.getSerialNumber() == b.getSerialNumber()
+				&& a.getSenderAccountID().equals(b.getSenderAccountID())
+				&& a.getReceiverAccountID().equals(b.getReceiverAccountID());
 	}
 }
