@@ -68,7 +68,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoTransferHTSSuite extends HapiApiSuite {
@@ -97,12 +96,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						nonNestedCryptoTransferForFungibleToken(),
-//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-//						nonNestedCryptoTransferForNonFungibleToken(),
-//						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-//						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-//						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+						nonNestedCryptoTransferForFungibleToken(),
+						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+						nonNestedCryptoTransferForNonFungibleToken(),
+						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
 						repeatedTokenIdsAreAutomaticallyConsolidated()
 				}
 		);
@@ -168,7 +167,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 															).build()
 											}
 									))
-											.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 											.payingWith(GENESIS)
 											.via(repeatedIdsPrecompileXferTxn)
 											.gas(1_000_000L));
