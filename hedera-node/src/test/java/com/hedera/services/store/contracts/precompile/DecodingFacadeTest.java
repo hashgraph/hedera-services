@@ -83,9 +83,9 @@ class DecodingFacadeTest {
 		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
 		assertEquals(43, fungibleTransfers.get(0).receiverAdjustment().getAmount());
 		assertTrue(nftExchanges.get(0).getTokenType().getTokenNum() > 0);
-		assertTrue(nftExchanges.get(0).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
-		assertTrue(nftExchanges.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);
-		assertEquals(72, nftExchanges.get(0).nftTransfer().getSerialNumber());
+		assertTrue(nftExchanges.get(0).asGrpc().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nftExchanges.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
+		assertEquals(72, nftExchanges.get(0).asGrpc().getSerialNumber());
 	}
 
 	@Test
@@ -187,10 +187,10 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT);
 		final var nonFungibleTransfer = decodedInput.get(0).nftExchanges().get(0);
 
-		assertTrue(nonFungibleTransfer.nftTransfer().getSenderAccountID().getAccountNum() > 0);
-		assertTrue(nonFungibleTransfer.nftTransfer().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfer.asGrpc().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfer.asGrpc().getReceiverAccountID().getAccountNum() > 0);
 		assertTrue(nonFungibleTransfer.getTokenType().getTokenNum() > 0);
-		assertEquals(101, nonFungibleTransfer.nftTransfer().getSerialNumber());
+		assertEquals(101, nonFungibleTransfer.asGrpc().getSerialNumber());
 	}
 
 	@Test
@@ -199,14 +199,14 @@ class DecodingFacadeTest {
 		final var nonFungibleTransfers = decodedInput.get(0).nftExchanges();
 
 		assertEquals(2, nonFungibleTransfers.size());
-		assertTrue(nonFungibleTransfers.get(0).nftTransfer().getSenderAccountID().getAccountNum() > 0);
-		assertTrue(nonFungibleTransfers.get(1).nftTransfer().getSenderAccountID().getAccountNum() > 0);
-		assertTrue(nonFungibleTransfers.get(0).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
-		assertTrue(nonFungibleTransfers.get(1).nftTransfer().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(0).asGrpc().getReceiverAccountID().getAccountNum() > 0);
+		assertTrue(nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID().getAccountNum() > 0);
 		assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
 		assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
-		assertEquals(123, nonFungibleTransfers.get(0).nftTransfer().getSerialNumber());
-		assertEquals(234, nonFungibleTransfers.get(1).nftTransfer().getSerialNumber());
+		assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
+		assertEquals(234, nonFungibleTransfers.get(1).asGrpc().getSerialNumber());
 	}
 
 	@Test

@@ -599,7 +599,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final WorldLedgers ledgers
 		) {
 			final var op = syntheticTxn.getCryptoTransfer();
-			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op, false);
+			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op);
 			if (validity != ResponseCodeEnum.OK) {
 				throw new InvalidTransactionException(validity);
 			}
@@ -700,7 +700,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								BalanceChange.changingNftOwnership(
 										Id.fromGrpcToken(nftExchange.getTokenType()),
 										nftExchange.getTokenType(),
-										nftExchange.nftTransfer()
+										nftExchange.asGrpc()
 								)
 						);
 					}
