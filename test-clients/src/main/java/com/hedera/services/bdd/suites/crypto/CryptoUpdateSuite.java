@@ -106,22 +106,22 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						updateWithUniqueSigs(),
-//						updateWithOverlappingSigs(),
-//						updateWithOneEffectiveSig(),
-//						canUpdateMemo(),
-//						updateFailsWithInsufficientSigs(),
-//						cannotSetThresholdNegative(),
-//						updateWithEmptyKeyFails(),
-//						updateFailsIfMissingSigs(),
-//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-//						updateFailsWithContractKey(),
-//						updateFailsWithOverlyLongLifetime(),
-//						updateFailsWithInvalidMaxAutoAssociations(),
-//						usdFeeAsExpected(),
+						updateWithUniqueSigs(),
+						updateWithOverlappingSigs(),
+						updateWithOneEffectiveSig(),
+						canUpdateMemo(),
+						updateFailsWithInsufficientSigs(),
+						cannotSetThresholdNegative(),
+						updateWithEmptyKeyFails(),
+						updateFailsIfMissingSigs(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+						updateFailsWithContractKey(),
+						updateFailsWithOverlyLongLifetime(),
+						updateFailsWithInvalidMaxAutoAssociations(),
+						usdFeeAsExpected(),
 						canUpdateUsingAlias(),
-//						canUpdateProxyUsingAlias(),
-//						failsWhenInvalidAlias()
+						canUpdateProxyUsingAlias(),
+						failsWhenInvalidAlias()
 				}
 		);
 	}
@@ -135,10 +135,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				).when(
 						cryptoUpdateAliased(alias)
 								.entityMemo(memo)
-								.hasPrecheck(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				).then(
-						getAliasedAccountInfo(alias)
-								.has(accountWith().memo(memo))
 				);
 	}
 
@@ -155,14 +153,15 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, proxyAlias, ONE_HUNDRED_HBARS))
 								.via("transferTxn")
 				).when(
-						getAccountInfo(alias)
+						getTxnRecord("transferTxn").andAllChildRecords(),
+						getAliasedAccountInfo(alias)
 								.has(accountWith().memo("auto-created account")),
 						cryptoUpdateAliased(alias)
-								.newProxy(proxyAlias)
+								.newProxyWithAlias(proxyAlias)
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getAliasedAccountInfo(alias)
-								.has(accountWith().memo(memo))
+								.has(accountWith().proxyWithAlias(proxyAlias))
 				);
 	}
 

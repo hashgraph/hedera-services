@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
@@ -138,7 +139,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 								"tokens.maxPerAccount", "" + 1000
 						)).payingWith(ADDRESS_BOOK_CONTROL),
 						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN)
+						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN,
+								TokenAssociationSpecs.VANILLA_TOKEN)
 				).then(
 						getAccountInfo("misc")
 								.hasToken(
@@ -177,7 +179,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)
 						),
-						getAccountInfo(aliasKey)
+						getAliasedAccountInfo(aliasKey)
 				);
 	}
 

@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -86,6 +87,8 @@ class AwareNodeDiligenceScreenTest {
 	private OptionValidator validator;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -95,7 +98,7 @@ class AwareNodeDiligenceScreenTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
+		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts, aliasManager);
 	}
 
 	@Test

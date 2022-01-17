@@ -94,6 +94,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts proxyWithAlias(String idLiteral) {
+		registerProvider((spec, o) -> {
+			assertEquals(spec.registry().getAccountID(spec.registry().getKey(idLiteral).toByteString().toStringUtf8()),
+					((AccountInfo) o).getProxyAccountID(),
+					"Bad proxy alias id!");
+		});
+		return this;
+	}
+
+
 	public AccountInfoAsserts solidityId(String cid) {
 		registerProvider((spec, o) -> {
 			AccountID id = spec.registry().getAccountID(cid);

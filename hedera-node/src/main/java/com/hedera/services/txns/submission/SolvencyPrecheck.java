@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,10 +30,9 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.merkle.map.MerkleMap;
@@ -45,7 +44,6 @@ import javax.inject.Singleton;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.validation.PureValidation.queryableAccountStatus;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -108,7 +106,12 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerEntity = EntityNum.fromAccountId(lookUpAccountID(accessor.getPayer()));
+		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
+		if (payerLookup.response() != OK) {
+			return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
+		}
+
+		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
 		final var payerStatus = queryableAccountStatus(payerEntity, accounts.get());
 		if (payerStatus != OK) {
 			return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
@@ -127,7 +130,7 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerId = EntityNum.fromAccountId(lookUpAccountID(accessor.getPayer()));
+		final var payerId = EntityNum.fromAccountId(aliasManager.lookUpAccountID(accessor.getPayer()).resolvedId());
 		final var payerAccount = accounts.get().get(payerId);
 
 		try {
@@ -171,15 +174,6 @@ public class SolvencyPrecheck {
 			return INVALID_ACCOUNT_ID;
 		} catch (Exception ignore) {
 			return INVALID_SIGNATURE;
-		}
-	}
-
-	private AccountID lookUpAccountID(final AccountID idOrAlias) {
-		if (isAlias(idOrAlias)) {
-			final var id = aliasManager.lookupIdBy(idOrAlias.getAlias());
-			return id.toGrpcAccountId();
-		} else {
-			return idOrAlias;
 		}
 	}
 }
