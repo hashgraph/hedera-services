@@ -195,26 +195,6 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void rejectsContractInAccountAmounts() {
-		givenInitialBalancesAndOwnership();
-		backingAccounts.getRef(aModel).setSmartContract(true);
-
-		// when:
-		subject.begin();
-		// and:
-
-		assertFailsWith(
-				() -> subject.doZeroSum(fixtureChanges()),
-				ResponseCodeEnum.INVALID_ACCOUNT_ID);
-
-		// then:
-		subject.commit();
-
-		// and:
-		assertInitialBalanceUnchanged();
-	}
-
-	@Test
 	void rejectsMissingAccount() {
 		givenInitialBalancesAndOwnership();
 		backingAccounts.remove(aModel);

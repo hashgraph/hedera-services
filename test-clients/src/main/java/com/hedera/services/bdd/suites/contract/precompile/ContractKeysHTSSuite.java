@@ -223,7 +223,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(28_000),
+														.gas(56_000),
 												getTxnRecord("creationTx").logged(),
 												newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														CONTRACT))),
