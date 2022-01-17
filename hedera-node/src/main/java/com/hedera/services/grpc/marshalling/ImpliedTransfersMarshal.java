@@ -126,10 +126,7 @@ public class ImpliedTransfersMarshal {
 	}
 
 	public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
-		return validityWithCurrentProps(op, true);
-	}
-	public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op, boolean validateRepeatableIds) {
-		return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps(), validateRepeatableIds);
+		return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps());
 	}
 
 	public ImpliedTransfers assessCustomFeesAndValidate(
