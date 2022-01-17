@@ -38,6 +38,9 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_TRANSFER_DISTRIBUTE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
@@ -58,6 +61,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -76,7 +80,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -120,8 +123,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				HSCS_PREC_017_rollback_after_insufficient_balance(),
-				nonZeroTransfersFail()
+				HSCS_PREC_017_rollback_after_insufficient_balance()
 		);
 	}
 
@@ -132,7 +134,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 				transferNft(),
 				transferMultipleNfts(),
 				tokenTransferFromFeeCollector(),
-				tokenTransferFromFeeCollectorStaticNestedCall()
+				tokenTransferFromFeeCollectorStaticNestedCall(),
+				hbarTransferFromFeeCollector()
 		);
 	}
 
@@ -483,7 +486,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
-		return defaultHapiSpec("TokenTransferFromFeeCollectorStaticNestedCall")
+		return defaultHapiSpec("tokenTransferFromFeeCollectorStaticNestedCall")
 				.given(
 						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
 						cryptoCreate(FEE_COLLECTOR),
@@ -523,14 +526,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000L));
+											.gas(110_000));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000L));
+													.gas(110_000));
 								})
 				).when(
 						withOpContext(
@@ -553,7 +556,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(110_000)
 													.via("distributeTx")
 													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
@@ -569,7 +572,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(110_000)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
@@ -584,7 +587,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(110_000)
 													.via("failingChildFrameTx")
 													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
@@ -622,6 +625,85 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
 						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
+				);
+	}
+
+	private HapiApiSpec hbarTransferFromFeeCollector() {
+		return defaultHapiSpec("HbarTransferFromFeeCollector")
+				.given(
+						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+						cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(FEE_COLLECTOR).balance(0L),
+
+						fileCreate("bytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.HBAR_FEE_TRANSFER)),
+						fileCreate("nestedBytecode").payingWith(ACCOUNT),
+						updateLargeFile(ACCOUNT, "nestedBytecode",
+								extractByteCode(ContractResources.TRANSFERER)),
+						withOpContext(
+								(spec, opLog) -> {
+									allRunFor(spec, contractCreate(NESTED)
+											.payingWith(ACCOUNT)
+											.bytecode("nestedBytecode")
+											.gas(100_000));
+									allRunFor(
+											spec,
+											contractCreate(CONTRACT, HBAR_FEE_TRANSFER_CONSTRUCTOR, getNestedContractAddress(NESTED,
+													spec))
+													.balance(0L)
+													.payingWith(ACCOUNT)
+													.bytecode("bytecode")
+													.gas(100_000));
+									allRunFor(spec,
+											tokenCreate(A_TOKEN)
+													.tokenType(TokenType.FUNGIBLE_COMMON)
+													.initialSupply(TOTAL_SUPPLY)
+													.treasury(TOKEN_TREASURY)
+													.withCustom(fixedHbarFee(100L, CONTRACT)),
+
+											tokenAssociate(ACCOUNT, A_TOKEN),
+											tokenAssociate(RECEIVER, A_TOKEN),
+
+											cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
+													.between(TOKEN_TREASURY, ACCOUNT)));
+								})
+				).when(
+						getAccountBalance(CONTRACT).hasTinyBars(0),
+						withOpContext(
+								(spec, opLog) -> {
+									final var token = asAddress(spec.registry().getTokenID(A_TOKEN));
+									final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+									final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+									final var feeCollector = asAddress(spec.registry().getAccountID(FEE_COLLECTOR));
+
+									/* --- HSCS-PREC-008 --- */
+									allRunFor(
+											spec,
+											contractCall(CONTRACT, HBAR_FEE_TRANSFER_DISTRIBUTE,
+													token,
+													sender,
+													receiver,
+													10L,
+													feeCollector
+											)
+													.payingWith(ACCOUNT)
+													.gas(100_000)
+													.via("distributeTx")
+													.hasKnownStatus(SUCCESS));
+								})
+				).then(
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -10L)
+														.including(A_TOKEN, RECEIVER, 10L)
+										)
+										.transfers(including(tinyBarsFromTo(ACCOUNT, CONTRACT, 100L)))),
+						getAccountBalance(CONTRACT).hasTinyBars(0),
+						getAccountBalance(FEE_COLLECTOR).hasTinyBars(100)
 				);
 	}
 
@@ -772,72 +854,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountBalance(RECEIVER).hasTokenBalance(NFT, 2),
 						getAccountInfo(ACCOUNT).hasOwnedNfts(0),
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0)
-				);
-	}
-
-	private HapiApiSpec nonZeroTransfersFail() {
-		final var theSecondReceiver = "somebody2";
-		return defaultHapiSpec("NonZeroTransfersFail")
-				.given(
-						newKeyNamed(UNIVERSAL_KEY),
-						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
-						cryptoCreate(RECEIVER),
-						cryptoCreate(theSecondReceiver),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(A_TOKEN)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY),
-						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode",
-								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
-						fileCreate("nestedBytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "nestedBytecode",
-								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
-						withOpContext(
-								(spec, opLog) -> {
-									allRunFor(spec, contractCreate(NESTED)
-											.payingWith(ACCOUNT)
-											.bytecode("nestedBytecode")
-											.gas(100_000));
-									allRunFor(
-											spec,
-											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
-													getNestedContractAddress(NESTED, spec))
-													.payingWith(ACCOUNT)
-													.bytecode("bytecode")
-													.gas(100_000));
-								}),
-						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
-						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
-						tokenAssociate(RECEIVER, List.of(A_TOKEN)),
-						tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-				).when(
-						withOpContext(
-								(spec, opLog) -> {
-									final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
-									final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
-
-									final var accounts = List.of(receiver1, receiver2);
-									final var amounts = List.of(5L, 5L);
-
-									allRunFor(
-											spec,
-											contractCall(CONTRACT, VERSATILE_TRANSFERS_TOKENS,
-													asAddress(spec.registry().getTokenID(A_TOKEN)),
-													accounts.toArray(),
-													amounts.toArray()
-											)
-													.payingWith(ACCOUNT)
-													.gas(48_000)
-													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-													.via("distributeTx"));
-								})
-
-				).then(
-						childRecordsCheck("distributeTx", CONTRACT_REVERT_EXECUTED,
-								recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
 				);
 	}
 

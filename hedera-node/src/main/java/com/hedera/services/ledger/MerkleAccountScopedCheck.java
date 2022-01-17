@@ -71,10 +71,6 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet
 	) {
-		if ((boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet)) {
-			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
-		}
-
 		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
