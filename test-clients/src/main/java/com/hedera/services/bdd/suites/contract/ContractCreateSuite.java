@@ -114,26 +114,28 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall()
-				}
-		);
+		return List.of(
+				createEmptyConstructor(),
+				insufficientPayerBalanceUponCreation(),
+				rejectsInvalidMemo(),
+				rejectsInsufficientFee(),
+				rejectsInvalidBytecode(),
+				revertsNonzeroBalance(),
+				createFailsIfMissingSigs(),
+				rejectsInsufficientGas(),
+				createsVanillaContractAsExpectedWithOmittedAdminKey(),
+				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+				cannotCreateTooLargeContract(),
+				revertedTryExtCallHasNoSideEffects(),
+				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+				cannotSendToNonExistentAccount(),
+				canCallPendingContractSafely(),
+				delegateContractIdRequiredForTransferInDelegateCall(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCreate(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				vanillaSuccess());
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
@@ -163,6 +165,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
@@ -186,7 +189,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 								)
 										.payingWith(GENESIS)
 										.gas(300_000L)
-										.via(callTxn))
+										.via(callTxn)),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -443,8 +447,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(0L)
 								.keyShape(origKey.signedWith(sigs(ON, sendInternalAndDelegate)))
 								.receiverSigRequired(true)
-								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
-						getAccountInfo(beneficiary).logged()
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum()))
 				).then(
 						/* Without delegateContractId permissions, the second send via delegate call will
 						 * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
@@ -548,15 +551,15 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when(
 						contractCreate(firstContract)
 								.bytecode(initcode)
-								.gas(300_000L)
+								.gas(80_000L)
 								.payingWith(civilian)
 								.balance(0L)
 								.via(creation),
-						getTxnRecord(creation).providingFeeTo(baseCreationFee::set)
+						getTxnRecord(creation).providingFeeTo(baseCreationFee::set).logged()
 				).then(
 						sourcing(() -> contractCreate(secondContract)
 								.bytecode(initcode)
-								.gas(100_000L)
+								.gas(80_000L)
 								.payingWith(civilian)
 								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get())
 								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))

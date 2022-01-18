@@ -172,9 +172,17 @@ public final class HederaOperationUtil {
 					Optional.of(supplierHaltGasCost.get()),
 					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
-
-		final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-				account.getAddress(), frame.getRecipientAddress(), frame.getContractAddress(), frame.getSenderAddress());
+		boolean isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
+		boolean sigReqIsMet;
+		// if this is a delegate call activeContract should be the recipient address
+		// otherwise it should be the contract address
+		if (isDelegateCall) {
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(account.getAddress(),
+					frame.getRecipientAddress(), frame.getContractAddress(), frame.getRecipientAddress());
+		} else {
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(account.getAddress(),
+					frame.getRecipientAddress(), frame.getContractAddress(), frame.getContractAddress());
+		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()), Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE)
