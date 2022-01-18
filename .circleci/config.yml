@@ -649,7 +649,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
@@ -663,11 +663,11 @@ workflows:
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 2 * * 4"
+          cron: "5 5 * * 6"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -685,11 +685,11 @@ workflows:
   GCP-Weekly-Services-MixedOps-Restart-Performance-21N-21C:
     triggers:
       - schedule:
-          cron: "0 23 * * 4"
+          cron: "0 2 * * 3"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -708,11 +708,11 @@ workflows:
   GCP-Weekly-Services-HCS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 7 * * 4"
+          cron: "5 10 * * 6"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -731,11 +731,11 @@ workflows:
   GCP-Weekly-Services-HTS-Restart-Performance-15N-15C:
     triggers:
       - schedule:
-          cron: "5 12 * * 4"
+          cron: "5 15 * * 6"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -754,11 +754,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 2 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -779,7 +779,7 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "58 0 * * *"
+          cron: "58 3 * * *"
           filters:
             branches:
               only:
@@ -807,11 +807,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 2 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -833,7 +833,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-18N-1C:
     triggers:
           - schedule:
-              cron: "0 20 * * *"
+              cron: "0 23,8 * * *"
               filters:
                 branches:
                   only:
@@ -859,11 +859,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 3 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -882,11 +882,11 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "0 0 * * *"
+          cron: "0 3 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -905,11 +905,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "15 0 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -928,11 +928,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 0 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -951,11 +951,11 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "45 0 * * *"
+          cron: "45 3 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -974,11 +974,11 @@ workflows:
   GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
     triggers:
       - schedule:
-          cron: "0 1 * * *"
+          cron: "0 4 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -997,11 +997,11 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1020,11 +1020,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "45 19 * * *"
+          cron: "45 22 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1043,11 +1043,11 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "15 19 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1066,11 +1066,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "15 20 * * *"
+          cron: "15 23 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1089,11 +1089,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "30 20 * * *"
+          cron: "30 23 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1112,11 +1112,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 3 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1136,11 +1136,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 2 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1160,11 +1160,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "40 4 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1183,11 +1183,11 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 2 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1206,11 +1206,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "55 3 * * *"
+          cron: "55 6 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1229,11 +1229,11 @@ workflows:
   GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "0 3 * * 4"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1252,11 +1252,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 4 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1275,11 +1275,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
-          cron: "40 1 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1299,11 +1299,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "30 1 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1322,11 +1322,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1345,11 +1345,11 @@ workflows:
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 4 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1368,11 +1368,11 @@ workflows:
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 5 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1391,11 +1391,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "25 5 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
-                - hts-contracts
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
