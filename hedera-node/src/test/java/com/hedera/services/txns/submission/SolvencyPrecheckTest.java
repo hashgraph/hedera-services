@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,14 +26,15 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -61,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -100,14 +102,15 @@ class SolvencyPrecheckTest {
 					.setTransactionFee(acceptableRequiredFee)
 					.build().toByteString())
 			.build());
-	private final SignedTxnAccessor accessorCoveringAllFeesWithAliasedPayer = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
-			.setBodyBytes(TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder()
-							.setTransactionValidStart(now)
-							.setAccountID(payerWithAlias))
-					.setTransactionFee(acceptableRequiredFee)
-					.build().toByteString())
-			.build());
+	private final SignedTxnAccessor accessorCoveringAllFeesWithAliasedPayer = SignedTxnAccessor.uncheckedFrom(
+			Transaction.newBuilder()
+					.setBodyBytes(TransactionBody.newBuilder()
+							.setTransactionID(TransactionID.newBuilder()
+									.setTransactionValidStart(now)
+									.setAccountID(payerWithAlias))
+							.setTransactionFee(acceptableRequiredFee)
+							.build().toByteString())
+					.build());
 	private final SignedTxnAccessor accessorNotCoveringSvcFee = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
 			.setBodyBytes(TransactionBody.newBuilder()
 					.setTransactionID(TransactionID.newBuilder()
@@ -146,6 +149,7 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void rejectsUnusablePayer() {
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
@@ -155,7 +159,8 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void rejectsUnusablePayerWithAlias() {
-		given(aliasManager.lookupIdBy(payerAlias)).willReturn(EntityNum.MISSING_NUM);
+		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(
+				AliasLookup.of(payerWithAlias, INVALID_PAYER_ACCOUNT_ID));
 		var result = subject.assessWithSvcFees(accessorCoveringAllFeesWithAliasedPayer);
 
 		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);
@@ -342,8 +347,7 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void recognizesSolventPayerWithAlias() {
-		given(aliasManager.lookupIdBy(payerAlias)).willReturn(EntityNum.fromLong(1234L));
-		givenSolventPayer();
+		givenSolventPayerWithAlias();
 		givenValidSigs(true);
 		givenAcceptableFees(true);
 		givenNoMaterialAdjustment(true);
@@ -355,7 +359,8 @@ class SolvencyPrecheckTest {
 
 	private void givenNoMaterialAdjustment(boolean aliased) {
 		if (aliased) {
-			given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFeesWithAliasedPayer, now)).willReturn(-1L);
+			given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFeesWithAliasedPayer,
+					now)).willReturn(-1L);
 		} else {
 			given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(-1L);
 		}
@@ -363,9 +368,11 @@ class SolvencyPrecheckTest {
 
 	private void givenAcceptableFees(boolean aliased) {
 		if (aliased) {
-			given(feeCalculator.estimateFee(accessorCoveringAllFeesWithAliasedPayer, payerKey, stateView, now)).willReturn(acceptableFees);
+			given(feeCalculator.estimateFee(accessorCoveringAllFeesWithAliasedPayer, payerKey, stateView,
+					now)).willReturn(acceptableFees);
 		} else {
-			given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willReturn(acceptableFees);
+			given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willReturn(
+					acceptableFees);
 		}
 	}
 
@@ -376,20 +383,29 @@ class SolvencyPrecheckTest {
 			} else {
 				given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willReturn(true);
 			}
-		} catch (Exception impossible) {}
+		} catch (Exception impossible) {
+		}
 	}
 
 	private void givenValidSigsNonSvc() {
 		try {
 			given(precheckVerifier.hasNecessarySignatures(accessorNotCoveringSvcFee)).willReturn(true);
-		} catch (Exception impossible) {}
+		} catch (Exception impossible) {
+		}
 	}
 
 	private void givenSolventPayer() {
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(solventPayerAccount);
+	}
+
+	private void givenSolventPayerWithAlias() {
+		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(solventPayerAccount);
 	}
 
 	private void givenInsolventPayer() {
+		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(insolventPayerAccount);
 	}
 
