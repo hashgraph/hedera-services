@@ -504,7 +504,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISSING_ACCOUNT)
 		);
-		given(ledger.lookUpAccountId(MISSING_ACCOUNT, INVALID_AUTORENEW_ACCOUNT))
+		given(ledger.lookUpAccountId(MISSING_ACCOUNT))
 				.willReturn(AliasLookup.of(MISSING_ACCOUNT, INVALID_AUTORENEW_ACCOUNT));
 
 	}
@@ -517,7 +517,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
-		given(ledger.lookUpAccountId(MISC_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(ledger.lookUpAccountId(MISC_ACCOUNT)).willReturn(
 				AliasLookup.of(MISC_ACCOUNT, OK));
 	}
 
@@ -528,7 +528,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
 		given(validator.hasGoodEncoding(any())).willReturn(true);
-		given(ledger.lookUpAccountId(MISC_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(ledger.lookUpAccountId(MISC_ACCOUNT)).willReturn(
 				AliasLookup.of(MISC_ACCOUNT, OK));
 	}
 
@@ -537,7 +537,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder().setAutoRenewAccount(account)
 		);
-		given(ledger.lookUpAccountId(account, INVALID_AUTORENEW_ACCOUNT)).willReturn(AliasLookup.of(account, OK));
+		given(ledger.lookUpAccountId(account)).willReturn(AliasLookup.of(account, OK));
 	}
 
 	private void givenTransactionChangingAutoRenewAccountWithAliasId() {
@@ -545,7 +545,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder().setAutoRenewAccount(account)
 		);
-		given(ledger.lookUpAccountId(account, INVALID_AUTORENEW_ACCOUNT)).willReturn(AliasLookup.of(MISC_ACCOUNT, OK));
+		given(ledger.lookUpAccountId(account)).willReturn(AliasLookup.of(MISC_ACCOUNT, OK));
 	}
 
 	private void givenTransactionClearingKeys() {
@@ -561,7 +561,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 
 	private void givenValidTransactionWithAliasedAutoRenewAccount() {
 		givenValidTransactionWithAllOptions(ALIASED_ACCOUNT);
-		given(ledger.lookUpAccountId(ALIASED_ACCOUNT, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(ledger.lookUpAccountId(ALIASED_ACCOUNT)).willReturn(
 				AliasLookup.of(MISC_ACCOUNT, OK));
 	}
 
@@ -583,7 +583,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(updatedSubmitKey)).willReturn(true);
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
-		given(ledger.lookUpAccountId(autoRenewAccount, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(ledger.lookUpAccountId(autoRenewAccount)).willReturn(
 				AliasLookup.of(autoRenewAccount, OK));
 	}
 

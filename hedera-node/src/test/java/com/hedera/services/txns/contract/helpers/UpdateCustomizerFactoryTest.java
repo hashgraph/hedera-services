@@ -95,6 +95,7 @@ class UpdateCustomizerFactoryTest {
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
 		given(ledger.lookUpAccountId(newProxy)).willReturn(AliasLookup.of(newProxy, OK));
+		given(ledger.usableOrElse(newProxy, INVALID_ACCOUNT_ID)).willReturn(OK);
 
 		// when:
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);

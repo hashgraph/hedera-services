@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -584,14 +585,26 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private AliasLookup checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
-			return lookUpAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			final var autoRenewLookUp =  lookUpAccountId(changes.getAutoRenewAccount(), INVALID_ALIAS_KEY);
+			if (autoRenewLookUp.response() != OK) {
+				return autoRenewLookUp;
+			} else {
+				final var validity = usableOrElse(autoRenewLookUp.resolvedId(), INVALID_AUTORENEW_ACCOUNT);
+				return AliasLookup.of(autoRenewLookUp.resolvedId(), validity);
+			}
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}
 
 	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
-			return lookUpAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			final var treasuryLookUp = lookUpAccountId(changes.getTreasury(), INVALID_ALIAS_KEY);
+			if (treasuryLookUp.response() != OK) {
+				return treasuryLookUp;
+			} else {
+				final var validity = usableOrElse(treasuryLookUp.resolvedId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+				return AliasLookup.of(treasuryLookUp.resolvedId(), validity);
+			}
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}

@@ -124,6 +124,7 @@ class CryptoUpdateTransitionLogicTest {
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
 		given(ledger.lookUpAccountId(TARGET)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.usableOrElse(TARGET, INVALID_ACCOUNT_ID)).willReturn(OK);
 	}
 
 	@Test
@@ -524,6 +525,7 @@ class CryptoUpdateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
 		given(ledger.lookUpAccountId(PROXY)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.usableOrElse(PROXY, INVALID_ACCOUNT_ID)).willReturn(OK);
 	}
 
 	private TransactionID ourTxnId() {

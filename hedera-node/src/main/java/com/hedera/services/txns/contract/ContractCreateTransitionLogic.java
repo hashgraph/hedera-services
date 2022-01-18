@@ -57,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 public class ContractCreateTransitionLogic implements TransitionLogic {
@@ -105,14 +104,16 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var op = contractCreateTxn.getContractCreateInstance();
 
 		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
-		final var senderId = Id.fromGrpcAccount(hederaLedger.lookUpAccountId(grpcSender).resolvedId());
+		final var senderAccountNum = accountStore.getAccountNumFromAlias(grpcSender.getAlias(), grpcSender.getAccountNum());
+		final var senderId =  new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
 		var proxyAccount = Id.DEFAULT;
 
 		/* ---- validate -- */
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
-			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID());
-			validateTrue(OK == result.response(), INVALID_ACCOUNT_ID);
-			proxyAccount = Id.fromGrpcAccount(result.resolvedId());
+			final var grpcProxy = op.getProxyAccountID();
+			final var proxyAccountNum = accountStore.getAccountNumFromAlias(grpcProxy.getAlias(), grpcProxy.getAccountNum());
+			proxyAccount = new Id(grpcProxy.getShardNum(), grpcProxy.getRealmNum(), proxyAccountNum);
+			accountStore.loadAccountOrFailWith(proxyAccount, INVALID_ACCOUNT_ID);
 		}
 
 		var key = op.hasAdminKey()

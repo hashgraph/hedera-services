@@ -74,7 +74,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -483,12 +486,8 @@ public class HederaLedger {
 		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
-	public AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum response) {
-		return tokenStore.lookUpAccountId(grpcId, response);
-	}
-
 	public AliasLookup lookUpAccountId(final AccountID grpcId) {
-		return tokenStore.lookUpAccountId(grpcId, INVALID_ACCOUNT_ID);
+		return tokenStore.lookUpAccountId(grpcId, INVALID_ALIAS_KEY);
 	}
 
 	public boolean isDeleted(AccountID id) {
@@ -554,6 +553,24 @@ public class HederaLedger {
 				setBalance(accountId, change.getNewBalance());
 				sideEffectsTracker.trackHbarChange(accountId, change.units());
 			}
+		}
+	}
+
+	public ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
+		final var validity = checkAccountUsability(aId);
+
+		return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
+	}
+
+	private ResponseCodeEnum checkAccountUsability(AccountID aId) {
+		if (!accountsLedger.exists(aId)) {
+			return INVALID_ACCOUNT_ID;
+		} else if (isDeleted(aId)) {
+			return ACCOUNT_DELETED;
+		} else if (isDetached(aId)) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+		} else {
+			return OK;
 		}
 	}
 

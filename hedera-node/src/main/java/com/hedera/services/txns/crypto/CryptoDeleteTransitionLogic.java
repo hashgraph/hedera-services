@@ -39,7 +39,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -87,6 +86,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
+			var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+			if (validity != OK) {
+				txnCtx.setStatus(validity);
+				return;
+			}
+
 			AccountID id = result.resolvedId();
 
 			if (ledger.isKnownTreasury(id)) {
@@ -99,12 +104,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
-			AccountID beneficiary = result.resolvedId();
-
-			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
-				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+			validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+			if (validity != OK) {
+				txnCtx.setStatus(validity);
 				return;
 			}
+			AccountID beneficiary = result.resolvedId();
 
 			if (!ledger.allTokenBalancesVanish(id)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);

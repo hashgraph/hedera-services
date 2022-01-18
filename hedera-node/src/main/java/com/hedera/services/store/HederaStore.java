@@ -84,12 +84,7 @@ public abstract class HederaStore {
 	public AliasLookup lookUpAccountId(
 			final AccountID grpcId,
 			final AliasManager aliasManager,
-			final ResponseCodeEnum response) {
-		var result = aliasManager.lookUpAccountID(grpcId, response);
-		if (result.response() != OK) {
-			return result;
-		}
-		var validity = usableOrElse(result.resolvedId(), response);
-		return AliasLookup.of(result.resolvedId(), validity);
+			final ResponseCodeEnum errResponse) {
+		return aliasManager.lookUpAccountID(grpcId, errResponse);
 	}
 }
