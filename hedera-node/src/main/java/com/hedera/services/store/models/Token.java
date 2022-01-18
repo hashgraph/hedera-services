@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -126,6 +127,7 @@ public class Token {
 	 * @return a new instance of the {@link Token} class
 	 */
 	public static Token fromGrpcOpAndMeta(
+			final AccountStore accountStore,
 			final Id tokenId,
 			final TokenCreateTransactionBody op,
 			final Account treasury,
@@ -168,7 +170,7 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
-		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
+		token.setCustomFees(op.getCustomFeesList().stream().map(fee -> FcCustomFee.fromGrpc(fee, accountStore)).toList());
 		token.setPaused(false);
 
 		token.setNew(true);

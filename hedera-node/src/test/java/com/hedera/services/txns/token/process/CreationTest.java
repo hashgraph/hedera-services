@@ -226,6 +226,11 @@ class CreationTest {
 	}
 
 	@Test
+	void failsWhenInvalidFeeCollectorInCustomFees() {
+
+	}
+
+	@Test
 	void validatesNumCustomFees() {
 		givenSubjectWithEverything();
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(1);
@@ -241,7 +246,7 @@ class CreationTest {
 
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
-		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
+		given(modelFactory.createFrom(accountStore, provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
@@ -263,7 +268,7 @@ class CreationTest {
 
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
-		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
+		given(modelFactory.createFrom(accountStore, provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
 
 		subject.setProvisionalId(provisionalId);

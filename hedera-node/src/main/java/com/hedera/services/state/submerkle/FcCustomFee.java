@@ -211,11 +211,24 @@ public class FcCustomFee implements SelfSerializable {
 		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null);
 	}
 
-	public static FcCustomFee fromGrpc(CustomFee source) {
+	/**
+	 * Convert the customFee [ which may have the feeCollector in alias form ]
+	 * provided from grpc {@link CustomFee} form to subMerkle form {@link FcCustomFee}
+	 *
+	 * @param source
+	 * 			The grpc customFee
+	 * @param accountStore
+	 * 			AccountStore to look up the accountNum of the aliased FeeCollector.
+	 * @return
+	 * 			FcCustomFee representation of the provided grpcCustomFee
+	 */
+	public static FcCustomFee fromGrpc(CustomFee source, AccountStore accountStore) {
 		final var isSpecified = source.hasFixedFee() || source.hasFractionalFee() || source.hasRoyaltyFee();
 		validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 
-		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
+		final var grpcFeeCollector = source.getFeeCollectorAccountId();
+		final var resolvedFeeCollectorNum = accountStore.getAccountNumFromAlias(grpcFeeCollector.getAlias(), grpcFeeCollector.getAccountNum());
+		final var feeCollector = new EntityId(grpcFeeCollector.getShardNum(), grpcFeeCollector.getRealmNum(), resolvedFeeCollectorNum);
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
 			final var fixedSource = source.getFixedFee();

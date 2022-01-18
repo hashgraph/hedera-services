@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -676,9 +677,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return grpcList;
 	}
 
-	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
+	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule, AccountStore accountStore) {
 		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
-		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).toList();
+		feeSchedule = grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, accountStore)).toList();
 	}
 
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {

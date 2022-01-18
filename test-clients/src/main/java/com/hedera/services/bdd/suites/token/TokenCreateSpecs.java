@@ -164,19 +164,28 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec creationWithAliasWorks() {
+		final String hbarCollector = "hbarCollector";
+		final String fractionalCollector = "fractionalCollector";
+		final String selfDenominatedFixedCollector = "selfDenominatedFixedCollector";
 		return defaultHapiSpec("CreationWithAliasWorks")
 				.given(
 						newKeyNamed("autoRenewAlias"),
 						newKeyNamed("treasuryAlias"),
 						newKeyNamed("invalidAlias"),
-						newKeyNamed("adminKey")
+						newKeyNamed("adminKey"),
+						newKeyNamed(hbarCollector),
+						newKeyNamed(fractionalCollector),
+						newKeyNamed(selfDenominatedFixedCollector)
 				)
 				.when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "autoRenewAlias", ONE_HUNDRED_HBARS),
-								tinyBarsFromToWithAlias(DEFAULT_PAYER, "treasuryAlias", ONE_HUNDRED_HBARS))
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, "treasuryAlias", ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, hbarCollector, ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, fractionalCollector, ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, selfDenominatedFixedCollector, ONE_HUNDRED_HBARS))
 								.via("autoCreate"),
 						getTxnRecord("autoCreate")
-								.hasChildRecordCount(2)
+								.hasChildRecordCount(5)
 				)
 				.then(
 						tokenCreate("tokenA")
@@ -184,7 +193,47 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury("treasuryAlias")
 								.treasuryIsAlias()
 								.autoRenewAccount("autoRenewAlias")
-								.autoRenewAccountIsAlias(),
+								.autoRenewAccountIsAlias()
+								.withCustom(fixedHbarFee(
+										20L,
+										hbarCollector))
+								.withCustom(fractionalFee(
+										1L, 100L, 1L, OptionalLong.of(5L),
+										fractionalCollector))
+								.withCustom(fixedHtsFee(
+										2L, "0.0.0",
+										selfDenominatedFixedCollector))
+								.signedBy(
+										DEFAULT_PAYER,
+										"adminKey",
+										"treasuryAlias",
+										"autoRenewAlias",
+										hbarCollector,
+										selfDenominatedFixedCollector)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenCreate("tokenA")
+								.adminKey("adminKey")
+								.treasury("treasuryAlias")
+								.treasuryIsAlias()
+								.autoRenewAccount("autoRenewAlias")
+								.autoRenewAccountIsAlias()
+								.withCustom(fixedHbarFee(
+										20L,
+										hbarCollector))
+								.withCustom(fractionalFee(
+										1L, 100L, 1L, OptionalLong.of(5L),
+										fractionalCollector))
+								.withCustom(fixedHtsFee(
+										2L, "0.0.0",
+										selfDenominatedFixedCollector))
+								.signedBy(
+										DEFAULT_PAYER,
+										"adminKey",
+										"treasuryAlias",
+										"autoRenewAlias",
+										hbarCollector,
+										fractionalCollector,
+										selfDenominatedFixedCollector),
 						tokenCreate("tokenB")
 								.adminKey("adminKey")
 								.treasury("invalidAlias")

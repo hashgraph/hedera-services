@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
@@ -30,6 +31,7 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -126,16 +128,21 @@ class MerkleTokenTest {
 	private static final CustomFee fixedFee = builder.withFixedFee(
 			fixedHts(denom.toGrpcTokenId(), fixedUnitsToCollect));
 	private static final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
-	private static final List<FcCustomFee> feeSchedule = grpcFeeSchedule.stream()
-			.map(FcCustomFee::fromGrpc)
-			.collect(toList());
+	private static List<FcCustomFee> feeSchedule;
 
 	private final int number = 123_456;
 
+	private AccountStore accountStore;
 	private MerkleToken subject;
 
 	@BeforeEach
 	void setup() {
+		accountStore = mock(AccountStore.class);
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		feeSchedule = grpcFeeSchedule.stream()
+				.map(fee -> FcCustomFee.fromGrpc(fee, accountStore))
+				.collect(toList());
+
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name,
 				freezeDefault, accountsKycGrantedByDefault, treasury,
@@ -156,7 +163,7 @@ class MerkleTokenTest {
 		subject.setName(name);
 		subject.setSymbol(symbol);
 		subject.setAccountsFrozenByDefault(true);
-		subject.setFeeScheduleFrom(grpcFeeSchedule);
+		subject.setFeeScheduleFrom(grpcFeeSchedule, accountStore);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -231,7 +238,7 @@ class MerkleTokenTest {
 	@Test
 	void v0120DeserializeWorks() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
-		subject.setFeeScheduleFrom(Collections.emptyList());
+		subject.setFeeSchedule(Collections.emptyList());
 		subject.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -684,7 +691,7 @@ class MerkleTokenTest {
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
-		token.setFeeScheduleFrom(grpcFeeSchedule);
+		token.setFeeSchedule(grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, accountStore)).toList());
 		token.setFeeScheduleKey(feeScheduleKey);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.INFINITE);
@@ -806,7 +813,7 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		assertEquals(Collections.emptyList(), token.grpcFeeSchedule());
 
-		token.setFeeScheduleFrom(grpcFeeSchedule);
+		token.setFeeSchedule(grpcFeeSchedule.stream().map(fee -> FcCustomFee.fromGrpc(fee, accountStore)).toList());
 		assertEquals(grpcFeeSchedule, token.grpcFeeSchedule());
 	}
 

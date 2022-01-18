@@ -32,11 +32,14 @@ import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
@@ -133,14 +136,20 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 		final var newHbarCollector = "newHbarFee";
 		final var newHtsCollector = "newDenomFee";
 		final var newTokenCollector = "newFractionalFee";
+		final var aliasedHbarCollector = "hbarCollector";
 
 		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+						newKeyNamed(aliasedHbarCollector),
 						newKeyNamed(adminKey),
 						newKeyNamed(feeScheduleKey),
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasedHbarCollector, ONE_HUNDRED_HBARS))
+								.via("autoCreate"),
+						getTxnRecord("autoCreate")
+								.hasChildRecordCount(1),
 						cryptoCreate(htsCollector),
 						cryptoCreate(newHtsCollector),
 						cryptoCreate(hbarCollector),
@@ -242,6 +251,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenAssociate(newTokenCollector, token),
 						tokenFeeScheduleUpdate(token)
+								.withCustom(fixedHbarFee(newHbarAmount, aliasedHbarCollector))
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
@@ -250,6 +260,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										newTokenCollector))
 				).then(
 						getTokenInfo(token)
+								// TODO fix this .hasCustom(fixedHbarFeeInSchedule(newHbarAmount, aliasedHbarCollector))
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(
