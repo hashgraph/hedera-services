@@ -226,11 +226,6 @@ class CreationTest {
 	}
 
 	@Test
-	void failsWhenInvalidFeeCollectorInCustomFees() {
-
-	}
-
-	@Test
 	void validatesNumCustomFees() {
 		givenSubjectWithEverything();
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(1);

@@ -54,6 +54,7 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -224,11 +225,11 @@ class AwareNodeDiligenceScreenTest {
 	void invalidPayerAccountIfAlias() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
+		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, INVALID_PAYER_ACCOUNT_ID));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+		verify(txnCtx).setStatus(INVALID_PAYER_ACCOUNT_ID);
 	}
 
 	@Test

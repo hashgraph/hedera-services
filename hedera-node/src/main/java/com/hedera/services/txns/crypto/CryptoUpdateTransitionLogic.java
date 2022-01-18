@@ -106,11 +106,11 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(result.response());
 				return;
 			}
-			var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
-				return;
-			}
+//			var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+//			if (validity != OK) {
+//				txnCtx.setStatus(validity);
+//				return;
+//			}
 
 			final var target = result.resolvedId();
 			final var customizer = asCustomizer(op);
@@ -119,7 +119,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
 				return;
 			}
-			validity = sanityCheck(target, customizer);
+			var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;

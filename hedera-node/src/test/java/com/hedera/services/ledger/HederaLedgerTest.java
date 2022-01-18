@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATI
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -74,6 +79,48 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
+	}
+
+	@Test
+	void checkAccountUsabilityWorks() {
+		final long balance = 0;
+		final long expiry = 123;
+		final AccountID testId = AccountID.newBuilder().setAccountNum(123L).build();
+		given(accountsLedger.exists(testId)).willReturn(false);
+
+		assertEquals(INVALID_ACCOUNT_ID,  subject.usableOrElse(testId, INVALID_ACCOUNT_ID));
+
+		given(accountsLedger.exists(testId)).willReturn(true);
+		given(accountsLedger.get(testId, IS_DELETED)).willReturn(true);
+
+		assertEquals(ACCOUNT_DELETED,  subject.usableOrElse(testId, ACCOUNT_DELETED));
+
+		validator = mock(OptionValidator.class);
+//		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
+//		given(accountsLedger.exists(testId)).willReturn(true);
+//		given(accountsLedger.get(testId, IS_DELETED)).willReturn(false);
+//		given(accountsLedger.get(testId, IS_SMART_CONTRACT)).willReturn(false);
+//		given(accountsLedger.get(testId, BALANCE)).willReturn(balance);
+//		given(accountsLedger.get(testId, EXPIRY)).willReturn(expiry);
+//
+//		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL,  subject.usableOrElse(testId, ACCOUNT_DELETED));
+
+		given(validator.isAfterConsensusSecond(expiry)).willReturn(true);
+		given(accountsLedger.exists(testId)).willReturn(true);
+		given(accountsLedger.get(testId, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(testId, IS_SMART_CONTRACT)).willReturn(false);
+		given(accountsLedger.get(testId, BALANCE)).willReturn(balance);
+		given(accountsLedger.get(testId, EXPIRY)).willReturn(expiry);
+
+		assertEquals(OK,  subject.usableOrElse(testId, ACCOUNT_DELETED));
+	}
+
+	@Test
+	void deligatesAccountLookUp() {
+		final AccountID testId = AccountID.newBuilder().setAccountNum(123L).build();
+		subject.lookUpAccountId(testId);
+
+		verify(tokenStore).lookUpAccountId(testId, INVALID_ALIAS_KEY);
 	}
 
 	@Test

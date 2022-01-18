@@ -275,6 +275,20 @@ class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
+	@Test
+	void failsWithMissingAliasedProxy() {
+		givenValidTxnCtxWithAliasedProxy();
+		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(
+				AliasLookup.of(aliasedProxyID, OK));
+		given(ledger.usableOrElse(aliasedProxyID, INVALID_ACCOUNT_ID)).willReturn(INVALID_ACCOUNT_ID);
+		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(
+				AliasLookup.of(PAYER, OK));
+
+		subject.doStateTransition();
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
 	}

@@ -153,9 +153,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, proxyAlias, ONE_HUNDRED_HBARS))
 								.via("transferTxn")
 				).when(
-						getTxnRecord("transferTxn").andAllChildRecords(),
+						getTxnRecord("transferTxn").hasChildRecordCount(2),
 						getAliasedAccountInfo(alias)
-								.has(accountWith().memo("auto-created account")),
+								.has(accountWith().memo("auto-created account"))
+								.logged(),
 						cryptoUpdateAliased(alias)
 								.newProxyWithAlias(proxyAlias)
 								.hasKnownStatus(SUCCESS)

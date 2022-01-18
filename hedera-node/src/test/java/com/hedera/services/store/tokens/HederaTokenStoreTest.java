@@ -919,6 +919,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void updateRejectsMissingNewAutoRenewAlias() {
+		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_ALIAS_KEY))
+				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, INVALID_ALIAS_KEY));
+		given(accountsLedger.exists(newAutoRenewAccountWithAlias)).willReturn(false);
+		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome);
+	}
+
+	@Test
 	void updateRejectsInvalidNewTreasuryAlias() {
 		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_ALIAS_KEY))
 				.willReturn(AliasLookup.of(newTreasuryWithAlias, OK));
@@ -928,6 +940,18 @@ class HederaTokenStoreTest {
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
 		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, outcome);
+	}
+
+	@Test
+	void updateRejectsMissingNewTreasuryAlias() {
+		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_ALIAS_KEY))
+				.willReturn(AliasLookup.of(newTreasuryWithAlias, INVALID_ALIAS_KEY));
+		given(accountsLedger.exists(newTreasuryWithAlias)).willReturn(false);
+		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_ALIAS_KEY, outcome);
 	}
 
 	@Test

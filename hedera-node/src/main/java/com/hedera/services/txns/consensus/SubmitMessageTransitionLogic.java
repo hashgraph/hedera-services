@@ -109,12 +109,13 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 					chunkInfo.getInitialTransactionID().getAccountID());
 			final var transactionIDLookup = aliasManager.lookUpPayerAccountID(
 					transactionBody.getTransactionID().getAccountID());
-			if (chunkAccountIDLookup.response() != OK) {
-				transactionContext.setStatus(chunkAccountIDLookup.response());
-			}
-			if (transactionIDLookup.response() != OK) {
-				transactionContext.setStatus(transactionIDLookup.response());
-			}
+			/* I dont think we need these checks as it is handled just aftet these checks */
+//			if (chunkAccountIDLookup.response() != OK) {
+//				transactionContext.setStatus(chunkAccountIDLookup.response());
+//			}
+//			if (transactionIDLookup.response() != OK) {
+//				transactionContext.setStatus(transactionIDLookup.response());
+//			}
 
 			if (!chunkAccountIDLookup.resolvedId().equals(transactionIDLookup.resolvedId())) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
@@ -132,9 +133,6 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		try {
 			final AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
 			final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
-			if (result.response() != OK) {
-				transactionContext.setStatus(result.response());
-			}
 			final AccountID payer = result.resolvedId();
 
 			mutableTopic.updateRunningHashAndSequenceNumber(
