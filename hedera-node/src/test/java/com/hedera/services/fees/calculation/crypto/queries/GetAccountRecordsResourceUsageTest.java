@@ -76,9 +76,9 @@ class GetAccountRecordsResourceUsageTest {
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(), usageEstimator);
 	}

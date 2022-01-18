@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -227,7 +228,7 @@ public class TxnUtils {
 
 	public static String txnToString(Transaction txn) {
 		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(txn);
+			return toReadableString(txn);
 		} catch (InvalidProtocolBufferException e) {
 			log.error("Got Grpc protocol buffer error: ", e);
 		}
@@ -574,5 +575,20 @@ public class TxnUtils {
 
 	public static String nAscii(int n) {
 		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(joining());
+	}
+
+	/**
+	 * Generates a human readable string for grpc transaction.
+	 *
+	 * @param grpcTransaction
+	 * 		GRPC transaction
+	 * @return generated readable string
+	 * @throws InvalidProtocolBufferException
+	 * 		when protocol buffer is invalid
+	 */
+	public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
+		TransactionBody body = extractTransactionBody(grpcTransaction);
+		return "body=" + TextFormat.shortDebugString(body) + "; sigs="
+				+ TextFormat.shortDebugString(com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
 	}
 }

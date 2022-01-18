@@ -21,12 +21,11 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.Platform;
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsRunningAverage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -53,22 +52,27 @@ class MiscRunningAvgsTest {
 		final var waitMs = mock(StatEntry.class);
 		final var queueSizes = mock(StatEntry.class);
 		final var submitSizes = mock(StatEntry.class);
+		final var gasPerSec = mock(StatEntry.class);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES::equals),
-				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
-				argThat(subject.accountLookupRetries::equals))).willReturn(retries);
+				MiscRunningAvgs.Names.ACCOUNT_LOOKUP_RETRIES,
+				MiscRunningAvgs.Descriptions.ACCOUNT_LOOKUP_RETRIES,
+				subject.accountLookupRetries)).willReturn(retries);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS::equals),
-				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
-				argThat(subject.accountRetryWaitMs::equals))).willReturn(waitMs);
+				MiscRunningAvgs.Names.ACCOUNT_RETRY_WAIT_MS,
+				MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS,
+				subject.accountRetryWaitMs)).willReturn(waitMs);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
-				argThat(MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM::equals),
-				argThat(subject.writeQueueSizeRecordStream::equals))).willReturn(queueSizes);
+				MiscRunningAvgs.Names.WRITE_QUEUE_SIZE_RECORD_STREAM,
+				MiscRunningAvgs.Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM,
+				subject.writeQueueSizeRecordStream)).willReturn(queueSizes);
 		given(factory.from(
-				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
-				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
-				argThat(subject.handledSubmitMessageSize::equals))).willReturn(submitSizes);
+				MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE,
+				MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
+				subject.handledSubmitMessageSize)).willReturn(submitSizes);
+		given(factory.from(
+				MiscRunningAvgs.Names.GAS_PER_CONSENSUS_SEC,
+				MiscRunningAvgs.Descriptions.GAS_PER_CONSENSUS_SEC,
+				subject.gasPerConsSec)).willReturn(gasPerSec);
 
 		subject.registerWith(platform);
 
@@ -76,6 +80,7 @@ class MiscRunningAvgsTest {
 		verify(platform).addAppStatEntry(waitMs);
 		verify(platform).addAppStatEntry(queueSizes);
 		verify(platform).addAppStatEntry(submitSizes);
+		verify(platform).addAppStatEntry(gasPerSec);
 	}
 
 	@Test
@@ -85,22 +90,26 @@ class MiscRunningAvgsTest {
 		final var queueSize = mock(StatsRunningAverage.class);
 		final var submitSizes = mock(StatsRunningAverage.class);
 		final var hashS = mock(StatsRunningAverage.class);
+		final var gasPerSec = mock(StatsRunningAverage.class);
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
 		subject.writeQueueSizeRecordStream = queueSize;
 		subject.hashQueueSizeRecordStream = hashS;
+		subject.gasPerConsSec = gasPerSec;
 
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
 		subject.writeQueueSizeRecordStream(4);
 		subject.hashQueueSizeRecordStream(5);
+		subject.recordGasPerConsSec(6L);
 
 		verify(retries).recordValue(1.0);
 		verify(waitMs).recordValue(2.0);
 		verify(submitSizes).recordValue(3.0);
 		verify(queueSize).recordValue(4.0);
 		verify(hashS).recordValue(5);
+		verify(gasPerSec).recordValue(6L);
 	}
 }

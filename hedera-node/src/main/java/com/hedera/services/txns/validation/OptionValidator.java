@@ -44,7 +44,6 @@ import java.time.Instant;
  */
 
 public interface OptionValidator {
-
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);

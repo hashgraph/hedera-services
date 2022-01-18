@@ -21,7 +21,7 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.Platform;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatsSpeedometer;
 
 public class MiscSpeedometers {
 	private final SpeedometerFactory speedometer;

@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
@@ -109,6 +110,7 @@ class ContextOptionValidatorTest {
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
+	final private ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	PropertySource properties;
 	GlobalDynamicProperties dynamicProperties;
 	private MerkleTopic deletedMerkleTopic;
@@ -165,6 +167,7 @@ class ContextOptionValidatorTest {
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
 		return FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();

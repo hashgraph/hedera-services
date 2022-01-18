@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.21.0-SNAPSHOT</version>
+	<version>0.22.0-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -156,6 +156,7 @@
 		<maven-javadoc.version>3.3.1</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
+                <bouncycastle.version>1.70</bouncycastle.version>
 		<commons-codec.version>1.15</commons-codec.version>
 		<commons-io.version>2.11.0</commons-io.version>
 		<commons-lang3.version>3.12.0</commons-lang3.version>
@@ -164,17 +165,19 @@
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.0.1-jre</guava.version>
-		<hapi-proto.version>0.21.0-SNAPSHOT</hapi-proto.version>
+		<hapi-proto.version>0.22.0</hapi-proto.version>
+		<headlong.version>5.5.0</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>
 		<log4j.version>2.17.1</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.2</protobuf-java.version>
-		<swirlds.version>0.21.0</swirlds.version>
+		<swirlds.version>0.22.0</swirlds.version>
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit5.version>5.8.2</junit5.version>
 		<mockito.version>3.12.4</mockito.version>
+                <awaitility.version>3.0.0</awaitility.version>
 
 		<!-- SonarCloud properties -->
 		<jacoco.version>0.8.7</jacoco.version>
@@ -192,7 +195,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2021-11-25T04:40:43Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-01-07T20:25:53Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>
@@ -388,6 +391,21 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk15on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk15on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.esaulpaugh</groupId>
+				<artifactId>headlong</artifactId>
+				<version>${headlong.version}</version>
+			</dependency>
+			<dependency>
 				<groupId>io.grpc</groupId>
 				<artifactId>grpc-bom</artifactId>
 				<version>${grpc.version}</version>
@@ -400,6 +418,16 @@
 				<version>${netty.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.swirlds</groupId>
+				<artifactId>swirlds-virtualmap</artifactId>
+				<version>${swirlds.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.swirlds</groupId>
+				<artifactId>swirlds-jasperdb</artifactId>
+				<version>${swirlds.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.swirlds</groupId>
@@ -547,6 +575,16 @@
 			<artifactId>log4j-core</artifactId>
 			<version>${log4j.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.cedarsoftware</groupId>
+			<artifactId>java-util</artifactId>
+			<version>1.67.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tuweni</groupId>
+			<artifactId>tuweni-bytes</artifactId>
+			<version>2.0.0</version>
+		</dependency>
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.hamcrest</groupId>
@@ -578,14 +616,10 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.cedarsoftware</groupId>
-			<artifactId>java-util</artifactId>
-			<version>1.67.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.tuweni</groupId>
-			<artifactId>tuweni-bytes</artifactId>
-			<version>2.0.0</version>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<version>${awaitility.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

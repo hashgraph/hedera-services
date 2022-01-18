@@ -20,6 +20,8 @@ package com.hedera.services.throttles;
  * ‍
  */
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
+
 /**
  * A throttle that enforces a transaction rate with resolution of 1/1000th
  * of a transaction. Throttling decisions are made based on the capacity
@@ -151,10 +153,5 @@ public class BucketThrottle {
 
 	long mtps() {
 		return mtps;
-	}
-
-	public static boolean productWouldOverflow(long multiplier, long multiplicand) {
-		final var maxMultiplier = Long.MAX_VALUE / multiplicand;
-		return multiplier > maxMultiplier;
 	}
 }

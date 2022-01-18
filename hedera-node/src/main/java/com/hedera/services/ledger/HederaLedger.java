@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -40,9 +39,10 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,7 +57,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
+import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -68,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -79,28 +79,25 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Provides a ledger for Hedera Services crypto and smart contract
  * accounts with transactional semantics. Changes to the ledger are
  * <b>only</b> allowed in the scope of a transaction.
- *
+ * <p>
  * All changes that are made during a transaction are summarized as
  * per-account changesets. These changesets are committed to a
  * wrapped {@link TransactionalLedger}; or dropped entirely in case
  * of a rollback.
- *
+ * <p>
  * The ledger delegates history of each transaction to an injected
  * {@link AccountRecordsHistorian} by invoking its {@code addNewRecords}
  * immediately before the final {@link TransactionalLedger#commit()}.
- *
+ * <p>
  * We should think of the ledger as using double-booked accounting,
  * (e.g., via the {@link HederaLedger#doTransfer(AccountID, AccountID, long)}
  * method); but it is necessary to provide "unsafe" single-booked
  * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in
  * order to match transfer semantics the EVM expects.
  */
-@SuppressWarnings("unchecked")
 public class HederaLedger {
-	private static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
-			List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+	public static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 
-	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
@@ -119,6 +116,7 @@ public class HederaLedger {
 			.thenComparingLong(ContractID::getRealmNum);
 
 	private final TokenStore tokenStore;
+	private final TransferLogic transferLogic;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -126,14 +124,14 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	private UniqTokenViewsManager tokenViewsManager = null;
+	private MutableEntityAccess mutableEntityAccess;
+	private UniqueTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger = null;
 
-	private final MerkleAccountScopedCheck scopedCheck;
 	private final AutoCreationLogic autoCreationLogic;
 
 	public HederaLedger(
@@ -145,6 +143,7 @@ public class HederaLedger {
 			final AccountRecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final TransferLogic transferLogic,
 			final AutoCreationLogic autoCreationLogic
 	) {
 		this.ids = ids;
@@ -154,26 +153,29 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.transferLogic = transferLogic;
 		this.autoCreationLogic = autoCreationLogic;
 
 		creator.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
-
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
 	}
 
-	public void setTokenViewsManager(UniqTokenViewsManager tokenViewsManager) {
+	public void setMutableEntityAccess(final MutableEntityAccess mutableEntityAccess) {
+		this.mutableEntityAccess = mutableEntityAccess;
+	}
+
+	public void setTokenViewsManager(final UniqueTokenViewsManager tokenViewsManager) {
 		this.tokenViewsManager = tokenViewsManager;
 	}
 
-	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+	public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
 		this.nftsLedger = nftsLedger;
 	}
 
 	public void setTokenRelsLedger(
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
@@ -194,6 +196,7 @@ public class HederaLedger {
 	public void begin() {
 		autoCreationLogic.reset();
 		accountsLedger.begin();
+		mutableEntityAccess.begin();
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
@@ -207,6 +210,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		accountsLedger.rollback();
+		mutableEntityAccess.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
@@ -223,6 +227,7 @@ public class HederaLedger {
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
 		accountsLedger.commit();
+		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}
@@ -246,6 +251,8 @@ public class HederaLedger {
 				sb.append("\n--- NFTS ---\n")
 						.append(nftsLedger.changeSetSoFar());
 			}
+			sb.append("\n--- TOKENS ---\n")
+					.append(mutableEntityAccess.currentManagedChangeSet());
 			return sb.toString();
 		} else {
 			return NO_ACTIVE_TXN_CHANGE_SET;
@@ -260,13 +267,13 @@ public class HederaLedger {
 	public void adjustBalance(final AccountID id, final long adjustment) {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
-
 		sideEffectsTracker.trackHbarChange(id, adjustment);
 	}
 
 	void doTransfer(AccountID from, AccountID to, long adjustment) {
 		long newFromBalance = computeNewBalance(from, -1 * adjustment);
 		long newToBalance = computeNewBalance(to, adjustment);
+
 		setBalance(from, newFromBalance);
 		setBalance(to, newToBalance);
 
@@ -328,17 +335,7 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		if (tokenRelsLedger.isInTransaction()) {
-			tokenRelsLedger.rollback();
-		}
-		if (nftsLedger.isInTransaction()) {
-			nftsLedger.rollback();
-		}
-		if (tokenViewsManager.isInTransaction()) {
-			tokenViewsManager.rollback();
-		}
-		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
-		sideEffectsTracker.resetTrackedTokenChanges();
+		dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
 	}
 
 	public ResponseCodeEnum doTokenTransfer(
@@ -359,40 +356,8 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public void doZeroSum(final List<BalanceChange> changes) {
-		var validity = OK;
-		var autoCreationFee = 0L;
-		for (final var change : changes) {
-			if (change.isForHbar()) {
-				/* The ImpliedTransferMarshal resolves any existing alias to its account id */
-				if (change.hasNonEmptyAlias()) {
-					final var result = autoCreationLogic.create(change, accountsLedger);
-					validity = result.getLeft();
-					autoCreationFee += result.getRight();
-				} else {
-					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-				}
-			} else {
-				validity = tokenStore.tryTokenChange(change);
-			}
-			if (validity != OK) {
-				break;
-			}
-		}
-
-		if (validity == OK) {
-			adjustHbarUnchecked(changes);
-			if (autoCreationFee > 0) {
-				adjustBalance(dynamicProperties.fundingAccount(), autoCreationFee);
-				autoCreationLogic.submitRecordsTo(historian);
-			}
-		} else {
-			dropPendingTokenChanges();
-			if (autoCreationLogic.reclaimPendingAliases()) {
-				accountsLedger.undoCreations();
-			}
-			throw new InvalidTransactionException(validity);
-		}
+	public void doZeroSum(List<BalanceChange> changes) {
+		transferLogic.doZeroSum(changes);
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -535,16 +500,6 @@ public class HederaLedger {
 
 	private void setBalance(AccountID id, long newBalance) {
 		accountsLedger.set(id, BALANCE, newBalance);
-	}
-
-	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				final var accountId = change.accountId();
-				setBalance(accountId, change.getNewBalance());
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
-			}
-		}
 	}
 
 	/* -- Only used by unit tests --- */

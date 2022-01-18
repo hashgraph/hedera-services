@@ -32,10 +32,12 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -83,6 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -134,6 +137,10 @@ class ServicesStateTest {
 	private ServicesInitFlow initFlow;
 	@Mock
 	private ServicesApp.Builder appBuilder;
+	@Mock
+	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
+	@Mock
+	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -234,7 +241,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(7)).archive();
+		verify(mockMm, times(6)).archive();
 	}
 
 	@Test
@@ -250,6 +257,7 @@ class ServicesStateTest {
 
 		given(metadata.app()).willReturn(app);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(app.prefetchProcessor()).willReturn(prefetchProcessor);
 		given(app.sigReqsManager()).willReturn(sigReqsManager);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
@@ -284,6 +292,7 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 
@@ -342,22 +351,21 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0180() {
+	void minimumVersionIsRelease0190() {
 		// expect:
 		assertEquals(StateVersions.RELEASE_0190_AND_020_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		// expect:
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
+				StateChildIndices.NUM_PRE_0220_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
+				StateChildIndices.NUM_0220_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0220_VERSION));
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -367,6 +375,17 @@ class ServicesStateTest {
 		// expect:
 		assertEquals(0x8e300b0dfdafbb1aL, subject.getClassId());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.getVersion());
+	}
+
+	@Test
+	void defersInitWhenInitializingFromRelease0190() {
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
+
+		subject.init(platform, addressBook, dualState);
+
+		assertSame(platform, subject.getPlatformForDeferredInit());
+		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+		assertSame(dualState, subject.getDualStateForDeferredInit());
 	}
 
 	@Test
@@ -387,12 +406,31 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0200() {
+	void doesntMigrateWhenInitializingFromRelease0220() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0210_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0210() {
+		ServicesState.setBlobMigrator(blobMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+
+		subject.migrate();
+
+		verify(blobMigrator).migrateFromBinaryObjectStore(
+				subject, StateVersions.RELEASE_0210_VERSION);
+		verify(subject).init(platform, addressBook, dualState);
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test
@@ -430,6 +468,7 @@ class ServicesStateTest {
 		assertNotNull(subject.scheduleTxs());
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
+		assertNotNull(subject.contractStorage());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());

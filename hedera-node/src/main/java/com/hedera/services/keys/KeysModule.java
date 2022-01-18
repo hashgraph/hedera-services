@@ -37,6 +37,12 @@ public final class KeysModule {
 		return new InHandleActivationHelper(characteristicsFactory, txnCtx::accessor);
 	}
 
+	@Provides
+	@Singleton
+	public static ActivationTest provideActivationTest() {
+		return HederaKeyActivation::isActive;
+	}
+
 	private KeysModule() {
 		throw new UnsupportedOperationException("Dagger2 module");
 	}

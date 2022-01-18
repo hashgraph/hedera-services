@@ -29,17 +29,21 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
+import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
@@ -63,11 +67,24 @@ class SignatoryUtilsTest {
 	private Optional<List<JKey>> goodSecp256k1Valid = Optional.of(List.of(goodSecp256k1Key));
 
 	@Mock
-	ScheduleStore store;
+	private ScheduleStore store;
 	@Mock
-	MerkleSchedule schedule;
+	private MerkleSchedule schedule;
 	@Mock
-	InHandleActivationHelper activationHelper;
+	private InHandleActivationHelper activationHelper;
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void usesScheduleValidSignatureCheckForTestingActivation() {
+		final ArgumentCaptor<BiPredicate<JKey, TransactionSignature>> captor = ArgumentCaptor.forClass(BiPredicate.class);
+		given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
+
+		SignatoryUtils.isReady(schedule, activationHelper);
+
+		verify(activationHelper).areScheduledPartiesActive(eq(scheduledTxn), captor.capture());
+		captor.getValue().test(goodEd25519Key, INVALID_MISSING_SIG);
+		verify(schedule).hasValidSignatureFor(goodEd25519Key.getEd25519());
+	}
 
 	@Test
 	void respondsToNoAttemptsCorrectly() {

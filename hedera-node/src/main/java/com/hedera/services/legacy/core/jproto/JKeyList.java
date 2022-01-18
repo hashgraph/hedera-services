@@ -30,7 +30,7 @@ public class JKeyList extends JKey {
 	private List<JKey> keys;
 
 	public JKeyList() {
-		this.keys = new LinkedList<JKey>();
+		this.keys = new LinkedList<>();
 	}
 
 	public JKeyList(List<JKey> keys) {

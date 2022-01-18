@@ -99,9 +99,9 @@ class AnswerFunctionsTest {
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		recordCache = mock(RecordCache.class);
 

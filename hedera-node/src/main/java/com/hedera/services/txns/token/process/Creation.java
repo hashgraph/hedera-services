@@ -129,8 +129,8 @@ public class Creation {
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.persistTokenRelationships(newRels);
-		newRels.forEach(rel -> accountStore.persistAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newRels);
+		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {

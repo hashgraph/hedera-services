@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -210,6 +211,29 @@ class ExpiringCreationsTest {
 				sideEffectsTracker).build();
 
 		assertArrayEquals(mockMints.stream().mapToLong(l -> l).toArray(), created.getReceipt().getSerialNumbers());
+	}
+
+	@Test
+	void includesAutoCreatedAliases() {
+		final var mockAlias = ByteString.copyFromUtf8("make-believe");
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
+		given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
+		given(sideEffectsTracker.getNewAccountAlias()).willReturn(mockAlias);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
+		assertEquals(mockAlias, created.getAlias());
 	}
 
 	@Test

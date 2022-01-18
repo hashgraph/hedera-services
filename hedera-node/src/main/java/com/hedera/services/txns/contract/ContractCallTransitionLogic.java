@@ -21,38 +21,43 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.PreFetchableTransition;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.db.ServicesRepositoryRoot;
 
 import javax.inject.Inject;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 
-public class ContractCallTransitionLogic implements TransitionLogic {
+public class ContractCallTransitionLogic implements PreFetchableTransition {
+	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
 	private final AccountStore accountStore;
 	private final TransactionContext txnCtx;
-	private final HederaWorldState worldState;
+	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
-	private final ServicesRepositoryRoot repositoryRoot;
+	private final GlobalDynamicProperties properties;
+	private final CodeCache codeCache;
 	private final SigImpactHistorian sigImpactHistorian;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
@@ -61,24 +66,25 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 	public ContractCallTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
-			final SigImpactHistorian sigImpactHistorian,
 			final HederaWorldState worldState,
 			final TransactionRecordService recordService,
 			final CallEvmTxProcessor evmTxProcessor,
-			final ServicesRepositoryRoot repositoryRoot
+			final GlobalDynamicProperties properties,
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
-		this.repositoryRoot = repositoryRoot;
+		this.properties = properties;
+		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
 	public void doStateTransition() {
-
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
@@ -91,9 +97,6 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 
-		final var bytesReceiver = receiver.getId().asEvmAddress().toArray();
-		validateTrue(isNotEmpty(repositoryRoot.getCode(bytesReceiver)), CONTRACT_BYTECODE_EMPTY);
-
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(
 				sender,
@@ -104,7 +107,7 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 				txnCtx.consensusTime());
 
 		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persist();
+		final var createdContracts = worldState.persistProvisionalContractCreations();
 		worldState.customizeSponsoredAccounts();
 		result.setCreatedContracts(createdContracts);
 
@@ -134,6 +137,23 @@ public class ContractCallTransitionLogic implements TransitionLogic {
 		if (op.getAmount() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
+		}
 		return OK;
+	}
+
+	@Override
+	public void preFetch(TxnAccessor accessor) {
+		var contractCallTxn = accessor.getTxn();
+		var op = contractCallTxn.getContractCall();
+		final var contractId = Id.fromGrpcContract(op.getContractID());
+		final var address = contractId.asEvmAddress();
+
+		try {
+			codeCache.getIfPresent(address);
+		} catch(RuntimeException e) {
+			log.warn("Exception while attempting to pre-fetch code for {}", address);
+		}
 	}
 }

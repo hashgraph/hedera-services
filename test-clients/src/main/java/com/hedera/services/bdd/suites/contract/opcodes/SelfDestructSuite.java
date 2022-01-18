@@ -37,70 +37,82 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SelfDestructSuite extends HapiApiSuite {
-    private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
+	private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
-    public static void main(String... args) {
-        new SelfDestructSuite().runSuiteSync();
-    }
+	public static void main(String... args) {
+		new SelfDestructSuite().runSuiteSync();
+	}
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOGGER;
-    }
+	@Override
+	protected Logger getResultsLogger() {
+		return LOGGER;
+	}
 
-    @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                HSCS_EVM_008_SelfDesctructUpdatesHederaAccount(),
-                HSCS_EVM_008_SelfDestructWhenCalling()
-        );
-    }
+	@Override
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[] {
+						HSCS_EVM_008_SelfDestructInConstructorWorks(),
+						HSCS_EVM_008_SelfDestructWhenCalling(),
+				}
+		);
+	}
 
-    private HapiApiSpec HSCS_EVM_008_SelfDesctructUpdatesHederaAccount() {
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructUpdatesHederaAccount")
-                .given(
-                        fileCreate("bytecode")
-                                .path(FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT)
-                )
-                .when(
-                        contractCreate("selfDestroying")
-                                .bytecode("bytecode")
-                                .via("contractCreate")
-                                .hasKnownStatus(SUCCESS)
-                )
-                .then(
-                        getAccountInfo("selfDestroying")
-                                .hasCostAnswerPrecheck(ACCOUNT_DELETED),
-                        getContractInfo("selfDestroying")
-                                .hasCostAnswerPrecheck(CONTRACT_DELETED)
-                );
-    }
+	private HapiApiSpec HSCS_EVM_008_SelfDestructInConstructorWorks() {
+		final var nextAccount = "civilian";
 
-    private HapiApiSpec HSCS_EVM_008_SelfDestructWhenCalling() {
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
-                .given(
-                        cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
-                        fileCreate("bytecode").path(SELF_DESTRUCT_CALLABLE).payingWith("acc")
-                )
-                .when(
-                        contractCreate("destructable")
-                                .bytecode("bytecode")
-                                .via("cc")
-                                .payingWith("acc")
-                                .hasKnownStatus(SUCCESS)
-                )
-                .then(
-                        contractCall("destructable", ContractResources.SELF_DESTRUCT_CALL_ABI)
-                                .payingWith("acc"),
-                        getAccountInfo("destructable")
-                                .hasCostAnswerPrecheck(ACCOUNT_DELETED),
-                        getContractInfo("destructable")
-                                .hasCostAnswerPrecheck(CONTRACT_DELETED)
-                );
-    }
+		return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
+				.given(
+						fileCreate("bytecode")
+								.path(FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT)
+				).when(
+						contractCreate("selfDestroying")
+								.balance(3 * ONE_HBAR)
+								.bytecode("bytecode")
+								.via("contractCreate"),
+						cryptoCreate(nextAccount)
+				).then(
+						getAccountInfo("selfDestroying")
+								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getContractInfo("selfDestroying")
+								.hasCostAnswerPrecheck(CONTRACT_DELETED),
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final var destroyedNum = registry.getContractId("selfDestroying").getContractNum();
+							final var nextNum = registry.getAccountID(nextAccount).getAccountNum();
+							assertEquals(
+									destroyedNum + 2, nextNum,
+									"Two ID numbers should be consumed by the self-destroying contract");
+						})
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_008_SelfDestructWhenCalling() {
+		return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
+				.given(
+						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
+						fileCreate("bytecode").path(SELF_DESTRUCT_CALLABLE).payingWith("acc")
+				)
+				.when(
+						contractCreate("destructable")
+								.bytecode("bytecode")
+								.via("cc")
+								.payingWith("acc")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						contractCall("destructable", ContractResources.SELF_DESTRUCT_CALL_ABI)
+								.payingWith("acc"),
+						getAccountInfo("destructable")
+								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getContractInfo("destructable")
+								.hasCostAnswerPrecheck(CONTRACT_DELETED)
+				);
+	}
 }

@@ -29,17 +29,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -53,107 +42,6 @@ public final class CommonUtils {
 	}
 
 	/**
-	 * Sleep given seconds.
-	 *
-	 * @param timeInMillis
-	 * 		time to sleep in milliseconds
-	 * @throws InterruptedException
-	 * 		when thread sleep interruption
-	 */
-	public static void napMillis(long timeInMillis) throws InterruptedException {
-		Thread.sleep(timeInMillis);
-	}
-
-	/**
-	 * Sleep given seconds.
-	 *
-	 * @param timeInSec
-	 * 		time to sleep in seconds
-	 * @throws InterruptedException
-	 * 		when thread sleep interruption
-	 */
-	public static void nap(int timeInSec) throws InterruptedException {
-		Thread.sleep(timeInSec * 1000L);
-	}
-
-	public static void nap(double timeInSec) throws InterruptedException {
-		Thread.sleep((long) timeInSec * 1000);
-	}
-
-
-	/**
-	 * Write bytes to a file.
-	 *
-	 * @param path
-	 * 		the file path to write bytes
-	 * @param data
-	 * 		the byte array data
-	 * @throws IOException
-	 * 		when error with IO
-	 */
-	public static void writeToFile(String path, byte[] data) throws IOException {
-		writeToFile(path, data, false);
-	}
-
-	/**
-	 * Write bytes to a file.
-	 *
-	 * @param path
-	 * 		file write path
-	 * @param data
-	 * 		byte array representation of data to write
-	 * @param append
-	 * 		append to existing file if true
-	 * @throws IOException
-	 * 		when error with IO
-	 */
-	public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
-		File f = new File(path);
-		File parent = f.getParentFile();
-		if (!parent.exists()) {
-			parent.mkdirs();
-		}
-		try (FileOutputStream fos = new FileOutputStream(f, append)) {
-			fos.write(data);
-			fos.flush();
-		} catch (IOException e) {
-			throw e;
-		}
-	}
-
-	/**
-	 * Write string to a file using UTF_8 encoding.
-	 *
-	 * @param path
-	 * 		the file path to write bytes
-	 * @param data
-	 * 		the byte array data
-	 * @throws IOException
-	 * 		when error with IO
-	 */
-	public static void writeToFileUTF8(String path, String data) throws IOException {
-		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-		writeToFile(path, bytes);
-	}
-
-	/**
-	 * Write string to a file using UTF_8 encoding.
-	 *
-	 * @param data
-	 * 		data represented as string
-	 * @param path
-	 * 		file write path
-	 * @param append
-	 * 		append to existing file if true
-	 * @throws IOException
-	 * 		when error with IO
-	 */
-	public static void writeToFileUTF8(String path, String data, boolean append) throws IOException {
-		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-		writeToFile(path, bytes, append);
-	}
-
-	/**
 	 * Encode bytes as base64.
 	 *
 	 * @param bytes
@@ -161,87 +49,7 @@ public final class CommonUtils {
 	 * @return base64 string
 	 */
 	public static String base64encode(byte[] bytes) {
-		String rv = null;
-		rv = Base64.getEncoder().encodeToString(bytes);
-		return rv;
-	}
-
-	/**
-	 * Serialize a Java object to bytes.
-	 *
-	 * @param object
-	 * 		the Java object to be serialized
-	 * @return converted bytes
-	 * @throws IOException
-	 * 		when error with IO
-	 */
-	public static byte[] convertToBytes(Object object) throws IOException {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			 ObjectOutput out = new ObjectOutputStream(bos)) {
-			out.writeObject(object);
-			return bos.toByteArray();
-		}
-	}
-
-	/**
-	 * Copy bytes.
-	 *
-	 * @param start
-	 * 		from position
-	 * @param length
-	 * 		number of bytes to copy
-	 * @param bytes
-	 * 		source byte array
-	 * @return copied byte array
-	 */
-	public static byte[] copyBytes(int start, int length, byte[] bytes) {
-		byte[] rv = new byte[length];
-		for (int i = 0; i < length; i++) {
-			rv[i] = bytes[start + i];
-		}
-		return rv;
-	}
-
-	/**
-	 * Reads a resource file
-	 *
-	 * @param filePath
-	 * 		the resource file to be read
-	 * @param myClass
-	 * 		the calling class
-	 * @param <T>
-	 * 		type to read binary into
-	 * @return type T from the binary input
-	 * @throws IOException
-	 * 		when error with IO
-	 * @throws URISyntaxException
-	 * 		when invalid URI syntax
-	 */
-	public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
-			throws IOException, URISyntaxException {
-		Path path = Paths.get(myClass.getClassLoader().getResource(filePath).toURI());
-		return Files.readAllBytes(path);
-	}
-
-	/**
-	 * Generates a human readable string for grpc transaction.
-	 *
-	 * @param grpcTransaction
-	 * 		GRPC transaction
-	 * @return generated readable string
-	 * @throws InvalidProtocolBufferException
-	 * 		when protocol buffer is invalid
-	 */
-	public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
-		String rv = null;
-		try {
-			TransactionBody body = extractTransactionBody(grpcTransaction);
-			rv = "body=" + TextFormat.shortDebugString(body) + "; sigs="
-					+ TextFormat.shortDebugString(extractSignatureMap(grpcTransaction));
-		} catch (InvalidProtocolBufferException e) {
-			throw e;
-		}
-		return rv;
+		return Base64.getEncoder().encodeToString(bytes);
 	}
 
 	/**
@@ -329,7 +137,8 @@ public final class CommonUtils {
 		return sha384HashOf(transaction.getSignedTransactionBytes().toByteArray());
 	}
 
-	public static void writeTxId2File(String txIdString) throws IOException {
-		writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
+	public static boolean productWouldOverflow(final long multiplier, final long multiplicand) {
+		final var maxMultiplier = Long.MAX_VALUE / multiplicand;
+		return multiplier > maxMultiplier;
 	}
 }

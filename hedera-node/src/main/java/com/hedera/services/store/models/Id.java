@@ -31,6 +31,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Comparator;
 
+import static com.hedera.services.utils.MiscUtils.perm64;
+
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
@@ -96,9 +98,7 @@ public record Id(long shard, long realm, long num) {
 
 	@Override
 	public int hashCode() {
-		int result = Long.hashCode(shard);
-		result = 31 * result + Long.hashCode(realm);
-		return 31 * result + Long.hashCode(num);
+		return (int) perm64(perm64(perm64(shard) ^ realm) ^ num);
 	}
 
 	public EntityId asEntityId() {

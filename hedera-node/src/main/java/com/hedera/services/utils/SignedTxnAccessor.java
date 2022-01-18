@@ -58,6 +58,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
@@ -347,6 +348,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
+	}
+
+	@Override
+	public long getGasLimitForContractTx() {
+		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() : getTxn().getContractCall().getGas();
 	}
 
 	private void setOpUsageMeta() {

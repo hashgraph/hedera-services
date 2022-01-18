@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UInt32Value;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
@@ -65,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -99,6 +101,12 @@ class ImpliedTransfersMarshalTest {
 	private AliasResolver aliasResolver;
 	@Mock
 	private Predicate<CryptoTransferTransactionBody> aliasCheck;
+	@Mock
+	private CryptoTransferTransactionBody cryptoTransferTransactionBody;
+	@Mock
+	private TransferList hbarAdjustsWrapper;
+	@Mock
+	private TokenTransferList tokenAdjustsList;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -183,7 +191,7 @@ class ImpliedTransfersMarshalTest {
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
-
+	
 	@Test
 	void getsHbarOnly() {
 		setupHbarOnlyFixture();
@@ -195,7 +203,8 @@ class ImpliedTransfersMarshalTest {
 
 		final var expectedChanges = expNonFeeChanges(false);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), mockAliases, 1);
+		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(),
+				mockAliases, 1);
 
 		givenValidity(OK);
 
@@ -209,9 +218,10 @@ class ImpliedTransfersMarshalTest {
 
 	@Test
 	void hasAliasInChanges() {
-		Key aliasA  = KeyFactory.getDefaultInstance().newEd25519();
-		Key aliasB  = KeyFactory.getDefaultInstance().newEd25519();
-		AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(9_999L).setAlias(aliasA.toByteString()).build();
+		Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
+		Key aliasB = KeyFactory.getDefaultInstance().newEd25519();
+		AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(9_999L).setAlias(
+				aliasA.toByteString()).build();
 		AccountID validAliasAccount = AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
 		setupProps();
 
@@ -226,7 +236,8 @@ class ImpliedTransfersMarshalTest {
 		expectedChanges.add(changingHbar(adjustFrom(a, -100)));
 		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100)));
 
-		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), NO_ALIASES);
+		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(),
+				NO_ALIASES);
 
 		givenValidity(OK);
 
@@ -268,6 +279,13 @@ class ImpliedTransfersMarshalTest {
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
+
+		// assert decimal changes
+		assertTrue(result.getAllBalanceChanges().get(3).hasExpectedDecimals());
+		assertEquals(2, result.getAllBalanceChanges().get(3).getExpectedDecimals());
+		assertEquals(anotherId.getTokenNum(), result.getAllBalanceChanges().get(3).getToken().num());
+		assertFalse(result.getAllBalanceChanges().get(4).hasExpectedDecimals());
+		assertEquals(result.getAllBalanceChanges().get(3).getToken(), result.getAllBalanceChanges().get(4).getToken());
 	}
 
 	@Test
@@ -338,6 +356,7 @@ class ImpliedTransfersMarshalTest {
 			builder
 					.addTokenTransfers(TokenTransferList.newBuilder()
 							.setToken(anotherId)
+							.setExpectedDecimals(UInt32Value.of(2))
 							.addAllTransfers(List.of(
 									adjustFrom(a, -50),
 									adjustFrom(b, 25),
@@ -365,7 +384,10 @@ class ImpliedTransfersMarshalTest {
 		ans.add(changingHbar(adjustFrom(bModel, +50)));
 		ans.add(changingHbar(adjustFrom(cModel, +50)));
 		if (incTokens) {
-			ans.add(tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50));
+			final var adjustOne = tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50);
+			adjustOne.setExpectedDecimals(2);
+
+			ans.add(adjustOne);
 			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25));
 			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25));
 			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100));

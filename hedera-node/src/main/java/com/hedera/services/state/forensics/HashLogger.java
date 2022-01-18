@@ -31,12 +31,14 @@ import javax.inject.Singleton;
 public class HashLogger {
 	private static final Logger log = LogManager.getLogger(HashLogger.class);
 
+	private static final String UNAVAILABLE_VIRTUAL_MAP_HASH = "<N/A>";
+
 	@Inject
 	public HashLogger() {
 	}
 
 	public void logHashesFor(ServicesState state) {
-		String textBlock = """
+		final var summaryTpl = """
 				[SwirldState Hashes] 
 				Overall                :: {}
 				Accounts               :: {}
@@ -50,11 +52,12 @@ public class HashLogger {
 				AddressBook            :: {}
 				RecordsRunningHashLeaf :: {}
 				  ↪ Running hash       :: {}
-				UniqueTokens           :: {}""";
-		log.info(textBlock,
+				UniqueTokens           :: {}
+				ContractStorage        :: {}""";
+		log.info(summaryTpl,
 				state.getHash(),
 				state.accounts().getHash(),
-				state.storage().getHash(),
+				UNAVAILABLE_VIRTUAL_MAP_HASH,
 				state.topics().getHash(),
 				state.tokens().getHash(),
 				state.tokenAssociations().getHash(),
@@ -64,6 +67,7 @@ public class HashLogger {
 				state.addressBook().getHash(),
 				state.runningHashLeaf().getHash(),
 				state.runningHashLeaf().getRunningHash().getHash(),
-				state.uniqueTokens().getHash());
+				state.uniqueTokens().getHash(),
+				UNAVAILABLE_VIRTUAL_MAP_HASH);
 	}
 }
