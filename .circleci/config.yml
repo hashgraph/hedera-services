@@ -514,6 +514,7 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
+            ls -l /swirlds-platform/regression
             cd /swirlds-platform
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
