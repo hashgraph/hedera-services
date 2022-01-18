@@ -597,7 +597,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return syntheticTxn;
 		}
 
-
 		@Override
 		public ExpirableTxnRecord.Builder run(
 				final MessageFrame frame,

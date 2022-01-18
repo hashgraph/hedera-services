@@ -97,6 +97,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -264,6 +265,34 @@ class TransferPrecompilesTest {
 		verify(transferLogic).doZeroSum(tokensTransferChanges);
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void abortsIfImpliedCustomFeesCannotBeAssessed() {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
+
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+
+		// when:
+		subject.gasRequirement(pretendArguments);
+		final var result = subject.computeInternal(frame);
+		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
+		assertEquals(statusResult, result);
 	}
 
 	@Test

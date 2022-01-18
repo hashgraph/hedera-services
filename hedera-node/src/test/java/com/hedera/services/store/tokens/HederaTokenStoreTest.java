@@ -749,6 +749,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
+		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
 
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);

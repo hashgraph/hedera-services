@@ -94,7 +94,7 @@ public class EncodingFacade {
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
 			if (functionType == FunctionType.MINT) {
 				tupleType = mintReturnType;
-			} else if (functionType == FunctionType.BURN) {
+			} else {
 				tupleType = burnReturnType;
 			}
 			this.functionType = functionType;
@@ -120,7 +120,7 @@ public class EncodingFacade {
 			var result = Tuple.EMPTY;
 			if (functionType == FunctionType.MINT) {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
-			} else if (functionType == FunctionType.BURN) {
+			} else {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply));
 			}
 			return Bytes.wrap(tupleType.encode(result).array());
