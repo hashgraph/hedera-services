@@ -61,7 +61,7 @@ public class ContractResources {
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
 	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
-
+	public static final String WORKING_HOURS_USER_BYTECODE_PATH = bytecodePath("WorkingHours");
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
 	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
 	public static final String BALANCE_CHECKER_CONTRACT = bytecodePath("BalanceChecker");
@@ -106,6 +106,16 @@ public class ContractResources {
 	public static final String STATIC_CONTRACT = bytecodePath("StaticContract");
 	public static final String MIXED_MINT_TOKEN_CONTRACT = bytecodePath("MixedMintTokenContract");
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
+
+	public static final String WORKING_HOURS_CONS = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_treasury\"," +
+			"\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String WORKING_HOURS_TAKE_TICKET = "{\"inputs\":[],\"name\":\"takeTicket\"," +
+			"\"outputs\":[{\"internalType\":\"int64\",\"name\":\"serialNumber\",\"type\":\"int64\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WORKING_HOURS_WORK_TICKET = "{\"inputs\":[{\"internalType\":\"int64\"," +
+			"\"name\":\"ticketNum\",\"type\":\"int64\"}],\"name\":\"workTicket\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
 			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +

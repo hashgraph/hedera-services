@@ -39,10 +39,10 @@ public interface SoliditySigsVerifier {
 	 * @param account the address of the account to test for key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param contractToBeChecked the address of the contract that should be signed in the key
+	 * @param activeContract the address of the contract that is deemed active
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveKey(Address account, Address recipient, Address contract, Address contractToBeChecked);
+	boolean hasActiveKey(Address account, Address recipient, Address contract, Address activeContract);
 
 	/**
 	 * Determines if the target account <b>either</b> has no receiver sig requirement; or an active key given
@@ -58,11 +58,10 @@ public interface SoliditySigsVerifier {
 	 * @param target the account to test for receiver sig requirement and key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param contractToBeChecked the address of the contract that should be signed in the key
+	 * @param activeContract the address of the contract that is deemed active
 	 * @return false if the account requires a receiver sig but has no active key; true otherwise
 	 */
-	boolean hasActiveKeyOrNoReceiverSigReq(Address target, Address recipient, Address contract,
-										   Address contractToBeChecked);
+	boolean hasActiveKeyOrNoReceiverSigReq(Address target, Address recipient, Address contract, Address activeContract);
 
 	/**
 	 * Determines if the target token has an active supply key given the cryptographic signatures from the
@@ -78,8 +77,8 @@ public interface SoliditySigsVerifier {
 	 * @param token the address of the token to test for supply key activation
 	 * @param recipient the address of the contract that received the message represented by the active frame
 	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param contractToBeChecked the address of the contract that should be signed in the key
+	 * @param activeContract the address of the contract that should be signed in the key
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveSupplyKey(Address token, Address recipient, Address contract, Address contractToBeChecked);
+	boolean hasActiveSupplyKey(Address token, Address recipient, Address contract, Address activeContract);
 }

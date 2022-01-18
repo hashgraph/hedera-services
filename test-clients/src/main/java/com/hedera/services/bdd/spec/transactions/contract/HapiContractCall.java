@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.util.ByteUtil;
@@ -49,7 +50,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -75,6 +75,9 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
+
+	private String resultAbi = null;
+	private Consumer<Object[]> resultObserver = null;
 
 	@Override
 	public HederaFunctionality type() {
@@ -110,6 +113,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	public HapiContractCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
 		this(abi, contract);
 		paramsFn = Optional.of(fn);
+	}
+
+	public HapiContractCall exposingResultTo(final Consumer<Object[]> observer) {
+		resultObserver = observer;
+		return this;
 	}
 
 	public HapiContractCall exposingGasTo(ObjLongConsumer<ResponseCodeEnum> gasObserver) {
@@ -277,6 +285,16 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		if (gasObserver.isPresent()) {
 			doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
 		}
+		if (resultObserver != null) {
+			doObservedLookup(spec, txnSubmitted, record -> {
+				final var function = CallTransaction.Function.fromJsonInterface(abi);
+				final var result = function.decodeResult(record
+						.getContractCallResult()
+						.getContractCallResult()
+						.toByteArray());
+				resultObserver.accept(result);
+			});
+		}
 	}
 
 	@Override
@@ -295,19 +313,27 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 			final Transaction txn,
 			final boolean isCreate
 	) throws Throwable {
+		doObservedLookup(spec, txn, record -> {
+			final var gasUsed = isCreate
+					? record.getContractCreateResult().getGasUsed()
+					: record.getContractCallResult().getGasUsed();
+			gasObserver.accept(gasUsed);
+		});
+	}
+
+	static void doObservedLookup(
+			final HapiApiSpec spec,
+			final Transaction txn,
+			Consumer<TransactionRecord> observer
+	) throws Throwable {
 		final var txnId = extractTxnId(txn);
-		final var gasLookup = getTxnRecord(txnId)
+		final var lookup = getTxnRecord(txnId)
 				.assertingNothing()
 				.noLogging()
 				.payingWith(GENESIS)
 				.nodePayment(1)
-				.exposingTo(record -> {
-					final var gasUsed = isCreate
-							? record.getContractCreateResult().getGasUsed()
-							: record.getContractCallResult().getGasUsed();
-					gasObserver.accept(gasUsed);
-				});
-		allRunFor(spec, gasLookup);
+				.exposingTo(observer);
+		allRunFor(spec, lookup);
 	}
 
 	@Override

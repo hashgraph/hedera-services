@@ -357,8 +357,12 @@ public class Token {
 		return rel;
 	}
 
-	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode,
-			boolean ignoreSupplyKey) {
+	private void changeSupply(
+			final TokenRelationship treasuryRel,
+			final long amount,
+			final ResponseCodeEnum negSupplyCode,
+			final boolean ignoreSupplyKey
+	) {
 		validateTrue(treasuryRel != null, FAIL_INVALID,
 				"Cannot mint with a null treasuryRel");
 		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID,

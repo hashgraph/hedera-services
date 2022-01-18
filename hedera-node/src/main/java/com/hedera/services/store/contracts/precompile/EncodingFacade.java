@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
@@ -32,23 +33,47 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class EncodingFacade {
+	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 
 	@Inject
 	public EncodingFacade() {
-		//Default constructor
+		/* For Dagger2 */
 	}
 
-	public Bytes getMintSuccessfulResultFromReceipt(final long totalSupply, final long[] serialNumbers) {
-		return functionResultBuilder().forFunction(FunctionType.MINT).withStatus(SUCCESS.getNumber()).
-				withTotalSupply(totalSupply).
-				withSerialNumbers(serialNumbers != null ? serialNumbers : new long[0]).build();
+	public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.MINT)
+				.withStatus(SUCCESS.getNumber())
+				.withTotalSupply(totalSupply)
+				.withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
+				.build();
 	}
 
-	public Bytes getBurnSuccessfulResultFromReceipt(final long totalSupply) {
-		return functionResultBuilder().forFunction(FunctionType.BURN).withStatus(SUCCESS.getNumber()).
-				withTotalSupply(totalSupply).build();
+	public Bytes encodeMintFailure(final ResponseCodeEnum status) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.MINT)
+				.withStatus(status.getNumber())
+				.withTotalSupply(0L)
+				.withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
+				.build();
+	}
+
+	public Bytes encodeBurnSuccess(final long totalSupply) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.BURN)
+				.withStatus(SUCCESS.getNumber())
+				.withTotalSupply(totalSupply)
+				.build();
+	}
+
+	public Bytes encodeBurnFailure(final ResponseCodeEnum status) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.BURN)
+				.withStatus(status.getNumber())
+				.withTotalSupply(0L)
+				.build();
 	}
 
 	private enum FunctionType {
@@ -72,7 +97,6 @@ public class EncodingFacade {
 			} else if (functionType == FunctionType.BURN) {
 				tupleType = burnReturnType;
 			}
-
 			this.functionType = functionType;
 			return this;
 		}
@@ -93,16 +117,11 @@ public class EncodingFacade {
 		}
 
 		private Bytes build() {
-			Tuple result = Tuple.EMPTY;
+			var result = Tuple.EMPTY;
 			if (functionType == FunctionType.MINT) {
-				result = Tuple.of(
-						status,
-						BigInteger.valueOf(totalSupply),
-						serialNumbers);
+				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
 			} else if (functionType == FunctionType.BURN) {
-				result = Tuple.of(
-						status,
-						BigInteger.valueOf(totalSupply));
+				result = Tuple.of(status, BigInteger.valueOf(totalSupply));
 			}
 			return Bytes.wrap(tupleType.encode(result).array());
 		}

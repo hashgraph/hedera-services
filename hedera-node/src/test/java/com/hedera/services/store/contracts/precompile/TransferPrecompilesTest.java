@@ -220,7 +220,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
@@ -268,7 +268,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenWithSenderOnlyHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
@@ -316,7 +316,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenWithReceiverOnlyHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);
@@ -362,7 +362,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferNftsHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(mockSynthBodyBuilder);
@@ -412,7 +412,7 @@ class TransferPrecompilesTest {
 		final var recipientAddr = Address.ALTBN128_ADD;
 		final var senderId = Id.fromGrpcAccount(sender);
 		final var receiverId = Id.fromGrpcAccount(receiver);
-		givenFrameContext();
+		givenMinimalFrameContext();
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		givenLedgers();
 
@@ -469,7 +469,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void cryptoTransferHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
@@ -517,7 +517,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferFailsAndCatchesProperly() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
@@ -581,6 +581,14 @@ class TransferPrecompilesTest {
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
 		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+	}
+
+	private void givenMinimalFrameContext() {
+		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
