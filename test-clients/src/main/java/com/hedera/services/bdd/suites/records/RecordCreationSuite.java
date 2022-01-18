@@ -98,16 +98,16 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						ensureDefaultSystemFiles(),
-//						confirmNftToggleIsWorksThenReenable(),
-//						payerRecordCreationSanityChecks(),
+						ensureDefaultSystemFiles(),
+						confirmNftToggleIsWorksThenReenable(),
+						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
-//						accountsGetPayerRecordsIfSoConfigured(),
-//						calledContractNoLongerGetsRecord(),
-//						thresholdRecordsDontExistAnymore(),
-//						submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
-//						submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-//						submittingNodeStillPaidIfServiceFeesOmitted(),
+						accountsGetPayerRecordsIfSoConfigured(),
+						calledContractNoLongerGetsRecord(),
+						thresholdRecordsDontExistAnymore(),
+						submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
+						submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
+						submittingNodeStillPaidIfServiceFeesOmitted(),
 
 						/* This last spec requires sleeping for the default TTL (180s) so that the
 						expiration queue will be purged of all entries for existing records.

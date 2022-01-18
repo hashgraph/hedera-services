@@ -63,13 +63,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						cryptoCreateRecordSanityChecks(),
-//						cryptoDeleteRecordSanityChecks(),
-//						cryptoTransferRecordSanityChecks(),
-//						cryptoUpdateRecordSanityChecks(),
-//						insufficientAccountBalanceRecordSanityChecks(),
+						cryptoCreateRecordSanityChecks(),
+						cryptoDeleteRecordSanityChecks(),
+						cryptoTransferRecordSanityChecks(),
+						cryptoUpdateRecordSanityChecks(),
+						insufficientAccountBalanceRecordSanityChecks(),
 						invalidPayerSigCryptoTransferRecordSanityChecks(),
-//						ownershipChangeShowsInRecord(),
+						ownershipChangeShowsInRecord(),
 				}
 		);
 	}
