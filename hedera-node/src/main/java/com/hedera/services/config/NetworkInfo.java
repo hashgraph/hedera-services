@@ -29,16 +29,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class NetworkInfo {
-	/*
-	 * The following are the ledgerId values for various networks
-	 * 0x00  Hedera Mainnet
-     * 0x01  Hedera testnet
-     * 0x02  Hedera previewnet
-	 * 0x03  Hedera dev/preprod
-	 *
-	 * By default, the ledgerId is set to dev/preprod
-	 */
-	private static final String DEFAULT_LEDGER_ID = "0x03";
 
 	private final PropertySource properties;
 	private ByteString ledgerId;
@@ -50,11 +40,14 @@ public class NetworkInfo {
 
 	public ByteString ledgerId() {
 		if (ledgerId == null) {
-			if (properties.containsProperty("ledger.id")) {
-				ledgerId = ByteString.copyFromUtf8(properties.getStringProperty("ledger.id"));
-			} else {
-				ledgerId = ByteString.copyFromUtf8(DEFAULT_LEDGER_ID);
-			}
+			/*
+			 * Permanent ledger ids are to be set in a future specification. The provisional ids are,
+			 *   0x00 -> mainnet
+			 *   0x01 -> testnet
+			 *   0x02 -> previewnet
+			 *   0x03 -> other dev or preprod networks
+			 */
+			ledgerId = ByteString.copyFromUtf8(properties.getStringProperty("ledger.id"));
 		}
 		return ledgerId;
 	}

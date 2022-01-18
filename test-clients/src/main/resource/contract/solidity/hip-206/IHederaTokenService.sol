@@ -70,7 +70,7 @@ interface IHederaTokenService {
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
     /// @return serialNumbers If the token is an NFT the newly generate serial numbers, othersise empty.
     function mintToken(address token, uint64 amount, bytes[] memory metadata) external
-        returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers);
+        returns (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers);
 
     /// Burns an amount of the token from the defined treasury account
     /// @param token The token for which to burn tokens. If token does not exist, transaction results in
@@ -141,14 +141,16 @@ interface IHederaTokenService {
     /// @param token The ID of the token as a solidity address
     /// @param accountId account to do a transfer to/from
     /// @param amount The amount from the accountId at the same index
-    function transferTokens(address token, address[] memory accountId, int64[] memory amount) external returns (int responseCode);
+    function transferTokens(address token, address[] memory accountId, int64[] memory amount) external
+        returns (int responseCode);
 
     /// Initiates a Non-Fungable Token Transfer
     /// @param token The ID of the token as a solidity address
     /// @param sender the sender of an nft
     /// @param receiver the receiver of the nft sent by the same index at sender
     /// @param serialNumber the serial number of the nft sent by the same index at sender
-    function transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) external returns (int responseCode);
+    function transferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber)
+        external returns (int responseCode);
 
     /// Transfers tokens where the calling account/contract is implicitly the first entry in the token transfer list,
     /// where the amount is the value needed to zero balance the transfers. Regular signing rules apply for sending
@@ -157,7 +159,8 @@ interface IHederaTokenService {
     /// @param sender The sender for the transaction
     /// @param recipient The receiver of the transaction
     /// @param amount Non-negative value to send. a negative value will result in a failure.
-    function transferToken(address token, address sender, address recipient, int64 amount) external returns (int responseCode);
+    function transferToken(address token, address sender, address recipient, int64 amount) external
+        returns (int responseCode);
 
     /// Transfers tokens where the calling account/contract is implicitly the first entry in the token transfer list,
     /// where the amount is the value needed to zero balance the transfers. Regular signing rules apply for sending
@@ -165,6 +168,7 @@ interface IHederaTokenService {
     /// @param token The token to transfer to/from
     /// @param sender The sender for the transaction
     /// @param recipient The receiver of the transaction
-    /// @param serialNum The serial number of the NFT to transfer.
-    function transferNFT(address token,  address sender, address recipient, int64 serialNum) external returns (int responseCode);
+    /// @param serialNumber The serial number of the NFT to transfer.
+    function transferNFT(address token,  address sender, address recipient, int64 serialNumber) external
+        returns (int responseCode);
 }

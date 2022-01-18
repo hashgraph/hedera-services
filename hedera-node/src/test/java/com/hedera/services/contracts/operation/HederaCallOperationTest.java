@@ -123,6 +123,10 @@ class HederaCallOperationTest {
 		given(evmMsgFrame.stackSize()).willReturn(20);
 		given(evmMsgFrame.getRemainingGas()).willReturn(cost);
 		given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+
+		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));

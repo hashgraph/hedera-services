@@ -192,7 +192,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			validity = validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
 			return validity;
 		} else {
-			if (op.getExpiry().getSeconds() <= txnCtx.consensusTime().getEpochSecond()) {
+			final var curConsTime = txnCtx.consensusTime();
+			if (curConsTime != null && op.getExpiry().getSeconds() <= curConsTime.getEpochSecond()) {
 				return INVALID_EXPIRATION_TIME;
 			}
 		}

@@ -114,28 +114,21 @@ public class DecodingFacade {
 
 		for (final var tuple : decodedTuples) {
 			for (final var tupleNested : (Tuple[]) tuple) {
-				final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
-				final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 				final var tokenType = convertAddressBytesToTokenID((byte[]) tupleNested.get(0));
 
-				final var transfers = (Tuple[]) tupleNested.get(1);
-				for (final var transfer : transfers) {
-					final AccountID accountID = convertAddressBytesToAccountID((byte[]) transfer.get(0));
-					final long amount = (long) transfer.get(1);
+				var nftExchanges = NO_NFT_EXCHANGES;
+				var fungibleTransfers = NO_FUNGIBLE_TRANSFERS;
 
-					fillFungibleTokenTransfers(fungibleTransfers, tokenType, accountID, amount);
+				final var abiAdjustments = (Tuple[]) tupleNested.get(1);
+				if (abiAdjustments.length > 0) {
+					fungibleTransfers = bindFungibleTransfersFrom(tokenType, abiAdjustments);
+				}
+				final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
+				if (abiNftExchanges.length > 0) {
+					nftExchanges = bindNftExchangesFrom(tokenType, abiNftExchanges);
 				}
 
-				final var nftTransfersDecoded = (Tuple[]) tupleNested.get(2);
-				for (final var nftTransferDecoded : nftTransfersDecoded) {
-					nftExchanges.add(new SyntheticTxnFactory.NftExchange((long) nftTransferDecoded.get(2),
-							tokenType, convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(0)),
-							convertAddressBytesToAccountID((byte[]) nftTransferDecoded.get(1))));
-				}
-
-				final TokenTransferWrapper tokenTransferWrapper =
-						new TokenTransferWrapper(nftExchanges, fungibleTransfers);
-				tokenTransferWrappers.add(tokenTransferWrapper);
+				tokenTransferWrappers.add(new TokenTransferWrapper(nftExchanges, fungibleTransfers));
 			}
 		}
 
@@ -198,7 +191,7 @@ public class DecodingFacade {
 			final var accountID = accountIDs.get(i);
 			final var amount = amounts[i];
 
-			fillFungibleTokenTransfers(fungibleTransfers, tokenType, accountID, amount);
+			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
 		}
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -279,7 +272,7 @@ public class DecodingFacade {
 					"Selector does not match, expected " + selector
 							+ " actual " + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
 		}
-		return decoder.decode(input.slice(4).toArray());
+		return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 	}
 
 	private static List<AccountID> decodeAccountIDsFromBytesArray(final byte[][] accountBytesArray) {
@@ -310,7 +303,35 @@ public class DecodingFacade {
 		return EntityIdUtils.tokenParsedFromSolidityAddress(address.toArray());
 	}
 
-	private void fillFungibleTokenTransfers(
+	private List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
+			final TokenID tokenType,
+			final Tuple[] abiExchanges
+	) {
+		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
+		for (final var exchange : abiExchanges) {
+			final var sender = convertAddressBytesToAccountID((byte[]) exchange.get(0));
+			final var receiver = convertAddressBytesToAccountID((byte[]) exchange.get(1));
+			final var serialNo = (long) exchange.get(2);
+			nftExchanges.add(new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
+		}
+		return nftExchanges;
+	}
+
+	private List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
+			final TokenID tokenType,
+			final Tuple[] abiTransfers
+	) {
+		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+		for (final var transfer : abiTransfers) {
+			final AccountID accountID = convertAddressBytesToAccountID((byte[]) transfer.get(0));
+			final long amount = (long) transfer.get(1);
+
+			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);
+		}
+		return fungibleTransfers;
+	}
+
+	private void addAdjustmentAsTransfer(
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
 			final TokenID tokenType,
 			final AccountID accountID,

@@ -101,6 +101,12 @@ class ImpliedTransfersMarshalTest {
 	private AliasResolver aliasResolver;
 	@Mock
 	private Predicate<CryptoTransferTransactionBody> aliasCheck;
+	@Mock
+	private CryptoTransferTransactionBody cryptoTransferTransactionBody;
+	@Mock
+	private TransferList hbarAdjustsWrapper;
+	@Mock
+	private TokenTransferList tokenAdjustsList;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -185,7 +191,7 @@ class ImpliedTransfersMarshalTest {
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
-
+	
 	@Test
 	void getsHbarOnly() {
 		setupHbarOnlyFixture();

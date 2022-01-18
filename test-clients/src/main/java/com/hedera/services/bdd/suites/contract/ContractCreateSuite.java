@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -47,7 +46,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -59,9 +57,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_BRRR_CALL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
@@ -78,8 +73,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -87,8 +80,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -123,25 +114,28 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall()
-				}
+		return List.of(
+				createEmptyConstructor(),
+				insufficientPayerBalanceUponCreation(),
+				rejectsInvalidMemo(),
+				rejectsInsufficientFee(),
+				rejectsInvalidBytecode(),
+				revertsNonzeroBalance(),
+				createFailsIfMissingSigs(),
+				rejectsInsufficientGas(),
+				createsVanillaContractAsExpectedWithOmittedAdminKey(),
+				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+				cannotCreateTooLargeContract(),
+				revertedTryExtCallHasNoSideEffects(),
+				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+				cannotSendToNonExistentAccount(),
+				canCallPendingContractSafely(),
+				delegateContractIdRequiredForTransferInDelegateCall(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCreate(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				vanillaSuccess()
 		);
 	}
 
@@ -172,6 +166,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
@@ -195,7 +190,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 								)
 										.payingWith(GENESIS)
 										.gas(300_000L)
-										.via(callTxn))
+										.via(callTxn)),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -452,8 +448,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.balance(0L)
 								.keyShape(origKey.signedWith(sigs(ON, sendInternalAndDelegate)))
 								.receiverSigRequired(true)
-								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
-						getAccountInfo(beneficiary).logged()
+								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum()))
 				).then(
 						/* Without delegateContractId permissions, the second send via delegate call will
 						 * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
@@ -557,17 +552,18 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when(
 						contractCreate(firstContract)
 								.bytecode(initcode)
-								.gas(300_000L)
+								.gas(80_000L)
 								.payingWith(civilian)
 								.balance(0L)
 								.via(creation),
-						getTxnRecord(creation).providingFeeTo(baseCreationFee::set)
+						getTxnRecord(creation).providingFeeTo(baseCreationFee::set).logged()
 				).then(
 						sourcing(() -> contractCreate(secondContract)
 								.bytecode(initcode)
-								.gas(100_000L)
+								.gas(80_000L)
 								.payingWith(civilian)
-								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get()))
+								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get())
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
 				);
 	}
 

@@ -20,13 +20,14 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +36,8 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -44,6 +47,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -64,25 +68,38 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_TAKE_TICKET;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_WORK_TICKET;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -110,35 +127,137 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						resultSizeAffectsFees(),
-						payableSuccess(),
-						depositSuccess(),
-						depositDeleteSuccess(),
-						multipleDepositSuccess(),
-						payTestSelfDestructCall(),
-						multipleSelfDestructsAreSafe(),
-						smartContractInlineAssemblyCheck(),
-						ocToken(),
-						contractTransferToSigReqAccountWithKeySucceeds(),
-						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsedByContractCall(),
-						HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-						HSCS_EVM_006_ContractHBarTransferToAccount(),
-						HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-						HSCS_EVM_010_MultiSignatureAccounts(),
-						HSCS_EVM_010_ReceiverMustSignContractTx(),
-						insufficientGas(),
-						insufficientFee(),
-						nonPayable(),
-						invalidContract(),
-						smartContractFailFirst(),
-						contractTransferToSigReqAccountWithoutKeyFails(),
-						callingDestructedContractReturnsStatusDeleted(),
-						gasLimitOverMaxGasLimitFailsPrecheck(),
-						imapUserExercise(),
-				}
+		return List.of(
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
+				smartContractInlineAssemblyCheck(),
+				ocToken(),
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCall(),
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
+				invalidContract(),
+				smartContractFailFirst(),
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				imapUserExercise(),
+				workingHoursDemo(),
+				deletedContractsCannotBeUpdated()
 		);
+	}
+
+	private HapiApiSpec deletedContractsCannotBeUpdated() {
+		final var adminKey = "admin";
+		final var contract = "contract";
+
+		return defaultHapiSpec("DeletedContractsCannotBeUpdated")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate("bytecode").path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(contract)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000)
+				).when(
+						contractCall(contract, ContractResources.SELF_DESTRUCT_CALL_ABI)
+								.deferStatusResolution()
+				).then(
+						contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID)
+				);
+	}
+
+	private HapiApiSpec workingHoursDemo() {
+		final var initcode = "initcode";
+		final var gasToOffer = 4_000_000;
+		final var workingHours = "workingHours";
+
+		final var ticketToken = "ticketToken";
+		final var adminKey = "admin";
+		final var treasury = "treasury";
+		final var newSupplyKey = "newSupplyKey";
+
+		final var ticketTaking = "ticketTaking";
+		final var ticketWorking = "ticketWorking";
+		final var mint = "minting";
+		final var burn = "burning";
+		final var preMints = List.of(
+				ByteString.copyFromUtf8("HELLO"),
+				ByteString.copyFromUtf8("GOODBYE"));
+
+		final AtomicLong ticketSerialNo = new AtomicLong();
+
+		return defaultHapiSpec("WorkingHoursDemo")
+				.given(
+						newKeyNamed(adminKey),
+						cryptoCreate(treasury),
+						tokenCreate(ticketToken)
+								.treasury(treasury)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyType(TokenSupplyType.INFINITE)
+								.adminKey(adminKey)
+								.supplyKey(adminKey),
+						mintToken(ticketToken, preMints).via(mint),
+						burnToken(ticketToken, List.of(1L)).via(burn),
+						fileCreate(initcode),
+						updateLargeFile(
+								GENESIS,
+								initcode,
+								extractByteCode(WORKING_HOURS_USER_BYTECODE_PATH))
+				).when(
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final var tokenId = registry.getTokenID(ticketToken);
+							final var treasuryId = registry.getAccountID(treasury);
+							final var creation = contractCreate(
+									workingHours,
+									WORKING_HOURS_CONS,
+									tokenId.getTokenNum(), treasuryId.getAccountNum()
+							)
+									.bytecode(initcode)
+									.gas(gasToOffer);
+							allRunFor(spec, creation);
+						}),
+						newKeyNamed(newSupplyKey)
+								.shape(KeyShape.CONTRACT.signedWith(workingHours)),
+						tokenUpdate(ticketToken).supplyKey(newSupplyKey)
+				).then(
+						/* Take a ticket */
+						contractCall(workingHours, WORKING_HOURS_TAKE_TICKET)
+								.via(ticketTaking)
+								.alsoSigningWithFullPrefix(treasury)
+								.exposingResultTo(result -> {
+									log.info("Explicit mint result is {}", result);
+									ticketSerialNo.set(((BigInteger) result[0]).longValueExact());
+								}),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						/* Our ticket number is 3 (b/c of the two pre-mints), so we must call
+						* work twice before the contract will actually accept our ticket. */
+						sourcing(() ->
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						sourcing(() ->
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.via(ticketWorking)),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 0L),
+						getTokenInfo(ticketToken).hasTotalSupply(1L),
+						/* Review the history */
+						getTxnRecord(ticketTaking).andAllChildRecords().logged(),
+						getTxnRecord(ticketWorking).andAllChildRecords().logged()
+				);
 	}
 
 	private HapiApiSpec imapUserExercise() {
@@ -226,7 +345,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop3, subop4, subop5);
+							allRunFor(spec, subop1, subop3, subop4, subop5);
 
 							CallTransaction.Function funcSymbol =
 									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
@@ -291,7 +410,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
+							allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
 
 							long aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
 									function)).longValue();
@@ -338,7 +457,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
+							allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
 									subop18);
 
 							long daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
@@ -381,7 +500,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveRecordNumToRegistry("tokenContractRecordNum")
 									.hasCostAnswerPrecheck(OK);
 
-							CustomSpecAssert.allRunFor(spec, finalOp);
+							allRunFor(spec, finalOp);
 
 							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
 							ctxLog.info("Finished {}", totalRecordNum);
@@ -437,7 +556,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							var subop2 = getAccountInfo("payer")
 									.savingSnapshot("payerAccountInfo");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2);
+							allRunFor(spec, subop1, subop2);
 
 							ContractGetInfoResponse.ContractInfo simpleStorageContractInfo =
 									spec.registry().getContractInfo(
@@ -449,7 +568,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveResultTo("simpleStorageContractCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec, subop3);
+							allRunFor(spec, subop3);
 
 							byte[] result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
@@ -480,7 +599,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveResultTo("fakeCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 							result = spec.registry().getBytes("fakeCodeSizeBytes");
 
 							codeSize = 0;
@@ -542,7 +661,7 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via("payTxn").sending(depositAmount);
 								var subOp3 = getAccountBalance("payableContract")
 										.hasTinyBars(changeFromSnapshot("payerBefore", +depositAmount));
-								CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3);
+								allRunFor(spec, subOp1, subOp2, subOp3);
 							}
 						})
 				);
@@ -876,7 +995,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.via("selfDestruct")
 									.hasKnownStatus(SUCCESS);
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3, subop4, subop5);
+							allRunFor(spec, subop1, subop2, subop3, subop4, subop5);
 						})
 				).then(
 						getTxnRecord("deposit"),
@@ -927,7 +1046,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).payingWith("receivableSigReqAccount")
 									.gas(300_000).hasKnownStatus(SUCCESS);
-							CustomSpecAssert.allRunFor(spec, call, callWithReceivable);
+							allRunFor(spec, call, callWithReceivable);
 						})
 				);
 	}
@@ -949,7 +1068,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							var call = contractCall("transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
-							CustomSpecAssert.allRunFor(spec, call);
+							allRunFor(spec, call);
 						})
 				);
 	}
@@ -966,7 +1085,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
-							CustomSpecAssert.allRunFor(spec, subop01);
+							allRunFor(spec, subop01);
 
 							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
 									.getContractCallResult().getGasUsed();
@@ -988,7 +1107,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
-							CustomSpecAssert.allRunFor(spec, subop01);
+							allRunFor(spec, subop01);
 
 							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
 									.getContractCallResult().getGasUsed();

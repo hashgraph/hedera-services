@@ -73,28 +73,16 @@ class MerkleAccountScopedCheckTest {
 	}
 
 	@Test
-	void failsAsExpectedForSmartContacts() {
-		when(account.isSmartContract()).thenReturn(true);
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkUsing(account, changeSet));
-
-		given(extantProps.apply(AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkUsing(extantProps, changeSet));
-	}
-
-	@Test
 	void failsAsExpectedForDeletedAccount() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(true);
 		assertEquals(ACCOUNT_DELETED, subject.checkUsing(account, changeSet));
 
-		given(extantProps.apply(IS_SMART_CONTRACT)).willReturn(false);
 		given(extantProps.apply(IS_DELETED)).willReturn(true);
 		assertEquals(ACCOUNT_DELETED, subject.checkUsing(extantProps, changeSet));
 	}
 
 	@Test
 	void failAsExpectedForDeletedAccountInChangeSet() {
-		when(account.isSmartContract()).thenReturn(false);
 		Map<AccountProperty, Object> changes = new HashMap<>();
 		changes.put(IS_DELETED, true);
 
@@ -105,7 +93,6 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedForExpiredAccount() {
 		final var expiry = 1234L;
 
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
 		when(account.getBalance()).thenReturn(0L);
@@ -113,7 +100,6 @@ class MerkleAccountScopedCheckTest {
 		when(validator.isAfterConsensusSecond(expiry)).thenReturn(false);
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
 
-		given(extantProps.apply(IS_SMART_CONTRACT)).willReturn(false);
 		given(extantProps.apply(IS_DELETED)).willReturn(false);
 		given(extantProps.apply(BALANCE)).willReturn(0L);
 		given(extantProps.apply(EXPIRY)).willReturn(expiry);
@@ -122,7 +108,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenInsufficientBalance() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 
@@ -135,7 +120,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPath() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(0L);

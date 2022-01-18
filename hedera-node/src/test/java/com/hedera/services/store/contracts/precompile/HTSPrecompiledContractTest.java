@@ -59,6 +59,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissoc
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,6 +104,14 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
+	}
+
+	@Test
+	void noopTreasuryManagersDoNothing() {
+		assertDoesNotThrow(() ->
+				HTSPrecompiledContract.NOOP_TREASURY_ADDER.perform(null, null));
+		assertDoesNotThrow(() ->
+				HTSPrecompiledContract.NOOP_TREASURY_REMOVER.removeKnownTreasuryForToken(null, null));
 	}
 
 	@Test
@@ -420,7 +429,8 @@ class HTSPrecompiledContractTest {
 		final var builder = TokenDissociateTransactionBody.newBuilder();
 		builder.setAccount(multiDissociateOp.accountId());
 		builder.addAllTokens(multiDissociateOp.tokenIds());
-		given(syntheticTxnFactory.createDissociate(any())).willReturn(TransactionBody.newBuilder().setTokenDissociate(builder));
+		given(syntheticTxnFactory.createDissociate(any())).willReturn(
+				TransactionBody.newBuilder().setTokenDissociate(builder));
 		given(dynamicProperties.htsDefaultGasCost()).willReturn(DEFAULT_GAS_PRICE);
 
 		// when

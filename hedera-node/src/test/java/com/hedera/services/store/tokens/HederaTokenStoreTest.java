@@ -139,7 +139,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -176,7 +175,7 @@ class HederaTokenStoreTest {
 	private static final long newAutoRenewPeriod = 2_000_000L;
 	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
 	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
-	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.0");
+	private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.9898");
 	private static final AccountID treasury = IdUtils.asAccount("0.0.3");
 	private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
 	private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
@@ -256,7 +255,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(sponsor, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(counterparty, IS_DELETED)).willReturn(false);
-		given(accountsLedger.get(IdUtils.asAccount("0.0.0"), IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(primaryTreasury, IS_DELETED)).willReturn(false);
 
 		backingTokens = mock(BackingTokens.class);
 		given(backingTokens.contains(misc)).willReturn(true);
@@ -718,9 +717,7 @@ class HederaTokenStoreTest {
 		final var sender = EntityId.fromGrpcAccountId(counterparty);
 		final var receiver = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
-		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
-			add(nonfungible);
-		}});
+		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(receiver);
 		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
@@ -748,13 +745,11 @@ class HederaTokenStoreTest {
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
 		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
-		subject.knownTreasuries.put(primaryTreasury, new HashSet<>() {{
-			add(nonfungible);
-		}});
 		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
+		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
 
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);

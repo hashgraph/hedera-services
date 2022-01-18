@@ -86,7 +86,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -377,8 +376,8 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
-													  ResponseCodeEnum parentalStatus,
-													  TransactionRecordAsserts ...childRecordAsserts) {
+			ResponseCodeEnum parentalStatus,
+			TransactionRecordAsserts... childRecordAsserts) {
 		return withOpContext(
 				(spec, opLog) -> {
 					var distributeTx = getTxnRecord(parentTxnId);
@@ -413,7 +412,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-											   AtomicLong count) {
+			AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -520,7 +519,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation reduceFeeFor(HederaFunctionality function,
-												 long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
+			long tinyBarMaxNodeFee, long tinyBarMaxNetworkFee, long tinyBarMaxServiceFee) {
 		return withOpContext((spec, opLog) -> {
 			if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
 				opLog.info("Sleeping to wait for fee reduction...");
@@ -553,7 +552,7 @@ public class UtilVerbs {
 	}
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
-											   long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
+			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
 		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
@@ -659,6 +658,7 @@ public class UtilVerbs {
 					final var newPosition = position + bytesThisAppend;
 					final var appendSubOp = fileAppend(fileName)
 							.content(contents.substring(position, newPosition).toByteArray())
+							.fee(ONE_HUNDRED_HBARS)
 							.noLogging()
 							.payingWith(payer)
 							.signedBy(payer)
@@ -968,6 +968,7 @@ public class UtilVerbs {
 	public static TokenTransferListBuilder tokenTransferList() {
 		return new TokenTransferListBuilder();
 	}
+
 	public static TokenTransferListsBuilder tokenTransferLists() {
 		return new TokenTransferListsBuilder();
 	}
@@ -988,23 +989,23 @@ public class UtilVerbs {
 		}
 
 		public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
-			if(isSingleList) {
-				this.tokenTransferList = Tuple.singleton(new Tuple[]{Tuple.of(token, accountAmounts,
-						new Tuple[]{})});
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, accountAmounts, new Tuple[] { })
+				});
 			} else {
-				this.tokenTransferList = Tuple.of(token, accountAmounts,
-						new Tuple[]{});
+				this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] { });
 			}
 			return this;
 		}
 
 		public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
-			if(isSingleList) {
-			this.tokenTransferList = Tuple.singleton(new Tuple[]{Tuple.of(token, new Tuple[]{},
-					nftTransfers)});
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, new Tuple[] { }, nftTransfers)
+				});
 			} else {
-				this.tokenTransferList = Tuple.of(token, new Tuple[]{},
-						nftTransfers);
+				this.tokenTransferList = Tuple.of(token, new Tuple[] { }, nftTransfers);
 			}
 			return this;
 		}

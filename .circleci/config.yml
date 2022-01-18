@@ -649,7 +649,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
@@ -667,7 +667,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -689,7 +689,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -712,7 +712,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -735,7 +735,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -758,7 +758,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -811,7 +811,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -863,7 +863,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -886,7 +886,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -909,7 +909,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -932,7 +932,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -955,7 +955,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -978,7 +978,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1001,7 +1001,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1024,7 +1024,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1047,7 +1047,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1070,7 +1070,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1093,7 +1093,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1116,7 +1116,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1140,7 +1140,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1164,7 +1164,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1187,7 +1187,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1210,7 +1210,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1233,7 +1233,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1256,7 +1256,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1279,7 +1279,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1303,7 +1303,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1326,7 +1326,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1349,7 +1349,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1372,7 +1372,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1395,7 +1395,7 @@ workflows:
           filters:
             branches:
               only:
-                - hts-contracts
+                - release/0.22
     jobs:
       - build-platform-and-services
       - jrs-regression:
