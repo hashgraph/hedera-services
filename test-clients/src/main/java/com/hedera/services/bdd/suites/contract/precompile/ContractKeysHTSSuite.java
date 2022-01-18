@@ -104,6 +104,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -2466,21 +2467,32 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCall(theContract, BURN_TOKEN_ORDINARY_CALL,
+                                                contractCall(
+                                                        theContract,
+                                                        BURN_TOKEN_ORDINARY_CALL,
                                                         asAddress(spec.registry().getTokenID(fungibleToken)),
                                                         1, new ArrayList<Long>())
-                                                        .via(firstBurnTxn).payingWith(theAccount).
-                                                        signedBy(MULTI_KEY).
-                                                        signedBy(theAccount).
-                                                        hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(theContract, BURN_TOKEN_ORDINARY_CALL,
+                                                        .via(firstBurnTxn)
+                                                        .payingWith(theAccount)
+                                                        .signedBy(MULTI_KEY)
+                                                        .signedBy(theAccount)
+                                                        .hasKnownStatus(SUCCESS),
+                                                contractCall(
+                                                        theContract,
+                                                        BURN_TOKEN_ORDINARY_CALL,
                                                         asAddress(spec.registry().getTokenID(fungibleToken)),
-                                                        1, new ArrayList<Long>())
+                                                        1,
+                                                        new ArrayList<Long>())
                                                         .via(secondBurnTxn).payingWith(theAccount)
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .hasKnownStatus(SUCCESS))),
-                        getTxnRecord(firstBurnTxn).andAllChildRecords().logged(),
-                        getTxnRecord(secondBurnTxn).andAllChildRecords().logged(),
+                        childRecordsCheck(firstBurnTxn, SUCCESS,
+                                recordWith()
+                                        .status(INVALID_SIGNATURE)),
+                        childRecordsCheck(secondBurnTxn, SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .newTotalSupply(99)),
                         getTokenInfo(fungibleToken).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
                 );
