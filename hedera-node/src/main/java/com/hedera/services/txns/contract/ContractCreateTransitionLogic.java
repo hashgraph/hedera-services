@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
@@ -110,8 +111,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		/* ---- validate -- */
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
-			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID());
-			validateTrue(OK == result.response(), INVALID_ACCOUNT_ID);
+			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
+			validateTrue(OK == result.response(), INVALID_PROXY_ACCOUNT_ID);
 			proxyAccount = Id.fromGrpcAccount(result.resolvedId());
 		}
 

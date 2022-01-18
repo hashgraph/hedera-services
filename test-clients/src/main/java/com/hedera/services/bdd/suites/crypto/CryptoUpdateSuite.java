@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -121,7 +122,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						usdFeeAsExpected(),
 						canUpdateUsingAlias(),
 						canUpdateProxyUsingAlias(),
-						failsWhenInvalidAlias()
+						failsWhenInvalidAlias(),
+				        invalidProxyAliasFails()
 				}
 		);
 	}
@@ -137,6 +139,27 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.entityMemo(memo)
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				).then(
+				);
+	}
+
+	private HapiApiSpec invalidProxyAliasFails() {
+		String alias = "alias";
+		String proxyAlias = "proxyAlias";
+		return defaultHapiSpec("invalidProxyAliasFails")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(proxyAlias),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+								.via("transferTxn")
+				).when(
+						getTxnRecord("transferTxn").andAllChildRecords(),
+						getAliasedAccountInfo(alias)
+								.has(accountWith().memo("auto-created account"))
+				).then(
+						cryptoUpdateAliased(alias)
+								.newProxyWithAlias(proxyAlias)
+								.hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
 				);
 	}
 

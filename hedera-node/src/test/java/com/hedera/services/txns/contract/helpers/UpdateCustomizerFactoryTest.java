@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,7 +95,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
-		given(ledger.lookUpAccountId(newProxy)).willReturn(AliasLookup.of(newProxy, OK));
+		given(ledger.lookUpAccountId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(newProxy, OK));
 
 		// when:
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
@@ -125,12 +126,12 @@ class UpdateCustomizerFactoryTest {
 				.setExpirationTime(newExpiryTime)
 				.build();
 
-		given(ledger.lookUpAccountId(newProxy)).willReturn(
-				AliasLookup.of(newProxy, INVALID_ACCOUNT_ID));
+		given(ledger.lookUpAccountId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(newProxy, INVALID_PROXY_ACCOUNT_ID));
 
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
 
-		assertEquals(INVALID_ACCOUNT_ID, result.getRight());
+		assertEquals(INVALID_PROXY_ACCOUNT_ID, result.getRight());
 		assertEquals(Optional.empty(), result.getLeft());
 	}
 

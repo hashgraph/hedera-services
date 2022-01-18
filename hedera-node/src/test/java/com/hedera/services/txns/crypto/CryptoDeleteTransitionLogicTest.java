@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -262,7 +263,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnWithAlias(aliasedTransfer);
 
 		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(AliasLookup.of(payer, OK));
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(AliasLookup.of(payer, OK));
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
 		given(ledger.lookUpAccountId(aliasAccountTarget)).willReturn(AliasLookup.of(target, OK));
 
 		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
@@ -281,7 +282,7 @@ class CryptoDeleteTransitionLogicTest {
 
 		given(ledger.lookUpAccountId(aliasAccountTarget))
 				.willReturn(AliasLookup.of(aliasAccountTarget, INVALID_ACCOUNT_ID));
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(target, OK));
 
 		subject.doStateTransition();
@@ -295,11 +296,11 @@ class CryptoDeleteTransitionLogicTest {
 
 		given(ledger.lookUpAccountId(aliasAccountTarget))
 				.willReturn(AliasLookup.of(target, OK));
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(
-				AliasLookup.of(aliasedTransfer, INVALID_ACCOUNT_ID));
+		given(ledger.lookUpAccountId(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID));
 
 		subject.doStateTransition();
-		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+		verify(txnCtx).setStatus(INVALID_TRANSFER_ACCOUNT_ID);
 	}
 
 	private void givenValidTxnCtx() {
@@ -318,7 +319,7 @@ class CryptoDeleteTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.lookUpAccountId(target)).willReturn(AliasLookup.of(target, OK));
-		given(ledger.lookUpAccountId(transfer)).willReturn(AliasLookup.of(transfer, OK));
+		given(ledger.lookUpAccountId(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
 	}
 
 	private void givenDeleteTxnMissingTarget() {

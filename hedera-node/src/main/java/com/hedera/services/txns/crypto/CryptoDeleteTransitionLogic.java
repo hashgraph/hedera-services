@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -94,7 +95,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			result = ledger.lookUpAccountId(op.getTransferAccountID());
+			result = ledger.lookUpAccountId(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;

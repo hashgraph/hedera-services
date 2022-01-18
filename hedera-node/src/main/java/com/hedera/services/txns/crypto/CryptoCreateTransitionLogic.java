@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
@@ -102,7 +103,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			long balance = op.getInitialBalance();
 
 			if (op.hasProxyAccountID()) {
-				final var proxyValidation = ledger.lookUpAccountId(op.getProxyAccountID()).response();
+				final var proxyValidation = ledger.lookUpAccountId(op.getProxyAccountID(),
+						INVALID_PROXY_ACCOUNT_ID).response();
 				if (proxyValidation != OK) {
 					txnCtx.setStatus(proxyValidation);
 					return;
@@ -136,7 +138,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID());
+			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			customizer.proxy(EntityId.fromGrpcAccountId(result.resolvedId()));
 		}
 		return customizer;
