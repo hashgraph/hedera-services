@@ -173,12 +173,12 @@ class AssociatePrecompileTest {
 	@Test
 	void computeAssociateTokenFailurePathWorks() {
 		// given:
-		givenFrameContext();
+		givenCommonFrameContext();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments)).willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
-				recipientAddress))
+		given(sigsVerifier.hasActiveKey(
+				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress, senderAddress))
 				.willReturn(false);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
@@ -192,16 +192,23 @@ class AssociatePrecompileTest {
 	}
 
 	@Test
-	void computeAssociateTokenHappyPathWorks() {
-		givenFrameContext();
+	void computeAssociateTokenHappyPathWorksWithDelegateCall() {
+		given(frame.getContractAddress()).willReturn(contractAddress);
+		given(frame.getRecipientAddress()).willReturn(contractAddress);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(pretendArguments))
 				.willReturn(associateOp);
 		given(syntheticTxnFactory.createAssociate(associateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
-						recipientAddress))
+		given(sigsVerifier.hasActiveKey(
+				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress, recipientAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -325,7 +332,7 @@ class AssociatePrecompileTest {
 
 	@Test
 	void computeMultiAssociateTokenHappyPathWorks() {
-		givenFrameContext();
+		givenCommonFrameContext();
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 		given(decoder.decodeMultipleAssociations(pretendArguments))
@@ -334,8 +341,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(transactionBody.getTokensCount()).willReturn(1);
 		given(mockSynthBodyBuilder.getTokenAssociate()).willReturn(transactionBody);
-		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress,
-				recipientAddress))
+		given(sigsVerifier.hasActiveKey(
+				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress, senderAddress))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);

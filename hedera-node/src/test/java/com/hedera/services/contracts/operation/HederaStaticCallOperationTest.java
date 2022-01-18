@@ -125,6 +125,9 @@ class HederaStaticCallOperationTest {
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
+		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+		
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);

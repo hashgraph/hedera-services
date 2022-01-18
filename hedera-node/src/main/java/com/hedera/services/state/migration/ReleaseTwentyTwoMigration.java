@@ -21,20 +21,24 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -74,16 +78,18 @@ public class ReleaseTwentyTwoMigration {
 
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 		final MerkleMap<String, MerkleOptionalBlob> legacyBlobs = initializingState.getChild(StateChildIndices.STORAGE);
+		final MerkleMap<EntityNum, MerkleAccount> accounts = initializingState.getChild(StateChildIndices.ACCOUNTS);
 
 		final VirtualMap<VirtualBlobKey, VirtualBlobValue> vmBlobs = virtualMapFactory.newVirtualizedBlobs();
 		final VirtualMap<ContractKey, ContractValue> vmStorage = virtualMapFactory.newVirtualizedStorage();
 
+		final Map<Long, Integer> kvCounts = new TreeMap<>();
 		final Map<Character, AtomicInteger> counts = new HashMap<>();
 		forEach(legacyBlobs, (path, blob) -> {
 			final var pathCode = path.charAt(LEGACY_BLOB_CODE_INDEX);
 			if (pathCode == 'd') {
 				final var contractNum = parseLong(path.substring(LEGACY_BLOB_CODE_INDEX + 1));
-				insertPairsFrom(contractNum, blob.getData(), vmStorage);
+				insertPairsFrom(contractNum, blob.getData(), kvCounts, vmStorage);
 			} else {
 				final var vKey = VirtualBlobKey.fromPath(path);
 				final var vBlob = new VirtualBlobValue(blob.getData());
@@ -91,6 +97,7 @@ public class ReleaseTwentyTwoMigration {
 			}
 			counts.computeIfAbsent(pathCode, ignore -> new AtomicInteger()).getAndIncrement();
 		});
+		initKvCounts(kvCounts, accounts);
 
 		initializingState.setChild(StateChildIndices.STORAGE, vmBlobs);
 		initializingState.setChild(StateChildIndices.CONTRACT_STORAGE, vmStorage);
@@ -114,10 +121,11 @@ public class ReleaseTwentyTwoMigration {
 	static void insertPairsFrom(
 			final long contractNum,
 			final byte[] orderedKeyValueStorage,
+			final Map<Long, Integer> kvCounts,
 			final VirtualMap<ContractKey, ContractValue> vmStorage
 	) {
 		int offset = 0;
-
+		int n = 0;
 		while (offset < orderedKeyValueStorage.length) {
 			final var rawKey = new byte[SIZE];
 			final var rawValue = new byte[SIZE];
@@ -127,10 +135,25 @@ public class ReleaseTwentyTwoMigration {
 			System.arraycopy(orderedKeyValueStorage, offset, rawValue, 0, SIZE);
 			offset += SIZE;
 
-			final var key = new ContractKey(contractNum, rawKey);
-			final var value = new ContractValue(rawValue);
-			vmStorage.put(key, value);
+			if (!Bytes32.wrap(rawValue).isZero()) {
+				final var key = new ContractKey(contractNum, rawKey);
+				final var value = new ContractValue(rawValue);
+				vmStorage.put(key, value);
+				n++;
+			}
 		}
+		log.info("Existing contract 0.0.{} had {} non-ZERO key/value pairs", contractNum, n);
+		kvCounts.put(contractNum, n);
+	}
+
+	static void initKvCounts(final Map<Long, Integer> kvCounts, final MerkleMap<EntityNum, MerkleAccount> accounts ) {
+		kvCounts.forEach((contractId, n) -> {
+			final var key = EntityNum.fromLong(contractId);
+			if (accounts.containsKey(key)) {
+				final var mutableAccount = accounts.getForModify(key);
+				mutableAccount.setNumContractKvPairs(n);
+			}
+		});
 	}
 
 	private ReleaseTwentyTwoMigration() {

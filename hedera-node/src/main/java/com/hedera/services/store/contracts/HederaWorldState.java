@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -65,6 +66,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
@@ -73,11 +75,24 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian
+	) {
+		this.ids = ids;
+		this.entityAccess = entityAccess;
+		this.codeCache = codeCache;
+		this.sigImpactHistorian = sigImpactHistorian;
+	}
+
+	public HederaWorldState(
+			final EntityIdSource ids,
+			final EntityAccess entityAccess,
 			final CodeCache codeCache
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
+		this.sigImpactHistorian = null;
 	}
 
 	@Override
@@ -359,6 +374,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		public void commit() {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
+			final var impactHistorian = wrapped.sigImpactHistorian;
 
 			commitSizeLimitedStorageTo(entityAccess);
 
@@ -369,8 +385,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountParsedFromSolidityAddress(address);
+				validateTrue(impactHistorian != null, FAIL_INVALID);
+				impactHistorian.markEntityChanged(accountId.getAccountNum());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				final var deletedBalance= entityAccess.getBalance(accountId);
+				final var deletedBalance = entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {

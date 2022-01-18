@@ -30,6 +30,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -61,8 +62,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
@@ -82,7 +81,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.newMet
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -99,7 +97,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class MintPrecompilesTest {
-
 	@Mock
 	private Bytes pretendArguments;
 	@Mock
@@ -114,12 +111,6 @@ class MintPrecompilesTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
-	@Mock
-	private MessageFrame parentFrame;
-	@Mock
-	private Deque<MessageFrame> frameDeque;
-	@Mock
-	private Iterator<MessageFrame> dequeIterator;
 	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
@@ -184,6 +175,7 @@ class MintPrecompilesTest {
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+		given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
 		subject.gasRequirement(pretendArguments);
@@ -199,7 +191,9 @@ class MintPrecompilesTest {
 	void mintRandomFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any())).willThrow(new IllegalArgumentException("random error"));
+		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any()))
+				.willThrow(new IllegalArgumentException("random error"));
+		given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
 
 		// when:
 		subject.gasRequirement(pretendArguments);
@@ -214,7 +208,8 @@ class MintPrecompilesTest {
 		givenNonFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
+				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -224,6 +219,10 @@ class MintPrecompilesTest {
 		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
+		final var mints = new long[] { 1L, 2L, };
+		given(mockRecordBuilder.getReceiptBuilder()).willReturn(TxnReceipt.newBuilder()
+				.setSerialNumbers(mints));
+		given(encoder.encodeMintSuccess(0L, mints)).willReturn(successResult);
 		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
 
 		// when:
@@ -243,7 +242,7 @@ class MintPrecompilesTest {
 		givenFungibleFrameContext();
 		givenLedgers();
 		givenFungibleCollaborators();
-		given(encoder.getMintSuccessfulResultFromReceipt(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
+		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 
 		// when:
 		subject.gasRequirement(pretendArguments);
@@ -258,12 +257,13 @@ class MintPrecompilesTest {
 
 	@Test
 	void mintFailsWithMissingParentUpdater() {
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		givenFungibleFrameContext();
+		givenLedgers();
+		givenFungibleCollaborators();
+		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 		given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
 
+		subject.gasRequirement(pretendArguments);
 		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);
 	}
 
@@ -280,14 +280,8 @@ class MintPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
-		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
-		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
-		given(frame.getMessageFrameStack()).willReturn(frameDeque);
-		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

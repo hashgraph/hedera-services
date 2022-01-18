@@ -39,9 +39,13 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
 @Singleton
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
@@ -67,33 +71,34 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	@Override
-	public boolean hasActiveKey(final Address accountAddress, final Address recipient, final Address contract,
-								final Address sender) {
+	public boolean hasActiveKey(
+			final Address accountAddress,
+			final Address recipient,
+			final Address contract,
+			final Address activeContract
+	) {
 		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress);
 		final var simpleId = Id.fromGrpcAccount(accountId);
 		final var entityNum = simpleId.asEntityNum();
 		final var account = accounts.get().get(entityNum);
-		if (account == null) {
-			throw new IllegalArgumentException("Cannot test key activation for missing account " + accountId);
-		}
-		return isActiveInFrame(account.getAccountKey(), recipient, contract, sender);
+		validateTrue(account != null, INVALID_ACCOUNT_ID);
+		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract);
 	}
 
 	@Override
-	public boolean hasActiveSupplyKey(Address tokenAddress, Address recipient, Address contract, final Address contractAddressExpectedToBeSigned) {
+	public boolean hasActiveSupplyKey(
+			final Address tokenAddress,
+			final Address recipient,
+			final Address contract,
+			final Address activeContract
+	) {
 		final var tokenId = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress);
 		final var simpleId = Id.fromGrpcToken(tokenId);
 		final var entityNum = simpleId.asEntityNum();
 		final var token = tokens.get().get(entityNum);
-		if (token == null) {
-			throw new IllegalArgumentException(
-					"Cannot test supply key activation for missing token " + tokenId);
-		}
-		if (!token.hasSupplyKey()) {
-			throw new IllegalArgumentException(
-					"Cannot test supply key activation, as token " + tokenId + " does not have one");
-		}
-		return isActiveInFrame(token.getSupplyKey(), recipient, contract, contractAddressExpectedToBeSigned);
+		validateTrue(token != null, INVALID_TOKEN_ID);
+		validateTrue(token.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
+		return isActiveInFrame(token.getSupplyKey(), recipient, contract, activeContract);
 	}
 
 	@Override
@@ -101,38 +106,46 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address target,
 			final Address recipient,
 			final Address contract,
-			final Address contractAddressExpectedToBeSigned
+			final Address activeContract
 	) {
 		final var accountId = accountParsedFromSolidityAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}
 		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
-		if (requiredKey.isPresent()) {
-			return isActiveInFrame(requiredKey.get(), recipient, contract, contractAddressExpectedToBeSigned);
-		} else {
-			return true;
-		}
+		return requiredKey.map(key -> isActiveInFrame(key, recipient, contract, activeContract)).orElse(true);
 	}
 
-	BiPredicate<JKey, TransactionSignature> validityTestFor(final Address recipient, final Address contract,
-															final Address contractAddressExpectedToBeSigned) {
-		final var contractIdExpectedToBeSigned =
-				contractParsedFromSolidityAddress(contractAddressExpectedToBeSigned);
+	private boolean isActiveInFrame(
+			final JKey key,
+			final Address recipient,
+			final Address contract,
+			final Address activeContract
+	) {
+		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract, activeContract));
+	}
+
+	BiPredicate<JKey, TransactionSignature> validityTestFor(
+			final Address recipient,
+			final Address contract,
+			final Address activeContract
+	) {
+		final var activeContractId = contractParsedFromSolidityAddress(activeContract);
 		final var isDelegateCall = !contract.equals(recipient);
 
-		/* Note that when this observer is used directly above in isActive(), it will be called
-		 * with each primitive key in the top-level Hedera key of interest, along with that key's
-		 * verified cryptographic signature (if any was available in the sigMap). */
+		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
+		 * called  with each primitive key in the top-level Hedera key of interest, along with
+		 * that key's verified cryptographic signature (if any was available in the sigMap). */
 		return (key, sig) -> {
 			if (key.hasDelegatableContractId()) {
 				final var controllingId = key.getDelegatableContractIdKey().getContractID();
-				return controllingId.equals(contractIdExpectedToBeSigned);
+				return controllingId.equals(activeContractId);
 			} else if (key.hasContractID()) {
 				final var controllingId = key.getContractIDKey().getContractID();
-				return controllingId.equals(contractIdExpectedToBeSigned) && !isDelegateCall;
+				return !isDelegateCall && controllingId.equals(activeContractId);
 			} else {
-				/* Otherwise delegate to the cryptographic validity test */
+				/* Otherwise apply the standard cryptographic validity test */
 				return cryptoValidity.test(key, sig);
 			}
 		};
@@ -143,10 +156,5 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
 				.map(MerkleAccount::getAccountKey);
-	}
-
-	private boolean isActiveInFrame(final JKey key, final Address recipient, final Address contract, final Address contractAddressExpectedToBeSigned) {
-		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
-		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract, contractAddressExpectedToBeSigned));
 	}
 }

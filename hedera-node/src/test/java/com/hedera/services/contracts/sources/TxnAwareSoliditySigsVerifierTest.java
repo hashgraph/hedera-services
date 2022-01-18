@@ -51,8 +51,11 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -104,15 +107,18 @@ class TxnAwareSoliditySigsVerifierTest {
 	private void setup() throws Exception {
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> tokens, () -> accounts, cryptoValidity);
+		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> tokens, () -> accounts,
+				cryptoValidity);
 	}
 
 	@Test
 	void throwsIfAskedToVerifyMissingToken() {
 		given(tokens.get(tokenId.asEntityNum())).willReturn(null);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+		assertFailsWith(() ->
+						subject.hasActiveSupplyKey(
+								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR),
+				INVALID_TOKEN_ID);
 	}
 
 	@Test
@@ -122,8 +128,10 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(tokens.get(tokenId.asEntityNum())).willReturn(token);
 		given(token.hasSupplyKey()).willReturn(false);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+		assertFailsWith(() ->
+						subject.hasActiveSupplyKey(
+								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR),
+				TOKEN_HAS_NO_SUPPLY_KEY);
 	}
 
 	@Test
@@ -136,7 +144,9 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+		final var verdict = subject.hasActiveSupplyKey(PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR,
+				PRETEND_CONTRACT_ADDR,
+				PRETEND_SENDER_ADDR);
 
 		assertTrue(verdict);
 	}
@@ -145,8 +155,10 @@ class TxnAwareSoliditySigsVerifierTest {
 	void throwsIfAskedToVerifyMissingAccount() {
 		given(accounts.get(accountId.asEntityNum())).willReturn(null);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveKey(PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR));
+		assertFailsWith(() ->
+				subject.hasActiveKey(
+						PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR),
+				INVALID_ACCOUNT_ID);
 	}
 
 	@Test
@@ -157,7 +169,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveKey(PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+		final var verdict = subject.hasActiveKey(PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				PRETEND_SENDER_ADDR);
 
 		assertTrue(verdict);
 	}
@@ -169,7 +182,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				PRETEND_SENDER_ADDR);
 
 		assertTrue(contractFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -181,7 +195,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(noSigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+				asTypedSolidityAddress(noSigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				PRETEND_SENDER_ADDR);
 
 		assertTrue(noSigRequiredFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -198,7 +213,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
 		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				PRETEND_SENDER_ADDR);
 
 		assertTrue(sigRequiredFlag);
 	}
