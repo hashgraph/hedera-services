@@ -41,7 +41,7 @@ import java.util.function.LongSupplier;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getResolvedIdFromRegistry;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -178,7 +178,8 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		submitKey.ifPresent(exp ->
 				assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
 		autoRenewAccount.ifPresent(exp ->
-				assertEquals(getIdWithAliasLookUp(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
+				assertEquals(getResolvedIdFromRegistry(exp, spec, autoRenewAccountRefType), info.getAutoRenewAccount(),
+						"Bad auto-renew account!"));
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}

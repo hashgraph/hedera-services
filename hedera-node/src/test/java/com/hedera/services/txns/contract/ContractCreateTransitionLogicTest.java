@@ -153,8 +153,6 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
-				AliasLookup.of(proxy, OK));
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -163,13 +161,28 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void validationFailsWithInvalidProxy() {
 		AccountID invalidProxy = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
-		givenInvalidTxnCtx(aliasPayer, invalidProxy);
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(hederaLedger.lookUpAccountId(invalidProxy)).willReturn(
-				AliasLookup.of(invalidProxy, INVALID_ACCOUNT_ID));
+		var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setConstructorParameters(copyFromUtf8("test"))
+				.setProxyAccountID(invalidProxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(contractCreateTxn));
+		var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
+				AliasLookup.of(senderAccountId, OK));
+		given(hederaLedger.lookUpAccountId(invalidProxy)).willReturn(AliasLookup.of(invalidProxy, INVALID_ACCOUNT_ID));
+
+		// when:
+		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertEquals("INVALID_ACCOUNT_ID", exception.getMessage());
 	}
 
 	@Test
@@ -528,8 +541,6 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
-		given(hederaLedger.lookUpAccountId(proxy)).willReturn(
-				AliasLookup.of(proxy, OK));
 
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
 

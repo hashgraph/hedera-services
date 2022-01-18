@@ -21,6 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
@@ -55,16 +56,19 @@ public final class AwareNodeDiligenceScreen {
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public AwareNodeDiligenceScreen(
 			final OptionValidator validator,
 			final TransactionContext txnCtx,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AliasManager aliasManager
 	) {
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.backingAccounts = backingAccounts;
+		this.aliasManager = aliasManager;
 	}
 
 	public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
@@ -84,7 +88,13 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		final var payerAccountId = txnCtx.activePayer();
+		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
+
+		if (payerLookup.response() != OK) {
+			txnCtx.setStatus(payerLookup.response());
+		}
+		final var payerAccountId = payerLookup.resolvedId();
+
 		final var payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {

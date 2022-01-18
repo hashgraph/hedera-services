@@ -55,15 +55,15 @@ public class TopicCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-//				signingRequirementsEnforced(),
-//				autoRenewPeriodIsValidated(),
-//				autoRenewAccountIdNeedsAdminKeyToo(),
-//				submitKeyIsValidated(),
-//				adminKeyIsValidated(),
-//				autoRenewAccountIsValidated(),
-//				noAutoRenewPeriod(),
-//				allFieldsSetHappyCase(),
-//				feeAsExpected(),
+				signingRequirementsEnforced(),
+				autoRenewPeriodIsValidated(),
+				autoRenewAccountIdNeedsAdminKeyToo(),
+				submitKeyIsValidated(),
+				adminKeyIsValidated(),
+				autoRenewAccountIsValidated(),
+				noAutoRenewPeriod(),
+				allFieldsSetHappyCase(),
+				feeAsExpected(),
 				autoRenewAccountWorksWithAlias(),
 				invalidAutoRenewAccountFailsWithAlias()
 		);

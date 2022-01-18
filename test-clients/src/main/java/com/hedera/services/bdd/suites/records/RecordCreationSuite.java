@@ -199,7 +199,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 			final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
 			return defaultHapiSpec("EnsureDefaultSystemFiles")
-					.given( ).when( ).then(
+					.given().when().then(
 							uploadDefaultFeeSchedules(GENESIS),
 							fileUpdate(API_PERMISSIONS)
 									.payingWith(GENESIS)

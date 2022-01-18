@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -67,7 +68,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -142,14 +142,17 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("treasuryAlias"),
 						newKeyNamed("invalidAlias"),
 						newKeyNamed("adminKey"),
-						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "autoRenewAlias", ONE_HUNDRED_HBARS),
+						sortedCryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "autoRenewAlias",
+										ONE_HUNDRED_HBARS),
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, "treasuryAlias", ONE_HUNDRED_HBARS))
+								.payingWith(GENESIS)
 								.via("autoCreate")
 				)
 				.when(
 						getTxnRecord("autoCreate")
+								.andAllChildRecords()
 								.hasAliasInChildRecord("autoRenewAlias", 0)
-								.hasAliasInChildRecord("treasuryAlias", 1),
+								.hasAliasInChildRecord("treasuryAlias", 1).logged(),
 						tokenCreate("tokenA")
 								.adminKey("adminKey")
 								.treasury(DEFAULT_PAYER)
@@ -165,11 +168,11 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tokenA")
 								.treasury("invalidAlias")
 								.treasuryIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY),
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN),
 						tokenUpdate("tokenA")
 								.autoRenewAccount("invalidAlias")
 								.autoRenewAccountIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				);
 	}
 
@@ -720,7 +723,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.logged(),
 						getTokenNftInfos("primary", 0, 1)
 								.hasNfts(
-										newTokenNftInfo("primary", 1, "newTokenTreasury", ByteString.copyFromUtf8("memo1"))
+										newTokenNftInfo("primary", 1, "newTokenTreasury",
+												ByteString.copyFromUtf8("memo1"))
 								)
 								.logged(),
 						getTxnRecord("tokenUpdateTxn").logged()

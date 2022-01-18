@@ -82,6 +82,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+	private ReferenceType proxyReferenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
@@ -107,6 +108,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	public HapiCryptoUpdate newProxy(String name) {
+		newProxy = Optional.of(name);
+		return this;
+	}
+
+	public HapiCryptoUpdate newProxyWithAlias(String name) {
+		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
 		newProxy = Optional.of(name);
 		return this;
 	}
@@ -184,7 +191,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						CryptoUpdateTransactionBody.class, builder -> {
 							builder.setAccountIDToUpdate(id);
 							newProxy.ifPresent(p -> {
-								var proxyId = TxnUtils.asId(p, spec);
+								AccountID proxyId;
+								if (proxyReferenceType == ReferenceType.REGISTRY_NAME) {
+									proxyId = TxnUtils.asId(p, spec);
+								} else {
+									proxyId = asIdForKeyLookUp(p, spec);
+								}
 								builder.setProxyAccountID(proxyId);
 							});
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
@@ -211,7 +223,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return defaultUpdateSigners(account, updKeyName, this::effectivePayer);
+		return defaultUpdateSigners(referenceType == ReferenceType.ALIAS_KEY_NAME ? aliasKeySource : account,
+				updKeyName,
+				this::effectivePayer);
 	}
 
 	@Override

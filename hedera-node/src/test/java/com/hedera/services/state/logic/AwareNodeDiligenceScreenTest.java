@@ -22,6 +22,8 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.accounts.AliasLookup;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -86,6 +88,8 @@ class AwareNodeDiligenceScreenTest {
 	private OptionValidator validator;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -95,7 +99,7 @@ class AwareNodeDiligenceScreenTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts);
+		subject = new AwareNodeDiligenceScreen(validator, txnCtx, backingAccounts, aliasManager);
 	}
 
 	@Test
@@ -209,6 +213,7 @@ class AwareNodeDiligenceScreenTest {
 	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -219,7 +224,7 @@ class AwareNodeDiligenceScreenTest {
 	void invalidPayerAccountIfAlias() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(txnCtx.activePayer()).willReturn(payerAccountId);
+		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -234,7 +239,7 @@ class AwareNodeDiligenceScreenTest {
 		given(payerAccountRef.isDeleted()).willReturn(true);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
-		given(txnCtx.activePayer()).willReturn(payerAccountId);
+		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -277,7 +282,7 @@ class AwareNodeDiligenceScreenTest {
 		final var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(false);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(txnCtx.activePayer()).willReturn(payerAccountId);
+		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
 	}
 }

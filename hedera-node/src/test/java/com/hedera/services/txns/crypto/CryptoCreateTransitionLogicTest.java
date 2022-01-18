@@ -264,12 +264,14 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
+		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(
 				AliasLookup.of(aliasedProxyID, INVALID_ACCOUNT_ID));
 		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
-		assertEquals(INVALID_ACCOUNT_ID, subject.validate(cryptoCreateTxn));
+		subject.doStateTransition();
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	private Key unmappableKey() {

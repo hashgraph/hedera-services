@@ -34,6 +34,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -104,10 +106,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
 		final var senderId = Id.fromGrpcAccount(hederaLedger.lookUpAccountId(grpcSender).resolvedId());
+		var proxyAccount = Id.DEFAULT;
 
-		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(
-				hederaLedger.lookUpAccountId(op.getProxyAccountID()).resolvedId()) :
-				Id.DEFAULT;
+		/* ---- validate -- */
+		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID());
+			validateTrue(OK == result.response(), INVALID_ACCOUNT_ID);
+			proxyAccount = Id.fromGrpcAccount(result.resolvedId());
+		}
+
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
 				: STANDIN_CONTRACT_ID_KEY;
@@ -189,13 +196,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
-		}
-
-		if (op.hasProxyAccountID()) {
-			final var result = hederaLedger.lookUpAccountId(op.getProxyAccountID()).response();
-			if (result != OK) {
-				return result;
-			}
 		}
 
 		return validator.memoCheck(op.getMemo());

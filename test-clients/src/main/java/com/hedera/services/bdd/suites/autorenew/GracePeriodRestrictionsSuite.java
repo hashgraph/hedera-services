@@ -81,19 +81,19 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						gracePeriodRestrictionsSuiteSetup(),
+//						gracePeriodRestrictionsSuiteSetup(),
 
 						contractCallRestrictionsEnforced(),
-						payerRestrictionsEnforced(),
-						cryptoTransferRestrictionsEnforced(),
-						tokenMgmtRestrictionsEnforced(),
-						cryptoAndContractDeleteRestrictionsEnforced(),
-						treasuryOpsRestrictionEnforced(),
-						tokenAutoRenewOpsEnforced(),
-						topicAutoRenewOpsEnforced(),
+//						payerRestrictionsEnforced(),
+//						cryptoTransferRestrictionsEnforced(),
+//						tokenMgmtRestrictionsEnforced(),
+//						cryptoAndContractDeleteRestrictionsEnforced(),
+//						treasuryOpsRestrictionEnforced(),
+//						tokenAutoRenewOpsEnforced(),
+//						topicAutoRenewOpsEnforced(),
 						cryptoUpdateRestrictionsEnforced(),
 
-						gracePeriodRestrictionsSuiteCleanup(),
+//						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
@@ -108,6 +108,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ContractCallRestrictionsEnforced")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(1, 7776000L)),
 						fileCreate(bytecode).path(ContractResources.DOUBLE_SEND_BYTECODE_PATH),
 						contractCreate(contract)
 								.balance(ONE_HBAR)
@@ -116,7 +119,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.balance(0L),
 						cryptoCreate(detachedAccount)
 								.balance(0L)
-								.autoRenewSecs(1)
+								.autoRenewSecs(4)
 				).when(
 						sleepFor(1_500L),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
@@ -148,6 +151,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CryptoUpdateRestrictionsEnforced")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(1, 7776000L)),
 						newKeyNamed("ntb"),
 						cryptoCreate(detachedAccount)
 								.balance(0L)
