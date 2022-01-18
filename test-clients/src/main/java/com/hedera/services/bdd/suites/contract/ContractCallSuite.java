@@ -85,6 +85,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -153,7 +154,29 @@ public class ContractCallSuite extends HapiApiSuite {
 				callingDestructedContractReturnsStatusDeleted(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				imapUserExercise(),
-				workingHoursDemo());
+				workingHoursDemo(),
+				deletedContractsCannotBeUpdated()
+		);
+	}
+
+	private HapiApiSpec deletedContractsCannotBeUpdated() {
+		final var adminKey = "admin";
+		final var contract = "contract";
+
+		return defaultHapiSpec("DeletedContractsCannotBeUpdated")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate("bytecode").path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(contract)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000)
+				).when(
+						contractCall(contract, ContractResources.SELF_DESTRUCT_CALL_ABI)
+								.deferStatusResolution()
+				).then(
+						contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID)
+				);
 	}
 
 	private HapiApiSpec workingHoursDemo() {

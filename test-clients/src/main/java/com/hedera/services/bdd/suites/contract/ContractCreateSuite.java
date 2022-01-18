@@ -135,7 +135,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
 				minChargeIsTXGasUsedByContractCreate(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
-				vanillaSuccess());
+				vanillaSuccess()
+		);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
