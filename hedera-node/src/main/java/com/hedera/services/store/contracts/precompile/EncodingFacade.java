@@ -117,7 +117,7 @@ public class EncodingFacade {
 		}
 
 		private Bytes build() {
-			var result = Tuple.EMPTY;
+			Tuple result;
 			if (functionType == FunctionType.MINT) {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
 			} else {
