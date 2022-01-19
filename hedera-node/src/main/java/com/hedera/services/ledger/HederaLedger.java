@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -510,16 +509,6 @@ public class HederaLedger {
 
 	private void setBalance(AccountID id, long newBalance) {
 		accountsLedger.set(id, BALANCE, newBalance);
-	}
-
-	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
-		for (var change : changes) {
-			if (change.isForHbar()) {
-				final var accountId = change.accountId();
-				setBalance(accountId, change.getNewBalance());
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
-			}
-		}
 	}
 
 	public ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
