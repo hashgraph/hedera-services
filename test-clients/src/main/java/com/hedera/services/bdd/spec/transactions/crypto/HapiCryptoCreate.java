@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -49,6 +50,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
@@ -74,7 +76,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Long> initialBalance = Optional.empty();
 	private Optional<Long> autoRenewDurationSecs = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
-	private Optional<String> proxyAlias = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<String> keyName = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
@@ -181,13 +182,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
 	public HapiCryptoCreate proxy(String idLit) {
 		proxyReferenceType = ReferenceType.REGISTRY_NAME;
-		proxy = Optional.of(HapiPropertySource.asAccount(idLit));
+		proxy = Optional.of(asAccount(idLit));
 		return this;
 	}
 
 	public HapiCryptoCreate proxyWithAlias(String idLit) {
 		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
-		proxyAlias = Optional.of(idLit);
+		proxy = Optional.of(asAccount(ByteString.copyFromUtf8(idLit)));
 		return this;
 	}
 

@@ -192,6 +192,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
+	public HapiContractCreate proxyWithAlias(String idLit) {
+		proxy = Optional.of(HapiPropertySource.asAccount(ByteString.copyFromUtf8(idLit)));
+		return this;
+	}
+
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		return (omitAdminKey || useDeprecatedAdminKey)

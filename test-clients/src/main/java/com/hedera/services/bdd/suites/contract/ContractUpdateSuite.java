@@ -36,17 +36,21 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -80,8 +84,40 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				canMakeContractImmutableWithEmptyKeyList(),
 				givenAdminKeyMustBeValid(),
 				fridayThe13thSpec(),
-				updateDoesNotChangeBytecode()
+				updateDoesNotChangeBytecode(),
+				updateProxyAsAliasWorks(),
+				invalidProxyAsAliasFails()
 		);
+	}
+
+	private HapiApiSpec updateProxyAsAliasWorks() {
+		return defaultHapiSpec("updateProxyAsAliasWorks")
+				.given(
+						newKeyNamed("alias"),
+						newKeyNamed("adminKey"),
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
+								.via("autoCreation"),
+						getTxnRecord("autoCreation").andAllChildRecords()
+				).when(
+						contractCreate("contract")
+								.adminKey("adminKey")
+								.entityMemo("memo"),
+
+						contractUpdate("contract").newProxyWithAlias("alias")
+				).then();
+	}
+
+	private HapiApiSpec invalidProxyAsAliasFails() {
+		return defaultHapiSpec("invalidProxyAsAliasFails")
+				.given(
+						newKeyNamed("alias"),
+						newKeyNamed("adminKey"),
+						contractCreate("contract")
+								.adminKey("adminKey")
+								.entityMemo("memo")
+				).when(
+						contractUpdate("contract").newProxyWithAlias("alias").hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
+				).then();
 	}
 
 	private HapiApiSpec updateWithBothMemoSettersWorks() {
@@ -344,7 +380,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				)
 				.then(
 						withOpContext((spec, log) -> {
-							var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
+							var op = getContractBytecode("contract").hasBytecode(
+									spec.registry().getBytes("initialBytecode"));
 							allRunFor(spec, op);
 						})
 				);

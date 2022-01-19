@@ -53,7 +53,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -65,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -94,8 +97,46 @@ public class ContractCreateSuite extends HapiApiSuite {
 						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
 						cannotCreateTooLargeContract(),
 						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						proxyCanBeUsedAsAlias(),
+						invalidProxyFails()
 				}
 		);
+	}
+
+	private HapiApiSpec proxyCanBeUsedAsAlias() {
+		return defaultHapiSpec("proxyCanBeUsedAsAlias")
+				.given(
+						newKeyNamed("alias"),
+						fileCreate("contractFile")
+								.path(ContractResources.VALID_BYTECODE_PATH)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
+								.via("autoCreation"),
+						getTxnRecord("autoCreation").andAllChildRecords()
+				).then(
+						contractCreate("contract")
+								.omitAdminKey()
+								.proxyWithAlias("alias")
+								.bytecode("contractFile"),
+						getContractInfo("contract")
+								.has(contractWith().immutableContractKey("contract"))
+								.logged()
+				);
+	}
+
+	private HapiApiSpec invalidProxyFails() {
+		return defaultHapiSpec("proxyCanBeUsedAsAlias")
+				.given(
+						newKeyNamed("alias"),
+						fileCreate("contractFile")
+								.path(ContractResources.VALID_BYTECODE_PATH)
+				).when().then(
+						contractCreate("contract")
+								.omitAdminKey()
+								.proxyWithAlias("alias")
+								.bytecode("contractFile")
+								.hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
+				);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
