@@ -67,7 +67,6 @@ class TokenDissociateTransitionLogicTest {
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(validDissociateTxn()));
 	}
-
 	@Test
 	void hasCorrectApplicability() {
 		// expect:

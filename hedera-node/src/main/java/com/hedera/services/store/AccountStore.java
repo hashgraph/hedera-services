@@ -43,7 +43,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 @Singleton
@@ -169,7 +168,16 @@ public class AccountStore {
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(grpcId, mutableAccount);
 	}
-
+	
+	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum, final ResponseCodeEnum response) {
+		if (!alias.isEmpty() && possibleAccountNum == 0) {
+			var entityNum = aliasManager.lookupIdBy(alias);
+			validateTrue(entityNum != EntityNum.MISSING_NUM, response);
+			return entityNum.longValue();
+		}
+		return possibleAccountNum;
+	}
+	
 	/**
 	 * Fetches the account Num from the alias map that is mapped to the given alias
 	 *
@@ -180,12 +188,7 @@ public class AccountStore {
 	 * @return AccountNum of the alias account if alias is found in the aliasManager.
 	 */
 	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum) {
-		if (!alias.isEmpty() && possibleAccountNum == 0) {
-			var entityNum = aliasManager.lookupIdBy(alias);
-			validateTrue(entityNum != EntityNum.MISSING_NUM, INVALID_ALIAS_KEY);
-			return entityNum.longValue();
-		}
-		return possibleAccountNum;
+		return getAccountNumFromAlias(alias, possibleAccountNum, INVALID_ACCOUNT_ID);
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {

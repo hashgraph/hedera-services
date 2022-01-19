@@ -22,6 +22,8 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
 
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;

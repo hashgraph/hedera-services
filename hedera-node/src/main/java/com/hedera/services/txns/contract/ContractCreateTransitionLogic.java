@@ -56,10 +56,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 public class ContractCreateTransitionLogic implements TransitionLogic {
@@ -110,16 +113,18 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var op = contractCreateTxn.getContractCreateInstance();
 
 		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
-		final var senderAccountNum = accountStore.getAccountNumFromAlias(grpcSender.getAlias(), grpcSender.getAccountNum());
-		final var senderId =  new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
+		final var senderLookup= hederaLedger.lookUpAccountIdAndValidate(grpcSender, INVALID_PAYER_ACCOUNT_ID);
+
+		validateTrue(OK == senderLookup.response(), INVALID_PAYER_ACCOUNT_ID);
+		final var senderId = Id.fromGrpcAccount(senderLookup.resolvedId());
+
 		var proxyAccount = Id.DEFAULT;
 
 		/* ---- validate -- */
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
-			final var grpcProxy = op.getProxyAccountID();
-			final var proxyAccountNum = accountStore.getAccountNumFromAlias(grpcProxy.getAlias(), grpcProxy.getAccountNum());
-			proxyAccount = new Id(grpcProxy.getShardNum(), grpcProxy.getRealmNum(), proxyAccountNum);
-			accountStore.loadAccountOrFailWith(proxyAccount, INVALID_PROXY_ACCOUNT_ID);
+			final var result = hederaLedger.lookUpAccountIdAndValidate(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
+			validateTrue(OK == result.response(), INVALID_PROXY_ACCOUNT_ID);
+			proxyAccount = Id.fromGrpcAccount(result.resolvedId());
 		}
 
 		var key = op.hasAdminKey()

@@ -92,7 +92,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Validate --- */
 		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewId.getAlias(),
-				autoRenewId.getAccountNum());
+				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
 		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
 
 		final var payer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());

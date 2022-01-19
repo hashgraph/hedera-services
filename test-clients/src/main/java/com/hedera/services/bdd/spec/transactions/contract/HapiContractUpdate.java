@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +21,14 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -45,6 +47,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate.DEPRECATED_CID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -58,6 +61,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 	private Optional<String> newKey = Optional.empty();
 	private Optional<String> newMemo = Optional.empty();
 	private Optional<Long> newAutoRenew = Optional.empty();
+	private Optional<AccountID> newProxy = Optional.empty();
 	private boolean wipeToThresholdKey = false;
 	private boolean useEmptyAdminKeyList = false;
 	private boolean useDeprecatedMemoField = false;
@@ -76,38 +80,57 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		newKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiContractUpdate newExpiryTime(long t) {
 		newExpiryTime = OptionalLong.of(t);
 		return this;
 	}
+
 	public HapiContractUpdate newExpirySecs(long t) {
 		newExpirySecs = Optional.of(t);
 		return this;
 	}
+
 	public HapiContractUpdate newMemo(String s) {
 		newMemo = Optional.of(s);
 		return this;
 	}
+
+	public HapiContractUpdate newProxy(String s) {
+		newProxy = Optional.of(asAccount(s));
+		return this;
+	}
+
+	public HapiContractUpdate newProxyWithAlias(String s) {
+		newProxy = Optional.of(asAccount(ByteString.copyFromUtf8(s)));
+		return this;
+	}
+
 	public HapiContractUpdate newAutoRenew(long autoRenewSecs) {
 		newAutoRenew = Optional.of(autoRenewSecs);
 		return this;
 	}
+
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
+
 	public HapiContractUpdate useDeprecatedMemoField() {
 		useDeprecatedMemoField = true;
 		return this;
 	}
+
 	public HapiContractUpdate improperlyEmptyingAdminKey() {
 		wipeToThresholdKey = true;
 		return this;
 	}
+
 	public HapiContractUpdate properlyEmptyingAdminKey() {
 		useEmptyAdminKeyList = true;
 		return this;
 	}
+
 	public HapiContractUpdate bytecode(String bytecode) {
 		this.bytecode = Optional.of(bytecode);
 		return this;
@@ -143,16 +166,19 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							} else {
 								key.ifPresent(b::setAdminKey);
 							}
-							newExpirySecs.ifPresent(t -> b.setExpirationTime(Timestamp.newBuilder().setSeconds(t).build()));
+							newExpirySecs.ifPresent(
+									t -> b.setExpirationTime(Timestamp.newBuilder().setSeconds(t).build()));
 							newMemo.ifPresent(s -> {
-								if (useDeprecatedMemoField)	 {
+								if (useDeprecatedMemoField) {
 									b.setMemo(s);
 								} else {
 									b.setMemoWrapper(StringValue.newBuilder().setValue(s).build());
 								}
 							});
-							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenew).build()));
+							newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(
+									Duration.newBuilder().setSeconds(autoRenew).build()));
 							bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec)).build());
+							newProxy.ifPresent(b::setProxyAccountID);
 						}
 				);
 		return builder -> builder.setContractUpdateInstance(opBody);
@@ -166,6 +192,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		}
 		return signers;
 	}
+
 	private List<Function<HapiApiSpec, Key>> oldDefaults() {
 		return List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),

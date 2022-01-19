@@ -243,7 +243,7 @@ class AccountStoreTest {
 
 		var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.getAccountNumFromAlias(alias, num));
-		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
 	}
 
 	@Test

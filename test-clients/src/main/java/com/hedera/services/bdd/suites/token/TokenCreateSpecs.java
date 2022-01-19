@@ -81,7 +81,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -238,12 +237,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.treasury("invalidAlias")
 								.treasuryIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY),
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN),
 						tokenCreate("tokenC")
 								.adminKey("adminKey")
 								.autoRenewAccount("invalidAlias")
 								.autoRenewAccountIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				);
 	}
 

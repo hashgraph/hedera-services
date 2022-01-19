@@ -43,14 +43,13 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -135,10 +134,10 @@ class TokenGrantKycTransitionLogicTest {
 	void failsWhenInvalidAlias() {
 		givenValidAliasTxnCtx();
 		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
-				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
 	}
 
 	@Test

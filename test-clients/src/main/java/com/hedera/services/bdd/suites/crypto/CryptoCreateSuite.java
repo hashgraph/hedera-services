@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -99,12 +100,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec createAccountWithMissingAliasedProxy() {
 		return defaultHapiSpec("createAccountWithMissingAliasedProxy")
-				.given(newKeyNamed("someRandomAlias"))
+				.given(newKeyNamed("randomAlias"))
 				.when()
 				.then(
 						cryptoCreate("accountWithInvalidAliasProxy")
-								.proxyWithAlias("someRandomAlias")
-								.hasPrecheck(INVALID_ACCOUNT_ID)
+								.proxyWithAlias("randomAlias")
+								.hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
 				);
 	}
 
@@ -121,7 +122,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						getTxnRecord("proxyCreation").andAllChildRecords().hasChildRecordCount(1)
 				).then(
 						cryptoCreate("accountWithAliasProxy")
-//								.proxyWithAlias(alias)
+								.proxyWithAlias(alias)
 								.hasKnownStatus(SUCCESS)
 				);
 	}

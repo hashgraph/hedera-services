@@ -66,7 +66,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -143,23 +142,23 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				)
 				.then(
 						grantTokenKycAliased(token, validAlias),
-						grantTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+						grantTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						tokenUnfreezeAliased(token, validAlias),
-						tokenUnfreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+						tokenUnfreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
 						cryptoTransfer(
 								moving(500, token).between(DEFAULT_PAYER, validAlias)),
 						getAliasedAccountInfo(validAlias)
 								.hasToken(relationshipWith(token).balance(500))
 								.logged(),
 						revokeTokenKycAliased(token, validAlias),
-						revokeTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+						revokeTokenKycAliased(token, invalidAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						tokenFreezeAliased(token, validAlias),
-						tokenFreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ALIAS_KEY),
+						tokenFreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						wipeTokenAccountAliased(token, validAlias, 250).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-						wipeTokenAccountAliased(token, invalidAlias, 250).hasKnownStatus(INVALID_ALIAS_KEY),
+						wipeTokenAccountAliased(token, invalidAlias, 250).hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						getAliasedAccountInfo(validAlias)
 								.hasToken(relationshipWith(token).balance(500))

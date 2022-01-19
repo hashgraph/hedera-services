@@ -50,6 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -84,15 +86,24 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 
 	private HapiApiSpec canDeleteAccountSpecifiedWithAlias() {
 		final var aliasToBeDeleted = "alias";
+		final var invalidAlias ="invalid";
 
 		return defaultHapiSpec("canDeleteAccountSpecifiedWithAlias")
 				.given(
 						newKeyNamed(aliasToBeDeleted),
+						newKeyNamed(invalidAlias),
 						cryptoCreate("transferAccount").balance(0L)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS)).via(
 								"autoCreation"),
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1),
+
+						cryptoDeleteAliased(invalidAlias)
+								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(invalidAlias, "transferAccount", DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						cryptoDeleteAliased(aliasToBeDeleted)
 								.transfer("transferAccount")
@@ -109,11 +120,13 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec transferAccountCanBeSpecifiedAsAlias() {
 		final var aliasToBeDeleted = "alias";
 		final var transferAccount = "transferAccount";
+		final var invalidTransferAccount = "invalidTransferAccount";
 
 		return defaultHapiSpec("transferAccountCanBeSpecifiedAsAlias")
 				.given(
 						newKeyNamed(aliasToBeDeleted),
-						newKeyNamed(transferAccount)
+						newKeyNamed(transferAccount),
+						newKeyNamed(invalidTransferAccount)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS),
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, transferAccount, ONE_HUNDRED_HBARS)).via(
@@ -121,12 +134,19 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(2),
 
 						cryptoDeleteAliased(aliasToBeDeleted)
+								.transferAliased(invalidTransferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, invalidTransferAccount, DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID),
+						cryptoDeleteAliased(aliasToBeDeleted)
 								.transferAliased(transferAccount)
 								.hasKnownStatus(SUCCESS)
 								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
 								.via("deleteTxn")
 				).then(
 						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getAliasedAccountInfo(invalidTransferAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
 						getAliasedAccountInfo(transferAccount).has(
 								accountWith().expectedBalanceWithChargedUsd(2 * ONE_HUNDRED_HBARS, 0.1, 0.05)),
 						getTxnRecord("deleteTxn").logged());

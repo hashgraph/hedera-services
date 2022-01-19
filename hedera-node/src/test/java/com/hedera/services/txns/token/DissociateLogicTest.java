@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,9 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -30,6 +32,7 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -43,6 +46,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
@@ -77,6 +83,11 @@ class DissociateLogicTest {
 
 	private DissociateLogic subject;
 
+	private final ByteString alias = KeyFactory.getDefaultInstance().newEd25519().getEd25519();
+	private final AccountID accountWithAlias = AccountID.newBuilder().setAlias(alias).build();
+	private final long mappedAliasNum = 1234L;
+	private final Id mappedAliasId = new Id(0, 0, mappedAliasNum);
+
 	@BeforeEach
 	private void setup() {
 		subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory);
@@ -105,6 +116,48 @@ class DissociateLogicTest {
 		verify(accountStore).commitAccount(account);
 		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));
 	}
+
+	@Test
+	void performsExpectedLogicWithAlias() {
+		given(accessor.getTxn()).willReturn(validDissociateTxnWithAlias());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willReturn(mappedAliasNum);
+		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);
+		// and:
+		given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);
+		willAnswer(invocationOnMock -> {
+			((List<TokenRelationship>) invocationOnMock.getArgument(0)).add(tokenRelationship);
+			return null;
+		}).given(dissociation).addUpdatedModelRelsTo(anyList());
+
+		subject.dissociate(accountWithAlias, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
+
+		verify(account).dissociateUsing(List.of(dissociation), validator);
+	}
+
+	private TransactionBody validDissociateTxnWithAlias() {
+		return TransactionBody.newBuilder()
+				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
+						.setAccount(accountWithAlias)
+						.addTokens(firstTargetToken))
+				.build();
+	}
+
+	@Test
+	void failsAsExpectedWithInvalidAlias() {
+		given(accessor.getTxn()).willReturn(validDissociateTxnWithAlias());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
+
+		final var tokenList = txnCtx.accessor().getTxn().getTokenDissociate().getTokensList();
+
+		final var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.dissociate(accountWithAlias, tokenList));
+		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
+	}
+
 
 	private TransactionBody validDissociateTxn() {
 		return TransactionBody.newBuilder()

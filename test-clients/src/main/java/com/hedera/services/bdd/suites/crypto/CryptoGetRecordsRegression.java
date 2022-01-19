@@ -84,6 +84,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 		return defaultHapiSpec("getAccountRecordUsingAlias")
 				.given(
 						newKeyNamed(alias),
+						newKeyNamed("invalid"),
 						cryptoCreate(payer)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
@@ -100,7 +101,9 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
 										.txnId("transferTxn")
 										.transfers(including(tinyBarsFromTo(DEFAULT_PAYER, payer, 1L)))
 										.status(SUCCESS)
-										.payerWithAlias(alias))).logged()
+										.payerWithAlias(alias)))
+								.logged(),
+						getAliasedAccountRecords("invalid").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)
 				);
 	}
 
