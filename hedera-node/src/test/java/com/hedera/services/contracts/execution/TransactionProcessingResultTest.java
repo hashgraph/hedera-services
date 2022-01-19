@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +51,8 @@ class TransactionProcessingResultTest {
 	private static final long GAS_PRICE = 1234L;
 	private final Account logger = new Account(new Id(0, 0, 1002));
 
-	private final Bytes logTopicBytes = Bytes.fromHexString("0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
+	private final Bytes logTopicBytes = Bytes.fromHexString(
+			"0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
 
 	private final LogTopic logTopic = LogTopic.create(logTopicBytes);
 
@@ -87,7 +89,8 @@ class TransactionProcessingResultTest {
 				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
 
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(
+				EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
 		var result = TransactionProcessingResult.successful(
@@ -96,7 +99,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				1234L,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -129,10 +133,12 @@ class TransactionProcessingResultTest {
 				.setGasUsed(GAS_USAGE)
 				.setBloom(ByteString.copyFrom(new byte[256]));
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(
+				EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));
+		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,
+				Optional.of(exception),Map.of());
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
@@ -149,7 +155,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_PRICE, result.getGasPrice());
 	}
@@ -162,7 +169,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 	}
@@ -175,11 +183,12 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_USAGE, result.getGasUsed());
 	}
-	
+
 	@Test
 	void assertSuccessfulStatus() {
 		var result = TransactionProcessingResult.successful(
@@ -188,7 +197,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertTrue(result.isSuccessful());
 	}

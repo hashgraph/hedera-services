@@ -72,7 +72,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-@ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
+@ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
 class ContractCallLocalResourceUsageTest {
 	private static final int gas = 1_234;
 	private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
@@ -123,7 +123,7 @@ class ContractCallLocalResourceUsageTest {
 	void setsResultInQueryCxtIfPresent() {
 		final var queryCtx = new HashMap<String, Object>();
 		final var transactionProcessingResult = TransactionProcessingResult.successful(
-				new ArrayList<>(), 0, 0,1, Bytes.EMPTY, callerID.asEvmAddress());
+				new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), null /*//FIXME*/);
 		final var response = okResponse(transactionProcessingResult);
 		final var estimateResponse = subject.dummyResponse(target);
 		final var expected = expectedUsage();

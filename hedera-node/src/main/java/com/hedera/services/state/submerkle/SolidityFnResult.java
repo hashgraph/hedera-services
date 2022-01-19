@@ -21,27 +21,42 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.utils.BytesComparator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class SolidityFnResult implements SelfSerializable {
 	private static final byte[] MISSING_BYTES = new byte[0];
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_021_VERSION = 2;
+	static final int MERKLE_VERSION = 2;
+
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -58,6 +73,7 @@ public class SolidityFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = new ArrayList<>();
 	private List<SolidityLog> logs = new ArrayList<>();
+	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 	public SolidityFnResult() {
 	}
@@ -69,7 +85,8 @@ public class SolidityFnResult implements SelfSerializable {
 			byte[] bloom,
 			long gasUsed,
 			List<SolidityLog> logs,
-			List<EntityId> createdContractIds
+			List<EntityId> createdContractIds,
+			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -78,6 +95,7 @@ public class SolidityFnResult implements SelfSerializable {
 		this.gasUsed = gasUsed;
 		this.logs = logs;
 		this.createdContractIds = createdContractIds;
+		this.stateChanges = stateChanges;
 	}
 
 	/* --- SelfSerializable --- */
@@ -101,6 +119,28 @@ public class SolidityFnResult implements SelfSerializable {
 		contractId = serdes.readNullableSerializable(in);
 		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
+		if (version > RELEASE_021_VERSION) {
+			int contractLen = in.readInt();
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new HashMap<>(contractLen);
+			while (contractLen > 0) {
+				byte[] contractAddress = in.readByteArray(32);
+				int storageLen = in.readInt();
+				Map<Bytes, Pair<Bytes, Bytes>> storage = new HashMap<>(storageLen);
+				state.put(Address.wrap(Bytes.wrap(contractAddress)), storage);
+				while (storageLen > 0) {
+					Bytes slot = Bytes.wrap(in.readByteArray(32));
+					Bytes left = Bytes.wrap(in.readByteArray(32));
+					boolean hasRight = in.readBoolean();
+					Bytes right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
+					storage.put(slot, Pair.of(left, right));
+					storageLen--;
+				}
+				contractLen--;
+			}
+			stateChanges = state;
+		} else {
+			stateChanges = Map.of();
+		}
 	}
 
 	@Override
@@ -112,6 +152,26 @@ public class SolidityFnResult implements SelfSerializable {
 		serdes.writeNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
+
+		out.write(stateChanges.size());
+		for (Map.Entry<Address, Map<Bytes, Pair<Bytes, Bytes>>> entry : stateChanges.entrySet()) {
+			out.writeByteArray(entry.getKey().trimLeadingZeros().toArrayUnsafe());
+			Map<Bytes, Pair<Bytes, Bytes>> slots = entry.getValue();
+			out.writeInt(slots.size());
+			for (var slot : slots.entrySet()) {
+				out.writeByteArray(slot.getKey().trimLeadingZeros().toArrayUnsafe());
+				out.writeByteArray(slot.getValue().getLeft().trimLeadingZeros().toArrayUnsafe());
+				Bytes right = slot.getValue().getRight();
+				if (right == null) {
+					out.writeBoolean(false);
+				} else {
+					out.writeBoolean(true);
+					out.writeByteArray(right.trimLeadingZeros().toArrayUnsafe());
+				}
+			}
+		}
+
+
 	}
 
 	/* --- Object --- */
@@ -126,12 +186,12 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		var that = (SolidityFnResult) o;
 		return gasUsed == that.gasUsed &&
-				Objects.equals(contractId, that.contractId) &&
-				Arrays.equals(result, that.result) &&
-				Objects.equals(error, that.error) &&
-				Arrays.equals(bloom, that.bloom) &&
-				Objects.equals(logs, that.logs) &&
-				Objects.equals(createdContractIds, that.createdContractIds);
+			   Objects.equals(contractId, that.contractId) &&
+			   Arrays.equals(result, that.result) &&
+			   Objects.equals(error, that.error) &&
+			   Arrays.equals(bloom, that.bloom) &&
+			   Objects.equals(logs, that.logs) &&
+			   Objects.equals(createdContractIds, that.createdContractIds);
 	}
 
 	@Override
@@ -184,6 +244,10 @@ public class SolidityFnResult implements SelfSerializable {
 		return createdContractIds;
 	}
 
+	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+		return stateChanges;
+	}
+
 	/* --- Helpers --- */
 
 	public static SolidityFnResult fromGrpc(ContractFunctionResult that) {
@@ -194,7 +258,21 @@ public class SolidityFnResult implements SelfSerializable {
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
 				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).collect(toList()),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()));
+				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()),
+				that.getStateChangesList().stream().collect(Collectors.toMap(
+						csc -> Address.wrap(Bytes.wrap(asSolidityAddress(csc.getContractID()))),
+						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
+								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
+								sc -> Pair.of(
+										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
+										sc.getWriteModeCase() == StorageChange.WriteModeCase.READONLY ? null :
+												Bytes.wrap(sc.getValueWritten().toByteArray()).trimLeadingZeros()),
+								(l, r) -> l,
+								() -> new TreeMap<>(BytesComparator.INSTANCE)
+						)),
+						(l, r) -> l,
+						() -> new TreeMap<>(BytesComparator.INSTANCE)))
+		);
 	}
 
 	public ContractFunctionResult toGrpc() {
@@ -213,6 +291,24 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()));
+		}
+		for (var stateChanges : stateChanges.entrySet()) {
+			var contractStateChange = ContractStateChange.newBuilder().setContractID(
+					EntityIdUtils.contractParsedFromSolidityAddress(stateChanges.getKey().toArrayUnsafe()));
+			for (var slotChange : stateChanges.getValue().entrySet()) {
+				var storageChange = StorageChange.newBuilder();
+				storageChange.setSlot(ByteString.copyFrom(slotChange.getKey().toArrayUnsafe()));
+				Pair<Bytes, Bytes> value = slotChange.getValue();
+				storageChange.setValueRead(ByteString.copyFrom(value.getLeft().toArrayUnsafe()));
+				Bytes valueRight = value.getRight();
+				if (valueRight == null) {
+					storageChange.setReadOnly(true);
+				} else {
+					storageChange.setValueWritten(ByteString.copyFrom(valueRight.toArrayUnsafe()));
+				}
+				contractStateChange.addStorageChanges(storageChange.build());
+			}
+			grpc.addStateChanges(contractStateChange);
 		}
 		return grpc.build();
 	}

@@ -23,15 +23,22 @@ package com.hedera.services.state.submerkle;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
@@ -55,6 +62,11 @@ class SolidityFnResultTest {
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L));
 	private final List<SolidityLog> logs = List.of(logFrom(0), logFrom(1));
+	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
+			Map.of(Address.fromHexString("0x6"),
+					Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
+					Address.fromHexString("0x9"),
+					Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12))));
 
 	private DomainSerdes serdes;
 	private SolidityFnResult subject;
@@ -70,7 +82,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				stateChanges);
 
 		SolidityFnResult.serdes = serdes;
 	}
@@ -90,7 +103,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				stateChanges);
 		final var three = new SolidityFnResult(
 				contractId,
 				result,
@@ -98,7 +112,8 @@ class SolidityFnResultTest {
 				bloom,
 				gasUsed,
 				logs,
-				createdContractIds);
+				createdContractIds,
+				stateChanges);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -119,7 +134,8 @@ class SolidityFnResultTest {
 						subject.getBloom(),
 						subject.getGasUsed(),
 						subject.getLogs(),
-						subject.getCreatedContractIds()),
+						subject.getCreatedContractIds(),
+						subject.getStateChanges()),
 				subject
 		);
 	}
@@ -163,6 +179,24 @@ class SolidityFnResultTest {
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
 				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
+				.addStateChanges(ContractStateChange.newBuilder()
+						.setContractID(ContractID.newBuilder().setContractNum(6).build())
+						.addStorageChanges(
+								StorageChange.newBuilder()
+										.setSlot(ByteString.copyFrom(new byte[] {7}))
+										.setValueRead(ByteString.copyFrom(new byte[] {8}))
+										.setReadOnly(true)
+										.build())
+						.build())
+				.addStateChanges(ContractStateChange.newBuilder()
+						.setContractID(ContractID.newBuilder().setContractNum(9).build())
+						.addStorageChanges(
+								StorageChange.newBuilder()
+										.setSlot(ByteString.copyFrom(new byte[] {10}))
+										.setValueRead(ByteString.copyFrom(new byte[] {11}))
+										.setValueWritten(ByteString.copyFrom(new byte[] {12}))
+										.build())
+						.build())
 				.build();
 
 		final var actual = subject.toGrpc();

@@ -27,8 +27,11 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.BytesComparator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -47,6 +50,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
@@ -298,6 +302,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 				new HederaAccountCustomizer().isSmartContract(true);
 
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> storageChanges = new TreeMap<>(BytesComparator.INSTANCE);
+		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
+		Gas sbhRefund = Gas.ZERO;
 
 		private Gas sbhRefund = Gas.ZERO;
 
@@ -308,6 +315,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public Map<Address, Address> getSponsorMap() {
 			return sponsorMap;
+		}
+
+
+		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStorageChanges() {
+			return storageChanges;
 		}
 
 		@Override

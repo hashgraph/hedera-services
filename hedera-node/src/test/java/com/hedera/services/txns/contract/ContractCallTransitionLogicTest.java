@@ -123,8 +123,9 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
@@ -157,15 +158,17 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L,124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
 	}
 
 	@Test

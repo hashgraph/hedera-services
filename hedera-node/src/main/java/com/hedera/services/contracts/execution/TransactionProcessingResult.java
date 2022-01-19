@@ -27,6 +27,9 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.StorageChange;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -35,7 +38,9 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -70,13 +75,15 @@ public class TransactionProcessingResult {
 	private final Optional<ExceptionalHaltReason> haltReason;
 
 	private List<ContractID> createdContracts = new ArrayList<>();
+	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 	public static TransactionProcessingResult failed(
 			final long gasUsed,
 			final long sbhRefund,
 			final long gasPrice,
 			final Optional<Bytes> revertReason,
-			final Optional<ExceptionalHaltReason> haltReason) {
+			final Optional<ExceptionalHaltReason> haltReason,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
 				new ArrayList<>(),
@@ -86,7 +93,8 @@ public class TransactionProcessingResult {
 				Bytes.EMPTY,
 				Optional.empty(),
 				revertReason,
-				haltReason);
+				haltReason,
+				stateChanges);
 	}
 
 	public static TransactionProcessingResult successful(
@@ -95,7 +103,8 @@ public class TransactionProcessingResult {
 			final long sbhRefund,
 			final long gasPrice,
 			final Bytes output,
-			final Address recipient) {
+			final Address recipient,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
@@ -105,7 +114,8 @@ public class TransactionProcessingResult {
 				output,
 				Optional.of(recipient),
 				Optional.empty(),
-				Optional.empty());
+				Optional.empty(),
+				stateChanges);
 	}
 
 	public TransactionProcessingResult(
@@ -117,7 +127,8 @@ public class TransactionProcessingResult {
 			final Bytes output,
 			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
-			final Optional<ExceptionalHaltReason> haltReason) {
+			final Optional<ExceptionalHaltReason> haltReason,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
 		this.logs = logs;
 		this.output = output;
 		this.status = status;
@@ -127,11 +138,15 @@ public class TransactionProcessingResult {
 		this.recipient = recipient;
 		this.haltReason = haltReason;
 		this.revertReason = revertReason;
+		this.stateChanges = stateChanges;
 	}
 
 	/**
-	 * Adds a list of created contracts to be externalised as part of the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
-	 * @param createdContracts the list of contractIDs created
+	 * Adds a list of created contracts to be externalised as part of the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
+	 *
+	 * @param createdContracts
+	 * 		the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
@@ -150,7 +165,9 @@ public class TransactionProcessingResult {
 		return gasPrice;
 	}
 
-	public long getGasUsed() { return gasUsed; }
+	public long getGasUsed() {
+		return gasUsed;
+	}
 
 	public long getSbhRefund() {
 		return sbhRefund;
@@ -171,13 +188,15 @@ public class TransactionProcessingResult {
 
 	/**
 	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} GRPC model
+	 *
 	 * @return the {@link ContractFunctionResult} model to externalise
 	 */
 	public ContractFunctionResult toGrpc() {
 		final var contractResultBuilder = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed);
 		contractResultBuilder.setContractCallResult(ByteString.copyFrom(output.toArray()));
-		recipient.ifPresent(address -> contractResultBuilder.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
+		recipient.ifPresent(address -> contractResultBuilder.setContractID(
+				EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
 		// Set Revert reason as error message if present, otherwise set halt reason (if present)
 		if (revertReason.isPresent()) {
 			contractResultBuilder.setErrorMessage(revertReason.toString());
@@ -195,6 +214,25 @@ public class TransactionProcessingResult {
 
 		/* Populate Created Contract IDs */
 		contractResultBuilder.addAllCreatedContractIDs(createdContracts);
+
+		/* Populate stateChanges */
+		stateChanges.forEach((address, states) -> {
+			ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
+					EntityIdUtils.contractParsedFromSolidityAddress(address.toArray()));
+			states.forEach((slot, changePair) -> {
+				StorageChange.Builder stateChange = StorageChange.newBuilder()
+						.setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(changePair.getLeft().toArrayUnsafe()));
+				Bytes changePairRight = changePair.getRight();
+				if (changePairRight == null) {
+					stateChange.setReadOnly(true);
+				} else {
+					stateChange.setValueWritten(ByteString.copyFrom(changePairRight.toArrayUnsafe()));
+				}
+				contractChanges.addStorageChanges(stateChange.build());
+			});
+			contractResultBuilder.addStateChanges(contractChanges.build());
+		});
 
 		return contractResultBuilder.build();
 	}

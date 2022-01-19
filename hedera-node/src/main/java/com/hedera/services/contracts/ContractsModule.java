@@ -31,6 +31,7 @@ import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
+import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
@@ -169,6 +170,11 @@ public abstract class ContractsModule {
 	@Singleton
 	@IntoSet
 	public abstract Operation bindSStoreOperation(HederaSStoreOperation sstore);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	public abstract Operation bindHederaSLoadOperation(HederaSLoadOperation sstore);
 
 	@Binds
 	@Singleton

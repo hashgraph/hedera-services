@@ -230,7 +230,7 @@ class ContractCallLocalAnswerTest {
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.empty());
+				.failed(0, 0, 1, Optional.empty(), Optional.empty(), null /*//FIXME*/);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
 		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));

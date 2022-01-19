@@ -25,11 +25,19 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.BytesComparator;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.fee.FeeBuilder;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -49,15 +57,22 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
+import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -172,7 +187,7 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-		final var updater = worldState.updater();
+		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final var senderEvmAddress = sender.getId().asEvmAddress();
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
 		final MutableAccount mutableSender = senderAccount.getMutable();
@@ -225,7 +240,11 @@ abstract class EvmTxProcessor {
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 		final Gas sbhRefund = updater.getSbhRefund();
-		if (!isStatic) {
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+
+		if (isStatic) {
+			stateChanges = Map.of();
+		} else {
 			// return gas price to accounts
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
@@ -239,6 +258,34 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
+//			stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
+//			// record storage read-only access first
+//			for (HederaWorldState.WorldStateAccount accessedAccount : ((HederaWorldState.Updater)updater).getAccessedAccounts().values()) {
+//				Map<Bytes, Pair<Bytes, Bytes>> accountChanges = new TreeMap<>(BytesComparator.INSTANCE);
+//				stateChanges.put(accessedAccount.getAddress(), accountChanges);
+//				for (Map.Entry<Bytes, Bytes> entry : accessedAccount.getReadCache().entrySet()) {
+//					Bytes key = entry.getKey();
+//					accountChanges.put(key,
+//							new ImmutablePair<>(entry.getValue(), null));
+//				}
+//			}
+			stateChanges = updater.getStorageChanges();
+
+			// record storage read/write access
+			for (UpdateTrackingAccount<? extends Account> uta :
+					(Collection<UpdateTrackingAccount<? extends Account>>) updater.getTouchedAccounts()) {
+				Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+				stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+				for (Map.Entry<UInt256, UInt256> entry : uta.getUpdatedStorage().entrySet()) {
+					UInt256 key = entry.getKey();
+					UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
+					UInt256 updatedStorageValue = uta.getStorageValue(key);
+					accountChanges.put(key,
+							new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+				}
+
+			}
+
 			/* Commit top level Updater */
 			updater.commit();
 		}
@@ -251,14 +298,16 @@ abstract class EvmTxProcessor {
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getOutputData(),
-					initialFrame.getRecipientAddress());
+					initialFrame.getRecipientAddress(),
+					stateChanges);
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason());
+					initialFrame.getExceptionalHaltReason(),
+					stateChanges);
 		}
 	}
 

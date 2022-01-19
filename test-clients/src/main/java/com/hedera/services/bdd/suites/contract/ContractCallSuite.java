@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
@@ -473,8 +474,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate("fuse").bytecode("bytecode")
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
+								.scrambleTxnBody(
+										tx -> {
+											System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+											return tx;
+										})
 				).then(
-						getTxnRecord("lightTxn").logged()
+						getTxnRecord("lightTxn").logged().exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
 				);
 	}
 
