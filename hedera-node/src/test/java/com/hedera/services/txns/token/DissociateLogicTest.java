@@ -151,8 +151,10 @@ class DissociateLogicTest {
 		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
-		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.dissociate(accountWithAlias,
-				txnCtx.accessor().getTxn().getTokenDissociate().getTokensList()));
+		final var tokenList = txnCtx.accessor().getTxn().getTokenDissociate().getTokensList();
+
+		final var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.dissociate(accountWithAlias, tokenList));
 		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
 	}
 
