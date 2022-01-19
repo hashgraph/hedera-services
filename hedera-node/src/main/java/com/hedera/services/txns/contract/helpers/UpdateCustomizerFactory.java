@@ -65,13 +65,10 @@ public class UpdateCustomizerFactory {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID());
+			final var result = ledger.lookUpAccountIdAndValidate(
+					updateOp.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
-				return Pair.of(Optional.empty(), INVALID_PROXY_ACCOUNT_ID);
-			}
-			final var validity = ledger.usableOrElse(result.resolvedId(), INVALID_PROXY_ACCOUNT_ID);
-			if (validity != OK) {
-				return Pair.of(Optional.empty(), validity);
+				return Pair.of(Optional.empty(), result.response());
 			}
 			customizer.proxy(fromGrpcAccountId(result.resolvedId()));
 		}

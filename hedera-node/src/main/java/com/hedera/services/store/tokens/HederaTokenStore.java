@@ -474,8 +474,19 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum response) {
+	public AliasLookup lookUpAccountId(final AccountID grpcId,
+			final ResponseCodeEnum response) {
 		return lookUpAccountId(grpcId, aliasManager, response);
+	}
+
+	@Override
+	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, ResponseCodeEnum errResponse) {
+		final var lookUpResult = lookUpAccountId(grpcId, aliasManager, errResponse);
+		if (lookUpResult.response() != OK) {
+			return lookUpResult;
+		}
+		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
+		return AliasLookup.of(lookUpResult.resolvedId(), validity);
 	}
 
 	public void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId) {
@@ -624,26 +635,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private AliasLookup checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
-			final var autoRenewLookUp =  lookUpAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (autoRenewLookUp.response() != OK) {
-				return autoRenewLookUp;
-			} else {
-				final var validity = usableOrElse(autoRenewLookUp.resolvedId(), INVALID_AUTORENEW_ACCOUNT);
-				return AliasLookup.of(autoRenewLookUp.resolvedId(), validity);
-			}
+			return lookUpAccountIdAndValidate(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}
 
 	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
-			final var treasuryLookUp = lookUpAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-			if (treasuryLookUp.response() != OK) {
-				return treasuryLookUp;
-			} else {
-				final var validity = usableOrElse(treasuryLookUp.resolvedId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-				return AliasLookup.of(treasuryLookUp.resolvedId(), validity);
-			}
+			return lookUpAccountIdAndValidate(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}

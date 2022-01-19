@@ -166,7 +166,8 @@ class CryptoDeleteTransitionLogicTest {
 	void rejectsDetachedAccountAsTarget() {
 		// setup:
 		givenValidTxnCtx();
-		given(ledger.usableOrElse(target, INVALID_ACCOUNT_ID)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		given(ledger.lookUpAccountIdAndValidate(target, INVALID_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(target, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		// when:
 		subject.doStateTransition();
@@ -182,7 +183,8 @@ class CryptoDeleteTransitionLogicTest {
 		var receiver = IdUtils.asAccount("0.0.7676");
 
 		givenValidTxnCtx(receiver);
-		given(ledger.usableOrElse(receiver, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		given(ledger.lookUpAccountIdAndValidate(receiver, INVALID_TRANSFER_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(receiver, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 
 		// when:
 		subject.doStateTransition();
@@ -261,12 +263,8 @@ class CryptoDeleteTransitionLogicTest {
 	void worksWithAlias() {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
-
-		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(AliasLookup.of(payer, OK));
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(AliasLookup.of(payer, OK));
-		given(ledger.lookUpAccountId(aliasAccountTarget)).willReturn(AliasLookup.of(target, OK));
-		given(ledger.usableOrElse(target, INVALID_ACCOUNT_ID)).willReturn(OK);
-		given(ledger.usableOrElse(payer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(OK);
+		given(ledger.lookUpAccountIdAndValidate(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(payer, OK));
+		given(ledger.lookUpAccountIdAndValidate(aliasAccountTarget, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(target, OK));
 
 		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
 		assertEquals(OK, validity);
@@ -282,9 +280,9 @@ class CryptoDeleteTransitionLogicTest {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
 
-		given(ledger.lookUpAccountId(aliasAccountTarget))
+		given(ledger.lookUpAccountIdAndValidate(aliasAccountTarget, INVALID_ACCOUNT_ID))
 				.willReturn(AliasLookup.of(aliasAccountTarget, INVALID_ACCOUNT_ID));
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(
+		given(ledger.lookUpAccountIdAndValidate(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(target, OK));
 
 		subject.doStateTransition();
@@ -296,12 +294,10 @@ class CryptoDeleteTransitionLogicTest {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
 
-		given(ledger.lookUpAccountId(aliasAccountTarget))
+		given(ledger.lookUpAccountIdAndValidate(aliasAccountTarget, INVALID_ACCOUNT_ID))
 				.willReturn(AliasLookup.of(target, OK));
-		given(ledger.usableOrElse(target, INVALID_ACCOUNT_ID)).willReturn(OK);
-		given(ledger.lookUpAccountId(aliasedTransfer)).willReturn(
-				AliasLookup.of(aliasedTransfer, OK));
-		given(ledger.usableOrElse(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(INVALID_TRANSFER_ACCOUNT_ID);
+		given(ledger.lookUpAccountIdAndValidate(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(aliasedTransfer, INVALID_TRANSFER_ACCOUNT_ID));
 
 		subject.doStateTransition();
 		verify(txnCtx).setStatus(INVALID_TRANSFER_ACCOUNT_ID);
@@ -322,10 +318,8 @@ class CryptoDeleteTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.lookUpAccountId(target)).willReturn(AliasLookup.of(target, OK));
-		given(ledger.lookUpAccountId(transfer)).willReturn(AliasLookup.of(transfer, OK));
-		given(ledger.usableOrElse(target, INVALID_ACCOUNT_ID)).willReturn(OK);
-		given(ledger.usableOrElse(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(OK);
+		given(ledger.lookUpAccountIdAndValidate(target, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(target, OK));
+		given(ledger.lookUpAccountIdAndValidate(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
 	}
 
 	private void givenDeleteTxnMissingTarget() {
@@ -336,7 +330,7 @@ class CryptoDeleteTransitionLogicTest {
 								.setTransferAccountID(asAccount("0.0.1234"))
 								.build()
 				).build();
-		given(ledger.lookUpAccountId(asAccount("0.0.1234"))).willReturn(
+		given(ledger.lookUpAccountIdAndValidate(asAccount("0.0.1234"), INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(asAccount("0.0.1234"), INVALID_ACCOUNT_ID));
 	}
 

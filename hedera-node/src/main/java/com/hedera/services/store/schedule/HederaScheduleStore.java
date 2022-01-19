@@ -51,7 +51,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.forEach;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -136,28 +135,23 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		if (schedule.hasExplicitPayer()) {
-			final var schedulePayerLookUp = buildAndLookUpAccountId(schedule.payer(), schedule.getPayerAlias());
+			final var schedulePayerLookUp = buildAndLookUpAccountId(
+					schedule.payer(),
+					schedule.getPayerAlias(),
+					INVALID_SCHEDULE_PAYER_ID);
 			if (schedulePayerLookUp.response() != OK) {
-				return failure(INVALID_SCHEDULE_PAYER_ID);
-			}
-
-			var validity = usableOrElse(schedulePayerLookUp.resolvedId(), INVALID_SCHEDULE_PAYER_ID);
-			if (validity != OK) {
-				return failure(validity);
+				return failure(schedulePayerLookUp.response());
 			}
 
 			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.resolvedId()));
 		}
 
-		final var schedulingAccountLookup = buildAndLookUpAccountId(schedule.schedulingAccount(),
-				schedule.getSchedulingAccountAlias());
+		final var schedulingAccountLookup = buildAndLookUpAccountId(
+				schedule.schedulingAccount(),
+				schedule.getSchedulingAccountAlias(),
+				INVALID_SCHEDULE_ACCOUNT_ID);
 		if (schedulingAccountLookup.response() != OK) {
-			return failure(INVALID_SCHEDULE_ACCOUNT_ID);
-		}
-
-		var validity = usableOrElse(schedulingAccountLookup.resolvedId(), INVALID_SCHEDULE_ACCOUNT_ID);
-		if (validity != OK) {
-			return failure(validity);
+			return failure(schedulingAccountLookup.response());
 		}
 
 		schedule.setSchedulingAccount(EntityId.fromGrpcAccountId(schedulingAccountLookup.resolvedId()));
@@ -255,18 +249,23 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	@Override
-	public AliasLookup lookUpAccountId(final AccountID grpcId, ResponseCodeEnum errResponse) {
-		return lookUpAccountId(grpcId, aliasManager, errResponse);
+	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, ResponseCodeEnum errResponse) {
+		final var lookUpResult = lookUpAccountId(grpcId, aliasManager, errResponse);
+		if (lookUpResult.response() != OK) {
+			return lookUpResult;
+		}
+		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
+		return AliasLookup.of(lookUpResult.resolvedId(), validity);
 	}
 
-	private AliasLookup buildAndLookUpAccountId(EntityId entityId, ByteString alias) {
+	private AliasLookup buildAndLookUpAccountId(EntityId entityId, ByteString alias, ResponseCodeEnum errResponse) {
 		final var accountId = alias.isEmpty() ? entityId.toGrpcAccountId() :
 				AccountID.newBuilder()
 						.setShardNum(entityId.shard())
 						.setRealmNum(entityId.realm())
 						.setAlias(alias)
 						.build();
-		return lookUpAccountId(accountId, INVALID_ALIAS_KEY);
+		return lookUpAccountIdAndValidate(accountId, errResponse);
 	}
 
 	private void resetPendingCreation() {

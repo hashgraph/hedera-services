@@ -52,7 +52,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 
 	void expire(EntityId id);
 
-	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse);
+	AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

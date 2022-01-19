@@ -82,14 +82,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			var result = ledger.lookUpAccountId(op.getDeleteAccountID());
+			var result = ledger.lookUpAccountIdAndValidate(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
-				txnCtx.setStatus(INVALID_ACCOUNT_ID);
-				return;
-			}
-			var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
+				txnCtx.setStatus(result.response());
 				return;
 			}
 
@@ -100,14 +95,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			result = ledger.lookUpAccountId(op.getTransferAccountID());
+			result = ledger.lookUpAccountIdAndValidate(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
 			if (result.response() != OK) {
-				txnCtx.setStatus(INVALID_TRANSFER_ACCOUNT_ID);
-				return;
-			}
-			validity = ledger.usableOrElse(result.resolvedId(), INVALID_TRANSFER_ACCOUNT_ID);
-			if (validity != OK) {
-				txnCtx.setStatus(validity);
+				txnCtx.setStatus(result.response());
 				return;
 			}
 			AccountID beneficiary = result.resolvedId();

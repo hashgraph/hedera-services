@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -96,21 +97,16 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
 			final var result = ledger.lookUpAccountId(
-					cryptoCreateTxn.getTransactionID().getAccountID());
+					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_PAYER_ACCOUNT_ID);
 			AccountID sponsor = result.resolvedId();
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
 
 			if (op.hasProxyAccountID()) {
-				final var proxyLookUp = ledger.lookUpAccountId(op.getProxyAccountID());
+				final var proxyLookUp = ledger.lookUpAccountIdAndValidate(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 				if (proxyLookUp.response() != OK) {
-					txnCtx.setStatus(INVALID_PROXY_ACCOUNT_ID);
-					return;
-				}
-				final var validity = ledger.usableOrElse(proxyLookUp.resolvedId(), INVALID_PROXY_ACCOUNT_ID);
-				if (validity != OK) {
-					txnCtx.setStatus(validity);
+					txnCtx.setStatus(proxyLookUp.response());
 					return;
 				}
 			}
@@ -142,7 +138,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(op.getProxyAccountID());
+			final var result = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			customizer.proxy(EntityId.fromGrpcAccountId(result.resolvedId()));
 		}
 		return customizer;

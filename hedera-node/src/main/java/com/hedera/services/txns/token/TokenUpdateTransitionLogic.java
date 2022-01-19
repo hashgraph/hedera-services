@@ -145,15 +145,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		AccountID newTreasury = null;
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			final var newTreasuryLookUp = tokenStore.lookUpAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			final var newTreasuryLookUp = tokenStore.lookUpAccountIdAndValidate(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 			if (newTreasuryLookUp.response() != OK) {
-				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-				return;
-			}
-			final var result = ledger.usableOrElse(
-					newTreasuryLookUp.resolvedId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-			if (result != OK) {
-				txnCtx.setStatus(result);
+				txnCtx.setStatus(newTreasuryLookUp.response());
 				return;
 			}
 			if (!tokenStore.associationExists(newTreasuryLookUp.resolvedId(), id)) {
@@ -266,14 +260,10 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
 		if (op.hasAutoRenewAccount()) {
-			final var newAutoRenewAccountLookUp = tokenStore.lookUpAccountId(
+			final var newAutoRenewAccountLookUp = tokenStore.lookUpAccountIdAndValidate(
 					op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (newAutoRenewAccountLookUp.response() != OK) {
-				return INVALID_AUTORENEW_ACCOUNT;
-			}
-			final var result = ledger.usableOrElse(newAutoRenewAccountLookUp.resolvedId(), INVALID_AUTORENEW_ACCOUNT);
-			if (result != OK) {
-				return result;
+				return newAutoRenewAccountLookUp.response();
 			}
 
 			if (token.hasAutoRenewAccount()) {
