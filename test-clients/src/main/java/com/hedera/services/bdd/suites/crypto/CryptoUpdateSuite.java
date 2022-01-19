@@ -174,7 +174,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						newKeyNamed(alias),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
-								.via("transferTxn")
+								.via("transferTxn"),
+						getTxnRecord("transferTxn").hasChildRecordCount(1)
 				).when(
 						getAliasedAccountInfo(alias)
 								.has(accountWith().memo("auto-created account")),
