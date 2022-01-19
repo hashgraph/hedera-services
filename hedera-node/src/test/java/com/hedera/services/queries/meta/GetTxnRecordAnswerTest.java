@@ -58,7 +58,7 @@ import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
@@ -306,7 +306,7 @@ class GetTxnRecordAnswerTest {
 	void syntaxCheckPrioritizesAccountStatus() {
 		final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
-		given(aliasManager.lookUpAccountID(targetTxnId.getAccountID())).willReturn(
+		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID())).willReturn(
 				AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 		final var validity = subject.checkValidity(query, view);
@@ -317,10 +317,10 @@ class GetTxnRecordAnswerTest {
 	@Test
 	void syntaxCheckShortCircuitsOnDefaultAccountID() {
 		final var query = Query.getDefaultInstance();
-		given(aliasManager.lookUpAccountID(query.getTransactionGetRecord().getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayerAccountID(query.getTransactionGetRecord().getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(query.getTransactionGetRecord().getTransactionID().getAccountID(),
-						INVALID_ACCOUNT_ID));
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(query, view));
+						INVALID_PAYER_ACCOUNT_ID));
+		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.checkValidity(query, view));
 	}
 
 	@Test
@@ -329,7 +329,7 @@ class GetTxnRecordAnswerTest {
 		final var query = queryOf(op);
 		given(answerFunctions.txnRecord(recordCache, view, op)).willReturn(Optional.of(cachedTargetRecord));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
-		given(aliasManager.lookUpAccountID(targetTxnId.getAccountID())).willReturn(
+		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID())).willReturn(
 				AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 
