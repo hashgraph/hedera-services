@@ -60,6 +60,9 @@ class NodeLocalPropertiesTest {
 		assertEquals(25, subject.numExecutionTimesToTrack());
 		assertEquals(26, subject.issResetPeriod());
 		assertEquals(27, subject.issRoundsToDump());
+		assertEquals(28, subject.prefetchQueueCapacity());
+		assertEquals(29, subject.prefetchThreadPoolSize());
+		assertEquals(30, subject.prefetchCodeCacheTtlSecs());
 	}
 
 	@Test
@@ -110,6 +113,9 @@ class NodeLocalPropertiesTest {
 		assertEquals(26, subject.numExecutionTimesToTrack());
 		assertEquals(27, subject.issResetPeriod());
 		assertEquals(28, subject.issRoundsToDump());
+		assertEquals(29, subject.prefetchQueueCapacity());
+		assertEquals(30, subject.prefetchThreadPoolSize());
+		assertEquals(31, subject.prefetchCodeCacheTtlSecs());
 	}
 
 	@Test
@@ -178,6 +184,9 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("stats.executionTimesToTrack")).willReturn(i + 24);
 		given(properties.getIntProperty("iss.resetPeriod")).willReturn(i + 25);
 		given(properties.getIntProperty("iss.roundsToDump")).willReturn(i + 26);
+		given(properties.getIntProperty("hedera.prefetch.queueCapacity")).willReturn(i + 27);
+		given(properties.getIntProperty("hedera.prefetch.threadPoolSize")).willReturn(i + 28);
+		given(properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs")).willReturn(i + 29);
 	}
 
 	static String logDir(int num) {

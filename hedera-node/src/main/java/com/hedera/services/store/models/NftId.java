@@ -22,6 +22,8 @@ package com.hedera.services.store.models;
 
 import com.hederahashgraph.api.proto.java.TokenID;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+
 public record NftId(long shard, long realm, long num, long serialNo) {
 	public TokenID tokenId() {
 		return TokenID.newBuilder()
@@ -31,11 +33,7 @@ public record NftId(long shard, long realm, long num, long serialNo) {
 				.build();
 	}
 
-	@Override
-	public int hashCode() {
-		int result = Long.hashCode(shard);
-		result = 31 * result + Long.hashCode(realm);
-		result = 31 * result + Long.hashCode(num);
-		return 31 * result + Long.hashCode(serialNo);
+	public static NftId withDefaultShardRealm(final long num, final long serialNo) {
+		return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
 	}
 }

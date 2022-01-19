@@ -54,6 +54,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
@@ -143,6 +144,8 @@ class MerkleAccountPropertyTest {
 		final EntityId newProxy = new EntityId(0, 0, 2);
 		final var oldAlias = ByteString.copyFromUtf8("then");
 		final var newAlias = ByteString.copyFromUtf8("now");
+		final int oldNumKvPairs = 123;
+		final int newNumKvPairs = 123;
 
 		final var account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
@@ -155,6 +158,7 @@ class MerkleAccountPropertyTest {
 				.isSmartContract(origIsContract)
 				.isReceiverSigRequired(origIsReceiverSigReq)
 				.customizing(new MerkleAccount());
+		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
@@ -189,6 +193,7 @@ class MerkleAccountPropertyTest {
 		NUM_NFTS_OWNED.setter().accept(account, newNumNfts);
 		MAX_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newMaxAutoAssociations);
 		ALREADY_USED_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newAlreadyUsedAutoAssociations);
+		NUM_CONTRACT_KV_PAIRS.setter().accept(account, newNumKvPairs);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -203,6 +208,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(newAlreadyUsedAutoAssociations, ALREADY_USED_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newMaxAutoAssociations, MAX_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newAlias, ALIAS.getter().apply(account));
+		assertEquals(newNumKvPairs, NUM_CONTRACT_KV_PAIRS.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

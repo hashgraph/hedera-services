@@ -52,7 +52,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.toReadableString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FeesAndRatesProvider {

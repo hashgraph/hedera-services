@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,12 +65,14 @@ class HederaDelegateCallOperationTest {
 	private Address accountAddr;
 	@Mock
 	private Gas cost;
+	@Mock
+	private BiPredicate<Address, MessageFrame> addressValidator;
 
 	private HederaDelegateCallOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaDelegateCallOperation(calc);
+		subject = new HederaDelegateCallOperation(calc, addressValidator);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 
@@ -87,6 +90,7 @@ class HederaDelegateCallOperationTest {
 		given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
 		given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+		given(addressValidator.test(any(), any())).willReturn(false);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 
@@ -110,6 +114,7 @@ class HederaDelegateCallOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
+		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());

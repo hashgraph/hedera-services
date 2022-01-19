@@ -20,10 +20,20 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static java.lang.System.arraycopy;
 
 public class Utils {
 
@@ -32,8 +42,35 @@ public class Utils {
 				Bytes.wrap(event.getBytes())).toArray());
 	}
 
-
 	public static ByteString parsedToByteString(long n) {
 		return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
+	}
+
+	public static byte[] asAddress(final TokenID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	}
+
+	public static byte[] asAddress(final AccountID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+		final byte[] solidityAddress = new byte[20];
+
+		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+
+		return solidityAddress;
+	}
+
+	public static ByteString extractByteCode(String path) {
+		try {
+			final var bytes = Files.readAllBytes(Path.of(path));
+			return ByteString.copyFrom(bytes);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ByteString.EMPTY;
+		}
 	}
 }

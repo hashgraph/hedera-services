@@ -24,17 +24,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.Map;
+
+import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 public enum DefaultKeyGen implements KeyGenerator {
 	DEFAULT_KEY_GEN;
@@ -44,8 +44,7 @@ public enum DefaultKeyGen implements KeyGenerator {
 
 	static {
 		try {
-			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-			ecKpGenerator = KeyPairGenerator.getInstance("EC");
+			ecKpGenerator = KeyPairGenerator.getInstance("EC", BOUNCYCASTLE_PROVIDER);
 			ecKpGenerator.initialize(ecSpec, new SecureRandom());
 		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException fatal) {
 			throw new IllegalStateException(fatal);

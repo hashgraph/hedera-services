@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
@@ -37,6 +38,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -110,7 +112,6 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -128,7 +129,10 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -174,6 +178,7 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
@@ -252,13 +257,31 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith({ MockitoExtension.class })
 class MiscUtilsTest {
+
+	@Mock
+	TxnAccessor accessor;
+	@Mock
+	TransactionBody body;
+	@Mock
+	ContractCreateTransactionBody createTransactionBody;
+	@Mock
+	ContractCallTransactionBody callTransactionBody;
+	@Mock
+	TransactionContext txCtx;
+	@Mock
+	ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	SolidityFnResult solidityFnResult;
+
 	@Test
 	void canUnpackTime() {
 		final long seconds = 1_234_567L;
@@ -771,10 +794,6 @@ class MiscUtilsTest {
 		final var expectedHash = com.swirlds.common.CommonUtils.unhex(
 				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
 		);
-		final var transaction = mock(Transaction.class);
-		final var accessor = mock(PlatformTxnAccessor.class);
-		given(transaction.toByteArray()).willReturn(testBytes);
-		given(accessor.getSignedTxnWrapper()).willReturn(transaction);
 
 		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
 		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
@@ -820,6 +839,28 @@ class MiscUtilsTest {
 		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
 	}
 
+	@Test
+	void rejectsNonPrimitiveProtoKeys() {
+		assertFalse(MiscUtils.isSerializedProtoKey(Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))))
+				.build()
+				.toByteString()));
+		assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
+	}
+
+	@Test
+	void contractCallIsConsensusThrottled() {
+		assertTrue(isGasThrottled(ContractCall));
+	}
+
+	@Test
+	void contractCreateIsConsensusThrottled() {
+		assertTrue(isGasThrottled(ContractCreate));
+	}
+
+	@SuppressWarnings("unchecked")
 	public static class BodySetter<T, B> {
 		private final Class<T> type;
 

@@ -23,7 +23,6 @@ package com.hedera.services.legacy.regression.umbrella;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
@@ -51,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
@@ -58,11 +58,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -76,10 +78,6 @@ public class FileServiceTest extends CryptoServiceTest {
 	private static String[] files = { "1K.txt", "1K.jpg", "1K.pdf", "1K.bin" };
 	protected static int FILE_PART_SIZE = 4096; //4K bytes
 	protected static ConcurrentHashMap<FileID, List<Key>> fid2waclMap = new ConcurrentHashMap<>();
-
-	public FileServiceTest() {
-		super();
-	}
 
 	public FileServiceTest(String testConfigFilePath) {
 		super(testConfigFilePath);
@@ -96,6 +94,32 @@ public class FileServiceTest extends CryptoServiceTest {
 			log.info("i=" + i + "\n prev=" + prev.getNanos() + "\n curr=" + current.getNanos());
 			Assertions.assertNotEquals(prev.getNanos(), current.getNanos());
 			prev = current;
+		}
+	}
+
+	/**
+	 * Write bytes to a file.
+	 *
+	 * @param path
+	 * 		file write path
+	 * @param data
+	 * 		byte array representation of data to write
+	 * @param append
+	 * 		append to existing file if true
+	 * @throws IOException
+	 * 		when error with IO
+	 */
+	public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
+		File f = new File(path);
+		File parent = f.getParentFile();
+		if (!parent.exists()) {
+			parent.mkdirs();
+		}
+		try (FileOutputStream fos = new FileOutputStream(f, append)) {
+			fos.write(data);
+			fos.flush();
+		} catch (IOException e) {
+			throw e;
 		}
 	}
 
@@ -519,7 +543,7 @@ public class FileServiceTest extends CryptoServiceTest {
 			firstPartBytes = bytes;
 			remainder = 0;
 		} else {
-			firstPartBytes = CommonUtils.copyBytes(0, FILE_PART_SIZE, bytes);
+			firstPartBytes = Arrays.copyOfRange(bytes, 0, FILE_PART_SIZE);
 		}
 
 		// create file with first part
@@ -528,25 +552,26 @@ public class FileServiceTest extends CryptoServiceTest {
 		log.info("@@@ created file with first part: fileID = " + fid);
 
 		getFileInfo(fid, payerID, nodeID);
-		CommonUtils.nap(WAIT_IN_SEC);
+		TimeUnit.SECONDS.sleep(WAIT_IN_SEC);
 
 		// append the rest of the parts
 		int i = 1;
 		for (; i < numParts; i++) {
-			byte[] partBytes = CommonUtils.copyBytes(i * FILE_PART_SIZE, FILE_PART_SIZE, bytes);
+			byte[] partBytes = Arrays.copyOfRange(bytes,i * FILE_PART_SIZE, (i + 1) * FILE_PART_SIZE);
 			fileData = ByteString.copyFrom(partBytes);
 			appendFile(payerID, nodeID, fid, fileData, waclPubKeyList);
 			log.info("@@@ append file count = " + i);
-			CommonUtils.nap(WAIT_IN_SEC);
+			TimeUnit.SECONDS.sleep(WAIT_IN_SEC);
 			getFileInfo(fid, payerID, nodeID);
 		}
 
 		if (remainder > 0) {
-			byte[] partBytes = CommonUtils.copyBytes(numParts * FILE_PART_SIZE, remainder, bytes);
+			final var start = numParts * FILE_PART_SIZE;
+			byte[] partBytes = Arrays.copyOfRange(bytes, start, start + remainder);
 			fileData = ByteString.copyFrom(partBytes);
 			appendFile(payerID, nodeID, fid, fileData, waclPubKeyList);
 			log.info("@@@ append file count = " + i);
-			CommonUtils.nap(WAIT_IN_SEC);
+			TimeUnit.SECONDS.sleep(WAIT_IN_SEC);
 			getFileInfo(fid, payerID, nodeID);
 		}
 
@@ -723,7 +748,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
 	protected void saveFile(byte[] content, String filePath) throws IOException {
 		String path = "saved" + FileSystems.getDefault().getSeparator() + filePath;
-		CommonUtils.writeToFile(path, content);
+		writeToFile(path, content, false);
 		String workDir = System.getProperty("user.dir");
 		log.info(
 				"File downloaded and saved at project root as: " + workDir + FileSystems.getDefault()

@@ -29,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -53,7 +52,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 
 	public static void main(String... args) {
-		new ContractCallLocalSuite().runSuiteAsync();
+		new ContractCallLocalSuite().runSuiteSync();
 	}
 
 	@Override
@@ -63,25 +62,14 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
-
-	private List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-				deletedContract(),
-				invalidContractID(),
-				impureCallFails(),
-				insufficientFeeFails(),
-				lowBalanceFails()
-		);
-	}
-
-	private List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
-				vanillaSuccess()
+		return List.of(new HapiApiSpec[] {
+						deletedContract(),
+						invalidContractID(),
+						impureCallFails(),
+						insufficientFeeFails(),
+						lowBalanceFails(),
+						vanillaSuccess(),
+				}
 		);
 	}
 
@@ -91,7 +79,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
@@ -154,7 +142,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCreate("parentDelegate")
 								.bytecode("parentDelegateBytecode")
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
@@ -174,7 +162,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
 						cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
 				).then(
 						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)

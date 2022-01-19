@@ -255,7 +255,8 @@ class DeterministicThrottleTest {
 
 		assertEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, aLast));
 		assertNotEquals(null, a);
-		assertNotEquals(new Object(), a);
+		assertNotEquals(a, new Object());
+
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast));
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast));
 

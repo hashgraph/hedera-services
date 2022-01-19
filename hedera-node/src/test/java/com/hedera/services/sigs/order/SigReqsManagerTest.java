@@ -199,7 +199,6 @@ class SigReqsManagerTest {
 		verify(expansionHelper, times(3)).expandIn(accessor, signedStateSigReqs, pubKeyToSigBytes);
 		final var capturedStateChildren = captor.getValue();
 		assertSame(nextLastHandleTime, capturedStateChildren.signedAt());
-		assertThrows(NullPointerException.class, capturedStateChildren::accounts);
 	}
 
 	private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);

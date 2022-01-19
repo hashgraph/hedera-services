@@ -87,7 +87,7 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the updated models --- */
 
-		tokenStore.persistTokenRelationships(List.of(tokenRelationship));
+		tokenStore.commitTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Override

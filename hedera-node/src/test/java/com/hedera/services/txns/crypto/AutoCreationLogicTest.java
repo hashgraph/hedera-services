@@ -108,7 +108,7 @@ class AutoCreationLogicTest {
 
 		assertEquals(initialTransfer - totalFee, input.units());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
-		verify(aliasManager).createAlias(alias, createdNum);
+		verify(aliasManager).link(alias, createdNum);
 		verify(sigImpactHistorian).markAliasChanged(alias);
 		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
 		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
@@ -120,7 +120,7 @@ class AutoCreationLogicTest {
 				.willReturn(consensusNow);
 		given(ids.newAccountId(any()))
 				.willReturn(created);
-		given(syntheticTxnFactory.cryptoCreate(aPrimitiveKey, 0L))
+		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
 				.willReturn(mockSyntheticCreation);
 		given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
 				.willReturn(fees);

@@ -21,16 +21,23 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingNfts;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -86,6 +93,18 @@ public abstract class StoresModule {
 
 	@Provides
 	@Singleton
+	public static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
+			BackingStore<TokenID, MerkleToken> backingTokens
+	) {
+		return new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				backingTokens,
+				new ChangeSummaryManager<>());
+	}
+
+	@Provides
+	@Singleton
 	public static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
 			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
@@ -99,14 +118,35 @@ public abstract class StoresModule {
 	}
 
 	@Provides
+	@Singleton
+	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
+			final BackingStore<AccountID, MerkleAccount> backingAccounts
+	) {
+		return new TransactionalLedger<>(
+				AccountProperty.class,
+				MerkleAccount::new,
+				backingAccounts,
+				new ChangeSummaryManager<>());
+	}
+
+	@Provides
 	@AreFcotmrQueriesDisabled
-	public static boolean provideAreFcotmrQueriesDisabled(@CompositeProps PropertySource properties) {
+	public static boolean provideAreFcotmrQueriesDisabled(final @CompositeProps PropertySource properties) {
 		return !properties.getBooleanProperty("tokens.nfts.areQueriesEnabled");
 	}
 
 	@Provides
 	@AreTreasuryWildcardsEnabled
-	public static boolean provideAreTreasuryWildcardsEnabled(@CompositeProps PropertySource properties) {
+	public static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
+	}
+
+	@Provides
+	@Singleton
+	public static CodeCache provideCodeCache(
+			final NodeLocalProperties properties,
+			final MutableEntityAccess entityAccess
+	) {
+		return new CodeCache(properties, entityAccess);
 	}
 }

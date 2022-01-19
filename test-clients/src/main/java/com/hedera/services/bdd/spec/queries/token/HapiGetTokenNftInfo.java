@@ -132,6 +132,8 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
 				registry);
+
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	private <T, R> void assertFor(

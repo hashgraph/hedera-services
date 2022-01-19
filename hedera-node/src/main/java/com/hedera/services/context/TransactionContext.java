@@ -247,4 +247,16 @@ public interface TransactionContext {
 	 * @param assessedCustomFees the assessed custom fees
 	 */
 	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
+
+	/**
+	 * Verifies if the transaction context for the currently executing transaction has a contract result
+	 * @return true if there is a ContractCall or ContractCreate result attached to the context
+	 */
+	boolean hasContractResult();
+
+	/**
+	 * Extracts the amount of gas used by the currently executing transaction.
+	 * @return long - the amount of gas used for the TX execution
+	 */
+	long getGasUsedForContractTxn();
 }

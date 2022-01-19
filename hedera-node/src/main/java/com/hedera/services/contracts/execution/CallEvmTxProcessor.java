@@ -23,37 +23,44 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
+
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
+	private final CodeCache codeCache;
 
 	@Inject
 	public CallEvmTxProcessor(
-			HederaWorldState worldState,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties dynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, dynamicProperties, gasCalculator, hederaOperations);
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		this.codeCache = codeCache;
 	}
 
 	public TransactionProcessingResult execute(
@@ -75,7 +82,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				false,
-				Optional.empty());
+				OptionalLong.empty());
 	}
 
 	@Override
@@ -84,14 +91,23 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
-		Bytes code = updater.get(to).getCode();
+	protected MessageFrame buildInitialFrame(
+			final MessageFrame.Builder baseInitialFrame,
+			final HederaWorldUpdater updater,
+			final Address to,
+			final Bytes payload
+	) {
+		final var code = codeCache.getIfPresent(to);
+		/* The ContractCallTransitionLogic would have rejected a missing or deleted
+		* contract, so at this point we should have non-null bytecode available. */
+		validateTrue(code != null, FAIL_INVALID);
+
 		return baseInitialFrame
 				.type(MessageFrame.Type.MESSAGE_CALL)
 				.address(to)
 				.contract(to)
 				.inputData(payload)
-				.code(new Code(code, Hash.hash(code)))
+				.code(code)
 				.build();
 	}
 }

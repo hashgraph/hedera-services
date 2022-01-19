@@ -26,15 +26,15 @@ import com.swirlds.common.CommonUtils;
  * Maps to proto Key of type RSA_3072.
  */
 public class JRSA_3072Key extends JKey {
-	private byte[] rsa3072Key;
+	private byte[] rsa3072;
 
-	public JRSA_3072Key(byte[] rsa3072Key) {
-		this.rsa3072Key = rsa3072Key;
+	public JRSA_3072Key(byte[] rsa3072) {
+		this.rsa3072 = rsa3072;
 	}
 
 	@Override
 	public String toString() {
-		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(rsa3072Key) + ">";
+		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(rsa3072) + ">";
 	}
 
 	public boolean hasRSA_3072Key() {
@@ -42,12 +42,12 @@ public class JRSA_3072Key extends JKey {
 	}
 
 	public byte[] getRSA3072() {
-		return rsa3072Key;
+		return rsa3072;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return ((null == rsa3072Key) || (0 == rsa3072Key.length));
+		return ((null == rsa3072) || (0 == rsa3072.length));
 	}
 
 	@Override

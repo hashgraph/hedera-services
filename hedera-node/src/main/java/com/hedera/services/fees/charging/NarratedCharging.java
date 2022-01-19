@@ -42,6 +42,7 @@ public interface NarratedCharging {
 
 	void chargePayerAllFees();
 	void chargePayerServiceFee();
+	void refundPayerServiceFee();
 	void chargePayerNetworkAndUpToNodeFee();
 	void chargeSubmittingNodeUpToNetworkFee();
 

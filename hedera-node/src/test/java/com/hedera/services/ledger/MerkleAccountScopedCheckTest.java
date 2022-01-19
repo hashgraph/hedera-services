@@ -32,9 +32,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -42,27 +46,25 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountScopedCheckTest {
 	@Mock
-	GlobalDynamicProperties dynamicProperties;
-
+	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	OptionValidator validator;
-
+	private OptionValidator validator;
 	@Mock
-	BalanceChange balanceChange;
-
+	private BalanceChange balanceChange;
 	@Mock
-	MerkleAccount account;
-
+	private MerkleAccount account;
 	@Mock
-	Map<AccountProperty, Object> changeSet;
+	private Map<AccountProperty, Object> changeSet;
+	@Mock
+	private Function<AccountProperty, Object> extantProps;
 
-	long expiry = 1234L;
-	MerkleAccountScopedCheck subject;
+	private MerkleAccountScopedCheck subject;
 
 	@BeforeEach
 	void setUp() {
@@ -71,23 +73,16 @@ class MerkleAccountScopedCheckTest {
 	}
 
 	@Test
-	void failsAsExpectedForSmartContacts() {
-		when(account.isSmartContract()).thenReturn(true);
-
-		assertEquals(INVALID_ACCOUNT_ID, subject.checkUsing(account, changeSet));
-	}
-
-	@Test
 	void failsAsExpectedForDeletedAccount() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(true);
-
 		assertEquals(ACCOUNT_DELETED, subject.checkUsing(account, changeSet));
+
+		given(extantProps.apply(IS_DELETED)).willReturn(true);
+		assertEquals(ACCOUNT_DELETED, subject.checkUsing(extantProps, changeSet));
 	}
 
 	@Test
 	void failAsExpectedForDeletedAccountInChangeSet() {
-		when(account.isSmartContract()).thenReturn(false);
 		Map<AccountProperty, Object> changes = new HashMap<>();
 		changes.put(IS_DELETED, true);
 
@@ -96,19 +91,23 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedForExpiredAccount() {
-		when(account.isSmartContract()).thenReturn(false);
+		final var expiry = 1234L;
+
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
 		when(account.getBalance()).thenReturn(0L);
 		when(account.getExpiry()).thenReturn(expiry);
 		when(validator.isAfterConsensusSecond(expiry)).thenReturn(false);
-
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
+
+		given(extantProps.apply(IS_DELETED)).willReturn(false);
+		given(extantProps.apply(BALANCE)).willReturn(0L);
+		given(extantProps.apply(EXPIRY)).willReturn(expiry);
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(extantProps, changeSet));
 	}
 
 	@Test
 	void failsAsExpectedWhenInsufficientBalance() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 
@@ -121,7 +120,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPath() {
-		when(account.isSmartContract()).thenReturn(false);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(0L);
@@ -133,7 +131,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void throwsAsExpected() {
 		var iae = assertThrows(IllegalArgumentException.class,
-				() -> subject.getEffective(AUTO_RENEW_PERIOD, account, changeSet));
+				() -> subject.getEffective(AUTO_RENEW_PERIOD, account, null, changeSet));
 		assertEquals("Property "+ AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
 	}
 }

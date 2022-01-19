@@ -21,11 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -33,8 +28,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -49,55 +42,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 @Singleton
 public class TokenAssociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
+	private final AssociateLogic associateLogic;
 
 	@Inject
-	public TokenAssociateTransitionLogic(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
-	) {
-		this.dynamicProperties = dynamicProperties;
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
+	public TokenAssociateTransitionLogic(final TransactionContext txnCtx, final AssociateLogic associateLogic) {
 		this.txnCtx = txnCtx;
+		this.associateLogic = associateLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenAssociate();
-		/* First the account */
-		final var grpcId = op.getAccount();
-		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());
-		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
-		/* And then the tokens */
-		final List<Id> tokenIds = new ArrayList<>();
-		for (final var _grpcId : op.getTokensList()) {
-			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
-		}
-
-		/* --- Load the model objects --- */
-		final var account = accountStore.loadAccount(accountId);
-		final List<Token> tokens = new ArrayList<>();
-		for (final var tokenId : tokenIds) {
-			final var token = tokenStore.loadToken(tokenId);
-			tokens.add(token);
-		}
 
 		/* --- Do the business logic --- */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
-
-		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account);
-		for (final var token : tokens) {
-			tokenStore.persistTokenRelationships(List.of(token.newRelationshipWith(account, false)));
-		}
+		associateLogic.associate(op.getAccount(), op.getTokensList());
 	}
 
 	@Override

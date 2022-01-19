@@ -29,6 +29,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.BalanceOperation;
 
 import javax.inject.Inject;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link BalanceOperation}. Performs an existence check on the requested {@link Address}
@@ -37,9 +38,13 @@ import javax.inject.Inject;
  */
 public class HederaBalanceOperation extends BalanceOperation {
 
+	private final BiPredicate<Address, MessageFrame> addressValidator;
+
 	@Inject
-	public HederaBalanceOperation(GasCalculator gasCalculator) {
+	public HederaBalanceOperation(GasCalculator gasCalculator,
+								  BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
@@ -48,6 +53,7 @@ public class HederaBalanceOperation extends BalanceOperation {
 				frame,
 				() -> frame.getStackItem(0),
 				() -> cost(true),
-				() -> super.execute(frame, evm));
+				() -> super.execute(frame, evm),
+				addressValidator);
 	}
 }

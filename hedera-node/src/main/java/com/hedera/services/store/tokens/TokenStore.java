@@ -38,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -76,6 +77,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to);
 
+	boolean matchesTokenDecimals(TokenID tId, int expectedDecimals);
+
 	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
 	default TokenID resolve(TokenID id) {
@@ -105,6 +108,9 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 		var tokenId = resolve(change.tokenId());
 		if (tokenId == MISSING_TOKEN) {
 			validity = INVALID_TOKEN_ID;
+		}
+		if (change.hasExpectedDecimals() && !matchesTokenDecimals(change.tokenId(), change.getExpectedDecimals())) {
+			validity = UNEXPECTED_TOKEN_DECIMALS;
 		}
 		if (validity == OK) {
 			if (change.isForNft()) {

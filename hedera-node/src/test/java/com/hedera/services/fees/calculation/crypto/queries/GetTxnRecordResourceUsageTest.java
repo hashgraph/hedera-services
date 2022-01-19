@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
@@ -77,7 +76,6 @@ class GetTxnRecordResourceUsageTest {
 	private static final Query satisfiableAnswerOnlyWithChildrenQuery = queryOf(satisfiableAnswerOnlyWithChildrenNoDups);
 	private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
 
-	private NodeLocalProperties nodeProps;
 	private StateView view;
 	private RecordCache recordCache;
 	private CryptoFeeBuilder usageEstimator;
@@ -91,14 +89,13 @@ class GetTxnRecordResourceUsageTest {
 
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
-		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new MutableStateChildren();
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))

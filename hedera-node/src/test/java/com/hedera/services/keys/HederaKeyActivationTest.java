@@ -256,6 +256,7 @@ class HederaKeyActivationTest {
 		final var kp = KeyFactory.ecdsaKpGenerator.generateKeyPair();
 		final var q = ((ECPublicKeyParameters) kp.getPublic()).getQ();
 		final var uncompressed = Arrays.copyOfRange(q.getEncoded(false), 1, 65);
+		final var other= "0123456789012345678901234567890123456789012345678901234567890123".getBytes();
 
 		final var sameParityCompressed = q.getEncoded(true);
 		final var otherParityCompressed = Arrays.copyOfRange(sameParityCompressed, 0, sameParityCompressed.length);
@@ -263,5 +264,6 @@ class HederaKeyActivationTest {
 
 		assertTrue(HederaKeyActivation.keysMatch(sameParityCompressed, uncompressed));
 		assertFalse(HederaKeyActivation.keysMatch(otherParityCompressed, uncompressed));
+		assertFalse(HederaKeyActivation.keysMatch(sameParityCompressed, other));
 	}
 }

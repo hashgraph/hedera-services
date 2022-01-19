@@ -70,7 +70,7 @@ public class TokenUnpauseTransitionLogic implements TransitionLogic {
 		token.changePauseStatus(false);
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
+		tokenStore.commitToken(token);
 	}
 
 	@Override

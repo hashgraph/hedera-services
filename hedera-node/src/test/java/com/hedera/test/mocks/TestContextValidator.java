@@ -66,7 +66,7 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isAfterConsensusSecond(long now) {
-		return true;
+		return now < 9999999L;
 	}
 
 	@Override

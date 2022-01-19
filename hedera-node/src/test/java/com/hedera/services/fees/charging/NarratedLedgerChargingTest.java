@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -134,6 +135,43 @@ class NarratedLedgerChargingTest {
 	}
 
 	@Test
+	void refundsServiceFeeToPayerAsExpected() {
+		final var inOrder = Mockito.inOrder(ledger);
+
+		final var allFees = nodeFee + networkFee + serviceFee;
+		givenSetupToChargePayer(allFees, allFees);
+
+		assertTrue(subject.canPayerAffordAllFees());
+		subject.chargePayerAllFees();
+		subject.refundPayerServiceFee();
+
+		inOrder.verify(ledger).adjustBalance(grpcNodeId, +nodeFee);
+		inOrder.verify(ledger).adjustBalance(grpcFundingId, +(networkFee + serviceFee));
+		inOrder.verify(ledger).adjustBalance(grpcPayerId, -(nodeFee + networkFee + serviceFee));
+		inOrder.verify(ledger).adjustBalance(grpcFundingId, -serviceFee);
+		inOrder.verify(ledger).adjustBalance(grpcPayerId, +serviceFee);
+		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
+	}
+
+	@Test
+	void refundingToExemptPayerIsNoop() {
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(aliasManager.lookUpPayerAccountID(grpcPayerId)).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+
+		subject.resetForTxn(accessor, submittingNodeId);
+
+		subject.refundPayerServiceFee();
+
+		verifyNoInteractions(ledger);
+	}
+
+	@Test
+	void failsFastIfTryingToRefundToUnchargedPayer() {
+		assertThrows(IllegalStateException.class, subject::refundPayerServiceFee);
+	}
+
+	@Test
 	void chargesNetworkAndUpToNodeFeeToPayerAsExpected() {
 		givenSetupToChargePayer(networkFee + nodeFee / 2, nodeFee + networkFee + serviceFee);
 
@@ -223,7 +261,7 @@ class NarratedLedgerChargingTest {
 		assertTrue(subject.isPayerWillingToCoverServiceFee());
 	}
 
-	private void givenSetupToChargePayer(long payerBalance, long totalOfferedFee) {
+	private void givenSetupToChargePayer(final long payerBalance, final long totalOfferedFee) {
 		final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
 		given(accounts.get(payerId)).willReturn(payerAccount);
 
@@ -238,7 +276,7 @@ class NarratedLedgerChargingTest {
 		subject.setFees(fees);
 	}
 
-	private void givenSetupToChargeNode(long nodeBalance) {
+	private void givenSetupToChargeNode(final long nodeBalance) {
 		final var nodeAccount = MerkleAccountFactory.newAccount().balance(nodeBalance).get();
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 

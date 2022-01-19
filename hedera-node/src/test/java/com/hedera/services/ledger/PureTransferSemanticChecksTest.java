@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -230,6 +230,7 @@ class PureTransferSemanticChecksTest {
 	void tokenSemanticsOkForEmpty() {
 		// expect:
 		assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList()));
+		assertEquals(OK, subject.validateTokenTransferSemantics(Collections.emptyList()));
 	}
 
 	@Test
@@ -239,6 +240,11 @@ class PureTransferSemanticChecksTest {
 				TokenTransferList.newBuilder()
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
 				.build()
+		)));
+		assertEquals(INVALID_TOKEN_ID, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build()
 		)));
 	}
 
@@ -251,11 +257,23 @@ class PureTransferSemanticChecksTest {
 						.addTransfers(AccountAmount.newBuilder().setAmount(123).build())
 						.build()
 		)));
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addTransfers(AccountAmount.newBuilder().setAmount(123).build())
+						.build()
+		)));
 	}
 
 	@Test
 	void rejectsZeroAccountAmount() {
 		// expect:
+		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(0).build())
+						.build()
+		)));
 		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -274,11 +292,25 @@ class PureTransferSemanticChecksTest {
 						.addTransfers(AccountAmount.newBuilder().setAccountID(b).setAmount(2).build())
 						.build()
 		)));
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
+						.addTransfers(AccountAmount.newBuilder().setAccountID(b).setAmount(2).build())
+						.build()
+		)));
 	}
 
 	@Test
 	void rejectsRepeatedAccountInScopedAdjusts() {
 		// expect:
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(-1).build())
+						.addTransfers(AccountAmount.newBuilder().setAccountID(a).setAmount(1).build())
+						.build()
+		)));
 		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)
@@ -315,6 +347,15 @@ class PureTransferSemanticChecksTest {
 								.setSerialNumber(123L))
 						.build()
 		)));
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(a)
+								.setReceiverAccountID(a)
+								.setSerialNumber(123L))
+						.build()
+		)));
 	}
 
 	@Test
@@ -335,6 +376,23 @@ class PureTransferSemanticChecksTest {
 	@Test
 	void oksSaneTokenExchange() {
 		// expect:
+		assertEquals(OK, subject.validateTokenTransferSemantics(List.of(
+				TokenTransferList.newBuilder()
+						.setToken(aTid)
+						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(bTid)
+						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(cTid)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(a)
+								.setReceiverAccountID(b)
+								.setSerialNumber(123L))
+						.build()
+		)));
 		assertEquals(OK, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.setToken(aTid)

@@ -24,11 +24,15 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -64,6 +68,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -81,11 +87,19 @@ class ContractCallLocalResourceUsageTest {
 	private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
 
 	@Mock
+	private AccountStore accountStore;
+	@Mock
 	private StateView view;
 	@Mock
 	private SmartContractFeeBuilder usageEstimator;
 	@Mock
-	CallLocalExecutor executor;
+	private CallLocalEvmTxProcessor evmTxProcessor;
+	@Mock
+	private EntityIdSource ids;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -95,7 +109,8 @@ class ContractCallLocalResourceUsageTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallLocalResourceUsage(usageEstimator, properties, executor);
+		subject = new ContractCallLocalResourceUsage(
+				usageEstimator, properties, nodeLocalProperties, accountStore, evmTxProcessor, ids, validator);
 	}
 
 	@Test
@@ -116,8 +131,10 @@ class ContractCallLocalResourceUsageTest {
 		final var estimateResponse = subject.dummyResponse(target);
 		final var expected = expectedUsage();
 
-		given(executor.execute(satisfiableAnswerOnly.getContractCallLocal()))
-				.willReturn(response);
+		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
 		given(usageEstimator.getContractCallLocalFeeMatrices(
 				params.size(),
 				response.getFunctionResult(),
@@ -149,14 +166,12 @@ class ContractCallLocalResourceUsageTest {
 		final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
 
 		assertEquals(expected, actualUsage);
-		verifyNoInteractions(executor);
+		verifyNoInteractions(evmTxProcessor);
 	}
 
 	@Test
 	void translatesExecutionException() {
 		final var queryCtx = new HashMap<String, Object>();
-
-		given(executor.execute(satisfiableAnswerOnly.getContractCallLocal())).willThrow(InvalidTransactionException.class);
 
 		assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
 		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
