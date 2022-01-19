@@ -227,8 +227,9 @@ public class FcCustomFee implements SelfSerializable {
 		validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 
 		final var grpcFeeCollector = source.getFeeCollectorAccountId();
-		final var resolvedFeeCollectorNum = accountStore.getAccountNumFromAlias(grpcFeeCollector.getAlias(), grpcFeeCollector.getAccountNum());
+		final var resolvedFeeCollectorNum = accountStore.getResolvedAccountNum(grpcFeeCollector.getAlias(), grpcFeeCollector.getAccountNum());
 		final var feeCollector = new EntityId(grpcFeeCollector.getShardNum(), grpcFeeCollector.getRealmNum(), resolvedFeeCollectorNum);
+
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
 			final var fixedSource = source.getFixedFee();

@@ -204,12 +204,12 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return true;
 		}
 
-		final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+		final var result = ledger.lookupAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		if (result.response() != OK) {
 			transactionContext.setStatus(result.response());
 			return false;
 		}
-		var newAutoRenewAccount = result.resolvedId();
+		final var newAutoRenewAccount = result.resolvedId();
 
 		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -235,7 +235,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			if (designatesAccountRemoval(op.getAutoRenewAccount())) {
 				topic.setAutoRenewAccountId(null);
 			} else {
-				final var result = ledger.lookUpAccountId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+				final var result = ledger.lookupAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(result.resolvedId()));
 			}
 		}

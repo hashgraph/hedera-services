@@ -88,7 +88,7 @@ class NarratedLedgerChargingTest {
 	void chargesNoFeesToExemptPayer() {
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
 		given(accessor.getPayer()).willReturn(grpcPayerId);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 
 		// when:
@@ -156,7 +156,7 @@ class NarratedLedgerChargingTest {
 	@Test
 	void refundingToExemptPayerIsNoop() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
-		given(aliasManager.lookUpPayerAccountID(grpcPayerId)).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(grpcPayerId)).willReturn(AliasLookup.of(grpcPayerId, OK));
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
 
 		subject.resetForTxn(accessor, submittingNodeId);
@@ -205,7 +205,7 @@ class NarratedLedgerChargingTest {
 		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		// and given:
 		subject.resetForTxn(accessor, submittingNodeId);
@@ -219,7 +219,7 @@ class NarratedLedgerChargingTest {
 	@Test
 	void detectsLackOfWillingness() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -234,7 +234,7 @@ class NarratedLedgerChargingTest {
 	void exemptPayerNeedsNoAbility() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -249,7 +249,7 @@ class NarratedLedgerChargingTest {
 	void exemptPayerNeedsNoWillingness() {
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
@@ -271,7 +271,7 @@ class NarratedLedgerChargingTest {
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		given(accessor.getOfferedFee()).willReturn(totalOfferedFee);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}
@@ -285,7 +285,7 @@ class NarratedLedgerChargingTest {
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
-		given(aliasManager.lookUpPayerAccountID(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
+		given(aliasManager.lookUpPayer(accessor.getPayer())).willReturn(AliasLookup.of(grpcPayerId, OK));
 		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}

@@ -102,7 +102,8 @@ public class AliasManager {
 	/**
 	 * Returns if there is an account linked the given alias.
 	 *
-	 * @param alias the alias of interest
+	 * @param alias
+	 * 		the alias of interest
 	 * @return whether there is a linked account
 	 */
 	public boolean contains(final ByteString alias) {
@@ -129,27 +130,28 @@ public class AliasManager {
 		return aliases;
 	}
 
-	public AliasLookup lookUpPayerAccountID(final AccountID id) {
-		return lookUpAccountID(id, INVALID_PAYER_ACCOUNT_ID);
+
+	/* --- Helpers for lookup --- */
+	public AliasLookup lookUpPayer(final AccountID id) {
+		return lookUpAccount(id, INVALID_PAYER_ACCOUNT_ID);
 	}
 
-	public AliasLookup lookUpAccountID(final AccountID id) {
-		return lookUpAccountID(id, INVALID_ACCOUNT_ID);
+	public AliasLookup lookUpAccount(final AccountID id) {
+		return lookUpAccount(id, INVALID_ACCOUNT_ID);
 	}
 
-	public AliasLookup lookUpAccountID(
-			final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		AccountID id;
+	public AliasLookup lookUpAccount(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		final var defaultResponse = OK;
+		AccountID id = grpcId;
+
 		if (isAlias(grpcId)) {
 			var accountNum = lookupIdBy(grpcId.getAlias());
 			if (accountNum == MISSING_NUM) {
 				return AliasLookup.of(grpcId, errResponse);
 			}
 			id = accountNum.toGrpcAccountId();
-		} else {
-			id = grpcId;
 		}
 
-		return AliasLookup.of(id, OK);
+		return AliasLookup.of(id, defaultResponse);
 	}
 }

@@ -194,7 +194,7 @@ class BasicTransactionContextTest {
 	@Test
 	void returnsPayerIfSigActive() {
 		given(accessor.getPayer()).willReturn(payer);
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -214,7 +214,7 @@ class BasicTransactionContextTest {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
 		given(accessor.getPayer()).willReturn(payer);
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(
+		given(aliasManager.lookUpPayer(payer)).willReturn(
 				AliasLookup.of(payer, OK));
 
 		// when:
@@ -306,7 +306,7 @@ class BasicTransactionContextTest {
 	@Test
 	void effectivePayerIsActiveIfVerified() {
 		given(accessor.getPayer()).willReturn(payer);
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.payerSigIsKnownActive();
@@ -536,7 +536,7 @@ class BasicTransactionContextTest {
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
-		given(aliasManager.lookUpPayerAccountID(txnId.getAccountID())).willReturn(
+		given(aliasManager.lookUpPayer(txnId.getAccountID())).willReturn(
 				AliasLookup.of(txnId.getAccountID(), OK));
 
 		// when:

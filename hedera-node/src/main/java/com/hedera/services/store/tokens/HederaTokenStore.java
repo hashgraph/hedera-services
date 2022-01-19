@@ -155,7 +155,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final AliasManager aliasManager
 	) {
-		super(ids);
+		super(ids, aliasManager);
 		this.validator = validator;
 		this.properties = properties;
 		this.nftsLedger = nftsLedger;
@@ -473,22 +473,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
 
-	@Override
-	public AliasLookup lookUpAccountId(final AccountID grpcId,
-			final ResponseCodeEnum response) {
-		return lookUpAccountId(grpcId, aliasManager, response);
-	}
-
-	@Override
-	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, ResponseCodeEnum errResponse) {
-		final var lookUpResult = lookUpAccountId(grpcId, aliasManager, errResponse);
-		if (lookUpResult.response() != OK) {
-			return lookUpResult;
-		}
-		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
-		return AliasLookup.of(lookUpResult.resolvedId(), validity);
-	}
-
 	public void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId) {
 		throwIfKnownTreasuryIsMissing(aId);
 		knownTreasuries.get(aId).remove(tId);
@@ -564,13 +548,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var validity = OK;
 		final var isExpiryOnly = affectsExpiryAtMost(changes);
 
-		final var autoRenewAccountLookup = checkNewAutoRenewAccount(changes);
+		final var autoRenewAccountLookup = validateNewAutoRenewAccount(changes);
 		validity = autoRenewAccountLookup.response();
 		if (validity != OK) {
 			return validity;
 		}
 
-		final var treasuryAccountLookUp = checkNewTreasuryAccount(changes);
+		final var treasuryAccountLookUp = validateNewTreasuryAccount(changes);
 		validity = treasuryAccountLookUp.response();
 		if (validity != OK) {
 			return validity;
@@ -633,16 +617,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return appliedValidity.get();
 	}
 
-	private AliasLookup checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
+	private AliasLookup validateNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
-			return lookUpAccountIdAndValidate(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			return lookupAndValidateAliasedId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}
 
-	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
+	private AliasLookup validateNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
-			return lookUpAccountIdAndValidate(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			return lookupAndValidateAliasedId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		}
 		return AliasLookup.of(AccountID.getDefaultInstance(), OK);
 	}

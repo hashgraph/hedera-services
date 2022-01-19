@@ -210,7 +210,7 @@ public class SystemOpPolicies {
 
 	private long payerFor(final TransactionBody txn) {
 		final var accountId = txn.getTransactionID().getAccountID();
-		return aliasManager.lookUpPayerAccountID(accountId).resolvedId().getAccountNum();
+		return aliasManager.lookUpPayer(accountId).resolvedId().getAccountNum();
 	}
 
 	boolean canPerformNonCryptoUpdate(final long payer, final long nonAccountSystemEntity) {

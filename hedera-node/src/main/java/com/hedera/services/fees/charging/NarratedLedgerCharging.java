@@ -93,7 +93,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
-		this.grpcPayerId = aliasManager.lookUpPayerAccountID(accessor.getPayer()).resolvedId();
+		this.grpcPayerId = aliasManager.lookUpPayer(accessor.getPayer()).resolvedId();
 		this.payerId = EntityNum.fromAccountId(grpcPayerId);
 		this.totalOfferedFee = accessor.getOfferedFee();
 

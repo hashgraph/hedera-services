@@ -447,14 +447,6 @@ public class HederaLedger {
 		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
-	public AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		return tokenStore.lookUpAccountId(grpcId, errResponse);
-	}
-
-	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		return tokenStore.lookUpAccountIdAndValidate(grpcId, errResponse);
-	}
-
 	public boolean isDeleted(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
@@ -509,6 +501,16 @@ public class HederaLedger {
 
 	private void setBalance(AccountID id, long newBalance) {
 		accountsLedger.set(id, BALANCE, newBalance);
+	}
+
+
+	/* ---- Alias lookup helpers */
+	public AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookupAliasedId(grpcId, errResponse);
+	}
+
+	public AliasLookup lookupAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookupAndValidateAliasedId(grpcId, errResponse);
 	}
 
 	/* -- Only used by unit tests --- */

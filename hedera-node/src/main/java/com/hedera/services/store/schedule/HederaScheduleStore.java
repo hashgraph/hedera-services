@@ -69,7 +69,6 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 	private final GlobalDynamicProperties properties;
 	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
-	private final AliasManager aliasManager;
 
 	ScheduleID pendingId = NO_PENDING_ID;
 	MerkleSchedule pendingCreation;
@@ -82,7 +81,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 			Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules,
 			final AliasManager aliasManager
 	) {
-		super(ids);
+		super(ids, aliasManager);
 		this.schedules = schedules;
 		this.properties = properties;
 		this.aliasManager = aliasManager;
@@ -135,22 +134,18 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		if (schedule.hasExplicitPayer()) {
-			final var schedulePayerLookUp = buildAndLookUpAccountId(
-					schedule.payer(),
-					schedule.getPayerAlias(),
+			final var schedulePayerLookUp = buildAndLookupID(schedule.payer(), schedule.getPayerAlias(),
 					INVALID_SCHEDULE_PAYER_ID);
-			if (schedulePayerLookUp.response() != OK) {
+			if (OK != schedulePayerLookUp.response()) {
 				return failure(schedulePayerLookUp.response());
 			}
 
 			schedule.setPayer(EntityId.fromGrpcAccountId(schedulePayerLookUp.resolvedId()));
 		}
 
-		final var schedulingAccountLookup = buildAndLookUpAccountId(
-				schedule.schedulingAccount(),
-				schedule.getSchedulingAccountAlias(),
-				INVALID_SCHEDULE_ACCOUNT_ID);
-		if (schedulingAccountLookup.response() != OK) {
+		final var schedulingAccountLookup = buildAndLookupID(schedule.schedulingAccount(),
+				schedule.getSchedulingAccountAlias(), INVALID_SCHEDULE_ACCOUNT_ID);
+		if (OK != schedulingAccountLookup.response()) {
 			return failure(schedulingAccountLookup.response());
 		}
 
@@ -248,24 +243,14 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		extantSchedules.remove(schedule);
 	}
 
-	@Override
-	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, ResponseCodeEnum errResponse) {
-		final var lookUpResult = lookUpAccountId(grpcId, aliasManager, errResponse);
-		if (lookUpResult.response() != OK) {
-			return lookUpResult;
-		}
-		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
-		return AliasLookup.of(lookUpResult.resolvedId(), validity);
-	}
-
-	private AliasLookup buildAndLookUpAccountId(EntityId entityId, ByteString alias, ResponseCodeEnum errResponse) {
+	private AliasLookup buildAndLookupID(EntityId entityId, ByteString alias, ResponseCodeEnum errResponse) {
 		final var accountId = alias.isEmpty() ? entityId.toGrpcAccountId() :
 				AccountID.newBuilder()
 						.setShardNum(entityId.shard())
 						.setRealmNum(entityId.realm())
 						.setAlias(alias)
 						.build();
-		return lookUpAccountIdAndValidate(accountId, errResponse);
+		return lookupAndValidateAliasedId(accountId, errResponse);
 	}
 
 	private void resetPendingCreation() {

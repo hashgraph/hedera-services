@@ -106,7 +106,7 @@ public class SolvencyPrecheck {
 	}
 
 	private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
+		final var payerLookup = aliasManager.lookUpPayer(accessor.getPayer());
 		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
 		final var payerStatus = queryableAccountStatus(payerEntity, accounts.get());
 		if (payerStatus != OK) {
@@ -127,7 +127,7 @@ public class SolvencyPrecheck {
 
 	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
 		final var payerId = EntityNum.fromAccountId(
-				aliasManager.lookUpPayerAccountID(accessor.getPayer()).resolvedId());
+				aliasManager.lookUpPayer(accessor.getPayer()).resolvedId());
 		final var payerAccount = accounts.get().get(payerId);
 
 		try {

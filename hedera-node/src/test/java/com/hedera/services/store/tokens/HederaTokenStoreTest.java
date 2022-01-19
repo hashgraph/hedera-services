@@ -316,7 +316,7 @@ class HederaTokenStoreTest {
 
 		aliasManager = mock(AliasManager.class);
 		given(aliasManager.lookupIdBy(newTreasuryWithAlias.getAlias())).willReturn(EntityNum.fromAccountId(newTreasury));
-		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
+		willCallRealMethod().given(aliasManager).lookUpAccount(any());
 
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
@@ -920,7 +920,7 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
-		given(aliasManager.lookUpAccountID(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT))
+		given(aliasManager.lookUpAccount(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(AliasLookup.of(newAutoRenewAccount, OK));
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, false);
 
@@ -931,7 +931,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidNewAutoRenewAlias() {
-		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
+		given(aliasManager.lookUpAccount(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, OK));
 		given(accountsLedger.exists(newAutoRenewAccountWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
@@ -943,7 +943,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsMissingNewAutoRenewAlias() {
-		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
+		given(aliasManager.lookUpAccount(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT));
 		given(accountsLedger.exists(newAutoRenewAccountWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
@@ -955,7 +955,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidNewTreasuryAlias() {
-		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasuryWithAlias, OK));
 		given(accountsLedger.exists(newTreasuryWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
@@ -967,7 +967,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsMissingNewTreasuryAlias() {
-		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
 		given(accountsLedger.exists(newTreasuryWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
@@ -1043,7 +1043,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsZeroTokenBalanceKey() {
-		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasury, OK));
 		final Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(nonfungible);
@@ -1128,16 +1128,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void delegatesLookUpAccountIDCorrectly() {
-		final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("aaa")).build();
-		given(aliasManager.lookUpAccountID(alias, INVALID_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(treasury, OK));
-		final var result = subject.lookUpAccountId(alias, aliasManager, INVALID_ACCOUNT_ID);
-		assertEquals(OK, result.response());
-		assertEquals(treasury, result.resolvedId());
-	}
-
-	@Test
 	void throwsIfInvalidTreasury() {
 		subject.knownTreasuries.clear();
 
@@ -1146,7 +1136,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
-		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
@@ -1181,7 +1171,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksForEverythingWithNewExpiry() {
-		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
@@ -1212,9 +1202,9 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateHappyPathWorksForEverythingWithAliasAndNewExpiry() {
-		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasury, OK));
-		given(aliasManager.lookUpAccountID(treasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(aliasManager.lookUpAccount(treasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(treasury, OK));
 		subject.addKnownTreasury(treasury, misc);
 		final Set<TokenID> tokenSet = new HashSet<>();
@@ -1290,9 +1280,9 @@ class HederaTokenStoreTest {
 	void updateHappyPathWorksWithNewAutoRenewAccount() {
 		subject.addKnownTreasury(treasury, misc);
 		givenUpdateTarget(ALL_KEYS, token);
-		given(aliasManager.lookUpAccountID(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT)).willReturn(
+		given(aliasManager.lookUpAccount(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT)).willReturn(
 				AliasLookup.of(newAutoRenewAccount, OK));
-		given(aliasManager.lookUpAccountID(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
+		given(aliasManager.lookUpAccount(newTreasury, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(
 				AliasLookup.of(newTreasury, OK));
 
 		final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true, false);

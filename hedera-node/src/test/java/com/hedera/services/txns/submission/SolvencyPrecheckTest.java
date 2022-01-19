@@ -149,7 +149,7 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void rejectsUnusablePayer() {
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
@@ -159,7 +159,7 @@ class SolvencyPrecheckTest {
 
 	@Test
 	void rejectsUnusablePayerWithAlias() {
-		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(
+		given(aliasManager.lookUpPayer(payerWithAlias)).willReturn(
 				AliasLookup.of(payerWithAlias, INVALID_PAYER_ACCOUNT_ID));
 		var result = subject.assessWithSvcFees(accessorCoveringAllFeesWithAliasedPayer);
 
@@ -395,17 +395,17 @@ class SolvencyPrecheckTest {
 	}
 
 	private void givenSolventPayer() {
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(solventPayerAccount);
 	}
 
 	private void givenSolventPayerWithAlias() {
-		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(solventPayerAccount);
 	}
 
 	private void givenInsolventPayer() {
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(insolventPayerAccount);
 	}
 

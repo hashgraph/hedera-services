@@ -214,9 +214,9 @@ class StateViewTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		given(accountStore.getAccountNumFromAlias(alias, payerWithAliasAccountId.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(alias, payerWithAliasAccountId.getAccountNum()))
 				.willReturn(payerAccountNum.longValue());
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, payerAccountId.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, payerAccountId.getAccountNum()))
 				.willReturn(payerAccountNum.longValue());
 
 		metadata = new HFileMeta(

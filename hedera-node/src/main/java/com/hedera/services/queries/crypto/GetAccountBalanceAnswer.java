@@ -118,10 +118,11 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		if (op.hasContractID()) {
 			return optionValidator.queryableContractStatus(op.getContractID(), accounts);
 		} else if (op.hasAccountID()) {
-			final var result = aliasManager.lookUpAccountID(op.getAccountID());
+			final var result = aliasManager.lookUpAccount(op.getAccountID());
 			if (result.response() != OK) {
 				return result.response();
 			}
+
 			final var effId = result.resolvedId();
 			return optionValidator.queryableAccountStatus(effId, accounts);
 		} else {
@@ -132,9 +133,8 @@ public class GetAccountBalanceAnswer implements AnswerService {
 	private AccountID targetOf(CryptoGetAccountBalanceQuery op) {
 		if (op.hasContractID()) {
 			return asAccount(op.getContractID());
-		} else {
-			return aliasManager.lookUpAccountID(op.getAccountID()).resolvedId();
 		}
+		return aliasManager.lookUpAccount(op.getAccountID()).resolvedId();
 	}
 
 	@Override

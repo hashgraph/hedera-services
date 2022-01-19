@@ -239,7 +239,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
+		given(aliasManager.lookUpAccount(id)).willReturn(AliasLookup.of(id, OK));
 
 		// when:
 		Response response = subject.responseGiven(query, view, PLATFORM_NOT_ACTIVE);
@@ -262,7 +262,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
+		given(aliasManager.lookUpAccount(id)).willReturn(AliasLookup.of(id, OK));
 		// and:
 		given(optionValidator.queryableAccountStatus(id, accounts))
 				.willReturn(ACCOUNT_DELETED);
@@ -280,7 +280,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(targetAlias)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		given(aliasManager.lookUpAccountID(targetAlias)).willReturn(AliasLookup.of(targetAlias, INVALID_ACCOUNT_ID));
+		given(aliasManager.lookUpAccount(targetAlias)).willReturn(AliasLookup.of(targetAlias, INVALID_ACCOUNT_ID));
 		ResponseCodeEnum status = subject.checkValidity(query, view);
 		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
@@ -291,7 +291,7 @@ class GetAccountBalanceAnswerTest {
 				.setAlias(ByteString.copyFromUtf8("nope"))
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
-		given(aliasManager.lookUpAccountID(aliasId)).willReturn(AliasLookup.of(wellKnownId.toGrpcAccountId(), OK));
+		given(aliasManager.lookUpAccount(aliasId)).willReturn(AliasLookup.of(wellKnownId.toGrpcAccountId(), OK));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -326,7 +326,7 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		given(aliasManager.lookUpAccountID(id)).willReturn(AliasLookup.of(id, OK));
+		given(aliasManager.lookUpAccount(id)).willReturn(AliasLookup.of(id, OK));
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
 		ResponseCodeEnum status = response.getCryptogetAccountBalance()

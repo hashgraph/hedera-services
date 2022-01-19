@@ -27,6 +27,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -42,7 +43,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
@@ -182,10 +182,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var txnId = query.getTransactionGetRecord().getTransactionID();
-		final var fallbackId = txnId.getAccountID();
-		final var validation = aliasManager.lookUpPayerAccountID(fallbackId);
+		final var validation = aliasManager.lookUpPayer(txnId.getAccountID());
+		final var fallbackId = validation.resolvedId();
 
-		if (validation.response() != OK) {
+		if (fallbackId.equals(AccountID.getDefaultInstance())) {
 			return INVALID_PAYER_ACCOUNT_ID;
 		}
 

@@ -90,7 +90,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		var op = contractCallTxn.getContractCall();
 
 		final var senderGrpc = contractCallTxn.getTransactionID().getAccountID();
-		final var lookedUpSender = accountStore.getAccountNumFromAlias(senderGrpc.getAlias(),
+		final var lookedUpSender = accountStore.getResolvedAccountNum(senderGrpc.getAlias(),
 				senderGrpc.getAccountNum());
 		final var senderId = new Id(senderGrpc.getShardNum(), senderGrpc.getRealmNum(), lookedUpSender);
 

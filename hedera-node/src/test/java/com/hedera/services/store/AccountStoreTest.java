@@ -49,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -227,12 +226,12 @@ class AccountStoreTest {
 	void fetchesAliasNumAsExpected() {
 		given(aliasManager.lookupIdBy(validAlias.getAlias())).willReturn(miscMerkleId);
 
-		assertEquals(miscAccountNum, subject.getAccountNumFromAlias(validAlias.getAlias(), 0L));
+		assertEquals(miscAccountNum, subject.getResolvedAccountNum(validAlias.getAlias(), 0L));
 	}
 
 	@Test
 	void fetchesGivenAccountNumIfAliasIsEmpty() {
-		assertEquals(miscAccountNum, subject.getAccountNumFromAlias(ByteString.EMPTY, miscAccountNum));
+		assertEquals(miscAccountNum, subject.getResolvedAccountNum(ByteString.EMPTY, miscAccountNum));
 	}
 
 	@Test
@@ -242,7 +241,7 @@ class AccountStoreTest {
 		final var num = validAlias.getAccountNum();
 
 		var ex = assertThrows(InvalidTransactionException.class,
-				() -> subject.getAccountNumFromAlias(alias, num));
+				() -> subject.getResolvedAccountNum(alias, num));
 		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
 	}
 
@@ -251,7 +250,7 @@ class AccountStoreTest {
 		final var validAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAlias(
 				ByteString.copyFromUtf8("alias")).setAccountNum(10).build();
 		assertEquals(validAccount.getAccountNum(), subject.
-				getAccountNumFromAlias(validAccount.getAlias(), validAccount.getAccountNum()));
+				getResolvedAccountNum(validAccount.getAlias(), validAccount.getAccountNum()));
 	}
 
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {

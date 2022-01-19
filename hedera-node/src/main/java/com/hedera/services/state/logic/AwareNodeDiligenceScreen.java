@@ -88,8 +88,7 @@ public final class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
-
+		final var payerLookup = aliasManager.lookUpPayer(accessor.getPayer());
 		if (payerLookup.response() != OK) {
 			txnCtx.setStatus(payerLookup.response());
 			return true;

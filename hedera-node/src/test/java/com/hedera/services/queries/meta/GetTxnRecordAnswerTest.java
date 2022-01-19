@@ -306,7 +306,7 @@ class GetTxnRecordAnswerTest {
 	void syntaxCheckPrioritizesAccountStatus() {
 		final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
-		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID())).willReturn(
+		given(aliasManager.lookUpPayer(targetTxnId.getAccountID())).willReturn(
 				AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 		final var validity = subject.checkValidity(query, view);
@@ -317,7 +317,7 @@ class GetTxnRecordAnswerTest {
 	@Test
 	void syntaxCheckShortCircuitsOnDefaultAccountID() {
 		final var query = Query.getDefaultInstance();
-		given(aliasManager.lookUpPayerAccountID(query.getTransactionGetRecord().getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayer(query.getTransactionGetRecord().getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(query.getTransactionGetRecord().getTransactionID().getAccountID(),
 						INVALID_PAYER_ACCOUNT_ID));
 		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.checkValidity(query, view));
@@ -329,7 +329,7 @@ class GetTxnRecordAnswerTest {
 		final var query = queryOf(op);
 		given(answerFunctions.txnRecord(recordCache, view, op)).willReturn(Optional.of(cachedTargetRecord));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
-		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID())).willReturn(
+		given(aliasManager.lookUpPayer(targetTxnId.getAccountID())).willReturn(
 				AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 

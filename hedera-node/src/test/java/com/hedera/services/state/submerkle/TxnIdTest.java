@@ -279,7 +279,7 @@ class TxnIdTest {
 
 	@Test
 	void fromGrpcReadsAccountIDFromAliasManager() {
-		given(aliasManager.lookUpPayerAccountID(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payerWithAlias)).willReturn(AliasLookup.of(payer, OK));
 		var subject = TxnId.fromGrpc(baseWithAlias().build(), aliasManager);
 		assertEquals(EntityId.fromGrpcAccountId(payer), subject.getPayerAccount());
 	}

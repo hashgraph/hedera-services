@@ -47,7 +47,7 @@ public class AssociateLogic {
 	}
 
 	public void associate(final AccountID accountID, final List<TokenID> tokensList) {
-		final var accountNum = accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum());
+		final var accountNum = accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum());
 		final var accountId = new Id(accountID.getShardNum(), accountID.getRealmNum(), accountNum);
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 

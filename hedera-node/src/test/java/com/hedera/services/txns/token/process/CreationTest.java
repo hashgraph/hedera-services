@@ -48,8 +48,6 @@ import java.util.List;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -152,7 +150,7 @@ class CreationTest {
 	@Test
 	void onlyLoadsTreasuryWithNoAutoRenew() {
 		givenSubjectNoAutoRenew();
-		given(accountStore.getAccountNumFromAlias(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(accountStore.getResolvedAccountNum(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(grpcTreasuryId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
@@ -167,10 +165,10 @@ class CreationTest {
 	@Test
 	void loadsAutoRenewWhenAvail() {
 		givenSubjectWithEverything();
-		given(accountStore.getAccountNumFromAlias(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum(),INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(accountStore.getResolvedAccountNum(grpcTreasuryId.getAlias(), grpcTreasuryId.getAccountNum(),INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(grpcTreasuryId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
-		given(accountStore.getAccountNumFromAlias(grpcAutoRenewId.getAlias(), grpcAutoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
+		given(accountStore.getResolvedAccountNum(grpcAutoRenewId.getAlias(), grpcAutoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(grpcAutoRenewId.getAccountNum());
 		given(accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
@@ -184,10 +182,10 @@ class CreationTest {
 	@Test
 	void loadsTreasuryAndAutoRenewWhenAvailWithAlias() {
 		givenSubjectWithEverythingAlias();
-		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(accountStore.getResolvedAccountNum(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(mappedTreasuryAliasNum);
 		given(accountStore.loadAccountOrFailWith(mappedTreasuryAliasId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
-		given(accountStore.getAccountNumFromAlias(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
+		given(accountStore.getResolvedAccountNum(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(mappedAutoRenewAliasNum);
 		given(accountStore.loadAccountOrFailWith(mappedAutoRenewAliasId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
 		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
@@ -201,7 +199,7 @@ class CreationTest {
 	@Test
 	void failsWithInvalidAliasInTreasury() {
 		givenSubjectWithEverythingAlias();
-		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(accountStore.getResolvedAccountNum(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willThrow(new InvalidTransactionException(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
 
 		final var ex = assertThrows(InvalidTransactionException.class,
@@ -213,11 +211,11 @@ class CreationTest {
 	@Test
 	void failsWithInvalidAliasInAutoRenew() {
 		givenSubjectWithEverythingAlias();
-		given(accountStore.getAccountNumFromAlias(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+		given(accountStore.getResolvedAccountNum(treasuryWithAlias.getAlias(), treasuryWithAlias.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(mappedTreasuryAliasNum);
 		given(accountStore.loadAccountOrFailWith(mappedTreasuryAliasId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
 
-		given(accountStore.getAccountNumFromAlias(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
+		given(accountStore.getResolvedAccountNum(autoRenewWithAlias.getAlias(), autoRenewWithAlias.getAccountNum(), INVALID_AUTORENEW_ACCOUNT))
 				.willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
 		final var ex = assertThrows(InvalidTransactionException.class,

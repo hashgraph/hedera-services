@@ -89,7 +89,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 			if (op.hasTransferAccountID()) {
 				final var receiver = op.getTransferAccountID();
-				final var result = ledger.lookUpAccountIdAndValidate(receiver, INVALID_TRANSFER_ACCOUNT_ID);
+				final var result = ledger.lookupAndValidateAliasedId(receiver, INVALID_TRANSFER_ACCOUNT_ID);
 				if (result.response() != OK) {
 					txnCtx.setStatus(result.response());
 					return;

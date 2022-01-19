@@ -133,7 +133,7 @@ class TokenGrantKycTransitionLogicTest {
 	@Test
 	void failsWhenInvalidAlias() {
 		givenValidAliasTxnCtx();
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -181,7 +181,7 @@ class TokenGrantKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum()))
 				.willReturn(accountNum);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
@@ -196,7 +196,7 @@ class TokenGrantKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willReturn(mappedAliasNum);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);

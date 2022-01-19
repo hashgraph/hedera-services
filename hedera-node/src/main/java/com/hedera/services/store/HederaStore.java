@@ -43,12 +43,15 @@ public abstract class HederaStore {
 	protected final EntityIdSource ids;
 
 	protected HederaLedger hederaLedger;
+	protected AliasManager aliasManager;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	protected HederaStore(
-			EntityIdSource ids
+			EntityIdSource ids,
+			AliasManager aliasManager
 	) {
 		this.ids = ids;
+		this.aliasManager = aliasManager;
 	}
 
 	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
@@ -69,6 +72,19 @@ public abstract class HederaStore {
 		return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
 	}
 
+	public AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum response) {
+		return aliasManager.lookUpAccount(grpcId, response);
+	}
+
+	public AliasLookup lookupAndValidateAliasedId(final AccountID grpcId, ResponseCodeEnum errResponse) {
+		final var lookUpResult = lookupAliasedId(grpcId, errResponse);
+		if (lookUpResult.response() != OK) {
+			return lookUpResult;
+		}
+		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
+		return AliasLookup.of(lookUpResult.resolvedId(), validity);
+	}
+
 	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
 		if (!accountsLedger.exists(aId)) {
 			return INVALID_ACCOUNT_ID;
@@ -79,12 +95,5 @@ public abstract class HederaStore {
 		} else {
 			return OK;
 		}
-	}
-
-	public AliasLookup lookUpAccountId(
-			final AccountID grpcId,
-			final AliasManager aliasManager,
-			final ResponseCodeEnum errResponse) {
-		return aliasManager.lookUpAccountID(grpcId, errResponse);
 	}
 }

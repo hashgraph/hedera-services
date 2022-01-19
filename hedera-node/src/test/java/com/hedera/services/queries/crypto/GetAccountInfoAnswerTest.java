@@ -302,7 +302,7 @@ class GetAccountInfoAnswerTest {
 
 		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(
 				ACCOUNT_DELETED);
-		given(aliasManager.lookUpAccountID(payerId)).willReturn(AliasLookup.of(payerId, OK));
+		given(aliasManager.lookUpAccount(payerId)).willReturn(AliasLookup.of(payerId, OK));
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -316,7 +316,7 @@ class GetAccountInfoAnswerTest {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 
-		given(aliasManager.lookUpAccountID(any())).willReturn(AliasLookup.of(entityNum.toGrpcAccountId(), OK));
+		given(aliasManager.lookUpAccount(any())).willReturn(AliasLookup.of(entityNum.toGrpcAccountId(), OK));
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
@@ -330,7 +330,7 @@ class GetAccountInfoAnswerTest {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 
-		given(aliasManager.lookUpAccountID(any())).willReturn(
+		given(aliasManager.lookUpAccount(any())).willReturn(
 				AliasLookup.of(entityNum.toGrpcAccountId(), INVALID_ACCOUNT_ID));
 
 		ResponseCodeEnum validity = subject.checkValidity(query, view);

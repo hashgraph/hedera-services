@@ -55,6 +55,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -193,9 +194,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.add("deleted", deleted)
 				.add("memo", memo)
 				.add("payer", readablePayer())
-//				.add("payerAlias", payerAlias.toStringUtf8())
 				.add("schedulingAccount", schedulingAccount)
-//				.add("schedulingAccountAlias", schedulingAccountAlias.toStringUtf8())
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
 				.add("adminKey", describe(adminKey));
@@ -441,7 +440,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 			}
 			if (creationOp.hasPayerAccountID()) {
 				final var grpcPayer = creationOp.getPayerAccountID();
-				if (!grpcPayer.getAlias().isEmpty()) {
+				if (isAlias(grpcPayer)) {
 					payerAlias = grpcPayer.getAlias();
 				}
 				payer = EntityId.fromGrpcAccountId(grpcPayer);
@@ -453,11 +452,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				}
 			}
 			scheduledTxn = creationOp.getScheduledTransactionBody();
+
 			final var grpcSchedulingAccount = parentTxn.getTransactionID().getAccountID();
-			if (!grpcSchedulingAccount.getAlias().isEmpty()) {
+			if (isAlias(grpcSchedulingAccount)) {
 				schedulingAccountAlias = grpcSchedulingAccount.getAlias();
 			}
 			schedulingAccount = EntityId.fromGrpcAccountId(grpcSchedulingAccount);
+
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {

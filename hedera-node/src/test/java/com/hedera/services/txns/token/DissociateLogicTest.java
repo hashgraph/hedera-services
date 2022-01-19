@@ -97,7 +97,7 @@ class DissociateLogicTest {
 	void performsExpectedLogic() {
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum()))
 				.willReturn(accountID.getAccountNum());
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		// and:
@@ -121,7 +121,7 @@ class DissociateLogicTest {
 	void performsExpectedLogicWithAlias() {
 		given(accessor.getTxn()).willReturn(validDissociateTxnWithAlias());
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willReturn(mappedAliasNum);
 		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);
 		// and:
@@ -148,7 +148,7 @@ class DissociateLogicTest {
 	void failsAsExpectedWithInvalidAlias() {
 		given(accessor.getTxn()).willReturn(validDissociateTxnWithAlias());
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var tokenList = txnCtx.accessor().getTxn().getTokenDissociate().getTokensList();

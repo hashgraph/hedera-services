@@ -128,7 +128,7 @@ class ContractCallTransitionLogicTest {
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
 				txnCtx.consensusTime())).willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
-		given(accountStore.getAccountNumFromAlias(senderAccount.getAlias(), senderAccount.getId().num()))
+		given(accountStore.getResolvedAccountNum(senderAccount.getAlias(), senderAccount.getId().num()))
 				.willReturn(senderAccount.getId().num());
 		// when:
 		subject.doStateTransition();
@@ -165,7 +165,7 @@ class ContractCallTransitionLogicTest {
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
-		given(accountStore.getAccountNumFromAlias(senderAccount.getAlias(), senderAccount.getId().num()))
+		given(accountStore.getResolvedAccountNum(senderAccount.getAlias(), senderAccount.getId().num()))
 				.willReturn(senderAccount.getId().num());
 		// when:
 		subject.doStateTransition();

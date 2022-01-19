@@ -152,15 +152,7 @@ public class TxnId implements SelfSerializable {
 	/* --- Helpers --- */
 	public static TxnId fromGrpc(final TransactionID grpc, final AliasManager aliasManager) {
 		return new TxnId(
-				EntityId.fromGrpcAccountId(aliasManager.lookUpPayerAccountID(grpc.getAccountID()).resolvedId()),
-				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
-				grpc.getScheduled(),
-				grpc.getNonce());
-	}
-
-	public static TxnId fromGrpc(final TransactionID grpc) {
-		return new TxnId(
-				EntityId.fromGrpcAccountId(grpc.getAccountID()),
+				EntityId.fromGrpcAccountId(aliasManager.lookUpPayer(grpc.getAccountID()).resolvedId()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
 				grpc.getScheduled(),
 				grpc.getNonce());
@@ -176,5 +168,14 @@ public class TxnId implements SelfSerializable {
 		grpc.setNonce(nonce);
 
 		return grpc.build();
+	}
+
+	/* --- ONLY  used in unit tests --- */
+	public static TxnId fromGrpc(final TransactionID grpc) {
+		return new TxnId(
+				EntityId.fromGrpcAccountId(grpc.getAccountID()),
+				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
+				grpc.getScheduled(),
+				grpc.getNonce());
 	}
 }

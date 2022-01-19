@@ -77,7 +77,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		final var op = txnCtx.accessor().getTxn().getTokenWipe();
 		final var targetTokenId = Id.fromGrpcToken(op.getToken());
 		final var grpcId = op.getAccount();
-		final var accountNum = accountStore.getAccountNumFromAlias(grpcId.getAlias(), grpcId.getAccountNum());
+		final var accountNum = accountStore.getResolvedAccountNum(grpcId.getAlias(), grpcId.getAccountNum());
 		final var targetAccountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
 
 		/* --- Load the model objects --- */

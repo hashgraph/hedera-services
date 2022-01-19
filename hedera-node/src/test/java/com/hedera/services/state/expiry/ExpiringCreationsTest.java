@@ -190,7 +190,7 @@ class ExpiringCreationsTest {
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
 		given(accessor.getHash()).willReturn(hash);
-		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+		given(aliasManager.lookUpPayer(grpcTxnId.getAccountID()))
 				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var builder = subject.createInvalidFailureRecord(accessor, timestamp);
@@ -207,7 +207,7 @@ class ExpiringCreationsTest {
 
 		given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
 		given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
-		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+		given(aliasManager.lookUpPayer(grpcTxnId.getAccountID()))
 				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(
@@ -231,7 +231,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
 		given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
 		given(sideEffectsTracker.getNewAccountAlias()).willReturn(mockAlias);
-		given(aliasManager.lookUpPayerAccountID(asAccount(account))).willReturn(AliasLookup.of(asAccount(account), OK));
+		given(aliasManager.lookUpPayer(asAccount(account))).willReturn(AliasLookup.of(asAccount(account), OK));
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,
@@ -250,7 +250,7 @@ class ExpiringCreationsTest {
 	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
 		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
-		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+		given(aliasManager.lookUpPayer(grpcTxnId.getAccountID()))
 				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(
@@ -284,7 +284,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getTrackedNewTokenId()).willReturn(newTokenId);
 		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
 		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
-		given(aliasManager.lookUpPayerAccountID(grpcTxnId.getAccountID()))
+		given(aliasManager.lookUpPayer(grpcTxnId.getAccountID()))
 				.willReturn(AliasLookup.of(grpcTxnId.getAccountID(), OK));
 
 		final var created = subject.createTopLevelRecord(

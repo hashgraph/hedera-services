@@ -46,7 +46,7 @@ public class AnswerFunctions {
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var id = aliasManager.lookUpAccountID(op.getAccountID()).resolvedId();
+		final var id = aliasManager.lookUpAccount(op.getAccountID()).resolvedId();
 		final var key = EntityNum.fromAccountId(id);
 		final var account = view.accounts().get(key);
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
@@ -63,7 +63,7 @@ public class AnswerFunctions {
 			return Optional.of(expirableTxnRecord.asGrpc());
 		} else {
 			try {
-				final var id = aliasManager.lookUpPayerAccountID(txnId.getAccountID()).resolvedId();
+				final var id = aliasManager.lookUpPayer(txnId.getAccountID()).resolvedId();
 				final var account = view.accounts().get(EntityNum.fromAccountId(id));
 				final var searchableId = TxnId.fromGrpc(txnId, aliasManager);
 				return account.recordList()

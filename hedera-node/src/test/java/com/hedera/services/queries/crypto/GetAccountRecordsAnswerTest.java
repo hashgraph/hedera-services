@@ -108,7 +108,7 @@ class GetAccountRecordsAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookUpAccountID(asAccount(target))).willReturn(AliasLookup.of(asAccount(target), OK));
+		given(aliasManager.lookUpAccount(asAccount(target))).willReturn(AliasLookup.of(asAccount(target), OK));
 
 		subject = new GetAccountRecordsAnswer(new AnswerFunctions(aliasManager), optionValidator, aliasManager);
 	}
@@ -161,7 +161,7 @@ class GetAccountRecordsAnswerTest {
 	void validatesInvalidAccountID() {
 		final var query = validQuery(COST_ANSWER, fee, target);
 		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
-		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+		given(aliasManager.lookUpAccount(query.getCryptoGetAccountRecords().getAccountID()))
 				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), INVALID_ACCOUNT_ID));
 
 		final var validity = subject.checkValidity(query, view);
@@ -173,7 +173,7 @@ class GetAccountRecordsAnswerTest {
 	void validatesAccountID() {
 		final var query = validQuery(COST_ANSWER, fee, target);
 		given(optionValidator.queryableAccountStatus(asAccount(target), accounts)).willReturn(OK);
-		given(aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID()))
+		given(aliasManager.lookUpAccount(query.getCryptoGetAccountRecords().getAccountID()))
 				.willReturn(AliasLookup.of(query.getCryptoGetAccountRecords().getAccountID(), OK));
 
 		final var validity = subject.checkValidity(query, view);
@@ -214,7 +214,7 @@ class GetAccountRecordsAnswerTest {
 		final var query = validQueryWithAlias(ANSWER_ONLY, fee, alias);
 		given(aliasManager.lookupIdBy(ByteString.copyFromUtf8(alias))).willReturn(
 				EntityNum.fromAccountId(asAccount(target)));
-		given(aliasManager.lookUpAccountID(asAccountWithAlias(alias))).willReturn(AliasLookup.of(asAccount(target),
+		given(aliasManager.lookUpAccount(asAccountWithAlias(alias))).willReturn(AliasLookup.of(asAccount(target),
 				OK));
 		final var response = subject.responseGiven(query, view, OK, fee);
 

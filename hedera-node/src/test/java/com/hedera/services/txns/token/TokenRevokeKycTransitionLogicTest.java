@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -134,7 +133,7 @@ class TokenRevokeKycTransitionLogicTest {
 	@Test
 	void failsWithInvalidAlias() {
 		givenValidAliasTxnCtx();
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
@@ -182,7 +181,7 @@ class TokenRevokeKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenRevokeKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum()))
 				.willReturn(accountNum);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
@@ -197,7 +196,7 @@ class TokenRevokeKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenRevokeKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
 				.willReturn(mappedAliasNum);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(mappedAliasId)).willReturn(account);

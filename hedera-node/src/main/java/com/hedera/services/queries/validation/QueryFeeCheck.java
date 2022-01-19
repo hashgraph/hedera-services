@@ -120,7 +120,7 @@ public class QueryFeeCheck {
 	}
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
-		var lookupResult = aliasManager.lookUpAccountID(adjustment.getAccountID());
+		var lookupResult = aliasManager.lookUpAccount(adjustment.getAccountID());
 		if (lookupResult.response() != OK) {
 			return lookupResult.response();
 		}
@@ -157,7 +157,7 @@ public class QueryFeeCheck {
 		final var payerAccountId = txn.getTransactionID().getAccountID();
 
 
-		final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
+		final var result = aliasManager.lookUpPayer(payerAccountId);
 		if (result.response() != OK) {
 			return result.response();
 		}
@@ -170,7 +170,7 @@ public class QueryFeeCheck {
 		final var currentAccounts = accounts.get();
 		ResponseCodeEnum status;
 		for (AccountAmount accountAmount : transfers) {
-			final var amountValidation = aliasManager.lookUpAccountID(accountAmount.getAccountID());
+			final var amountValidation = aliasManager.lookUpAccount(accountAmount.getAccountID());
 			if (amountValidation.response() != OK) {
 				return INVALID_ACCOUNT_ID;
 			}

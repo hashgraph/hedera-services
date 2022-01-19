@@ -91,11 +91,11 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var autoRenewId = op.getAutoRenewAccount();
 
 		/* --- Validate --- */
-		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewId.getAlias(),
+		final var autoRenewNum = accountStore.getResolvedAccountNum(autoRenewId.getAlias(),
 				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
 		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
 
-		final var payer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());
+		final var payer = accountStore.getResolvedAccountNum(payerId.getAlias(), payerId.getAccountNum());
 		final var payerAccountId = AccountID.newBuilder()
 				.setShardNum(payerId.getShardNum())
 				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)

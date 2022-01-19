@@ -95,6 +95,7 @@ import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -451,7 +452,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
-			final var accountLookup = aliasManager.lookUpAccountID(associateOp.accountId());
+			final var accountLookup = aliasManager.lookUpAccount(associateOp.accountId());
+			validateTrue(OK == accountLookup.response(), INVALID_ACCOUNT_ID);
+
 			final var accountId = Id.fromGrpcAccount(accountLookup.resolvedId());
 			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
@@ -496,7 +499,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(dissociateOp);
 
 			/* --- Check required signatures --- */
-			final var accountLookup = aliasManager.lookUpAccountID(dissociateOp.accountId());
+			final var accountLookup = aliasManager.lookUpAccount(dissociateOp.accountId());
+			validateTrue(OK == accountLookup.response(), INVALID_ACCOUNT_ID);
+
 			final var accountId = Id.fromGrpcAccount(accountLookup.resolvedId());
 			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);

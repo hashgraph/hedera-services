@@ -175,7 +175,7 @@ class DissociatePrecompilesTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
-		given(aliasManager.lookUpAccountID(account)).willReturn(AliasLookup.of(account, OK));
+		given(aliasManager.lookUpAccount(account)).willReturn(AliasLookup.of(account, OK));
 	}
 
 	@Test

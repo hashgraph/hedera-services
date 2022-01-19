@@ -127,7 +127,7 @@ class AnswerFunctionsTest {
 	void findsInPayerAccountIfPresentThere() {
 		final var validQuery = txnRecordQuery(targetTxnId);
 		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(null);
-		given(aliasManager.lookUpPayerAccountID(targetTxnId.getAccountID()))
+		given(aliasManager.lookUpPayer(targetTxnId.getAccountID()))
 				.willReturn(AliasLookup.of(targetTxnId.getAccountID(), OK));
 
 		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);

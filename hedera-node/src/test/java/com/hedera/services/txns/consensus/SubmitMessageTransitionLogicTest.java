@@ -110,7 +110,7 @@ class SubmitMessageTransitionLogicTest {
 	void followsHappyPath() {
 		// given:
 		givenValidTransactionContext();
-		given(aliasManager.lookUpPayerAccountID(transactionBody.getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayer(transactionBody.getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(transactionBody.getTransactionID().getAccountID(), OK));
 
 		// when:
@@ -190,9 +190,9 @@ class SubmitMessageTransitionLogicTest {
 				.setAccountNum(payer.getAccountNum() + 1)
 				.build();
 		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
-		given(aliasManager.lookUpPayerAccountID(initialTransactionPayer)).willReturn(
+		given(aliasManager.lookUpPayer(initialTransactionPayer)).willReturn(
 				AliasLookup.of(initialTransactionPayer, OK));
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -205,7 +205,7 @@ class SubmitMessageTransitionLogicTest {
 	void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
 		// given:
 		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -218,7 +218,7 @@ class SubmitMessageTransitionLogicTest {
 	void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -231,7 +231,7 @@ class SubmitMessageTransitionLogicTest {
 	void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
 		// given:
 		givenChunkMessage(1, 1, defaultTxnId());
-		given(aliasManager.lookUpPayerAccountID(payer)).willReturn(AliasLookup.of(payer, OK));
+		given(aliasManager.lookUpPayer(payer)).willReturn(AliasLookup.of(payer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -257,7 +257,7 @@ class SubmitMessageTransitionLogicTest {
 				.setTransactionID(defaultTxnId())
 				.setConsensusSubmitMessage(body.build())
 				.build();
-		given(aliasManager.lookUpPayerAccountID(transactionBody.getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayer(transactionBody.getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(transactionBody.getTransactionID().getAccountID(), OK));
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(transactionContext.accessor()).willReturn(accessor);

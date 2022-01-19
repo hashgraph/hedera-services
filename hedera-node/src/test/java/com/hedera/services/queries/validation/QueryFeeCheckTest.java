@@ -126,14 +126,14 @@ class QueryFeeCheckTest {
 		aliasManager = mock(AliasManager.class);
 		given(aliasManager.lookupIdBy(aRichAlias.getAlias())).willReturn(EntityNum.fromAccountId(aRich));
 		given(aliasManager.lookupIdBy(invalidAlias.getAlias())).willReturn(EntityNum.MISSING_NUM);
-		given(aliasManager.lookUpPayerAccountID(invalidAlias)).willReturn(
+		given(aliasManager.lookUpPayer(invalidAlias)).willReturn(
 				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
-		given(aliasManager.lookUpPayerAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
-		given(aliasManager.lookUpAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
-		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
-		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpAccountID(aQueryPayer)).willReturn(AliasLookup.of(aQueryPayer, OK));
-		given(aliasManager.lookUpAccountID(aTestPayer)).willReturn(AliasLookup.of(aTestPayer, OK));
+		given(aliasManager.lookUpPayer(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccount(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccount(aNode)).willReturn(AliasLookup.of(aNode, OK));
+		given(aliasManager.lookUpAccount(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccount(aQueryPayer)).willReturn(AliasLookup.of(aQueryPayer, OK));
+		given(aliasManager.lookUpAccount(aTestPayer)).willReturn(AliasLookup.of(aTestPayer, OK));
 
 		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts, aliasManager);
 	}
@@ -245,9 +245,9 @@ class QueryFeeCheckTest {
 
 	@Test
 	void catchesBadEntry() {
-		given(aliasManager.lookUpAccountID(aRich)).willReturn(AliasLookup.of(aRich, OK));
-		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
-		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccount(aRich)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccount(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
+		given(aliasManager.lookUpAccount(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
 		assertEquals(
 				ACCOUNT_ID_DOES_NOT_EXIST,
 				subject.transfersPlausibility(
@@ -268,7 +268,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void nonexistentSenderHasNoBalance() {
-		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
+		given(aliasManager.lookUpAccount(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
 		final var adjustment = adjustmentWith(aMissing, -aLittle);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
@@ -287,7 +287,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void detachedPayerRejectedWithRefinement() {
-		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
+		given(aliasManager.lookUpAccount(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		final var adjustment = adjustmentWith(aDetached, -aLot);
 
@@ -298,7 +298,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void cannotBeDetachedIfNoAutoRenew() {
-		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
+		given(aliasManager.lookUpAccount(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		dynamicProps.disableAutoRenew();
 		final var adjustment = adjustmentWith(aDetached, -aLot);
@@ -310,7 +310,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void noLongerDetachedWithNonzeroBalance() {
-		given(aliasManager.lookUpAccountID(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
+		given(aliasManager.lookUpAccount(aDetached)).willReturn(AliasLookup.of(aDetached, OK));
 		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
 		given(detached.getBalance()).willReturn(1L);
 		final var adjustment = adjustmentWith(aDetached, -aLot);
@@ -322,7 +322,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void missingReceiverRejected() {
-		given(aliasManager.lookUpAccountID(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
+		given(aliasManager.lookUpAccount(aMissing)).willReturn(AliasLookup.of(aMissing, OK));
 		final var adjustment = adjustmentWith(aMissing, aLot);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
@@ -342,7 +342,7 @@ class QueryFeeCheckTest {
 
 	@Test
 	void adjustmentAccountValidated() {
-		given(aliasManager.lookUpAccountID(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
+		given(aliasManager.lookUpAccount(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
 		final var adjustment = adjustmentWith(invalidAlias, aLot);
 
 		final var status = subject.adjustmentPlausibility(adjustment);
@@ -383,8 +383,8 @@ class QueryFeeCheckTest {
 	@Test
 	void paymentFailsWithQueryPayerBalance() {
 		final long amount = 5000L;
-		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
+		given(aliasManager.lookUpAccount(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccount(aNode)).willReturn(AliasLookup.of(aNode, OK));
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
@@ -403,9 +403,9 @@ class QueryFeeCheckTest {
 	@Test
 	void paymentFailsWithBrokenPayer() {
 		final long amount = 5000L;
-		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpPayerAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
+		given(aliasManager.lookUpAccount(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpPayer(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccount(aNode)).willReturn(AliasLookup.of(aNode, OK));
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
@@ -424,9 +424,9 @@ class QueryFeeCheckTest {
 	@Test
 	void paymentFailsWithInsufficientPayerBalance() {
 		final long amount = 5000L;
-		given(aliasManager.lookUpAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpPayerAccountID(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
-		given(aliasManager.lookUpAccountID(aNode)).willReturn(AliasLookup.of(aNode, OK));
+		given(aliasManager.lookUpAccount(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpPayer(aBroke)).willReturn(AliasLookup.of(aBroke, OK));
+		given(aliasManager.lookUpAccount(aNode)).willReturn(AliasLookup.of(aNode, OK));
 
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
@@ -444,7 +444,7 @@ class QueryFeeCheckTest {
 	@Test
 	void queryPaymentMultiPayerMultiNodeSucceeds() {
 		final long amount = 200L;
-		given(aliasManager.lookUpAccountID(anotherNode)).willReturn(AliasLookup.of(anotherNode, OK));
+		given(aliasManager.lookUpAccount(anotherNode)).willReturn(AliasLookup.of(anotherNode, OK));
 
 		final var transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
@@ -510,11 +510,11 @@ class QueryFeeCheckTest {
 
 	private TransactionBody getPaymentTxnBodyWithAlias(final long amount, final TransferList.Builder transferList,
 			final AccountID payer, final AccountID sender) {
-		given(aliasManager.lookUpPayerAccountID(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
-		given(aliasManager.lookUpPayerAccountID(invalidAlias)).willReturn(
+		given(aliasManager.lookUpPayer(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpPayer(invalidAlias)).willReturn(
 				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
-		given(aliasManager.lookUpAccountID(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
-		given(aliasManager.lookUpAccountID(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
+		given(aliasManager.lookUpAccount(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
+		given(aliasManager.lookUpAccount(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
 
 		final var transList = (transferList != null)
 				? transferList

@@ -80,7 +80,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		final var transactionBody = transactionContext.accessor().getTxn();
 		final var op = transactionBody.getConsensusSubmitMessage();
 		final var txnId = transactionBody.getTransactionID();
-		final var payer = aliasManager.lookUpPayerAccountID(txnId.getAccountID()).resolvedId();
+		final var payer = aliasManager.lookUpPayer(txnId.getAccountID()).resolvedId();
 
 		if (op.getMessage().isEmpty()) {
 			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
@@ -107,7 +107,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			}
 
 			final var initialTxnId = chunkInfo.getInitialTransactionID();
-			final var chunkAccountIDLookup = aliasManager.lookUpPayerAccountID(initialTxnId.getAccountID());
+			final var chunkAccountIDLookup = aliasManager.lookUpPayer(initialTxnId.getAccountID());
 
 			if (
 					chunkAccountIDLookup.response() != OK ||

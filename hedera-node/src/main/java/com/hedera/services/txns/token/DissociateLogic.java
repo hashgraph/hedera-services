@@ -54,7 +54,7 @@ public class DissociateLogic {
 	}
 
 	public void dissociate(AccountID accountID, List<TokenID> tokenIDList) {
-		final var accountNum = accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum());
+		final var accountNum = accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum());
 		final var accountId = new Id(accountID.getShardNum(), accountID.getRealmNum(), accountNum);
 
 		/* --- Load the model objects --- */

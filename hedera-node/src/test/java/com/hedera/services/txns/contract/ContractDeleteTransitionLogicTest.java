@@ -103,7 +103,7 @@ class ContractDeleteTransitionLogicTest {
 	@Test
 	void rejectsDetached() {
 		givenValidTxnCtx();
-		given(ledger.lookUpAccountIdAndValidate(transfer, INVALID_TRANSFER_ACCOUNT_ID))
+		given(ledger.lookupAndValidateAliasedId(transfer, INVALID_TRANSFER_ACCOUNT_ID))
 				.willReturn(AliasLookup.of(transfer, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		// when:
 		subject.doStateTransition();
@@ -125,7 +125,7 @@ class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(deleteRec);
-		given(ledger.lookUpAccountIdAndValidate(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
+		given(ledger.lookupAndValidateAliasedId(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
 		// when:
 		subject.doStateTransition();
 
@@ -145,7 +145,7 @@ class ContractDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(updateRec);
-		given(ledger.lookUpAccountIdAndValidate(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
+		given(ledger.lookupAndValidateAliasedId(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(AliasLookup.of(transfer, OK));
 
 		// when:
 		subject.doStateTransition();
@@ -196,7 +196,7 @@ class ContractDeleteTransitionLogicTest {
 
 		givenValidTxnCtx();
 		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(updateRec);
-		given(ledger.lookUpAccountIdAndValidate(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
+		given(ledger.lookupAndValidateAliasedId(transfer, INVALID_TRANSFER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(transfer, INVALID_TRANSFER_ACCOUNT_ID));
 
 		subject.doStateTransition();

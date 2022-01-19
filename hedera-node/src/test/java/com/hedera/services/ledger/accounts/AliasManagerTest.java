@@ -126,15 +126,15 @@ class AliasManagerTest {
 		subject.setAliases(expectedMap);
 		assertEquals(expectedMap, subject.getAliases());
 
-		final var resultA = subject.lookUpAccountID(aId);
-		final var resultB = subject.lookUpAccountID(bId);
+		final var resultA = subject.lookUpAccount(aId);
+		final var resultB = subject.lookUpAccount(bId);
 		assertEquals(a.longValue(), resultA.resolvedId().getAccountNum());
 		assertEquals(OK, resultA.response());
 		assertEquals(b.longValue(), resultB.resolvedId().getAccountNum());
 		assertEquals(OK, resultB.response());
 
 
-		final var invalidResult = subject.lookUpAccountID(invalidId);
+		final var invalidResult = subject.lookUpAccount(invalidId);
 		assertEquals(invalidId, invalidResult.resolvedId());
 		assertEquals(INVALID_ACCOUNT_ID, invalidResult.response());
 

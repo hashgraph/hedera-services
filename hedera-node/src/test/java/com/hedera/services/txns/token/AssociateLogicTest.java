@@ -84,7 +84,7 @@ class AssociateLogicTest {
 		final List<TokenID> tokenIds = List.of(firstToken, secondToken);
 		final List<Token> tokens = List.of(firstModelToken, secondModelToken);
 
-		given(accountStore.getAccountNumFromAlias(accountID.getAlias(), accountID.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum()))
 				.willReturn(accountID.getAccountNum());
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
@@ -105,7 +105,7 @@ class AssociateLogicTest {
 		final List<TokenID> tokenIds = List.of(firstToken, secondToken);
 		final List<Token> tokens = List.of(firstModelToken, secondModelToken);
 
-		given(accountStore.getAccountNumFromAlias(alias, accountWithAlias.getAccountNum())).willReturn(mappedAliasNum);
+		given(accountStore.getResolvedAccountNum(alias, accountWithAlias.getAccountNum())).willReturn(mappedAliasNum);
 		given(accountStore.loadAccount(mappedAliasId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
@@ -126,7 +126,7 @@ class AssociateLogicTest {
 		final List<TokenID> tokenIds = List.of(firstToken, secondToken);
 		final List<Token> tokens = List.of(firstModelToken, secondModelToken);
 
-		given(accountStore.getAccountNumFromAlias(alias, accountWithAlias.getAccountNum()))
+		given(accountStore.getResolvedAccountNum(alias, accountWithAlias.getAccountNum()))
 				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.associate(accountWithAlias, tokenIds));

@@ -308,7 +308,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcConversionWorksForFixed() {
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var wildcardId = new EntityId(0, 0, 0);
 		final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		final var expectedHtsSameTokenSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, wildcardId, feeCollector);
@@ -348,7 +348,7 @@ class FcCustomFeeTest {
 	@Test
 	void grpcConversionWorksForRoyaltyNoFallback() {
 		// setup:
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var targetId = new EntityId(7, 8, 9);
 		final var expectedRoyaltySubject =
 				FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector);
@@ -369,7 +369,7 @@ class FcCustomFeeTest {
 	@Test
 	void grpcConversionWorksForRoyalty() {
 		// setup:
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var targetId = new EntityId(7, 8, 9);
 		final var expectedRoyaltySubject =
 				FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector);
@@ -473,7 +473,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcConversionWorksForFractional() {
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var expectedExplicitMaxSubject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,

@@ -103,16 +103,10 @@ public class Creation {
 		final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
 		validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
 
-		final var treasuryGrpc = op.getTreasury();
-		final var treasuryNum = accountStore.getAccountNumFromAlias(treasuryGrpc.getAlias(), treasuryGrpc.getAccountNum(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-		final var treasuryId = new Id(treasuryGrpc.getShardNum(), treasuryGrpc.getRealmNum(), treasuryNum);
-		treasury = accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		treasury = resolvedTreasury();
 		autoRenew = null;
 		if (op.hasAutoRenewAccount()) {
-			final var autoRenewGrpc = op.getAutoRenewAccount();
-			final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewGrpc.getAlias(), autoRenewGrpc.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
-			final var autoRenewId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
-			autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
+			autoRenew = resolvedAutoRenewAccount();
 		}
 
 		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
@@ -174,5 +168,22 @@ public class Creation {
 
 	Account getAutoRenew() {
 		return autoRenew;
+	}
+
+	private Account resolvedTreasury() {
+		final var treasuryGrpc = op.getTreasury();
+		final var treasuryNum = accountStore.getResolvedAccountNum(treasuryGrpc.getAlias(),
+				treasuryGrpc.getAccountNum(),
+				INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		final var treasuryId = new Id(treasuryGrpc.getShardNum(), treasuryGrpc.getRealmNum(), treasuryNum);
+		return accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+	}
+
+	private Account resolvedAutoRenewAccount() {
+		final var autoRenewGrpc = op.getAutoRenewAccount();
+		final var autoRenewNum = accountStore.getResolvedAccountNum(autoRenewGrpc.getAlias(),
+				autoRenewGrpc.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
+		final var autoRenewId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
+		return accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
 	}
 }

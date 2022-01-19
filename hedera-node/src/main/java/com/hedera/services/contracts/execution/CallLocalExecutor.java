@@ -40,7 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 /**
- * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
+ * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer}
+ * and
  * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
  */
 @Singleton
@@ -53,18 +54,22 @@ public class CallLocalExecutor {
 	 * Executes the specified {@link ContractCallLocalQuery} through a static call. Parses the result from the
 	 * {@link CallLocalEvmTxProcessor} and sets the appropriate {@link com.hederahashgraph.api.proto.java.ResponseCode}
 	 *
-	 * @param accountStore   the account store
-	 * @param evmTxProcessor the {@link CallLocalEvmTxProcessor} processor
-	 * @param op             the query to answer
+	 * @param accountStore
+	 * 		the account store
+	 * @param evmTxProcessor
+	 * 		the {@link CallLocalEvmTxProcessor} processor
+	 * @param op
+	 * 		the query to answer
 	 * @return {@link ContractCallLocalResponse} result of the execution
 	 */
-	public static ContractCallLocalResponse execute(AccountStore accountStore, CallLocalEvmTxProcessor evmTxProcessor, ContractCallLocalQuery op) {
+	public static ContractCallLocalResponse execute(AccountStore accountStore, CallLocalEvmTxProcessor evmTxProcessor,
+			ContractCallLocalQuery op) {
 
 		try {
-			TransactionBody body =
-					SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
+			TransactionBody body = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
+
 			final var grpcSender = body.getTransactionID().getAccountID();
-			final long senderAccountNum = accountStore.getAccountNumFromAlias(grpcSender.getAlias(),
+			final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
 					grpcSender.getAccountNum());
 			final var senderId = new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
 

@@ -173,7 +173,7 @@ class AssociatePrecompileTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
-		given(aliasManager.lookUpAccountID(accountMerkleId)).willReturn(AliasLookup.of(accountMerkleId, OK));
+		given(aliasManager.lookUpAccount(accountMerkleId)).willReturn(AliasLookup.of(accountMerkleId, OK));
 	}
 
 	@Test

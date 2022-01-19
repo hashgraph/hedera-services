@@ -214,7 +214,7 @@ class AwareNodeDiligenceScreenTest {
 	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
+		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -225,7 +225,7 @@ class AwareNodeDiligenceScreenTest {
 	void invalidPayerAccountIfAlias() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, INVALID_PAYER_ACCOUNT_ID));
+		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, INVALID_PAYER_ACCOUNT_ID));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -240,7 +240,7 @@ class AwareNodeDiligenceScreenTest {
 		given(payerAccountRef.isDeleted()).willReturn(true);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
-		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
+		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
@@ -283,7 +283,7 @@ class AwareNodeDiligenceScreenTest {
 		final var payerAccountRef = mock(MerkleAccount.class);
 		given(payerAccountRef.isDeleted()).willReturn(false);
 		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
-		given(aliasManager.lookUpPayerAccountID(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
+		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, OK));
 		given(backingAccounts.contains(payerAccountId)).willReturn(true);
 	}
 }

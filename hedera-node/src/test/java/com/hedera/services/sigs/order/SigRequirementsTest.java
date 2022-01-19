@@ -944,7 +944,7 @@ class SigRequirementsTest {
 	void getsFileAppendProtected() throws Throwable {
 		// given:
 		setupFor(SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER);
-		given(aliasManager.lookUpPayerAccountID(txn.getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayer(txn.getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(txn.getTransactionID().getAccountID(), OK));
 
 		// when:
@@ -2792,16 +2792,16 @@ class SigRequirementsTest {
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 
 		aliasManager = mock(AliasManager.class);
-		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS)))
+		given(aliasManager.lookUpPayer(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS)))
 				.willReturn(AliasLookup.of(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS), INVALID_PAYER_ACCOUNT_ID));
-		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(NO_RECEIVER_SIG_ALIAS)))
+		given(aliasManager.lookUpPayer(asAccountWithAlias(NO_RECEIVER_SIG_ALIAS)))
 				.willReturn(AliasLookup.of(NO_RECEIVER_SIG, OK));
-		given(aliasManager.lookUpPayerAccountID(asAccountWithAlias(RECEIVER_SIG_ALIAS)))
+		given(aliasManager.lookUpPayer(asAccountWithAlias(RECEIVER_SIG_ALIAS)))
 				.willReturn(AliasLookup.of(RECEIVER_SIG, OK));
-		given(aliasManager.lookUpPayerAccountID(
+		given(aliasManager.lookUpPayer(
 				asAccountWithAlias(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8())))
 				.willReturn(AliasLookup.of(FIRST_TOKEN_SENDER, OK));
-		given(aliasManager.lookUpPayerAccountID(txn.getTransactionID().getAccountID()))
+		given(aliasManager.lookUpPayer(txn.getTransactionID().getAccountID()))
 				.willReturn(AliasLookup.of(txn.getTransactionID().getAccountID(), OK));
 
 		subject = new SigRequirements(

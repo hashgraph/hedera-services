@@ -138,7 +138,7 @@ class MerkleTokenTest {
 	@BeforeEach
 	void setup() {
 		accountStore = mock(AccountStore.class);
-		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		feeSchedule = grpcFeeSchedule.stream()
 				.map(fee -> FcCustomFee.fromGrpc(fee, accountStore))
 				.collect(toList());
