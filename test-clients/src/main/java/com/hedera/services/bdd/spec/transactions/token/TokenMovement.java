@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  * ‍
  */
 
+import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -48,6 +49,7 @@ public class TokenMovement {
 	private final Optional<List<String>> receivers;
 	private final Optional<Function<HapiApiSpec, String>> senderFn;
 	private final Optional<Function<HapiApiSpec, String>> receiverFn;
+	private int expectedDecimals;
 
 	public static final TokenID HBAR_SENTINEL_TOKEN_ID = TokenID.getDefaultInstance();
 
@@ -66,6 +68,7 @@ public class TokenMovement {
 
 		senderFn = Optional.empty();
 		receiverFn = Optional.empty();
+		expectedDecimals = -1;
 	}
 
 	TokenMovement(
@@ -82,6 +85,7 @@ public class TokenMovement {
 		sender = Optional.empty();
 		receiver = Optional.empty();
 		receivers = Optional.empty();
+		expectedDecimals = -1;
 	}
 
 	TokenMovement(
@@ -98,6 +102,26 @@ public class TokenMovement {
 		this.serialNums = serialNums;
 		this.receiver = receiver;
 		this.receivers = receivers;
+
+		senderFn = Optional.empty();
+		receiverFn = Optional.empty();
+		expectedDecimals = -1;
+	}
+
+	TokenMovement(
+			String token,
+			Optional<String> sender,
+			long amount,
+			Optional<String> receiver,
+			Optional<List<String>> receivers,
+			int expectedDecimals
+	) {
+		this.token = token;
+		this.sender = sender;
+		this.amount = amount;
+		this.receiver = receiver;
+		this.receivers = receivers;
+		this.expectedDecimals = expectedDecimals;
 
 		senderFn = Optional.empty();
 		receiverFn = Optional.empty();
@@ -166,6 +190,9 @@ public class TokenMovement {
 				scopedTransfers.addTransfers(adjustment(targets.get(i), +amountPerReceiver, spec));
 			}
 		}
+		if (expectedDecimals > 0) {
+			scopedTransfers.setExpectedDecimals(UInt32Value.of(expectedDecimals));
+		}
 		return scopedTransfers.build();
 	}
 
@@ -201,10 +228,17 @@ public class TokenMovement {
 		private final long amount;
 		private long[] serialNums;
 		private final String token;
+		private int expectedDecimals;
 
 		public Builder(long amount, String token) {
 			this.token = token;
 			this.amount = amount;
+		}
+
+		public Builder(long amount, String token, int expectedDecimals) {
+			this.token = token;
+			this.amount = amount;
+			this.expectedDecimals = expectedDecimals;
 		}
 
 		public Builder(long amount, String token, long... serialNums) {
@@ -222,6 +256,16 @@ public class TokenMovement {
 					serialNums,
 					Optional.of(receiver),
 					Optional.empty());
+		}
+
+		public TokenMovement betweenWithDecimals(String sender, String receiver) {
+			return new TokenMovement(
+					token,
+					Optional.of(sender),
+					amount,
+					Optional.of(receiver),
+					Optional.empty(),
+					expectedDecimals);
 		}
 
 		public TokenMovement between(
@@ -260,6 +304,10 @@ public class TokenMovement {
 
 	public static Builder moving(long amount, String token) {
 		return new Builder(amount, token);
+	}
+
+	public static Builder movingWithDecimals(long amount, String token, int expectedDecimals) {
+		return new Builder(amount, token, expectedDecimals);
 	}
 
 	public static Builder movingUnique(String token, long... serialNums) {

@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -53,11 +54,13 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
@@ -84,6 +87,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Consumer<HapiSpecRegistry>> successCb = Optional.empty();
 	Optional<String> abi = Optional.empty();
 	Optional<Object[]> args = Optional.empty();
+	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	Optional<LongConsumer> newNumObserver = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
 
@@ -120,6 +124,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	@Override
 	protected Key lookupKey(HapiApiSpec spec, String name) {
 		return name.equals(contract) ? adminKey : spec.registry().getKey(name);
+	}
+
+	public HapiContractCreate exposingGasTo(ObjLongConsumer<ResponseCodeEnum> gasObserver) {
+		this.gasObserver = Optional.of(gasObserver);
+		return this;
 	}
 
 	public HapiContractCreate skipAccountRegistration() {
@@ -207,6 +216,9 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
 		if (actualStatus != SUCCESS) {
+			if (gasObserver.isPresent()) {
+				doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, true);
+			}
 			return;
 		}
 		final var newId = lastReceipt.getContractID();
@@ -232,6 +244,9 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							contract,
 							lastReceipt.getContractID().getContractNum()));
 			log.info(banner);
+		}
+		if (gasObserver.isPresent()) {
+			doGasLookup(gas -> gasObserver.get().accept(SUCCESS, gas), spec, txnSubmitted, true);
 		}
 	}
 

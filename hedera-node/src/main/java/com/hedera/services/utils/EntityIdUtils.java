@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
@@ -192,6 +194,14 @@ public final class EntityIdUtils {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
+	public static Address asTypedSolidityAddress(final AccountID id) {
+		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	}
+
+	public static Address asTypedSolidityAddress(final ContractID id) {
+		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	}
+
 	public static String asSolidityAddressHex(Id id) {
 		return CommonUtils.hex(asSolidityAddress((int) id.shard(), id.realm(), id.num()));
 	}
@@ -204,6 +214,18 @@ public final class EntityIdUtils {
 		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
 		return solidityAddress;
+	}
+
+	public static AccountID accountParsedFromSolidityAddress(final Address address) {
+		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
+	}
+
+	public static ContractID contractParsedFromSolidityAddress(final Address address) {
+		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
+	}
+
+	public static TokenID tokenParsedFromSolidityAddress(final Address address) {
+		return tokenParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 
 	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
@@ -219,6 +241,14 @@ public final class EntityIdUtils {
 				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
 				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
 				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.build();
+	}
+
+	public static TokenID tokenParsedFromSolidityAddress(byte[] solidityAddress) {
+		return TokenID.newBuilder()
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
+				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
 				.build();
 	}
 

@@ -43,7 +43,7 @@ public final class ThrottlingModule {
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var delegate = new DeterministicThrottling(
-				() -> addressBook.get().getSize(), aliasManager, dynamicProperties);
+				() -> addressBook.get().getSize(), aliasManager, dynamicProperties, false);
 		return new HapiThrottling(delegate);
 	}
 
@@ -56,7 +56,7 @@ public final class ThrottlingModule {
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		final var delegate = new DeterministicThrottling(
-				() -> 1, aliasManager, dynamicProperties);
+				() -> 1, aliasManager, dynamicProperties, true);
 		return new TxnAwareHandleThrottling(txnCtx, delegate);
 	}
 

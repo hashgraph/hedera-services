@@ -26,6 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.CommonUtils;
@@ -57,12 +58,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final int UNRECORDED_STATE_VERSION = -1;
 	public static final long NO_PREPARED_UPDATE_FILE_NUM = -1;
 	public static final byte[] NO_PREPARED_UPDATE_FILE_HASH = new byte[0];
+	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
+			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
 	static final int RELEASE_0130_VERSION = 2;
 	static final int RELEASE_0140_VERSION = 3;
 	static final int RELEASE_0150_VERSION = 4;
 	static final int RELEASE_0190_VERSION = 5;
-	static final int CURRENT_VERSION = RELEASE_0190_VERSION;
+	static final int RELEASE_0200_VERSION = 6;
+	static final int CURRENT_VERSION = RELEASE_0200_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -87,6 +91,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
+	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -111,6 +116,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.lastScannedEntity = that.lastScannedEntity;
 		this.midnightRates = that.midnightRates.copy();
 		this.usageSnapshots = that.usageSnapshots;
+		this.gasThrottleUsageSnapshot = that.gasThrottleUsageSnapshot;
 		this.congestionLevelStarts = that.congestionLevelStarts;
 		this.stateVersion = that.stateVersion;
 		this.entitiesScannedThisSecond = that.entitiesScannedThisSecond;
@@ -138,7 +144,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			return;
 		}
 
-		reset(activeThrottles);
+		reset(activeThrottles, throttling.gasLimitThrottle());
 	}
 
 	/* --- Mutators that change this network context --- */
@@ -245,6 +251,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			preparedUpdateFileNum = in.readLong();
 			preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
 		}
+		if (version >= RELEASE_0200_VERSION) {
+			var used = in.readLong();
+			var lastUsed = serdes.readNullableInstant(in);
+			gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(used, (lastUsed == null) ? null : lastUsed.toJava());
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -258,7 +269,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 						used, (lastUsed == null) ? null : lastUsed.toJava());
 			}
 		}
-
 		int numCongestionStarts = in.readInt();
 		if (numCongestionStarts > 0) {
 			congestionLevelStarts = new Instant[numCongestionStarts];
@@ -304,6 +314,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
 		out.writeLong(preparedUpdateFileNum);
 		out.writeByteArray(preparedUpdateFileHash);
+		out.writeLong(gasThrottleUsageSnapshot.used());
+		serdes.writeNullableInstant(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out);
 	}
 
 	@Override
@@ -363,6 +375,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 						.append(" used (last decision time ")
 						.append(reprOf(snapshot.lastDecisionTime())).append(")");
 			}
+			sb.append(LINE_WRAP)
+					.append(gasThrottleUsageSnapshot.used())
+					.append(" gas used (last decision time ")
+					.append(reprOf(gasThrottleUsageSnapshot.lastDecisionTime())).append(")");
 			return sb.toString();
 		}
 	}
@@ -448,6 +464,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				usageSnapshots[i] = activeThrottles.get(i).usageSnapshot();
 			}
 		}
+		gasThrottleUsageSnapshot = throttling.gasLimitThrottle().usageSnapshot();
 	}
 
 	void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
@@ -460,7 +477,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
-	private void reset(List<DeterministicThrottle> throttles) {
+	private void reset(List<DeterministicThrottle> throttles, GasLimitDeterministicThrottle gasLimitThrottle) {
 		var currUsageSnapshots = throttles.stream()
 				.map(DeterministicThrottle::usageSnapshot)
 				.toList();
@@ -477,6 +494,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				resetUnconditionally(throttles, currUsageSnapshots);
 				break;
 			}
+		}
+
+		var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
+		try {
+			gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
+			log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
+		} catch (IllegalArgumentException e) {
+			log.warn(String.format("Saved gas throttle usage snapshot was not compatible " +
+					"with the corresponding active throttle (%s); not performing a reset!", e.getMessage()));
+			gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
 		}
 	}
 
@@ -546,5 +573,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	FunctionalityThrottling getThrottling() {
 		return throttling;
+	}
+
+	public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+		return gasThrottleUsageSnapshot;
+	}
+
+	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
+		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
 	}
 }

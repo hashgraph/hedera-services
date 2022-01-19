@@ -23,13 +23,14 @@ package com.hedera.services.state.forensics;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -42,6 +43,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +65,7 @@ class HashLoggerTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	@Mock
-	private MerkleMap<String, MerkleOptionalBlob> storage;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
@@ -93,7 +95,7 @@ class HashLoggerTest {
 				"Accounts               :: " +
 				"313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131\n" +
 				"Storage                :: " +
-				"363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636\n" +
+				"<N/A>\n" +
 				"Topics                 :: " +
 				"323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232\n" +
 				"Tokens                 :: " +
@@ -113,7 +115,9 @@ class HashLoggerTest {
 				"  ↪ Running hash       :: " +
 				"595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959595959\n" +
 				"UniqueTokens           :: " +
-				"343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434";
+				"343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434\n" +
+				"ContractStorage        :: " +
+				"<N/A>";
 
 		given(state.getHash()).willReturn(hashOf('0'));
 		given(state.accounts()).willReturn(accounts);
@@ -126,8 +130,6 @@ class HashLoggerTest {
 		given(uniqueTokens.getHash()).willReturn(hashOf('4'));
 		given(state.scheduleTxs()).willReturn(schedules);
 		given(schedules.getHash()).willReturn(hashOf('5'));
-		given(state.storage()).willReturn(storage);
-		given(storage.getHash()).willReturn(hashOf('6'));
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(tokenAssociations.getHash()).willReturn(hashOf('7'));
 		given(state.networkCtx()).willReturn(networkCtx);

@@ -229,6 +229,7 @@ class ExpirableTxnRecordTest {
 		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
 		subject.setAlias(MISSING_ALIAS);
+
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())

@@ -22,6 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -71,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
@@ -89,7 +91,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCreateTransitionLogicTest {
-	private long gas = 33_333L;
+	private int gas = 33_333;
 	private long customAutoRenewPeriod = 100_001L;
 	private Long balance = 1_234L;
 	private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
@@ -119,6 +121,8 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private ContractCreateTransactionBody transactionBody;
 	@Mock
+	private GlobalDynamicProperties properties;
+	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
 	private ContractCreateTransitionLogic subject;
@@ -137,7 +141,8 @@ class ContractCreateTransitionLogicTest {
 		subject = new ContractCreateTransitionLogic(
 				hfs,
 				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor, hederaLedger, sigImpactHistorian);
+				worldState, recordServices, evmTxProcessor,
+                                hederaLedger, properties, sigImpactHistorian);
 	}
 
 	@Test
@@ -154,9 +159,20 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
+		given(properties.maxGas()).willReturn(gas+1);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
+	}
+
+	@Test
+	void providingGasOverLimitReturnsCorrectPrecheck() {
+		givenValidTxnCtx();
+		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(properties.maxGas()).willReturn(gas - 1);
+		// expect:
+		assertEquals(MAX_GAS_LIMIT_EXCEEDED,
+				subject.semanticCheck().apply(contractCreateTxn));
 	}
 
 	@Test
@@ -219,7 +235,7 @@ class ContractCreateTransitionLogicTest {
 	@Test
 	void rejectsNegativeGas() {
 		// setup:
-		gas = -1L;
+		gas = -1;
 
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
@@ -401,7 +417,7 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
 				contractAccount.getId().asEvmAddress());
-		given(worldState.persist()).willReturn(expectedCreatedContracts);
+		given(worldState.persistProvisionalContractCreations()).willReturn(expectedCreatedContracts);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
@@ -430,7 +446,7 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(worldState).reclaimContractId();
-		verify(worldState).persist();
+		verify(worldState).persistProvisionalContractCreations();
 		verify(txnCtx, never()).setCreated(contractAccount.getId().asGrpcContract());
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 	}
@@ -446,7 +462,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(worldState.persist()).willReturn(secondaryCreations);
+		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
 		given(hederaLedger.lookUpAccountId(senderAccountId)).willReturn(
 				AliasLookup.of(senderAccountId, OK));
 		final var result = TransactionProcessingResult
@@ -481,6 +497,7 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).persistProvisionalContractCreations();
 		verify(recordServices).externaliseEvmCreateTransaction(result);
 		verify(worldState, never()).reclaimContractId();
 		verify(txnCtx).setCreated(contractAccount.getId().asGrpcContract());
@@ -545,6 +562,7 @@ class ContractCreateTransitionLogicTest {
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
+		given(properties.maxGas()).willReturn(gas+1);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));

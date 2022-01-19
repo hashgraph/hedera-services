@@ -74,6 +74,12 @@ public record EntityNumPair(long value) {
 				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
 	}
 
+	public Pair<Long, Long> asTokenNumAndSerialPair() {
+		return Pair.of(
+				unsignedHighOrder32From(value),
+				unsignedLowOrder32From(value));
+	}
+
 	@Override
 	public int hashCode() {
 		return (int) MiscUtils.perm64(value);

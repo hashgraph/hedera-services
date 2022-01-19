@@ -103,7 +103,7 @@ class TokenUnfreezeTransitionLogicTest {
 
 		// verify:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_FREEZE_KEY);
-		verify(tokenStore, never()).persistTokenRelationships(List.of(tokenRelationship));
+		verify(tokenStore, never()).commitTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -117,7 +117,7 @@ class TokenUnfreezeTransitionLogicTest {
 
 		// then:
 		verify(tokenRelationship).changeFrozenState(false);
-		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
+		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class TokenUnfreezeTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(tokenRelationship).changeFrozenState(false);
-		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
+		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test

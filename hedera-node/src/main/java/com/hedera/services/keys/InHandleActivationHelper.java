@@ -122,12 +122,12 @@ public class InHandleActivationHelper {
 			TransactionBody txn,
 			BiPredicate<JKey, TransactionSignature> givenTests
 	) {
-		var activeCharacter = characteristics.inferredFor(txn);
-		for (JKey req : otherParties) {
-			if (req.isForScheduledTxn() != useScheduleKeys) {
+		final var activeCharacter = characteristics.inferredFor(txn);
+		for (final var key : otherParties) {
+			if (key.isForScheduledTxn() != useScheduleKeys) {
 				continue;
 			}
-			if (!activation.test(req, sigsFn, givenTests, activeCharacter)) {
+			if (!activation.test(key, sigsFn, givenTests, activeCharacter)) {
 				return false;
 			}
 		}

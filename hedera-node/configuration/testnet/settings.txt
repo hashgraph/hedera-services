@@ -1,5 +1,6 @@
 checkSignedStateFromDisk,                      1
 csvFileName,                                   MainNetStats
+csvOutputFolder,                               data/stats
 dbBackup.active,                               1
 dbConnection.active,                           1
 dbRestore.active,                              1
@@ -12,7 +13,7 @@ maxEventQueueForCons,                          1000
 maxOutgoingSyncs,                              4
 numConnections,                                1000
 reconnect.active,                              1
-reconnect.asyncInputStreamTimeoutMilliseconds, 60000
+reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showDbStats,                                   0
 showInternalStats,                             1

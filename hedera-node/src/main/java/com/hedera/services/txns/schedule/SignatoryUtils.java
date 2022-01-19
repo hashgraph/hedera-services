@@ -88,6 +88,12 @@ public class SignatoryUtils {
 		return Pair.of(status, isReadyToExecute);
 	}
 
+	static boolean isReady(final MerkleSchedule schedule, final InHandleActivationHelper activationHelper) {
+		return activationHelper.areScheduledPartiesActive(
+				schedule.ordinaryViewOfScheduledTxn(),
+				(key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
+	}
+
 	private static ResponseCodeEnum witnessNonTriviallyScoped(
 			List<JKey> valid,
 			ScheduleID id,
@@ -107,12 +113,6 @@ public class SignatoryUtils {
 			}
 		}
 		l.add(bytes);
-	}
-
-	private static boolean isReady(MerkleSchedule schedule, InHandleActivationHelper activationHelper) {
-		return activationHelper.areScheduledPartiesActive(
-				schedule.ordinaryViewOfScheduledTxn(),
-				(key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
 	}
 
 	private static boolean witnessAnyNew(ScheduleStore store, ScheduleID id, List<byte[]> signatories) {

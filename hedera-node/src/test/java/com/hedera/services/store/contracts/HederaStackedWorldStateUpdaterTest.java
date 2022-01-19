@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.worldstate.AbstractWorldUpdater;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +44,10 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
-
-	@Mock(extraInterfaces = {HederaWorldUpdater.class})
-	private AbstractWorldUpdater<HederaWorldState, WorldStateAccount> updater;
+	@Mock
+	private WorldLedgers trackingLedgers;
+	@Mock(extraInterfaces = { HederaWorldUpdater.class })
+	private AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock
@@ -59,7 +59,7 @@ class HederaStackedWorldStateUpdaterTest {
 	@BeforeEach
 	void setUp() {
 		address = Address.fromHexString("0xabc");
-		subject = new HederaStackedWorldStateUpdater(updater, worldState);
+		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
 	}
 
 	@AfterEach

@@ -20,18 +20,22 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +47,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -52,30 +59,37 @@ public class NetworkCtxManager {
 
 	private final int issResetPeriod;
 
+	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
 	private final IssEventInfo issInfo;
+	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
 	private final HbarCentExchange exchange;
+	private final NarratedCharging narratedCharging;
 	private final SystemFilesManager systemFilesManager;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final TransactionContext txnCtx;
 
 	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
 	@Inject
 	public NetworkCtxManager(
-			IssEventInfo issInfo,
-			NodeLocalProperties nodeLocalProperties,
-			HapiOpCounters opCounters,
-			HbarCentExchange exchange,
-			SystemFilesManager systemFilesManager,
-			FeeMultiplierSource feeMultiplierSource,
-			GlobalDynamicProperties dynamicProperties,
-			@HandleThrottle FunctionalityThrottling handleThrottling,
-			Supplier<MerkleNetworkContext> networkCtx
+			final IssEventInfo issInfo,
+			final NodeLocalProperties nodeLocalProperties,
+			final HapiOpCounters opCounters,
+			final HbarCentExchange exchange,
+			final SystemFilesManager systemFilesManager,
+			final FeeMultiplierSource feeMultiplierSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final TransactionContext txnCtx,
+			final MiscRunningAvgs runningAvgs,
+			final NarratedCharging narratedCharging
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -83,10 +97,13 @@ public class NetworkCtxManager {
 		this.opCounters = opCounters;
 		this.exchange = exchange;
 		this.networkCtx = networkCtx;
+		this.narratedCharging = narratedCharging;
 		this.systemFilesManager = systemFilesManager;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 		this.dynamicProperties = dynamicProperties;
+		this.runningAvgs = runningAvgs;
+		this.txnCtx = txnCtx;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -150,16 +167,57 @@ public class NetworkCtxManager {
 		return consensusSecondJustChanged;
 	}
 
-	public void prepareForIncorporating(TxnAccessor accessor) {
-		/* This is only to monitor the current network usage for automated
-		congestion pricing; we don't actually throttle consensus transactions. */
+	/**
+	 * Used to monitor the current network usage for automated congestion pricing
+	 * and to throttle ContractCreate and ContractCall transactions by the transaction gas limit.
+	 *
+	 * @param accessor
+	 * 		the accessor for the transaction
+	 * @return whether processing can continue for this transaction
+	 */
+	public ResponseCodeEnum prepareForIncorporating(final TxnAccessor accessor) {
+		/* We unconditionally evaluate the throttle to track network usage for congestion pricing
+		 * purposes. (Note that since a gas-throttled transaction does not take up any capacity
+		 * in the "normal" throttle buckets, it actually reduces congestion by a tiny amount.)  */
 		handleThrottling.shouldThrottleTxn(accessor);
-
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
+
+		if (handleThrottling.wasLastTxnGasThrottled()) {
+			narratedCharging.refundPayerServiceFee();
+			return CONSENSUS_GAS_EXHAUSTED;
+		}
+		return OK;
 	}
 
+	/**
+	 * Callback used by the processing flow to notify the context manager it should update any network
+	 * context that derives from the side effects of handled transactions.
+	 *
+	 * At present, this context includes:
+	 * <ol>
+	 *     <li>The {@code *Handled} counts.</li>
+	 *     <li>The {@code gasPerConsSec} running average.</li>
+	 *     <li>The "in-handle" throttles.</li>
+	 *     <li>The congestion pricing multiplier.</li>
+	 * </ol>
+	 *
+	 * @param op the type of transaction just handled
+	 */
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
+		if (consensusSecondJustChanged) {
+			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
+			gasUsedThisConsSec = 0L;
+		}
+
+		if (isGasThrottled(op) && txnCtx.hasContractResult()) {
+			final var gasUsed = txnCtx.getGasUsedForContractTxn();
+			gasUsedThisConsSec += gasUsed;
+			if (dynamicProperties.shouldThrottleByGas()) {
+				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
+				handleThrottling.leakUnusedGasPreviouslyReserved(excessAmount);
+			}
+		}
 
 		var networkCtxNow = networkCtx.get();
 		networkCtxNow.syncThrottling(handleThrottling);
@@ -170,8 +228,21 @@ public class NetworkCtxManager {
 		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
 	}
 
+	/* --- Only used in unit tests --- */
 	int getIssResetPeriod() {
 		return issResetPeriod;
+	}
+
+	void setConsensusSecondJustChanged(boolean consensusSecondJustChanged) {
+		this.consensusSecondJustChanged = consensusSecondJustChanged;
+	}
+
+	long getGasUsedThisConsSec() {
+		return gasUsedThisConsSec;
+	}
+
+	void setGasUsedThisConsSec(long gasUsedThisConsSec) {
+		this.gasUsedThisConsSec = gasUsedThisConsSec;
 	}
 
 	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {

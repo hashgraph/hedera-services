@@ -90,13 +90,14 @@ class TokenAssociateTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock private AssociateLogic associateLogic;
 
 	private TransactionBody tokenAssociateTxn;
 	private TokenAssociateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenAssociateTransitionLogic(accountStore, tokenStore, txnCtx, dynamicProperties);
+		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
 	}
 
 	@Test
@@ -122,34 +123,9 @@ class TokenAssociateTransitionLogicTest {
 
 		// then:
 		inOrder.verify(modelAccount).associateWith(tokens, 123, false);
-		inOrder.verify(accountStore).persistAccount(modelAccount);
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
 	}
 
-	@Test
-	void appliesExpectedTransitionWithAlias() {
-		InOrder inOrder = Mockito.inOrder(modelAccount, accountStore, tokenStore);
 
-		givenValidAliasTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.getAccountNumFromAlias(alias, accountWithAlias.getAccountNum())).willReturn(mappedAliasNum);
-		given(accountStore.loadAccount(mappedAliasId)).willReturn(modelAccount);
-		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
-		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
-		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(123);
-		List<Token> tokens = List.of(firstModelToken, secondModelToken);
-
-		subject.doStateTransition();
-
-		inOrder.verify(modelAccount).associateWith(tokens, 123, false);
-		inOrder.verify(accountStore).persistAccount(modelAccount);
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
-	}
 
 	@Test
 	void failsAsExpectedTransitionWithInvalidAlias() {

@@ -20,8 +20,8 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsSpeedometer;
 
 public interface SpeedometerFactory {
 	default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {

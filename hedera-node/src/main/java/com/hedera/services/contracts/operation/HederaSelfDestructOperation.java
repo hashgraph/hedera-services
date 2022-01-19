@@ -35,36 +35,41 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.
- *
+ * <p>
  * Performs an existence check on the beneficiary {@link Address}
  * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
  * the account does not exist or it is deleted.
- *
+ * <p>
  * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the
  * beneficiary address is the same as the address being destructed
  */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
 
+	private final BiPredicate<Address, MessageFrame> addressValidator;
+
 	@Inject
-	public HederaSelfDestructOperation(final GasCalculator gasCalculator) {
+	public HederaSelfDestructOperation(final GasCalculator gasCalculator,
+									   final BiPredicate<Address, MessageFrame> addressValidator) {
 		super(gasCalculator);
+		this.addressValidator = addressValidator;
 	}
 
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		Address recipientAddress = Words.toAddress(frame.getStackItem(0));
-		Address address = frame.getRecipientAddress();
-		Account account = frame.getWorldUpdater().get(recipientAddress);
-		Account beneficiaryAccount = frame.getWorldUpdater().get(recipientAddress);
-		if (address.equals(recipientAddress)) {
-			return new OperationResult(errorGasCost(account),
-					Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
-		} else if (beneficiaryAccount == null) {
+		if (!addressValidator.test(recipientAddress, frame)) {
 			return new OperationResult(errorGasCost(null),
 					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+		}
+		Address address = frame.getRecipientAddress();
+		if (address.equals(recipientAddress)) {
+			Account account = frame.getWorldUpdater().get(recipientAddress);
+			return new OperationResult(errorGasCost(account),
+					Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
 		} else {
 			return super.execute(frame, evm);
 		}

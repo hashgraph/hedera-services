@@ -35,7 +35,6 @@ import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -166,7 +165,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						return false;
 					}
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, " +
-							"possibly network connection lost.", CommonUtils.toReadableString(txn));
+							"possibly network connection lost.", TxnUtils.toReadableString(txn));
 					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
 				}
 			}

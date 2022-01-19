@@ -93,7 +93,10 @@ public class CongestionPricingSuite extends HapiApiSuite {
 								.sending(ONE_HBAR)
 								.via("cheapCall"),
 						getTxnRecord("cheapCall")
-								.providingFeeTo(normalPrice::set)
+								.providingFeeTo(normalFee -> {
+									log.info("Normal fee is {}", normalFee);
+									normalPrice.set(normalFee);
+								})
 				).when(
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
@@ -121,7 +124,10 @@ public class CongestionPricingSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord("pricyCall")
 								.payingWith(GENESIS)
-								.providingFeeTo(sevenXPrice::set),
+								.providingFeeTo(congestionFee -> {
+									log.info("Congestion fee is {}", congestionFee);
+									sevenXPrice.set(congestionFee);
+								}),
 						withOpContext((spec, opLog) -> {
 							Assertions.assertEquals(
 									7.0,

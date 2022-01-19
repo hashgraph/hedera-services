@@ -40,6 +40,7 @@ import java.util.Set;
 public class MerkleAccountFactory {
 	private boolean useNewStyleTokenIds = false;
 
+	private int numKvPairs = 0;
 	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	private Optional<Long> balance = Optional.empty();
 	private Optional<Long> receiverThreshold = Optional.empty();
@@ -79,6 +80,7 @@ public class MerkleAccountFactory {
 			tokens.associateAll(associatedTokens);
 		}
 		value.setTokens(tokens);
+		value.setNumContractKvPairs(numKvPairs);
 		return value;
 	}
 
@@ -88,6 +90,11 @@ public class MerkleAccountFactory {
 	}
 	public static MerkleAccountFactory newContract() {
 		return new MerkleAccountFactory().isSmartContract(true);
+	}
+
+	public MerkleAccountFactory numKvPairs(final int numKvPairs) {
+		this.numKvPairs = numKvPairs;
+		return this;
 	}
 
 	public MerkleAccountFactory proxy(AccountID id) {

@@ -85,6 +85,8 @@ class TokenDissociateTransitionLogicTest {
 	@Mock
 	private DissociationFactory relsFactory;
 	@Mock
+	private DissociateLogic dissociateLogic;
+	@Mock
 	private TxnAccessor accessor;
 	@Mock
 	private Dissociation dissociation;
@@ -93,7 +95,7 @@ class TokenDissociateTransitionLogicTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new TokenDissociateTransitionLogic(tokenStore, accountStore, txnCtx, validator, relsFactory);
+		subject = new TokenDissociateTransitionLogic(txnCtx, dissociateLogic);
 	}
 
 	@Test
@@ -115,9 +117,6 @@ class TokenDissociateTransitionLogicTest {
 
 		// then:
 		verify(account).dissociateUsing(List.of(dissociation), validator);
-		// and:
-		verify(accountStore).persistAccount(account);
-		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -137,8 +136,6 @@ class TokenDissociateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(account).dissociateUsing(List.of(dissociation), validator);
-		verify(accountStore).persistAccount(account);
-		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -181,6 +178,18 @@ class TokenDissociateTransitionLogicTest {
 
 		// expect:
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, check.apply(dissociateTxnWith(repeatedTokenIdOp())));
+	}
+
+	@Test
+	void callsDissociateLogicWithCorrectParams() {
+		final var accountId = new Id(1, 2, 3);
+
+		given(accessor.getTxn()).willReturn(validDissociateTxn());
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(dissociateLogic).dissociate(accountId.asGrpcAccount(), txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 	}
 
 	private TransactionBody validDissociateTxn() {

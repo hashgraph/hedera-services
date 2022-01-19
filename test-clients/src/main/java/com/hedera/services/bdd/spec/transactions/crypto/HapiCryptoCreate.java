@@ -83,8 +83,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<SigControl> keyShape = Optional.empty();
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
+	private Optional<Consumer<AccountID>> newIdObserver = Optional.empty();
 	private ReferenceType proxyReferenceType;
-
 
 	@Override
 	public HederaFunctionality type() {
@@ -94,6 +94,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	@Override
 	protected Key lookupKey(HapiApiSpec spec, String name) {
 		return name.equals(account) ? key : spec.registry().getKey(name);
+	}
+
+	public HapiCryptoCreate exposingCreatedIdTo(Consumer<AccountID> newIdObserver) {
+		this.newIdObserver = Optional.of(newIdObserver);
+		return this;
 	}
 
 	public HapiCryptoCreate advertisingCreation() {
@@ -252,6 +257,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		if (actualStatus != SUCCESS || forgettingEverything) {
 			return;
 		}
+		final var createdId = lastReceipt.getAccountID();
 		if (recharging) {
 			spec.registry().setRecharging(account, initialBalance.orElse(spec.setup().defaultBalance()));
 			if (rechargeWindow.isPresent()) {
@@ -259,7 +265,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 			}
 		}
 		spec.registry().saveKey(account, key);
-		spec.registry().saveAccountId(account, lastReceipt.getAccountID());
+		spec.registry().saveAccountId(account, createdId);
+		newIdObserver.ifPresent(obs -> obs.accept(createdId));
 		receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
 		if (advertiseCreation) {

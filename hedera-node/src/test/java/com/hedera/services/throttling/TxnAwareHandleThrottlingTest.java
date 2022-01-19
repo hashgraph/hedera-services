@@ -23,8 +23,10 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +53,8 @@ class TxnAwareHandleThrottlingTest {
 	private TimedFunctionalityThrottling delegate;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private Query query;
 
 	private TxnAwareHandleThrottling subject;
 
@@ -61,7 +66,14 @@ class TxnAwareHandleThrottlingTest {
 	@Test
 	void txnHandlingDoesntSupportQueries() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
+	}
+
+	@Test
+	void delegatesWasLastTxnGasThrottled() {
+		given(delegate.wasLastTxnGasThrottled()).willReturn(true);
+
+		assertTrue(subject.wasLastTxnGasThrottled());
 	}
 
 	@Test
@@ -74,6 +86,21 @@ class TxnAwareHandleThrottlingTest {
 
 		// expect:
 		assertTrue(subject.shouldThrottleTxn(accessor));
+		// and:
+		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
+	}
+
+	@Test
+	void delegatesThrottlingConsensusTxnDecisionsWithConsensusTime() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
+
+		// expect:
+		assertTrue(subject.shouldThrottleTxn(accessor));
+
 		// and:
 		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
 	}
@@ -96,5 +123,28 @@ class TxnAwareHandleThrottlingTest {
 		verify(delegate).rebuildFor(defs);
 		assertSame(whatever, all);
 		assertSame(whatever, onlyXfer);
+	}
+
+	@Test
+	void leakUnusedGasCallsDelegateLeakMethod() {
+		//when:
+		subject.leakUnusedGasPreviouslyReserved(12345L);
+
+		//then:
+		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+	}
+
+	@Test
+	void gasLimitThrottleWorks() {
+		GasLimitDeterministicThrottle gasLimitDeterministicThrottle = new GasLimitDeterministicThrottle(1234);
+		given(delegate.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
+		GasLimitDeterministicThrottle gasLimitDeterministicThrottle1 = subject.gasLimitThrottle();
+		assertEquals(gasLimitDeterministicThrottle, gasLimitDeterministicThrottle1);
+	}
+
+	@Test
+	void applyGasConfig() {
+		subject.applyGasConfig();
+		verify(delegate).applyGasConfig();
 	}
 }

@@ -103,6 +103,7 @@ import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
+import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
@@ -417,6 +418,7 @@ public class SuiteRunner {
 		put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
 		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
 		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+		put("FibonacciPlusLoadProvider", aof(FibonacciPlusLoadProvider::new));
 		/* Functional tests - AUTORENEW */
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */

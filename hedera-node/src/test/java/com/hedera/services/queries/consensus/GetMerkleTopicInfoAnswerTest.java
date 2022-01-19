@@ -21,13 +21,14 @@ package com.hedera.services.queries.consensus;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
@@ -78,13 +79,16 @@ class GetMerkleTopicInfoAnswerTest {
 	String target = "3.2.1";
 	String memo = "This was Mr. Bleaney's room...";
 	String idLit = "0.0.12345";
+	EntityNum key = EntityNum.fromTopicId(asTopic(target));
 	long expiry = 1_234_567L;
 	long duration = 55L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 	MerkleTopic merkleTopic;
 	private Transaction paymentTxn;
 
 	GetTopicInfoAnswer subject;
 	NodeLocalProperties nodeProps;
+	NetworkInfo networkInfo;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -102,18 +106,21 @@ class GetMerkleTopicInfoAnswerTest {
 				.get();
 		merkleTopic.setRunningHash(hash);
 		merkleTopic.setSequenceNumber(seqNo);
-		EntityNum key = EntityNum.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 
 		nodeProps = mock(NodeLocalProperties.class);
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setTopics(topics);
+
+		networkInfo = mock(NetworkInfo.class);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				networkInfo);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);
@@ -256,6 +263,18 @@ class GetMerkleTopicInfoAnswerTest {
 		assertEquals(merkleTopic.getAutoRenewAccountId().num(), info.getAutoRenewAccount().getAccountNum());
 		assertEquals(merkleTopic.getSequenceNumber(), info.getSequenceNumber());
 		assertEquals(merkleTopic.getMemo(), info.getMemo());
+		assertEquals(ledgerId, info.getLedgerId());
+	}
+
+	@Test
+	void failsAsExpectedWhenFetchingMissingTopicInfo() throws Throwable {
+		given(topics.get(key)).willReturn(null);
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		assertTrue(response.hasConsensusGetTopicInfo());
+		assertEquals(INVALID_TOPIC_ID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test

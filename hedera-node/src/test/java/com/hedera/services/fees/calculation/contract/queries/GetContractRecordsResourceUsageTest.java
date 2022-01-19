@@ -54,8 +54,8 @@ class GetContractRecordsResourceUsageTest {
 				null,
 				null,
 				null,
-				null,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		subject = new GetContractRecordsResourceUsage(usageEstimator);
 	}

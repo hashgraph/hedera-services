@@ -75,6 +75,7 @@ class MerkleAccountStateTest {
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
+	private static final ByteString otherAlias = ByteString.copyFrom("012345789".getBytes());
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -86,6 +87,8 @@ class MerkleAccountStateTest {
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	private static final int otherNumber = 456;
+	private static final int kvPairs = 123;
+	private static final int otherKvPairs = 456;
 
 	private DomainSerdes serdes;
 
@@ -101,7 +104,8 @@ class MerkleAccountStateTest {
 				proxy,
 				number,
 				autoAssociationMetadata,
-				alias);
+				alias,
+				kvPairs);
 		serdes = mock(DomainSerdes.class);
 		MerkleAccountState.serdes = serdes;
 	}
@@ -121,10 +125,11 @@ class MerkleAccountStateTest {
 						"memo=" + memo + ", " +
 						"deleted=" + deleted + ", " +
 						"smartContract=" + smartContract + ", " +
+						"numContractKvPairs=" + kvPairs + ", "  +
 						"receiverSigRequired=" + receiverSigRequired + ", " +
 						"proxy=" + proxy + ", nftsOwned=0, " +
 						"alreadyUsedAutoAssociations=" + alreadyUsedAutoAssociations + ", " +
-						"maxAutoAssociations=" + maxAutoAssociations +  ", " +
+						"maxAutoAssociations=" + maxAutoAssociations + ", " +
 						"alias=" + alias.toStringUtf8() + "}",
 				subject.toString());
 	}
@@ -144,9 +149,11 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setSmartContract(false));
 		assertThrows(MutabilityException.class, () -> subject.setReceiverSigRequired(true));
 		assertThrows(MutabilityException.class, () -> subject.setExpiry(1_234_567L));
+		assertThrows(MutabilityException.class, () -> subject.setNumContractKvPairs(otherKvPairs));
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
 		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociations));
-		assertThrows(MutabilityException.class, () -> subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations));
+		assertThrows(MutabilityException.class,
+				() -> subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations));
 	}
 
 	@Test
@@ -155,6 +162,7 @@ class MerkleAccountStateTest {
 		final var newSubject = new MerkleAccountState();
 		subject.setAlreadyUsedAutomaticAssociations(0);
 		subject.setMaxAutomaticAssociations(0);
+		subject.setNumContractKvPairs(0);
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
 				.willReturn(expiry)
@@ -189,6 +197,7 @@ class MerkleAccountStateTest {
 		subject.setNftsOwned(nftsOwned);
 		subject.setMaxAutomaticAssociations(0);
 		subject.setAlreadyUsedAutomaticAssociations(0);
+		subject.setNumContractKvPairs(0);
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -222,6 +231,7 @@ class MerkleAccountStateTest {
 	void deserializeV0180WorksPreSdk() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
+		subject.setNumContractKvPairs(0);
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -254,6 +264,7 @@ class MerkleAccountStateTest {
 	void deserializeV0180WorksPostSdk() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
+		subject.setNumContractKvPairs(0);
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -282,6 +293,8 @@ class MerkleAccountStateTest {
 	void deserializeV0210Works() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
+		subject.setNumContractKvPairs(0);
+		assertEquals(0, subject.getNumContractKvPairs());
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -305,6 +318,35 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void deserializeV0220Works() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		subject.setNftsOwned(nftsOwned);
+		final var newSubject = new MerkleAccountState();
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs)
+				.willReturn(nftsOwned);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(in.readInt())
+				.willReturn(autoAssociationMetadata)
+				.willReturn(number)
+				.willReturn(kvPairs);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
+
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0220_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
 	void serializeWorks() throws IOException {
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(serdes, out);
@@ -321,6 +363,7 @@ class MerkleAccountStateTest {
 		verify(out, never()).writeLongArray(any());
 		inOrder.verify(out).writeInt(number);
 		inOrder.verify(out).writeByteArray(alias.toByteArray());
+		inOrder.verify(out).writeInt(kvPairs);
 	}
 
 	@Test
@@ -350,8 +393,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -365,8 +409,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -380,8 +425,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -395,8 +441,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -410,8 +457,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -425,8 +473,9 @@ class MerkleAccountStateTest {
 				otherDeleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -440,8 +489,9 @@ class MerkleAccountStateTest {
 				deleted, otherSmartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -455,8 +505,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, otherReceiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -470,8 +521,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				otherNumber,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -485,14 +537,45 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				otherProxy,
 				number, autoAssociationMetadata,
-				alias);
+				alias,
+				kvPairs);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAlias() {
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				otherAlias,
+				kvPairs);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForKvPairs() {
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs);
 
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0210_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0220_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -507,8 +590,9 @@ class MerkleAccountStateTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		final var otherSubject = new MerkleAccountState(
 				otherKey,
@@ -517,8 +601,9 @@ class MerkleAccountStateTest {
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy,
 				otherNumber,
-                                autoAssociationMetadata,
-				alias);
+				autoAssociationMetadata,
+				alias,
+				otherKvPairs);
 
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());
