@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ package com.hedera.services.bdd.spec.transactions.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -38,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
@@ -45,6 +48,7 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 	private final String contract;
 	private Optional<String> transferAccount = Optional.empty();
 	private Optional<String> transferContract = Optional.empty();
+	private ReferenceType transferAccountRefType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -64,6 +68,13 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 		transferAccount = Optional.of(to);
 		return this;
 	}
+
+	public HapiContractDelete transferAccountAliased(String to) {
+		transferAccountRefType = ReferenceType.ALIAS_KEY_NAME;
+		transferAccount = Optional.of(to);
+		return this;
+	}
+
 	public HapiContractDelete transferContract(String to) {
 		transferContract = Optional.of(to);
 		return this;
@@ -90,10 +101,16 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 							builder.setContractID(spec.registry().getContractId(contract));
 							transferContract.ifPresent(c ->
 									builder.setTransferContractID(spec.registry().getContractId(c)));
-							transferAccount.ifPresent(a ->
-									builder.setTransferAccountID(spec.registry().getAccountID(a)));
+							transferAccount.ifPresent(a -> {
+										if (transferAccountRefType == ReferenceType.ALIAS_KEY_NAME) {
+											builder.setTransferAccountID(asAccount(spec.registry().getKey(a).toByteString()));
+										} else {
+											builder.setTransferAccountID(spec.registry().getAccountID(a));
+										}
+									}
+							);
 						}
-					);
+				);
 		return builder -> builder.setContractDeleteInstance(opBody);
 	}
 
