@@ -135,11 +135,11 @@ class TokenFreezeTransitionLogicTest {
 	void failsWithInvalidAlias() {
 		givenValidAliasTxnCtx();
 		given(accountStore.getAccountNumFromAlias(accountWithAlias.getAlias(), accountWithAlias.getAccountNum()))
-				.willThrow(new InvalidTransactionException(INVALID_ALIAS_KEY));
+				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		final var ex = assertThrows(InvalidTransactionException.class, ()-> subject.doStateTransition());
 
-		assertEquals(INVALID_ALIAS_KEY, ex.getResponseCode());
+		assertEquals(INVALID_ACCOUNT_ID, ex.getResponseCode());
 	}
 
 	@Test

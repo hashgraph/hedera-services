@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -92,7 +93,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Validate --- */
 		final var autoRenewNum = accountStore.getAccountNumFromAlias(autoRenewId.getAlias(),
-				autoRenewId.getAccountNum());
+				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
 		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
 
 		final var payer = accountStore.getAccountNumFromAlias(payerId.getAlias(), payerId.getAccountNum());

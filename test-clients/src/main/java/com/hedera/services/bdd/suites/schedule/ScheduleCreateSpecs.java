@@ -152,7 +152,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
 								.designatingPayerAlias("invalidAlias")
 								.payingWithAlias("schedulingAlias")
-								.hasKnownStatus(INVALID_SCHEDULE_ACCOUNT_ID),
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						scheduleCreate("validScheduleWithAlias",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
 								.designatingPayerAlias("payerAlias")

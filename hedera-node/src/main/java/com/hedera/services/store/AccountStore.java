@@ -181,7 +181,16 @@ public class AccountStore {
 		mapModelToMutable(account, mutableAccount);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 	}
-
+	
+	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum, final ResponseCodeEnum response) {
+		if (!alias.isEmpty() && possibleAccountNum == 0) {
+			var entityNum = aliasManager.lookupIdBy(alias);
+			validateTrue(entityNum != EntityNum.MISSING_NUM, response);
+			return entityNum.longValue();
+		}
+		return possibleAccountNum;
+	}
+	
 	/**
 	 * Fetches the account Num from the alias map that is mapped to the given alias
 	 *
@@ -192,12 +201,7 @@ public class AccountStore {
 	 * @return AccountNum of the alias account if alias is found in the aliasManager.
 	 */
 	public long getAccountNumFromAlias(final ByteString alias, final long possibleAccountNum) {
-		if (!alias.isEmpty() && possibleAccountNum == 0) {
-			var entityNum = aliasManager.lookupIdBy(alias);
-			validateTrue(entityNum != EntityNum.MISSING_NUM, INVALID_ALIAS_KEY);
-			return entityNum.longValue();
-		}
-		return possibleAccountNum;
+		return getAccountNumFromAlias(alias, possibleAccountNum, INVALID_ACCOUNT_ID);
 	}
 
 	private void mapModelToMutable(Account model, MerkleAccount mutableAccount) {

@@ -396,11 +396,11 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtxWithAlias(true);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
-				.willReturn(AliasLookup.of(newTreasury, INVALID_ALIAS_KEY));
+				.willReturn(AliasLookup.of(newTreasury, INVALID_ACCOUNT_ID));
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test
@@ -409,11 +409,11 @@ class TokenUpdateTransitionLogicTest {
 		givenValidTxnCtxWithAlias(false);
 		givenToken(true, true);
 		given(store.lookUpAccountId(newAutoRenewWithAlias, INVALID_AUTORENEW_ACCOUNT))
-				.willReturn(AliasLookup.of(newAutoRenew, INVALID_ALIAS_KEY));
+				.willReturn(AliasLookup.of(newAutoRenew, INVALID_ACCOUNT_ID));
 
 		subject.doStateTransition();
 
-		verify(txnCtx).setStatus(INVALID_ALIAS_KEY);
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test
