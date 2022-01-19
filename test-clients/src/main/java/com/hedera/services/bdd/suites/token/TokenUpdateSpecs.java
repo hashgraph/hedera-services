@@ -150,9 +150,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				)
 				.when(
 						getTxnRecord("autoCreate")
-								.andAllChildRecords()
-								.hasAliasInChildRecord("autoRenewAlias", 0)
-								.hasAliasInChildRecord("treasuryAlias", 1).logged(),
+								.hasChildRecordCount(2),
 						tokenCreate("tokenA")
 								.adminKey("adminKey")
 								.treasury(DEFAULT_PAYER)

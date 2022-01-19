@@ -277,6 +277,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
@@ -402,7 +403,7 @@ class SigRequirementsTest {
 		subject.keysForPayer(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forInvalidAccount();
+		verify(mockSummaryFactory).forInvalidPayer();
 	}
 
 	@Test
@@ -816,13 +817,13 @@ class SigRequirementsTest {
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
-		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
+		given(mockSummaryFactory.forInvalidAccount()).willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingAccount();
+		verify(mockSummaryFactory).forInvalidAccount();
 	}
 
 	@Test
@@ -1706,7 +1707,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, summary.getErrorReport());
 	}
 
 	@Test
@@ -2296,7 +2297,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, summary.getErrorReport());
 	}
 
 	@Test

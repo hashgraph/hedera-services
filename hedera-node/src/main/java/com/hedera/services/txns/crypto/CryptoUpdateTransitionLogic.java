@@ -102,7 +102,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
 
-			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate());
+			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
@@ -115,7 +115,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
 				return;
 			}
-			final var validity = sanityCheck(target, customizer);
+			var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;
@@ -168,7 +168,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
-			final var result = ledger.lookUpAccountId(proxy.toGrpcAccountId(), INVALID_PROXY_ACCOUNT_ID);
+			final var result = ledger.lookUpAccountIdAndValidate(
+					proxy.toGrpcAccountId(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
 				return result.response();
 			}

@@ -65,7 +65,8 @@ public class UpdateCustomizerFactory {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
-			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
+			final var result = ledger.lookUpAccountIdAndValidate(
+					updateOp.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
 				return Pair.of(Optional.empty(), result.response());
 			}

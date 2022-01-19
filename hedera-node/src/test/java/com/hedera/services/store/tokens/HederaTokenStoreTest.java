@@ -921,7 +921,7 @@ class HederaTokenStoreTest {
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		given(aliasManager.lookUpAccountID(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT))
-				.willReturn(AliasLookup.of(newAutoRenewAccount, INVALID_AUTORENEW_ACCOUNT));
+				.willReturn(AliasLookup.of(newAutoRenewAccount, OK));
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, false);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
@@ -932,7 +932,20 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsInvalidNewAutoRenewAlias() {
 		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
+				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, OK));
+		given(accountsLedger.exists(newAutoRenewAccountWithAlias)).willReturn(false);
+		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
+	}
+
+	@Test
+	void updateRejectsMissingNewAutoRenewAlias() {
+		given(aliasManager.lookUpAccountID(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT))
 				.willReturn(AliasLookup.of(newAutoRenewAccountWithAlias, INVALID_AUTORENEW_ACCOUNT));
+		given(accountsLedger.exists(newAutoRenewAccountWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, false, true, false, true);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
@@ -943,7 +956,20 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsInvalidNewTreasuryAlias() {
 		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
+				.willReturn(AliasLookup.of(newTreasuryWithAlias, OK));
+		given(accountsLedger.exists(newTreasuryWithAlias)).willReturn(false);
+		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, outcome);
+	}
+
+	@Test
+	void updateRejectsMissingNewTreasuryAlias() {
+		given(aliasManager.lookUpAccountID(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN))
 				.willReturn(AliasLookup.of(newTreasuryWithAlias, INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+		given(accountsLedger.exists(newTreasuryWithAlias)).willReturn(false);
 		final var op = updateWith(NO_KEYS, misc, true, true, true, false, false, true);
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);

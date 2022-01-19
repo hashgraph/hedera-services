@@ -27,7 +27,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -54,8 +53,6 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
-	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
 
 	@Inject
 	public TokenFeeScheduleUpdateTransitionLogic(
@@ -86,7 +83,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		validateFalse(tooManyFees, CUSTOM_FEES_LIST_TOO_LONG);
 		final var customFees = op.getCustomFeesList()
 				.stream()
-				.map(grpcFeeConverter)
+				.map(fee -> FcCustomFee.fromGrpc(fee, accountStore))
 				.toList();
 		customFees.forEach(fee -> {
 			fee.validateWith(token, accountStore, tokenStore);
@@ -112,10 +109,5 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		final var op = txnBody.getTokenFeeScheduleUpdate();
 
 		return op.hasTokenId() ? OK : INVALID_TOKEN_ID;
-	}
-
-	/* --- Only used by unit tests --- */
-	void setGrpcFeeConverter(Function<CustomFee, FcCustomFee> grpcFeeConverter) {
-		this.grpcFeeConverter = grpcFeeConverter;
 	}
 }

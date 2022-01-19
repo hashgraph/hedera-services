@@ -257,6 +257,8 @@ class SubmitMessageTransitionLogicTest {
 				.setTransactionID(defaultTxnId())
 				.setConsensusSubmitMessage(body.build())
 				.build();
+		given(aliasManager.lookUpPayerAccountID(transactionBody.getTransactionID().getAccountID()))
+				.willReturn(AliasLookup.of(transactionBody.getTransactionID().getAccountID(), OK));
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(transactionContext.accessor()).willReturn(accessor);
 	}

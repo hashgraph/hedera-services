@@ -81,6 +81,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
+	AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, final ResponseCodeEnum errResponse);
+
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;
 	}

@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import java.util.OptionalLong;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class CustomFeeSpecs {
@@ -102,7 +102,7 @@ public class CustomFeeSpecs {
 
 	static CustomFee buildIncompleteCustomFee(final String collector,
 			final HapiApiSpec spec) {
-		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
+		final var collectorId = asIdForKeyLookUp(collector, spec);
 		return CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();
 	}
 
@@ -124,7 +124,7 @@ public class CustomFeeSpecs {
 			String collector,
 			HapiApiSpec spec
 	) {
-		final var feeCollector = TxnUtils.asId(collector, spec);
+		final var feeCollector = asIdForKeyLookUp(collector, spec);
 		return CustomFee.newBuilder()
 				.setRoyaltyFee(baseRoyaltyBuilder(numerator, denominator))
 				.setFeeCollectorAccountId(feeCollector)
@@ -138,7 +138,7 @@ public class CustomFeeSpecs {
 			Function<HapiApiSpec, FixedFee> fixedFallback,
 			HapiApiSpec spec
 	) {
-		final var feeCollector = TxnUtils.asId(collector, spec);
+		final var feeCollector = asIdForKeyLookUp(collector, spec);
 		final var fallback = fixedFallback.apply(spec);
 		return CustomFee.newBuilder()
 				.setRoyaltyFee(baseRoyaltyBuilder(numerator, denominator).setFallbackFee(fallback))
@@ -186,8 +186,7 @@ public class CustomFeeSpecs {
 			String collector,
 			HapiApiSpec spec
 	) {
-		final var collectorId = isIdLiteral(collector)
-				? asAccount(collector) : spec.registry().getAccountID(collector);
+		final var collectorId = asIdForKeyLookUp(collector, spec);
 		final var fractionalBuilder = FractionalFee.newBuilder()
 				.setFractionalAmount(Fraction.newBuilder()
 						.setNumerator(numerator)
@@ -206,8 +205,7 @@ public class CustomFeeSpecs {
 			String collector,
 			HapiApiSpec spec
 	) {
-		final var collectorId = isIdLiteral(collector)
-				? asAccount(collector) : spec.registry().getAccountID(collector);
+		final var collectorId = asIdForKeyLookUp(collector, spec);
 		final var fixedBuilder = FixedFee.newBuilder()
 				.setAmount(amount);
 		final var builder = CustomFee.newBuilder()

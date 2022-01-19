@@ -50,7 +50,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,10 +103,10 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 	@Test
 	void happyPathWorks() {
-		subject.setGrpcFeeConverter(grpcFeeConverter);
-		given(grpcFeeConverter.apply(CustomFee.getDefaultInstance()))
-				.willReturn(firstMockFee)
-				.willReturn(secondMockFee);
+		final var mockedStatic = mockStatic(FcCustomFee.class);
+		mockedStatic.when(() -> FcCustomFee.fromGrpc(any(), any()))
+				.thenReturn(firstMockFee)
+				.thenReturn(secondMockFee);
 
 		givenTxnCtx();
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
@@ -118,6 +120,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		verify(secondMockFee).nullOutCollector();
 		verify(token).setCustomFees(List.of(firstMockFee, secondMockFee));
 		verify(tokenStore).commitToken(token);
+		mockedStatic.close();
 	}
 
 	@Test

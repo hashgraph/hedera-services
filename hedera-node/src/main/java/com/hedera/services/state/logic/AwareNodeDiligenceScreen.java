@@ -92,6 +92,7 @@ public final class AwareNodeDiligenceScreen {
 
 		if (payerLookup.response() != OK) {
 			txnCtx.setStatus(payerLookup.response());
+			return true;
 		}
 		final var payerAccountId = payerLookup.resolvedId();
 

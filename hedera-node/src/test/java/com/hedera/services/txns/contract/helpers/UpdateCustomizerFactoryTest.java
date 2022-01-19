@@ -46,7 +46,6 @@ import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
@@ -95,7 +94,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
-		given(ledger.lookUpAccountId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(newProxy, OK));
+		given(ledger.lookUpAccountIdAndValidate(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(newProxy, OK));
 
 		// when:
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
@@ -126,7 +125,7 @@ class UpdateCustomizerFactoryTest {
 				.setExpirationTime(newExpiryTime)
 				.build();
 
-		given(ledger.lookUpAccountId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAccountIdAndValidate(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(newProxy, INVALID_PROXY_ACCOUNT_ID));
 
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
