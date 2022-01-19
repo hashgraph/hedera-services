@@ -36,7 +36,7 @@ public final class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
 
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/k%d";
-	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/k(\\d+)");
+	public static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/k(\\d+)");
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 

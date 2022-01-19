@@ -68,6 +68,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -80,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -108,6 +110,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
 						transferToNonAccountEntitiesReturnsInvalidAccountId(),
 						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+						checksExpectedDecimalsForFungibleTokenTransferList()
 				}
 		);
 	}
@@ -115,6 +118,59 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public boolean canRunAsync() {
 		return true;
+	}
+
+	private HapiApiSpec checksExpectedDecimalsForFungibleTokenTransferList() {
+		final var party = "owningParty";
+		final var multipurpose = "multi";
+		final var fungibleType = "fungible";
+
+		return defaultHapiSpec("checksExpectedDecimalsForFungibleTokenTransferList")
+				.given(
+						newKeyNamed(multipurpose),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(party).maxAutomaticTokenAssociations(123),
+						tokenCreate(fungibleType)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.decimals(2)
+								.initialSupply(1234)
+								.via("tokenCreate"),
+						getTxnRecord("tokenCreate")
+								.hasNewTokenAssociation(fungibleType, TOKEN_TREASURY),
+
+						cryptoTransfer(moving(100, fungibleType).between(TOKEN_TREASURY, party)).via("initialXfer"),
+						getTxnRecord("initialXfer")
+								.hasNewTokenAssociation(fungibleType, party)
+				).when(
+						getAccountInfo(party).savingSnapshot(party),
+						cryptoTransfer(movingWithDecimals(10, fungibleType, 4)
+								.betweenWithDecimals(TOKEN_TREASURY, party))
+								.signedBy(DEFAULT_PAYER, party, TOKEN_TREASURY)
+								.hasKnownStatus(UNEXPECTED_TOKEN_DECIMALS)
+								.via("failedTxn"),
+						cryptoTransfer(movingWithDecimals(20, fungibleType, 2)
+								.betweenWithDecimals(TOKEN_TREASURY, party))
+								.signedBy(DEFAULT_PAYER, party, TOKEN_TREASURY)
+								.hasKnownStatus(SUCCESS)
+								.via("validTxn"),
+						usableTxnIdNamed("uncheckedTxn").payerId(DEFAULT_PAYER),
+						uncheckedSubmit(
+								cryptoTransfer(movingWithDecimals(10, fungibleType, 4)
+										.betweenWithDecimals(TOKEN_TREASURY, party))
+										.signedBy(DEFAULT_PAYER, party, TOKEN_TREASURY)
+										.txnId("uncheckedTxn"))
+								.payingWith(GENESIS)
+				).then(
+						sleepFor(5_000),
+						getReceipt("uncheckedTxn").hasPriorityStatus(UNEXPECTED_TOKEN_DECIMALS).logged(),
+						getReceipt("validTxn").hasPriorityStatus(SUCCESS),
+						getTxnRecord("validTxn").logged(),
+						getAccountInfo(party)
+								.hasAlreadyUsedAutomaticAssociations(1)
+								.hasToken(relationshipWith(fungibleType).balance(120))
+								.logged()
+				);
 	}
 
 	private HapiApiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
@@ -392,7 +448,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var multipurpose = "multi";
 		final var hodlXfer = "hodlXfer";
 
-		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+		return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociationWithoutOpenSlots")
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate(royaltyCollectorNoSlots),
@@ -835,9 +891,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, "receiver", 1_000L)
 						).payingWith("payer").sigControl(
-								forKey("payer", payerSigs),
-								forKey("receiver", receiverSigs)
-						).hasKnownStatus(SUCCESS)
+										forKey("payer", payerSigs),
+										forKey("receiver", receiverSigs)
+								).hasKnownStatus(SUCCESS)
 								.fee(ONE_HUNDRED_HBARS)
 				);
 	}
@@ -881,7 +937,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								tinyBarsFromTo("payer", "payeeNoSigReq", 2_000L)
 						).via("transferTxn")
 				).then(
-						getAccountInfo("payer").has(accountWith().balance(initialBalance - 3_000L)),
+						getAccountInfo("payer")
+								.hasExpectedLedgerId("0x03")
+								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
 						getAccountInfo("payeeNoSigReq").has(accountWith().balance(initialBalance + 2_000L))
 				);

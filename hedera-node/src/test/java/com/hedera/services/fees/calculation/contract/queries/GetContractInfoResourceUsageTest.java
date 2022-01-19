@@ -57,8 +57,10 @@ import static org.mockito.Mockito.verify;
 class GetContractInfoResourceUsageTest {
 	private static final String memo = "Stay cold...";
 	private static final ContractID target = asContract("0.0.123");
+	private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	private static final ContractGetInfoResponse.ContractInfo info = ContractGetInfoResponse.ContractInfo.newBuilder()
+			.setLedgerId(ledgerId)
 			.setAdminKey(aKey)
 			.addAllTokenRelationships(List.of(
 					TokenRelationship.getDefaultInstance(),

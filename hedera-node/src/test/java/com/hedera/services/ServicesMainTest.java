@@ -23,7 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.grpc.GrpcStarter;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -132,6 +132,8 @@ class ServicesMainTest {
 	private ServicesState signedState;
 	@Mock
 	private BalancesExporter balancesExporter;
+	@Mock
+	private StateAccessor latestSignedState;
 
 	private ServicesMain subject = new ServicesMain();
 

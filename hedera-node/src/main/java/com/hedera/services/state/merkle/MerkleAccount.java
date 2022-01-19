@@ -311,12 +311,21 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getAlreadyUsedAutomaticAssociations();
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
+	public void setAlreadyUsedAutomaticAssociations(final int alreadyUsedAutoAssociations) {
 		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
 			throw new IllegalArgumentException(
 					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
 		}
 		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+	}
+
+	public int getNumContractKvPairs() {
+		return state().getNumContractKvPairs();
+	}
+
+	public void setNumContractKvPairs(final int numContractKvPairs) {
+		/* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
+		state().setNumContractKvPairs(numContractKvPairs);
 	}
 
 	/* --- Helpers --- */

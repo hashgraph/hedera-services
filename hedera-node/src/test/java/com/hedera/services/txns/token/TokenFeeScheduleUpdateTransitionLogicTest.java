@@ -119,7 +119,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		verify(firstMockFee).nullOutCollector();
 		verify(secondMockFee).nullOutCollector();
 		verify(token).setCustomFees(List.of(firstMockFee, secondMockFee));
-		verify(tokenStore).persistToken(token);
+		verify(tokenStore).commitToken(token);
 		mockedStatic.close();
 	}
 

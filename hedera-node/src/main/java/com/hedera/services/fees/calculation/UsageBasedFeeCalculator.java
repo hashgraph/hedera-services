@@ -217,12 +217,12 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private FeeObject feeGiven(
-			TxnAccessor accessor,
-			JKey payerKey,
-			StateView view,
-			Map<SubType, FeeData> prices,
-			ExchangeRate rate,
-			boolean inHandle
+			final TxnAccessor accessor,
+			final JKey payerKey,
+			final StateView view,
+			final Map<SubType, FeeData> prices,
+			final ExchangeRate rate,
+			final boolean inHandle
 	) {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {

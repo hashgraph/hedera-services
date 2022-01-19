@@ -50,19 +50,20 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	void reclaimContractId();
 
 	/**
-	 * Creates a updater for this mutable world view.
+	 * Creates an updater for this mutable world view.
 	 *
 	 * @return a new updater for this mutable world view. On commit, change made to this updater will
 	 * become visible on this view.
 	 */
-	HederaWorldState.Updater updater();
+	HederaWorldUpdater updater();
 
 	/**
-	 * Persists accumulated changes to the underlying storage
+	 * Returns the list of ContractIDs created by the current transaction
+	 * Clears the collected list after execution.
 	 *
 	 * @return the list of ContractIDs created by this transaction.
 	 */
-	List<ContractID> persist();
+	List<ContractID> persistProvisionalContractCreations();
 
 	/**
 	 * Customizes sponsored accounts

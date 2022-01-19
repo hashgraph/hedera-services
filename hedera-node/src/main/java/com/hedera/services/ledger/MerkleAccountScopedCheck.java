@@ -26,7 +26,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -41,26 +43,42 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	private BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
 
 	@Override
-	public ResponseCodeEnum checkUsing(final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
-		if ((boolean) getEffective(IS_SMART_CONTRACT, account, changeSet)) {
-			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
-		}
+	public ResponseCodeEnum checkUsing(
+			final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet
+	) {
+		return internalCheck(null, extantProps, changeSet);
+	}
 
-		if ((boolean) getEffective(IS_DELETED, account, changeSet)) {
+	@Override
+	public ResponseCodeEnum checkUsing(final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
+		return internalCheck(account, null, changeSet);
+	}
+
+	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
+		this.balanceChange = balanceChange;
+		return this;
+	}
+
+	private ResponseCodeEnum internalCheck(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet
+	) {
+		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
 
-		final var balance = (long) getEffective(BALANCE, account, changeSet);
-
+		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
 		final var isDetached = dynamicProperties.autoRenewEnabled() &&
-						balance == 0L &&
-						!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, changeSet));
+				balance == 0L &&
+				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
 		if (isDetached) {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
@@ -74,28 +92,28 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return OK;
 	}
 
-	public MerkleAccountScopedCheck setBalanceChange(final BalanceChange balanceChange) {
-		this.balanceChange = balanceChange;
-		return this;
-	}
-
 	Object getEffective(
 			final AccountProperty prop,
-			final MerkleAccount account,
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet
 	) {
 		if (changeSet != null && changeSet.containsKey(prop)) {
 			return changeSet.get(prop);
 		}
+		final var useExtantProps = extantProps != null;
+		if (!useExtantProps) {
+			assert account != null;
+		}
 		switch (prop) {
 			case IS_SMART_CONTRACT:
-				return account.isSmartContract();
+				return useExtantProps ? extantProps.apply(IS_SMART_CONTRACT) : account.isSmartContract();
 			case IS_DELETED:
-				return account.isDeleted();
+				return useExtantProps ? extantProps.apply(IS_DELETED) : account.isDeleted();
 			case BALANCE:
-				return account.getBalance();
+				return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
 			case EXPIRY:
-				return account.getExpiry();
+				return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
 		}
 		throw new IllegalArgumentException("Property " + prop + " cannot be validated in scoped check");
 	}

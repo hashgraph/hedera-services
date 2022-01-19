@@ -21,7 +21,7 @@ package com.hedera.services.context.init;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {
 	@Mock
@@ -58,11 +57,13 @@ class StoreInitializationFlowTest {
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
-	private UniqTokenViewsManager uniqTokenViewsManager;
+	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
 	private BackingStore<NftId, MerkleUniqueToken> backingNfts;
+	@Mock
+	private BackingStore<TokenID, MerkleToken> backingTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 	@Mock
@@ -81,8 +82,9 @@ class StoreInitializationFlowTest {
 				scheduleStore,
 				aliasManager,
 				stateAccessor,
-				uniqTokenViewsManager,
+				uniqueTokenViewsManager,
 				backingAccounts,
+				backingTokens,
 				backingNfts,
 				backingTokenRels);
 	}
@@ -102,7 +104,7 @@ class StoreInitializationFlowTest {
 		verify(backingNfts).rebuildFromSources();
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
-		verify(uniqTokenViewsManager).rebuildNotice(tokens, nfts);
+		verify(uniqueTokenViewsManager).rebuildNotice(tokens, nfts);
 		verify(aliasManager).rebuildAliasesMap(accounts);
 	}
 }

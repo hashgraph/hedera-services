@@ -438,19 +438,15 @@ class JKeySerializerTest {
 
 
 	@Test
-	void jKeyProtoSerDes() throws IOException {
+	void jKeyProtoSerDes() throws IOException, DecoderException {
 		final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
 		Key protoKey;
 		JKey jkey = null;
 		List<JKey> jListBefore = null;
 		//Jkey will have JEd25519Key,JECDSASecp256K1Key,JThresholdKey,JKeyList
-		try {
-			protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
-			jkey = JKey.mapKey(protoKey);
-			jListBefore = jkey.getKeyList().getKeysList();
-
-		} catch (DecoderException ignore) {
-		}
+		protoKey = genSampleComplexKey(2, pubKey2privKeyMap);
+		jkey = JKey.mapKey(protoKey);
+		jListBefore = jkey.getKeyList().getKeysList();
 
 		byte[] serializedJKey = jkey.serialize();
 
@@ -463,16 +459,13 @@ class JKeySerializerTest {
 					() -> assertNotNull(jKeyReborn),
 					() -> assertTrue(jKeyReborn instanceof JKeyList),
 					() -> assertTrue(jKeyReborn.hasKeyList()),
-					() -> assertFalse(jKeyReborn.hasThresholdKey())
-			);
+					() -> assertFalse(jKeyReborn.hasThresholdKey()));
 
 			final var jListAfter = jKeyReborn.getKeyList().getKeysList();
 			assertEquals(jListBefore.size(), jListAfter.size());
 			for (int i = 0; i < jListBefore.size(); i++) {
 				assertTrue(equalUpToDecodability(jListBefore.get(i), jListAfter.get(i)));
 			}
-		} catch (Exception e) {
-			throw new IllegalStateException(String.format("Failed to deserialize!", e));
 		}
 	}
 

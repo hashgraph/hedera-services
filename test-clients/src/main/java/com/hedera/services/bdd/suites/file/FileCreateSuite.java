@@ -92,7 +92,9 @@ public class FileCreateSuite extends HapiApiSuite {
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
 						fileCreate("memorable").entityMemo(memo)
 				).when().then(
-						getFileInfo("memorable").hasMemo(memo)
+						getFileInfo("memorable")
+								.hasExpectedLedgerId("0x03")
+								.hasMemo(memo)
 				);
 	}
 

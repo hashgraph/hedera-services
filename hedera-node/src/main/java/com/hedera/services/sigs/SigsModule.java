@@ -22,6 +22,8 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -53,6 +55,10 @@ import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_S
 
 @Module
 public abstract class SigsModule {
+	@Binds
+	@Singleton
+	public abstract SoliditySigsVerifier provideSoliditySigsVerifier(TxnAwareSoliditySigsVerifier txnAwareSoliditySigsVerifier);
+
 	@Binds
 	@Singleton
 	public abstract SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);

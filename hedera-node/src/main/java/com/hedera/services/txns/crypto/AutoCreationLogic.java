@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -121,7 +121,7 @@ public class AutoCreationLogic {
 		if (!pendingCreations.isEmpty()) {
 			for (final var pendingCreation : pendingCreations) {
 				final var alias = pendingCreation.recordBuilder().getAlias();
-				aliasManager.getAliases().remove(alias);
+				aliasManager.unlink(alias);
 			}
 			return true;
 		} else {
@@ -166,7 +166,7 @@ public class AutoCreationLogic {
 	) {
 		final var alias = change.alias();
 		final var key = asPrimitiveKeyUnchecked(alias);
-		final var syntheticCreation = syntheticTxnFactory.cryptoCreate(key, 0L);
+		final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
 		final var fee = autoCreationFeeFor(syntheticCreation);
 		if (fee > change.units()) {
 			return Pair.of(change.codeForInsufficientBalance(), 0L);
@@ -191,8 +191,8 @@ public class AutoCreationLogic {
 		final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
 		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		pendingCreations.add(inProgress);
-		/* If the transaction fails, we will get an opportunity to remove this alias in reclaimPendingAliases() */
-		aliasManager.createAlias(alias, EntityNum.fromAccountId(newAccountId));
+		/* If the transaction fails, we will get an opportunity to unlink this alias in reclaimPendingAliases() */
+		aliasManager.link(alias, EntityNum.fromAccountId(newAccountId));
 
 		return Pair.of(OK, fee);
 	}

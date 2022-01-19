@@ -22,19 +22,23 @@ package com.hedera.services.context;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
 
@@ -49,7 +53,9 @@ public interface StateChildren {
 
 	MerkleMap<EntityNum, MerkleSchedule> schedules();
 
-	MerkleMap<String, MerkleOptionalBlob> storage();
+	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
+
+	VirtualMap<ContractKey, ContractValue> contractStorage();
 
 	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 

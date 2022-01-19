@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,8 +23,10 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.util.List;
 
@@ -43,8 +45,18 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean wasLastTxnGasThrottled() {
+		return delegate.wasLastTxnGasThrottled();
+	}
+
+	@Override
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		delegate.leakUnusedGasPreviouslyReserved(value);
 	}
 
 	@Override
@@ -58,7 +70,17 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
+	public GasLimitDeterministicThrottle gasLimitThrottle() {
+		return delegate.gasLimitThrottle();
+	}
+
+	@Override
 	public void rebuildFor(ThrottleDefinitions defs) {
 		delegate.rebuildFor(defs);
+	}
+
+	@Override
+	public void applyGasConfig() {
+		delegate.applyGasConfig();
 	}
 }

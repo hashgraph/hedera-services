@@ -39,7 +39,6 @@ import static com.hedera.services.store.models.TopicConversion.fromModel;
  */
 @Singleton
 public class TopicStore {
-	
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final TransactionRecordService transactionRecordService;
 

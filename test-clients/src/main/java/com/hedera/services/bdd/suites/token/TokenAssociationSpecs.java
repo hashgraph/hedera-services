@@ -247,7 +247,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						newKeyNamed("admin"),
 						cryptoCreate(treasury),
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate(contract).bytecode("bytecode").via("creation"),
+						contractCreate(contract).bytecode("bytecode").gas(300_000).via("creation"),
 						withOpContext((spec, opLog) -> {
 							var subOp = getTxnRecord("creation");
 							allRunFor(spec, subOp);
@@ -525,12 +525,12 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
 		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
-		return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
+		return defaultHapiSpec("DissociateHasExpectedSemanticsForDissociatedContracts")
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
 						fileCreate(bytecode).path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate(contract).bytecode(bytecode),
+						contractCreate(contract).bytecode(bytecode).gas(300_000),
 						tokenCreate(uniqToken)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0)

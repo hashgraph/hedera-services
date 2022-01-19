@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.queries.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -86,6 +87,8 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
                 expectedNftElement.setNftID(expectedNftId.build());
                 nftInfo.getExpectedAccountID().ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
                 nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
+
+                expectedNftElement.setLedgerId(ByteString.copyFromUtf8(expectedLedgerId));
 
                 var completedNft = expectedNftElement.build();
                 expectedInfo.add(completedNft);

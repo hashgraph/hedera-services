@@ -89,6 +89,9 @@ public class StateInitializationFlow {
 		log.info("  (@ {}) # scheduled txns     = {}",
 				StateChildIndices.SCHEDULE_TXS,
 				activeState.scheduleTxs().size());
+		log.info("  (@ {}) # contract K/V pairs = {}",
+				StateChildIndices.CONTRACT_STORAGE,
+				activeState.contractStorage().size());
 
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);

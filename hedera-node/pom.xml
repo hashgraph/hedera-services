@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>com.hedera.hashgraph</groupId>
 		<artifactId>hedera-services</artifactId>
-		<version>0.21.0-SNAPSHOT</version>
+		<version>0.22.0-SNAPSHOT</version>
 	</parent>
 
 	<properties>
@@ -246,15 +246,19 @@
                   <artifactId>caffeine</artifactId>
                   <version>${caffeine.version}</version>
                 </dependency>
+                <dependency>
+	          <groupId>com.esaulpaugh</groupId>
+		  <artifactId>headlong</artifactId>
+	        </dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hapi-fees</artifactId>
-			<version>0.21.0-SNAPSHOT</version>
+			<version>0.22.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hapi-utils</artifactId>
-			<version>0.21.0-SNAPSHOT</version>
+			<version>0.22.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.swirlds</groupId>
@@ -271,6 +275,14 @@
 		<dependency>
 			<groupId>com.swirlds</groupId>
 			<artifactId>swirlds-fcqueue</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-jasperdb</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-virtualmap</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>

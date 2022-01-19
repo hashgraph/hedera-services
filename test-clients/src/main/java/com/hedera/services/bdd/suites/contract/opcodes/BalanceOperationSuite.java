@@ -72,7 +72,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
 						fileCreate("bytecode").path(ContractResources.BALANCE_CHECKER_CONTRACT),
 						contractCreate("balanceChecker")
 								.bytecode("bytecode")
-								.gas(1_000_000),
+								.gas(300_000L),
 						cryptoCreate("test").balance(BALANCE)
 				).when(
 				).then(

@@ -24,15 +24,11 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -48,6 +44,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -59,46 +56,57 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation
  * Provides
- * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Optional)}
+ * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, OptionalLong)}
  * method that handles the end-to-end execution of a EVM transaction
  */
 abstract class EvmTxProcessor {
-
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 
-	private final HederaWorldState worldState;
-	private final HbarCentExchange exchange;
+	private HederaMutableWorldState worldState;
 	private final GasCalculator gasCalculator;
-	private final UsagePricesProvider usagePrices;
-	protected final GlobalDynamicProperties dynamicProperties;
+	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 
+	protected final GlobalDynamicProperties dynamicProperties;
+
 	protected EvmTxProcessor(
-			final HederaWorldState worldState,
-			final HbarCentExchange exchange,
-			final UsagePricesProvider usagePrices,
+			final LivePricesSource livePricesSource,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
-			final Set<Operation> hederaOperations
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		this(null, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+	}
+
+	protected void setWorldState(HederaMutableWorldState worldState) {
+		this.worldState = worldState;
+	}
+
+	protected EvmTxProcessor(
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
 		this.worldState = worldState;
-		this.exchange = exchange;
-		this.usagePrices = usagePrices;
+		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
 
@@ -111,13 +119,14 @@ abstract class EvmTxProcessor {
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
+		precompiledContractMap.forEach((k, v) -> precompileContractRegistry.put(Address.fromHexString(k), v));
+
 		this.messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator,
 				evm,
 				true,
-				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE),
-						PrefixCodeRule.of()),
+				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of()),
 				1);
 	}
 
@@ -131,7 +140,7 @@ abstract class EvmTxProcessor {
 	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
 	 * @param gasPrice
 	 * 		GasPrice to use for gas calculations
-	 * @param providedGasLimit
+	 * @param gasLimit
 	 * 		Externally provided gas limit
 	 * @param value
 	 * 		Evm transaction value (HBars)
@@ -147,16 +156,21 @@ abstract class EvmTxProcessor {
 	 * 		In the case of Create transactions, the expiry of the top-level contract being created
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
-	protected TransactionProcessingResult execute(Account sender, Address receiver, long gasPrice,
-			long providedGasLimit, long value, Bytes payload, boolean contractCreation,
-			Instant consensusTime, boolean isStatic, Optional<Long> expiry) {
-		final long gasLimit = providedGasLimit > dynamicProperties.maxGas()
-				? dynamicProperties.maxGas()
-				: providedGasLimit;
+	protected TransactionProcessingResult execute(
+			final Account sender,
+			final Address receiver,
+			final long gasPrice,
+			final long gasLimit,
+			final long value,
+			final Bytes payload,
+			final boolean contractCreation,
+			final Instant consensusTime,
+			final boolean isStatic,
+			final OptionalLong expiry
+	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
-		final Gas intrinsicGas =
-				gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final var updater = worldState.updater();
 		final var senderEvmAddress = sender.getId().asEvmAddress();
@@ -164,21 +178,16 @@ abstract class EvmTxProcessor {
 		final MutableAccount mutableSender = senderAccount.getMutable();
 
 		if (!isStatic) {
-			validateFalse(upfrontCost.compareTo(mutableSender.getBalance()) > 0, INSUFFICIENT_PAYER_BALANCE);
 			if (intrinsicGas.toLong() > gasLimit) {
-				throw new InvalidTransactionException(
-						gasLimit < dynamicProperties.maxGas()
-								? INSUFFICIENT_GAS
-								: MAX_GAS_LIMIT_EXCEEDED);
+				throw new InvalidTransactionException(INSUFFICIENT_GAS);
 			}
+			final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+			validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+			mutableSender.decrementBalance(gasCost);
 		}
 
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
 		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
-		if (!isStatic) {
-			mutableSender.decrementBalance(gasCost);
-		}
-
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -207,28 +216,15 @@ abstract class EvmTxProcessor {
 								"HederaFunctionality", getFunctionType(),
 								"expiry", expiry));
 
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame,
-				updater,
-				receiver, payload);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, updater, receiver, payload);
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 
-		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS && !isStatic) {
-			stackedUpdater.commit();
-		}
-
-		Gas gasUsedByTransaction = Gas.of(gasLimit).minus(initialFrame.getRemainingGas());
-		/* Return leftover gas */
-		final Gas selfDestructRefund =
-				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
-						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
-		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
-
+		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 		final Gas sbhRefund = updater.getSbhRefund();
-
 		if (!isStatic) {
 			// return gas price to accounts
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
@@ -266,28 +262,37 @@ abstract class EvmTxProcessor {
 		}
 	}
 
-	protected long gasPriceTinyBarsGiven(Instant consensusTime) {
-		final var functionType = getFunctionType();
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getGas() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+	private Gas calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
+		Gas gasUsedByTransaction = Gas.of(txGasLimit).minus(initialFrame.getRemainingGas());
+		/* Return leftover gas */
+		final Gas selfDestructRefund =
+				gasCalculator.getSelfDestructRefundAmount().times(initialFrame.getSelfDestructs().size()).min(
+						gasUsedByTransaction.dividedBy(gasCalculator.getMaxRefundQuotient()));
+
+		gasUsedByTransaction = gasUsedByTransaction.minus(selfDestructRefund).minus(initialFrame.getGasRefund());
+
+		final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
+		gasUsedByTransaction = Gas.of(
+				Math.max(gasUsedByTransaction.toLong(), txGasLimit - txGasLimit * maxRefundPercent / 100));
+
+		return gasUsedByTransaction;
 	}
 
-	protected long storageByteHoursTinyBarsGiven(Instant consensusTime) {
-		final var functionType = getFunctionType();
-		final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
-		FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
-		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+	protected long gasPriceTinyBarsGiven(final Instant consensusTime) {
+		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
+	}
+
+	protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
+		return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
 	}
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame,
-			HederaWorldState.Updater updater, Address to, Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(
+			MessageFrame.Builder baseInitialFrame,
+			HederaWorldUpdater updater,
+			Address to,
+			Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

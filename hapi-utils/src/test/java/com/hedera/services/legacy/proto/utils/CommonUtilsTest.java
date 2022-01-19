@@ -22,29 +22,14 @@ package com.hedera.services.legacy.proto.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class CommonUtilsTest {
-	@Test
-	void testNap() throws InterruptedException, IOException {
-		final String filePath = "./src/test/resources/test.txt";
-		CommonUtils.writeToFile(filePath, "TEST".getBytes());
-		CommonUtils.nap(1);
-		final var file = new File(filePath);
-		assertTrue(file.exists());
-		file.delete();
-	}
-
 	@Test
 	void testForReadableTransactionID() throws InvalidProtocolBufferException {
 		final var transaction = Transaction.newBuilder().setBodyBytes(
