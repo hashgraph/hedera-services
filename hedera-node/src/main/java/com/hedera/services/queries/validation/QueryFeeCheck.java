@@ -45,6 +45,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -121,7 +123,7 @@ public class QueryFeeCheck {
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
 		var lookupResult = aliasManager.lookUpAccountID(adjustment.getAccountID());
 		if (lookupResult.response() != OK) {
-			return lookupResult.response();
+			return INVALID_ACCOUNT_ID;
 		}
 
 		var id = lookupResult.resolvedId();
@@ -158,7 +160,7 @@ public class QueryFeeCheck {
 
 		final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
 		if (result.response() != OK) {
-			return result.response();
+			return INVALID_PAYER_ACCOUNT_ID;
 		}
 		AccountID transactionPayer = result.resolvedId();
 
@@ -171,7 +173,7 @@ public class QueryFeeCheck {
 		for (AccountAmount accountAmount : transfers) {
 			final var amountValidation = aliasManager.lookUpAccountID(accountAmount.getAccountID());
 			if (amountValidation.response() != OK) {
-				return amountValidation.response();
+				return INVALID_ACCOUNT_ID;
 			}
 			var id = amountValidation.resolvedId();
 

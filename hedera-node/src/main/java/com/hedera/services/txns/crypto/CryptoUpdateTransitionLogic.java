@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -103,7 +104,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate());
 			if (result.response() != OK) {
-				txnCtx.setStatus(result.response());
+				txnCtx.setStatus(INVALID_ACCOUNT_ID);
 				return;
 			}
 
@@ -169,9 +170,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
 			final var result = ledger.lookUpAccountId(proxy.toGrpcAccountId());
 			if (result.response() != OK) {
-				return result.response();
+				return INVALID_PROXY_ACCOUNT_ID;
 			}
-			return ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+			return ledger.usableOrElse(result.resolvedId(), INVALID_PROXY_ACCOUNT_ID);
 		}
 
 		return OK;

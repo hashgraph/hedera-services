@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -91,7 +92,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 				final var receiver = op.getTransferAccountID();
 				final var result = ledger.lookUpAccountId(receiver);
 				if (result.response() != OK) {
-					txnCtx.setStatus(result.response());
+					txnCtx.setStatus(INVALID_TRANSFER_ACCOUNT_ID);
 					return;
 				}
 				final var receiverID = result.resolvedId();

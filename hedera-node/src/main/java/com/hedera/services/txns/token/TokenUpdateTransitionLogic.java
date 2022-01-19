@@ -145,16 +145,22 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		AccountID newTreasury = null;
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			var newTreasuryLookUp = tokenStore.lookUpAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			final var newTreasuryLookUp = tokenStore.lookUpAccountId(op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 			if (newTreasuryLookUp.response() != OK) {
-				txnCtx.setStatus(newTreasuryLookUp.response());
+				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+				return;
+			}
+			final var result = ledger.usableOrElse(
+					newTreasuryLookUp.resolvedId(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			if (result != OK) {
+				txnCtx.setStatus(result);
 				return;
 			}
 			if (!tokenStore.associationExists(newTreasuryLookUp.resolvedId(), id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
-			var existingTreasury = token.treasury().toGrpcAccountId();
+			final var existingTreasury = token.treasury().toGrpcAccountId();
 			if (!allowChangedTreasuryToOwnNfts && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
 				if (existingTreasuryBalance > 0L) {
@@ -263,8 +269,13 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			final var newAutoRenewAccountLookUp = tokenStore.lookUpAccountId(
 					op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (newAutoRenewAccountLookUp.response() != OK) {
-				return newAutoRenewAccountLookUp.response();
+				return INVALID_AUTORENEW_ACCOUNT;
 			}
+			final var result = ledger.usableOrElse(newAutoRenewAccountLookUp.resolvedId(), INVALID_AUTORENEW_ACCOUNT);
+			if (result != OK) {
+				return result;
+			}
+
 			if (token.hasAutoRenewAccount()) {
 				final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
 				if (ledger.isDetached(existingAutoRenew)) {

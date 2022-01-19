@@ -47,8 +47,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
@@ -105,10 +105,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			if (op.hasProxyAccountID()) {
 				final var proxyLookUp = ledger.lookUpAccountId(op.getProxyAccountID());
 				if (proxyLookUp.response() != OK) {
-					txnCtx.setStatus(proxyLookUp.response());
+					txnCtx.setStatus(INVALID_PROXY_ACCOUNT_ID);
 					return;
 				}
-				final var validity = ledger.usableOrElse(proxyLookUp.resolvedId(), INVALID_ACCOUNT_ID);
+				final var validity = ledger.usableOrElse(proxyLookUp.resolvedId(), INVALID_PROXY_ACCOUNT_ID);
 				if (validity != OK) {
 					txnCtx.setStatus(validity);
 					return;

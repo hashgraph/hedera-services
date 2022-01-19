@@ -54,8 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
@@ -113,7 +113,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final var grpcProxy = op.getProxyAccountID();
 			final var proxyAccountNum = accountStore.getAccountNumFromAlias(grpcProxy.getAlias(), grpcProxy.getAccountNum());
 			proxyAccount = new Id(grpcProxy.getShardNum(), grpcProxy.getRealmNum(), proxyAccountNum);
-			accountStore.loadAccountOrFailWith(proxyAccount, INVALID_ACCOUNT_ID);
+			accountStore.loadAccountOrFailWith(proxyAccount, INVALID_PROXY_ACCOUNT_ID);
 		}
 
 		var key = op.hasAdminKey()

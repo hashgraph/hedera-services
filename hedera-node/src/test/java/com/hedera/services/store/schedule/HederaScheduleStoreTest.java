@@ -388,11 +388,11 @@ class HederaScheduleStoreTest {
 
 		final var schedule = MerkleSchedule.from(parentTxn.toByteArray(), 0L);
 		given(aliasManager.lookUpAccountID(schedule.payer().toGrpcAccountId(), INVALID_ALIAS_KEY))
-				.willReturn(AliasLookup.of(schedule.payer().toGrpcAccountId(), INVALID_ALIAS_KEY));
+				.willReturn(AliasLookup.of(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID));
 
 		final var outcome = subject.createProvisionally(schedule, consensusTime);
 
-		assertEquals(INVALID_ALIAS_KEY, outcome.status());
+		assertEquals(INVALID_SCHEDULE_PAYER_ID, outcome.status());
 		assertNull(outcome.created());
 	}
 

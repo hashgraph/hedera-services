@@ -206,7 +206,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 		final var result = ledger.lookUpAccountId(op.getAutoRenewAccount());
 		if (result.response() != OK) {
-			transactionContext.setStatus(result.response());
+			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
 			return false;
 		}
 		var newAutoRenewAccount = result.resolvedId();

@@ -38,9 +38,9 @@ import java.util.Optional;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -67,9 +67,9 @@ public class UpdateCustomizerFactory {
 		if (updateOp.hasProxyAccountID()) {
 			final var result = ledger.lookUpAccountId(updateOp.getProxyAccountID());
 			if (result.response() != OK) {
-				return Pair.of(Optional.empty(), result.response());
+				return Pair.of(Optional.empty(), INVALID_PROXY_ACCOUNT_ID);
 			}
-			final var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+			final var validity = ledger.usableOrElse(result.resolvedId(), INVALID_PROXY_ACCOUNT_ID);
 			if (validity != OK) {
 				return Pair.of(Optional.empty(), validity);
 			}

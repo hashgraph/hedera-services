@@ -138,7 +138,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (schedule.hasExplicitPayer()) {
 			final var schedulePayerLookUp = buildAndLookUpAccountId(schedule.payer(), schedule.getPayerAlias());
 			if (schedulePayerLookUp.response() != OK) {
-				return failure(schedulePayerLookUp.response());
+				return failure(INVALID_SCHEDULE_PAYER_ID);
 			}
 
 			var validity = usableOrElse(schedulePayerLookUp.resolvedId(), INVALID_SCHEDULE_PAYER_ID);
@@ -152,7 +152,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		final var schedulingAccountLookup = buildAndLookUpAccountId(schedule.schedulingAccount(),
 				schedule.getSchedulingAccountAlias());
 		if (schedulingAccountLookup.response() != OK) {
-			return failure(schedulingAccountLookup.response());
+			return failure(INVALID_SCHEDULE_ACCOUNT_ID);
 		}
 
 		var validity = usableOrElse(schedulingAccountLookup.resolvedId(), INVALID_SCHEDULE_ACCOUNT_ID);

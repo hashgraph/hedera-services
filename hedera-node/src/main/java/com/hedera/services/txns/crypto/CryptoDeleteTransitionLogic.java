@@ -43,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -83,7 +84,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 			var result = ledger.lookUpAccountId(op.getDeleteAccountID());
 			if (result.response() != OK) {
-				txnCtx.setStatus(result.response());
+				txnCtx.setStatus(INVALID_ACCOUNT_ID);
 				return;
 			}
 			var validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
@@ -101,10 +102,10 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 			result = ledger.lookUpAccountId(op.getTransferAccountID());
 			if (result.response() != OK) {
-				txnCtx.setStatus(result.response());
+				txnCtx.setStatus(INVALID_TRANSFER_ACCOUNT_ID);
 				return;
 			}
-			validity = ledger.usableOrElse(result.resolvedId(), INVALID_ACCOUNT_ID);
+			validity = ledger.usableOrElse(result.resolvedId(), INVALID_TRANSFER_ACCOUNT_ID);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;

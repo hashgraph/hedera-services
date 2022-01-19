@@ -67,7 +67,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -179,12 +179,12 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.getAccountNumFromAlias(senderAccountId.getAlias(), senderAccountId.getAccountNum())).willReturn(
 				senderAccountId.getAccountNum());
 		given(accountStore.getAccountNumFromAlias(invalidProxy.getAlias(), invalidProxy.getAccountNum())).willReturn(proxy.getAccountNum());
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(proxy), INVALID_ACCOUNT_ID))
-				.willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(proxy), INVALID_PROXY_ACCOUNT_ID))
+				.willThrow(new InvalidTransactionException(INVALID_PROXY_ACCOUNT_ID));
 
 		// when:
 		Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-		assertEquals("INVALID_ACCOUNT_ID", exception.getMessage());
+		assertEquals("INVALID_PROXY_ACCOUNT_ID", exception.getMessage());
 	}
 
 	@Test

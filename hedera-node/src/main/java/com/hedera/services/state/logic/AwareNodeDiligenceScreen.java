@@ -39,6 +39,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -91,7 +92,7 @@ public final class AwareNodeDiligenceScreen {
 		final var payerLookup = aliasManager.lookUpPayerAccountID(accessor.getPayer());
 
 		if (payerLookup.response() != OK) {
-			txnCtx.setStatus(payerLookup.response());
+			txnCtx.setStatus(INVALID_PAYER_ACCOUNT_ID);
 			return true;
 		}
 		final var payerAccountId = payerLookup.resolvedId();

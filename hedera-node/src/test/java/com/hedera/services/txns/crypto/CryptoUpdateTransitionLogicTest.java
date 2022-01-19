@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -525,7 +526,7 @@ class CryptoUpdateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
 		given(ledger.lookUpAccountId(PROXY)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.usableOrElse(PROXY, INVALID_ACCOUNT_ID)).willReturn(OK);
+		given(ledger.usableOrElse(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(OK);
 	}
 
 	private TransactionID ourTxnId() {

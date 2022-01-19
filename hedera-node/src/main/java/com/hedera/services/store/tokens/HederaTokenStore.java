@@ -85,7 +85,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -585,7 +584,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private AliasLookup checkNewAutoRenewAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
-			final var autoRenewLookUp =  lookUpAccountId(changes.getAutoRenewAccount(), INVALID_ALIAS_KEY);
+			final var autoRenewLookUp =  lookUpAccountId(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (autoRenewLookUp.response() != OK) {
 				return autoRenewLookUp;
 			} else {
@@ -598,7 +597,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private AliasLookup checkNewTreasuryAccount(final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury()) {
-			final var treasuryLookUp = lookUpAccountId(changes.getTreasury(), INVALID_ALIAS_KEY);
+			final var treasuryLookUp = lookUpAccountId(changes.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 			if (treasuryLookUp.response() != OK) {
 				return treasuryLookUp;
 			} else {

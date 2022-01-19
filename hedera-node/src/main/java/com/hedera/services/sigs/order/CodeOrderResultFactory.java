@@ -129,7 +129,7 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 
 	@Override
 	public SigningOrderResult<ResponseCodeEnum> forMissingTokenTreasury() {
-		return MISSING_TOKEN_TRASURY;
+		return MISSING_TOKEN_TREASURY;
 	}
 
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_ACCOUNT_RESULT =
@@ -162,6 +162,6 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_FEE_COLLECTOR_RESULT =
 			new SigningOrderResult<>(INVALID_CUSTOM_FEE_COLLECTOR);
-	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_TRASURY =
+	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_TREASURY =
 			new SigningOrderResult<>(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 }

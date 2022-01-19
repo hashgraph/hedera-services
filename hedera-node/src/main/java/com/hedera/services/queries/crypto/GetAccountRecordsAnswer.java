@@ -37,6 +37,7 @@ import javax.inject.Singleton;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -102,7 +103,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var result = aliasManager.lookUpAccountID(query.getCryptoGetAccountRecords().getAccountID());
 		if (result.response() != OK) {
-			return result.response();
+			return INVALID_ACCOUNT_ID;
 		}
 		final var accountID = result.resolvedId();
 

@@ -120,7 +120,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 		} else if (op.hasAccountID()) {
 			final var result = aliasManager.lookUpAccountID(op.getAccountID());
 			if (result.response() != OK) {
-				return result.response();
+				return INVALID_ACCOUNT_ID;
 			}
 			final var effId = result.resolvedId();
 			return optionValidator.queryableAccountStatus(effId, accounts);
