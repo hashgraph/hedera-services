@@ -63,7 +63,12 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 	public TransactionRecordAsserts txnId(String expectedTxn) {
 		this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
 			try {
-				Assertions.assertEquals(spec.registry().getTxnId(expectedTxn), txnId, "Wrong txnId!");
+				Assertions.assertEquals(spec.registry().getTxnId(expectedTxn).getTransactionValidStart(), txnId.getTransactionValidStart(), "Wrong txnId valid start!");
+				AccountID accountID = spec.registry().getTxnId(expectedTxn).getAccountID();
+				if(!accountID.getAlias().isEmpty() && accountID.getAccountNum() == 0){
+					accountID = spec.registry().getAccountID(spec.registry().getTxnId(expectedTxn).getAccountID().getAlias().toStringUtf8());
+				}
+				Assertions.assertEquals(accountID, txnId.getAccountID(), "Wrong txnId AccountID!");
 			} catch (Throwable t) {
 				return List.of(t);
 			}

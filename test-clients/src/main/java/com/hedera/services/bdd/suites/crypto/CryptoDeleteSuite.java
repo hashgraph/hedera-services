@@ -91,23 +91,25 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("canDeleteAccountSpecifiedWithAlias")
 				.given(
 						newKeyNamed(aliasToBeDeleted),
+						newKeyNamed(invalidAlias),
 						cryptoCreate("transferAccount").balance(0L)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS)).via(
 								"autoCreation"),
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1),
 
-						cryptoDeleteAliased(aliasToBeDeleted)
-								.transfer("transferAccount")
-								.hasKnownStatus(SUCCESS)
-								.signedBy(aliasToBeDeleted, "transferAccount", DEFAULT_PAYER)
-								.via("deleteTxn"),
 						cryptoDeleteAliased(invalidAlias)
 								.transfer("transferAccount")
 								.hasKnownStatus(SUCCESS)
 								.signedBy(invalidAlias, "transferAccount", DEFAULT_PAYER)
 								.via("invaliddeleteTxn")
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, "transferAccount", DEFAULT_PAYER)
+								.via("deleteTxn")
 				).then(
 						getAccountInfo("transferAccount")
 								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.05)),
@@ -123,7 +125,8 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("transferAccountCanBeSpecifiedAsAlias")
 				.given(
 						newKeyNamed(aliasToBeDeleted),
-						newKeyNamed(transferAccount)
+						newKeyNamed(transferAccount),
+						newKeyNamed(invalidTransferAccount)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS),
 								tinyBarsFromToWithAlias(DEFAULT_PAYER, transferAccount, ONE_HUNDRED_HBARS)).via(
@@ -131,16 +134,16 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(2),
 
 						cryptoDeleteAliased(aliasToBeDeleted)
-								.transferAliased(transferAccount)
-								.hasKnownStatus(SUCCESS)
-								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
-								.via("deleteTxn"),
-						cryptoDeleteAliased(aliasToBeDeleted)
 								.transferAliased(invalidTransferAccount)
 								.hasKnownStatus(SUCCESS)
 								.signedBy(aliasToBeDeleted, invalidTransferAccount, DEFAULT_PAYER)
 								.via("invaliddeleteTxn")
-								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID)
+								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID),
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transferAliased(transferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
+								.via("deleteTxn")
 				).then(
 						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED),
 						getAliasedAccountInfo(invalidTransferAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
