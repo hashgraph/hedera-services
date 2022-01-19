@@ -114,15 +114,6 @@ public class Creation {
 			final var autoRenewId = new Id(autoRenewGrpc.getShardNum(), autoRenewGrpc.getRealmNum(), autoRenewNum);
 			autoRenew = accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
 		}
-//		final var customFeeList = op.getCustomFeesList();
-//		for (var fee : customFeeList) {
-//			if (fee.hasFeeCollectorAccountId()) {
-//				final var feeCollector = fee.getFeeCollectorAccountId();
-//				final var feeCollectorNum = accountStore.getAccountNumFromAlias(feeCollector.getAlias(), feeCollector.getAccountNum());
-//				final var feeCollectorId = new Id(feeCollector.getShardNum(), feeCollector.getRealmNum(), feeCollectorNum);
-//				accountStore.loadAccountOrFailWith(feeCollectorId, INVALID_ACCOUNT_ID);
-//			}
-//		}
 
 		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
 	}
