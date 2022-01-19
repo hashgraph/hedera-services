@@ -31,10 +31,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
@@ -58,6 +60,11 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	@Override
 	public SigningOrderResult<ResponseCodeEnum> forInvalidAccount() {
 		return INVALID_ACCOUNT_RESULT;
+	}
+
+	@Override
+	public SigningOrderResult<ResponseCodeEnum> forInvalidPayer() {
+		return MISSING_PAYER_RESULT;
 	}
 
 	@Override
@@ -120,8 +127,15 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 		return MISSING_FEE_COLLECTOR_RESULT;
 	}
 
+	@Override
+	public SigningOrderResult<ResponseCodeEnum> forMissingTokenTreasury() {
+		return MISSING_TOKEN_TREASURY;
+	}
+
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_ACCOUNT_RESULT =
 			new SigningOrderResult<>(INVALID_ACCOUNT_ID);
+	static final SigningOrderResult<ResponseCodeEnum> MISSING_PAYER_RESULT =
+			new SigningOrderResult<>(INVALID_PAYER_ACCOUNT_ID);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_ERROR_RESULT =
 			new SigningOrderResult<>(INVALID_SIGNATURE);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_PAYER_ERROR_RESULT =
@@ -148,4 +162,6 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_FEE_COLLECTOR_RESULT =
 			new SigningOrderResult<>(INVALID_CUSTOM_FEE_COLLECTOR);
+	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_TREASURY =
+			new SigningOrderResult<>(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 }

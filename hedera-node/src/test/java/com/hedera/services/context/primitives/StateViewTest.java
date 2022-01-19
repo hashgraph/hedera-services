@@ -43,6 +43,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
@@ -56,6 +57,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -138,6 +140,7 @@ class StateViewTest {
 	private static final int wellKnownNumKvPairs = 144;
 	private final Instant resolutionTime = Instant.ofEpochSecond(123L);
 	private final RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+	private final ByteString alias = KeyFactory.getDefaultInstance().newEd25519().getECDSA384();
 	private final long expiry = 2_000_000L;
 	private final byte[] data = "SOMETHING".getBytes();
 	private final byte[] expectedBytecode = "A Supermarket in California".getBytes();
@@ -148,7 +151,9 @@ class StateViewTest {
 	private final TokenID tokenId = asToken("0.0.5");
 	private final TokenID nftTokenId = asToken("0.0.3");
 	private final TokenID missingTokenId = asToken("0.0.5555");
-	private final AccountID payerAccountId = asAccount("0.0.9");
+	private final EntityNum payerAccountNum = new EntityNum(9);
+	private final AccountID payerAccountId = asAccount("0.0." + payerAccountNum.intValue());
+	private final AccountID payerWithAliasAccountId = AccountID.newBuilder().setAlias(alias).build();
 	private final AccountID tokenAccountId = asAccount("0.0.10");
 	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
 	private final AccountID treasuryOwnerId = asAccount("0.0.0");
@@ -199,6 +204,9 @@ class StateViewTest {
 	@Mock
 	private AliasManager aliasManager;
 
+	@Mock
+	private AccountStore accountStore;
+
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
@@ -206,6 +214,11 @@ class StateViewTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		given(accountStore.getAccountNumFromAlias(alias, payerWithAliasAccountId.getAccountNum()))
+				.willReturn(payerAccountNum.longValue());
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, payerAccountId.getAccountNum()))
+				.willReturn(payerAccountNum.longValue());
+
 		metadata = new HFileMeta(
 				false,
 				TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(),
@@ -278,7 +291,7 @@ class StateViewTest {
 		token.setPaused(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
-		token.setFeeScheduleFrom(grpcCustomFees);
+		token.setFeeScheduleFrom(grpcCustomFees, accountStore);
 
 		scheduleStore = mock(ScheduleStore.class);
 		parentScheduleCreate =
@@ -1022,10 +1035,11 @@ class StateViewTest {
 			fromJava(nftCreation));
 
 	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
+	private final CustomFeeBuilder builderWithAliasCollector = new CustomFeeBuilder(payerWithAliasAccountId);
 	private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-	private final CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
+	private final CustomFee customFixedFeeInHts = builderWithAliasCollector.withFixedFee(fixedHts(tokenId, 100L));
 	private final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-	private final CustomFee customFractionalFee = builder.withFractionalFee(
+	private final CustomFee customFractionalFee = builderWithAliasCollector.withFractionalFee(
 			fractional(15L, 100L)
 					.setMinimumAmount(10L)
 					.setMaximumAmount(50L));

@@ -60,6 +60,7 @@ import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromScheduleId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -320,10 +321,10 @@ class HederaScheduleStoreTest {
 		given(aliasManager.lookupIdBy(payerAlias)).willReturn(payerNum);
 		given(aliasManager.lookUpAccountID(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID))
 				.willReturn(AliasLookup.of(schedule.payer().toGrpcAccountId(), OK));
-		given(aliasManager.lookUpAccountID(AccountID.newBuilder().setAlias(payerAlias).build(),
-				INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, OK));
-		given(aliasManager.lookUpAccountID(AccountID.newBuilder().setAlias(schedulingAccountAlias).build(),
-				INVALID_SCHEDULE_ACCOUNT_ID)).willReturn(AliasLookup.of(schedulingAccount, OK));
+		given(aliasManager.lookUpAccountID(entityPayerWithAlias, INVALID_SCHEDULE_PAYER_ID))
+				.willReturn(AliasLookup.of(payerId, OK));
+		given(aliasManager.lookUpAccountID(entitySchedulingAccountWithAlias, INVALID_SCHEDULE_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(schedulingAccount, OK));
 		given(aliasManager.lookUpAccountID(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID))
 				.willReturn(AliasLookup.of(schedule.schedulingAccount().toGrpcAccountId(), OK));
 
@@ -346,7 +347,8 @@ class HederaScheduleStoreTest {
 
 		given(aliasManager.lookupIdBy(payerAlias)).willReturn(MISSING_NUM);
 		given(aliasManager.lookUpAccountID(AccountID.newBuilder().setAlias(payerAlias).build(),
-				INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, INVALID_SCHEDULE_PAYER_ID));
+				INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, OK));
+		given(accountsLedger.exists(payerId)).willReturn(false);
 		given(aliasManager.lookUpAccountID(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID))
 				.willReturn(AliasLookup.of(schedule.schedulingAccount().toGrpcAccountId(), OK));
 
@@ -366,7 +368,8 @@ class HederaScheduleStoreTest {
 		given(aliasManager.lookUpAccountID(entityPayerWithAlias, INVALID_SCHEDULE_PAYER_ID))
 				.willReturn(AliasLookup.of(payerId, OK));
 		given(aliasManager.lookUpAccountID(entitySchedulingAccountWithAlias, INVALID_SCHEDULE_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(entitySchedulingAccountWithAlias, INVALID_SCHEDULE_ACCOUNT_ID));
+				.willReturn(AliasLookup.of(entitySchedulingAccountWithAlias, OK));
+		given(accountsLedger.exists(entitySchedulingAccountWithAlias)).willReturn(false);
 
 		final var outcome = subject.createProvisionally(schedule, consensusTime);
 
@@ -408,9 +411,12 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void createProvisionallyRejectsInvalidScheduler() {
+		final var invalidSchedulingAccount = IdUtils.asAccount("22.33.44");
 		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
-		given(aliasManager.lookUpAccountID(IdUtils.asAccount("22.33.44"), INVALID_SCHEDULE_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(IdUtils.asAccount("22.33.44"), INVALID_SCHEDULE_ACCOUNT_ID));
+		given(aliasManager.lookUpAccountID(payerId, INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, OK));
+		given(aliasManager.lookUpAccountID(invalidSchedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(invalidSchedulingAccount, OK));
+		given(accountsLedger.exists(invalidSchedulingAccount)).willReturn(false);
 
 		final var differentParentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				adminJKey,
@@ -425,6 +431,7 @@ class HederaScheduleStoreTest {
 	@Test
 	void rejectsCreateProvisionallyDeletedPayer() {
 		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+		given(aliasManager.lookUpAccountID(payerId, INVALID_ALIAS_KEY)).willReturn(AliasLookup.of(payerId, OK));
 		given(hederaLedger.isDeleted(payerId)).willReturn(true);
 		willCallRealMethod().given(aliasManager).lookUpAccountID(any());
 
@@ -433,9 +440,9 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rejectsCreateProvisionallyDeletedScheduler() {
+		given(aliasManager.lookUpAccountID(payerId, INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, OK));
 		given(aliasManager.lookUpAccountID(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID));
-		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
+				.willReturn(AliasLookup.of(schedulingAccount, OK));
 		given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
 		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 
@@ -444,9 +451,10 @@ class HederaScheduleStoreTest {
 
 	@Test
 	void rejectsCreateProvisionallyWithMissingSchedulingAccount() {
-		given(aliasManager.lookUpAccountID(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID))
-				.willReturn(AliasLookup.of(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID));
 
+		given(aliasManager.lookUpAccountID(payerId, INVALID_SCHEDULE_PAYER_ID)).willReturn(AliasLookup.of(payerId, OK));
+		given(aliasManager.lookUpAccountID(schedulingAccount, INVALID_SCHEDULE_ACCOUNT_ID))
+				.willReturn(AliasLookup.of(schedulingAccount, OK));
 		given(accountsLedger.exists(schedulingAccount)).willReturn(false);
 		given(globalDynamicProperties.schedulingWhitelist()).willReturn(whitelist);
 		willCallRealMethod().given(aliasManager).lookUpAccountID(any());

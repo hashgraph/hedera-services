@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -75,7 +74,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -449,12 +447,12 @@ public class HederaLedger {
 		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
-	public AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum response) {
-		return tokenStore.lookUpAccountId(grpcId, response);
+	public AliasLookup lookUpAccountId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookUpAccountId(grpcId, errResponse);
 	}
 
-	public AliasLookup lookUpAccountId(final AccountID grpcId) {
-		return tokenStore.lookUpAccountId(grpcId, INVALID_ACCOUNT_ID);
+	public AliasLookup lookUpAccountIdAndValidate(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookUpAccountIdAndValidate(grpcId, errResponse);
 	}
 
 	public boolean isDeleted(AccountID id) {

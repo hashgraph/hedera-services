@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.AccountStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -82,9 +83,11 @@ class TokenTest {
 	private Token subject;
 	private TokenRelationship treasuryRel;
 	private TokenRelationship nonTreasuryRel;
+	private AccountStore accountStore;
 
 	@BeforeEach
 	void setUp() {
+		accountStore = mock(AccountStore.class);
 		subject = new Token(id);
 		subject.initTotalSupply(initialSupply);
 		subject.setTreasury(treasuryAccount);
@@ -168,7 +171,7 @@ class TokenTest {
 						.build())
 				.build();
 
-		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+		subject = Token.fromGrpcOpAndMeta(accountStore, id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
 
 		assertEquals("bitcoin", subject.getName());
 		assertEquals(123L, subject.getExpiry());

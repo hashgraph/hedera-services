@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +76,16 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
+	}
+
+	@Test
+	void deligatesAccountLookUp() {
+		final AccountID testId = AccountID.newBuilder().setAccountNum(123L).build();
+		subject.lookUpAccountId(testId, INVALID_ACCOUNT_ID);
+		verify(tokenStore).lookUpAccountId(testId, INVALID_ACCOUNT_ID);
+
+		subject.lookUpAccountIdAndValidate(testId, INVALID_ACCOUNT_ID);
+		verify(tokenStore).lookUpAccountIdAndValidate(testId, INVALID_ACCOUNT_ID);
 	}
 
 	@Test
@@ -162,12 +172,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.isDeleted(genesis);
 
 		verify(accountsLedger).get(genesis, IS_DELETED);
-	}
-
-	@Test
-	void delegatesLookUpAccountIDCorrectly() {
-		subject.lookUpAccountId(genesis, ResponseCodeEnum.INVALID_ACCOUNT_ID);
-		verify(tokenStore).lookUpAccountId(genesis, INVALID_ACCOUNT_ID);
 	}
 
 	@Test

@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -156,7 +158,7 @@ class FcCustomFeeTest {
 	@Test
 	void requiresSomeFeeTypeInGrpc() {
 		assertFailsWith(
-				() -> FcCustomFee.fromGrpc(CustomFee.getDefaultInstance()),
+				() -> FcCustomFee.fromGrpc(CustomFee.getDefaultInstance(), accountStore),
 				CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 	}
 
@@ -306,6 +308,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcConversionWorksForFixed() {
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var wildcardId = new EntityId(0, 0, 0);
 		final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		final var expectedHtsSameTokenSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, wildcardId, feeCollector);
@@ -314,9 +317,9 @@ class FcCustomFeeTest {
 		final var htsSameTokenGrpc = builder.withFixedFee(fixedHts(fixedUnitsToCollect));
 		final var hbarGrpc = builder.withFixedFee(fixedHbar(fixedUnitsToCollect));
 
-		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc);
-		final var htsSameTokenSubject = FcCustomFee.fromGrpc(htsSameTokenGrpc);
-		final var hbarSubject = FcCustomFee.fromGrpc(hbarGrpc);
+		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc, accountStore);
+		final var htsSameTokenSubject = FcCustomFee.fromGrpc(htsSameTokenGrpc, accountStore);
+		final var hbarSubject = FcCustomFee.fromGrpc(hbarGrpc, accountStore);
 
 		assertEquals(expectedHtsSubject, htsSubject);
 		assertEquals(expectedHtsSameTokenSubject, htsSameTokenSubject);
@@ -345,6 +348,7 @@ class FcCustomFeeTest {
 	@Test
 	void grpcConversionWorksForRoyaltyNoFallback() {
 		// setup:
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var targetId = new EntityId(7, 8, 9);
 		final var expectedRoyaltySubject =
 				FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector);
@@ -356,7 +360,7 @@ class FcCustomFeeTest {
 						.setDenominator(validDenominator)));
 
 		// when:
-		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc);
+		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc, accountStore);
 
 		// then:
 		assertEquals(expectedRoyaltySubject, actualSubject);
@@ -365,6 +369,7 @@ class FcCustomFeeTest {
 	@Test
 	void grpcConversionWorksForRoyalty() {
 		// setup:
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var targetId = new EntityId(7, 8, 9);
 		final var expectedRoyaltySubject =
 				FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector);
@@ -379,7 +384,7 @@ class FcCustomFeeTest {
 						.setDenominatingTokenId(fallbackFee.getTokenDenomination().toGrpcTokenId())));
 
 		// when:
-		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc);
+		final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc, accountStore);
 
 		// then:
 		assertEquals(expectedRoyaltySubject, actualSubject);
@@ -468,6 +473,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcConversionWorksForFractional() {
+		given(accountStore.getAccountNumFromAlias(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
 		final var expectedExplicitMaxSubject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
@@ -492,8 +498,8 @@ class FcCustomFeeTest {
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setNetOfTransfers(!netOfTransfers));
 
-		final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax);
-		final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax);
+		final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax, accountStore);
+		final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax, accountStore);
 
 		assertEquals(expectedExplicitMaxSubject, explicitMaxSubject);
 		assertEquals(expectedNoExplicitMaxSubject, noExplicitMaxSubject);
@@ -608,7 +614,7 @@ class FcCustomFeeTest {
 		final var expectedFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 		given(din.readByte()).willReturn(FcCustomFee.FIXED_CODE);
 		given(din.readLong()).willReturn(fixedUnitsToCollect);
-		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(denom).willReturn(feeCollector);
+		given(din.readSerializable(anyBoolean(), any())).willReturn(denom).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
 		subject.deserialize(din, FcCustomFee.CURRENT_VERSION);
@@ -634,7 +640,7 @@ class FcCustomFeeTest {
 				.willReturn(validDenominator)
 				.willReturn(minimumUnitsToCollect)
 				.willReturn(maximumUnitsToCollect);
-		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
+		given(din.readSerializable(anyBoolean(), any())).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
 		subject.deserialize(din, FcCustomFee.CURRENT_VERSION);
@@ -659,7 +665,7 @@ class FcCustomFeeTest {
 				.willReturn(validDenominator)
 				.willReturn(minimumUnitsToCollect)
 				.willReturn(maximumUnitsToCollect);
-		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
+		given(din.readSerializable(anyBoolean(), any())).willReturn(feeCollector);
 
 		final var subject = new FcCustomFee();
 		subject.deserialize(din, FcCustomFee.RELEASE_016X_VERSION);

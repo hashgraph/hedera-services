@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -219,9 +218,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
-								"txn"),
-						getTxnRecord("txn").hasChildRecordCount(1).logged()
+								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS))
+								.via("firstCreate"),
+						getTxnRecord("firstCreate").hasChildRecordCount(1).logged()
 				).then(
 						cryptoDeleteAliased("alias")
 								.transfer("payer")
@@ -230,7 +229,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.purging(),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
-								"txn2").hasKnownStatus(ACCOUNT_DELETED)
+								"txn2").via("secondCreate"),
+						getTxnRecord("secondCreate").hasChildRecordCount(1).logged()
 
 						/* need to validate it creates after expiration */
 //						sleepFor(60000L),

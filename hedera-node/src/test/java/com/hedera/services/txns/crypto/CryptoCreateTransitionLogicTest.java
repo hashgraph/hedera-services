@@ -57,8 +57,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
@@ -252,8 +253,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void worksWithValidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookUpAccountId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
 		subject.doStateTransition();
@@ -265,13 +266,13 @@ class CryptoCreateTransitionLogicTest {
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-		given(ledger.lookUpAccountId(aliasedProxyID)).willReturn(
-				AliasLookup.of(aliasedProxyID, INVALID_ACCOUNT_ID));
-		given(ledger.lookUpAccountId(aliasAccountPayer)).willReturn(
+		given(ledger.lookUpAccountIdAndValidate(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID));
+		given(ledger.lookUpAccountId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
 		subject.doStateTransition();
-		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+		verify(txnCtx).setStatus(INVALID_PROXY_ACCOUNT_ID);
 	}
 
 	private Key unmappableKey() {
@@ -372,9 +373,10 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.lookUpAccountId(proxy)).willReturn(AliasLookup.of(proxy, OK));
-		given(ledger.lookUpAccountId(cryptoCreateTxn.getTransactionID().getAccountID())).willReturn(
-				AliasLookup.of(cryptoCreateTxn.getTransactionID().getAccountID(), OK));
+		given(ledger.lookUpAccountIdAndValidate(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
+		given(ledger.lookUpAccountId(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
+		given(ledger.lookUpAccountId(txnId.getAccountID(), INVALID_PAYER_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(txnId.getAccountID(), OK));
 	}
 
 	private TransactionID ourTxnId() {

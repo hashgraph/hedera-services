@@ -209,7 +209,7 @@ public class SigRequirements {
 			return factory.forValidOrder(List.of(result.metadata().key()));
 		} else {
 			if (result.failureIfAny() == MISSING_ACCOUNT) {
-				return factory.forInvalidAccount();
+				return factory.forInvalidPayer();
 			} else {
 				return factory.forGeneralPayerError();
 			}
@@ -520,7 +520,7 @@ public class SigRequirements {
 		if (!payer.equals(target)) {
 			var targetResult = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
 			if (!targetResult.succeeded()) {
-				return accountFailure(targetResult.failureIfAny(), factory);
+				return factory.forMissingAccount();
 			}
 			required = mutable(required);
 			required.add(targetResult.metadata().key());
@@ -530,7 +530,7 @@ public class SigRequirements {
 		if (!payer.equals(beneficiary)) {
 			var beneficiaryResult = sigMetaLookup.aliasableAccountSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
-				return accountFailure(beneficiaryResult.failureIfAny(), factory);
+				return factory.forMissingAccount();
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
 				required = mutable(required);
 				required.add(beneficiaryResult.metadata().key());
@@ -553,7 +553,7 @@ public class SigRequirements {
 		var target = op.getAccountIDToUpdate();
 		var result = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
 		if (!result.succeeded()) {
-			return accountFailure(result.failureIfAny(), factory);
+			return factory.forInvalidAccount();
 		} else {
 			if (targetAccountKeyMustSign && !payer.equals(target)) {
 				required = mutable(required);
@@ -675,7 +675,7 @@ public class SigRequirements {
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
 				required,
 				linkedRefs)) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+			return factory.forMissingAutoRenewAccount();
 		}
 
 		return factory.forValidOrder(required);
@@ -697,7 +697,7 @@ public class SigRequirements {
 				required,
 				linkedRefs);
 		if (!couldAddTreasury) {
-			return accountFailure(MISSING_ACCOUNT, factory);
+			return factory.forMissingTokenTreasury();
 		}
 		final var couldAddAutoRenew = addAccount(
 				payer,
@@ -707,7 +707,7 @@ public class SigRequirements {
 				required,
 				linkedRefs);
 		if (!couldAddAutoRenew) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+			return factory.forMissingAutoRenewAccount();
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -835,7 +835,7 @@ public class SigRequirements {
 				TokenUpdateTransactionBody::getAutoRenewAccount,
 				required,
 				linkedRefs)) {
-			return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+			return factory.forMissingAutoRenewAccount();
 		}
 		if (!addAccount(
 				payer,
@@ -844,7 +844,7 @@ public class SigRequirements {
 				TokenUpdateTransactionBody::getTreasury,
 				required,
 				linkedRefs)) {
-			return accountFailure(MISSING_ACCOUNT, factory);
+			return factory.forMissingTokenTreasury();
 		}
 		addToMutableReqIfPresent(
 				op,
@@ -992,7 +992,7 @@ public class SigRequirements {
 				required,
 				linkedRefs);
 		if (!couldAddPayer) {
-			return accountFailure(INVALID_ACCOUNT, factory);
+			return factory.forInvalidAccount();
 		}
 		int after = required.size();
 		if (after > before) {
@@ -1021,7 +1021,7 @@ public class SigRequirements {
 		if (optionalPayer.isPresent()) {
 			var payerResult = sigMetaLookup.aliasableAccountSigningMetaFor(optionalPayer.get(), linkedRefs);
 			if (!payerResult.succeeded()) {
-				return accountFailure(INVALID_ACCOUNT, factory);
+				return factory.forInvalidAccount();
 			} else {
 				var dupKey = payerResult.metadata().key().duplicate();
 				dupKey.setForScheduledTxn(true);
@@ -1094,7 +1094,7 @@ public class SigRequirements {
 				required = mutable(required);
 				required.add(meta.key());
 			} else {
-				return factory.forMissingAccount();
+				return factory.forInvalidAccount();
 			}
 		}
 
@@ -1251,7 +1251,7 @@ public class SigRequirements {
 					required = mutable(required);
 					required.add(autoRenewResult.metadata().key());
 				} else {
-					return accountFailure(MISSING_AUTORENEW_ACCOUNT, factory);
+					return factory.forMissingAutoRenewAccount();
 				}
 			}
 		}

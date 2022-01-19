@@ -60,6 +60,13 @@ public interface SigningOrderResultFactory<T> {
 	SigningOrderResult<T> forInvalidAccount();
 
 	/**
+	 * Report an invalid account encountered as payer for some txn.
+	 *
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forInvalidPayer();
+
+	/**
 	 * Report an invalid smart contract encountered when listing signing keys for some txn.
 	 *
 	 * @return the error summary.
@@ -144,4 +151,11 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary
 	 */
 	SigningOrderResult<T> forMissingFeeCollector();
+
+	/**
+	 * Report an invalid token treasury in a TokenCreate or TokenUpdate.
+	 *
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forMissingTokenTreasury();
 }

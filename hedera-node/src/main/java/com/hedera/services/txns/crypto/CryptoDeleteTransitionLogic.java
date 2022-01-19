@@ -39,11 +39,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -82,11 +82,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			var result = ledger.lookUpAccountId(op.getDeleteAccountID());
+			var result = ledger.lookUpAccountIdAndValidate(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
 			}
+
 			AccountID id = result.resolvedId();
 
 			if (ledger.isKnownTreasury(id)) {
@@ -94,17 +95,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			result = ledger.lookUpAccountId(op.getTransferAccountID());
+			result = ledger.lookUpAccountIdAndValidate(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
 			}
 			AccountID beneficiary = result.resolvedId();
-
-			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
-				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-				return;
-			}
 
 			if (!ledger.allTokenBalancesVanish(id)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);

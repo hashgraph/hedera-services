@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -101,7 +102,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
 
-			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate());
+			final var result = ledger.lookUpAccountId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
@@ -114,7 +115,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
 				return;
 			}
-			final var validity = sanityCheck(target, customizer);
+			var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return;
@@ -167,7 +168,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
-			final var result = ledger.lookUpAccountId(proxy.toGrpcAccountId());
+			final var result = ledger.lookUpAccountIdAndValidate(
+					proxy.toGrpcAccountId(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
 				return result.response();
 			}
@@ -188,7 +190,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = ledger.lookUpAccountId(op.getProxyAccountID()).resolvedId();
+			final var id = ledger.lookUpAccountId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID).resolvedId();
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {

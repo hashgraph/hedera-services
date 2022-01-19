@@ -59,6 +59,7 @@ public class Creation {
 	@FunctionalInterface
 	public interface TokenModelFactory {
 		Token createFrom(
+				final AccountStore accountStore,
 				final Id tokenId,
 				final TokenCreateTransactionBody op,
 				final Account treasury,
@@ -121,7 +122,7 @@ public class Creation {
 		final var maxCustomFees = dynamicProperties.maxCustomFeesAllowed();
 		validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
-		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
+		provisionalToken = modelFactory.createFrom(accountStore, provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
 		newRels = listing.listFrom(provisionalToken, dynamicProperties.maxTokensPerAccount());

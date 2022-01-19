@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -78,8 +77,10 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var transactionBody = transactionContext.accessor().getTxn();
-		var op = transactionBody.getConsensusSubmitMessage();
+		final var transactionBody = transactionContext.accessor().getTxn();
+		final var op = transactionBody.getConsensusSubmitMessage();
+		final var txnId = transactionBody.getTransactionID();
+		final var payer = aliasManager.lookUpPayerAccountID(txnId.getAccountID()).resolvedId();
 
 		if (op.getMessage().isEmpty()) {
 			transactionContext.setStatus(INVALID_TOPIC_MESSAGE);
@@ -91,7 +92,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
+		final var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
 		if (OK != topicStatus) {
 			transactionContext.setStatus(topicStatus);
 			return;
@@ -105,23 +106,14 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			final var chunkAccountIDLookup = aliasManager.lookUpPayerAccountID(
-					chunkInfo.getInitialTransactionID().getAccountID());
-			final var transactionIDLookup = aliasManager.lookUpPayerAccountID(
-					transactionBody.getTransactionID().getAccountID());
-			if (chunkAccountIDLookup.response() != OK) {
-				transactionContext.setStatus(chunkAccountIDLookup.response());
-			}
-			if (transactionIDLookup.response() != OK) {
-				transactionContext.setStatus(transactionIDLookup.response());
-			}
+			final var initialTxnId = chunkInfo.getInitialTransactionID();
+			final var chunkAccountIDLookup = aliasManager.lookUpPayerAccountID(initialTxnId.getAccountID());
 
-			if (!chunkAccountIDLookup.resolvedId().equals(transactionIDLookup.resolvedId())) {
-				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
-				return;
-			}
-			if (1 == chunkInfo.getNumber() &&
-					!chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
+			if (
+					chunkAccountIDLookup.response() != OK ||
+					!chunkAccountIDLookup.resolvedId().equals(payer) ||
+					(1 == chunkInfo.getNumber() && !initialTxnId.equals(txnId))
+			) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}
@@ -130,13 +122,6 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		var topicId = EntityNum.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.get().getForModify(topicId);
 		try {
-			final AccountID payerAccountId = transactionBody.getTransactionID().getAccountID();
-			final var result = aliasManager.lookUpPayerAccountID(payerAccountId);
-			if (result.response() != OK) {
-				transactionContext.setStatus(result.response());
-			}
-			final AccountID payer = result.resolvedId();
-
 			mutableTopic.updateRunningHashAndSequenceNumber(
 					payer,
 					op.getMessage().toByteArray(),
