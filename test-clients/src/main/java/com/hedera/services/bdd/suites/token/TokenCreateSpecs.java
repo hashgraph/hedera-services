@@ -189,12 +189,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.treasury("invalidAlias")
 								.treasuryIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY),
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN),
 						tokenCreate("tokenC")
 								.adminKey("adminKey")
 								.autoRenewAccount("invalidAlias")
 								.autoRenewAccountIsAlias()
-								.hasKnownStatus(INVALID_ALIAS_KEY)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				);
 	}
 

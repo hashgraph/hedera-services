@@ -71,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -144,13 +145,13 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				.then(
 						tokenAssociateAliased("validAlias", "tokenA"),
 						tokenAssociateAliased("invalidAlias", "tokenA")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						getAliasedAccountInfo("validAlias")
 								.hasToken(relationshipWith("tokenA"))
 								.logged(),
 						tokenDissociateAliased("validAlias", "tokenA"),
 						tokenDissociateAliased("invalidAlias", "tokenA")
-								.hasKnownStatus(INVALID_ALIAS_KEY),
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						getAliasedAccountInfo("validAlias")
 								.hasNoTokenRelationship("tokenA")
 								.logged()

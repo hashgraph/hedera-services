@@ -50,6 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -84,6 +86,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 
 	private HapiApiSpec canDeleteAccountSpecifiedWithAlias() {
 		final var aliasToBeDeleted = "alias";
+		final var invalidAlias ="invalid";
 
 		return defaultHapiSpec("canDeleteAccountSpecifiedWithAlias")
 				.given(
@@ -98,7 +101,13 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.transfer("transferAccount")
 								.hasKnownStatus(SUCCESS)
 								.signedBy(aliasToBeDeleted, "transferAccount", DEFAULT_PAYER)
-								.via("deleteTxn")
+								.via("deleteTxn"),
+						cryptoDeleteAliased(invalidAlias)
+								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(invalidAlias, "transferAccount", DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				).then(
 						getAccountInfo("transferAccount")
 								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.05)),
@@ -109,6 +118,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec transferAccountCanBeSpecifiedAsAlias() {
 		final var aliasToBeDeleted = "alias";
 		final var transferAccount = "transferAccount";
+		final var invalidTransferAccount = "invalidTransferAccount";
 
 		return defaultHapiSpec("transferAccountCanBeSpecifiedAsAlias")
 				.given(
@@ -124,9 +134,16 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.transferAliased(transferAccount)
 								.hasKnownStatus(SUCCESS)
 								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
-								.via("deleteTxn")
+								.via("deleteTxn"),
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transferAliased(invalidTransferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, invalidTransferAccount, DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID)
 				).then(
 						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getAliasedAccountInfo(invalidTransferAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
 						getAliasedAccountInfo(transferAccount).has(
 								accountWith().expectedBalanceWithChargedUsd(2 * ONE_HUNDRED_HBARS, 0.1, 0.05)),
 						getTxnRecord("deleteTxn").logged());
