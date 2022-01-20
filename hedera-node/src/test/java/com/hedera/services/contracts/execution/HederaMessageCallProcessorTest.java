@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaMessageCallProcessorTest {
+class HederaMessageCallProcessorTest {
 
 	private static final String HEDERA_PRECOMPILE_ADDRESS_STRING = "0x1337";
 	private static final Address HEDERA_PRECOMPILE_ADDRESS = Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
@@ -73,11 +73,11 @@ public class HederaMessageCallProcessorTest {
 
 		subject.start(frame, operationTrace);
 
-		verify(hederaPrecompile).compute(any(), eq(frame));
-		verify(operationTrace).tracePrecompileCall(eq(frame), eq(GAS_ONE), eq(Bytes.EMPTY));
-		verify(frame).decrementRemainingGas(eq(GAS_ONE));
-		verify(frame).setOutputData(eq(Bytes.EMPTY));
-		verify(frame).setState(eq(COMPLETED_SUCCESS));
+		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
+		verify(frame).decrementRemainingGas(GAS_ONE);
+		verify(frame).setOutputData(Bytes.EMPTY);
+		verify(frame).setState(COMPLETED_SUCCESS);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
 
@@ -91,7 +91,7 @@ public class HederaMessageCallProcessorTest {
 
 		subject.start(frame, operationTrace);
 
-		verify(frame).setState(eq(MessageFrame.State.CODE_EXECUTING));
+		verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
 
@@ -101,8 +101,8 @@ public class HederaMessageCallProcessorTest {
 
 		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
 
-		verify(frame).setRevertReason(eq(INVALID_TRANSFER));
-		verify(frame).setState(eq(REVERT));
+		verify(frame).setRevertReason(INVALID_TRANSFER);
+		verify(frame).setState(REVERT);
 		verifyNoMoreInteractions(frame, hederaPrecompile);
 	}
 
@@ -115,11 +115,11 @@ public class HederaMessageCallProcessorTest {
 
 		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
 
-		verify(frame).setExceptionalHaltReason(eq(Optional.of(INSUFFICIENT_GAS)));
-		verify(frame).setState(eq(EXCEPTIONAL_HALT));
-		verify(frame).decrementRemainingGas(eq(GAS_ONE_K));
-		verify(hederaPrecompile).compute(eq(Bytes.EMPTY), eq(frame));
-		verify(operationTrace).tracePrecompileCall(eq(frame), eq(GAS_ONE_M), eq(null));
+		verify(frame).setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+		verify(frame).setState(EXCEPTIONAL_HALT);
+		verify(frame).decrementRemainingGas(GAS_ONE_K);
+		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, null);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
 
@@ -133,8 +133,8 @@ public class HederaMessageCallProcessorTest {
 
 		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
 
-		verify(frame).setState(eq(EXCEPTIONAL_HALT));
-		verify(operationTrace).tracePrecompileCall(eq(frame), eq(GAS_ONE), eq(null));
+		verify(frame).setState(EXCEPTIONAL_HALT);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
 }
