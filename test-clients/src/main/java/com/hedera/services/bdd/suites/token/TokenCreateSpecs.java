@@ -198,7 +198,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										hbarCollector))
 								.withCustom(fractionalFee(
 										1L, 100L, 1L, OptionalLong.of(5L),
-										fractionalCollector))
+										"invalidAlias"))
 								.withCustom(fixedHtsFee(
 										2L, "0.0.0",
 										selfDenominatedFixedCollector))
@@ -208,8 +208,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										"treasuryAlias",
 										"autoRenewAlias",
 										hbarCollector,
+										"invalidAlias",
 										selfDenominatedFixedCollector)
-								.hasKnownStatus(INVALID_SIGNATURE),
+								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
 						tokenCreate("tokenA")
 								.adminKey("adminKey")
 								.treasury("treasuryAlias")

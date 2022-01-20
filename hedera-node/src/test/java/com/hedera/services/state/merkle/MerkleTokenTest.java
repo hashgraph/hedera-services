@@ -54,6 +54,7 @@ import java.util.Optional;
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -138,7 +139,8 @@ class MerkleTokenTest {
 	@BeforeEach
 	void setup() {
 		accountStore = mock(AccountStore.class);
-		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num())).willReturn(feeCollector.num());
+		given(accountStore.getResolvedAccountNum(ByteString.EMPTY, feeCollector.num(), INVALID_CUSTOM_FEE_COLLECTOR))
+				.willReturn(feeCollector.num());
 		feeSchedule = grpcFeeSchedule.stream()
 				.map(fee -> FcCustomFee.fromGrpc(fee, accountStore))
 				.collect(toList());

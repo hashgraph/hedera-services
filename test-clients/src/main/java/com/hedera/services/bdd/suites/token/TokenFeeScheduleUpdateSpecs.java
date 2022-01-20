@@ -137,6 +137,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 		final var newHtsCollector = "newDenomFee";
 		final var newTokenCollector = "newFractionalFee";
 		final var aliasedHbarCollector = "hbarCollector";
+		final var invalidAlias = "invalidAlias";
 
 		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
@@ -146,6 +147,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 						newKeyNamed(aliasedHbarCollector),
 						newKeyNamed(adminKey),
 						newKeyNamed(feeScheduleKey),
+						newKeyNamed(invalidAlias),
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasedHbarCollector, ONE_HUNDRED_HBARS))
 								.via("autoCreate"),
 						getTxnRecord("autoCreate")
@@ -233,6 +235,9 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
+								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
+						tokenFeeScheduleUpdate(token)
+								.withCustom(fixedHbarFee(hbarAmount, invalidAlias))
 								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
