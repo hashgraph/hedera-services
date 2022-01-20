@@ -20,9 +20,11 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -51,11 +54,11 @@ class BalanceChangeTest {
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var tokenRepr = "BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var nftRepr = "BalanceChange{nft=Id{shard=1, realm=2, num=3}, serialNo=1234, " +
-				"from=Id{shard=1, realm=2, num=3}, to=Id{shard=2, realm=3, num=4}}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234, expectedDecimals=-1}";
+		final var tokenRepr = "BalanceChange{token=Id[shard=1, realm=2, num=3], account=Id[shard=1, realm=2, num=3], " +
+				"alias=, units=-1234, expectedDecimals=-1}";
+		final var nftRepr = "BalanceChange{nft=Id[shard=1, realm=2, num=3], serialNo=1234, " +
+				"from=Id[shard=1, realm=2, num=3], to=Id[shard=2, realm=3, num=4]}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -90,6 +93,38 @@ class BalanceChangeTest {
 	}
 
 	@Test
+	void hbarAdjust() {
+		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+		assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
+		assertTrue(hbarAdjust.isForHbar());
+		assertEquals(10, hbarAdjust.units());
+		assertEquals(10, hbarAdjust.originalUnits());
+		hbarAdjust.adjustUnits(10);
+		assertEquals(20, hbarAdjust.units());
+		assertEquals(10, hbarAdjust.originalUnits());
+	}
+
+	@Test
+	void objectContractWorks() {
+		final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+		adjust.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, adjust.codeForInsufficientBalance());
+		adjust.setExemptFromCustomFees(false);
+		assertFalse(adjust.isExemptFromCustomFees());
+	}
+
+	@Test
+	void tokenAdjust() {
+		final var tokenAdjust = BalanceChange.tokenAdjust(
+				IdUtils.asModelId("1.2.3"),
+				IdUtils.asModelId("3.2.1"),
+				10);
+		assertEquals(10, tokenAdjust.units());
+		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
+		assertEquals(new Id(3, 2, 1), tokenAdjust.getToken());
+	}
+
+	@Test
 	void ownershipChangeFactoryWorks() {
 		// setup:
 		final var xfer = NftTransfer.newBuilder()
@@ -108,6 +143,39 @@ class BalanceChangeTest {
 		assertEquals(serialNo, nftChange.serialNo());
 		// and:
 		assertTrue(nftChange.isForNft());
-		assertEquals(new NftId(t.getShard(), t.getRealm(), t.getNum(), serialNo), nftChange.nftId());
+		assertEquals(new NftId(t.shard(), t.realm(), t.num(), serialNo), nftChange.nftId());
+	}
+
+	@Test
+	void canReplaceAlias() {
+		final var created = IdUtils.asAccount("0.0.1234");
+		final var anAlias = ByteString.copyFromUtf8("abcdefg");
+		final var subject = BalanceChange.changingHbar(AccountAmount.newBuilder()
+				.setAmount(1234)
+				.setAccountID(AccountID.newBuilder()
+						.setAlias(anAlias))
+				.build());
+
+		subject.replaceAliasWith(created);
+		assertFalse(subject.hasNonEmptyAlias());
+		assertEquals(created, subject.accountId());
+	}
+
+	@Test
+	void settersAndGettersOfDecimalsWorks(){
+		final var created = new Id(1, 2, 3);
+		final var token = new Id(4, 5, 6);
+		final var subject = BalanceChange.changingFtUnits(token, token.asGrpcToken(),
+				AccountAmount.newBuilder()
+						.setAmount(1234)
+						.setAccountID(created.asGrpcAccount())
+						.build());
+		assertEquals(-1, subject.getExpectedDecimals());
+		assertFalse(subject.hasExpectedDecimals());
+
+		subject.setExpectedDecimals(2);
+
+		assertEquals(2, subject.getExpectedDecimals());
+		assertTrue(subject.hasExpectedDecimals());
 	}
 }

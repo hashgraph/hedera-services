@@ -26,6 +26,7 @@ import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.SwirldMain;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +78,6 @@ public class ServicesMain implements SwirldMain {
 			app.recordStreamManager().setInFreeze(false);
 		} else if (status == MAINTENANCE) {
 			app.recordStreamManager().setInFreeze(true);
-			app.upgradeActions().externalizeFreeze();
 		} else {
 			log.info("Platform {} status set to : {}", nodeId, status);
 		}
@@ -178,6 +178,7 @@ public class ServicesMain implements SwirldMain {
 		app.ledgerValidator().validate(app.workingState().accounts());
 		app.nodeInfo().validateSelfAccountIfStaked();
 		app.notificationEngine().get().register(ReconnectCompleteListener.class, app.reconnectListener());
+		app.notificationEngine().get().register(StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
 	}
 
 	private boolean defaultCharsetIsCorrect() {

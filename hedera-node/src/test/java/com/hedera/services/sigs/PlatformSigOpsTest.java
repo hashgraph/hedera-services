@@ -20,6 +20,8 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
@@ -33,13 +35,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
+import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
+import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.swirlds.common.crypto.SignatureType.ED25519;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +57,7 @@ class PlatformSigOpsTest {
 	private static final byte[] EMPTY_SIG = new byte[0];
 	private static final byte[] MOCK_SIG = "FIRST".getBytes();
 	private static final byte[][] MORE_MOCK_SIGS = new byte[][] {
-			"SECOND".getBytes(), "THIRD".getBytes(), "FOURTH".getBytes(), "FIFTH".getBytes()
+			"SECOND".getBytes(), "THIRD".getBytes(), "FOURTH".getBytes(), "FIFTH".getBytes(), "SIXTH".getBytes()
 	};
 	private static final byte[][] MORE_EMPTY_SIGS = new byte[][] {
 			EMPTY_SIG, EMPTY_SIG, EMPTY_SIG, EMPTY_SIG
@@ -62,7 +66,7 @@ class PlatformSigOpsTest {
 	private static final List<KeyTree> kts = List.of(
 			KeyTree.withRoot(ed25519()),
 			KeyTree.withRoot(list(ed25519(), ed25519())),
-			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519()))
+			KeyTree.withRoot(threshold(1, list(ed25519()), ed25519(), ecdsa384Secp256k1()))
 	);
 	private PubKeyToSigBytes sigBytes;
 	private TxnScopedPlatformSigFactory sigFactory;
@@ -75,22 +79,25 @@ class PlatformSigOpsTest {
 		for (final var kt : kts) {
 			pubKeys.add(kt.asJKey());
 		}
+		pubKeys.add(new JContractIDKey(0, 0, 1234));
+		pubKeys.add(new JDelegatableContractIDKey(0, 0, 12345));
 	}
 
 	@Test
 	void createsOnlyNonDegenerateSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_EMPTY_SIGS);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+		final var result = createCryptoSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		final var nextSigIndex = new AtomicInteger(0);
+		verify(sigBytes, never()).sigBytesFor(null);
 		for (final var kt : kts) {
 			kt.traverseLeaves(leaf -> {
 				final var pk = leaf.asKey().getEd25519().toByteArray();
 				if (nextSigIndex.get() == 0) {
-					verify(sigFactory).create(pk, MOCK_SIG);
+					verify(sigFactory).signBodyWithEd25519(pk, MOCK_SIG);
 				} else {
-					verify(sigFactory, never()).create(pk, EMPTY_SIG);
+					verify(sigFactory, never()).signBodyWithEd25519(pk, EMPTY_SIG);
 				}
 				nextSigIndex.addAndGet(1);
 			});
@@ -102,18 +109,26 @@ class PlatformSigOpsTest {
 	void createsSigsInTraversalOrder() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG, MORE_MOCK_SIGS);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
-
+		final var result = createCryptoSigsFrom(pubKeys, sigBytes, sigFactory);
 		final var nextSigIndex = new AtomicInteger(0);
 		for (final var kt : kts) {
 			kt.traverseLeaves(leaf -> {
-				final var pk = leaf.asKey().getEd25519().toByteArray();
-				final var sigBytes = (nextSigIndex.get() == 0) ? MOCK_SIG : MORE_MOCK_SIGS[nextSigIndex.get() - 1];
-				verify(sigFactory).create(pk, sigBytes);
+				final var isEd25519 = leaf.getSigType() == ED25519;
+				final var pk = isEd25519
+						? leaf.asKey().getEd25519().toByteArray()
+						: leaf.asKey().getECDSASecp256K1().toByteArray();
+				final var sigBytes = (nextSigIndex.get() == 0)
+						? MOCK_SIG
+						: MORE_MOCK_SIGS[nextSigIndex.get() - 1];
+				if (isEd25519) {
+					verify(sigFactory).signBodyWithEd25519(pk, sigBytes);
+				} else {
+					verify(sigFactory).signKeccak256DigestWithSecp256k1(pk, sigBytes);
+				}
 				nextSigIndex.addAndGet(1);
 			});
 		}
-		assertEquals(5, result.getPlatformSigs().size());
+		assertEquals(1 + MORE_MOCK_SIGS.length, result.getPlatformSigs().size());
 	}
 
 	@Test
@@ -122,7 +137,7 @@ class PlatformSigOpsTest {
 		scheduledKey.setForScheduledTxn(true);
 		given(sigBytes.sigBytesFor(any())).willThrow(KeyPrefixMismatchException.class);
 
-		final var result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+		final var result = createCryptoSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
 
 		assertFalse(result.hasFailed());
 		assertTrue(result.getPlatformSigs().isEmpty());
@@ -134,7 +149,7 @@ class PlatformSigOpsTest {
 		scheduledKey.setForScheduledTxn(true);
 		given(sigBytes.sigBytesFor(any())).willThrow(IllegalStateException.class);
 
-		final var result = createEd25519PlatformSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
+		final var result = createCryptoSigsFrom(List.of(scheduledKey), sigBytes, sigFactory);
 
 		assertTrue(result.hasFailed());
 	}
@@ -143,7 +158,7 @@ class PlatformSigOpsTest {
 	void failsOnInsufficientSigs() throws Throwable {
 		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(Exception.class);
 
-		final var result = createEd25519PlatformSigsFrom(pubKeys, sigBytes, sigFactory);
+		final var result = createCryptoSigsFrom(pubKeys, sigBytes, sigFactory);
 
 		assertEquals(1, result.getPlatformSigs().size());
 		assertTrue(result.hasFailed());

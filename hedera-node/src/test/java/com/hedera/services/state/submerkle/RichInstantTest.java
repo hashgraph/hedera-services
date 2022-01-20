@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.Instant;
 
+import static com.hedera.services.state.submerkle.RichInstant.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -65,7 +66,7 @@ class RichInstantTest {
 		given(in.readLong()).willReturn(seconds);
 		given(in.readInt()).willReturn(nanos);
 
-		final var readSubject = RichInstant.from(in);
+		final var readSubject = from(in);
 
 		assertEquals(subject, readSubject);
 	}
@@ -85,7 +86,7 @@ class RichInstantTest {
 	@Test
 	void knowsIfMissing() {
 		assertFalse(subject.isMissing());
-		assertTrue(RichInstant.MISSING_INSTANT.isMissing());
+		assertTrue(MISSING_INSTANT.isMissing());
 	}
 
 	@Test
@@ -97,8 +98,8 @@ class RichInstantTest {
 
 	@Test
 	void factoryWorksForMissing() {
-		assertEquals(RichInstant.MISSING_INSTANT, RichInstant.fromGrpc(Timestamp.getDefaultInstance()));
-		assertEquals(subject, RichInstant.fromGrpc(subject.toGrpc()));
+		assertEquals(MISSING_INSTANT, fromGrpc(Timestamp.getDefaultInstance()));
+		assertEquals(subject, fromGrpc(subject.toGrpc()));
 	}
 
 	@Test
@@ -125,11 +126,26 @@ class RichInstantTest {
 
 	@Test
 	void javaFactoryWorks() {
-		assertEquals(subject, RichInstant.fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
+		assertEquals(subject, fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
 	}
 
 	@Test
 	void javaViewWorks() {
 		assertEquals(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos()), subject.toJava());
+	}
+
+	@Test
+	void nullEqualsWorks() {
+		assertNotEquals(null, subject);
+	}
+
+	@Test
+	void emptyConstructor() {
+		RichInstant anotherSubject = new RichInstant();
+		assertEquals(0, anotherSubject.getNanos());
+		assertEquals(0, anotherSubject.getSeconds());
+		assertEquals(MISSING_INSTANT, anotherSubject);
+		assertEquals(MISSING_INSTANT, fromGrpc(Timestamp.getDefaultInstance()));
+		assertEquals(Timestamp.getDefaultInstance(), anotherSubject.toGrpc());
 	}
 }

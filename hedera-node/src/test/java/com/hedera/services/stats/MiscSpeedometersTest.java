@@ -21,8 +21,8 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.Platform;
-import com.swirlds.common.StatEntry;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatEntry;
+import com.swirlds.common.statistics.StatsSpeedometer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

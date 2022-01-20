@@ -48,7 +48,7 @@ public final class ConsensusOpsUsage {
 			final UsageAccumulator accumulator
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
-		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
+		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + submitMeta.numMsgBytes());
 		/* SubmitMessage receipts include a sequence number and running hash */
 		final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
 		accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);

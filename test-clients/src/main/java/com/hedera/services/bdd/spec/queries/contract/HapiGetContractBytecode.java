@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -42,6 +43,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
 	private final String contract;
 	private Optional<byte[]> expected = Optional.empty();
+	private Optional<Consumer<byte[]>> bytecodeObs = Optional.empty();
 	private Optional<String> saveResultToEntry = Optional.empty();
 	private boolean hasExpectations = false;
 
@@ -56,6 +58,11 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 
 	public HapiGetContractBytecode hasBytecode(byte[] c) {
 		expected = Optional.of(c);
+		return this;
+	}
+
+	public HapiGetContractBytecode exposingBytecodeTo(Consumer<byte[]> obs) {
+		bytecodeObs = Optional.of(obs);
 		return this;
 	}
 
@@ -77,7 +84,8 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (hasExpectations) {
-			Assertions.assertFalse(response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty bytecode!");
+			Assertions.assertFalse(response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty " +
+					"bytecode!");
 		}
 		expected.ifPresent(bytes -> Assertions.assertArrayEquals(
 				bytes,
@@ -90,9 +98,9 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 		Query query = getContractBytecodeQuery(spec, payment, false);
 		response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
 
-		if(saveResultToEntry.isPresent()) {
-			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractGetBytecodeResponse().getBytecode());
-		}
+		final var code = response.getContractGetBytecodeResponse().getBytecode();
+		saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, code));
+		bytecodeObs.ifPresent(obs -> obs.accept(code.toByteArray()));
 	}
 
 	@Override

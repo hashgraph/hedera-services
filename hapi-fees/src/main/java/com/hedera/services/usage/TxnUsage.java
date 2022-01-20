@@ -34,7 +34,7 @@ public abstract class TxnUsage {
 	protected static final int AMOUNT_REPR_BYTES = 8;
 
 	public static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
-	protected static UsageProperties usageProperties = USAGE_PROPERTIES;
+	protected static final UsageProperties usageProperties = USAGE_PROPERTIES;
 
 	protected final TransactionBody op;
 	protected final TxnUsageEstimator usageEstimator;

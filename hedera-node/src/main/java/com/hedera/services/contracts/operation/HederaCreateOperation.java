@@ -46,7 +46,7 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 
 	@Inject
 	public HederaCreateOperation(final GasCalculator gasCalculator) {
-		super(0xF0, "ħCREATE", 3, 1, false, 1, gasCalculator);
+		super(0xF0, "ħCREATE", 3, 1, 1, gasCalculator);
 		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
 	}
 

@@ -20,8 +20,8 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -31,19 +31,16 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -53,8 +50,6 @@ class EntityIdTest {
 	private static final long shard = 1L;
 	private static final long realm = 2L;
 	private static final long num = 3L;
-
-	private static final MerkleEntityId merkleId = new MerkleEntityId(shard, realm, num);
 
 	private static final FileID fileId = FileID.newBuilder()
 			.setShardNum(shard)
@@ -141,6 +136,13 @@ class EntityIdTest {
 	}
 
 	@Test
+	void settersWork() {
+		subject.setNum(123);
+
+		assertEquals(123, subject.num());
+	}
+
+	@Test
 	void identityCodeWorks() {
 		assertEquals((int) num, subject.identityCode());
 	}
@@ -160,6 +162,18 @@ class EntityIdTest {
 		assertEquals(subject, EntityId.fromGrpcFileId(fileId));
 		assertEquals(subject, EntityId.fromGrpcTokenId(tokenId));
 		assertEquals(subject, EntityId.fromGrpcScheduleId(scheduleId));
+	}
+
+	@Test
+	void idConstructorWorks() {
+		Id id = IdUtils.asModelId("1.2.3");
+
+		var subject = new EntityId(id);
+
+		assertEquals(id.shard(), subject.shard());
+		assertEquals(id.realm(), subject.realm());
+		assertEquals(id.num(), subject.num());
+		assertTrue(subject.matches(id));
 	}
 
 	@Test

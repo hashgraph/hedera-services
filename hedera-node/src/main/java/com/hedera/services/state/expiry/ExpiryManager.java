@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -63,13 +64,14 @@ public class ExpiryManager {
 	ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
 	the same expiry is that we round expiration times to a consensus second. */
 	private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator
-			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::getExpiry)
-			.thenComparingLong(ee -> ee.getId().getKey());
+			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::expiry)
+			.thenComparingLong(ee -> ee.id().getKey());
 
 	private final long shard;
 	private final long realm;
 
 	private final ScheduleStore scheduleStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
@@ -83,6 +85,7 @@ public class ExpiryManager {
 	public ExpiryManager(
 			final ScheduleStore scheduleStore,
 			final HederaNumbers hederaNums,
+			final SigImpactHistorian sigImpactHistorian,
 			final Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
@@ -91,6 +94,7 @@ public class ExpiryManager {
 		this.schedules = schedules;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
+		this.sigImpactHistorian = sigImpactHistorian;
 
 		this.shard = hederaNums.shard();
 		this.realm = hederaNums.realm();
@@ -199,7 +203,9 @@ public class ExpiryManager {
 	private void purgeExpiredShortLivedEntities(final long now) {
 		while (shortLivedEntityExpiries.hasExpiringAt(now)) {
 			final var current = shortLivedEntityExpiries.expireNextAt(now);
-			current.getValue().accept(entityWith(current.getKey()));
+			final var expiredNum = (long) current.getKey();
+			current.getValue().accept(entityWith(expiredNum));
+			sigImpactHistorian.markEntityChanged(expiredNum);
 		}
 	}
 

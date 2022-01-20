@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.commons.lang3.tuple.Pair;
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
@@ -153,6 +155,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						nftOwnersChangeAtomically(),
 						fractionalNetOfTransfersCaseStudy(),
 						royaltyAndFractionalTogetherCaseStudy(),
+						respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
 						/* HIP-23 */
 						happyPathAutoAssociationsWorkForBothTokenTypes(),
 						failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
@@ -596,6 +599,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
 						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
 						getAccountNftInfos(theAccount, 0, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN,
 												2, theAccount, copyFromUtf8("matter"))),
@@ -966,7 +970,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(A_TOKEN, 0),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 1),
-						getTokenInfo(A_TOKEN),
+						getTokenInfo(A_TOKEN)
+								.hasExpectedLedgerId("0x03"),
 						getTokenNftInfo(A_TOKEN, 1)
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
@@ -1014,15 +1019,18 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance("newTreasury")
 								.hasTokenBalance(B_TOKEN, 1),
 						getTokenNftInfo(A_TOKEN, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
 								.hasTokenID(A_TOKEN)
 								.hasAccountID("newTreasury"),
 						getTokenNftInfos(A_TOKEN, 0, 1)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo"))
 								).logged(),
 						getAccountNftInfos("newTreasury", 0, 2)
+								.hasExpectedLedgerId("0x03")
 								.hasNfts(
 										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo")),
 										newTokenNftInfo(B_TOKEN, 1, "newTreasury", copyFromUtf8("memo2"))
@@ -1650,6 +1658,49 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getTxnRecord(txnFromTreasury).logged(),
 						getTxnRecord(txnFromZephyr).logged()
+				);
+	}
+
+	public HapiApiSpec respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList() {
+		final var supplyKey = "misc";
+		final var nonfungible = "nonfungible";
+		final var civilian = "civilian";
+		final var beneficiary = "beneficiary";
+
+		return defaultHapiSpec("RespondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList")
+				.given(
+						cryptoCreate(civilian).maxAutomaticTokenAssociations(10),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(10),
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed(supplyKey),
+						tokenCreate(nonfungible)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(supplyKey)
+								.initialSupply(0L)
+								.withCustom(royaltyFeeWithFallback(
+										1, 2,
+										fixedHbarFeeInheritingRoyaltyCollector(100),
+										TOKEN_TREASURY))
+								.treasury(TOKEN_TREASURY),
+						mintToken(nonfungible, List.of(
+								copyFromUtf8("a"),
+								copyFromUtf8("aa"),
+								copyFromUtf8("aaa")
+						))
+				).when(
+						cryptoTransfer(
+								TokenMovement.movingUnique(nonfungible, 1L, 2L, 3L)
+										.between(TOKEN_TREASURY, civilian)
+						)
+								.signedBy(DEFAULT_PAYER, TOKEN_TREASURY, civilian)
+								.fee(ONE_HBAR)
+				).then(
+						cryptoTransfer(
+								moving(1, nonfungible).between(civilian, beneficiary)
+						)
+								.signedBy(DEFAULT_PAYER, civilian, beneficiary)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON)
 				);
 	}
 

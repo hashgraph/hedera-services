@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -28,11 +29,13 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.MerkleAccountScopedCheck;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -54,16 +57,17 @@ import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -77,10 +81,12 @@ class CryptoTransferTransitionLogicTest {
 	final private int maxTokenAdjusts = 10;
 	final private int maxOwnershipChanges = 15;
 	private final boolean areNftsEnabled = false;
+	private final boolean autoCreationEnabled = true;
 	private final int maxFeeNesting = 20;
 	private final int maxBalanceChanges = 20;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
+			areNftsEnabled, autoCreationEnabled);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -108,7 +114,8 @@ class CryptoTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks,
+				spanMapAccessor);
 	}
 
 	@Test
@@ -137,7 +144,10 @@ class CryptoTransferTransitionLogicTest {
 
 	@Test
 	void recomputesImpliedTransfersIfNotAvailableInSpan() {
-		final var a = asAccount("1.2.3");
+		final var a = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAlias(ByteString.copyFromUtf8("aaaa")).build();
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
 				validationProps, List.of(
@@ -241,6 +251,7 @@ class CryptoTransferTransitionLogicTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
 				pretendXferTxn.getCryptoTransfer().getTransfers(),
@@ -297,13 +308,13 @@ class CryptoTransferTransitionLogicTest {
 	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()
 			.setTransfers(TransferList.newBuilder()
 					.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
-					.addAccountAmounts(adjustFrom(asAccount("0.0.2"), +1_000))
+					.addAccountAmounts(adjustFrom(asAliasAccount(ByteString.copyFromUtf8("aaaa")), +1_000))
 					.build())
 			.addTokenTransfers(TokenTransferList.newBuilder()
 					.setToken(asToken("0.0.12345"))
 					.addAllTransfers(List.of(
 							adjustFrom(asAccount("0.0.2"), -1_000),
-							adjustFrom(asAccount("0.0.3"), +1_000)
+							adjustFrom(asAliasAccount(ByteString.copyFromUtf8("bbb")), +1_000)
 					)))
 			.build();
 

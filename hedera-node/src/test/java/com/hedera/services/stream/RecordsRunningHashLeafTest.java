@@ -35,9 +35,11 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,6 +72,26 @@ class RecordsRunningHashLeafTest {
 		CryptoFactory.getInstance().digestSync(copy, DigestType.SHA_384);
 		CryptoFactory.getInstance().digestSync(runningHashLeaf, DigestType.SHA_384);
 		assertEquals(runningHashLeaf.getHash(), copy.getHash());
+	}
+
+	@Test
+	void equalsTest() {
+		final var sameButDifferent = runningHashLeaf;
+		assertEquals(runningHashLeaf, sameButDifferent);
+		assertNotEquals(runningHashLeaf, new Object());
+	}
+
+	@Test
+	void toStringTest() {
+		var example = String.format("RecordsRunningHashLeaf's Hash: %s, Hash contained in the leaf: %s",
+				runningHashLeaf.getHash(),
+				runningHash.getHash());
+		assertEquals(example, runningHashLeaf.toString());
+	}
+
+	@Test
+	void hashCodeTest() {
+		assertEquals(Objects.hash(runningHash), runningHashLeaf.hashCode());
 	}
 
 	@Test

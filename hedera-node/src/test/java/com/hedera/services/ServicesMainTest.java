@@ -23,7 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.grpc.GrpcStarter;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -34,7 +34,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.txns.network.UpgradeActions;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
@@ -45,6 +44,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -113,6 +113,8 @@ class ServicesMainTest {
 	@Mock
 	private ReconnectCompleteListener reconnectListener;
 	@Mock
+	private StateWriteToDiskCompleteListener stateToDiskListener;
+	@Mock
 	private InvalidSignedStateListener issListener;
 	@Mock
 	private NotificationEngine notificationEngine;
@@ -125,13 +127,13 @@ class ServicesMainTest {
 	@Mock
 	private CurrentPlatformStatus currentPlatformStatus;
 	@Mock
-	private UpgradeActions upgradeActions;
-	@Mock
 	private RecordStreamManager recordStreamManager;
 	@Mock
 	private ServicesState signedState;
 	@Mock
 	private BalancesExporter balancesExporter;
+	@Mock
+	private StateAccessor latestSignedState;
 
 	private ServicesMain subject = new ServicesMain();
 
@@ -192,6 +194,7 @@ class ServicesMainTest {
 		verify(statsManager).initializeFor(platform);
 		verify(accountsExporter).toFile(accounts);
 		verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
+		verify(notificationEngine).register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
 		verify(grpcStarter).startIfAppropriate();
 	}
 
@@ -245,7 +248,6 @@ class ServicesMainTest {
 		withRunnableApp();
 		withChangeableApp();
 
-		given(app.upgradeActions()).willReturn(upgradeActions);
 		given(app.recordStreamManager()).willReturn(recordStreamManager);
 		// and:
 		subject.init(platform, nodeId);
@@ -255,7 +257,6 @@ class ServicesMainTest {
 
 		// then:
 		verify(currentPlatformStatus).set(MAINTENANCE);
-		verify(upgradeActions).externalizeFreeze();
 		verify(recordStreamManager).setInFreeze(true);
 	}
 
@@ -344,6 +345,7 @@ class ServicesMainTest {
 		given(app.issListener()).willReturn(issListener);
 		given(app.notificationEngine()).willReturn(() -> notificationEngine);
 		given(app.reconnectListener()).willReturn(reconnectListener);
+		given(app.stateWriteToDiskListener()).willReturn(stateToDiskListener);
 		given(app.statsManager()).willReturn(statsManager);
 		given(app.accountsExporter()).willReturn(accountsExporter);
 		given(app.grpcStarter()).willReturn(grpcStarter);

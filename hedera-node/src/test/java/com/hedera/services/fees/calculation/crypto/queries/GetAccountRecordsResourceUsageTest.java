@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -71,14 +71,14 @@ class GetAccountRecordsResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(MerkleMap.class);
 		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(), usageEstimator);
 	}

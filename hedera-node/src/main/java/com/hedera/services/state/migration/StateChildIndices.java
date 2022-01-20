@@ -21,7 +21,7 @@ package com.hedera.services.state.migration;
  */
 
 /**
- * Gives the Services 0.17.0 index order of Merkle node children.
+ * Gives the Services index order of Merkle node children.
  */
 public final class StateChildIndices {
 	public static final int UNIQUE_TOKENS = 0;
@@ -35,9 +35,10 @@ public final class StateChildIndices {
 	public static final int SCHEDULE_TXS = 8;
 	public static final int RECORD_STREAM_RUNNING_HASH = 9;
 	public static final int ADDRESS_BOOK = 10;
+	public static final int CONTRACT_STORAGE = 11;
 
-	public static final int NUM_PRE_0160_CHILDREN = 10;
-	public static final int NUM_POST_0160_CHILDREN = 11;
+	public static final int NUM_PRE_0220_CHILDREN = 11;
+	public static final int NUM_0220_CHILDREN = 12;
 
 	private StateChildIndices() {
 		throw new UnsupportedOperationException("Utility Class");

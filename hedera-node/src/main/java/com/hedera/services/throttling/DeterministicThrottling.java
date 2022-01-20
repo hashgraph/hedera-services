@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,10 +21,16 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -38,23 +44,42 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
+import static com.hedera.services.utils.MiscUtils.scheduledFunctionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+	private static final ThrottleReqOpsScaleFactor ONE_TO_ONE_SCALE = ThrottleReqOpsScaleFactor.from("1:1");
+
+	private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
+			"{} gas throttling enabled, but limited to 0 gas/sec";
 
 	private final IntSupplier capacitySplitSource;
+	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
+	private boolean consensusThrottled;
+	private boolean lastTxnWasGasThrottled;
+	private GasLimitDeterministicThrottle gasThrottle;
+
 	public DeterministicThrottling(
-			IntSupplier capacitySplitSource,
-			GlobalDynamicProperties dynamicProperties
+			final IntSupplier capacitySplitSource,
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties,
+			final boolean consensusThrottled
 	) {
 		this.capacitySplitSource = capacitySplitSource;
 		this.dynamicProperties = dynamicProperties;
+		this.consensusThrottled = consensusThrottled;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -63,26 +88,63 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
-		final var function = accessor.getFunction();
-		ThrottleReqsManager manager;
-		if ((manager = functionReqs.get(function)) == null) {
+	public boolean shouldThrottleTxn(final TxnAccessor accessor, final Instant now) {
+		lastTxnWasGasThrottled = false;
+
+		if (isGasExhausted(accessor, now)) {
+			lastTxnWasGasThrottled = true;
 			return true;
 		}
-		if (function == TokenMint) {
+
+		final var function = accessor.getFunction();
+		ThrottleReqsManager manager;
+
+		if ((manager = functionReqs.get(function)) == null) {
+			return true;
+		} else if (function == TokenMint) {
 			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
+		} else if (function == CryptoTransfer) {
+			if (dynamicProperties.isAutoCreationEnabled()) {
+				if (!accessor.areAutoCreationsCounted()) {
+					accessor.countAutoCreationsWith(aliasManager);
+				}
+				return shouldThrottleTransfer(manager, accessor.getNumAutoCreations(), now);
+			} else {
+				/* Since auto-creation is disabled, if this transfer does attempt one, it will
+				resolve to NOT_SUPPORTED right away; so we don't want to ask for capacity from the
+				CryptoCreate throttle bucket. */
+				return !manager.allReqsMetAt(now);
+			}
+		} else if (function == ScheduleCreate) {
+			final var scheduled = accessor.getTxn().getScheduleCreate().getScheduledTransactionBody();
+			return shouldThrottleScheduleCreate(manager, scheduled, now);
 		} else {
 			return !manager.allReqsMetAt(now);
 		}
 	}
 
 	@Override
-	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now) {
+	public boolean wasLastTxnGasThrottled() {
+		return lastTxnWasGasThrottled;
+	}
+
+	@Override
+	public void leakUnusedGasPreviouslyReserved(long value) {
+		gasThrottle.leakUnusedGasPreviouslyReserved(value);
+	}
+
+	@Override
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query) {
+		if (isGasThrottled(queryFunction) &&
+				dynamicProperties.shouldThrottleByGas() &&
+				(gasThrottle == null || !gasThrottle.allow(now, query.getContractCallLocal().getGas()))) {
+			return true;
+		}
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(queryFunction)) == null) {
 			return true;
@@ -130,8 +192,41 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		functionReqs = newFunctionReqs;
 		activeThrottles = newActiveThrottles;
-
 		logResolvedDefinitions();
+	}
+
+	@Override
+	public void applyGasConfig() {
+		long capacity;
+		if (consensusThrottled) {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.consensusThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Consensus");
+				return;
+			} else {
+				capacity = dynamicProperties.consensusThrottleGasLimit();
+			}
+		} else {
+			if (dynamicProperties.shouldThrottleByGas() && dynamicProperties.frontendThrottleGasLimit() == 0) {
+				log.warn(GAS_THROTTLE_AT_ZERO_WARNING_TPL, "Frontend");
+				return;
+			} else {
+				capacity = dynamicProperties.frontendThrottleGasLimit();
+			}
+		}
+		gasThrottle = new GasLimitDeterministicThrottle(capacity);
+		final var configDesc = "Resolved " +
+				(consensusThrottled ? "consensus" : "frontend") +
+				" gas throttle -\n  " +
+				gasThrottle.getCapacity() +
+				" gas/sec (throttling " +
+				(dynamicProperties.shouldThrottleByGas() ? "ON" : "OFF") +
+				")";
+		log.info(configDesc);
+	}
+
+	@Override
+	public GasLimitDeterministicThrottle gasLimitThrottle() {
+		return gasThrottle;
 	}
 
 	private void logResolvedDefinitions() {
@@ -149,8 +244,39 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		log.info(sb.toString().trim());
 	}
 
-	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
-		this.functionReqs = functionReqs;
+	private boolean shouldThrottleScheduleCreate(
+			final ThrottleReqsManager manager,
+			final SchedulableTransactionBody scheduled,
+			final Instant now
+	) {
+		final var scheduledFunction = scheduledFunctionOf(scheduled);
+		if (dynamicProperties.isAutoCreationEnabled() && scheduledFunction == CryptoTransfer) {
+			final var txn = scheduled.getCryptoTransfer();
+			if (usesAliases(txn)) {
+				final var resolver = new AliasResolver();
+				resolver.resolve(txn, aliasManager);
+				final var numAutoCreations = resolver.perceivedAutoCreations();
+				if (numAutoCreations > 0) {
+					return shouldThrottleAutoCreations(numAutoCreations, now);
+				}
+			}
+		}
+		return !manager.allReqsMetAt(now);
+	}
+
+	private boolean shouldThrottleTransfer(
+			final ThrottleReqsManager manager,
+			final int numAutoCreations,
+			final Instant now
+	) {
+		return (numAutoCreations == 0)
+				? !manager.allReqsMetAt(now)
+				: shouldThrottleAutoCreations(numAutoCreations, now);
+	}
+
+	private boolean shouldThrottleAutoCreations(final int n, final Instant now) {
+		final var manager = functionReqs.get(CryptoCreate);
+		return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE_SCALE);
 	}
 
 	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
@@ -160,5 +286,20 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		} else {
 			return !manager.allReqsMetAt(now, numNfts, dynamicProperties.nftMintScaleFactor());
 		}
+	}
+
+	private boolean isGasExhausted(final TxnAccessor accessor, final Instant now) {
+		return dynamicProperties.shouldThrottleByGas() &&
+				isGasThrottled(accessor.getFunction()) &&
+				(gasThrottle == null || !gasThrottle.allow(now, accessor.getGasLimitForContractTx()));
+	}
+
+	/* --- Only used by unit tests --- */
+	void setConsensusThrottled(boolean consensusThrottled) {
+		this.consensusThrottled = consensusThrottled;
+	}
+
+	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
+		this.functionReqs = functionReqs;
 	}
 }

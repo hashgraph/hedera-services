@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.test.utils.IdUtils.asModelId;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,6 +102,30 @@ class MerkleAccountTokensTest {
 		other.shareTokensOf(subject);
 
 		assertSame(subject.getRawIds(), other.getRawIds());
+	}
+
+	@Test
+	void associationsWorks() {
+		assertEquals(3, subject.numAssociations());
+		assertTrue(subject.includes(asToken("0.0.2")));
+	}
+
+	@Test
+	void associateDissociate() {
+		subject.associate(Set.of(asModelId("0.0.123")));
+
+		assertTrue(subject.includes(asToken("0.0.123")));
+
+		subject.dissociate(Set.of(asModelId("0.0.123")));
+
+		assertFalse(subject.includes(asToken("0.0.123")));
+	}
+
+	@Test
+	void nullEqualsWorks() {
+		final var sameButDifferent = subject;
+		assertNotEquals(null, subject);
+		assertEquals(subject, sameButDifferent);
 	}
 
 	@Test

@@ -48,6 +48,7 @@ public class KeyLabel {
 	public KeyLabel[] getConstituents() {
 		return constituents;
 	}
+
 	public String literally() {
 		return label;
 	}

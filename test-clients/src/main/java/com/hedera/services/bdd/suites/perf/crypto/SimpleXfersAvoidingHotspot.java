@@ -24,10 +24,12 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,19 +42,26 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
 
-	private static final int NUM_ACCOUNTS = 1_000;
+	private static final int NUM_ACCOUNTS = 10;
 
-	private AtomicLong duration = new AtomicLong(60);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
+	private AtomicLong duration = new AtomicLong(600);
+	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+	private AtomicInteger maxOpsPerSec = new AtomicInteger(700);
 
 	public static void main(String... args) {
 		new SimpleXfersAvoidingHotspot().runSuiteSync();
@@ -68,12 +77,14 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 	}
 
 	private HapiApiSpec runSimpleXfers() {
-		return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
-				.given().when().then(
-						runWithProvider(avoidantXfersFactory())
-								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
-				);
+		return HapiApiSpec.customHapiSpec("RunTokenTransfers").withProperties(Map.of(
+				"default.keyAlgorithm", "SECP256K1"
+//				"default.keyAlgorithm", "ED25519"
+		)).given().when().then(
+				runWithProvider(avoidantXfersFactory())
+						.lasting(duration::get, unit::get)
+						.maxOpsPerSec(maxOpsPerSec::get)
+		);
 	}
 
 	private Function<HapiApiSpec, OpProvider> avoidantXfersFactory() {
@@ -84,25 +95,47 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(inParallel(IntStream.range(0, NUM_ACCOUNTS)
-								.mapToObj(i -> cryptoCreate(nameFn.apply(i))
-										.balance(ONE_HUNDRED_HBARS * 1_000)
-										.key(GENESIS)
-										.deferStatusResolution())
+								.mapToObj(i -> uniqueCreation(nameFn.apply(i)))
 								.toArray(HapiSpecOperation[]::new)),
-						sleepFor(30_000L));
+						sleepFor(10_000L));
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				final int sender = nextSender.getAndUpdate(i -> (i + 1) % NUM_ACCOUNTS);
 				final int receiver = (sender + 1) % NUM_ACCOUNTS;
-				final var op = cryptoTransfer(tinyBarsFromTo(nameFn.apply(sender), nameFn.apply(receiver), 1))
+				final var from = nameFn.apply(sender);
+				final var to = nameFn.apply(receiver);
+				final var op = cryptoTransfer(tinyBarsFromTo(from, to, 1))
+						.payingWith(from)
+						.hasKnownStatusFrom(ACCEPTED_STATUSES)
 						.deferStatusResolution()
 						.noLogging();
 				return Optional.of(op);
 			}
 		};
 	}
+
+	private HapiSpecOperation uniqueCreation(final String name) {
+		return withOpContext((spec, opLog) -> {
+			while (true) {
+				try {
+					final var attempt = cryptoCreate(name)
+							.payingWith(GENESIS)
+							.ensuringResolvedStatusIsntFromDuplicate()
+							.balance(ONE_HUNDRED_HBARS * 10_000);
+					allRunFor(spec, attempt);
+					return;
+				} catch (IllegalStateException ignore) {
+					/* Collision with another client also using the treasury as its payer */
+				}
+			}
+		});
+	}
+
+	private static final ResponseCodeEnum[] ACCEPTED_STATUSES = {
+			SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED
+	};
 
 	@Override
 	protected Logger getResultsLogger() {

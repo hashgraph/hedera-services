@@ -22,39 +22,80 @@ package com.hedera.services.legacy.proto.utils;
 
 import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.Signature;
 import java.security.SignatureException;
+import java.security.interfaces.ECPrivateKey;
+
+import static com.swirlds.common.crypto.SignatureType.ECDSA_SECP256K1;
 
 public final class SignatureGenerator {
 	private SignatureGenerator() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
+	public static final Provider BOUNCYCASTLE_PROVIDER = new BouncyCastleProvider();
+
 	/**
 	 * Signs a message with a private key.
 	 *
-	 * @param msgBytes
+	 * @param msg
 	 * 		to be signed
 	 * @param privateKey
 	 * 		private key
 	 * @return signature in hex format
-	 * @throws InvalidKeyException
-	 * 		if the key is invalid
-	 * @throws SignatureException
-	 * 		if there is an error in the signature
+	 * @throws InvalidKeyException if the key is invalid
+	 * @throws SignatureException if there is an error in the signature
+	 * @throws NoSuchAlgorithmException if an expected signing algorithm is unavailable
 	 */
-	public static String signBytes(final byte[] msgBytes, final PrivateKey privateKey
-	) throws InvalidKeyException, SignatureException {
-		if (!(privateKey instanceof EdDSAPrivateKey)) {
-			throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
+	public static byte[] signBytes(
+			final byte[] msg,
+			final PrivateKey privateKey
+	) throws InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+		if (privateKey instanceof EdDSAPrivateKey) {
+			final var engine = new EdDSAEngine();
+			engine.initSign(privateKey);
+			return engine.signOneShot(msg);
+		} else if (privateKey instanceof ECPrivateKey) {
+			final Signature ecdsaSign = Signature.getInstance(ECDSA_SECP256K1.signingAlgorithm(), BOUNCYCASTLE_PROVIDER);
+			ecdsaSign.initSign(privateKey);
+			ecdsaSign.update(msg);
+			final var asn1Sig = ecdsaSign.sign();
+			return rawEcdsaSigFromAsn1Der(asn1Sig);
+		} else {
+			throw new IllegalArgumentException("Unusable private key " + privateKey);
 		}
-		final var engine = new EdDSAEngine();
-		engine.initSign(privateKey);
-		final var sigBytes = engine.signOneShot(msgBytes);
-
-		return com.swirlds.common.CommonUtils.hex(sigBytes);
 	}
 
+	private static byte[] rawEcdsaSigFromAsn1Der(final byte[] derSig) {
+		final var R_LEN_INDEX = 3;
+		final var rawBytes = new byte[64];
+
+		final var origRLen = derSig[R_LEN_INDEX] & 0xff;
+		int finalRLen = origRLen;
+		int rStart = R_LEN_INDEX + 1;
+		while (finalRLen > 32) {
+			rStart++;
+			finalRLen--;
+		}
+		System.arraycopy(derSig, rStart, rawBytes, 32 - finalRLen, Math.min(32, origRLen));
+
+		final var sLenPos = R_LEN_INDEX + (derSig[R_LEN_INDEX] & 0xff) + 2;
+
+		final var origSLen = derSig[sLenPos] & 0xff;
+		int finalSLen = origSLen;
+		int sStart = sLenPos + 1;
+		while (finalSLen > 32) {
+			sStart++;
+			finalSLen--;
+		}
+		System.arraycopy(derSig, sStart, rawBytes, 32 + (32 - finalSLen), Math.min(32, origSLen));
+
+		return rawBytes;
+	}
 }

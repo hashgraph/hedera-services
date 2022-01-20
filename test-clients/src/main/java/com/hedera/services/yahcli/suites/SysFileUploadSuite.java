@@ -22,7 +22,6 @@ package com.hedera.services.yahcli.suites;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import org.apache.logging.log4j.LogManager;
@@ -120,10 +119,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 						(appendOp, appendsLeft) -> appendOp
 								.alertingPre(COMMON_MESSAGES::appendBeginning)
 								.alertingPost(code -> COMMON_MESSAGES.appendEnding(code, appendsLeft))
-				),
-				QueryVerbs.getFileContents(fileId)
-						.payingWith(DEFAULT_PAYER)
-						.nodePayment(ONE_HBAR)
+				)
 		);
 	}
 

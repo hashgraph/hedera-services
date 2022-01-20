@@ -38,6 +38,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
@@ -93,7 +95,7 @@ class ZeroStakeAnswerFlowTest {
 	@Test
 	void throttlesIfAppropriate() {
 		given(service.canonicalFunction()).willReturn(function);
-		given(throttles.shouldThrottleQuery(function)).willReturn(true);
+		given(throttles.shouldThrottleQuery(eq(function), any())).willReturn(true);
 		given(service.responseGiven(query, view, BUSY)).willReturn(response);
 
 		// when:
@@ -101,7 +103,7 @@ class ZeroStakeAnswerFlowTest {
 
 		// then:
 		assertEquals(response, actual);
-		verify(throttles).shouldThrottleQuery(function);
+		verify(throttles).shouldThrottleQuery(eq(function), any());
 	}
 
 	@Test
@@ -109,7 +111,7 @@ class ZeroStakeAnswerFlowTest {
 		given(service.canonicalFunction()).willReturn(CryptoGetStakers);
 		given(queryHeaderValidity.checkHeader(query)).willReturn(OK);
 		given(service.checkValidity(query, view)).willReturn(OK);
-		given(throttles.shouldThrottleQuery(CryptoGetStakers)).willReturn(false);
+		given(throttles.shouldThrottleQuery(eq(CryptoGetStakers), any())).willReturn(false);
 		// and:
 		given(service.responseGiven(query, view, OK)).willReturn(response);
 

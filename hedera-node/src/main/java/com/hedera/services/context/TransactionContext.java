@@ -24,7 +24,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -32,8 +31,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
@@ -117,12 +114,12 @@ public interface TransactionContext {
 	ResponseCodeEnum status();
 
 	/**
-	 * Constructs and gets a {@link ExpirableTxnRecord} which captures the history
+	 * Constructs and gets a {@link ExpirableTxnRecord.Builder} which captures the history
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
 	 */
-	ExpirableTxnRecord recordSoFar();
+	ExpirableTxnRecord.Builder recordSoFar();
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}
@@ -166,13 +163,6 @@ public interface TransactionContext {
 	 * @param id the created topic.
 	 */
 	void setCreated(TopicID id);
-
-	/**
-	 * Record that the current transaction created a token.
-	 *
-	 * @param id the created token.
-	 */
-	void setCreated(TokenID id);
 
 	/**
 	 * Record that the current transaction created a scheduled transaction.
@@ -227,12 +217,6 @@ public interface TransactionContext {
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
 
 	/**
-	 * Set this token's new total supply for mint/burn/wipe transaction
-	 * @param newTotalTokenSupply new total supply of the token.
-	 */
-	void setNewTotalSupply(long newTotalTokenSupply);
-
-	/**
 	 * Sets a triggered TxnAccessor for execution
 	 * @param accessor the accessor which will be triggered
 	 */
@@ -258,19 +242,6 @@ public interface TransactionContext {
 	List<ExpiringEntity> expiringEntities();
 
 	/**
-	 * Set the token transfers that occurred as a result of the active transaction.
-	 *
-	 * @param tokenTransfers the token transfers to record
-	 */
-	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
-
-	/**
-	 * Update the serial numbers after minting unique tokens
-	 * @param serialNumbers - the serial numbers used in the mint op
-	 */
-	void setCreated(List<Long> serialNumbers);
-
-	/**
 	 * Set the assessed custom fees as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
 	 *
 	 * @param assessedCustomFees the assessed custom fees
@@ -278,9 +249,14 @@ public interface TransactionContext {
 	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
 
 	/**
-	 * Set the newly created token associations as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
-	 *
-	 * @param newTokenAssociations the newly created token associations
+	 * Verifies if the transaction context for the currently executing transaction has a contract result
+	 * @return true if there is a ContractCall or ContractCreate result attached to the context
 	 */
-	void setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations);
+	boolean hasContractResult();
+
+	/**
+	 * Extracts the amount of gas used by the currently executing transaction.
+	 * @return long - the amount of gas used for the TX execution
+	 */
+	long getGasUsedForContractTxn();
 }

@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -90,6 +91,7 @@ class CryptoCreateTransitionLogicTest {
 	private HederaLedger ledger;
 	private OptionValidator validator;
 	private TransactionBody cryptoCreateTxn;
+	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
@@ -102,11 +104,12 @@ class CryptoCreateTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
-		subject = new CryptoCreateTransitionLogic(ledger, validator, txnCtx, dynamicProperties);
+		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -210,6 +213,7 @@ class CryptoCreateTransitionLogicTest {
 		verify(ledger).create(argThat(PAYER::equals), longThat(BALANCE::equals), captor.capture());
 		verify(txnCtx).setCreated(CREATED);
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
 		final var changes = captor.getValue().getChanges();
 		assertEquals(7, changes.size());

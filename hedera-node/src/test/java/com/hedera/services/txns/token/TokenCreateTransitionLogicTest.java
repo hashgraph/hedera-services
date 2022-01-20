@@ -21,12 +21,15 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -47,7 +50,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
@@ -78,7 +80,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class TokenCreateTransitionLogicTest {
 	private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -86,13 +87,15 @@ class TokenCreateTransitionLogicTest {
 	private final Instant now = Instant.ofEpochSecond(thisSecond);
 	private final int decimals = 2;
 	private final long initialSupply = 1_000_000L;
+	private final Id createdId = new Id(0, 0, 777);
 	private final AccountID payer = IdUtils.asAccount("1.2.3");
 	private final AccountID treasury = IdUtils.asAccount("1.2.4");
 	private final AccountID renewAccount = IdUtils.asAccount("1.2.5");
-	private final Timestamp expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 
 	private TransactionBody tokenCreateTxn;
 
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private Creation creation;
 	@Mock
@@ -111,18 +114,22 @@ class TokenCreateTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private Creation.CreationFactory creationFactory;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TokenCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore, txnCtx, dynamicProperties, ids);
+				validator, tokenStore, accountStore,
+				txnCtx, dynamicProperties, ids, sigImpactHistorian, sideEffectsTracker);
 	}
 
 	@Test
 	void stateTransitionWorks() {
-		final List<FcTokenAssociation> mockAssociations = new ArrayList<>();
+		final List<FcTokenAssociation> mockAssociations = List.of(
+				new FcTokenAssociation(1L, 2L));
 		givenValidTxnCtx();
 		subject.setCreationFactory(creationFactory);
 
@@ -136,13 +143,15 @@ class TokenCreateTransitionLogicTest {
 				dynamicProperties,
 				tokenCreateTxn.getTokenCreation())).willReturn(creation);
 		given(creation.newAssociations()).willReturn(mockAssociations);
+		given(creation.newTokenId()).willReturn(createdId);
 
 		subject.doStateTransition();
 
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
-		verify(txnCtx).setNewTokenAssociations(mockAssociations);
+		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
+		verify(sigImpactHistorian).markEntityChanged(createdId.num());
 	}
 
 	@Test
@@ -367,29 +376,13 @@ class TokenCreateTransitionLogicTest {
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-
-		verify(ids).reclaimProvisionalIds();
-	}
-
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-
-		verify(ids).resetProvisionalIds();
-	}
-
 	private void givenInvalidSupplyTypeAndSupply() {
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setSupplyType(TokenSupplyType.INFINITE)
 						.setInitialSupply(0)
 						.setMaxSupply(1)
-						.build()
-				);
-
+						.build());
 
 		tokenCreateTxn = builder.build();
 	}
@@ -431,13 +424,6 @@ class TokenCreateTransitionLogicTest {
 			builder.getTokenCreationBuilder().setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey());
 		}
 		tokenCreateTxn = builder.build();
-	}
-
-	private void givenAvailTxn() {
-		given(accessor.getTxn()).willReturn(tokenCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(now);
-		given(validator.isValidExpiry(expiry)).willReturn(true);
 	}
 
 	private void givenInvalidInitialSupply() {

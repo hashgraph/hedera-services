@@ -26,17 +26,20 @@ import com.hederahashgraph.api.proto.java.ContractID;
  * Maps to proto Key of type contractID.
  */
 public class JContractIDKey extends JKey {
+	private final long shardNum;
+	private final long realmNum;
+	private final long contractNum;
 
-	private static final long serialVersionUID = 1L;
-	private long shardNum = 0; // the shard number (nonnegative)
-	private long realmNum = 0; // the realm number (nonnegative)
-	private long contractNum = 0; // a nonnegative number unique within its realm
-
-	public JContractIDKey(ContractID contractID) {
-		super();
+	public JContractIDKey(final ContractID contractID) {
 		this.shardNum = contractID.getShardNum();
 		this.realmNum = contractID.getRealmNum();
 		this.contractNum = contractID.getContractNum();
+	}
+
+	public JContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
+		this.shardNum = shardNum;
+		this.realmNum = realmNum;
+		this.contractNum = contractNum;
 	}
 
 	public JContractIDKey getContractIDKey() {
@@ -48,15 +51,11 @@ public class JContractIDKey extends JKey {
 	}
 
 	public ContractID getContractID() {
-		return ContractID.newBuilder().setShardNum(shardNum).setRealmNum(realmNum)
-				.setContractNum(contractNum).build();
-	}
-
-	public JContractIDKey(long shardNum, long realmNum, long contractNum) {
-		super();
-		this.shardNum = shardNum;
-		this.realmNum = realmNum;
-		this.contractNum = contractNum;
+		return ContractID.newBuilder()
+				.setShardNum(shardNum)
+				.setRealmNum(realmNum)
+				.setContractNum(contractNum)
+				.build();
 	}
 
 	public long getShardNum() {

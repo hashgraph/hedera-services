@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,20 +20,32 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
+import com.hedera.services.state.merkle.internals.FilePart;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.fcqueue.FCQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
  * A key-value store with {@link FileID} keys and {@code byte[]} values. Used to accumulate
@@ -45,87 +57,30 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
  * updates that map with a completely new {@code byte[]}.
  */
 public class MerkleSpecialFiles extends AbstractMerkleLeaf {
+	private static final Logger log = LogManager.getLogger(MerkleSpecialFiles.class);
+
+	private static final byte[] NO_CONTENTS = new byte[0];
+
 	public static final long CLASS_ID = 0x1608d4b49c28983aL;
-	public static final int CURRENT_VERSION = 1;
+	public static final int MEMCOPY_VERSION = 1;
+	public static final int CURRENT_VERSION = 2;
 
 	private final Map<FileID, byte[]> hashCache;
-	private final Map<FileID, byte[]> fileContents;
+	private final Map<FileID, FCQueue<FilePart>> fileContents;
+
+	private static Supplier<ByteArrayOutputStream> baosSupplier = ByteArrayOutputStream::new;
 
 	public MerkleSpecialFiles() {
-		this.hashCache = new HashMap<>();
+		this.hashCache = new LinkedHashMap<>();
 		this.fileContents = new LinkedHashMap<>();
 	}
 
 	public MerkleSpecialFiles(MerkleSpecialFiles that) {
 		hashCache = new HashMap<>(that.hashCache);
-		fileContents = new LinkedHashMap<>(that.fileContents);
-	}
-
-	/**
-	 * Checks if the current contents of the given file match the given SHA-384 hash.
-	 *
-	 * @param fid the id of the file to check
-	 * @param sha384Hash the candidate hash
-	 * @return if the given file's contents match the given hash
-	 */
-	public synchronized boolean hashMatches(FileID fid, byte[] sha384Hash) {
-		if (!fileContents.containsKey(fid)) {
-			return false;
+		fileContents = new LinkedHashMap<>();
+		for (final var entry : that.getFileContents().entrySet()) {
+			fileContents.put(entry.getKey(), entry.getValue().copy());
 		}
-		return Arrays.equals(sha384Hash, hashOfKnown(fid));
-	}
-
-	/**
-	 * Gets the contents of the given file.
-	 *
-	 * @param fid the id of the file to get
-	 * @return the file's contents
-	 */
-	public synchronized byte[] get(FileID fid) {
-		return fileContents.get(fid);
-	}
-
-	/**
-	 * Checks if the given file exists.
-	 *
-	 * @param fid the id of a file to check existence of
-	 * @return if the file exixts
-	 */
-	public synchronized boolean contains(FileID fid) {
-		return fileContents.containsKey(fid);
-	}
-
-	/**
-	 * Appends the given bytes to the contents of the requested file. (Or, if the file
-	 * does not yet exist, creates it with the given contents.)
-	 *
-	 * @param fid the id of the file to append to
-	 * @param extraContents the contents to append
-	 */
-	public synchronized void append(FileID fid, byte[] extraContents) {
-		throwIfImmutable();
-		final var oldContents = fileContents.get(fid);
-		if (oldContents == null) {
-			update(fid, extraContents);
-			return;
-		}
-		final var newLen = oldContents.length + extraContents.length;
-		final var newContents = Arrays.copyOf(oldContents, newLen);
-		System.arraycopy(extraContents, 0, newContents, oldContents.length, extraContents.length);
-		fileContents.put(fid, newContents);
-		hashCache.remove(fid);
-	}
-
-	/**
-	 * Sets the contents of the requested file to the given bytes.
-	 *
-	 * @param fid the id of the file to set contents of
-	 * @param newContents the new contents
-	 */
-	public synchronized void update(FileID fid, byte[] newContents) {
-		throwIfImmutable();
-		fileContents.put(fid, newContents);
-		hashCache.remove(fid);
 	}
 
 	/**
@@ -138,15 +93,105 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	}
 
 	/**
+	 * Checks if the current contents of the given file match the given SHA-384 hash.
+	 *
+	 * @param fid
+	 * 		the id of the file to check
+	 * @param sha384Hash
+	 * 		the candidate hash
+	 * @return if the given file's contents match the given hash
+	 */
+	public synchronized boolean hashMatches(final FileID fid, final byte[] sha384Hash) {
+		if (!fileContents.containsKey(fid)) {
+			return false;
+		}
+		return Arrays.equals(sha384Hash, hashOfKnown(fid));
+	}
+
+	/**
+	 * Gets the contents of the given file.
+	 *
+	 * @param fid
+	 * 		the id of the file to get
+	 * @return the file's contents
+	 */
+	public synchronized byte[] get(FileID fid) {
+		final var fileByParts = fileContents.get(fid);
+		if (fileByParts == null) {
+			return NO_CONTENTS;
+		}
+		final var baos = baosSupplier.get();
+		for (final FilePart part : fileByParts) {
+			try {
+				baos.write(part.getData());
+			} catch (IOException e) {
+				log.error("Special file concatenation failed for {}", readableId(fid), e);
+				throw new UncheckedIOException(e);
+			}
+		}
+		return baos.toByteArray();
+	}
+
+	/**
+	 * Checks if the given file exists.
+	 *
+	 * @param fid
+	 * 		the id of a file to check existence of
+	 * @return if the file exixts
+	 */
+	public synchronized boolean contains(FileID fid) {
+		return fileContents.containsKey(fid);
+	}
+
+	/**
+	 * Appends the given bytes to the contents of the requested file. (Or, if the file
+	 * does not yet exist, creates it with the given contents.)
+	 *
+	 * @param fid
+	 * 		the id of the file to append to
+	 * @param extraContents
+	 * 		the contents to append
+	 */
+	public synchronized void append(FileID fid, byte[] extraContents) {
+		throwIfImmutable();
+		final var fileByParts = fileContents.get(fid);
+		if (fileByParts == null) {
+			update(fid, extraContents);
+			return;
+		}
+		fileByParts.add(new FilePart(extraContents));
+		hashCache.remove(fid);
+	}
+
+	/**
+	 * Sets the contents of the requested file to the given bytes.
+	 *
+	 * @param fid
+	 * 		the id of the file to set contents of
+	 * @param newContents
+	 * 		the new contents
+	 */
+	public synchronized void update(FileID fid, byte[] newContents) {
+		throwIfImmutable();
+		fileContents.put(fid, newFcqWith(newContents));
+		hashCache.remove(fid);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public synchronized void deserialize(SerializableDataInputStream in, int i) throws IOException {
+	public synchronized void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		var numFiles = in.readInt();
 		while (numFiles-- > 0) {
 			final var fidNum = in.readLong();
-			final var contents = in.readByteArray(Integer.MAX_VALUE);
-			fileContents.put(STATIC_PROPERTIES.scopedFileWith(fidNum), contents);
+			if (version == MEMCOPY_VERSION) {
+				final var contents = in.readByteArray(Integer.MAX_VALUE);
+				fileContents.put(STATIC_PROPERTIES.scopedFileWith(fidNum), newFcqWith(contents));
+			} else {
+				final FCQueue<FilePart> fileByParts = in.readSerializable();
+				fileContents.put(STATIC_PROPERTIES.scopedFileWith(fidNum), fileByParts);
+			}
 		}
 	}
 
@@ -154,13 +199,11 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public synchronized void serialize(SerializableDataOutputStream out) throws IOException {
+	public synchronized void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeInt(fileContents.size());
 		for (final var entry : fileContents.entrySet()) {
-			final var fid = entry.getKey();
-			final var contents = entry.getValue();
-			out.writeLong(fid.getFileNum());
-			out.writeByteArray(contents);
+			out.writeLong(entry.getKey().getFileNum());
+			out.writeSerializable(entry.getValue(), true);
 		}
 	}
 
@@ -180,17 +223,42 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 		return CURRENT_VERSION;
 	}
 
+	@Override
+	public Hash getHash() {
+		final var baos = baosSupplier.get();
+		for (final var entry : fileContents.entrySet()) {
+			try {
+				baos.write(Longs.toByteArray(entry.getKey().getFileNum()));
+				baos.write(entry.getValue().getHash().getValue());
+			} catch (IOException e) {
+				log.error("Hash concatenation failed", e);
+				throw new UncheckedIOException(e);
+			}
+		}
+		return new Hash(noThrowSha384HashOf(baos.toByteArray()), DigestType.SHA_384);
+	}
+
 	private byte[] hashOfKnown(FileID fid) {
 		return hashCache.computeIfAbsent(fid, missingFid ->
-				CryptoFactory.getInstance().digestSync(fileContents.get(missingFid)).getValue());
+				CryptoFactory.getInstance().digestSync(get(missingFid)).getValue());
+	}
+
+	private FCQueue<FilePart> newFcqWith(byte[] initialContents) {
+		final var fileByParts = new FCQueue<FilePart>();
+		fileByParts.add(new FilePart(initialContents));
+		return fileByParts;
 	}
 
 	/* --- Only used by unit tests --- */
-	Map<FileID, byte[]> getHashCache() {
+	Map<FileID, FCQueue<FilePart>> getFileContents() {
+		return fileContents;
+	}
+
+	public Map<FileID, byte[]> getHashCache() {
 		return hashCache;
 	}
 
-	Map<FileID, byte[]> getFileContents() {
-		return fileContents;
+	static void setBaosSupplier(Supplier<ByteArrayOutputStream> baosSupplier) {
+		MerkleSpecialFiles.baosSupplier = baosSupplier;
 	}
 }

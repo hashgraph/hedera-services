@@ -66,6 +66,19 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
+	void gettersTest() {
+		final var subject = new MerkleEntityId();
+
+		subject.setShard(1);
+		subject.setRealm(2);
+		subject.setNum(3);
+
+		assertEquals(1, subject.getShard());
+		assertEquals(2, subject.getRealm());
+		assertEquals(3, subject.getNum());
+	}
+
+	@Test
 	void merkleMethodsWork() {
 		assertEquals(MerkleEntityId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleEntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());

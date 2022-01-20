@@ -21,6 +21,7 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -46,14 +47,17 @@ public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	@Inject
 	public ScheduleDeleteTransitionLogic(
 			final ScheduleStore store,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.store = store;
 		this.txnCtx = txnCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -67,7 +71,11 @@ public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
-		final var outcome = store.deleteAt(op.getScheduleID(), consensusTime);
+		final var target = op.getScheduleID();
+		final var outcome = store.deleteAt(target, consensusTime);
+		if (outcome == OK) {
+			sigImpactHistorian.markEntityChanged(target.getScheduleNum());
+		}
 		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 	}
 

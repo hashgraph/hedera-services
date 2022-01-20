@@ -9,46 +9,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
  * 
  *      http://www.apache.org/licenses/LICENSE-2.0
  * 
@@ -61,9 +21,8 @@ package com.hedera.services.bdd.suites.perf.contract;
  */
 
 import com.google.common.io.Files;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -93,7 +52,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.swirlds.common.CommonUtils.hex;
-import static java.lang.System.arraycopy;
 
 public class ContractPerformanceSuite extends HapiApiSuite {
 	private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
@@ -198,7 +156,6 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 									getExecTime(via)
 											.payingWith(GENESIS)
 											.logged()
-											// this is very high because of EthereumJ
 											.assertingNoneLongerThan(20, ChronoUnit.SECONDS),
 									getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
 									getTxnRecord(via).hasPriority(
@@ -213,17 +170,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 	}
 
 	public static String asSolidityAddress(final ContractID id) {
-		return hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum()));
-	}
-
-	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-		final byte[] solidityAddress = new byte[20];
-
-		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
-
-		return solidityAddress;
+		return hex(HapiPropertySource.asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum()));
 	}
 
 }

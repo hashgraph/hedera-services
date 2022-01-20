@@ -25,7 +25,6 @@ import com.hedera.services.ServicesState;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
-import com.swirlds.common.merkle.io.MerkleTreeSerializationOptions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,8 +32,10 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.util.List;
 import java.util.function.Function;
 
@@ -42,10 +43,28 @@ import java.util.function.Function;
 public class FcmDump {
 	private static final Logger log = LogManager.getLogger(FcmDump.class);
 
-	private static final MerkleTreeSerializationOptions serOptions =
-			MerkleTreeSerializationOptions.defaults().setAbbreviated(true);
 	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
 	static final String DUMP_IO_WARNING = "Couldn't dump %s FCM!";
+
+	@FunctionalInterface
+	interface DirectoryCreation {
+		Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException;
+	}
+
+	private DirectoryCreation directoryCreation = Files::createDirectories;
+
+	private Function<String, MerkleDataOutputStream> merkleOutFn = dumpLoc -> {
+		try {
+			directoryCreation.createDirectories(Path.of(dumpLoc).getParent());
+			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc))).setExternal(true);
+		} catch (IOException e) {
+			/* State dumps cannot be safely enabled in production, so if we get here it will
+			be in a dev environment where we can fix the location and re-run the test. */
+			log.error("Unable to use suggested dump location {}, please fix", dumpLoc, e);
+			throw new UncheckedIOException(e);
+		}
+	};
+
 
 	@Inject
 	public FcmDump() {
@@ -58,16 +77,6 @@ public class FcmDump {
 			Pair.of("tokens", ServicesState::tokens),
 			Pair.of("tokenAssociations", ServicesState::tokenAssociations),
 			Pair.of("scheduleTxs", ServicesState::scheduleTxs));
-
-	static Function<String, MerkleDataOutputStream> merkleOutFn = dumpLoc -> {
-		try {
-			Files.createDirectories(Path.of(dumpLoc).getParent());
-			return new MerkleDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)), serOptions);
-		} catch (Exception e) {
-			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
-			return new MerkleDataOutputStream(System.out, true);
-		}
-	};
 
 	public void dumpFrom(ServicesState state, NodeId self, long round) {
 		for (var fcmMeta : fcmFuncs) {
@@ -83,5 +92,18 @@ public class FcmDump {
 		} catch (IOException e) {
 			log.warn(String.format(DUMP_IO_WARNING, name));
 		}
+	}
+
+	/* --- Only used by unit tests --- */
+	void setMerkleOutFn(final Function<String, MerkleDataOutputStream> merkleOutFn) {
+		this.merkleOutFn = merkleOutFn;
+	}
+
+	Function<String, MerkleDataOutputStream> getMerkleOutFn() {
+		return merkleOutFn;
+	}
+
+	void setDirectoryCreation(final DirectoryCreation directoryCreation) {
+		this.directoryCreation = directoryCreation;
 	}
 }

@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.freeze;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFilePath;
 
@@ -65,8 +67,11 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
 						sourcing(
 								() -> {
 									try {
-										return UtilVerbs.updateLargeFile(GENESIS, upgradeFileId(),
-												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))));
+										return UtilVerbs.updateSpecialFile(GENESIS,
+												upgradeFileId(),
+												ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
+												TxnUtils.BYTES_4K,
+												upgradeFileAppendsPerBurst());
 									} catch (IOException e) {
 										e.printStackTrace();
 										return null;

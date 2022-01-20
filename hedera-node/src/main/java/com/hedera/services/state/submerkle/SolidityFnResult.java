@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class SolidityFnResult implements SelfSerializable {
@@ -193,8 +192,8 @@ public class SolidityFnResult implements SelfSerializable {
 				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
-				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).collect(toList()),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()));
+				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
+				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList());
 	}
 
 	public ContractFunctionResult toGrpc() {
@@ -209,10 +208,10 @@ public class SolidityFnResult implements SelfSerializable {
 			grpc.setContractID(contractId.toGrpcContractId());
 		}
 		if (isNotEmpty(logs)) {
-			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()));
+			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).toList());
 		}
 		if (isNotEmpty(createdContractIds)) {
-			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()));
+			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
 		return grpc.build();
 	}

@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -111,7 +112,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						// be inconsistent. The freeze shouldn't cause normal perf test any issue.
 						freezeOnly().payingWith(GENESIS)
 								.startingIn(30).seconds()
-								.hasKnownStatusFrom(SUCCESS, UNKNOWN)
+								.hasKnownStatusFrom(SUCCESS, UNKNOWN, FREEZE_ALREADY_SCHEDULED)
 								.hasAnyPrecheck(),
 						sleepFor(60_000)
 				);

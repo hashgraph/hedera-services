@@ -22,11 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,7 +31,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -49,26 +44,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 @Singleton
 public class TokenBurnTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
-	private final AccountStore accountStore;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final BurnLogic burnLogic;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public TokenBurnTransitionLogic(
 			OptionValidator validator,
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			BurnLogic burnLogic
 	) {
 		this.validator = validator;
-		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
-		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.burnLogic = burnLogic;
 	}
 
 	@Override
@@ -77,26 +69,10 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		final var op = txnCtx.accessor().getTxn().getTokenBurn();
 		final var grpcId = op.getToken();
 		final var targetId = Id.fromGrpcToken(grpcId);
+		final var amount = op.getAmount();
+		final var serialNumbersList = op.getSerialNumbersList();
 
-		/* --- Load the model objects --- */
-		final var token = tokenStore.loadToken(targetId);
-		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
-		final var ownershipTracker = new OwnershipTracker();
-
-		/* --- Do the business logic --- */
-		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-			token.burn(treasuryRel, op.getAmount());
-		} else {
-			final var burnList = op.getSerialNumbersList();
-			tokenStore.loadUniqueTokens(token, burnList);
-			token.burn(ownershipTracker, treasuryRel, burnList);
-		}
-
-		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(treasuryRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(token.getTreasury());
+		burnLogic.burn(targetId, amount, serialNumbersList);
 	}
 
 	@Override

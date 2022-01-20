@@ -20,7 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
@@ -94,14 +94,14 @@ class AnswerFunctionsTest {
 		accounts = mock(MerkleMap.class);
 		given(accounts.get(EntityNum.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
 		nodeProps = mock(NodeLocalProperties.class);
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		recordCache = mock(RecordCache.class);
 

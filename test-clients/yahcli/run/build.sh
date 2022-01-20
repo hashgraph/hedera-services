@@ -1,5 +1,5 @@
 #! /bin/sh
-TAG=${1:-'0.1.6'}
+TAG=${1:-'0.1.8'}
 
 cd ..
 mvn clean compile assembly:single@yahcli-jar

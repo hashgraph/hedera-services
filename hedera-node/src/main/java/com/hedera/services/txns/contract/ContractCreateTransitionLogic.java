@@ -21,20 +21,21 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,50 +50,55 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 
 public class ContractCreateTransitionLogic implements TransitionLogic {
 	private static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
 
 	private final HederaFs hfs;
-	private final EntityIdSource ids;
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final HederaWorldState worldState;
+	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final HederaLedger hederaLedger;
+	private final GlobalDynamicProperties properties;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public ContractCreateTransitionLogic(
-			HederaFs hfs,
-			EntityIdSource ids,
-			TransactionContext txnCtx,
-			AccountStore accountStore,
-			OptionValidator validator,
-			HederaWorldState worldState,
-			TransactionRecordService recordService,
-			CreateEvmTxProcessor evmTxProcessor,
-			HederaLedger hederaLedger
+			final HederaFs hfs,
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final OptionValidator validator,
+			final HederaWorldState worldState,
+			final TransactionRecordService recordService,
+			final CreateEvmTxProcessor evmTxProcessor,
+			final HederaLedger hederaLedger,
+			final GlobalDynamicProperties properties,
+			final SigImpactHistorian sigImpactHistorian
 	) {
-		this.ids = ids;
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.evmTxProcessor = evmTxProcessor;
 		this.hederaLedger = hederaLedger;
+		this.properties = properties;
 	}
 
 	@Override
@@ -120,16 +126,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
 				txnCtx.consensusTime(),
-				expiry
-		);
+				expiry);
 
 		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persist();
+		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
 		if (result.isSuccessful()) {
 			/* --- Create customizer for the newly created contract --- */
-			final var account = accountParsedFromSolidityAddress(newContractAddress.toArray());
+			final var account = accountParsedFromSolidityAddress(newContractAddress);
 			if (key == STANDIN_CONTRACT_ID_KEY) {
 				key = new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 			}
@@ -148,22 +153,17 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		worldState.customizeSponsoredAccounts();
 
 		/* --- Externalise changes --- */
+		for (final var createdContract : createdContracts) {
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+		}
 		if (result.isSuccessful()) {
-			txnCtx.setCreated(EntityIdUtils.contractParsedFromSolidityAddress(newContractAddress.toArray()));
+			final var newContractId = contractParsedFromSolidityAddress(newContractAddress.toArray());
+			sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
+			txnCtx.setCreated(newContractId);
 		}
 		recordService.externaliseEvmCreateTransaction(result);
 	}
 
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
-	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
@@ -190,7 +190,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (op.getInitialBalance() < 0) {
 			return CONTRACT_NEGATIVE_VALUE;
 		}
-
+		if (op.getGas() > properties.maxGas()) {
+			return MAX_GAS_LIMIT_EXCEEDED;
+		}
 		return validator.memoCheck(op.getMemo());
 	}
 

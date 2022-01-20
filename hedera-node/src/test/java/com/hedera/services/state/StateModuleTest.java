@@ -20,6 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -58,6 +59,8 @@ class StateModuleTest {
 	private LegacyEd25519KeyReader b64KeyReader;
 	@Mock
 	private PropertySource properties;
+	@Mock
+	private NetworkInfo networkInfo;
 
 	@Test
 	void providesDefaultCharset() {
@@ -81,7 +84,7 @@ class StateModuleTest {
 	void viewUsesWorkingStateChildren() {
 		// given:
 		final var viewFactory =
-				provideStateViews(tokenStore, scheduleStore, nodeLocalProperties, uniqTokenViewFactory, workingState);
+				provideStateViews(tokenStore, scheduleStore, uniqTokenViewFactory, workingState, networkInfo);
 
 		// when:
 		viewFactory.get();

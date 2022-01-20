@@ -20,17 +20,20 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +46,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,37 +72,39 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
+	private final String accountIdLit = "0.0.12345";
+	private final AccountID target = asAccount(accountIdLit);
+	private final String contractIdLit = "0.0.12346";
+	private final long balance = 1_234L;
+	private final long aBalance = 345;
+	private final long bBalance = 456;
+	private final long cBalance = 567;
+	private final long dBalance = 678;
+	private final TokenID aToken = IdUtils.asToken("0.0.3");
+	private final TokenID bToken = IdUtils.asToken("0.0.4");
+	private final TokenID cToken = IdUtils.asToken("0.0.5");
+	private final TokenID dToken = IdUtils.asToken("0.0.6");
+
+	private MerkleToken notDeleted, deleted;
+	private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
+			.balance(balance)
+			.tokens(aToken, bToken, cToken, dToken)
+			.get();
+	private final MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
+
 	private MerkleMap accounts;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
-	private String accountIdLit = "0.0.12345";
-	private AccountID target = asAccount(accountIdLit);
-	private String contractIdLit = "0.0.12346";
-	private long balance = 1_234L;
-	private long aBalance = 345;
-	private long bBalance = 456;
-	private long cBalance = 567;
-	private long dBalance = 678;
-	private TokenID aToken = IdUtils.asToken("0.0.3");
-	private TokenID bToken = IdUtils.asToken("0.0.4");
-	private TokenID cToken = IdUtils.asToken("0.0.5");
-	private TokenID dToken = IdUtils.asToken("0.0.6");
-	TokenStore tokenStore;
-	ScheduleStore scheduleStore;
-
-	MerkleToken notDeleted, deleted;
-	private MerkleAccount accountV = MerkleAccountFactory.newAccount()
-			.balance(balance)
-			.tokens(aToken, bToken, cToken, dToken)
-			.get();
-	private MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
-
-	private GetAccountBalanceAnswer subject;
+	private TokenStore tokenStore;
+	private AliasManager aliasManager;
+	private ScheduleStore scheduleStore;
 	private NodeLocalProperties nodeProps;
 
+	private GetAccountBalanceAnswer subject;
+
 	@BeforeEach
-	private void setup() throws ConstructableRegistryException {
+	private void setup() {
 		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);
 		given(deleted.decimals()).willReturn(123);
@@ -138,18 +142,19 @@ class GetAccountBalanceAnswerTest {
 
 		scheduleStore = mock(ScheduleStore.class);
 
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		optionValidator = mock(OptionValidator.class);
-		subject = new GetAccountBalanceAnswer(optionValidator);
+		aliasManager = mock(AliasManager.class);
+		subject = new GetAccountBalanceAnswer(aliasManager, optionValidator);
 	}
 
 	@Test
@@ -265,8 +270,39 @@ class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
+	void resolvesAliasIfExtant() {
+		final var aliasId = AccountID.newBuilder()
+				.setAlias(ByteString.copyFromUtf8("nope"))
+				.build();
+		final var wellKnownId = EntityNum.fromLong(12345L);
+		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
+
+		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+				.setAccountID(aliasId)
+				.build();
+		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+
+		Response response = subject.responseGiven(query, view, OK);
+		ResponseCodeEnum status = response.getCryptogetAccountBalance()
+				.getHeader()
+				.getNodeTransactionPrecheckCode();
+		long answer = response.getCryptogetAccountBalance().getBalance();
+
+		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
+		assertEquals(
+				List.of(tokenBalanceWith(aToken, aBalance, 1),
+						tokenBalanceWith(bToken, bBalance, 2),
+						tokenBalanceWith(cToken, cBalance, 123),
+						tokenBalanceWith(dToken, dBalance, 0)
+				),
+				response.getCryptogetAccountBalance().getTokenBalancesList());
+		assertEquals(OK, status);
+		assertEquals(balance, answer);
+		assertEquals(wellKnownId.toGrpcAccountId(), response.getCryptogetAccountBalance().getAccountID());
+	}
+
+	@Test
 	void answersWithAccountBalance() {
-		// setup:
 		AccountID id = asAccount(accountIdLit);
 
 		// given:
@@ -294,6 +330,38 @@ class GetAccountBalanceAnswerTest {
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
 		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+	}
+
+	@Test
+	void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
+		// setup:
+		ContractID id = asContract(accountIdLit);
+
+		// given:
+		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+				.setContractID(id)
+				.build();
+		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK);
+		ResponseCodeEnum status = response.getCryptogetAccountBalance()
+				.getHeader()
+				.getNodeTransactionPrecheckCode();
+		long answer = response.getCryptogetAccountBalance().getBalance();
+
+		// expect:
+		assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
+		assertEquals(
+				List.of(tokenBalanceWith(aToken, aBalance, 1),
+						tokenBalanceWith(bToken, bBalance, 2),
+						tokenBalanceWith(cToken, cBalance, 123),
+						tokenBalanceWith(dToken, dBalance, 0)
+				),
+				response.getCryptogetAccountBalance().getTokenBalancesList());
+		assertEquals(OK, status);
+		assertEquals(balance, answer);
+		assertEquals(asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
 	}
 
 	@Test

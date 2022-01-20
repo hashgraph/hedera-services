@@ -44,8 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
@@ -57,17 +60,6 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 		new ERC1155ContractInteractions().runSuiteSync();
 	}
 	
-	private ByteString getFileContents(String path) {
-		ByteString contents = null;
-		try {
-			var bytes = Files.readAllBytes(Path.of(path));
-			contents = ByteString.copyFrom(bytes);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return contents;
-	}
-	
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
@@ -76,13 +68,16 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 	}
 
 	private HapiApiSpec erc1155() {
-		final var contents = getFileContents(ContractResources.ERC_1155_BYTECODE_PATH);
+		final var PAYER_KEY = "payerKey";
+		final var FILE_KEY_LIST = "fileKeyList";
 		return defaultHapiSpec(CONTRACT_NAME)
 				.given(
+						newKeyNamed(PAYER_KEY),
+						newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
 						cryptoCreate(ACCOUNT1),
-						cryptoCreate(OPERATIONS_PAYER).balance(ONE_MILLION_HBARS),
-						fileCreate(CONTRACT_FILE_NAME).payingWith(OPERATIONS_PAYER),
-						updateLargeFile(OPERATIONS_PAYER, CONTRACT_FILE_NAME, contents)
+						cryptoCreate(OPERATIONS_PAYER).balance(ONE_MILLION_HBARS).key(PAYER_KEY),
+						fileCreate(CONTRACT_FILE_NAME).payingWith(OPERATIONS_PAYER).key(FILE_KEY_LIST),
+						updateLargeFile(OPERATIONS_PAYER, CONTRACT_FILE_NAME, extractByteCode(ContractResources.ERC_1155_BYTECODE_PATH))
 				)
 				.when()
 				.then(

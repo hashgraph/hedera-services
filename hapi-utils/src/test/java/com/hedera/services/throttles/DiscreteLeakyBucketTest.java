@@ -48,6 +48,16 @@ class DiscreteLeakyBucketTest {
 	}
 
 	@Test
+	void assertCapacityAndUsed() {
+		// given:
+		var subject = new DiscreteLeakyBucket(1234L, totalCapacity);
+
+		// expect:
+		assertEquals(totalCapacity, subject.totalCapacity());
+		assertEquals(1234L, subject.capacityUsed());
+	}
+
+	@Test
 	void leaksAsExpected() {
 		// given:
 		var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);

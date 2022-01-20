@@ -21,11 +21,12 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.Platform;
-import com.swirlds.platform.StatsRunningAverage;
+import com.swirlds.common.statistics.StatsRunningAverage;
 
 public class MiscRunningAvgs {
 	private final RunningAvgFactory runningAvg;
 
+	StatsRunningAverage gasPerConsSec;
 	StatsRunningAverage accountRetryWaitMs;
 	StatsRunningAverage accountLookupRetries;
 	StatsRunningAverage handledSubmitMessageSize;
@@ -36,6 +37,7 @@ public class MiscRunningAvgs {
 	public MiscRunningAvgs(final RunningAvgFactory runningAvg, final double halfLife) {
 		this.runningAvg = runningAvg;
 
+		gasPerConsSec = new StatsRunningAverage(halfLife);
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
@@ -69,9 +71,12 @@ public class MiscRunningAvgs {
 				runningAvg.from(
 						Names.HASH_QUEUE_SIZE_RECORD_STREAM,
 						Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM,
-						hashQueueSizeRecordStream
-				)
-		);
+						hashQueueSizeRecordStream));
+		platform.addAppStatEntry(
+				runningAvg.from(
+						Names.GAS_PER_CONSENSUS_SEC,
+						Descriptions.GAS_PER_CONSENSUS_SEC,
+						gasPerConsSec));
 	}
 
 	public void recordAccountLookupRetries(final int num) {
@@ -94,7 +99,12 @@ public class MiscRunningAvgs {
 		hashQueueSizeRecordStream.recordValue(num);
 	}
 
+	public void recordGasPerConsSec(final long gas) {
+		gasPerConsSec.recordValue(gas);
+	}
+
 	public static final class Names {
+		static final String GAS_PER_CONSENSUS_SEC = "gasPerConsSec";
 		static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
 		static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
@@ -108,6 +118,8 @@ public class MiscRunningAvgs {
 	}
 
 	public static final class Descriptions {
+		static final String GAS_PER_CONSENSUS_SEC =
+				"average EVM gas used per second of consensus time";
 		static final String ACCOUNT_RETRY_WAIT_MS =
 				"average time is millis spent waiting to lookup the account number";
 		static final String ACCOUNT_LOOKUP_RETRIES =

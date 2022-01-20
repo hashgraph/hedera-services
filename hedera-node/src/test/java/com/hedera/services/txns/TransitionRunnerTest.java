@@ -9,9 +9,9 @@ package com.hedera.services.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.txns;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -56,11 +57,13 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class TransitionRunnerTest {
 	private final Transaction mockTxn = Transaction.getDefaultInstance();
 	private final TransactionBody mockBody = TransactionBody.getDefaultInstance();
 
+	@Mock
+	private EntityIdSource ids;
 	@Mock
 	private TxnAccessor accessor;
 	@Mock
@@ -77,7 +80,7 @@ class TransitionRunnerTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new TransitionRunner(txnCtx, lookup);
+		subject = new TransitionRunner(ids, txnCtx, lookup);
 	}
 
 	@Test
@@ -124,6 +127,7 @@ class TransitionRunnerTest {
 
 		// then:
 		verify(txnCtx).setStatus(INVALID_TOKEN_MINT_AMOUNT);
+		verify(ids).reclaimProvisionalIds();
 		assertTrue(result);
 	}
 
@@ -136,13 +140,11 @@ class TransitionRunnerTest {
 		given(logic.validateSemantics(accessor)).willReturn(OK);
 		willThrow(new InvalidTransactionException("Yikes!", FAIL_INVALID)).given(logic).doStateTransition();
 
-		// when:
 		var result = subject.tryTransition(accessor);
 
-		// then:
 		verify(txnCtx).setStatus(FAIL_INVALID);
 		assertThat(logCaptor.warnLogs(),
-				contains(startsWith("Avoidable failure in transition logic for " +
+				contains(startsWith("Avoidable failure while handling " +
 						"com.hedera.services.exceptions.InvalidTransactionException: Yikes!")));
 		assertTrue(result);
 	}
@@ -160,21 +162,21 @@ class TransitionRunnerTest {
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 		assertTrue(result);
-		verify(logic).resetCreatedIds();
 	}
-	
+
 	@Test
 	void reclaimsIdsOnFailedTransaction() {
 		given(accessor.getFunction()).willReturn(TokenCreate);
 		given(accessor.getTxn()).willReturn(mockBody);
 		given(lookup.lookupFor(TokenCreate, mockBody)).willReturn(Optional.of(logic));
 		given(logic.validateSemantics(accessor)).willReturn(OK);
-		
+
 		doThrow(new InvalidTransactionException(FAIL_INVALID)).when(logic).doStateTransition();
-		
-		var res = subject.tryTransition(accessor);
+
+		subject.tryTransition(accessor);
+
 		verify(txnCtx).setStatus(FAIL_INVALID);
-		verify(logic).reclaimCreatedIds();
+		verify(ids).reclaimProvisionalIds();
 	}
 
 	@Test
@@ -192,6 +194,6 @@ class TransitionRunnerTest {
 
 		// then:
 		verify(txnCtx, never()).setStatus(FAIL_INVALID);
-		verify(logic).reclaimCreatedIds();
+		verify(ids).reclaimProvisionalIds();
 	}
 }

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith({ LogCaptureExtension.class })
+@ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -95,8 +95,14 @@ class BootstrapPropertiesTest {
 			entry("contracts.defaultLifetime", 7890000L),
 			entry("contracts.localCall.estRetBytes", 32),
 			entry("contracts.maxGas", 300000),
-			entry("contracts.maxStorageKb", 1024),
+			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
+			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
+			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.maxRefundPercentOfGasLimit", 20),
+			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
+			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
+			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
@@ -115,6 +121,9 @@ class BootstrapPropertiesTest {
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
 			entry("hedera.exportAccountsOnStartup", false),
 			entry("hedera.numReservedSystemEntities", 1_000L),
+			entry("hedera.prefetch.queueCapacity", 10000),
+			entry("hedera.prefetch.threadPoolSize", 2),
+			entry("hedera.prefetch.codeCacheTtlSecs", 120),
 			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
 			entry("hedera.recordStream.logDir", "/opt/hgcapp/recordStreams"),
@@ -126,12 +135,15 @@ class BootstrapPropertiesTest {
 			entry("hedera.transaction.minValidDuration", 15L),
 			entry("hedera.transaction.maxValidDuration", 180L),
 			entry("hedera.transaction.minValidityBufferSecs", 10),
+			entry("ledger.id", "0x03"),
+			entry("ledger.changeHistorian.memorySecs", 20),
 			entry("ledger.fundingAccount", 98L),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.transfers.maxLen", 10),
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
+			entry("autoCreation.enabled", true),
 			entry("autorenew.isEnabled", false),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
@@ -154,8 +166,6 @@ class BootstrapPropertiesTest {
 			entry("netty.startRetryIntervalMs", 1_000L),
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
-			entry("precheck.account.maxLookupRetries", 10),
-			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
@@ -172,6 +182,8 @@ class BootstrapPropertiesTest {
 					TokenMint,
 					TokenBurn,
 					ConsensusSubmitMessage)),
+			entry("scheduling.triggerTxn.windBackNanos", 11L),
+			entry("sigs.expandFromLastSignedState", true),
 			entry("stats.runningAvgHalfLifeSecs", 10.0),
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", 3_000L),
 			entry("stats.speedometerHalfLifeSecs", 10.0),

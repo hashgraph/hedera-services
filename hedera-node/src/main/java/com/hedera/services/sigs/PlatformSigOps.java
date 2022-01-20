@@ -43,7 +43,7 @@ public final class PlatformSigOps {
 	 * each public key in a left-to-right DFS traversal of the simple keys from a list of
 	 * Hedera keys, using signature bytes from a given {@link PubKeyToSigBytes}.
 	 *
-	 * @param pubKeys
+	 * @param hederaKeys
 	 * 		a list of Hedera keys to traverse for public keys.
 	 * @param sigBytesFn
 	 * 		a source of cryptographic signatures to associate to the public keys.
@@ -51,20 +51,20 @@ public final class PlatformSigOps {
 	 * 		a factory to convert public keys and cryptographic sigs into sigs.
 	 * @return the result of attempting this creation.
 	 */
-	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(
-			final List<JKey> pubKeys,
+	public static PlatformSigsCreationResult createCryptoSigsFrom(
+			final List<JKey> hederaKeys,
 			final PubKeyToSigBytes sigBytesFn,
 			final TxnScopedPlatformSigFactory factory
 	) {
 		final var result = new PlatformSigsCreationResult();
-		for (final var pk : pubKeys) {
-			visitSimpleKeys(pk, ed25519Key -> createPlatformSigFor(ed25519Key, sigBytesFn, factory, result));
+		for (final var hederaKey : hederaKeys) {
+			visitSimpleKeys(hederaKey, primitiveKey -> createCryptoSigFor(primitiveKey, sigBytesFn, factory, result));
 		}
 		return result;
 	}
 
-	private static void createPlatformSigFor(
-			final JKey ed25519Key,
+	private static void createCryptoSigFor(
+			final JKey primitiveKey,
 			final PubKeyToSigBytes sigBytesFn,
 			final TxnScopedPlatformSigFactory factory,
 			final PlatformSigsCreationResult result
@@ -74,14 +74,22 @@ public final class PlatformSigOps {
 		}
 
 		try {
-			final var keyBytes = ed25519Key.getEd25519();
-			final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
-			if (sigBytes.length > 0) {
-				result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
+			if (primitiveKey.hasEd25519Key()) {
+				final var key = primitiveKey.getEd25519();
+				final var sig = sigBytesFn.sigBytesFor(key);
+				if (sig.length > 0) {
+					result.getPlatformSigs().add(factory.signBodyWithEd25519(key, sig));
+				}
+			} else if (primitiveKey.hasECDSAsecp256k1Key()) {
+				final var key = primitiveKey.getECDSASecp256k1Key();
+				final var sig = sigBytesFn.sigBytesFor(key);
+				if (sig.length > 0) {
+					result.getPlatformSigs().add(factory.signKeccak256DigestWithSecp256k1(key, sig));
+				}
 			}
 		} catch (KeyPrefixMismatchException kmpe) {
-			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */
-			if (!ed25519Key.isForScheduledTxn()) {
+			/* No problem if a signature map is ambiguous for a key linked to a scheduled transaction. */
+			if (!primitiveKey.isForScheduledTxn()) {
 				result.setTerminatingEx(kmpe);
 			}
 		} catch (Exception e) {

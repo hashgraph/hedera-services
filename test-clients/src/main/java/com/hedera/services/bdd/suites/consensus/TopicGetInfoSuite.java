@@ -65,12 +65,13 @@ public class TopicGetInfoSuite extends HapiApiSuite {
 				.when()
 				.then(
 						getTopicInfo("testTopic")
-							.hasMemo("testmemo")
-							.hasAdminKey("adminKey")
-							.hasSubmitKey("submitKey")
-							.hasAutoRenewAccount("autoRenewAccount")
-							.hasSeqNo(0)
-							.hasRunningHash(new byte[48])
+								.hasExpectedLedgerId("0x03")
+								.hasMemo("testmemo")
+								.hasAdminKey("adminKey")
+								.hasSubmitKey("submitKey")
+								.hasAutoRenewAccount("autoRenewAccount")
+								.hasSeqNo(0)
+								.hasRunningHash(new byte[48])
 				);
 	}
 

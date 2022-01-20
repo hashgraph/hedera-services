@@ -23,7 +23,6 @@ package com.hedera.services.state.submerkle;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTI
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -55,10 +55,10 @@ class RoyaltyFeeSpecTest {
 	@Mock
 	private TypedTokenStore tokenStore;
 
+	final RoyaltyFeeSpec subject = new RoyaltyFeeSpec(1, 10, fallbackSpec);
+
 	@Test
 	void validationRequiresNonFungibleUnique() {
-		final var subject = new RoyaltyFeeSpec(1, 10, fallbackSpec);
-
 		assertFailsWith(
 				() -> subject.validateWith(token, feeCollector, tokenStore),
 				CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
@@ -117,9 +117,9 @@ class RoyaltyFeeSpecTest {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
 
-		assertEquals(1, a.getNumerator());
-		assertEquals(10, a.getDenominator());
-		assertSame(fallback, a.getFallbackFee());
+		assertEquals(1, a.numerator());
+		assertEquals(10, a.denominator());
+		assertSame(fallback, a.fallbackFee());
 		assertTrue(a.hasFallbackFee());
 	}
 
@@ -127,8 +127,8 @@ class RoyaltyFeeSpecTest {
 	void toStringWorks() {
 		final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
 		final var a = new RoyaltyFeeSpec(1, 10, fallback);
-		final var desired = "RoyaltyFeeSpec{numerator=1, denominator=10, " +
-				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}}";
+		final var desired = "RoyaltyFeeSpec[numerator=1, denominator=10, " +
+				"fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}]";
 
 		assertEquals(desired, a.toString());
 	}
@@ -143,14 +143,14 @@ class RoyaltyFeeSpecTest {
 		final var e = new RoyaltyFeeSpec(1, 10, fallback);
 		final var f = a;
 
-		Assertions.assertEquals(a, e);
-		Assertions.assertEquals(a, f);
-		Assertions.assertNotEquals(a, b);
-		Assertions.assertNotEquals(a, c);
-		Assertions.assertNotEquals(a, d);
-		Assertions.assertNotEquals(null, a);
-		Assertions.assertNotEquals(new Object(), a);
+		assertEquals(a, e);
+		assertEquals(a, f);
+		assertNotEquals(a, b);
+		assertNotEquals(a, c);
+		assertNotEquals(a, d);
+		assertNotEquals(null, a);
+		assertNotEquals(new Object(), a);
 
-		Assertions.assertEquals(a.hashCode(), e.hashCode());
+		assertEquals(a.hashCode(), e.hashCode());
 	}
 }

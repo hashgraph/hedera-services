@@ -482,7 +482,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				.then(
 						scheduleSign("basicXfer")
 								.alsoSigningWith("somebodyelse")
-								.hasKnownStatus(NO_NEW_VALID_SIGNATURES)
+								.hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID)
 				);
 	}
 

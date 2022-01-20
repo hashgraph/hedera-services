@@ -56,8 +56,11 @@ public class CurrencyAdjustments implements SelfSerializable {
 		accountIds = parties;
 	}
 
-	/* --- SelfSerializable --- */
+	public boolean isEmpty() {
+		return hbars.length == 0;
+	}
 
+	/* --- SelfSerializable --- */
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -81,7 +84,6 @@ public class CurrencyAdjustments implements SelfSerializable {
 	}
 
 	/* ---- Object --- */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -111,7 +113,6 @@ public class CurrencyAdjustments implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-
 	public TransferList toGrpc() {
 		var grpc = TransferList.newBuilder();
 		IntStream.range(0, hbars.length)

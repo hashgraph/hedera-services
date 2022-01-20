@@ -44,7 +44,6 @@ import java.time.Instant;
  */
 
 public interface OptionValidator {
-
 	boolean hasGoodEncoding(Key key);
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);
@@ -73,7 +72,11 @@ public interface OptionValidator {
 	JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, MerkleMap<EntityNum, MerkleAccount> accounts) {
-		return PureValidation.queryableAccountStatus(id, accounts);
+		return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
+	}
+
+	default ResponseCodeEnum queryableAccountStatus(EntityNum entityNum, MerkleMap<EntityNum, MerkleAccount> accounts) {
+		return PureValidation.queryableAccountStatus(entityNum, accounts);
 	}
 
 	default ResponseCodeEnum queryableContractStatus(ContractID cid, MerkleMap<EntityNum, MerkleAccount> contracts) {

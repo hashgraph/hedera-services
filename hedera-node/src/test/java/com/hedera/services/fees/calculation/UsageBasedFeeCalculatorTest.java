@@ -26,6 +26,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
@@ -56,10 +57,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.Optional;
 
 import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.test.factories.txns.ContractCallFactory.newSignedContractCall;
@@ -169,6 +170,7 @@ class UsageBasedFeeCalculatorTest {
 		subject = new UsageBasedFeeCalculator(
 				autoRenewCalcs,
 				exchange,
+				mock(AutoCreationLogic.class),
 				usagePrices,
 				new NestedMultiplierSource(),
 				pricedUsageCalculator,
@@ -179,7 +181,7 @@ class UsageBasedFeeCalculatorTest {
 	@Test
 	void delegatesAutoRenewCalcs() {
 		// setup:
-		final var expected = new AutoRenewCalcs.RenewAssessment(456L, 123L);
+		final var expected = new RenewAssessment(456L, 123L);
 
 		given(autoRenewCalcs.maxRenewalAndFeeFor(any(), anyLong(), any(), any())).willReturn(expected);
 
@@ -287,7 +289,8 @@ class UsageBasedFeeCalculatorTest {
 	@Test
 	void loadPriceSchedulesOnInit() {
 		// setup:
-		final var seq = Triple.of(Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()), Instant.now(), Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
+		final var seq = Triple.of(Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()), Instant.now(),
+				Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
 
 		given(usagePrices.activePricingSequence(CryptoAccountAutoRenew)).willReturn(seq);
 
@@ -331,7 +334,8 @@ class UsageBasedFeeCalculatorTest {
 		// expect:
 		assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
 		assertThrows(NoSuchElementException.class,
-				() -> subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at, Collections.emptyMap()));
+				() -> subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at,
+						Collections.emptyMap()));
 	}
 
 	@Test
@@ -349,7 +353,8 @@ class UsageBasedFeeCalculatorTest {
 		given(exchange.rate(at)).willReturn(currentRate);
 
 		// when:
-		FeeObject fees = subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at, Collections.emptyMap());
+		FeeObject fees = subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at,
+				Collections.emptyMap());
 
 		// then:
 		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -385,7 +390,8 @@ class UsageBasedFeeCalculatorTest {
 				FeeBuilder.getSignatureCount(signedTxn),
 				9,
 				FeeBuilder.getSignatureSize(signedTxn));
-		FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate, multiplier);
+		FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate,
+				multiplier);
 		suggestedMultiplier.set(multiplier);
 
 		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
@@ -464,7 +470,8 @@ class UsageBasedFeeCalculatorTest {
 				.burning(tokenId)
 				.txnValidStart(at)
 				.get();
-		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenBurn, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE );
+		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenBurn, SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
+				TokenType.NON_FUNGIBLE_UNIQUE);
 	}
 
 
@@ -477,7 +484,8 @@ class UsageBasedFeeCalculatorTest {
 				.txnValidStart(at)
 				.get();
 
-		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenAccountWipe , SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE );
+		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenAccountWipe, SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
+				TokenType.NON_FUNGIBLE_UNIQUE);
 	}
 
 	@Test
@@ -489,9 +497,9 @@ class UsageBasedFeeCalculatorTest {
 				.txnValidStart(at)
 				.get();
 
-		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenMint, SubType.TOKEN_FUNGIBLE_COMMON, TokenType.FUNGIBLE_COMMON);
+		invokesAccessorBasedUsagesForTxnInHandle(signedTxn, TokenMint, SubType.TOKEN_FUNGIBLE_COMMON,
+				TokenType.FUNGIBLE_COMMON);
 	}
-
 
 
 	@Test

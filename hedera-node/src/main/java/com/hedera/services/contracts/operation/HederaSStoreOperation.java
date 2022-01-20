@@ -54,7 +54,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 
 	@Inject
 	public HederaSStoreOperation(final GasCalculator gasCalculator) {
-		super(0x55, "SSTORE", 2, 0, false, 1, gasCalculator);
+		super(0x55, "SSTORE", 2, 0, 1, gasCalculator);
 		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
 	}
 

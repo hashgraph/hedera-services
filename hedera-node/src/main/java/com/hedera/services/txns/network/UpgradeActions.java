@@ -89,8 +89,10 @@ public class UpgradeActions {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void externalizeFreeze() {
-		writeCheckMarker(NOW_FROZEN_MARKER);
+	public void externalizeFreezeIfUpgradePending() {
+		if (networkCtx.get().hasPreparedUpgrade()) {
+			writeCheckMarker(NOW_FROZEN_MARKER);
+		}
 	}
 
 	public CompletableFuture<Void> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
@@ -157,20 +159,14 @@ public class UpgradeActions {
 	}
 
 	private void catchUpOnMissedFreezeScheduling() {
-		if (isFreezeScheduled() && networkCtx.get().hasPreparedUpgrade()) {
+		final var isUpgradePrepared = networkCtx.get().hasPreparedUpgrade();
+		if (isFreezeScheduled() && isUpgradePrepared) {
 			writeMarker(FREEZE_SCHEDULED_MARKER, dualState.get().getFreezeTime());
-		} else {
-			/* Must be non-null or isFreezeScheduled() would have thrown */
-			final var ds = dualState.get();
-			if (ds.getFreezeTime() == null) {
-				/* Under normal conditions, this implies we are initializing after a reconnect. Write a
-				freeze aborted marker just in case we missed handling a FREEZE_ABORT while away. */
-				writeCheckMarker(FREEZE_ABORTED_MARKER);
-			} else {
-				/* We just restarted after a freeze, so can null out the freeze time. */
-				ds.setFreezeTime(null);
-			}
 		}
+		/* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
+		But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
+		us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
+		imminent PREPARE_UPGRADE. */
 	}
 
 	private void catchUpOnMissedUpgradePrep() {
