@@ -75,7 +75,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Long> receiveThresh = Optional.empty();
 	private Optional<Long> initialBalance = Optional.empty();
 	private Optional<Long> autoRenewDurationSecs = Optional.empty();
-	private Optional<AccountID> proxy = Optional.empty();
+	private Optional<String> proxy = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<String> keyName = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
@@ -84,7 +84,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> newIdObserver = Optional.empty();
-	private ReferenceType proxyReferenceType;
+	private ReferenceType proxyReferenceType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -186,14 +186,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	}
 
 	public HapiCryptoCreate proxy(String idLit) {
-		proxyReferenceType = ReferenceType.REGISTRY_NAME;
-		proxy = Optional.of(asAccount(idLit));
+		proxy = Optional.of(idLit);
 		return this;
 	}
 
 	public HapiCryptoCreate proxyWithAlias(String idLit) {
 		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
-		proxy = Optional.of(asAccount(ByteString.copyFromUtf8(idLit)));
+		proxy = Optional.of(idLit);
 		return this;
 	}
 
@@ -227,7 +226,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-							proxy.ifPresent(b::setProxyAccountID);
+							proxy.ifPresent(p -> {
+								if (proxyReferenceType == ReferenceType.ALIAS_KEY_NAME) {
+									b.setProxyAccountID(asAccount(spec.registry().getKey(p).toByteString()));
+								} else {
+									b.setProxyAccountID(spec.registry().getAccountID(p));
+								}
+							});
 							entityMemo.ifPresent(b::setMemo);
 							sendThresh.ifPresent(b::setSendRecordThreshold);
 							receiveThresh.ifPresent(b::setReceiveRecordThreshold);

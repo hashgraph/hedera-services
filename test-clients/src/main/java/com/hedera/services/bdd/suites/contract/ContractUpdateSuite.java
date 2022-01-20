@@ -98,7 +98,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed("adminKey"),
 						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
 								.via("autoCreation"),
-						getTxnRecord("autoCreation").andAllChildRecords()
+						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1)
 				).when(
 						contractCreate("contract")
 								.adminKey("adminKey")

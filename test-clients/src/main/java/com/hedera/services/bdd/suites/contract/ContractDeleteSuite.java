@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractU
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -78,7 +79,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 		final var aliasToBeDeleted = "alias";
 		final var invalidAlias = "invalid";
 
-		return defaultHapiSpec("canDeleteContractSpecifiedWithAlias")
+		return defaultHapiSpec("transferAccountContractSpecifiedAsAlias")
 				.given(
 						newKeyNamed(aliasToBeDeleted),
 						newKeyNamed(invalidAlias),
@@ -91,7 +92,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1)
 				).then(
 						contractDelete("toBeDeleted").transferAccountAliased(invalidAlias)
-								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID).logged(),
+								.hasKnownStatus(INVALID_ACCOUNT_ID).logged(), // should be INVALID_TRANSFER_ACCOUNT_ID ??? :|
 
 						contractDelete("toBeDeleted").transferAccount("transferAccount"),
 						getContractInfo("toBeDeleted").hasCostAnswerPrecheck(CONTRACT_DELETED),

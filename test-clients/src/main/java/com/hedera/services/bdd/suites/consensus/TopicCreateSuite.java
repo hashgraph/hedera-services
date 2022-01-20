@@ -272,7 +272,7 @@ public class TopicCreateSuite extends HapiApiSuite {
 								.adminKeyName("adminKey")
 								.submitKeyName("submitKey")
 								.autoRenewAccountIdAsAlias(alias)
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
 				);
 	}
 

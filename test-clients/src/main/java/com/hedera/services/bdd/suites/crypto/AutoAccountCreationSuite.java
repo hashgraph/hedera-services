@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -52,7 +53,9 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -93,7 +96,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 						multipleAutoAccountCreations(),
 						accountCreatedIfAliasUsedAsPubKey(),
 						aliasCanBeUsedOnManyAccountsNotAsAlias(),
-						autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+						autoAccountCreationDoesntHappenWhenAccountDeletedNotExpired(),
 						canGetBalanceAndInfoViaAlias()
 				}
 		);
@@ -210,8 +213,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-		return defaultHapiSpec("AutoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+	private HapiApiSpec autoAccountCreationDoesntHappenWhenAccountDeletedNotExpired() {
+		return defaultHapiSpec("autoAccountCreationDoesntHappenWhenAccountDeletedNotExpired")
 				.given(
 						newKeyNamed("alias"),
 						newKeyNamed("alias2"),
@@ -229,8 +232,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								.purging(),
 						cryptoTransfer(
 								tinyBarsFromToWithAlias("payer", "alias", ONE_HUNDRED_HBARS)).via(
-								"txn2").via("secondCreate"),
-						getTxnRecord("secondCreate").hasChildRecordCount(1).logged()
+								"txn2").via("secondCreate").hasKnownStatus(ACCOUNT_DELETED),
+						getTxnRecord("secondCreate").hasChildRecordCount(0).logged()
 
 						/* need to validate it creates after expiration */
 //						sleepFor(60000L),
