@@ -121,7 +121,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.balance(0L)
 								.autoRenewSecs(4)
 				).when(
-						sleepFor(1_500L),
+						sleepFor(4_500L),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
 						withOpContext((spec, opLog) -> {
 							detachedNum.set((int) spec.registry().getAccountID(detachedAccount).getAccountNum());

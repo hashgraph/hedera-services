@@ -102,7 +102,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
 
-			final var result = ledger.lookupAndValidateAliasedId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+			final var result = ledger.lookupAliasedId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;

@@ -141,7 +141,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public HederaTokenStore(
