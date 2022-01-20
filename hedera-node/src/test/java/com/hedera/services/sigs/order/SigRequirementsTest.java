@@ -151,6 +151,8 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NEW_ALIAS_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NEW_ALIAS_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO;
@@ -264,6 +266,7 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.FileCreateFactory.DEFAULT_WACL_KT;
+import static com.hedera.test.factories.txns.SignedTxnFactory.ALIAS_KEY;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
@@ -479,6 +482,24 @@ class SigRequirementsTest {
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(RECEIVER_SIG_KT.asKey()));
 		assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
+	}
+
+	@Test
+	void getsUpdateAlias() throws Throwable {
+		setupFor(CRYPTO_UPDATE_NEW_ALIAS_SELF_PAID_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(sanityRestored(summary.getOrderedKeys()).contains(ALIAS_KEY));
+	}
+
+	@Test
+	void getsUpdateAliasOnMiscAccount() throws Throwable {
+		setupFor(CRYPTO_UPDATE_NEW_ALIAS_KEY_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), ALIAS_KEY));
 	}
 
 	@Test

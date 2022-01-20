@@ -27,6 +27,7 @@ import com.hedera.test.factories.sigs.SigFactory;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -57,6 +58,8 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 	public static final Instant DEFAULT_VALID_START = Instant.now();
 	public static final Integer DEFAULT_VALID_DURATION = 60;
 	public static final SigFactory DEFAULT_SIG_FACTORY = new SigFactory();
+	public static Key ALIAS_KEY =  KeyFactory.getDefaultInstance().newEd25519();
+	public static ByteString ALIAS_PUBKEY_BYTESTRING =  ALIAS_KEY.toByteString();
 
 	protected KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	protected FeeBuilder fees = new FeeBuilder();
