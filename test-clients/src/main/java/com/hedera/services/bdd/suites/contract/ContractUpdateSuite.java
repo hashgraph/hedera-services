@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,13 +34,16 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -68,15 +71,17 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				updateWithBothMemoSettersWorks(),
-				updatingExpiryWorks(),
-				rejectsExpiryTooFarInTheFuture(),
-				updateAutoRenewWorks(),
-				updateAdminKeyWorks(),
-				canMakeContractImmutableWithEmptyKeyList(),
-				givenAdminKeyMustBeValid(),
-				fridayThe13thSpec()
+		return List.of(new HapiApiSpec[] {
+						updateWithBothMemoSettersWorks(),
+						updatingExpiryWorks(),
+						rejectsExpiryTooFarInTheFuture(),
+						updateAutoRenewWorks(),
+						updateAdminKeyWorks(),
+						canMakeContractImmutableWithEmptyKeyList(),
+						givenAdminKeyMustBeValid(),
+						fridayThe13thSpec(),
+						updateDoesNotChangeBytecode()
+				}
 		);
 	}
 
@@ -113,7 +118,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				)
 				.when(
 						contractUpdate("contract")
-							.newExpirySecs(newExpiry)
+								.newExpirySecs(newExpiry)
 				)
 				.then(
 						getContractInfo("contract").has(contractWith().expiry(newExpiry))
@@ -127,7 +132,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
 				.given(
 						contractCreate("target")
-				).when( ).then(
+				).when().then(
 						contractUpdate("target")
 								.newExpirySecs(excessiveExpiry)
 								.hasKnownStatus(INVALID_EXPIRATION_TIME)
@@ -139,17 +144,17 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("admin"),
 						contractCreate("contract")
-							.adminKey("admin")
-							.autoRenewSecs(ONE_MONTH)
+								.adminKey("admin")
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 				)
 				.when(
 						contractUpdate("contract")
-							.newAutoRenew(ONE_MONTH + ONE_DAY)
+								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
 				)
 				.then(
 						getContractInfo("contract")
-							.has(contractWith()
-								.autoRenew(ONE_MONTH + ONE_DAY))
+								.has(contractWith()
+										.autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
 				);
 	}
 
@@ -159,10 +164,10 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed("oldAdminKey"),
 						newKeyNamed("newAdminKey"),
 						contractCreate("contract")
-							.adminKey("oldAdminKey")
+								.adminKey("oldAdminKey")
 				).when(
 						contractUpdate("contract")
-							.newKey("newAdminKey")
+								.newKey("newAdminKey")
 				).then(
 						contractUpdate("contract")
 								.newMemo("some new memo"),
@@ -320,6 +325,30 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						contractDelete("contract")
 								.payingWith("payer")
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec updateDoesNotChangeBytecode() {
+		return defaultHapiSpec("HSCS-DCPR-001")
+				.given(
+						fileCreate("contractFile")
+								.path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
+						fileCreate("bytecode2")
+								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
+						contractCreate("contract")
+								.bytecode("contractFile"),
+						getContractBytecode("contract").saveResultTo("initialBytecode")
+				)
+				.when(
+						contractUpdate("contract")
+								.bytecode("bytecode2")
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var op = getContractBytecode("contract").hasBytecode(
+									spec.registry().getBytes("initialBytecode"));
+							allRunFor(spec, op);
+						})
 				);
 	}
 

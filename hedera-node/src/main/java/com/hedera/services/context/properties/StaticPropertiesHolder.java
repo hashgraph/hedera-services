@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -33,7 +34,7 @@ public class StaticPropertiesHolder {
 	private long shard = 0;
 	private long realm = 0;
 
-	public void setNumbersFrom(HederaNumbers hederaNum) {
+	public void setNumbersFrom(final HederaNumbers hederaNum) {
 		shard = hederaNum.shard();
 		realm = hederaNum.realm();
 	}
@@ -46,7 +47,11 @@ public class StaticPropertiesHolder {
 		return realm;
 	}
 
-	public AccountID scopedAccountWith(long num) {
+	public JContractIDKey scopedContractKeyWith(final long num) {
+		return new JContractIDKey(shard, realm, num);
+	}
+
+	public AccountID scopedAccountWith(final long num) {
 		return AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
@@ -54,7 +59,7 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public FileID scopedFileWith(long num) {
+	public FileID scopedFileWith(final long num) {
 		return FileID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
@@ -62,7 +67,7 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public TokenID scopedTokenWith(long num) {
+	public TokenID scopedTokenWith(final long num) {
 		return TokenID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
@@ -70,7 +75,7 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public ScheduleID scopedScheduleWith(long num) {
+	public ScheduleID scopedScheduleWith(final long num) {
 		return ScheduleID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
@@ -78,7 +83,7 @@ public class StaticPropertiesHolder {
 				.build();
 	}
 
-	public String scopedIdLiteralWith(long num) {
+	public String scopedIdLiteralWith(final long num) {
 		return shard + "." + realm + "." + num;
 	}
 }

@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -52,6 +53,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,6 +118,32 @@ class MerkleDiskFsTest {
 	}
 
 	@Test
+	void getClassIdAndVersion() {
+		assertEquals(0xd8a59882c746d0a3L, subject.getClassId());
+		assertEquals(1, subject.getVersion());
+	}
+
+	@Test
+	void nullEqualsWorks() {
+		final var sameButDifferent = subject;
+		assertNotEquals(null, subject);
+		assertEquals(subject, sameButDifferent);
+	}
+
+	@Test
+	void hashCodeWorks() {
+		final Map<FileID, byte[]> hashes = new HashMap<>();
+		hashes.put(IdUtils.asFile("0.0.150"), origFileHash);
+
+		assertEquals(Objects.hash(hashes), subject.hashCode());
+	}
+
+	@Test
+	void containsWorks() {
+		assertTrue(subject.contains(IdUtils.asFile("0.0.150")));
+	}
+
+	@Test
 	void toStringWorks() {
 		assertEquals(
 				"MerkleDiskFs{fileHashes=[0.0.150 :: " + CommonUtils.hex(origFileHash) + "]}",
@@ -173,7 +201,7 @@ class MerkleDiskFsTest {
 	void serializeAbbreviatedWorks() throws IOException {
 		final var out = mock(SerializableDataOutputStream.class);
 
-		subject.serializeAbbreviated(out);
+		subject.serializeExternal(out, null);
 
 		verify(out).writeInt(1);
 		verify(out, times(2)).writeLong(0);
@@ -228,7 +256,7 @@ class MerkleDiskFsTest {
 		given(fin.readByteArray(48)).willReturn(origFileHash);
 		final var read = new MerkleDiskFs();
 
-		read.deserializeAbbreviated(fin, expectedHash, MerkleDiskFs.MERKLE_VERSION);
+		read.deserializeExternal(fin, null, expectedHash, MerkleDiskFs.MERKLE_VERSION);
 
 		assertEquals(subject, read);
 		assertEquals(expectedHash, read.getHash());

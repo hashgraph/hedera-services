@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -27,6 +28,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +63,10 @@ class MerkleAccountTest {
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int autoAssociationMetadata =
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private static final Key aliasKey = Key.newBuilder()
+			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
+	private static final int kvPairs = 123;
+	private static final ByteString alias = aliasKey.getECDSASecp256K1();
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -99,10 +105,13 @@ class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				number, 
-                                autoAssociationMetadata);
+				number,
+				autoAssociationMetadata,
+				alias,
+				kvPairs);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
+		subject.setNftsOwned(2L);
 	}
 
 	@AfterEach
@@ -160,8 +169,11 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
+		assertEquals(2L, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
+		assertEquals(state.getAlias(), subject.getAlias());
+		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 	}
 
 	@Test
@@ -191,6 +203,9 @@ class MerkleAccountTest {
 		subject.setKey(new EntityNum(number));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		subject.setNftsOwned(2L);
+		subject.setAlias(alias);
+		subject.setNumContractKvPairs(kvPairs);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -204,6 +219,15 @@ class MerkleAccountTest {
 		verify(delegate).setNumber(number);
 		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociations);
 		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		verify(delegate).setNumContractKvPairs(kvPairs);
+		verify(delegate).setNftsOwned(2L);
+		verify(delegate).setAlias(alias);
+	}
+
+	@Test
+	void isDeletedWorks() {
+		subject.setDeleted(true);
+		assertTrue(subject.isDeleted());
 	}
 
 	@Test
@@ -250,6 +274,14 @@ class MerkleAccountTest {
 		subject.copy();
 
 		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	void equalsWorksWithExtremes() {
+		final var sameButDifferent = subject;
+		assertEquals(subject, sameButDifferent);
+		assertNotEquals(null, subject);
+		assertNotEquals(subject, new Object());
 	}
 
 	@Test

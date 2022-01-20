@@ -26,7 +26,9 @@ import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.SigObserver;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -39,7 +41,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
@@ -54,14 +58,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
 class HederaToPlatformSigOpsTest {
 	private static List<JKey> payerKey;
 	private static List<JKey> otherKeys;
+	private static List<JKey> fullPrefixKeys;
 	private PubKeyToSigBytes allSigBytes;
 	private PlatformTxnAccessor platformTxn;
 	private SigRequirements keyOrdering;
@@ -72,6 +79,7 @@ class HederaToPlatformSigOpsTest {
 		otherKeys = List.of(
 				KeyTree.withRoot(ed25519()).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());
+		fullPrefixKeys = List.of(KeyTree.withRoot(ed25519()).asJKey());
 	}
 
 	@BeforeEach
@@ -81,51 +89,62 @@ class HederaToPlatformSigOpsTest {
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 	}
 
+	@SuppressWarnings("unchecked")
 	private void wellBehavedOrdersAndSigSources() throws Exception {
 		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(payerKey));
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
+				.willReturn(new SigningOrderResult<>(payerKey));
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+				.willReturn(new SigningOrderResult<>(otherKeys));
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willReturn("3".getBytes());
+		given(allSigBytes.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
+		willAnswer(inv -> {
+			final var obs = (SigObserver) inv.getArgument(0);
+			obs.accept(KeyType.ED25519, fullPrefixKeys.get(0).getEd25519(), "4".getBytes());
+			return null;
+		}).given(allSigBytes).forEachUnusedSigWithFullPrefix(any());
 	}
 
 	@Test
 	void includesSuccessfulExpansions() throws Exception {
 		wellBehavedOrdersAndSigSources();
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(OK, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
 	void returnsImmediatelyOnPayerKeyOrderFailure() {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
 	}
 
 	@Test
 	void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
-		given(keyOrdering.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForPayer(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(payerKey));
-		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY))
+		given(keyOrdering.keysForOtherParties(eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any()))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		given(allSigBytes.sigBytesFor(any()))
 				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
-		final var status = expandIn(platformTxn, keyOrdering, allSigBytes);
+		expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(OK, status);
+		assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
 		assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getPlatformTxn().getSignatures());
 	}
 
@@ -197,9 +216,9 @@ class HederaToPlatformSigOpsTest {
 	void rationalizesOnlyMissingSigs() throws Exception {
 		wellBehavedOrdersAndSigSources();
 		platformTxn.getPlatformTxn().addAll(
-				asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new TransactionSignature[0]));
+				asValid(expectedSigsWithOtherPartiesCreationError()).toArray(new TransactionSignature[0]));
 		final SyncVerifier syncVerifier = l -> {
-			if (l.equals(expectedSigsWithNoErrors().subList(0, 1))) {
+			if (l.equals(expectedSigsWithOtherPartiesCreationError())) {
 				throw new AssertionError("Payer sigs were verified async!");
 			} else {
 				ALWAYS_VALID.verifySync(l);
@@ -249,10 +268,11 @@ class HederaToPlatformSigOpsTest {
 	}
 
 	private List<TransactionSignature> expectedSigsWithNoErrors() {
-		return List.of(
+		return new ArrayList<>(List.of(
 				dummyFor(payerKey.get(0), "1"),
 				dummyFor(otherKeys.get(0), "2"),
-				dummyFor(otherKeys.get(1), "3"));
+				dummyFor(otherKeys.get(1), "3"),
+				dummyFor(fullPrefixKeys.get(0), "4")));
 	}
 
 	private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
@@ -260,7 +280,7 @@ class HederaToPlatformSigOpsTest {
 	}
 
 	private TransactionSignature dummyFor(final JKey key, final String sig) {
-		return PlatformSigFactory.createEd25519(
+		return PlatformSigFactory.ed25519Sig(
 				key.getEd25519(),
 				sig.getBytes(),
 				platformTxn.getTxnBytes());

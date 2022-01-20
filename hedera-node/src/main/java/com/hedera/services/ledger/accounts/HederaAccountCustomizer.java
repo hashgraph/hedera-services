@@ -25,22 +25,28 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 
 public final class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
-	private static final Map<Option, AccountProperty> OPTION_PROPERTIES = Map.of(
-			Option.KEY, AccountProperty.KEY,
-			Option.MEMO, AccountProperty.MEMO,
-			Option.PROXY, AccountProperty.PROXY,
-			Option.EXPIRY, AccountProperty.EXPIRY,
-			Option.IS_DELETED, AccountProperty.IS_DELETED,
-			Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD,
-			Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT,
-			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED,
-			Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS,
-			Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS
-	);
+	private static final Map<Option, AccountProperty> OPTION_PROPERTIES;
+	static {
+		Map<Option, AccountProperty> optionAccountPropertyMap = new EnumMap<>(Option.class);
+		optionAccountPropertyMap.put(Option.KEY, AccountProperty.KEY);
+		optionAccountPropertyMap.put(Option.MEMO, AccountProperty.MEMO);
+		optionAccountPropertyMap.put(Option.PROXY, AccountProperty.PROXY);
+		optionAccountPropertyMap.put(Option.EXPIRY, AccountProperty.EXPIRY);
+		optionAccountPropertyMap.put(Option.IS_DELETED, AccountProperty.IS_DELETED);
+		optionAccountPropertyMap.put(Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD);
+		optionAccountPropertyMap.put(Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT);
+		optionAccountPropertyMap.put(Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED);
+		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+		optionAccountPropertyMap.put(Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
+		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
+	}
 
 	public HederaAccountCustomizer() {
 		super(AccountProperty.class, OPTION_PROPERTIES, new ChangeSummaryManager<>());

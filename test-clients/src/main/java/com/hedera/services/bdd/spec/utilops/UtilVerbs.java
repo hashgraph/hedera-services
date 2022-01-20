@@ -20,10 +20,13 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.SequentialID;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
@@ -66,24 +69,35 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ObjIntConsumer;
@@ -94,6 +108,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -115,6 +130,9 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -126,9 +144,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
+
 	public static HapiFreeze freeze() {
 		return new HapiFreeze();
 	}
@@ -296,6 +316,32 @@ public class UtilVerbs {
 				.overridingProps(Map.of(property, "" + value));
 	}
 
+	public static HapiSpecOperation resetAppPropertiesTo(String path) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(readPropertyFile(path));
+	}
+
+	private static Map<String, String> readPropertyFile(String path) {
+		Properties properties = null;
+
+		try (InputStream input = new FileInputStream(path)) {
+			properties = new Properties();
+			properties.load(input);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		Map<String, String> resultMap = new HashMap<>();
+
+		for (String key : properties.stringPropertyNames()) {
+			resultMap.put(key, properties.getProperty(key));
+		}
+
+		return resultMap;
+	}
+
 	public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
 		return new CustomSpecAssert((spec, log) -> {
 			spec.exportAccountBalances(acctBalanceFile);
@@ -327,6 +373,31 @@ public class UtilVerbs {
 				CustomSpecAssert.allRunFor(spec, subOp);
 			}
 		});
+	}
+
+	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
+			ResponseCodeEnum parentalStatus,
+			TransactionRecordAsserts... childRecordAsserts) {
+		return withOpContext(
+				(spec, opLog) -> {
+					var distributeTx = getTxnRecord(parentTxnId);
+					allRunFor(spec, distributeTx);
+
+					var distributeTxId = distributeTx.getResponseRecord().getTransactionID();
+					SequentialID sequentialID = new SequentialID(distributeTxId);
+
+					for (TransactionRecordAsserts childRecordAssert : childRecordAsserts) {
+						childRecordAssert.txnId(sequentialID.nextChild());
+					}
+
+					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
+							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
+							.hasChildRecords(childRecordAsserts).logged());
+				});
+	}
+
+	public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
+		return childRecordsCheck(parentTxnId, parentalStatus);
 	}
 
 	public static Setting from(String name, String value) {
@@ -539,7 +610,88 @@ public class UtilVerbs {
 			OptionalLong tinyBarsToOffer
 	) {
 		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
-				op -> {}, (op, i) -> {});
+				op -> {
+				}, (op, i) -> {
+				});
+	}
+
+	public static HapiSpecOperation updateSpecialFile(
+			final String payer,
+			final String fileName,
+			final ByteString contents,
+			final int bytesPerOp,
+			final int appendsPerBurst
+	) {
+		return withOpContext((spec, opLog) -> {
+			final var bytesToUpload = contents.size();
+			final var bytesToAppend = bytesToUpload - bytesPerOp;
+			final var appendsRequired = bytesToAppend / bytesPerOp + Math.min(1, bytesToAppend % bytesPerOp);
+			COMMON_MESSAGES.info(
+					"Beginning update for " + fileName + " (" + appendsRequired + " appends required)");
+			final var numBursts = appendsRequired / appendsPerBurst + Math.min(1, appendsRequired % appendsPerBurst);
+
+			int position = Math.min(bytesPerOp, bytesToUpload);
+			final var updateSubOp = fileUpdate(fileName)
+					.fee(ONE_HUNDRED_HBARS)
+					.contents(contents.substring(0, position))
+					.alertingPre(fid ->
+							COMMON_MESSAGES.info("Submitting initial update for file 0.0." + fid.getFileNum()))
+					.alertingPost(code ->
+							COMMON_MESSAGES.info("Finished initial update with " + code))
+					.noLogging()
+					.payingWith(payer)
+					.signedBy(payer);
+			allRunFor(spec, updateSubOp);
+
+			final AtomicInteger burstNo = new AtomicInteger(1);
+			while (position < bytesToUpload) {
+				final var totalBytesLeft = bytesToUpload - position;
+				final var appendsLeft = totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
+				final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
+				boolean isFirstAppend = true;
+				final List<HapiSpecOperation> theBurst = new ArrayList<>();
+				final CountDownLatch burstLatch = new CountDownLatch(1);
+				final AtomicReference<Instant> burstStart = new AtomicReference<>();
+				while (appendsHere.getAndDecrement() >= 0) {
+					final var bytesLeft = bytesToUpload - position;
+					final var bytesThisAppend = Math.min(bytesLeft, bytesPerOp);
+					final var newPosition = position + bytesThisAppend;
+					final var appendSubOp = fileAppend(fileName)
+							.content(contents.substring(position, newPosition).toByteArray())
+							.fee(ONE_HUNDRED_HBARS)
+							.noLogging()
+							.payingWith(payer)
+							.signedBy(payer)
+							.deferStatusResolution();
+					if (isFirstAppend) {
+						final var fixedBurstNo = burstNo.get();
+						final var fixedAppendsHere = appendsHere.get() + 1;
+						appendSubOp.alertingPre(fid -> {
+							burstStart.set(Instant.now());
+							COMMON_MESSAGES.info(
+									"Starting burst " + fixedBurstNo
+											+ "/" + numBursts + " (" + fixedAppendsHere + " ops)");
+						});
+						isFirstAppend = false;
+					}
+					if (appendsHere.get() < 0) {
+						final var fixedBurstNo = burstNo.get();
+						appendSubOp.alertingPost(code -> {
+							final var burstSecs = Duration.between(burstStart.get(), Instant.now()).getSeconds();
+							COMMON_MESSAGES.info(
+									"Completed burst #" + fixedBurstNo
+											+ "/" + numBursts + " in " + burstSecs + "s with " + code);
+							burstLatch.countDown();
+						});
+					}
+					theBurst.add(appendSubOp);
+					position = newPosition;
+				}
+				allRunFor(spec, theBurst);
+				burstLatch.await();
+				burstNo.getAndIncrement();
+			}
+		});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -561,8 +713,7 @@ public class UtilVerbs {
 					.contents(byteString.substring(0, position))
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
-					.payingWith(payer)
-					.signedBy(payer);
+					.payingWith(payer);
 			updateCustomizer.accept(updateSubOp);
 			if (tinyBarsToOffer.isPresent()) {
 				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
@@ -581,8 +732,7 @@ public class UtilVerbs {
 						.content(byteString.substring(position, newPosition).toByteArray())
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
-						.payingWith(payer)
-						.signedBy(payer);
+						.payingWith(payer);
 				appendCustomizer.accept(appendSubOp, totalAppendsRequired - numAppends);
 				if (tinyBarsToOffer.isPresent()) {
 					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
@@ -813,5 +963,94 @@ public class UtilVerbs {
 				.stream()
 				.map(aa -> new AbstractMap.SimpleEntry<>(asAccountString(aa.getAccountID()), aa.getAmount()))
 				.collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
+	}
+
+	public static TokenTransferListBuilder tokenTransferList() {
+		return new TokenTransferListBuilder();
+	}
+
+	public static TokenTransferListsBuilder tokenTransferLists() {
+		return new TokenTransferListsBuilder();
+	}
+
+	public static class TokenTransferListBuilder {
+		private Tuple tokenTransferList;
+		private byte[] token;
+		private boolean isSingleList = true;
+
+		public TokenTransferListBuilder isSingleList(final boolean isSingleList) {
+			this.isSingleList = isSingleList;
+			return this;
+		}
+
+		public TokenTransferListBuilder forToken(final TokenID token) {
+			this.token = getAddressWithFilledEmptyBytes(asAddress(token));
+			return this;
+		}
+
+		public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, accountAmounts, new Tuple[] { })
+				});
+			} else {
+				this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] { });
+			}
+			return this;
+		}
+
+		public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, new Tuple[] { }, nftTransfers)
+				});
+			} else {
+				this.tokenTransferList = Tuple.of(token, new Tuple[] { }, nftTransfers);
+			}
+			return this;
+		}
+
+		public Tuple build() {
+			return tokenTransferList;
+		}
+	}
+
+	public static class TokenTransferListsBuilder {
+		private Tuple tokenTransferLists;
+
+		public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
+			this.tokenTransferLists =
+					Tuple.singleton(tokenTransferLists);
+			return this;
+		}
+
+		public Tuple build() {
+			return tokenTransferLists;
+		}
+	}
+
+	public static Tuple accountAmount(
+			final AccountID account,
+			final Long amount) {
+		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
+
+		return Tuple.of(account32,
+				amount);
+	}
+
+	public static Tuple nftTransfer(
+			final AccountID sender, final AccountID receiver,
+			final Long serialNumber) {
+		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
+		final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
+
+		return Tuple.of(account32, receiver32,
+				serialNumber);
+	}
+
+	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
+		final var address32 = new byte[32];
+		arraycopy(address20, 0, address32, 12, 20);
+		return address32;
 	}
 }

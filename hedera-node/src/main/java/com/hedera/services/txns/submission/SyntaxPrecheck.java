@@ -31,6 +31,7 @@ import javax.inject.Singleton;
 import java.time.Clock;
 import java.time.Instant;
 
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.txns.validation.PureValidation.asCoercedInstant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -70,7 +71,7 @@ public class SyntaxPrecheck {
 			return INVALID_TRANSACTION_ID;
 		}
 		var txnId = txn.getTransactionID();
-		if (txnId.getScheduled()) {
+		if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
 			return TRANSACTION_ID_FIELD_NOT_ALLOWED;
 		}
 		if (recordCache.isReceiptPresent(txnId)) {

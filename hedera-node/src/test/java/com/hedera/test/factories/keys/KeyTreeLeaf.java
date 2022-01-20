@@ -9,9 +9,9 @@ package com.hedera.test.factories.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,8 +36,6 @@ public class KeyTreeLeaf implements KeyTreeNode {
 	private SignatureType sigType = SignatureType.ED25519;
 	private final Key NONSENSE_RSA_KEY =
 			Key.newBuilder().setRSA3072(ByteString.copyFrom("MOME".getBytes())).build();
-	private final Key NONSENSE_ECDSA_KEY =
-			Key.newBuilder().setECDSA384(ByteString.copyFrom("OUTGRABE".getBytes())).build();
 	private final Map<KeyFactory, Key> keyCache = new HashMap<>();
 
 	public KeyTreeLeaf(boolean usedToSign, String label, SignatureType sigType) {
@@ -45,19 +43,8 @@ public class KeyTreeLeaf implements KeyTreeNode {
 		this.sigType = sigType;
 		this.usedToSign = usedToSign;
 	}
-	public KeyTreeLeaf(boolean usedToSign) {
-		this.usedToSign = usedToSign;
-	}
-	public KeyTreeLeaf(String label) {
-		this.label = label;
-	}
-	public KeyTreeLeaf(SignatureType sigType) {
-		this.sigType = sigType;
-	}
-	public KeyTreeLeaf() {}
 
-	public String getLabel() {
-		return label;
+	public KeyTreeLeaf() {
 	}
 
 	public boolean isUsedToSign() {
@@ -72,11 +59,12 @@ public class KeyTreeLeaf implements KeyTreeNode {
 	public Key asKey(KeyFactory factory) {
 		return keyCache.computeIfAbsent(factory, this::customKey);
 	}
+
 	private Key customKey(KeyFactory factory) {
 		if (sigType == SignatureType.ED25519) {
 			return Optional.ofNullable(label).map(factory::labeledEd25519).orElse(factory.newEd25519());
-		} else if (sigType == SignatureType.ECDSA) {
-			return NONSENSE_ECDSA_KEY;
+		} else if (sigType == SignatureType.ECDSA_SECP256K1) {
+			return Optional.ofNullable(label).map(factory::labeledEcdsaSecp256k1).orElse(factory.newEcdsaSecp256k1());
 		} else if (sigType == SignatureType.RSA) {
 			return NONSENSE_RSA_KEY;
 		}

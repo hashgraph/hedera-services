@@ -21,12 +21,14 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.TextFormat;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -48,8 +50,8 @@ public class TransactionIDCache {
 	private volatile long lastTxIDSubmitTimeMillis = -1;
 	private long POLL_TIMEOUT_MILLIS = 1000;
 
-	public long getLastTxIDSubmitTimeMillis() {
-		return lastTxIDSubmitTimeMillis;
+	public static void writeTxId2File(String txIdString) throws IOException {
+		writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
 	}
 
 	/**
@@ -112,6 +114,23 @@ public class TransactionIDCache {
 	}
 
 	/**
+	 * Write string to a file using UTF_8 encoding.
+	 *
+	 * @param data
+	 * 		data represented as string
+	 * @param path
+	 * 		file write path
+	 * @param append
+	 * 		append to existing file if true
+	 * @throws IOException
+	 * 		when error with IO
+	 */
+	public static void writeToFileUTF8(String path, String data, boolean append) throws IOException {
+		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
+		FileServiceTest.writeToFile(path, bytes, append);
+	}
+
+	/**
 	 * Adds a transaction ID to cache.
 	 *
 	 * @param txId
@@ -126,7 +145,7 @@ public class TransactionIDCache {
 		lastTxID = txId;
 		lastTxIDSubmitTimeMillis = System.currentTimeMillis();
 		try {
-			com.hedera.services.legacy.proto.utils.CommonUtils.writeTxId2File(TextFormat.shortDebugString(txId));
+			writeTxId2File(TextFormat.shortDebugString(txId));
 		} catch (IOException e) {
 			log.warn("Got IOException when writing TransactionID to file: ", e);
 		}

@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides the state transition for updating token fee schedule.
@@ -88,7 +87,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		final var customFees = op.getCustomFeesList()
 				.stream()
 				.map(grpcFeeConverter)
-				.collect(toList());
+				.toList();
 		customFees.forEach(fee -> {
 			fee.validateWith(token, accountStore, tokenStore);
 			fee.nullOutCollector();
@@ -96,7 +95,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
+		tokenStore.commitToken(token);
 	}
 
 	@Override

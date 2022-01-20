@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -62,20 +63,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
 @Singleton
 public class ContextOptionValidator implements OptionValidator {
 	private final long maxEntityLifetime;
-	private final AccountID nodeAccount;
+	private final NodeInfo nodeInfo;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
+	private AccountID nodeAccount;
+
 	@Inject
 	public ContextOptionValidator(
-			AccountID nodeAccount,
+			NodeInfo nodeInfo,
 			@CompositeProps PropertySource properties,
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
 		this.txnCtx = txnCtx;
-		this.nodeAccount = nodeAccount;
+		this.nodeInfo = nodeInfo;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -85,8 +88,8 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isThisNodeAccount(AccountID id) {
-		return nodeAccount.equals(id);
+	public boolean isThisNodeAccount(final AccountID id) {
+		return nodeAccount().equals(id);
 	}
 
 	@Override
@@ -288,5 +291,12 @@ public class ContextOptionValidator implements OptionValidator {
 	@Override
 	public boolean isAfterConsensusSecond(long now) {
 		return now > txnCtx.consensusTime().getEpochSecond();
+	}
+
+	private AccountID nodeAccount() {
+		if (nodeAccount == null) {
+			nodeAccount = nodeInfo.selfAccount();
+		}
+		return nodeAccount;
 	}
 }

@@ -81,6 +81,12 @@ class TokenRevokeKycUsageTest {
 		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
+	@Test
+	void assertSelf() {
+		subject = TokenRevokeKycUsage.newEstimate(txn, sigUsage);
+		assertEquals(subject, subject.self());
+	}
+
 	private void givenOp() {
 		op = TokenRevokeKycTransactionBody.newBuilder()
 				.setToken(id)

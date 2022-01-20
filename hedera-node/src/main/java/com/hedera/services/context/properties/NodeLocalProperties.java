@@ -31,8 +31,6 @@ public class NodeLocalProperties {
 
 	private int port;
 	private int tlsPort;
-	private int precheckLookupRetries;
-	private int precheckLookupRetryBackoffMs;
 	private long statsHapiOpsSpeedometerUpdateIntervalMs;
 	private Profile activeProfile;
 	private double statsSpeedometerHalfLifeSecs;
@@ -62,6 +60,9 @@ public class NodeLocalProperties {
 	private int numExecutionTimesToTrack;
 	private int issResetPeriod;
 	private int issRoundsToDump;
+	private int prefetchQueueCapacity;
+	private int prefetchThreadPoolSize;
+	private int prefetchCodeCacheTtlSecs;
 
 	@Inject
 	public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -73,8 +74,6 @@ public class NodeLocalProperties {
 	public void reload() {
 		port = properties.getIntProperty("grpc.port");
 		tlsPort = properties.getIntProperty("grpc.tlsPort");
-		precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
-		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
 		statsHapiOpsSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapiOps.speedometerUpdateIntervalMs");
 		statsSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.speedometerHalfLifeSecs");
@@ -104,6 +103,9 @@ public class NodeLocalProperties {
 		numExecutionTimesToTrack = properties.getIntProperty("stats.executionTimesToTrack");
 		issResetPeriod = properties.getIntProperty("iss.resetPeriod");
 		issRoundsToDump = properties.getIntProperty("iss.roundsToDump");
+		prefetchQueueCapacity = properties.getIntProperty("hedera.prefetch.queueCapacity");
+		prefetchThreadPoolSize = properties.getIntProperty("hedera.prefetch.threadPoolSize");
+		prefetchCodeCacheTtlSecs = properties.getIntProperty("hedera.prefetch.codeCacheTtlSecs");
 	}
 
 	public int port() {
@@ -112,14 +114,6 @@ public class NodeLocalProperties {
 
 	public int tlsPort() {
 		return tlsPort;
-	}
-
-	public int precheckLookupRetries() {
-		return precheckLookupRetries;
-	}
-
-	public int precheckLookupRetryBackoffMs() {
-		return precheckLookupRetryBackoffMs;
 	}
 
 	public Profile activeProfile() {
@@ -237,4 +231,10 @@ public class NodeLocalProperties {
 	public int issRoundsToDump() {
 		return issRoundsToDump;
 	}
+
+	public int prefetchQueueCapacity() { return prefetchQueueCapacity; }
+
+	public int prefetchThreadPoolSize() { return prefetchThreadPoolSize; }
+
+	public int prefetchCodeCacheTtlSecs() { return prefetchCodeCacheTtlSecs; }
 }

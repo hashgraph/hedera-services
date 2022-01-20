@@ -20,10 +20,10 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -33,18 +33,21 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.merkle.map.MerkleMap;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,8 +57,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -64,30 +67,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
 	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private UniqTokenViewsManager uniqTokenViewsManager;
+	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
+	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private TransactionRecordService transactionRecordService;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private BackingTokenRels backingTokenRels;
+	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private TokenStore legacyStore;
 
@@ -103,20 +104,33 @@ class TypedTokenStoreTest {
 
 		subject = new TypedTokenStore(
 				accountStore,
-				transactionRecordService,
-				() -> tokens,
-				() -> uniqueTokens,
-				() -> tokenRels,
-				backingTokenRels,
-				uniqTokenViewsManager,
+				tokens,
+				uniqueTokens,
+				tokenRels,
+				uniqueTokenViewsManager,
 				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken);
+				legacyStore::removeKnownTreasuryForToken,
+				sideEffectsTracker);
 	}
 
 	/* --- Token relationship loading --- */
 	@Test
 	void failsLoadingMissingRelationship() {
 		assertMiscRelLoadFailsWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+	}
+
+	@Test
+	void loadPossiblyDeletedTokenRelationshipWorks() {
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+
+		final var actualTokenRel = subject.loadPossiblyDeletedTokenRelationship(token, miscAccount);
+
+		assertEquals(miscTokenRel, actualTokenRel);
+	}
+
+	@Test
+	void loadPossiblyDeletedTokenRelationshipReturnsNullAsExpected() {
+		assertNull(subject.loadPossiblyDeletedTokenRelationship(token, miscAccount));
 	}
 
 	@Test
@@ -146,13 +160,12 @@ class TypedTokenStoreTest {
 		modelTokenRel.setFrozen(!frozen);
 		modelTokenRel.setKycGranted(!kycGranted);
 		// and:
-		subject.persistTokenRelationships(List.of(modelTokenRel));
+		subject.commitTokenRelationships(List.of(modelTokenRel));
 
 		// then:
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
-		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -163,19 +176,20 @@ class TypedTokenStoreTest {
 		destroyedRel.markAsDestroyed();
 
 		// when:
-		subject.persistTokenRelationships(List.of(destroyedRel));
+		subject.commitTokenRelationships(List.of(destroyedRel));
 
 		// then:
-		verify(tokenRels).remove(miscTokenRelId);
-		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+		verify(tokenRels).remove(Pair.of(
+                      STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
+		      STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 
 	@Test
 	void persistTrackers() {
 		final var ot = new OwnershipTracker();
-		subject.persistTrackers(ot);
-		verify(transactionRecordService).includeOwnershipChanges(ot);
+		subject.commitTrackers(ot);
+		verify(sideEffectsTracker).trackTokenOwnershipChanges(ot);
 	}
 
 	@Test
@@ -190,19 +204,19 @@ class TypedTokenStoreTest {
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
 		// and:
-		subject.persistTokenRelationships(List.of(newTokenRel));
+		subject.commitTokenRelationships(List.of(newTokenRel));
 
 		// then:
-		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
+		verify(tokenRels).put(Pair.of(STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
+				STATIC_PROPERTIES.scopedTokenWith(tokenNum)), expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
+		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
 	@Test
 	void reportsExpectedNftsMinted() {
-		given(uniqueTokens.size()).willReturn(123);
-
+		given(uniqueTokens.size()).willReturn(123L);
 		// expect:
 		assertEquals(123L, subject.currentMintedNfts());
 	}
@@ -317,30 +331,29 @@ class TypedTokenStoreTest {
 		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
 		final var serialNumbers = List.of(1L, 2L);
 		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-		given(uniqueTokens.get(any())).willReturn(merkleUniqueToken);
+		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
 
 		subject.loadUniqueTokens(aToken, serialNumbers);
 
 		assertEquals(2, aToken.getLoadedUniqueTokens().size());
 
-		given(uniqueTokens.get(any())).willReturn(null);
+		given(uniqueTokens.getImmutableRef(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
 	}
 
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
-		given(tokens.getForModify(any())).willReturn(merkleToken);
+		givenModifiableToken(merkleTokenId, merkleToken);
 
 		token.setIsDeleted(true);
 		token.setAutoRenewAccount(null);
 
-		subject.persistToken(token);
+		subject.commitToken(token);
 
 		assertTrue(merkleToken.isDeleted());
 		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
 	}
-
 
 	/* --- Token saving --- */
 	@Test
@@ -389,14 +402,14 @@ class TypedTokenStoreTest {
 		expectedReplacementToken2.setMemo(memo);
 		expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
 		// and:
-		final var expectedNewUniqTokenId = EntityNumPair.fromLongs(tokenEntityId.num(), mintedSerialNo);
-		final var expectedNewUniqTokenId2 = EntityNumPair.fromLongs(tokenEntityId.num(), mintedSerialNo2);
+		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
+		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
 		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
-		final var expectedPastUniqTokenId = EntityNumPair.fromLongs(tokenEntityId.num(), wipedSerialNo);
-		final var expectedPastUniqTokenId2 = EntityNumPair.fromLongs(tokenEntityId.num(), burnedSerialNo);
+		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
+		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
-		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
+		givenToken(merkleTokenId, merkleToken);
 
 		// when:
 		var modelToken = subject.loadToken(tokenId);
@@ -414,16 +427,17 @@ class TypedTokenStoreTest {
 		modelToken.setCustomFees(List.of());
 		modelToken.setMemo(memo);
 		// and:
-		subject.persistToken(modelToken);
+		subject.commitToken(modelToken);
 
 		// then:
 		assertEquals(expectedReplacementToken, merkleToken);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).put(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
-		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId, autoRenewId.asEntityId());
-		verify(uniqTokenViewsManager).wipeNotice(expectedPastUniqTokenId, treasuryId);
+		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
+		verify(uniqueTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);
 
 		// when:
 		modelToken = subject.loadToken(tokenId);
@@ -438,17 +452,16 @@ class TypedTokenStoreTest {
 		modelToken.removedUniqueTokens().add(burnedToken);
 		modelToken.setCustomFees(List.of());
 		// and:
-		subject.persistToken(modelToken);
+		subject.commitToken(modelToken);
 
 		// then:
 		assertEquals(expectedReplacementToken2, merkleToken);
-		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken2);
 		// and:
-		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
-		verify(uniqTokenViewsManager).mintNotice(expectedNewUniqTokenId2, treasuryId);
-		verify(uniqTokenViewsManager).burnNotice(expectedPastUniqTokenId2, treasuryId);
+		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId2), treasuryId);
+		verify(uniqueTokenViewsManager).burnNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId2), treasuryId);
 	}
 
 	@Test
@@ -471,13 +484,13 @@ class TypedTokenStoreTest {
 
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
-		verify(transactionRecordService).includeChangesToToken(newToken);
+		verify(sideEffectsTracker).trackTokenChanges(newToken);
 	}
 
 	@Test
 	void loadOrFailsWorksAsExpected() {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
-		given(tokens.get(any(EntityNum.class))).willReturn(merkleToken);
+		given(tokens.getImmutableRef(any())).willReturn(merkleToken);
 		assertNotNull(subject.loadTokenOrFailWith(IdUtils.asModelId("0.0.3"), FAIL_INVALID));
 	}
 
@@ -487,19 +500,19 @@ class TypedTokenStoreTest {
 	}
 
 	private void givenRelationship(final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
-		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
+		given(tokenRels.getImmutableRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
 	}
 
 	private void givenModifiableRelationship(final EntityNumPair anAssoc, final MerkleTokenRelStatus aRelationship) {
-		given(tokenRels.getForModify(anAssoc)).willReturn(aRelationship);
+		given(tokenRels.getRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
 	}
 
 	private void givenToken(final EntityNum anId, final MerkleToken aToken) {
-		given(tokens.get(anId)).willReturn(aToken);
+		given(tokens.getImmutableRef(anId.toGrpcTokenId())).willReturn(aToken);
 	}
 
 	private void givenModifiableToken(final EntityNum anId, final MerkleToken aToken) {
-		given(tokens.getForModify(anId)).willReturn(aToken);
+		given(tokens.getRef(anId.toGrpcTokenId())).willReturn(aToken);
 	}
 
 	private void assertTokenLoadFailsWith(final ResponseCodeEnum status) {

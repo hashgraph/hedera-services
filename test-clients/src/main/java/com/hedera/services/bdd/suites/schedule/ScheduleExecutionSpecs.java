@@ -112,6 +112,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
 	private static final String A_TOKEN = "token";
 
+	private static final long defaultWindBackNanos =
+			HapiSpecSetup.getDefaultNodeProps().getLong("scheduling.triggerTxn.windBackNanos");
+
 	String failingTxn = "failingTxn", successTxn = "successTxn", signTxn = "signTxn";
 
 	public static void main(String... args) {
@@ -262,7 +265,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 										ByteString.copyFromUtf8("m1")
 								)
 						),
-						scheduleCreate("validSchedule", burnToken(A_TOKEN, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L)))
+						scheduleCreate("validSchedule",
+								burnToken(A_TOKEN, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L)))
 								.designatingPayer("schedulePayer")
 								.via(failingTxn)
 				)
@@ -317,7 +321,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 
@@ -572,7 +576,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.initialSupply(0),
 						scheduleCreate("validSchedule",
 								mintToken(
-										A_TOKEN, List.of(ByteString.copyFromUtf8("somemetadata1"), ByteString.copyFromUtf8("somemetadata2"))
+										A_TOKEN, List.of(ByteString.copyFromUtf8("somemetadata1"),
+												ByteString.copyFromUtf8("somemetadata2"))
 								)
 						)
 								.designatingPayer("schedulePayer")
@@ -592,7 +597,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 
@@ -650,7 +655,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 
@@ -709,7 +714,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 
@@ -1508,7 +1513,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 							allRunFor(spec, createTx, signTx, triggeredTx);
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 
@@ -1745,7 +1750,8 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 								.treasury("treasury")
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0),
-						scheduleCreate("validSchedule", mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("metadata"))))
+						scheduleCreate("validSchedule", mintToken(A_TOKEN,
+								List.of(ByteString.copyFromUtf8("metadata"))))
 								.designatingPayer("schedulePayer")
 								.via(failingTxn)
 				)
@@ -1794,7 +1800,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 									"Scheduled transaction be successful!");
 
 							Assertions.assertEquals(
-									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
+									signTx.getResponseRecord().getConsensusTimestamp().getNanos() + defaultWindBackNanos,
 									triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos(),
 									"Wrong consensus timestamp!");
 

@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
@@ -35,7 +36,9 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -109,7 +112,6 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -127,7 +129,10 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -173,11 +178,14 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.scheduledFunctionOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -215,6 +223,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -248,19 +257,46 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith({ MockitoExtension.class })
 class MiscUtilsTest {
+
+	@Mock
+	TxnAccessor accessor;
+	@Mock
+	TransactionBody body;
+	@Mock
+	ContractCreateTransactionBody createTransactionBody;
+	@Mock
+	ContractCallTransactionBody callTransactionBody;
+	@Mock
+	TransactionContext txCtx;
+	@Mock
+	ExpirableTxnRecord expirableTxnRecord;
+	@Mock
+	SolidityFnResult solidityFnResult;
+
+	@Test
+	void canUnpackTime() {
+		final long seconds = 1_234_567L;
+		final int nanos = 890;
+		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
+		final var expected = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+		assertEquals(expected, MiscUtils.asTimestamp(packedTime));
+	}
+
 	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
 		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
-		@SuppressWarnings("unchecked")
-		final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		@SuppressWarnings("unchecked") final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(
+				BiConsumer.class);
 		// and:
 		final var key1 = new FcLong(1L);
 		final var key2 = new FcLong(2L);
@@ -567,7 +603,8 @@ class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
+					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
@@ -676,7 +713,7 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void getsExpectedTxnFunctionality() throws UnknownHederaFunctionality {
+	void getsExpectedTxnFunctionality() {
 		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
 				setters = new HashMap<>() {{
 			put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
@@ -733,15 +770,30 @@ class MiscUtilsTest {
 	}
 
 	@Test
+	void getsExpectedScheduledTxnFunctionality() {
+		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
+				setters = new HashMap<>() {{
+			put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
+			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
+			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
+			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+		}};
+
+		setters.forEach((function, setter) -> {
+			final var txn = SchedulableTransactionBody.newBuilder();
+			setter.setDefaultInstanceFor(txn);
+			assertEquals(function, scheduledFunctionOf(txn.build()));
+		});
+
+		assertEquals(NONE, scheduledFunctionOf(SchedulableTransactionBody.getDefaultInstance()));
+	}
+
+	@Test
 	void hashCorrectly() throws IllegalArgumentException {
 		final var testBytes = "test bytes".getBytes();
 		final var expectedHash = com.swirlds.common.CommonUtils.unhex(
 				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
 		);
-		final var transaction = mock(Transaction.class);
-		final var accessor = mock(PlatformTxnAccessor.class);
-		given(transaction.toByteArray()).willReturn(testBytes);
-		given(accessor.getSignedTxnWrapper()).willReturn(transaction);
 
 		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
 		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
@@ -772,6 +824,43 @@ class MiscUtilsTest {
 		assertEquals("<N/A>", describe(tooDeep));
 	}
 
+	@Test
+	void managesOffsetsAsExpected() {
+		final var sec = 1_234_567L;
+		final Instant wellBeforeBoundary = Instant.ofEpochSecond(sec - 1, 500_000_000);
+		final Instant beforeBoundary = Instant.ofEpochSecond(sec - 1, 999_999_999);
+		final Instant onBoundary = Instant.ofEpochSecond(sec, 0);
+		final Instant inTheMiddle = Instant.ofEpochSecond(sec, 500_000_000);
+
+		assertEquals(beforeBoundary, nonNegativeNanosOffset(onBoundary, -1));
+		assertEquals(wellBeforeBoundary, nonNegativeNanosOffset(onBoundary, -500_000_000));
+		assertEquals(onBoundary, nonNegativeNanosOffset(beforeBoundary, +1));
+		assertEquals(inTheMiddle.minusNanos(1), nonNegativeNanosOffset(inTheMiddle, -1));
+		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
+	}
+
+	@Test
+	void rejectsNonPrimitiveProtoKeys() {
+		assertFalse(MiscUtils.isSerializedProtoKey(Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))))
+				.build()
+				.toByteString()));
+		assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
+	}
+
+	@Test
+	void contractCallIsConsensusThrottled() {
+		assertTrue(isGasThrottled(ContractCall));
+	}
+
+	@Test
+	void contractCreateIsConsensusThrottled() {
+		assertTrue(isGasThrottled(ContractCreate));
+	}
+
+	@SuppressWarnings("unchecked")
 	public static class BodySetter<T, B> {
 		private final Class<T> type;
 

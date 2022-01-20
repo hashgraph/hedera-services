@@ -26,8 +26,8 @@ import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
+import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.stream.RecordStreamManager;
-import com.hedera.services.txns.network.UpgradeActions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +45,6 @@ public class StateInitializationFlow {
 	private final HederaFs hfs;
 	private final HederaNumbers hederaNums;
 	private final StateAccessor stateAccessor;
-	private final UpgradeActions upgradeActions;
 	private final RecordStreamManager recordStreamManager;
 	private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
 
@@ -53,7 +52,6 @@ public class StateInitializationFlow {
 	public StateInitializationFlow(
 			final HederaFs hfs,
 			final HederaNumbers hederaNums,
-			final UpgradeActions upgradeActions,
 			final RecordStreamManager recordStreamManager,
 			final @WorkingState StateAccessor stateAccessor,
 			final Set<FileUpdateInterceptor> fileUpdateInterceptors
@@ -61,7 +59,6 @@ public class StateInitializationFlow {
 		this.hfs = hfs;
 		this.hederaNums = hederaNums;
 		this.stateAccessor = stateAccessor;
-		this.upgradeActions = upgradeActions;
 		this.recordStreamManager = recordStreamManager;
 		this.fileUpdateInterceptors = fileUpdateInterceptors;
 	}
@@ -69,10 +66,32 @@ public class StateInitializationFlow {
 	public void runWith(ServicesState activeState) {
 		staticNumbersHolder.accept(hederaNums);
 
-		stateAccessor.updateFrom(activeState);
+		stateAccessor.updateChildrenFrom(activeState);
 		log.info("Context updated with working state");
-
-		upgradeActions.catchUpOnMissedSideEffects();
+		log.info("  (@ {}) # NFTs               = {}",
+				StateChildIndices.UNIQUE_TOKENS,
+				activeState.uniqueTokens().size());
+		log.info("  (@ {}) # token associations = {}",
+				StateChildIndices.TOKEN_ASSOCIATIONS,
+				activeState.tokenAssociations().size());
+		log.info("  (@ {}) # topics             = {}",
+				StateChildIndices.TOPICS,
+				activeState.topics().size());
+		log.info("  (@ {}) # blobs              = {}",
+				StateChildIndices.STORAGE,
+				activeState.storage().size());
+		log.info("  (@ {}) # accounts/contracts = {}",
+				StateChildIndices.ACCOUNTS,
+				activeState.accounts().size());
+		log.info("  (@ {}) # tokens             = {}",
+				StateChildIndices.TOKENS,
+				activeState.tokens().size());
+		log.info("  (@ {}) # scheduled txns     = {}",
+				StateChildIndices.SCHEDULE_TXS,
+				activeState.scheduleTxs().size());
+		log.info("  (@ {}) # contract K/V pairs = {}",
+				StateChildIndices.CONTRACT_STORAGE,
+				activeState.contractStorage().size());
 
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);

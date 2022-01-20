@@ -80,6 +80,13 @@ class TokenDeleteUsageTest {
 		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
+
+	@Test
+	void assertSelf() {
+		subject = TokenDeleteUsage.newEstimate(txn, sigUsage);
+		assertEquals(subject, subject.self());
+	}
+
 	private void givenOp() {
 		op = TokenDeleteTransactionBody.newBuilder()
 				.setToken(id)

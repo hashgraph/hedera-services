@@ -144,6 +144,4 @@ public class ExpandHandleSpanMapAccessor {
 	public CryptoUpdateMeta getCryptoUpdateMeta(TxnAccessor accessor) {
 		return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
 	}
-
-
 }

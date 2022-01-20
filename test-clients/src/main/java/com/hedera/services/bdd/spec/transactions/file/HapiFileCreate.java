@@ -52,6 +52,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -69,14 +70,19 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	Optional<String> contentsPath = Optional.empty();
 	Optional<byte[]> contents = Optional.empty();
 	Optional<String> memo = Optional.empty();
-	Optional<SigControl> waclControl = Optional.empty();
 	Optional<String> keyName = Optional.empty();
-	Optional<String> resourceName = Optional.empty();
+	Optional<SigControl> waclControl = Optional.empty();
+	Optional<LongConsumer> newNumObserver = Optional.empty();
 	AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
 	Optional<Function<HapiApiSpec, String>> contentsPathFn = Optional.empty();
 
 	public HapiFileCreate(String fileName) {
 		this.fileName = fileName;
+	}
+
+	public HapiFileCreate exposingNumTo(LongConsumer obs) {
+		newNumObserver = Optional.of(obs);
+		return this;
 	}
 
 	public HapiFileCreate advertisingCreation() {
@@ -213,9 +219,9 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (waclControl.isPresent()) {
 			SigControl control = waclControl.get();
 			Assertions.assertEquals(SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
-			waclKey = spec.keys().generateSubjectTo(control, generator);
+			waclKey = spec.keys().generateSubjectTo(spec, control, generator);
 		} else {
-			waclKey = spec.keys().generate(KeyFactory.KeyType.LIST, generator);
+			waclKey = spec.keys().generate(spec, KeyFactory.KeyType.LIST, generator);
 		}
 	}
 
@@ -224,10 +230,13 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		if (actualStatus != SUCCESS) {
 			return;
 		}
+		final var newId = lastReceipt.getFileID();
+		newNumObserver.ifPresent(obs -> obs.accept(newId.getFileNum()));
+
 		if (!immutable) {
 			spec.registry().saveKey(fileName, waclKey);
 		}
-		spec.registry().saveFileId(fileName, lastReceipt.getFileID());
+		spec.registry().saveFileId(fileName, newId);
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
 		if (verboseLoggingOn) {
 			log.info("Created file {} with ID {}.", fileName, lastReceipt.getFileID());

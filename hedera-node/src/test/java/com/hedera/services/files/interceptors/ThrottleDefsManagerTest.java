@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -67,7 +68,8 @@ class ThrottleDefsManagerTest {
 	EnumSet<HederaFunctionality> pretendExpectedOps = EnumSet.of(
 			CryptoCreate, CryptoTransfer, ContractCall,
 			TokenCreate, TokenAssociateToAccount, TokenMint,
-			CryptoGetAccountBalance, TransactionGetReceipt
+			CryptoGetAccountBalance, TransactionGetReceipt,
+			GetVersionInfo
 	);
 
 	@Mock

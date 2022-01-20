@@ -39,7 +39,6 @@ import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.TokenOpsUsageUtils;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
@@ -116,10 +115,6 @@ class AccessorBasedUsagesTest {
 	private ConsensusOpsUsage consensusOpsUsage;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private TokenOpsUsageUtils tokenOpsUsageUtils;
-	@Mock
-	private TransactionBody txnBody;
 
 	private AccessorBasedUsages subject;
 
@@ -276,7 +271,7 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForTokenFreezeAccount() {
 		final var baseMeta = new BaseTransactionMeta(0, 0);
-		final var tokenFreezeMeta = new TokenFreezeMeta(48 );
+		final var tokenFreezeMeta = new TokenFreezeMeta(48);
 		final var accumulator = new UsageAccumulator();
 		given(txnAccessor.getFunction()).willReturn(TokenFreezeAccount);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
@@ -290,7 +285,7 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForTokenUnfreezeAccount() {
 		final var baseMeta = new BaseTransactionMeta(0, 0);
-		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48 );
+		final var tokenUnfreezeMeta = new TokenUnfreezeMeta(48);
 		final var accumulator = new UsageAccumulator();
 		given(txnAccessor.getFunction()).willReturn(TokenUnfreezeAccount);
 		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);

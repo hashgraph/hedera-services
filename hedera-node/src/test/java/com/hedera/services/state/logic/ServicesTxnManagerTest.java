@@ -22,6 +22,8 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -71,6 +73,10 @@ class ServicesTxnManagerTest {
 	private RecordCache recordCache;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -80,20 +86,23 @@ class ServicesTxnManagerTest {
 	@BeforeEach
 	void setup() {
 		subject = new ServicesTxnManager(
-				processLogic, recordStreaming, triggeredProcessLogic, recordCache, ledger, txnCtx);
+				processLogic, recordStreaming, triggeredProcessLogic, recordCache,
+				ledger, txnCtx, sigImpactHistorian, recordsHistorian);
 	}
 
 	@Test
 	void managesHappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming);
+		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordsHistorian, sigImpactHistorian);
 
 		// when:
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(sigImpactHistorian).setChangeTime(consensusTime);
+		inOrder.verify(recordsHistorian).clearHistory();
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordStreaming).run();
@@ -141,8 +150,8 @@ class ServicesTxnManagerTest {
 		// then:
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).setStatus(ResponseCodeEnum.FAIL_INVALID);
-		inOrder.verify(ledger).commit();
-		inOrder.verify(recordStreaming).run();
+		inOrder.verify(ledger).rollback();
+		inOrder.verify(recordStreaming, never()).run();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn processing")));
@@ -163,8 +172,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
@@ -191,8 +200,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
@@ -220,8 +229,8 @@ class ServicesTxnManagerTest {
 		subject.process(accessor, consensusTime, submittingMember);
 
 		// then:
-		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).resetFor(accessor, consensusTime, submittingMember);
+		inOrder.verify(ledger).begin();
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);

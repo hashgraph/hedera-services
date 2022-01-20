@@ -65,6 +65,24 @@ class SolidityLogTest {
 	}
 
 	@Test
+	void equalsSame() {
+		final var sameButDifferent = subject;
+		assertEquals(subject, sameButDifferent);
+	}
+
+	@Test
+	void areSameTopicsBadScenarios() {
+		List<byte[]> differentTopics = List.of("first".getBytes(), "second".getBytes());
+		List<byte[]> sameButDifferentTopics = List.of("first".getBytes(), "second".getBytes(), "thirds".getBytes());
+
+		SolidityLog copy = new SolidityLog(contractId, bloom, differentTopics, data);
+		SolidityLog sameButDifferentCopy = new SolidityLog(contractId, bloom, sameButDifferentTopics, data);
+
+		assertNotEquals(subject, copy);
+		assertNotEquals(subject, sameButDifferentCopy);
+	}
+
+	@Test
 	void toStringWorks() {
 		assertEquals(
 				"SolidityLog{data=" + CommonUtils.hex(data) + ", " +

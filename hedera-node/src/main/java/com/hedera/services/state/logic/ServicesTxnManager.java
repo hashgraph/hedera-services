@@ -22,6 +22,8 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
@@ -48,20 +50,26 @@ public class ServicesTxnManager {
 	private final RecordCache recordCache;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
+	private final AccountRecordsHistorian recordsHistorian;
 
 	@Inject
 	public ServicesTxnManager(
-			@RunTopLevelTransition Runnable scopedProcessing,
-			@RunRecordStreaming Runnable scopedRecordStreaming,
-			@RunTriggeredTransition Runnable scopedTriggeredProcessing,
-			RecordCache recordCache,
-			HederaLedger ledger,
-			TransactionContext txnCtx
+			final @RunTopLevelTransition Runnable scopedProcessing,
+			final @RunRecordStreaming Runnable scopedRecordStreaming,
+			final @RunTriggeredTransition Runnable scopedTriggeredProcessing,
+			final RecordCache recordCache,
+			final HederaLedger ledger,
+			final TransactionContext txnCtx,
+			final SigImpactHistorian sigImpactHistorian,
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.recordCache = recordCache;
+		this.recordsHistorian = recordsHistorian;
 		this.scopedProcessing = scopedProcessing;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.scopedRecordStreaming = scopedRecordStreaming;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
 	}
@@ -69,20 +77,29 @@ public class ServicesTxnManager {
 	private boolean createdStreamableRecord;
 
 	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+		var processFailed = false;
 		createdStreamableRecord = false;
 
 		try {
-			ledger.begin();
 			txnCtx.resetFor(accessor, consensusTime, submittingMember);
+			sigImpactHistorian.setChangeTime(consensusTime);
+			recordsHistorian.clearHistory();
+			ledger.begin();
+
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {
 				scopedProcessing.run();
 			}
 		} catch (Exception processFailure) {
+			processFailed = true;
 			logContextualizedError(processFailure, "txn processing");
 			txnCtx.setStatus(FAIL_INVALID);
-		} finally {
+		}
+
+		if (processFailed) {
+			attemptRollback(accessor, consensusTime, submittingMember);
+		} else {
 			attemptCommit(accessor, consensusTime, submittingMember);
 			if (createdStreamableRecord) {
 				attemptRecordStreaming();

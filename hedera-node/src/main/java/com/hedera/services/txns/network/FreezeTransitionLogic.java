@@ -50,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
@@ -134,8 +133,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				return validate(op, effectiveNow, false);
 			case PREPARE_UPGRADE:
 				return validate(op, null, true);
-			case FREEZE_UPGRADE:
-			case TELEMETRY_UPGRADE:
+			case FREEZE_UPGRADE, TELEMETRY_UPGRADE:
 				return validate(op, effectiveNow, true);
 			default:
 				return INVALID_FREEZE_TRANSACTION_BODY;
@@ -185,7 +183,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				assertValidFreezeOnly(op);
 				break;
 			case FREEZE_ABORT:
-				assertValidFreezeAbort();
+				/* Nothing to do here; FREEZE_ABORT is idempotent to allow DevOps to submit
+				multiple such transactions if disconnected nodes missed the previous. */
 				break;
 			case PREPARE_UPGRADE:
 				assertValidPrepareUpgrade(op);
@@ -198,11 +197,6 @@ public class FreezeTransitionLogic implements TransitionLogic {
 						"Transaction type '" + freezeType + "' should have been rejected in precheck",
 						FAIL_INVALID);
 		}
-	}
-
-	private void assertValidFreezeAbort() {
-		final var isSomethingToAbort = upgradeActions.isFreezeScheduled() || networkCtx.get().hasPreparedUpgrade();
-		validateTrue(isSomethingToAbort, NO_FREEZE_IS_SCHEDULED);
 	}
 
 	private void assertValidFreezeOnly(final FreezeTransactionBody op) {
@@ -230,7 +224,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 		final var fileMatches = op.getUpdateFile().getFileNum() == curNetworkCtx.getPreparedUpdateFileNum();
 		validateTrue(fileMatches, UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED);
-		final var hashMatches = Arrays.equals(op.getFileHash().toByteArray(), curNetworkCtx.getPreparedUpdateFileHash());
+		final var hashMatches = Arrays.equals(op.getFileHash().toByteArray(),
+				curNetworkCtx.getPreparedUpdateFileHash());
 		validateTrue(hashMatches, UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
 
 		final var isHashUnchanged = curNetworkCtx.isPreparedFileHashValidGiven(specialFiles.get());

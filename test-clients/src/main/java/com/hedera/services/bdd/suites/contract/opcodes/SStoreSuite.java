@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +53,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 
 public class SStoreSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SStoreSuite.class);
@@ -88,8 +88,8 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
-										"contracts.maxGas", "" + MAX_CONTRACT_GAS)))
+										"contracts.maxGas", "" + MAX_CONTRACT_GAS,
+										"contracts.throttle.throttleByGas", "false")))
 				.when()
 				.then();
 	}
@@ -107,7 +107,6 @@ public class SStoreSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bigArrayContractFile").path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
@@ -146,12 +145,12 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec childStorage() {
+		// Successfully exceeds deprecated max contract storage of 1 KB
 		return defaultHapiSpec("ChildStorage")
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_KB,
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
@@ -175,9 +174,8 @@ public class SStoreSuite extends HapiApiSuite {
 						valuesMatch(19, 17, 19),
 						contractCall("childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23),
 						valuesMatch(23, 23, 19),
-						contractCall("childStorage", ContractResources.SET_BOTH_ABI, 29)
-								.hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED),
-						valuesMatch(23, 23, 19)
+						contractCall("childStorage", ContractResources.SET_BOTH_ABI, 29),
+						valuesMatch(29, 29, 29)
 				));
 	}
 
@@ -240,6 +238,7 @@ public class SStoreSuite extends HapiApiSuite {
 	HapiApiSpec temporarySStoreRefundTest() {
 		return defaultHapiSpec("TemporarySStoreRefundTest")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("bytecode").path(ContractResources.TEMPORARY_SSTORE_REFUND_CONTRACT),
 						contractCreate("sStoreRefundContract").bytecode("bytecode")
 				).when(
@@ -255,6 +254,7 @@ public class SStoreSuite extends HapiApiSuite {
 									.saveTxnRecordToRegistry("tempHoldTxRec").logged();
 							final var subop02 = getTxnRecord("permHoldTx")
 									.saveTxnRecordToRegistry("permHoldTxRec").logged();
+
 							CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
 							final var gasUsedForTemporaryHoldTx = spec.registry()
@@ -262,10 +262,12 @@ public class SStoreSuite extends HapiApiSuite {
 							final var gasUsedForPermanentHoldTx = spec.registry()
 									.getTransactionRecord("permHoldTxRec").getContractCallResult().getGasUsed();
 
-							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
+							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-						}
-				));
+						}),
+						UtilVerbs.resetAppPropertiesTo(
+								"src/main/resource/bootstrap.properties")
+				);
 	}
 
 	@Override

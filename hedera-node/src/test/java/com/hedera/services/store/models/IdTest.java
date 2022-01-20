@@ -61,8 +61,7 @@ class IdTest {
 		assertNotEquals(cId, aId);
 		assertNotEquals(dId, aId);
 		assertEquals(eId, aId);
-		assertNotEquals(null, aId);
-		assertNotEquals(new Object(), aId);
+		assertNotEquals(aId, new Object());
 		assertEquals(aId, aId);
 	}
 
@@ -92,16 +91,16 @@ class IdTest {
 	void gettersWork() {
 		final var id = new Id(11, 22, 33);
 
-		assertEquals(11, id.getShard());
-		assertEquals(22, id.getRealm());
-		assertEquals(33, id.getNum());
+		assertEquals(11, id.shard());
+		assertEquals(22, id.realm());
+		assertEquals(33, id.num());
 	}
 
 	@Test
 	void toStringWorks() {
 		final var id = new Id(4, 5, 6);
 
-		assertEquals("Id{shard=4, realm=5, num=6}", id.toString());
+		assertEquals("Id[shard=4, realm=5, num=6]", id.toString());
 	}
 
 	@Test

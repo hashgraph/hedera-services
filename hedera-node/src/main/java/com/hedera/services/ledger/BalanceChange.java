@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -43,10 +44,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code tokenId} and {@code accountId} fields are
- * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
- * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
- * whose APIs still use gRPC types.
+ * The {@code tokenId} and {@code accountId} fields are temporary, needed to interact with the
+ * {@code BackingAccounts} and {@code BackingTokenRels} components whose APIs still use gRPC types.
  */
 public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
@@ -63,6 +62,8 @@ public class BalanceChange {
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
 	private ResponseCodeEnum codeForInsufficientBalance;
+	private ByteString alias;
+	private int expectedDecimals = -1;
 
 	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -86,7 +87,7 @@ public class BalanceChange {
 				nftTransfer.getReceiverAccountID(),
 				serialNo,
 				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-		nftChange.nftId = new NftId(token.getShard(), token.getRealm(), token.getNum(), serialNo);
+		nftChange.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
 		nftChange.tokenId = tokenId;
 		return nftChange;
 	}
@@ -103,6 +104,7 @@ public class BalanceChange {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
+		this.alias = accountId.getAlias();
 		this.units = amount;
 		this.originalUnits = amount;
 		this.codeForInsufficientBalance = code;
@@ -112,6 +114,7 @@ public class BalanceChange {
 	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
+		this.alias = accountId.getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
 		this.units = aa.getAmount();
 		this.originalUnits = units;
@@ -124,8 +127,15 @@ public class BalanceChange {
 		this.accountId = sender;
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
+		this.alias = accountId.getAlias();
 		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
+	}
+
+	public void replaceAliasWith(final AccountID createdId) {
+		accountId = createdId;
+		account = Id.fromGrpcAccount(createdId);
+		alias = ByteString.EMPTY;
 	}
 
 	public void adjustUnits(long units) {
@@ -172,6 +182,10 @@ public class BalanceChange {
 		return accountId;
 	}
 
+	public ByteString alias() {
+		return alias;
+	}
+
 	public AccountID counterPartyAccountId() {
 		return counterPartyAccountId;
 	}
@@ -186,6 +200,18 @@ public class BalanceChange {
 
 	public ResponseCodeEnum codeForInsufficientBalance() {
 		return codeForInsufficientBalance;
+	}
+
+	public boolean hasExpectedDecimals() {
+		return expectedDecimals != -1;
+	}
+
+	public int getExpectedDecimals() {
+		return expectedDecimals;
+	}
+
+	public void setExpectedDecimals(final int expectedDecimals) {
+		this.expectedDecimals = expectedDecimals;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -208,7 +234,9 @@ public class BalanceChange {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
+					.add("alias", alias.toStringUtf8())
 					.add("units", units)
+					.add("expectedDecimals", expectedDecimals)
 					.toString();
 		} else {
 			return MoreObjects.toStringHelper(BalanceChange.class)
@@ -230,5 +258,9 @@ public class BalanceChange {
 
 	public boolean isExemptFromCustomFees() {
 		return exemptFromCustomFees;
+	}
+
+	public boolean hasNonEmptyAlias() {
+		return accountId.getAccountNum() == 0 && !alias.isEmpty();
 	}
 }

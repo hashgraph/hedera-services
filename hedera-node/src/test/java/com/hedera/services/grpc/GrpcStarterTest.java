@@ -27,6 +27,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,8 @@ class GrpcStarterTest {
 	@Mock
 	private Address nodeAddress;
 	@Mock
+	private AddressBook addressBook;
+	@Mock
 	private GrpcServerManager grpcServerManager;
 	@Mock
 	private NodeLocalProperties nodeLocalProperties;
@@ -69,7 +72,12 @@ class GrpcStarterTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new GrpcStarter(nodeId, nodeAddress, grpcServerManager, nodeLocalProperties, Optional.of(console));
+		subject = new GrpcStarter(
+				nodeId,
+				grpcServerManager,
+				nodeLocalProperties,
+				() -> addressBook,
+				Optional.of(console));
 	}
 
 	@Test
@@ -109,6 +117,7 @@ class GrpcStarterTest {
 	void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
 		withPorts();
 
+		given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
 		given(nodeAddress.getMemo()).willReturn("0.0.3");
@@ -125,6 +134,7 @@ class GrpcStarterTest {
 	void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
 		withPorts();
 
+		given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
 		given(nodeAddress.getMemo()).willReturn("0.0.4");
@@ -144,6 +154,7 @@ class GrpcStarterTest {
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeAddress.getMemo()).willReturn("0.0.3");
 		given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
+		given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
 
 		// when:
 		subject.startIfAppropriate();
@@ -156,6 +167,7 @@ class GrpcStarterTest {
 	void startsIfUnblessedOnDevProfileAllNodesListening() {
 		withPorts();
 
+		given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
 		given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 		given(nodeAddress.getMemo()).willReturn("0.0.4");
 		given(nodeAddress.getPortExternalIpv4()).willReturn(50666);

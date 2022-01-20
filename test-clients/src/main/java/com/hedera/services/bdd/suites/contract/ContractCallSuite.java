@@ -20,19 +20,24 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -41,45 +46,60 @@ import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_TAKE_TICKET;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_WORK_TICKET;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -87,6 +107,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -96,33 +117,17 @@ public class ContractCallSuite extends HapiApiSuite {
 	private static final long depositAmount = 1000;
 
 	public static void main(String... args) {
-		new ContractCallSuite().runSuiteAsync();
+		new ContractCallSuite().runSuiteSync();
 	}
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
-
-	List<HapiApiSpec> negativeSpecs() {
-		return Arrays.asList(
-				insufficientGas(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails()
-		);
-	}
-
-	List<HapiApiSpec> positiveSpecs() {
-		return Arrays.asList(
+		return List.of(
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -132,8 +137,157 @@ public class ContractCallSuite extends HapiApiSuite {
 				multipleSelfDestructsAreSafe(),
 				smartContractInlineAssemblyCheck(),
 				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds()
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCall(),
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
+				invalidContract(),
+				smartContractFailFirst(),
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				imapUserExercise(),
+				workingHoursDemo(),
+				deletedContractsCannotBeUpdated()
 		);
+	}
+
+	private HapiApiSpec deletedContractsCannotBeUpdated() {
+		final var adminKey = "admin";
+		final var contract = "contract";
+
+		return defaultHapiSpec("DeletedContractsCannotBeUpdated")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate("bytecode").path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(contract)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000)
+				).when(
+						contractCall(contract, ContractResources.SELF_DESTRUCT_CALL_ABI)
+								.deferStatusResolution()
+				).then(
+						contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID)
+				);
+	}
+
+	private HapiApiSpec workingHoursDemo() {
+		final var initcode = "initcode";
+		final var gasToOffer = 4_000_000;
+		final var workingHours = "workingHours";
+
+		final var ticketToken = "ticketToken";
+		final var adminKey = "admin";
+		final var treasury = "treasury";
+		final var newSupplyKey = "newSupplyKey";
+
+		final var ticketTaking = "ticketTaking";
+		final var ticketWorking = "ticketWorking";
+		final var mint = "minting";
+		final var burn = "burning";
+		final var preMints = List.of(
+				ByteString.copyFromUtf8("HELLO"),
+				ByteString.copyFromUtf8("GOODBYE"));
+
+		final AtomicLong ticketSerialNo = new AtomicLong();
+
+		return defaultHapiSpec("WorkingHoursDemo")
+				.given(
+						newKeyNamed(adminKey),
+						cryptoCreate(treasury),
+						tokenCreate(ticketToken)
+								.treasury(treasury)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyType(TokenSupplyType.INFINITE)
+								.adminKey(adminKey)
+								.supplyKey(adminKey),
+						mintToken(ticketToken, preMints).via(mint),
+						burnToken(ticketToken, List.of(1L)).via(burn),
+						fileCreate(initcode),
+						updateLargeFile(
+								GENESIS,
+								initcode,
+								extractByteCode(WORKING_HOURS_USER_BYTECODE_PATH))
+				).when(
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final var tokenId = registry.getTokenID(ticketToken);
+							final var treasuryId = registry.getAccountID(treasury);
+							final var creation = contractCreate(
+									workingHours,
+									WORKING_HOURS_CONS,
+									tokenId.getTokenNum(), treasuryId.getAccountNum()
+							)
+									.bytecode(initcode)
+									.gas(gasToOffer);
+							allRunFor(spec, creation);
+						}),
+						newKeyNamed(newSupplyKey)
+								.shape(KeyShape.CONTRACT.signedWith(workingHours)),
+						tokenUpdate(ticketToken).supplyKey(newSupplyKey)
+				).then(
+						/* Take a ticket */
+						contractCall(workingHours, WORKING_HOURS_TAKE_TICKET)
+								.via(ticketTaking)
+								.alsoSigningWithFullPrefix(treasury)
+								.exposingResultTo(result -> {
+									log.info("Explicit mint result is {}", result);
+									ticketSerialNo.set(((BigInteger) result[0]).longValueExact());
+								}),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						/* Our ticket number is 3 (b/c of the two pre-mints), so we must call
+						* work twice before the contract will actually accept our ticket. */
+						sourcing(() ->
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						sourcing(() ->
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.via(ticketWorking)),
+						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 0L),
+						getTokenInfo(ticketToken).hasTotalSupply(1L),
+						/* Review the history */
+						getTxnRecord(ticketTaking).andAllChildRecords().logged(),
+						getTxnRecord(ticketWorking).andAllChildRecords().logged()
+				);
+	}
+
+	private HapiApiSpec imapUserExercise() {
+		final var initcode = "initcode";
+		final var contract = "imapUser";
+		final var insert1To4 = "insert1To10";
+		final var insert2To8 = "insert2To8";
+		final var insert3To16 = "insert3To16";
+		final var remove2 = "remove2";
+		final var gasToOffer = 4_000_000;
+
+		return defaultHapiSpec("ImapUserExercise")
+				.given(
+						fileCreate(initcode).path(IMAP_USER_BYTECODE_PATH),
+						contractCreate(contract)
+								.bytecode(initcode)
+				).when().then(
+						contractCall(contract, IMAP_USER_INSERT, 1, 4)
+								.gas(gasToOffer)
+								.via(insert1To4),
+						contractCall(contract, IMAP_USER_INSERT, 2, 8)
+								.gas(gasToOffer)
+								.via(insert2To8),
+						contractCall(contract, IMAP_USER_INSERT, 3, 16)
+								.gas(gasToOffer)
+								.via(insert3To16),
+						contractCall(contract, IMAP_USER_REMOVE, 2)
+								.gas(gasToOffer)
+								.via(remove2)
+				);
 	}
 
 	HapiApiSpec ocToken() {
@@ -191,12 +345,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop3, subop4, subop5);
+							allRunFor(spec, subop1, subop3, subop4, subop5);
 
 							CallTransaction.Function funcSymbol =
 									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
 
-							String symbol = (String) getValueFromRegistry(spec, "token_symbol", funcSymbol);
+							String symbol = getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
 							ctxLog.info("symbol: [{}]", symbol);
 							Assertions.assertEquals(
@@ -256,7 +410,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
+							allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
 
 							long aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
 									function)).longValue();
@@ -303,7 +457,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
-							CustomSpecAssert.allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
+							allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
 									subop18);
 
 							long daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
@@ -346,7 +500,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveRecordNumToRegistry("tokenContractRecordNum")
 									.hasCostAnswerPrecheck(OK);
 
-							CustomSpecAssert.allRunFor(spec, finalOp);
+							allRunFor(spec, finalOp);
 
 							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
 							ctxLog.info("Finished {}", totalRecordNum);
@@ -402,10 +556,11 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							var subop2 = getAccountInfo("payer")
 									.savingSnapshot("payerAccountInfo");
-							CustomSpecAssert.allRunFor(spec, subop1, subop2);
+							allRunFor(spec, subop1, subop2);
 
-							ContractGetInfoResponse.ContractInfo simpleStorageContractInfo = spec.registry().getContractInfo(
-									"simpleStorageKey");
+							ContractGetInfoResponse.ContractInfo simpleStorageContractInfo =
+									spec.registry().getContractInfo(
+											"simpleStorageKey");
 							String contractAddress = simpleStorageContractInfo.getContractAccountID();
 
 							var subop3 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI,
@@ -413,7 +568,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveResultTo("simpleStorageContractCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec, subop3);
+							allRunFor(spec, subop3);
 
 							byte[] result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
@@ -435,7 +590,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									"Real smart contract code size should be greater than 0");
 
 
-							CryptoGetInfoResponse.AccountInfo payerAccountInfo = spec.registry().getAccountInfo("payerAccountInfo");
+							CryptoGetInfoResponse.AccountInfo payerAccountInfo = spec.registry().getAccountInfo(
+									"payerAccountInfo");
 							String acctAddress = payerAccountInfo.getContractAccountID();
 
 							var subop4 = contractCallLocal("inlineTestContract", ContractResources.GET_CODE_SIZE_ABI,
@@ -443,7 +599,7 @@ public class ContractCallSuite extends HapiApiSuite {
 									.saveResultTo("fakeCodeSizeBytes")
 									.gas(300_000L);
 
-							CustomSpecAssert.allRunFor(spec, subop4);
+							allRunFor(spec, subop4);
 							result = spec.registry().getBytes("fakeCodeSizeBytes");
 
 							codeSize = 0;
@@ -467,7 +623,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
 						fileCreate("bytecode").path(ContractResources.FUSE_BYTECODE_PATH),
-						contractCreate("fuse").bytecode("bytecode")
+						contractCreate("fuse").bytecode("bytecode").gas(300_000)
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
@@ -505,7 +661,7 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via("payTxn").sending(depositAmount);
 								var subOp3 = getAccountBalance("payableContract")
 										.hasTinyBars(changeFromSnapshot("payerBefore", +depositAmount));
-								CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3);
+								allRunFor(spec, subOp1, subOp2, subOp3);
 							}
 						})
 				);
@@ -532,8 +688,9 @@ public class ContractCallSuite extends HapiApiSuite {
 	HapiApiSpec payableSuccess() {
 		return defaultHapiSpec("PayableSuccess")
 				.given(
+						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						fileCreate("payableBytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH),
-						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD).gas(1_000_000)
 				).when(
 						contractCall("payableContract").via("payTxn").sending(depositAmount)
 				).then(
@@ -541,53 +698,29 @@ public class ContractCallSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
-														logWith().longAtBytes(depositAmount, 24)))))
+														logWith().longAtBytes(depositAmount, 24))))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
-	HapiApiSpec simpleUpdate() {
-		return defaultHapiSpec("SimpleUpdate")
+	HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
+		return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
 				.given(
+						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
 				).when(
-						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(1_000_000),
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI, "0x0000000000000000000000000000000000000002").gas(1_000_000)
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_SELFDESTRUCT_UPDATE_ABI,
+								"0x0000000000000000000000000000000000000002")
+								.gas(1_000_000L)
 				).then(
-						contractCall("simpleUpdateContract", ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(1_000_000).hasKnownStatus(CONTRACT_DELETED)
-				);
-	}
-
-	HapiApiSpec vanillaSuccess() {
-		return defaultHapiSpec("VanillaSuccess")
-				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
-						getContractInfo("parentDelegate").logged().saveToRegistry("parentInfo")
-				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("createChildTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).via("getChildResultTxn"),
-						contractCall("parentDelegate", ContractResources.GET_CHILD_ADDRESS_ABI).via(
-								"getChildAddressTxn")
-				).then(
-						getTxnRecord("createChildTxn")
-								.saveCreatedContractListToRegistry("createChild")
-								.logged(),
-						getTxnRecord("getChildResultTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith().resultThruAbi(
-												ContractResources.GET_CHILD_RESULT_ABI,
-												isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
-						getTxnRecord("getChildAddressTxn")
-								.hasPriority(recordWith().contractCallResult(
-										resultWith()
-												.resultThruAbi(
-														ContractResources.GET_CHILD_ADDRESS_ABI,
-														isContractWith(contractWith()
-																.nonNullContractId()
-																.propertiesInheritedFrom("parentInfo")))
-												.logs(inOrder()))),
-						contractListWithPropertiesInheritedFrom("createChildCallResult", 1, "parentInfo")
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 15, 434).gas(350_000L)
+								.hasKnownStatus(CONTRACT_DELETED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -626,7 +759,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).via("callTxn").sending(
-										depositAmount)
+								depositAmount)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				).then(
 						getTxnRecord("callTxn").hasPriority(
@@ -653,21 +786,23 @@ public class ContractCallSuite extends HapiApiSuite {
 					+ ", fee = " + record.getTransactionFee()
 					+ ", result is [self-reported size = " + result.getContractCallResult().size()
 					+ ", '" + result.getContractCallResult() + "']");
-			txnLog.info("  Literally :: " + result.toString());
+			txnLog.info("  Literally :: " + result);
 		};
 
 		return defaultHapiSpec("ResultSizeAffectsFees")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						TxnVerbs.fileCreate("bytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
 						TxnVerbs.contractCreate("testContract").bytecode("bytecode")
 				).when(
 						TxnVerbs.contractCall(
-										"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
-										TRANSFER_AMOUNT, 0, "So we out-danced thought...")
+								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
+								TRANSFER_AMOUNT, 0, "So we out-danced thought...")
 								.via("noLogsCallTxn").sending(TRANSFER_AMOUNT),
 						TxnVerbs.contractCall(
-										"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
-										TRANSFER_AMOUNT, 5, "So we out-danced thought...")
+								"testContract", ContractResources.VERBOSE_DEPOSIT_ABI,
+								TRANSFER_AMOUNT, 5, "So we out-danced thought...")
 								.via("loggedCallTxn").sending(TRANSFER_AMOUNT)
 
 				).then(
@@ -687,7 +822,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									unloggedRecord.getTransactionFee(),
 									loggedRecord.getTransactionFee(),
 									"Result size should change the txn fee!");
-						})
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -823,38 +959,43 @@ public class ContractCallSuite extends HapiApiSuite {
 								.bytecode("bytecode")
 				).when(
 						withOpContext((spec, opLog) -> {
-							var subop1 = contractCall("payTestSelfDestruct", ContractResources.DEPOSIT_ABI, 1_000L)
+							var subop1 = contractCall(
+									"payTestSelfDestruct", ContractResources.DEPOSIT_ABI, 1_000L)
 									.payingWith("payer")
 									.gas(300_000L)
 									.via("deposit")
 									.sending(1_000L);
 
-							var subop2 = contractCall("payTestSelfDestruct", ContractResources.GET_BALANCE_ABI)
+							var subop2 = contractCall(
+									"payTestSelfDestruct", ContractResources.GET_BALANCE_ABI)
 									.payingWith("payer")
 									.gas(300_000L)
 									.via("getBalance");
 
 							AccountID contractAccountId = asId("payTestSelfDestruct", spec);
-							var subop3 = contractCall("payTestSelfDestruct", ContractResources.KILL_ME_ABI,
+							var subop3 = contractCall(
+									"payTestSelfDestruct", ContractResources.KILL_ME_ABI,
 									contractAccountId.getAccountNum())
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(OBTAINER_SAME_CONTRACT_ID);
 
-							var subop4 = contractCall("payTestSelfDestruct", ContractResources.KILL_ME_ABI, 999_999L)
+							var subop4 = contractCall(
+									"payTestSelfDestruct", ContractResources.KILL_ME_ABI, 999_999L)
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(INVALID_SOLIDITY_ADDRESS);
 
 							AccountID receiverAccountId = asId("receiver", spec);
-							var subop5 = contractCall("payTestSelfDestruct", ContractResources.KILL_ME_ABI,
+							var subop5 = contractCall(
+									"payTestSelfDestruct", ContractResources.KILL_ME_ABI,
 									receiverAccountId.getAccountNum())
 									.payingWith("payer")
 									.gas(300_000L)
 									.via("selfDestruct")
 									.hasKnownStatus(SUCCESS);
 
-							CustomSpecAssert.allRunFor(spec, subop1, subop2, subop3, subop4, subop5);
+							allRunFor(spec, subop1, subop2, subop3, subop4, subop5);
 						})
 				).then(
 						getTxnRecord("deposit"),
@@ -862,7 +1003,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												ContractResources.GET_BALANCE_ABI,
-												isLiteralResult(new Object[]{BigInteger.valueOf(1_000L)})))),
+												isLiteralResult(new Object[] { BigInteger.valueOf(1_000L) })))),
 						getAccountBalance("receiver")
 								.hasTinyBars(2_000L)
 				);
@@ -879,7 +1020,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")
-								.gas(1_000_000L).balance(5000L)
+								.gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							String accountAddress = spec.registry()
@@ -891,16 +1032,21 @@ public class ContractCallSuite extends HapiApiSuite {
 							spec.registry().saveKey("receivableKey", receivableAccountKey);
 							spec.registry().saveKey("contractCallerKey", contractCallerKey);
 							/* if any of the keys are missing, INVALID_SIGNATURE is returned */
-							var call = contractCall("transferringContract",
+							var call = contractCall(
+									"transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
-									accountAddress, 1).payingWith("contractCaller").gas(300_000)
-									.signedBy("receivableKey", "contractCallerKey").hasKnownStatus(SUCCESS);
+									accountAddress,
+									1
+							)
+									.payingWith("contractCaller")
+									.gas(300_000)
+									.alsoSigningWithFullPrefix("receivableKey");
 							/* calling with the receivableSigReqAccount should pass without adding keys */
 							var callWithReceivable = contractCall("transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).payingWith("receivableSigReqAccount")
 									.gas(300_000).hasKnownStatus(SUCCESS);
-							CustomSpecAssert.allRunFor(spec, call, callWithReceivable);
+							allRunFor(spec, call, callWithReceivable);
 						})
 				);
 	}
@@ -914,7 +1060,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						fileCreate("transferringContractBytecode").path(ContractResources.TRANSFERRING_CONTRACT)
 				).when(
 						contractCreate("transferringContract").bytecode("transferringContractBytecode")
-								.gas(1_000_000L).balance(5000L)
+								.gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							String accountAddress = spec.registry()
@@ -922,7 +1068,300 @@ public class ContractCallSuite extends HapiApiSuite {
 							var call = contractCall("transferringContract",
 									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
 									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
-							CustomSpecAssert.allRunFor(spec, call);
+							allRunFor(spec, call);
+						})
+				);
+	}
+
+	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
+				).when(
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L).via("callTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
+							allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
+									.getContractCallResult().getGasUsed();
+							Assertions.assertEquals(285000, gasUsed);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec minChargeIsTXGasUsedByContractCall() {
+		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
+				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE)
+				).when(
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(300_000L).via("callTX")
+				).then(
+						withOpContext((spec, ignore) -> {
+							final var subop01 = getTxnRecord("callTX").saveTxnRecordToRegistry("callTXRec");
+							allRunFor(spec, subop01);
+
+							final var gasUsed = spec.registry().getTransactionRecord("callTXRec")
+									.getContractCallResult().getGasUsed();
+							Assertions.assertTrue(gasUsed > 0L);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+				.given(
+						fileCreate("simpleUpdateBytecode").path(ContractResources.SIMPLE_UPDATE),
+						contractCreate("simpleUpdateContract").bytecode("simpleUpdateBytecode").gas(300_000L),
+						UtilVerbs.overriding("contracts.maxGas", "100")
+				).when().then(
+						contractCall("simpleUpdateContract",
+								ContractResources.SIMPLE_UPDATE_ABI, 5, 42).gas(101L).hasPrecheck(
+								MAX_GAS_LIMIT_EXCEEDED),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_006_ContractHBarTransferToAccount() {
+		final var ACCOUNT = "account";
+		final var CONTRACT_FROM = "contract1";
+		return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(10_000L),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(
+								ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver").savingSnapshot("receiverInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									receiverAddr, 10)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance("receiver").hasTinyBars(10_000 + 10)
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts() {
+		final var ACCOUNT = "account";
+		final var TOP_LEVEL_CONTRACT = "tlc";
+		final var SUB_LEVEL_CONTRACT = "slc";
+		final var INITIAL_CONTRACT_BALANCE = 100;
+
+		return defaultHapiSpec("HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						fileCreate(TOP_LEVEL_CONTRACT + "bytecode").path(
+								ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT),
+						fileCreate(SUB_LEVEL_CONTRACT + "bytecode").path(
+								ContractResources.SUB_LEVEL_TRANSFERRING_CONTRACT)
+				)
+				.when(
+						contractCreate(TOP_LEVEL_CONTRACT).bytecode(TOP_LEVEL_CONTRACT + "bytecode").payingWith(
+								ACCOUNT).balance(INITIAL_CONTRACT_BALANCE),
+						contractCreate(SUB_LEVEL_CONTRACT).bytecode(SUB_LEVEL_CONTRACT + "bytecode").payingWith(
+								ACCOUNT).balance(INITIAL_CONTRACT_BALANCE)
+				)
+				.then(
+						contractCall(TOP_LEVEL_CONTRACT).sending(10).payingWith(ACCOUNT),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 10),
+
+						contractCall(TOP_LEVEL_CONTRACT,
+								ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT_TRANSFER_CALL_PAYABLE_ABI)
+								.sending(10)
+								.payingWith(ACCOUNT),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 20),
+
+						contractCall(TOP_LEVEL_CONTRACT,
+								ContractResources.TOP_LEVEL_TRANSFERRING_CONTRACT_NON_PAYABLE_ABI)
+								.sending(10)
+								.payingWith(ACCOUNT)
+								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE + 20),
+
+						getContractInfo(TOP_LEVEL_CONTRACT).saveToRegistry("tcinfo"),
+						getContractInfo(SUB_LEVEL_CONTRACT).saveToRegistry("scinfo"),
+
+						/* sub-level non-payable contract call */
+						assertionsHold((spec, log) -> {
+							final var subLevelSolidityAddr = spec.registry().getContractInfo(
+									"scinfo").getContractAccountID();
+							final var cc = contractCall(
+									SUB_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_NON_PAYABLE_ABI,
+									subLevelSolidityAddr, 20L)
+									.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
+							allRunFor(spec, cc);
+						}),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(20 + INITIAL_CONTRACT_BALANCE),
+						getAccountBalance(SUB_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE),
+
+						/* sub-level payable contract call */
+						assertionsHold((spec, log) -> {
+							final var subLevelSolidityAddr = spec.registry().getContractInfo(
+									"scinfo").getContractAccountID();
+							final var cc = contractCall(
+									TOP_LEVEL_CONTRACT,
+									ContractResources.SUB_LEVEL_PAYABLE_ABI,
+									subLevelSolidityAddr, 20);
+							allRunFor(spec, cc);
+						}),
+						getAccountBalance(TOP_LEVEL_CONTRACT).hasTinyBars(INITIAL_CONTRACT_BALANCE),
+						getAccountBalance(SUB_LEVEL_CONTRACT).hasTinyBars(20 + INITIAL_CONTRACT_BALANCE)
+
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts() {
+		final var ACCOUNT = "account";
+		final var CONTRACT_FROM = "contract1";
+		final var CONTRACT_TO = "contract2";
+		return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(
+								ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						contractCreate(CONTRACT_TO).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getContractInfo(CONTRACT_TO).saveToRegistry("contract_to"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var cto = spec.registry().getContractInfo("contract_to").getContractAccountID();
+
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									cto, 10)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance(CONTRACT_FROM).hasTinyBars(10_000 - 10),
+						getAccountBalance(CONTRACT_TO).hasTinyBars(10_000 + 10)
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_010_ReceiverMustSignContractTx() {
+		final var ACCOUNT = "acc";
+		final var RECEIVER_KEY = "receiverKey";
+		return defaultHapiSpec("HSCS_EVM_010_ReceiverMustSignContractTx")
+				.given(
+						newKeyNamed(RECEIVER_KEY),
+						cryptoCreate(ACCOUNT)
+								.balance(5 * ONE_HUNDRED_HBARS)
+								.receiverSigRequired(true)
+								.key(RECEIVER_KEY)
+				)
+				.when(
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						contractCreate("contract")
+								.bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var withoutReceiverSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS / 2)
+									.hasKnownStatus(INVALID_SIGNATURE);
+							allRunFor(spec, withoutReceiverSignature);
+
+							var withSignature = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, ONE_HUNDRED_HBARS / 2)
+									.payingWith(ACCOUNT)
+									.signedBy(RECEIVER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, withSignature);
+						})
+				);
+	}
+
+	private HapiApiSpec HSCS_EVM_010_MultiSignatureAccounts() {
+		final var ACCOUNT = "acc";
+		final var PAYER_KEY = "pkey";
+		final var OTHER_KEY = "okey";
+		final var KEY_LIST = "klist";
+		return defaultHapiSpec("HSCS_EVM_010_MultiSignatureAccounts")
+				.given(
+						newKeyNamed(PAYER_KEY),
+						newKeyNamed(OTHER_KEY),
+						newKeyListNamed(KEY_LIST, List.of(PAYER_KEY, OTHER_KEY)),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(KEY_LIST)
+								.keyType(THRESHOLD)
+				)
+				.when(
+						fileCreate("bytecode")
+								.path(ContractResources.TRANSFERRING_CONTRACT),
+						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY)
+								.adminKey(KEY_LIST).hasPrecheck(INVALID_SIGNATURE),
+
+						contractCreate("contract").bytecode("bytecode")
+								.payingWith(ACCOUNT)
+								.signedBy(PAYER_KEY, OTHER_KEY)
+								.balance(10)
+								.adminKey(KEY_LIST)
+				)
+				.then(
+						withOpContext((spec, log) -> {
+							var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+							var assertionWithOnlyOneKey = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY)
+									.hasPrecheck(INVALID_SIGNATURE);
+							allRunFor(spec, assertionWithOnlyOneKey);
+
+							var assertionWithBothKeys = contractCall(
+									"contract",
+									ContractResources.TRANSFERRING_CONTRACT_TRANSFERTOADDRESS,
+									acc, 10)
+									.payingWith(ACCOUNT)
+									.signedBy(PAYER_KEY, OTHER_KEY)
+									.hasKnownStatus(SUCCESS);
+							allRunFor(spec, assertionWithBothKeys);
 						})
 				);
 	}

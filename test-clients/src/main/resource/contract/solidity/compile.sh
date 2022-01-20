@@ -5,7 +5,7 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 CONTRACT=${1%%.*}
-solcjs --bin --abi -o ../bytecodes/ $1 --overwrite
+solcjs --bin --abi -o ../bytecodes/ $1
 BASE_PATH="../bytecodes/${CONTRACT}_sol_${CONTRACT}"
 echo $BASE_PATH
 mv ${BASE_PATH}.bin ../bytecodes/${CONTRACT}.bin

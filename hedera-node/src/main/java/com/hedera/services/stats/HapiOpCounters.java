@@ -35,6 +35,8 @@ import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_DES
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL;
@@ -55,6 +57,7 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> handledTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
+	AtomicLong receivedDeprecatedTxns;
 
 	public HapiOpCounters(
 			final CounterFactory counter,
@@ -70,14 +73,15 @@ public class HapiOpCounters {
 		Arrays.stream(allFunctions.get())
 				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
 				.forEach(function -> {
-			receivedOps.put(function, new AtomicLong());
-			if (QUERY_FUNCTIONS.contains(function)) {
-				answeredQueries.put(function, new AtomicLong());
-			} else {
-				submittedTxns.put(function, new AtomicLong());
-				handledTxns.put(function, new AtomicLong());
-			}
-		});
+					receivedOps.put(function, new AtomicLong());
+					if (QUERY_FUNCTIONS.contains(function)) {
+						answeredQueries.put(function, new AtomicLong());
+					} else {
+						submittedTxns.put(function, new AtomicLong());
+						handledTxns.put(function, new AtomicLong());
+					}
+				});
+		receivedDeprecatedTxns = new AtomicLong();
 	}
 
 	public void registerWith(final Platform platform) {
@@ -85,6 +89,17 @@ public class HapiOpCounters {
 		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
 		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
 		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
+		registerCounter(platform, receivedDeprecatedTxns, COUNTER_RECEIVED_DEPRECATED_NAME_TPL,
+				COUNTER_RECEIVED_DEPRECATED_DESC_TPL);
+	}
+
+	private void registerCounter(
+			final Platform platform,
+			final AtomicLong counters,
+			final String nameTpl,
+			final String descTpl
+	) {
+		platform.addAppStatEntry(counter.from(nameTpl, descTpl, counters::get));
 	}
 
 	private void registerCounters(
@@ -93,7 +108,7 @@ public class HapiOpCounters {
 			final String nameTpl,
 			final String descTpl
 	) {
-		for (final var entry : counters.entrySet())	{
+		for (final var entry : counters.entrySet()) {
 			final var baseName = statNameFn.apply(entry.getKey());
 			final var fullName = String.format(nameTpl, baseName);
 			final var description = String.format(descTpl, baseName);
@@ -144,5 +159,13 @@ public class HapiOpCounters {
 		if (!IGNORED_FUNCTIONS.contains(function)) {
 			counters.get(function).getAndIncrement();
 		}
+	}
+
+	public void countDeprecatedTxnReceived() {
+		receivedDeprecatedTxns.getAndIncrement();
+	}
+
+	public long receivedDeprecatedTxnSoFar() {
+		return receivedDeprecatedTxns.get();
 	}
 }

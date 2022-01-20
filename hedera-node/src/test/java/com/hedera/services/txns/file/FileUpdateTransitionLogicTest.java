@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.files.SimpleUpdateResult;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -80,7 +82,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class FileUpdateTransitionLogicTest {
-	enum UpdateTarget { KEY, EXPIRY, CONTENTS, MEMO }
+	enum UpdateTarget {KEY, EXPIRY, CONTENTS, MEMO}
 
 	long lifetime = 1_234_567L;
 	long txnValidDuration = 180;
@@ -110,6 +112,7 @@ class FileUpdateTransitionLogicTest {
 	MerkleNetworkContext networkCtx;
 	EntityNumbers number = new MockEntityNumbers();
 	TransactionContext txnCtx;
+	SigImpactHistorian sigImpactHistorian;
 
 	FileUpdateTransitionLogic subject;
 
@@ -138,7 +141,9 @@ class FileUpdateTransitionLogicTest {
 		given(validator.hasGoodEncoding(newWacl)).willReturn(true);
 		given(validator.memoCheck(newMemo)).willReturn(OK);
 
-		subject = new FileUpdateTransitionLogic(hfs, number, validator, txnCtx, () -> networkCtx);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
+
+		subject = new FileUpdateTransitionLogic(hfs, number, validator, sigImpactHistorian, txnCtx, () -> networkCtx);
 	}
 
 	@Test
@@ -186,9 +191,9 @@ class FileUpdateTransitionLogicTest {
 		given(hfs.getattr(sysFileTarget)).willReturn(immutableAttr);
 		// and:
 		given(hfs.overwrite(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(false, true, SUCCESS));
+				.willReturn(new SimpleUpdateResult(false, true, SUCCESS));
 		given(hfs.setattr(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(true, false, SUCCESS));
+				.willReturn(new SimpleUpdateResult(true, false, SUCCESS));
 
 		// when:
 		subject.doStateTransition();
@@ -209,9 +214,9 @@ class FileUpdateTransitionLogicTest {
 		given(hfs.getattr(nonSysFileTarget)).willReturn(immutableAttr);
 		// and:
 		given(hfs.overwrite(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(false, true, SUCCESS));
+				.willReturn(new SimpleUpdateResult(false, true, SUCCESS));
 		given(hfs.setattr(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(true, false, SUCCESS));
+				.willReturn(new SimpleUpdateResult(true, false, SUCCESS));
 
 		// when:
 		subject.doStateTransition();
@@ -258,7 +263,7 @@ class FileUpdateTransitionLogicTest {
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.setattr(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(true, false, SUCCESS));
+				.willReturn(new SimpleUpdateResult(true, false, SUCCESS));
 		given(hfs.getattr(nonSysFileTarget)).willReturn(immutableAttr);
 
 		// when:
@@ -294,7 +299,7 @@ class FileUpdateTransitionLogicTest {
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
 		given(hfs.overwrite(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(
+				.willReturn(new SimpleUpdateResult(
 						false,
 						false,
 						AUTHORIZATION_FAILED));
@@ -310,14 +315,14 @@ class FileUpdateTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx);
+		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
 
 		givenTxnCtxUpdating(EnumSet.allOf(UpdateTarget.class));
 		// and:
 		given(hfs.overwrite(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(false, true, SUCCESS));
+				.willReturn(new SimpleUpdateResult(false, true, SUCCESS));
 		given(hfs.setattr(any(), any()))
-				.willReturn(new TieredHederaFs.SimpleUpdateResult(true, false, SUCCESS));
+				.willReturn(new SimpleUpdateResult(true, false, SUCCESS));
 		given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
 
 		// when:
@@ -331,6 +336,7 @@ class FileUpdateTransitionLogicTest {
 				argThat(nonSysFileTarget::equals),
 				argThat(attr -> newAttr.toString().equals(attr.toString())));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(nonSysFileTarget.getFileNum());
 	}
 
 	@Test

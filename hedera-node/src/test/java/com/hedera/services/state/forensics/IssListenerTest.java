@@ -137,4 +137,20 @@ class IssListenerTest {
 		verify(fcmDump, never()).dumpFrom(state, self, round);
 		verify(state).logSummary();
 	}
+
+	@Test
+	void shouldDumpThisRoundIsFalse() {
+		given(info.shouldDumpThisRound()).willReturn(false);
+
+		// when:
+		subject.notifyError(
+				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+
+		// then:
+		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
+		verify(info).alert(consensusTime);
+		verify(info, never()).decrementRoundsToDump();
+		verify(fcmDump, never()).dumpFrom(state, self, round);
+		verify(state, never()).logSummary();
+	}
 }

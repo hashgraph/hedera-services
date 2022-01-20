@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -50,11 +52,14 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
@@ -81,6 +86,13 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Consumer<HapiSpecRegistry>> successCb = Optional.empty();
 	Optional<String> abi = Optional.empty();
 	Optional<Object[]> args = Optional.empty();
+	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
+	Optional<LongConsumer> newNumObserver = Optional.empty();
+
+	public HapiContractCreate exposingNumTo(LongConsumer obs) {
+		newNumObserver = Optional.of(obs);
+		return this;
+	}
 
 	public HapiContractCreate advertisingCreation() {
 		advertiseCreation = true;
@@ -112,6 +124,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return name.equals(contract) ? adminKey : spec.registry().getKey(name);
 	}
 
+	public HapiContractCreate exposingGasTo(ObjLongConsumer<ResponseCodeEnum> gasObserver) {
+		this.gasObserver = Optional.of(gasObserver);
+		return this;
+	}
+
 	public HapiContractCreate skipAccountRegistration() {
 		shouldAlsoRegisterAsAccount = false;
 		return this;
@@ -126,22 +143,27 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		bytecodeFile = Optional.of(fileName);
 		return this;
 	}
+
 	public HapiContractCreate bytecode(Supplier<String> supplier) {
 		bytecodeFileFn = Optional.of(supplier);
 		return this;
 	}
+
 	public HapiContractCreate adminKey(KeyFactory.KeyType type) {
 		adminKeyType = Optional.of(type);
 		return this;
 	}
+
 	public HapiContractCreate adminKeyShape(SigControl controller) {
 		adminKeyControl = Optional.of(controller);
 		return this;
 	}
+
 	public HapiContractCreate autoRenewSecs(long period) {
 		autoRenewPeriodSecs = Optional.of(period);
 		return this;
 	}
+
 	public HapiContractCreate balance(long initial) {
 		balance = Optional.of(initial);
 		return this;
@@ -152,18 +174,21 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
-	public HapiContractCreate entityMemo(String s)	 {
+	public HapiContractCreate entityMemo(String s) {
 		memo = Optional.of(s);
 		return this;
 	}
-	public HapiContractCreate omitAdminKey()	 {
+
+	public HapiContractCreate omitAdminKey() {
 		omitAdminKey = true;
 		return this;
 	}
+
 	public HapiContractCreate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
 	}
+
 	public HapiContractCreate adminKey(String existingKey) {
 		key = Optional.of(existingKey);
 		return this;
@@ -177,15 +202,20 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	}
 
 	@Override
-	protected void updateStateOf(HapiApiSpec spec) {
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
 		if (actualStatus != SUCCESS) {
+			if (gasObserver.isPresent()) {
+				doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, true);
+			}
 			return;
 		}
+		final var newId = lastReceipt.getContractID();
+		newNumObserver.ifPresent(obs -> obs.accept(newId.getContractNum()));
 		if (shouldAlsoRegisterAsAccount) {
 			spec.registry().saveAccountId(contract, equivAccount(lastReceipt.getContractID()));
 		}
 		spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
-		spec.registry().saveContractId(contract, lastReceipt.getContractID());
+		spec.registry().saveContractId(contract, newId);
 		ContractGetInfoResponse.ContractInfo otherInfo = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
 				.setMemo(memo.orElse(spec.setup().defaultMemo()))
@@ -202,6 +232,9 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							contract,
 							lastReceipt.getContractID().getContractNum()));
 			log.info(banner);
+		}
+		if (gasObserver.isPresent()) {
+			doGasLookup(gas -> gasObserver.get().accept(SUCCESS, gas), spec, txnSubmitted, true);
 		}
 	}
 
@@ -232,11 +265,10 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							b.setFileID(bytecodeFileId);
 							autoRenewPeriodSecs.ifPresent(p ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p).build()));
-							balance.ifPresent(a -> b.setInitialBalance(a));
-							memo.ifPresent(m -> b.setMemo(m));
+							balance.ifPresent(b::setInitialBalance);
+							memo.ifPresent(b::setMemo);
 							gas.ifPresent(b::setGas);
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
-							gas.ifPresent(a -> b.setGas(a));
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);
@@ -247,10 +279,10 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 			adminKey = spec.registry().getKey(key.get());
 		} else {
 			KeyGenerator generator = effectiveKeyGen();
-			if (!adminKeyControl.isPresent()) {
-				adminKey = spec.keys().generate(adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
+			if (adminKeyControl.isEmpty()) {
+				adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
 			} else {
-				adminKey = spec.keys().generateSubjectTo(adminKeyControl.get(), generator);
+				adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get(), generator);
 			}
 		}
 	}

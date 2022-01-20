@@ -120,6 +120,6 @@ public class RichInstant {
 	}
 
 	public boolean isMissing() {
-		return this == MISSING_INSTANT;
+		return this.equals(MISSING_INSTANT);
 	}
 }

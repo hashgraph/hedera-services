@@ -53,7 +53,7 @@ public class Dissociation {
 			return new Dissociation(dissociatingAccountRel, null);
 		} else {
 			final var treasury = token.getTreasury();
-			final var dissociatedTokenTreasuryRel = tokenStore.loadTokenRelationship(token, treasury);
+			final var dissociatedTokenTreasuryRel = tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury);
 			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		}
 	}
@@ -85,8 +85,9 @@ public class Dissociation {
 	}
 
 	public void updateModelRelsSubjectTo(OptionValidator validator) {
-		/* The token-treasury relationship is null only if the token has been
-		auto-removed; and there is nothing more to do or validate in that case. */
+		/* The token-treasury relationship is null either if (1) the token has been auto-removed; or
+		(2) the token is deleted and its treasury has already been dissociated.
+		In either case, there is nothing more to do or validate. */
 		if (dissociatedTokenTreasuryRel != null) {
 			/* Also nothing more to do for an association with a deleted token. */
 			if (dissociatingAccountRel.getToken().isDeleted()) {

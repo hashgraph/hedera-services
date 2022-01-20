@@ -24,7 +24,9 @@ package com.hedera.services.ledger;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.Map;
+import java.util.function.Function;
 
 public interface LedgerCheck<A, P>  {
 	ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
+	ResponseCodeEnum checkUsing(Function<P, Object> extantProps, Map<P, Object> changeSet);
 }

@@ -20,7 +20,9 @@ package com.hedera.services.bdd.spec.queries.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -47,6 +49,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetScheduleInfo.class);
+
+	private static final long defaultWindBackNanos =
+			HapiSpecSetup.getDefaultNodeProps().getLong("scheduling.triggerTxn.windBackNanos");
 
 	String schedule;
 
@@ -184,7 +189,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 		if (executionTxn.isPresent()) {
 			assertTimestampMatches(
 					executionTxn.get(),
-					1,
+					(int) defaultWindBackNanos,
 					actualInfo.getExecutionTime(),
 					"Wrong consensus execution time!",
 					spec);
@@ -223,6 +228,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				(n, r) -> r.getAdminKey(schedule),
 				"Wrong schedule admin key!",
 				registry);
+
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	private void assertTimestampMatches(

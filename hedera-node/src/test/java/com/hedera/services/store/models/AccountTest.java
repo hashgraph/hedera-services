@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,8 @@ class AccountTest {
 	private final long ownedNfts = 5;
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int maxAutoAssociations = 1234;
-	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations,
+			alreadyUsedAutoAssociations);
 
 	private Account subject;
 	private OptionValidator validator;
@@ -110,8 +111,10 @@ class AccountTest {
 	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "Account{id=Id{shard=0, realm=0, num=12345}, expiry=0, balance=0, deleted=false, " +
-				"tokens=[0.0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234}";
+		final var desired = "Account{id=Id[shard=0, realm=0, num=12345], expiry=0, balance=0, deleted=false, " +
+				"tokens=[0" +
+				".0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
+				"alias=" + subject.getAlias().toStringUtf8() + "}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -137,7 +140,7 @@ class AccountTest {
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
-		assertEquals(alreadyUsedAutoAssociations-1, subject.getAlreadyUsedAutomaticAssociations());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
 	@Test
@@ -258,7 +261,7 @@ class AccountTest {
 	void incrementsTheAlreadyUsedAutoAssociationAsExpected() {
 		final var firstNewToken = new Token(new Id(0, 0, 888));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
-		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations-1);
+		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
 		subject.associateWith(List.of(firstNewToken), 10, true);
 
@@ -268,7 +271,7 @@ class AccountTest {
 	@Test
 	void invalidValuesToAlreadyUsedAutoAssociationsFailAsExpected() {
 		assertFailsWith(
-				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations+1),
+				() -> subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations + 1),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);

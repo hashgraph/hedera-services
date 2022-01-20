@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.file;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -35,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -54,9 +56,10 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	private Optional<Boolean> expectedDeleted = Optional.empty();
 	private Optional<String> expectedWacl = Optional.empty();
 	private Optional<String> expectedMemo = Optional.empty();
-	private Optional<LongSupplier> expectedExpiry = Optional.empty();
+	private Optional<String> expectedKeyRepr = Optional.empty();
 	private Optional<LongPredicate> expiryTest = Optional.empty();
 	private Optional<Supplier<String>> fileSupplier = Optional.empty();
+	private Optional<Consumer<String>> keyReprObserver = Optional.empty();
 
 	private FileID fileId;
 
@@ -72,6 +75,16 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
 	public HapiGetFileInfo isUnmodifiable() {
 		immutable = true;
+		return this;
+	}
+
+	public HapiGetFileInfo hasKeyReprTo(String repr) {
+		expectedKeyRepr = Optional.of(repr);
+		return this;
+	}
+
+	public HapiGetFileInfo exposingKeyReprTo(Consumer<String> obs) {
+		keyReprObserver = Optional.of(obs);
 		return this;
 	}
 
@@ -140,6 +153,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 				TxnUtils.asFileId(file, spec),
 				info.getFileID(),
 				"Wrong file id!");
+		keyReprObserver.ifPresent(obs -> obs.accept(info.getKeys().toString().replaceAll("\\s", "")));
 
 		if (immutable) {
 			Assertions.assertFalse(info.hasKeys(), "Should have no WACL, expected immutable!");
@@ -153,6 +167,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		expiryTest.ifPresent(p ->
 				Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
 		expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), info.getLedgerId());
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {

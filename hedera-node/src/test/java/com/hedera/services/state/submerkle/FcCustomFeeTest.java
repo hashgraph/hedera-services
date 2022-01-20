@@ -26,6 +26,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -106,15 +107,15 @@ class FcCustomFeeTest {
 	@Mock
 	private RoyaltyFeeSpec royaltyFeeSpec;
 
+	final FcCustomFee subject = new FcCustomFee(
+			FcCustomFee.FeeType.FRACTIONAL_FEE,
+			feeCollector,
+			fixedFeeSpec,
+			fractionalFeeSpec,
+			royaltyFeeSpec);
+
 	@Test
 	void fractionalRequiresCollectorAssociation() {
-		final var subject = new FcCustomFee(
-				FcCustomFee.FeeType.FRACTIONAL_FEE,
-				feeCollector,
-				fixedFeeSpec,
-				fractionalFeeSpec,
-				royaltyFeeSpec);
-
 		assertTrue(subject.requiresCollectorAutoAssociation());
 	}
 
@@ -146,7 +147,7 @@ class FcCustomFeeTest {
 		assertFalse(subject.requiresCollectorAutoAssociation());
 
 		given(royaltyFeeSpec.hasFallbackFee()).willReturn(true);
-		given(royaltyFeeSpec.getFallbackFee()).willReturn(fixedFeeSpec);
+		given(royaltyFeeSpec.fallbackFee()).willReturn(fixedFeeSpec);
 		given(fixedFeeSpec.usedDenomWildcard()).willReturn(true);
 
 		assertTrue(subject.requiresCollectorAutoAssociation());
@@ -833,6 +834,7 @@ class FcCustomFeeTest {
 		assertEquals(maximumUnitsToCollect, fractionalSpec.getMaximumUnitsToCollect());
 		assertEquals(fixedUnitsToCollect, fixedSpec.getUnitsToCollect());
 		assertEquals(denom, fixedSpec.getTokenDenomination());
+		assertEquals(Id.fromGrpcAccount(IdUtils.asAccount("0.0.6")), subject.getFeeCollectorAsId());
 	}
 
 	@Test

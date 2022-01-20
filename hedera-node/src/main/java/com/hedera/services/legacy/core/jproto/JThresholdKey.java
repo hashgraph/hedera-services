@@ -24,9 +24,8 @@ package com.hedera.services.legacy.core.jproto;
  * Maps to proto Key of type ThresholdKey.
  */
 public class JThresholdKey extends JKey {
-	private static final long serialVersionUID = 1L;
-	int threshold = 0;
-	private JKeyList keys = null;
+	int threshold;
+	private JKeyList keys;
 
 	public JThresholdKey(JKeyList keys, int threshold) {
 		this.keys = keys;

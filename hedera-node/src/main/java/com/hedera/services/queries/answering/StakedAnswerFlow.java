@@ -163,7 +163,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			return INSUFFICIENT_TX_FEE;
 		}
 
-		final var screenStatus = systemScreen(service.canonicalFunction(), optionalPayment);
+		final var screenStatus = systemScreen(service.canonicalFunction(), optionalPayment, query);
 		if (screenStatus != OK) {
 			return screenStatus;
 		}
@@ -173,7 +173,8 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
 	private ResponseCodeEnum systemScreen(
 			final HederaFunctionality function,
-			@Nullable final SignedTxnAccessor payment
+			@Nullable final SignedTxnAccessor payment,
+			final Query query
 	) {
 		AccountID payer = null;
 		if (null != payment) {
@@ -187,7 +188,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 		if (payer == null && RESTRICTED_FUNCTIONALITIES.contains(function)) {
 			return NOT_SUPPORTED;
 		} else if (payer == null || !IS_THROTTLE_EXEMPT.test(payer.getAccountNum())) {
-			return throttles.shouldThrottleQuery(function) ? BUSY : OK;
+			return throttles.shouldThrottleQuery(function, query) ? BUSY : OK;
 		} else {
 			return OK;
 		}

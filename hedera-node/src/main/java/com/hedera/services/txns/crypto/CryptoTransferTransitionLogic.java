@@ -63,8 +63,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			GlobalDynamicProperties dynamicProperties,
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			PureTransferSemanticChecks transferSemanticChecks,
-			ExpandHandleSpanMapAccessor spanMapAccessor
-	) {
+			ExpandHandleSpanMapAccessor spanMapAccessor) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.spanMapAccessor = spanMapAccessor;
@@ -82,6 +81,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		validateTrue(outcome == OK, outcome);
 
 		final var changes = impliedTransfers.getAllBalanceChanges();
+
 		ledger.doZeroSum(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
@@ -109,15 +109,17 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			 * we've been managing in the normal way. */
 			return impliedTransfers.getMeta().code();
 		} else {
-			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
-			transaction that reached consensus without a managed expand-handle span. */
+			/* Accessor is for either (1) a transaction in precheck; or (2) a scheduled
+			transaction that reached consensus without a managed expand-handle span; or
+			(3) in a development environment, a transaction submitted via UncheckedSubmit. */
 			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
 					dynamicProperties.maxTransferListSize(),
 					dynamicProperties.maxTokenTransferListSize(),
 					dynamicProperties.maxNftTransfersLen(),
 					dynamicProperties.maxCustomFeeDepth(),
 					dynamicProperties.maxXferBalanceChanges(),
-					dynamicProperties.areNftsEnabled());
+					dynamicProperties.areNftsEnabled(),
+					dynamicProperties.isAutoCreationEnabled());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
 					op.getTransfers(), op.getTokenTransfersList(), validationProps);

@@ -29,47 +29,33 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * A summary of the result of trying to create a store member, such as a token or scheduled entity.
  *
- * @param <T> the type of the store member.
+ * @param <T>
+ * 		the type of the store member.
  */
-public final class CreationResult<T> {
-    private final ResponseCodeEnum status;
-    @Nullable private final T created;
+public record CreationResult<T>(ResponseCodeEnum status, @Nullable T created) {
+	/**
+	 * Factory to summarize the result of a failed store member creation.
+	 *
+	 * @param type
+	 * 		the kind of failure that occurred.
+	 * @param <T>
+	 * 		the type of store member being created.
+	 * @return the summary constructed.
+	 */
+	public static <T> CreationResult<T> failure(final ResponseCodeEnum type) {
+		return new CreationResult<>(type, null);
+	}
 
-    private CreationResult(
-            final ResponseCodeEnum status,
-            @Nullable final T created
-    ) {
-        this.status = status;
-        this.created = created;
-    }
-
-    /**
-     * Factory to summarize the result of a failed store member creation.
-     *
-     * @param type the kind of failure that occurred.
-     * @param <T> the type of store member being created.
-     * @return the summary constructed.
-     */
-    public static <T> CreationResult<T> failure(final ResponseCodeEnum type) {
-        return new CreationResult<>(type, null);
-    }
-
-    /**
-     * Factory to summarize the result of a successful store member creation.
-     *
-     * @param created the resulting store member.
-     * @param <T> the type of store member being created.
-     * @return the summary constructed.
-     */
-    public static <T> CreationResult<T> success(final T created) {
-        return new CreationResult<>(OK, created);
-    }
-
-    public ResponseCodeEnum getStatus() {
-        return status;
-    }
-
-    public @Nullable T getCreated() {
-        return created;
-    }
+	/**
+	 * Factory to summarize the result of a successful store member creation.
+	 *
+	 * @param created
+	 * 		the resulting store member.
+	 * @param <T>
+	 * 		the type of store member being created.
+	 * @return the summary constructed.
+	 */
+	public static <T> CreationResult<T> success(final T created) {
+		return new CreationResult<>(OK, created);
+	}
 }

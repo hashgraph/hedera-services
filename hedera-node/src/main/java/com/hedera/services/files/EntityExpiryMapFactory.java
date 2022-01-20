@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 public final class EntityExpiryMapFactory {
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/e%d";
-	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/e(\\d+)");
+	public static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/e(\\d+)");
 	private static final int REALM_INDEX = 1;
 	private static final int NUM_INDEX = 2;
 

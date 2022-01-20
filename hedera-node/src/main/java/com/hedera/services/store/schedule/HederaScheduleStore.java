@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
@@ -116,7 +117,14 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	@Override
-	public CreationResult<ScheduleID> createProvisionally(MerkleSchedule schedule, RichInstant consensusTime) {
+	public CreationResult<ScheduleID> createProvisionally(
+			final MerkleSchedule schedule,
+			final RichInstant consensusTime
+	) {
+		if (!properties.schedulingWhitelist().contains(schedule.scheduledFunction())) {
+			return failure(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+		}
+
 		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		var validity = OK;
@@ -203,7 +211,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (status != OK) {
 			return status;
 		}
-		final var executionTime = consensusTime.plusNanos(1L);
+		final var offset = properties.triggerTxnWindBackNanos();
+		final var executionTime = consensusTime.plusNanos(offset);
 		apply(id, schedule -> schedule.markExecuted(executionTime));
 		return OK;
 	}

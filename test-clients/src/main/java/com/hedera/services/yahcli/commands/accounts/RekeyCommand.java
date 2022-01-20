@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @CommandLine.Command(
@@ -61,9 +62,7 @@ public class RekeyCommand implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
-		var config = ConfigManager.from(accountsCommand.getYahcli());
-		config.assertNoMissingDefaults();
-		COMMON_MESSAGES.printGlobalInfo(config);
+		var config = configFrom(accountsCommand.getYahcli());
 
 		if ("<N/A>".equals(replKeyLoc) && !genNewKey) {
 			throw new CommandLine.ParameterException(
@@ -81,6 +80,9 @@ public class RekeyCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - account 0.0." + accountNum + " has been re-keyed");
+		} else {
+			COMMON_MESSAGES.warn("FAILED to re-key account 0.0." + accountNum);
+			return 1;
 		}
 
 		return 0;

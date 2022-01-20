@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 public class DataMapFactory {
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/f%d";
-	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/f(\\d+)");
+	public static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/f(\\d+)");
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 

@@ -23,6 +23,7 @@ package com.hedera.services.files.sysfiles;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySources;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ConfigCallbacksTest {
@@ -40,12 +42,14 @@ class ConfigCallbacksTest {
 	PropertySources propertySources;
 	@Mock
 	HapiOpPermissions hapiOpPermissions;
+	@Mock
+	FunctionalityThrottling functionalityThrottling;
 
 	ConfigCallbacks subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources);
+		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, functionalityThrottling, functionalityThrottling);
 	}
 
 	@Test
@@ -58,6 +62,7 @@ class ConfigCallbacksTest {
 		// then:
 		verify(propertySources).reloadFrom(config);
 		verify(dynamicProps).reload();
+		verify(functionalityThrottling, times(2)).applyGasConfig();
 	}
 
 	@Test

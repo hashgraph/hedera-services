@@ -23,7 +23,7 @@ package com.hedera.services.stats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatsSpeedometer;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -37,6 +37,8 @@ import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_HANDLED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_SUBMITTED_DESC_TPL;
@@ -54,11 +56,13 @@ public class HapiOpSpeedometers {
 	final Map<HederaFunctionality, Long> lastHandledTxnsCount = new HashMap<>();
 	final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new HashMap<>();
 	final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new HashMap<>();
+	Long lastReceivedDeprecatedTxnCount;
 
 	final EnumMap<HederaFunctionality, StatsSpeedometer> receivedOps = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> handledTxns = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> answeredQueries = new EnumMap<>(HederaFunctionality.class);
+	StatsSpeedometer receivedDeprecatedTxns;
 
 	public HapiOpSpeedometers(
 			HapiOpCounters counters,
@@ -86,6 +90,8 @@ public class HapiOpSpeedometers {
 				lastHandledTxnsCount.put(function, 0L);
 			}
 		});
+		receivedDeprecatedTxns = new StatsSpeedometer(halfLife);
+		lastReceivedDeprecatedTxnCount = 0L;
 	}
 
 	public void registerWith(Platform platform) {
@@ -93,6 +99,17 @@ public class HapiOpSpeedometers {
 		registerSpeedometers(platform, submittedTxns, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL);
 		registerSpeedometers(platform, handledTxns, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
 		registerSpeedometers(platform, answeredQueries, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+		registerSpeedometer(platform, receivedDeprecatedTxns, SPEEDOMETER_RECEIVED_DEPRECATED_NAME_TPL,
+				SPEEDOMETER_RECEIVED_DEPRECATED_DESC_TPL);
+	}
+
+	private void registerSpeedometer(
+			Platform platform,
+			StatsSpeedometer speedometers,
+			String nameTpl,
+			String descTpl
+	) {
+		platform.addAppStatEntry(speedometer.from(nameTpl, descTpl, speedometers));
 	}
 
 	private void registerSpeedometers(
@@ -114,6 +131,9 @@ public class HapiOpSpeedometers {
 		updateSpeedometers(submittedTxns, lastSubmittedTxnsCount, counters::submittedSoFar);
 		updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
 		updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
+
+		receivedDeprecatedTxns.update((double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
+		lastReceivedDeprecatedTxnCount = counters.receivedDeprecatedTxnSoFar();
 	}
 
 	private void updateSpeedometers(

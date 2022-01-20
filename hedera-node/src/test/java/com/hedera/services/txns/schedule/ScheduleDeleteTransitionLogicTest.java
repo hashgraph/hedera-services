@@ -21,6 +21,7 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -55,9 +56,10 @@ import static org.mockito.Mockito.verify;
 class ScheduleDeleteTransitionLogicTest {
 	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final ResponseCodeEnum NOT_OK = null;
-	private static final ScheduleID schedule = IdUtils.asSchedule("1.2.3");
+	private static final ScheduleID schedule = IdUtils.asSchedule("0.0.3");
 
 	private ScheduleStore store;
+	private SigImpactHistorian sigImpactHistorian;
 	private PlatformTxnAccessor accessor;
 	private TransactionContext txnCtx;
 
@@ -74,7 +76,8 @@ class ScheduleDeleteTransitionLogicTest {
 		store = mock(ScheduleStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
-		subject = new ScheduleDeleteTransitionLogic(store, txnCtx);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
+		subject = new ScheduleDeleteTransitionLogic(store, txnCtx, sigImpactHistorian);
 	}
 
 	@Test
@@ -86,6 +89,7 @@ class ScheduleDeleteTransitionLogicTest {
 
 		verify(store).deleteAt(schedule, consensusNow);
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
 	}
 
 	@Test

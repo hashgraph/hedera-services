@@ -238,6 +238,14 @@ class TieredHederaFsTest {
 	}
 
 	@Test
+	void assertIllegalArgumentTypeGuggestedStatus() {
+		assertEquals(ResponseCodeEnum.FILE_DELETED, IllegalArgumentType.DELETED_FILE.suggestedStatus());
+		assertEquals(ResponseCodeEnum.INVALID_FILE_ID, IllegalArgumentType.UNKNOWN_FILE.suggestedStatus());
+		assertEquals(ResponseCodeEnum.INVALID_EXPIRATION_TIME, IllegalArgumentType.FILE_WOULD_BE_EXPIRED.suggestedStatus());
+		assertEquals(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, IllegalArgumentType.OVERSIZE_CONTENTS.suggestedStatus());
+	}
+
+	@Test
 	void appendAllowsOversizeContentsForDiskFs() {
 		final var stretchContents = new byte[BYTES_PER_KB - 1];
 		final var burstContents = new byte[2];

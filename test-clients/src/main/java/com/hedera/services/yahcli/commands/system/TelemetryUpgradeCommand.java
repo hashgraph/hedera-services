@@ -69,6 +69,9 @@ public class TelemetryUpgradeCommand implements Callable<Integer> {
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info(
 					"SUCCESS - NMT telemetry upgrade in motion from " + upgradeFile + " artifacts ZIP");
+		} else {
+			COMMON_MESSAGES.warn("FAILED - NMT telemetry upgrade is not in motion ");
+			return 1;
 		}
 
 		return 0;

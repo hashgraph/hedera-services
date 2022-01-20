@@ -71,6 +71,16 @@ public class HFileMetaSerde {
 		}
 	}
 
+	static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
+		long objectType = in.readLong();
+		if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
+			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
+		}
+		/* Unused legacy length information. */
+		in.readLong();
+		return unpack(in);
+	}
+
 	private static HFileMeta readMemoMeta(DataInputStream in) throws IOException {
 		var serIn = serInFactory.apply(in);
 		var isDeleted = serIn.readBoolean();
@@ -78,16 +88,6 @@ public class HFileMetaSerde {
 		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
 		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
-	}
-
-	private static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
-		long objectType = in.readLong();
-		if (objectType != JObjectType.JFileInfo.longValue()) {
-			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
-		}
-		/* Unused legacy length information. */
-		in.readLong();
-		return unpack(in);
 	}
 
 	private static HFileMeta unpack(DataInputStream stream) throws IOException {

@@ -43,19 +43,4 @@ public final class TransferListChecks {
 		}
 		return net.equals(ZERO);
 	}
-
-	public static boolean hasRepeatedAccount(final TransferList wrapper) {
-		final int n = wrapper.getAccountAmountsCount();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (wrapper.getAccountAmounts(i).getAccountID().equals(wrapper.getAccountAmounts(j).getAccountID())) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
 }

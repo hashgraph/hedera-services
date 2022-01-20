@@ -42,6 +42,8 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -60,6 +62,20 @@ class AccountCustomizerTest {
 	private void setupWithLiveChangeManager() {
 		subject = new TestAccountCustomizer(new ChangeSummaryManager<>());
 	}
+
+	@Test
+	void testChanges() {
+		setupWithLiveChangeManager();
+		final var a = subject
+				.isDeleted(false)
+				.expiry(100L)
+				.memo("memo")
+				.customizing(new TestAccount());
+
+		assertNotNull(subject.getChanges());
+		assertNotEquals(0, subject.getChanges().size());
+	}
+
 
 	@Test
 	void directlyCustomizesAnAccount() {

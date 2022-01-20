@@ -20,6 +20,7 @@ package com.hedera.services.queries.file;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -63,6 +64,7 @@ class GetFileInfoAnswerTest {
 	private String target = "0.0.123";
 	private Transaction paymentTxn;
 	private long fee = 1_234L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	FileGetInfoResponse.FileInfo expected;
 
 	OptionValidator optionValidator;
@@ -73,6 +75,7 @@ class GetFileInfoAnswerTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		expected = FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setDeleted(false)
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setFileID(asFile(target))

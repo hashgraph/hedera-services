@@ -22,6 +22,8 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
@@ -45,18 +47,22 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public StandardProcessLogic(
-			ExpiryManager expiries,
-			InvariantChecks invariantChecks,
-			ExpandHandleSpan expandHandleSpan,
-			EntityAutoRenewal autoRenewal,
-			ServicesTxnManager txnManager,
-			TransactionContext txnCtx,
-			ExecutionTimeTracker executionTimeTracker
+			final ExpiryManager expiries,
+			final InvariantChecks invariantChecks,
+			final ExpandHandleSpan expandHandleSpan,
+			final EntityAutoRenewal autoRenewal,
+			final ServicesTxnManager txnManager,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final ExecutionTimeTracker executionTimeTracker,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
@@ -65,6 +71,8 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
+		this.dynamicProperties = dynamicProperties;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -73,20 +81,25 @@ public class StandardProcessLogic implements ProcessLogic {
 			final var accessor = expandHandleSpan.accessorFor(platformTxn);
 			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
-				effectiveConsensusTime = consensusTime.minusNanos(1);
+				final var offset = dynamicProperties.triggerTxnWindBackNanos();
+				effectiveConsensusTime = consensusTime.minusNanos(offset);
 			}
 
 			if (!invariantChecks.holdFor(accessor, effectiveConsensusTime, submittingMember)) {
 				return;
 			}
 
+			sigImpactHistorian.setChangeTime(effectiveConsensusTime);
 			expiries.purge(effectiveConsensusTime.getEpochSecond());
+			sigImpactHistorian.purge();
 
 			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 
 			autoRenewal.execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
+		} catch (Exception internal) {
+			log.error("Unhandled internal process failure", internal);
 		}
 	}
 

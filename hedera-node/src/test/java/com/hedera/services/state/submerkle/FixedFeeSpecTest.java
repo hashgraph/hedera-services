@@ -140,7 +140,7 @@ class FixedFeeSpecTest {
 		selfDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore);
 
 		verifyNoInteractions(tokenStore);
-		assertEquals(provisionalId.getNum(), selfDenomSubject.getTokenDenomination().num());
+		assertEquals(provisionalId.num(), selfDenomSubject.getTokenDenomination().num());
 		assertTrue(selfDenomSubject.usedDenomWildcard());
 	}
 

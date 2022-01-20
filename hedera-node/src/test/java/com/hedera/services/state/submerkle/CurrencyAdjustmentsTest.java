@@ -37,7 +37,9 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.booleanThat;
 import static org.mockito.BDDMockito.given;
@@ -65,6 +67,24 @@ class CurrencyAdjustmentsTest {
 		subject = new CurrencyAdjustments();
 		subject.accountIds = List.of(fromGrpcAccountId(a), fromGrpcAccountId(b), fromGrpcAccountId(c));
 		subject.hbars = new long[] { aAmount, bAmount, cAmount };
+	}
+
+	@Test
+	void equalsWork() {
+		var expectedAmounts = new long[] {1, 2, 3};
+		var expectedParties = List.of(EntityId.fromGrpcAccountId(IdUtils.asAccount("0.0.1")));
+
+		final var sameButDifferent = subject;
+		final var anotherSubject = new CurrencyAdjustments(expectedAmounts, expectedParties);
+		assertNotEquals(subject, anotherSubject);
+		assertEquals(subject, sameButDifferent);
+		assertNotEquals(null, subject);
+	}
+
+	@Test
+	void isEmptyWorks() {
+		assertFalse(subject.isEmpty());
+		assertTrue(new CurrencyAdjustments().isEmpty());
 	}
 
 	@Test

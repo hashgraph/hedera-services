@@ -354,6 +354,24 @@ class FcAssessedCustomFeeTest {
 	}
 
 	@Test
+	void testFromGrpcFails() {
+		// given:
+		final var grpc = AssessedCustomFee
+				.newBuilder()
+				.setTokenId(token.toGrpcTokenId())
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units)
+				.build();
+
+		//expect:
+		final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);
+		assertEquals(account, fcFee.account());
+		assertEquals(token, fcFee.token());
+		assertEquals(units, fcFee.units());
+		assertArrayEquals(new long[0], fcFee.effPayerAccountNums());
+	}
+
+	@Test
 	void testFromGrpcForHbarAdjust() {
 		// given:
 		final var grpc = AssessedCustomFee

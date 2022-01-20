@@ -90,6 +90,20 @@ class BytesStoreAdapterTest {
 	}
 
 	@Test
+	void assertByteStoreAdapterGetter() {
+		var firstByte = new StringBuilder().append("First byte");
+		var secondByte = new StringBuilder().append("Second byte");
+		var thirdByte = new StringBuilder().append("Third byte");
+		subject.put(1, firstByte);
+		subject.put(2, secondByte);
+		subject.put(3, thirdByte);
+
+		assertEquals(firstByte.toString(), subject.get(1).toString());
+		assertEquals(secondByte.toString(), subject.get(2).toString());
+		assertEquals(thirdByte.toString(), subject.get(3).toString());
+	}
+
+	@Test
 	void usesFilterIfPresent() {
 		// setup:
 		delegate.put("NOT-A-VALID_KEY", bytes("Nope."));

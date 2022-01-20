@@ -21,22 +21,14 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.token.process.Dissociation;
-import com.hedera.services.txns.token.process.DissociationFactory;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -52,25 +44,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 public class TokenDissociateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final AccountStore accountStore;
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
-	private final OptionValidator validator;
-	private final DissociationFactory dissociationFactory;
+	private final DissociateLogic dissociateLogic;
 
 	@Inject
 	public TokenDissociateTransitionLogic(
-			TypedTokenStore tokenStore,
-			AccountStore accountStore,
 			TransactionContext txnCtx,
-			OptionValidator validator,
-			DissociationFactory dissociationFactory
-	) {
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
+			DissociateLogic dissociateLogic) {
 		this.txnCtx = txnCtx;
-		this.validator = validator;
-		this.dissociationFactory = dissociationFactory;
+		this.dissociateLogic = dissociateLogic;
 	}
 
 	@Override
@@ -78,24 +60,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		var op = txnCtx.accessor().getTxn().getTokenDissociate();
 		final var accountId = Id.fromGrpcAccount(op.getAccount());
-
-		/* --- Load the model objects --- */
-		final var account = accountStore.loadAccount(accountId);
-		final List<Dissociation> dissociations = new ArrayList<>();
-		for (var tokenId : op.getTokensList()) {
-			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
-		}
-
-		/* --- Do the business logic --- */
-		account.dissociateUsing(dissociations, validator);
-
-		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account);
-		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
-		for (var dissociation : dissociations) {
-			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
-		}
-		tokenStore.persistTokenRelationships(allUpdatedRels);
+		dissociateLogic.dissociate(accountId, op.getTokensList());
 	}
 
 	@Override

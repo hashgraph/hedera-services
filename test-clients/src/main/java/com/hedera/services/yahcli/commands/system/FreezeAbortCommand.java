@@ -48,6 +48,9 @@ public class FreezeAbortCommand implements Callable<Integer> {
 
 		if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
 			COMMON_MESSAGES.info("SUCCESS - freeze aborted and/or staged upgrade discarded");
+		} else {
+			COMMON_MESSAGES.warn("FAILED - Scheduled freeze is not aborted and/or staged upgrade is not discarded");
+			return 1;
 		}
 
 		return 0;

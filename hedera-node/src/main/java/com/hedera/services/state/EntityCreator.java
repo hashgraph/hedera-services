@@ -20,15 +20,15 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +37,8 @@ public interface EntityCreator {
 	/**
 	 * Sets the ledger for the entity creator.
 	 *
-	 * @param ledger the ledger to use
+	 * @param ledger
+	 * 		the ledger to use
 	 */
 	void setLedger(HederaLedger ledger);
 
@@ -63,45 +64,62 @@ public interface EntityCreator {
 			long submittingMember);
 
 	/**
-	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing
-	 * the active transaction
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given top-level transaction.
 	 *
-	 * @param otherNonThresholdFees
-	 * 		part of fees
+	 * @param fee
+	 * 		the fee to include the record
 	 * @param hash
-	 * 		transaction hash
+	 * 		the hash of the transaction to include in the record
 	 * @param accessor
-	 * 		transaction accessor
+	 * 		the accessor for the id, memo, and schedule reference (if any) for the transaction
 	 * @param consensusTime
-	 * 		consensus time
-	 * @param receipt
-	 * 		transaction receipt
-	 * @param explicitTokenTransfers
-	 * 		explicit list of token transfers
+	 * 		the consensus time of the transaction
+	 * @param receiptBuilder
+	 * 		the in-progress builder for the receipt for the record
 	 * @param assessedCustomFees
-	 * 		the list of assessed custom fees
-	 * @param newTokenAssociations
-	 * 		the list of newly created token associations
-	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
+	 * 		the custom fees assessed during the transaction
+	 * @param sideEffectsTracker
+	 * 		the side effects tracked throughout the transaction
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
-	ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
+	ExpirableTxnRecord.Builder createTopLevelRecord(
+			long fee,
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt,
-			List<TokenTransferList> explicitTokenTransfers,
+			TxnReceipt.Builder receiptBuilder,
 			List<FcAssessedCustomFee> assessedCustomFees,
-			List<FcTokenAssociation> newTokenAssociations);
+			SideEffectsTracker sideEffectsTracker);
 
 	/**
-	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given synthetic transaction.
+	 *
+	 * @param assessedCustomFees the custom fees assessed during the transaction
+	 * @param sideEffectsTracker the side effects tracked throughout the transaction
+	 * @param memo memo to be used for transaction
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
+	 */
+	ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
+			List<FcAssessedCustomFee> assessedCustomFees,
+			SideEffectsTracker sideEffectsTracker,
+			String memo);
+
+	/**
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing a failed synthetic transaction.
+	 *
+	 * @param failureReason the cause of the failure
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
+	 */
+	ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(ResponseCodeEnum failureReason);
+
+	/**
+	 * Returns a {@link ExpirableTxnRecord.Builder} for a transaction that failed due to an internal error.
 	 *
 	 * @param accessor
 	 * 		transaction accessor
 	 * @param consensusTimestamp
 	 * 		consensus timestamp
-	 * @return a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
+	 * @return a record of a invalid failure transaction
 	 */
-	ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp);
+	ExpirableTxnRecord.Builder createInvalidFailureRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

@@ -63,7 +63,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
 						fileCreate("bytecode").path(ContractResources.CALL_OPERATIONS_CHECKER),
 						contractCreate(CONTRACT)
 								.bytecode("bytecode")
-								.gas(1_000_000)
+								.gas(300_000L)
 				).when(
 				).then(
 						contractCall(CONTRACT,
