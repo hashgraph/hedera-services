@@ -316,7 +316,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		try {
 			this.transactionBody = this.precompile.body(input);
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.warn("Internal precompile failure", e);
 			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
 		}
