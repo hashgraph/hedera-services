@@ -119,9 +119,7 @@ abstract class EvmTxProcessor {
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
-		precompiledContractMap.forEach((k, v) -> precompileContractRegistry.put(Address.fromHexString(k), v));
-
-		this.messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry);
+		this.messageCallProcessor = new HederaMessageCallProcessor(evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator,
 				evm,

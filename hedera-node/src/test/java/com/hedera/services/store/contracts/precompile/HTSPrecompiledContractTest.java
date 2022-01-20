@@ -20,8 +20,10 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -41,6 +43,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
@@ -95,6 +99,10 @@ class HTSPrecompiledContractTest {
 	private ImpliedTransfersMarshal impliedTransfers;
 	@Mock
 	private DissociationFactory dissociationFactory;
+	@Mock
+	private FeeCalculator feeCalculator;
+	@Mock
+	private StateView stateView;
 
 	private HTSPrecompiledContract subject;
 
@@ -103,7 +111,8 @@ class HTSPrecompiledContractTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
+				() -> feeCalculator, stateView);
 	}
 
 	@Test
