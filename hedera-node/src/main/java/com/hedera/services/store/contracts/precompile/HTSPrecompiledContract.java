@@ -73,6 +73,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -178,7 +179,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private TransactionBody.Builder transactionBody;
 	private final Provider<FeeCalculator> feeCalculator;
 	private Gas gasRequirement;
-	private StateView currentView;
+	private final StateView currentView;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -222,7 +223,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
-		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+		return fees.getServiceFee();
 	}
 
 	@Override
@@ -252,13 +253,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
-		long feeInTinybars = gasFeeInTinybars(transactionBody, Instant.ofEpochSecond(blockTimestamp));
-
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+				blockTimestamp).build();
+		long feeInTinybars = gasFeeInTinybars(
+				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
 		long gasPriceTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall,
-				Timestamp.newBuilder().setSeconds(
-						blockTimestamp).build());
+				timestamp);
+		Gas baseCost = Gas.of((feeInTinybars + gasPriceTinybars - 1) / gasPriceTinybars);
 
-		gasRequirement = Gas.of((feeInTinybars + gasPriceTinybars - 1) / gasPriceTinybars);
+		// charge premium
+		gasRequirement = baseCost.plus((baseCost.dividedBy(5)));
 	}
 
 	void prepareComputation(final Bytes input) {
