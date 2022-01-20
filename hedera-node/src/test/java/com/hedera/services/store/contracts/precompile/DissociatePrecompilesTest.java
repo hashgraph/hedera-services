@@ -241,8 +241,6 @@ class DissociatePrecompilesTest {
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(transactionBody.getTokensCount()).willReturn(1);
-		given(mockSynthBodyBuilder.getTokenDissociate()).willReturn(transactionBody);
 		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))

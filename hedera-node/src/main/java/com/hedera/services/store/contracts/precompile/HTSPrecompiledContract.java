@@ -178,7 +178,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
 	private final Provider<FeeCalculator> feeCalculator;
-	private Gas gasRequirement;
+	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
 
 	@Inject
