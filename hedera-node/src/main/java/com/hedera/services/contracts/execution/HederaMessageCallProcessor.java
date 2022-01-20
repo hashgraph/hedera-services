@@ -5,7 +5,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -18,12 +17,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+
 /**
- * Overrides Besu precompiler handling so we can break model layers in Precompile execution
+ * Overrides Besu precompiler handling, so we can break model layers in Precompile execution
  */
 public class HederaMessageCallProcessor extends MessageCallProcessor {
 
-	Bytes INVALID_TRANSFER = Bytes.of("Transfer of Value to Hedera Precompile".getBytes(StandardCharsets.UTF_8));
+	static final Bytes INVALID_TRANSFER = Bytes.of("Transfer of Value to Hedera Precompile".getBytes(StandardCharsets.UTF_8));
 
 	Map<Address, PrecompiledContract> hederaPrecompiles;
 
@@ -38,34 +42,36 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
 		if (hederaPrecompile != null) {
 			// hedera precompile logic
-			executePrecompile(hederaPrecompile, frame, operationTracer);
+			executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
 		} else {
 			super.start(frame, operationTracer);
 		}
 	}
 
-	private void executePrecompile(
+	void executeHederaPrecompile(
 			final PrecompiledContract contract,
 			final MessageFrame frame,
 			final OperationTracer operationTracer) {
 		// EVM value transfers are not allowed
 		if (!Objects.equals(Wei.ZERO, frame.getValue())) {
 			frame.setRevertReason(INVALID_TRANSFER);
-			frame.setState(MessageFrame.State.REVERT);
+			frame.setState(REVERT);
+			return;
 		}
 
 		final Bytes output = contract.compute(frame.getInputData(), frame);
 		final Gas gasRequirement = contract.gasRequirement(frame.getInputData());
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-		if (frame.getRemainingGas().compareTo(Gas.ZERO) < 0) {
-			frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-			frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+		if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
+			frame.decrementRemainingGas(frame.getRemainingGas());
+			frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+			frame.setState(EXCEPTIONAL_HALT);
 		} else if (output != null) {
 			frame.decrementRemainingGas(gasRequirement);
 			frame.setOutputData(output);
-			frame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+			frame.setState(COMPLETED_SUCCESS);
 		} else {
-			frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+			frame.setState(EXCEPTIONAL_HALT);
 		}
 	}
 }

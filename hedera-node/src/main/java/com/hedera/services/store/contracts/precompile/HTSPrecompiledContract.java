@@ -246,9 +246,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
 
-		System.out.printf(">>> %s - %d %n", precompile.getClass().getSimpleName(),
-				gasRequirement.toLong()); //FIXME debug
-
 		return computeInternal(messageFrame);
 	}
 
