@@ -1,0 +1,149 @@
+name: Hedera Services CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn install
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          root_dir: '/home/runner/work/hedera-services/'
+          files: 'jacoco.xml'
+
+      - name: Upload build
+        uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: |
+            **/target/*.jar
+            **/target/pom.xml
+
+  javadoc:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Generate javadocs
+        run: mvn javadoc:javadoc -DskipTests
+
+  e2e:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2 # checkout current branch
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build docker images # build the  image for hedera-node
+        run: bash compose-build.sh
+
+      - name: Start network # start 3 node network
+        run: docker-compose -f docker-compose-ci.yml up -d
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build
+
+      - name: Run E2E Specs # run selected e2e specs, after sleeping for 45s
+        run: |
+          cd test-clients
+          sleep 45s
+          mvn test -Dargs="-s -a -spt" -DskipTests -Pe2e-tests
+#          > e2e-output.txt
+
+#      - name: Parse E2E Logs # processes the e2e output into csv rows, suitable to fill SUITE,SPEC,STATUS table headers
+#        run: |
+#          echo SUITE,SPEC,STATUS > results.csv
+#          awk '/status=/{print}' test-clients/e2e-output.txt > temp.txt
+#          awk '{print $5,$6,$7,$8,$10}' temp.txt |
+#          awk -F'[}{]' '{print $1,$2}' |
+#          awk '{print $1,$4,$5}' |
+#          awk -F'=' '{print $1,$2,$3}' |
+#          awk -F' ' '{print $1,$3,$5}' |
+#          awk -F',' '{print $1,$2,$4}' |
+#          awk -F' ' '{print $1 "," $2 "," $3}' >> results.csv
+#          cat results.csv | grep ,from --invert > final_results.csv
+#          cat test-clients/e2e-output.txt > full_output.txt
+#          rm -f test-clients/e2e-output.txt temp.txt
+#
+#      - name: Upload E2E Output # uploads the csv output
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: e2e-results
+#          path: |
+#            final_results.csv
+#            full_output.txt
+#
+#      - name: Upload node logs # uploads the logs from the 3-node network
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: node-output
+#          path: |
+#            ./compose-network/node0/output/
+#            ./compose-network/node1/output/
+#            ./compose-network/node2/output/
