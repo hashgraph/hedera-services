@@ -71,6 +71,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.asPrimitiveKeyUnchecked;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -549,6 +550,7 @@ public class SigRequirements {
 		List<JKey> required = EMPTY_LIST;
 		final var newAccountKeyMustSign = !signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn);
 		final var targetAccountKeyMustSign = !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn);
+		final var aliasKeyMustSign = !signatureWaivers.isAliasKeyWaived(cryptoUpdateTxn);
 		final var op = cryptoUpdateTxn.getCryptoUpdateAccount();
 		var target = op.getAccountIDToUpdate();
 		var result = sigMetaLookup.aliasableAccountSigningMetaFor(target, linkedRefs);
@@ -562,6 +564,11 @@ public class SigRequirements {
 			if (newAccountKeyMustSign && op.hasKey()) {
 				required = mutable(required);
 				var candidate = asUsableFcKey(op.getKey());
+				candidate.ifPresent(required::add);
+			}
+			if (aliasKeyMustSign) {
+				required = mutable(required);
+				var candidate = asUsableFcKey(asPrimitiveKeyUnchecked(op.getAlias()));
 				candidate.ifPresent(required::add);
 			}
 		}

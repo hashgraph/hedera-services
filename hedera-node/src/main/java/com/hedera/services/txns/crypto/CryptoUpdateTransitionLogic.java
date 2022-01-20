@@ -46,15 +46,21 @@ import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -72,7 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
 
-	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
+	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(EXPIRY);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -115,6 +121,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
 				return;
 			}
+
 			var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
@@ -134,7 +141,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {
+	private ResponseCodeEnum sanityCheck(final AccountID target, final HederaAccountCustomizer customizer) {
 		if (!ledger.exists(target) || ledger.isSmartContract(target)) {
 			return INVALID_ACCOUNT_ID;
 		}
@@ -148,15 +155,15 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		if (keyChanges.contains(AccountProperty.EXPIRY)) {
-			final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
+		if (keyChanges.contains(EXPIRY)) {
+			final long newExpiry = (long) changes.get(EXPIRY);
 			if (newExpiry < ledger.expiry(target)) {
 				return EXPIRATION_REDUCTION_NOT_ALLOWED;
 			}
 		}
 
-		if (keyChanges.contains(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
-			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+		if (keyChanges.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
+			final long newMax = (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS);
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
 				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 			}
@@ -165,9 +172,13 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
+		if (keyChanges.contains(ALIAS) && !ledger.alias(target).isEmpty()) {
+			return ALIAS_IS_IMMUTABLE;
+		}
+
 		// should we also check if proxy accountID is valid and exists in address book ?
-		if (keyChanges.contains(AccountProperty.PROXY)) {
-			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
+		if (keyChanges.contains(PROXY)) {
+			final var proxy = (EntityId) changes.get(PROXY);
 			final var result = ledger.lookupAndValidateAliasedId(
 					proxy.toGrpcAccountId(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
@@ -207,6 +218,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasMaxAutomaticTokenAssociations()) {
 			customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
 		}
+		if (!op.getAlias().isEmpty()) {
+			customizer.alias(op.getAlias());
+		}
 		return customizer;
 	}
 
@@ -238,6 +252,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			} catch (DecoderException e) {
 				return BAD_ENCODING;
 			}
+		}
+
+		if (!op.getAlias().isEmpty() && !validator.isValidAlias(op.getAlias())) {
+			return INVALID_ALIAS_KEY;
 		}
 
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {

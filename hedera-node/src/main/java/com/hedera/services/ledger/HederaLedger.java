@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -60,6 +61,7 @@ import java.util.List;
 
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -74,6 +76,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -466,6 +469,10 @@ public class HederaLedger {
 		return (String) accountsLedger.get(id, MEMO);
 	}
 
+	public ByteString alias(AccountID id) {
+		return (ByteString) accountsLedger.get(id, ALIAS);
+	}
+
 	public boolean isPendingCreation(AccountID id) {
 		return accountsLedger.existsPending(id);
 	}
@@ -505,6 +512,10 @@ public class HederaLedger {
 
 
 	/* ---- Alias lookup helpers */
+	public AliasLookup lookupAliasedId(final AccountID grpcId) {
+		return tokenStore.lookupAliasedId(grpcId, INVALID_ACCOUNT_ID);
+	}
+
 	public AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
 		return tokenStore.lookupAliasedId(grpcId, errResponse);
 	}

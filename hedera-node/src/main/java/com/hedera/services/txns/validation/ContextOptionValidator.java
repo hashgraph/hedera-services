@@ -20,6 +20,8 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -47,6 +49,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -126,6 +129,11 @@ public class ContextOptionValidator implements OptionValidator {
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
 		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
+	}
+
+	@Override
+	public boolean isValidAlias(final ByteString alias) {
+		return isSerializedProtoKey(alias);
 	}
 
 	@Override
