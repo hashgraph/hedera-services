@@ -40,6 +40,16 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
+<!--          <execution>-->
+<!--            <id>execute-all-e2e-tests</id>-->
+<!--            <phase>integration-test</phase>-->
+<!--            <goals>-->
+<!--              <goal>java</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <mainClass>com.hedera.services.bdd.suites.E2EGlobalRunner</mainClass>-->
+<!--            </configuration>-->
+<!--          </execution>-->
           <execution>
             <id>stage-changes</id>
             <configuration>
