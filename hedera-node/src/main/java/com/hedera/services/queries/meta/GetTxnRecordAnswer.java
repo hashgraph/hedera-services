@@ -189,7 +189,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 			return INVALID_PAYER_ACCOUNT_ID;
 		}
 
-		return optionValidator.queryableAccountStatus(validation.resolvedId(), view.accounts());
+		return optionValidator.queryableAccountStatus(fallbackId, view.accounts());
 	}
 
 	@Override

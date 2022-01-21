@@ -31,6 +31,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -439,25 +440,19 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				memo = creationOp.getMemo();
 			}
 			if (creationOp.hasPayerAccountID()) {
-				final var grpcPayer = creationOp.getPayerAccountID();
-				if (isAlias(grpcPayer)) {
-					payerAlias = grpcPayer.getAlias();
-				}
-				payer = EntityId.fromGrpcAccountId(grpcPayer);
+				setPayerIdOrAlias(creationOp.getPayerAccountID());
 			}
+
 			if (creationOp.hasAdminKey()) {
 				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
 				if (adminKey != UNUSED_KEY) {
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}
+
 			scheduledTxn = creationOp.getScheduledTransactionBody();
 
-			final var grpcSchedulingAccount = parentTxn.getTransactionID().getAccountID();
-			if (isAlias(grpcSchedulingAccount)) {
-				schedulingAccountAlias = grpcSchedulingAccount.getAlias();
-			}
-			schedulingAccount = EntityId.fromGrpcAccountId(grpcSchedulingAccount);
+			setSchedulingAccountOrAlias(parentTxn.getTransactionID().getAccountID());
 
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
@@ -465,5 +460,19 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 			throw new IllegalArgumentException(String.format(
 					"Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));
 		}
+	}
+
+	private void setSchedulingAccountOrAlias(final AccountID grpcSchedulingAccount) {
+		if (isAlias(grpcSchedulingAccount)) {
+			schedulingAccountAlias = grpcSchedulingAccount.getAlias();
+		}
+		schedulingAccount = EntityId.fromGrpcAccountId(grpcSchedulingAccount);
+	}
+
+	private void setPayerIdOrAlias(final AccountID grpcPayer) {
+		if (isAlias(grpcPayer)) {
+			payerAlias = grpcPayer.getAlias();
+		}
+		payer = EntityId.fromGrpcAccountId(grpcPayer);
 	}
 }

@@ -122,14 +122,6 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		sigImpactHistorian.markEntityChanged(topicId.getTopicNum());
 	}
 
-	private AccountID resolvedPayerId(final AccountID payerId) {
-		final var payer = accountStore.getResolvedAccountNum(payerId.getAlias(), payerId.getAccountNum());
-		return AccountID.newBuilder()
-				.setShardNum(payerId.getShardNum())
-				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
-				.build();
-	}
-
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasConsensusCreateTopic;
@@ -160,5 +152,13 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var autoRenewNum = accountStore.getResolvedAccountNum(autoRenewId.getAlias(),
 				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
 		return new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
+	}
+
+	private AccountID resolvedPayerId(final AccountID payerId) {
+		final var payer = accountStore.getResolvedAccountNum(payerId.getAlias(), payerId.getAccountNum());
+		return AccountID.newBuilder()
+				.setShardNum(payerId.getShardNum())
+				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
+				.build();
 	}
 }

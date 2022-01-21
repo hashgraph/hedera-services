@@ -124,12 +124,6 @@ public class SolvencyPrecheck {
 		return solvencyOfVerifiedPayer(accessor, includeSvcFee);
 	}
 
-	private ResponseCodeEnum getResolvedPayerStatus(final AccountID payer) {
-		final var payerLookup = aliasManager.lookUpPayer(payer);
-		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
-		return queryableAccountStatus(payerEntity, accounts.get());
-	}
-
 	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(final SignedTxnAccessor accessor,
 			final boolean includeSvcFee) {
 		final var payerId = EntityNum.fromAccountId(
@@ -178,5 +172,11 @@ public class SolvencyPrecheck {
 		} catch (Exception ignore) {
 			return INVALID_SIGNATURE;
 		}
+	}
+
+	private ResponseCodeEnum getResolvedPayerStatus(final AccountID payer) {
+		final var payerLookup = aliasManager.lookUpPayer(payer);
+		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
+		return queryableAccountStatus(payerEntity, accounts.get());
 	}
 }

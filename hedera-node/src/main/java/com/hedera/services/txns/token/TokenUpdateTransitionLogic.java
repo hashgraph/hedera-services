@@ -145,15 +145,15 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		AccountID newTreasury = null;
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			final var newTreasuryLookUp = tokenStore.lookUpAndValidateAliasedId(op.getTreasury(),
-					INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-			if (newTreasuryLookUp.response() != OK) {
-				txnCtx.setStatus(newTreasuryLookUp.response());
+			final var treasuryLookUp = tokenStore.lookUpAndValidateAliasedId(
+					op.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+			if (treasuryLookUp.response() != OK) {
+				txnCtx.setStatus(treasuryLookUp.response());
 				return;
 			}
-			final var resolvedNewTreasuryId = newTreasuryLookUp.resolvedId();
+			final var resolvedTreasury = treasuryLookUp.resolvedId();
 
-			if (!tokenStore.associationExists(resolvedNewTreasuryId, id)) {
+			if (!tokenStore.associationExists(resolvedTreasury, id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
@@ -165,18 +165,18 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					return;
 				}
 			}
-			if (!resolvedNewTreasuryId.equals(existingTreasury)) {
+			if (!resolvedTreasury.equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
-				outcome = prepNewTreasury(id, token, resolvedNewTreasuryId);
+				outcome = prepNewTreasury(id, token, resolvedTreasury);
 				if (outcome != OK) {
 					abortWith(outcome);
 					return;
 				}
 				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
-				newTreasury = resolvedNewTreasuryId;
+				newTreasury = resolvedTreasury;
 			}
 		}
 

@@ -26,8 +26,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
- * Lookup an accountID alias and return the accountID with accountNum and response code {@code ResponseCodeEnum.OK} if
- * alias is valid. If the alias is invalid returns given accountID with alias and error response given.
+ * For an accountID represented using alias, look up and return the resolved accountID with accountNum.
+ * If a corresponding accountNumber exists for given alias the ResponseCode returned will be OK.
+ * Else if the alias is invalid returns error response given, with the given aliasedID as resolved ID.
  */
 public record AliasLookup(AccountID resolvedId, ResponseCodeEnum response) {
 	public static AliasLookup of(final AccountID resolvedId, final ResponseCodeEnum response) {
