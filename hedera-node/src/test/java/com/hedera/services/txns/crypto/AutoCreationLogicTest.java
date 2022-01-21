@@ -122,8 +122,8 @@ class AutoCreationLogicTest {
 	void validatePrimitiveKeyCheck() {
 		final var key = KeyFactory.getDefaultInstance().newEd25519();
 		assertDoesNotThrow(() -> AutoCreationLogic.asPrimitiveKeyUnchecked(key.toByteString()));
-		assertThrows(IllegalStateException.class,
-				() -> AutoCreationLogic.asPrimitiveKeyUnchecked(key.toByteString().substring(0, 10)));
+		final var invalidKey = key.toByteString().substring(0, 10);
+		assertThrows(IllegalStateException.class, () -> AutoCreationLogic.asPrimitiveKeyUnchecked(invalidKey));
 	}
 
 	private void givenCollaborators() {
