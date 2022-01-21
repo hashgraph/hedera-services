@@ -102,7 +102,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		try {
 			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
 
-			final var result = ledger.lookupAliasedId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+			final var result = ledger.lookUpAliasedId(op.getAccountIDToUpdate(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
@@ -168,7 +168,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		// should we also check if proxy accountID is valid and exists in address book ?
 		if (keyChanges.contains(AccountProperty.PROXY)) {
 			final var proxy = (EntityId) changes.get(AccountProperty.PROXY);
-			final var result = ledger.lookupAndValidateAliasedId(
+			final var result = ledger.lookUpAndValidateAliasedId(
 					proxy.toGrpcAccountId(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
 				return result.response();
@@ -190,7 +190,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			final var id = ledger.lookupAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID).resolvedId();
+			final var id = ledger.lookUpAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID).resolvedId();
 			customizer.proxy(EntityId.fromGrpcAccountId(id));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {

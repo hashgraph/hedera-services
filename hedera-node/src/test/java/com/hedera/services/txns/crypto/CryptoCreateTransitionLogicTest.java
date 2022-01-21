@@ -253,8 +253,9 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void worksWithValidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
-		given(ledger.lookupAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookUpAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER,
+				OK));
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
 
 		subject.doStateTransition();
@@ -266,9 +267,9 @@ class CryptoCreateTransitionLogicTest {
 	void failsWithInvalidAliasedProxy() {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-		given(ledger.lookupAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID));
-		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_PAYER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
 		subject.doStateTransition();
@@ -373,9 +374,9 @@ class CryptoCreateTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.lookupAndValidateAliasedId(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
-		given(ledger.lookupAliasedId(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
-		given(ledger.lookupAliasedId(txnId.getAccountID(), INVALID_PAYER_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAndValidateAliasedId(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
+		given(ledger.lookUpAliasedId(proxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(proxy, OK));
+		given(ledger.lookUpAliasedId(txnId.getAccountID(), INVALID_PAYER_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(txnId.getAccountID(), OK));
 	}
 

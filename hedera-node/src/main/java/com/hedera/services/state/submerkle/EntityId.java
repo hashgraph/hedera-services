@@ -171,6 +171,7 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
+	/* --- Helpers --- */
 	public static EntityId fromGrpcAccountId(AccountID id) {
 		if (id == null) {
 			return MISSING_ENTITY_ID;

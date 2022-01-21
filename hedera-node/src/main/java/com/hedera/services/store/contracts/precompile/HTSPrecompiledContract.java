@@ -139,6 +139,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
+
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final AliasManager aliasManager;
 
@@ -286,7 +287,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	/* --- Helpers --- */
 	private AccountStore createAccountStore(final WorldLedgers ledgers) {
-		return accountStoreFactory.newAccountStore(validator, dynamicProperties, ledgers.accounts(), aliasManager);
+		return accountStoreFactory.newAccountStore(validator, dynamicProperties, ledgers.accounts(),
+				aliasManager);
 	}
 
 	private TypedTokenStore createTokenStore(
@@ -456,6 +458,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(OK == accountLookup.response(), INVALID_ACCOUNT_ID);
 
 			final var accountId = Id.fromGrpcAccount(accountLookup.resolvedId());
+			accountId.asEvmAddress();
 			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -640,12 +643,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					sideEffects,
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens(),
+					ledgers.tokenRels(),
+					ledgers.nfts(),
+					ledgers.tokens(),
 					aliasManager);
 			hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
 			final var transferLogic = transferLogicFactory.newLogic(
-					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
+					ledgers.accounts(),
+					ledgers.nfts(),
+					ledgers.tokenRels(),
+					hederaTokenStore,
 					sideEffects,
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,

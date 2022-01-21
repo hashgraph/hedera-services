@@ -185,7 +185,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 		final var validation = aliasManager.lookUpPayer(txnId.getAccountID());
 		final var fallbackId = validation.resolvedId();
 
-		if (fallbackId.equals(AccountID.getDefaultInstance())) {
+		if (fallbackId.equals(AccountID.getDefaultInstance()) || validation.response() != OK) {
 			return INVALID_PAYER_ACCOUNT_ID;
 		}
 

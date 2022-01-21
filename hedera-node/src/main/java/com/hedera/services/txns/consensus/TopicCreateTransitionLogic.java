@@ -91,15 +91,8 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var autoRenewId = op.getAutoRenewAccount();
 
 		/* --- Validate --- */
-		final var autoRenewNum = accountStore.getResolvedAccountNum(autoRenewId.getAlias(),
-				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
-		final var autoRenewAccountId = new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
-
-		final var payer = accountStore.getResolvedAccountNum(payerId.getAlias(), payerId.getAccountNum());
-		final var payerAccountId = AccountID.newBuilder()
-				.setShardNum(payerId.getShardNum())
-				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
-				.build();
+		final var autoRenewAccountId = resolvedAutoRenewAccount(autoRenewId);
+		final var payerAccountId = resolvedPayerId(payerId);
 
 		final var memoValidationResult = validator.memoCheck(memo);
 		validateTrue(OK == memoValidationResult, memoValidationResult);
@@ -129,6 +122,14 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		sigImpactHistorian.markEntityChanged(topicId.getTopicNum());
 	}
 
+	private AccountID resolvedPayerId(final AccountID payerId) {
+		final var payer = accountStore.getResolvedAccountNum(payerId.getAlias(), payerId.getAccountNum());
+		return AccountID.newBuilder()
+				.setShardNum(payerId.getShardNum())
+				.setRealmNum(payerId.getRealmNum()).setAccountNum(payer)
+				.build();
+	}
+
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasConsensusCreateTopic;
@@ -153,5 +154,11 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 			return BAD_ENCODING;
 		}
 		return OK;
+	}
+
+	private Id resolvedAutoRenewAccount(final AccountID autoRenewId) {
+		final var autoRenewNum = accountStore.getResolvedAccountNum(autoRenewId.getAlias(),
+				autoRenewId.getAccountNum(), INVALID_AUTORENEW_ACCOUNT);
+		return new Id(autoRenewId.getShardNum(), autoRenewId.getRealmNum(), autoRenewNum);
 	}
 }

@@ -134,8 +134,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		schedule.setExpiry(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs());
 
 		if (schedule.hasExplicitPayer()) {
-			final var schedulePayerLookUp = buildAndLookupID(schedule.payer(), schedule.getPayerAlias(),
-					INVALID_SCHEDULE_PAYER_ID);
+			final var schedulePayerLookUp = buildAndLookupID(schedule.payer(),
+					schedule.getPayerAlias(), INVALID_SCHEDULE_PAYER_ID);
 			if (OK != schedulePayerLookUp.response()) {
 				return failure(schedulePayerLookUp.response());
 			}
@@ -250,7 +250,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 						.setRealmNum(entityId.realm())
 						.setAlias(alias)
 						.build();
-		return lookupAndValidateAliasedId(accountId, errResponse);
+		return lookUpAndValidateAliasedId(accountId, errResponse);
 	}
 
 	private void resetPendingCreation() {

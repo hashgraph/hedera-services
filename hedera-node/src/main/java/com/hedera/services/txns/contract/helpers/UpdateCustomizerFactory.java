@@ -46,10 +46,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class UpdateCustomizerFactory {
 	public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
-			MerkleAccount contract,
-			OptionValidator validator,
-			ContractUpdateTransactionBody updateOp,
-			HederaLedger ledger
+			final MerkleAccount contract,
+			final OptionValidator validator,
+			final ContractUpdateTransactionBody updateOp,
+			final HederaLedger ledger
 	) {
 		if (!onlyAffectsExpiry(updateOp) && !isMutable(contract)) {
 			return Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT);
@@ -65,7 +65,7 @@ public class UpdateCustomizerFactory {
 			return Pair.of(Optional.empty(), INVALID_ADMIN_KEY);
 		}
 		if (updateOp.hasProxyAccountID()) {
-			final var result = ledger.lookupAndValidateAliasedId(
+			final var result = ledger.lookUpAndValidateAliasedId(
 					updateOp.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			if (result.response() != OK) {
 				return Pair.of(Optional.empty(), result.response());
@@ -113,7 +113,7 @@ public class UpdateCustomizerFactory {
 		return false;
 	}
 
-	boolean isMutable(MerkleAccount contract) {
+	boolean isMutable(final MerkleAccount contract) {
 		return Optional.ofNullable(contract.getAccountKey()).map(key -> !key.hasContractID()).orElse(false);
 	}
 
@@ -125,15 +125,15 @@ public class UpdateCustomizerFactory {
 				|| op.hasAdminKey());
 	}
 
-	boolean affectsMemo(ContractUpdateTransactionBody op) {
+	boolean affectsMemo(final ContractUpdateTransactionBody op) {
 		return op.hasMemoWrapper() || op.getMemo().length() > 0;
 	}
 
-	private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
+	private boolean reducesExpiry(final ContractUpdateTransactionBody op, final long curExpiry) {
 		return op.hasExpirationTime() && op.getExpirationTime().getSeconds() < curExpiry;
 	}
 
-	private Optional<JKey> keyIfAcceptable(Key candidate) {
+	private Optional<JKey> keyIfAcceptable(final Key candidate) {
 		var key = MiscUtils.asUsableFcKey(candidate);
 		if (key.isEmpty() || key.get() instanceof JContractIDKey) {
 			return Optional.empty();

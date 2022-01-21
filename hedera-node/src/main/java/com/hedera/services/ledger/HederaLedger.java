@@ -505,12 +505,12 @@ public class HederaLedger {
 
 
 	/* ---- Alias lookup helpers */
-	public AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		return tokenStore.lookupAliasedId(grpcId, errResponse);
+	public AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookUpAliasedId(grpcId, errResponse);
 	}
 
-	public AliasLookup lookupAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		return tokenStore.lookupAndValidateAliasedId(grpcId, errResponse);
+	public AliasLookup lookUpAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
+		return tokenStore.lookUpAndValidateAliasedId(grpcId, errResponse);
 	}
 
 	/* -- Only used by unit tests --- */

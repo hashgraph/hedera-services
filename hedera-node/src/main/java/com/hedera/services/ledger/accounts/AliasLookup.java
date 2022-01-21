@@ -25,6 +25,10 @@ package com.hedera.services.ledger.accounts;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+/**
+ * Lookup an accountID alias and return the accountID with accountNum and response code {@code ResponseCodeEnum.OK} if
+ * alias is valid. If the alias is invalid returns given accountID with alias and error response given.
+ */
 public record AliasLookup(AccountID resolvedId, ResponseCodeEnum response) {
 	public static AliasLookup of(final AccountID resolvedId, final ResponseCodeEnum response) {
 		return new AliasLookup(resolvedId, response);

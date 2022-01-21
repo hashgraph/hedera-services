@@ -132,14 +132,38 @@ public class AliasManager {
 
 
 	/* --- Helpers for lookup --- */
+
+	/**
+	 * Look up aliased payer accountID and if it doesn't exist returns INVALID_PAYER_ACCOUNT_ID
+	 *
+	 * @param id
+	 * 		payer accountID to look up
+	 * @return result from alias look up
+	 */
 	public AliasLookup lookUpPayer(final AccountID id) {
 		return lookUpAccount(id, INVALID_PAYER_ACCOUNT_ID);
 	}
 
+	/**
+	 * Look up an aliased accountID and if it doesn't exist returns INVALID_ACCOUNT_ID
+	 *
+	 * @param id
+	 * 		accountID to look up
+	 * @return result from alias look up
+	 */
 	public AliasLookup lookUpAccount(final AccountID id) {
 		return lookUpAccount(id, INVALID_ACCOUNT_ID);
 	}
 
+	/**
+	 * Look up an aliased accountID and if it doesn't exist returns error response provided
+	 *
+	 * @param grpcId
+	 * 		accountID to look up
+	 * @param errResponse
+	 * 		error response to be returned if the alias doesn't exist
+	 * @return result from alias look up
+	 */
 	public AliasLookup lookUpAccount(final AccountID grpcId, final ResponseCodeEnum errResponse) {
 		final var defaultResponse = OK;
 		AccountID id = grpcId;

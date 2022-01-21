@@ -81,11 +81,11 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void deligatesAccountLookUp() {
 		final AccountID testId = AccountID.newBuilder().setAccountNum(123L).build();
-		subject.lookupAliasedId(testId, INVALID_ACCOUNT_ID);
-		verify(tokenStore).lookupAliasedId(testId, INVALID_ACCOUNT_ID);
+		subject.lookUpAliasedId(testId, INVALID_ACCOUNT_ID);
+		verify(tokenStore).lookUpAliasedId(testId, INVALID_ACCOUNT_ID);
 
-		subject.lookupAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
-		verify(tokenStore).lookupAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
+		subject.lookUpAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
+		verify(tokenStore).lookUpAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
 	}
 
 	@Test

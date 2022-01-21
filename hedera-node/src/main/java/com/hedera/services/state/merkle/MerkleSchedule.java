@@ -330,10 +330,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return payer;
 	}
 
-	public ByteString getPayerAlias() {
-		return payerAlias;
-	}
-
 	public EntityId effectivePayer() {
 		return hasExplicitPayer() ? payer : schedulingAccount;
 	}
@@ -342,17 +338,21 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return payer != UNUSED_PAYER;
 	}
 
+	public ByteString getPayerAlias() {
+		return payerAlias;
+	}
+
 	public void setSchedulingAccount(EntityId schedulingAccount) {
 		throwIfImmutable("Cannot change this schedule's schedulingAccount if it's immutable.");
 		this.schedulingAccount = schedulingAccount;
 	}
 
-	public EntityId schedulingAccount() {
-		return schedulingAccount;
-	}
-
 	public ByteString getSchedulingAccountAlias() {
 		return schedulingAccountAlias;
+	}
+
+	public EntityId schedulingAccount() {
+		return schedulingAccount;
 	}
 
 	public RichInstant schedulingTXValidStart() {

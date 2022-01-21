@@ -104,9 +104,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
 		if (result.response() != OK) {
 			return result.response();
 		}
-		final var accountID = result.resolvedId();
+		final var id = result.resolvedId();
 
-		return optionValidator.queryableAccountStatus(accountID, view.accounts());
+		return optionValidator.queryableAccountStatus(id, view.accounts());
 	}
 
 	@Override

@@ -204,7 +204,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return true;
 		}
 
-		final var result = ledger.lookupAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+		final var result = ledger.lookUpAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 		if (result.response() != OK) {
 			transactionContext.setStatus(result.response());
 			return false;
@@ -235,7 +235,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			if (designatesAccountRemoval(op.getAutoRenewAccount())) {
 				topic.setAutoRenewAccountId(null);
 			} else {
-				final var result = ledger.lookupAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+				final var result = ledger.lookUpAliasedId(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 				topic.setAutoRenewAccountId(EntityId.fromGrpcAccountId(result.resolvedId()));
 			}
 		}

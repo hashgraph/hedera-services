@@ -32,6 +32,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
@@ -89,11 +90,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
 
-		final var senderGrpc = contractCallTxn.getTransactionID().getAccountID();
-		final var lookedUpSender = accountStore.getResolvedAccountNum(senderGrpc.getAlias(),
-				senderGrpc.getAccountNum());
-		final var senderId = new Id(senderGrpc.getShardNum(), senderGrpc.getRealmNum(), lookedUpSender);
-
+		final var senderId = resolvedSenderId(contractCallTxn.getTransactionID().getAccountID());
 		final var contractId = Id.fromGrpcContract(op.getContractID());
 
 		/* --- Load the model objects --- */
@@ -157,8 +154,14 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 		try {
 			codeCache.getIfPresent(address);
-		} catch(RuntimeException e) {
+		} catch (RuntimeException e) {
 			log.warn("Exception while attempting to pre-fetch code for {}", address);
 		}
+	}
+
+	private Id resolvedSenderId(final AccountID senderGrpc) {
+		final var lookedUpSender = accountStore.getResolvedAccountNum(senderGrpc.getAlias(),
+				senderGrpc.getAccountNum());
+		return new Id(senderGrpc.getShardNum(), senderGrpc.getRealmNum(), lookedUpSender);
 	}
 }
