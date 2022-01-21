@@ -41,12 +41,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
+// TODO: Return the test to its original state - runs async and changes default properties only for the first test
 public class LogsSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(LogsSuite.class);
 
 	public static void main(String... args) {
-		new LogsSuite().runSuiteAsync();
+		new LogsSuite().runSuiteSync();
 	}
 
 	@Override
@@ -79,13 +80,14 @@ public class LogsSuite extends HapiApiSuite {
 										resultWith().logs(
 												inOrder(logWith().noTopics().longValue(15))
 										).gasUsed(22_285))),
-						UtilVerbs.resetAppPropertiesTo(
-								"src/main/resource/bootstrap.properties"));
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 	}
 
 	private HapiApiSpec log1Works() {
 		return defaultHapiSpec("log1Works")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+
 						fileCreate("logs").path(ContractResources.LOGS),
 						contractCreate("logsContract").bytecode("logs")
 				).when(
@@ -96,12 +98,14 @@ public class LogsSuite extends HapiApiSuite {
 										List.of(
 												eventSignatureOf("Log1(uint256)"),
 												parsedToByteString(15))))
-								).gasUsed(22_583))));
+								).gasUsed(22_583))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 	}
 
 	private HapiApiSpec log2Works() {
 		return defaultHapiSpec("log2Works")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("logs").path(ContractResources.LOGS),
 						contractCreate("logsContract").bytecode("logs")
 				).when(
@@ -114,12 +118,14 @@ public class LogsSuite extends HapiApiSuite {
 														eventSignatureOf("Log2(uint256,uint256)"),
 														parsedToByteString(1),
 														parsedToByteString(2))))
-										).gasUsed(23_112))));
+										).gasUsed(23_112))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 	}
 
 	private HapiApiSpec log3Works() {
 		return defaultHapiSpec("log3Works")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("logs").path(ContractResources.LOGS),
 						contractCreate("logsContract").bytecode("logs")
 				).when(
@@ -133,12 +139,14 @@ public class LogsSuite extends HapiApiSuite {
 														parsedToByteString(1),
 														parsedToByteString(2),
 														parsedToByteString(3))))
-										).gasUsed(23_638))));
+										).gasUsed(23_638))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 	}
 
 	private HapiApiSpec log4Works() {
 		return defaultHapiSpec("log4Works")
 				.given(
+						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("logs").path(ContractResources.LOGS),
 						contractCreate("logsContract").bytecode("logs")
 				).when(
@@ -155,6 +163,7 @@ public class LogsSuite extends HapiApiSuite {
 																parsedToByteString(1),
 																parsedToByteString(2),
 																parsedToByteString(3))))
-										).gasUsed(24_294))));
+										).gasUsed(24_294))),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 	}
 }

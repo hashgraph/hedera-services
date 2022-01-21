@@ -10,6 +10,7 @@ public enum SuitePackage {
 	CONTRACT_RECORDS_SUITES("Contract records"),
 	CRYPTO_SUITES("Crypto"),
 	FEES_SUITES("Fees"),
+
 	FILE_SUITES("File"),
 	FILE_NEGATIVE_SUITES("File negative"),
 	FILE_POSITIVE_SUITES("File positive"),
@@ -18,6 +19,7 @@ public enum SuitePackage {
 	META_SUITES("Meta"),
 	MISC_SUITES("Misc"),
 	PERF_SUITES("Perf"),
+
 	RECONNECT_SUITES("Reconnect"),
 	RECORDS_SUITES("Record"),
 	REGRESSION_SUITES("Regression"),
