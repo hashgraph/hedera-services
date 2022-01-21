@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
@@ -37,6 +38,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -54,6 +56,7 @@ import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import java.util.EnumSet;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -61,12 +64,14 @@ import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogicTest.al
 import static com.hedera.services.txns.crypto.CryptoDeleteTransitionLogicTest.aliasAccountPayer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -269,8 +274,10 @@ class CryptoUpdateTransitionLogicTest {
 	void failsIfInvalidAccount() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
-		given(ledger.lookupAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, INVALID_ACCOUNT_ID));
-		given(ledger.lookupAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, INVALID_ACCOUNT_ID));
+		given(ledger.lookupAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET,
+				INVALID_ACCOUNT_ID));
+		given(ledger.lookupAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(TARGET, INVALID_ACCOUNT_ID));
 
 		subject.doStateTransition();
 
@@ -326,6 +333,44 @@ class CryptoUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
+	void rejectsInvalidAliasKey() {
+		givenTxnCtx(EnumSet.of(ALIAS), EnumSet.of(ALIAS));
+		given(ledger.alias(TARGET)).willReturn(ByteString.EMPTY);
+		given(validator.isValidAlias(any())).willReturn(false);
+
+		assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void acceptsValidAliasKey() {
+		givenTxnCtx(EnumSet.of(ALIAS), EnumSet.of(ALIAS));
+		given(ledger.alias(TARGET)).willReturn(ByteString.EMPTY);
+		given(validator.isValidAlias(any())).willReturn(true);
+
+		assertEquals(OK, subject.semanticCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	void rejectsUpdateIfAliasAlreadyPresent() {
+		givenTxnCtx(EnumSet.of(ALIAS), EnumSet.of(ALIAS));
+		given(ledger.alias(TARGET)).willReturn(KeyFactory.getDefaultInstance().newEd25519().toByteString());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(ALIAS_IS_IMMUTABLE);
+	}
+
+	@Test
+	void updatesIfAliasNotAlreadyPresent() {
+		givenTxnCtx(EnumSet.of(ALIAS), EnumSet.of(ALIAS));
+		given(ledger.alias(TARGET)).willReturn(ByteString.EMPTY);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -422,7 +467,8 @@ class CryptoUpdateTransitionLogicTest {
 				.build();
 		given(ledger.exists(PAYER)).willReturn(true);
 		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(PAYER, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -442,8 +488,10 @@ class CryptoUpdateTransitionLogicTest {
 				.build();
 		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
 		given(ledger.lookupAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.lookupAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(PROXY, OK));
+		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(TARGET, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -481,7 +529,8 @@ class CryptoUpdateTransitionLogicTest {
 				AccountCustomizer.Option.PROXY,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
-				AccountCustomizer.Option.AUTO_RENEW_PERIOD
+				AccountCustomizer.Option.AUTO_RENEW_PERIOD,
+				ALIAS
 		), EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
@@ -522,6 +571,13 @@ class CryptoUpdateTransitionLogicTest {
 		}
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+		}
+		if (updating.contains(ALIAS)) {
+			if (misconfiguring.contains(ALIAS)) {
+				op.setAlias(KeyFactory.getDefaultInstance().newEd25519().toByteString().substring(0, 10));
+			} else {
+				op.setAlias(KeyFactory.getDefaultInstance().newEd25519().toByteString());
+			}
 		}
 		op.setAccountIDToUpdate(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();

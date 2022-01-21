@@ -59,6 +59,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.aliasKeyNamed;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -77,6 +78,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private OptionalLong newAutoRenewPeriod = OptionalLong.empty();
 	private Optional<Long> lifetimeSecs = Optional.empty();
 	private Optional<String> newProxy = Optional.empty();
+	private Optional<String> newAlias = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> updKeyName = Optional.empty();
 	private Optional<Boolean> updSigRequired = Optional.empty();
@@ -109,6 +111,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	public HapiCryptoUpdate newProxy(String name) {
 		newProxy = Optional.of(name);
+		return this;
+	}
+
+	public HapiCryptoUpdate newAlias(String name) {
+		newAlias = Optional.of(name);
 		return this;
 	}
 
@@ -216,6 +223,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 									builder.setExpirationTime(Timestamp.newBuilder().setSeconds(l).build()));
 							newMaxAutomaticAssociations.ifPresent(p ->
 									builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
+							newAlias.ifPresent(p -> builder.setAlias(aliasKeyNamed(p, spec)));
 						}
 				);
 		return builder -> builder.setCryptoUpdateAccount(opBody);

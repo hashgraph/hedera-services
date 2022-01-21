@@ -107,31 +107,48 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						updateWithUniqueSigs(),
-						updateWithOverlappingSigs(),
-						updateWithOneEffectiveSig(),
-						canUpdateMemo(),
-						updateFailsWithInsufficientSigs(),
-						cannotSetThresholdNegative(),
-						updateWithEmptyKeyFails(),
-						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateFailsWithContractKey(),
-						updateFailsWithOverlyLongLifetime(),
-						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected(),
-						canUpdateUsingAlias(),
-						canUpdateProxyUsingAlias(),
-						failsWhenInvalidAlias(),
-				        invalidProxyAliasFails()
+//						updateWithUniqueSigs(),
+//						updateWithOverlappingSigs(),
+//						updateWithOneEffectiveSig(),
+//						canUpdateMemo(),
+//						updateFailsWithInsufficientSigs(),
+//						cannotSetThresholdNegative(),
+//						updateWithEmptyKeyFails(),
+//						updateFailsIfMissingSigs(),
+//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+//						updateFailsWithContractKey(),
+//						updateFailsWithOverlyLongLifetime(),
+//						updateFailsWithInvalidMaxAutoAssociations(),
+//						usdFeeAsExpected(),
+//						canUpdateUsingAlias(),
+//						canUpdateProxyUsingAlias(),
+//				        failsWhenInvalidAliasedIdGiven(),
+//				        invalidProxyAliasFails(),
+				        canUpdateIfAliasNotPresent()
 				}
 		);
 	}
 
-	private HapiApiSpec failsWhenInvalidAlias() {
+	private HapiApiSpec canUpdateIfAliasNotPresent() {
+		final var alias = "alias";
+		return defaultHapiSpec("UpdateWithUniqueSigs")
+				.given(
+						newKeyNamed(alias).shape(SIMPLE),
+						newKeyNamed(TARGET_KEY).shape(SIMPLE),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+				).when(
+						cryptoUpdate(TARGET_ACCOUNT)
+								.signedBy(alias, TARGET_KEY)
+								.newAlias(alias)
+				).then(
+						getAccountInfo(TARGET_ACCOUNT).logged()
+				);
+	}
+
+	private HapiApiSpec failsWhenInvalidAliasedIdGiven() {
 		String alias = "alias";
 		String memo = "Second";
-		return defaultHapiSpec("failsWhenInvalidAlias")
+		return defaultHapiSpec("failsWhenInvalidAliasedIdGiven")
 				.given(
 						newKeyNamed(alias)
 				).when(
