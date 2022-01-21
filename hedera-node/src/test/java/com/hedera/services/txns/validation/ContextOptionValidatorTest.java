@@ -34,6 +34,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.topics.TopicFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -178,22 +179,23 @@ class ContextOptionValidatorTest {
 				.build();
 	}
 
-	private TransactionBody buildValidTransaction() {
-		final var creationOp = CryptoCreateTransactionBody.getDefaultInstance();
-		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder()
-								.setSeconds(Instant.now().getEpochSecond()))
-						.setAccountID(a))
-				.setCryptoCreateAccount(creationOp)
-				.build();
-	}
-
 	@Test
 	void decodesKeyAsExpected() throws Exception {
 		final var key = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asKey();
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		assertTrue(equalUpToDecodability(wacl, subject.attemptDecodeOrThrow(key)));
+	}
+
+	@Test
+	void validatesAliasAsExpected() {
+		final var keylist = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asKey();
+		assertFalse(subject.isValidAlias(keylist.toByteString()));
+
+		final var ed25519Key = KeyFactory.getDefaultInstance().newEd25519();
+		assertTrue(subject.isValidAlias(ed25519Key.toByteString()));
+
+		final var ecdsaKey = KeyFactory.getDefaultInstance().newEcdsaSecp256k1();
+		assertTrue(subject.isValidAlias(ecdsaKey.toByteString()));
 	}
 
 	@Test

@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -79,14 +80,18 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void deligatesAccountLookUp() {
+	void delegatesAccountLookUp() {
 		final AccountID testId = AccountID.newBuilder().setAccountNum(123L).build();
 		subject.lookupAliasedId(testId, INVALID_ACCOUNT_ID);
 		verify(tokenStore).lookupAliasedId(testId, INVALID_ACCOUNT_ID);
 
 		subject.lookupAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
 		verify(tokenStore).lookupAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
+
+		subject.lookupAliasedId(testId);
+		verify(tokenStore, times(2)).lookupAliasedId(testId, INVALID_ACCOUNT_ID);
 	}
+
 
 	@Test
 	void ledgerGettersWork() {
@@ -242,6 +247,13 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.memo(genesis);
 
 		verify(accountsLedger).get(genesis, MEMO);
+	}
+
+	@Test
+	void delegatesToCorrectAliasProperty() {
+		subject.alias(aliasAccountId);
+
+		verify(accountsLedger).get(aliasAccountId, ALIAS);
 	}
 
 	@Test

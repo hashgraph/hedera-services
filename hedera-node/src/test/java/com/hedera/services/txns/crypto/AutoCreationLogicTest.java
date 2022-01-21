@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +60,9 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -113,6 +117,14 @@ class AutoCreationLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
 		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
 		assertEquals(Pair.of(OK, totalFee), result);
+	}
+
+	@Test
+	void validatePrimitiveKeyCheck() {
+		final var key = KeyFactory.getDefaultInstance().newEd25519();
+		assertDoesNotThrow(() -> AutoCreationLogic.asPrimitiveKeyUnchecked(key.toByteString()));
+		assertThrows(IllegalStateException.class,
+				() -> AutoCreationLogic.asPrimitiveKeyUnchecked(key.toByteString().substring(0, 10)));
 	}
 
 	private void givenCollaborators() {
