@@ -278,7 +278,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var insert2To8 = "insert2To8";
 		final var insert3To16 = "insert3To16";
 		final var remove2 = "remove2";
-		final var gasToOffer = 4_000_000;
+		final var gasToOffer = 400_000;
 
 		return defaultHapiSpec("ImapUserExercise")
 				.given(
