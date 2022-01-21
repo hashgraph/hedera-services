@@ -72,7 +72,7 @@ public class TokenGrantKycTransitionLogic implements TransitionLogic {
 		/* --- Convert to model ids --- */
 
 		final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
-		final var targetAccountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
+		final var targetAccountId = Id.fromResolvedAccountNum(grpcId, accountNum);
 
 		/* --- Load the model objects --- */
 

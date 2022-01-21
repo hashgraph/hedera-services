@@ -108,6 +108,6 @@ public class CallLocalExecutor {
 		final var grpcSender = body.getTransactionID().getAccountID();
 		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
 				grpcSender.getAccountNum());
-		return new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
+		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
 	}
 }

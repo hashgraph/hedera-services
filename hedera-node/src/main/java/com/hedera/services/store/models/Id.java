@@ -60,6 +60,10 @@ public record Id(long shard, long realm, long num) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 	}
 
+	public static Id fromResolvedAccountNum(final AccountID id, final long accountNum) {
+		return new Id(id.getShardNum(), id.getRealmNum(), accountNum);
+	}
+
 	public EntityNum asEntityNum() {
 		return EntityNum.fromLong(num);
 	}

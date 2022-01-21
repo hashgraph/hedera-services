@@ -151,7 +151,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				txnCtx.setStatus(newTreasuryLookUp.response());
 				return;
 			}
-			if (!tokenStore.associationExists(newTreasuryLookUp.resolvedId(), id)) {
+			final var resolvedNewTreasuryId = newTreasuryLookUp.resolvedId();
+
+			if (!tokenStore.associationExists(resolvedNewTreasuryId, id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
@@ -163,18 +165,18 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					return;
 				}
 			}
-			if (!newTreasuryLookUp.resolvedId().equals(existingTreasury)) {
+			if (!resolvedNewTreasuryId.equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
-				outcome = prepNewTreasury(id, token, newTreasuryLookUp.resolvedId());
+				outcome = prepNewTreasury(id, token, resolvedNewTreasuryId);
 				if (outcome != OK) {
 					abortWith(outcome);
 					return;
 				}
 				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
-				newTreasury = newTreasuryLookUp.resolvedId();
+				newTreasury = resolvedNewTreasuryId;
 			}
 		}
 
@@ -261,10 +263,10 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
 		if (op.hasAutoRenewAccount()) {
-			final var newAutoRenewAccountLookUp = tokenStore.lookUpAndValidateAliasedId(
+			final var lookUp = tokenStore.lookUpAndValidateAliasedId(
 					op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (newAutoRenewAccountLookUp.response() != OK) {
-				return newAutoRenewAccountLookUp.response();
+			if (lookUp.response() != OK) {
+				return lookUp.response();
 			}
 
 			if (token.hasAutoRenewAccount()) {
