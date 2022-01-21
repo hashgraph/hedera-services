@@ -103,6 +103,7 @@ class CryptoUpdateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID TARGET = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final String MEMO = "Not since life began";
+	private static final ByteString ALIAS_KEY = KeyFactory.getDefaultInstance().newEd25519().toByteString();
 
 	private boolean useLegacyFields;
 	private HederaLedger ledger;
@@ -428,6 +429,7 @@ class CryptoUpdateTransitionLogicTest {
 	void translatesMissingAccountException() {
 		givenTxnCtx();
 		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
+		given(validator.isValidAlias(ALIAS_KEY)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -438,6 +440,7 @@ class CryptoUpdateTransitionLogicTest {
 	void translatesAccountIsDeletedException() {
 		givenTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
+		given(validator.isValidAlias(ALIAS_KEY)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -472,10 +475,32 @@ class CryptoUpdateTransitionLogicTest {
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.alias(PAYER)).willReturn(aliasAccountPayer.getAlias());
 
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void failsTryingToUpdateAlias() {
+		givenTxnCtx(EnumSet.of(ALIAS));
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(aliasAccountPayer))
+				.build();
+		given(ledger.exists(PAYER)).willReturn(true);
+		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(PAYER, OK));
+
+		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.alias(PAYER)).willReturn(aliasAccountPayer.getAlias());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(ALIAS_IS_IMMUTABLE);
 	}
 
 	@Test
@@ -495,6 +520,7 @@ class CryptoUpdateTransitionLogicTest {
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(validator.isValidAlias(ALIAS_KEY)).willReturn(true);
 
 		subject.doStateTransition();
 
@@ -529,8 +555,7 @@ class CryptoUpdateTransitionLogicTest {
 				AccountCustomizer.Option.PROXY,
 				EXPIRY,
 				IS_RECEIVER_SIG_REQUIRED,
-				AccountCustomizer.Option.AUTO_RENEW_PERIOD,
-				ALIAS
+				AccountCustomizer.Option.AUTO_RENEW_PERIOD
 		), EnumSet.noneOf(AccountCustomizer.Option.class));
 	}
 
@@ -574,9 +599,9 @@ class CryptoUpdateTransitionLogicTest {
 		}
 		if (updating.contains(ALIAS)) {
 			if (misconfiguring.contains(ALIAS)) {
-				op.setAlias(KeyFactory.getDefaultInstance().newEd25519().toByteString().substring(0, 10));
+				op.setAlias(ALIAS_KEY.substring(0, 10));
 			} else {
-				op.setAlias(KeyFactory.getDefaultInstance().newEd25519().toByteString());
+				op.setAlias(ALIAS_KEY);
 			}
 		}
 		op.setAccountIDToUpdate(TARGET);
@@ -587,6 +612,7 @@ class CryptoUpdateTransitionLogicTest {
 		given(ledger.lookupAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
 		given(ledger.lookupAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
 		given(ledger.lookupAndValidateAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(validator.isValidAlias(ALIAS_KEY)).willReturn(true);
 	}
 
 	private TransactionID ourTxnId() {

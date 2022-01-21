@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
@@ -59,9 +60,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -107,41 +110,97 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						updateWithUniqueSigs(),
-//						updateWithOverlappingSigs(),
-//						updateWithOneEffectiveSig(),
-//						canUpdateMemo(),
-//						updateFailsWithInsufficientSigs(),
-//						cannotSetThresholdNegative(),
-//						updateWithEmptyKeyFails(),
-//						updateFailsIfMissingSigs(),
-//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-//						updateFailsWithContractKey(),
-//						updateFailsWithOverlyLongLifetime(),
-//						updateFailsWithInvalidMaxAutoAssociations(),
-//						usdFeeAsExpected(),
-//						canUpdateUsingAlias(),
-//						canUpdateProxyUsingAlias(),
-//				        failsWhenInvalidAliasedIdGiven(),
-//				        invalidProxyAliasFails(),
-				        canUpdateIfAliasNotPresent()
+						updateWithUniqueSigs(),
+						updateWithOverlappingSigs(),
+						updateWithOneEffectiveSig(),
+						canUpdateMemo(),
+						updateFailsWithInsufficientSigs(),
+						cannotSetThresholdNegative(),
+						updateWithEmptyKeyFails(),
+						updateFailsIfMissingSigs(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+						updateFailsWithContractKey(),
+						updateFailsWithOverlyLongLifetime(),
+						updateFailsWithInvalidMaxAutoAssociations(),
+						usdFeeAsExpected(),
+						canUpdateUsingAlias(),
+						canUpdateProxyUsingAlias(),
+				        failsWhenInvalidAliasedIdGiven(),
+				        invalidProxyAliasFails(),
+						canUpdateIfAliasNotPresent(),
+						failsUpdatingAliasIfPresent(),
+						failsUpdatingNonPrimitiveKeyAlias()
 				}
 		);
 	}
 
-	private HapiApiSpec canUpdateIfAliasNotPresent() {
+	private HapiApiSpec failsUpdatingNonPrimitiveKeyAlias() {
 		final var alias = "alias";
-		return defaultHapiSpec("UpdateWithUniqueSigs")
+		return defaultHapiSpec("failsUpdatingNonPrimitiveKeyAlias")
 				.given(
-						newKeyNamed(alias).shape(SIMPLE),
-						newKeyNamed(TARGET_KEY).shape(SIMPLE),
+						newKeyNamed(alias).shape(TWO_LEVEL_THRESH),
+						newKeyNamed(TARGET_KEY),
 						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when(
+						getAccountInfo(TARGET_ACCOUNT)
+								.has(accountWith().noAlias())
+								.has(accountWith().key(TARGET_KEY))
+								.logged(),
 						cryptoUpdate(TARGET_ACCOUNT)
-								.signedBy(alias, TARGET_KEY)
+								.signedBy(alias, DEFAULT_PAYER, TARGET_KEY)
+								.newAlias(alias)
+								.hasPrecheck(INVALID_ALIAS_KEY)
+				).then(
+						getAccountInfo(TARGET_ACCOUNT)
+								.has(accountWith().noAlias())
+								.has(accountWith().key(TARGET_KEY))
+								.logged()
+				);
+	}
+
+	private HapiApiSpec failsUpdatingAliasIfPresent() {
+		final var alias = "alias";
+		return defaultHapiSpec("failsUpdatingAliasIfPresent")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(TARGET_KEY)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+								.via("autoCreation"),
+						getTxnRecord("autoCreation").andAllChildRecords(),
+						getAliasedAccountInfo(alias)
+								.has(accountWith().alias(alias)),
+
+						cryptoUpdateAliased(alias)
+								.newAlias(TARGET_KEY)
+								.signedBy(TARGET_KEY, DEFAULT_PAYER, alias)
+								.hasKnownStatus(ALIAS_IS_IMMUTABLE)
+				).then(
+						getAliasedAccountInfo(alias)
+								.has(accountWith().alias(alias))
+				);
+	}
+
+	private HapiApiSpec canUpdateIfAliasNotPresent() {
+		final var alias = "alias";
+		return defaultHapiSpec("canUpdateIfAliasNotPresent")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(TARGET_KEY),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+				).when(
+						getAccountInfo(TARGET_ACCOUNT)
+								.has(accountWith().noAlias())
+								.has(accountWith().key(TARGET_KEY))
+								.logged(),
+						cryptoUpdate(TARGET_ACCOUNT)
+								.signedBy(alias, DEFAULT_PAYER, TARGET_KEY)
 								.newAlias(alias)
 				).then(
-						getAccountInfo(TARGET_ACCOUNT).logged()
+						getAccountInfo(TARGET_ACCOUNT)
+								.has(accountWith().alias(alias))
+								.has(accountWith().key(TARGET_KEY))
+								.logged()
 				);
 	}
 
