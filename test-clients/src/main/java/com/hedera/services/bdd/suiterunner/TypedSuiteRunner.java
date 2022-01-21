@@ -185,8 +185,8 @@ public class TypedSuiteRunner {
 				.map(category -> suites.get(category).get())
 				.flatMap(Collection::stream)
 				.peek(suite -> {
-					suite.skipClientTearDown();
-					suite.deferResultsSummary();
+//					suite.skipClientTearDown();
+//					suite.deferResultsSummary();
 				})
 				.forEach(suite -> {
 					if (suite.canRunAsync()) {
@@ -216,7 +216,7 @@ public class TypedSuiteRunner {
 		console.add(pattern);
 		file.add(pattern);
 
-		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.WARN);
+		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.INFO);
 		rootLogger.add(builder.newAppenderRef("log"));
 		rootLogger.add(builder.newAppenderRef("stdout"));
 
