@@ -275,13 +275,13 @@ class GetAccountBalanceAnswerTest {
 	}
 
 	@Test
-	void validatesIfIdExistsIfAlias() {
-		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
+	void validatesIfAliasedIDExists() {
+		final CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(targetAlias)
 				.build();
-		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 		given(aliasManager.lookUpAccount(targetAlias)).willReturn(AliasLookup.of(targetAlias, INVALID_ACCOUNT_ID));
-		ResponseCodeEnum status = subject.checkValidity(query, view);
+		final ResponseCodeEnum status = subject.checkValidity(query, view);
 		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 

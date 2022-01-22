@@ -327,13 +327,13 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void failsWithInvalidAliasLookup() throws Throwable {
-		EntityNum entityNum = EntityNum.fromAccountId(payerId);
-		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
+		final EntityNum entityNum = EntityNum.fromAccountId(payerId);
+		final Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
 
 		given(aliasManager.lookUpAccount(any())).willReturn(
 				AliasLookup.of(entityNum.toGrpcAccountId(), INVALID_ACCOUNT_ID));
 
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
+		final ResponseCodeEnum validity = subject.checkValidity(query, view);
 		assertEquals(INVALID_ACCOUNT_ID, validity);
 	}
 
