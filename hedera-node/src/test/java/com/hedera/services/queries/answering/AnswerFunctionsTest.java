@@ -22,21 +22,20 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -48,11 +47,53 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class AnswerFunctionsTest {
+	@Mock
+	private StateView view;
+	@Mock
+	private RecordCache recordCache;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+	private AnswerFunctions subject = new AnswerFunctions();
+
+	@Test
+	void returnsEmptyOptionalWhenProblematic() {
+		final var validQuery = txnRecordQuery(absentTxnId);
+		given(recordCache.getPriorityRecord(absentTxnId)).willReturn(null);
+
+		final var txnRecord = subject.txnRecord(recordCache, validQuery);
+
+		assertFalse(txnRecord.isPresent());
+	}
+
+	@Test
+	void usesCacheIfPresentThere() {
+		final var validQuery = txnRecordQuery(targetTxnId);
+		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(cachedTargetRecord);
+
+		final var txnRecord = subject.txnRecord(recordCache, validQuery);
+
+		assertEquals(grpcRecord, txnRecord.get());
+		verify(accounts, never()).get(any());
+		verify(recordCache, never()).isReceiptPresent(any());
+	}
+
+	private void setupAccountsView() {
+		final var children = new MutableStateChildren();
+		children.setAccounts(accounts);
+		view = new StateView(
+				null,
+				null,
+				children,
+				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
+	}
+
 	private static final TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
@@ -75,68 +116,4 @@ class AnswerFunctionsTest {
 			.build();
 	private static final ExpirableTxnRecord targetRecord = fromGprc(grpcRecord);
 	private static final ExpirableTxnRecord cachedTargetRecord = targetRecord;
-
-	private MerkleAccount payerAccount;
-	private StateView view;
-	private RecordCache recordCache;
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-
-	private NodeLocalProperties nodeProps;
-
-	private AnswerFunctions subject;
-
-	@BeforeEach
-	private void setup() {
-		payerAccount = MerkleAccountFactory.newAccount().get();
-		payerAccount.records().offer(recordOne());
-		payerAccount.records().offer(targetRecord);
-
-		accounts = mock(MerkleMap.class);
-		given(accounts.get(EntityNum.fromAccountId(asAccount(payer)))).willReturn(payerAccount);
-		nodeProps = mock(NodeLocalProperties.class);
-		final var children = new MutableStateChildren();
-		children.setAccounts(accounts);
-		view = new StateView(
-				null,
-				null,
-				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
-
-		recordCache = mock(RecordCache.class);
-
-		subject = new AnswerFunctions();
-	}
-
-	@Test
-	void returnsEmptyOptionalWhenProblematic() {
-		final var validQuery = txnRecordQuery(absentTxnId);
-		given(recordCache.getPriorityRecord(absentTxnId)).willReturn(null);
-
-		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
-
-		assertFalse(txnRecord.isPresent());
-	}
-
-	@Test
-	void findsInPayerAccountIfPresentThere() {
-		final var validQuery = txnRecordQuery(targetTxnId);
-		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(null);
-
-		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
-
-		assertEquals(grpcRecord, txnRecord.get());
-	}
-
-	@Test
-	void usesCacheIfPresentThere() {
-		final var validQuery = txnRecordQuery(targetTxnId);
-		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(cachedTargetRecord);
-
-		final var txnRecord = subject.txnRecord(recordCache, view, validQuery);
-
-		assertEquals(grpcRecord, txnRecord.get());
-		verify(accounts, never()).get(any());
-		verify(recordCache, never()).isReceiptPresent(any());
-	}
 }

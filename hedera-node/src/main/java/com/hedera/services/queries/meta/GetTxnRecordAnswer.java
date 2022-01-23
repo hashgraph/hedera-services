@@ -157,7 +157,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 				}
 			}
 		} else {
-			final var txnRecord = answerFunctions.txnRecord(recordCache, view, op);
+			final var txnRecord = answerFunctions.txnRecord(recordCache, op);
 			if (txnRecord.isEmpty()) {
 				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
 			} else {

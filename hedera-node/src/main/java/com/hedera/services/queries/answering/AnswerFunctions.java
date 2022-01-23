@@ -23,7 +23,6 @@ package com.hedera.services.queries.answering;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
@@ -46,28 +45,9 @@ public class AnswerFunctions {
 		return ExpirableTxnRecord.allToGrpc(account.recordList());
 	}
 
-	public Optional<TransactionRecord> txnRecord(
-			final RecordCache recordCache,
-			final StateView view,
-			final TransactionGetRecordQuery query
-	) {
+	public Optional<TransactionRecord> txnRecord(final RecordCache recordCache, final TransactionGetRecordQuery query) {
 		final var txnId = query.getTransactionID();
 		final var expirableTxnRecord = recordCache.getPriorityRecord(txnId);
-		if (expirableTxnRecord != null) {
-			return Optional.of(expirableTxnRecord.asGrpc());
-		} else {
-			try {
-				final var id = txnId.getAccountID();
-				final var account = view.accounts().get(EntityNum.fromAccountId(id));
-				final var searchableId = TxnId.fromGrpc(txnId);
-				return account.recordList()
-						.stream()
-						.filter(r -> r.getTxnId().equals(searchableId))
-						.findAny()
-						.map(ExpirableTxnRecord::asGrpc);
-			} catch (final Exception ignore) {
-				return Optional.empty();
-			}
-		}
+		return Optional.ofNullable(expirableTxnRecord).map(ExpirableTxnRecord::asGrpc);
 	}
 }

@@ -86,9 +86,7 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
 			@Nullable final Map<String, Object> queryCtx
 	) {
 		final var op = query.getTransactionGetRecord();
-		final var txnRecord = answerFunctions
-				.txnRecord(recordCache, view, op)
-				.orElse(MISSING_RECORD_STANDIN);
+		final var txnRecord = answerFunctions.txnRecord(recordCache, op).orElse(MISSING_RECORD_STANDIN);
 		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, stateProofType);
 		if (txnRecord != MISSING_RECORD_STANDIN) {
 			putIfNotNull(queryCtx, PRIORITY_RECORD_CTX_KEY, txnRecord);
