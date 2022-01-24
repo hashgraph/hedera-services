@@ -73,8 +73,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -196,7 +194,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {

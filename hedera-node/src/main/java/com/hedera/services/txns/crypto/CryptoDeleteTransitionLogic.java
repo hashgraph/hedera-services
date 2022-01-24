@@ -60,8 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	private final HederaLedger ledger;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
@@ -119,7 +117,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoDeleteTxn) {

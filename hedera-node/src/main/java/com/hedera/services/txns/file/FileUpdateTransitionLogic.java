@@ -65,8 +65,6 @@ import static java.lang.Math.max;
 public class FileUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(FileUpdateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	private final HederaFs hfs;
 	private final EntityNumbers entityNums;
 	private final OptionValidator validator;
@@ -208,7 +206,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum validate(final TransactionBody fileUpdateTxn) {

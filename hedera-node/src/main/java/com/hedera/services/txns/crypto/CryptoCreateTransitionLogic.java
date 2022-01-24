@@ -67,8 +67,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -137,7 +135,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {

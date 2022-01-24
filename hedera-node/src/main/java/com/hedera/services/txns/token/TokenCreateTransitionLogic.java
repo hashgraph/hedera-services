@@ -59,8 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
  */
 @Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
 	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
 	private Creation.CreationFactory creationFactory = Creation::new;
@@ -123,7 +121,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

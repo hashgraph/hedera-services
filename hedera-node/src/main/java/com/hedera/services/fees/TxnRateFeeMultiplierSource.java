@@ -229,6 +229,6 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	void logReadableCutoffs() {
-		log.info("The new cutoffs for congestion pricing are:{}", this);
+		log.info("The new cutoffs for congestion pricing are : {}", this);
 	}
 }

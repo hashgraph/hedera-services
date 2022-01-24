@@ -98,7 +98,7 @@ class TokenUpdateUsageTest {
 	}
 
 	@Test
-	void getterWork() {
+	void gettersWork() {
 		assertEquals(TxnUsage.getEstimatorFactory(), factory);
 	}
 

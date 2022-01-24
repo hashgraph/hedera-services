@@ -60,8 +60,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final CodeCache codeCache;
 	private final SigImpactHistorian sigImpactHistorian;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validateSemantics;
-
 	@Inject
 	public ContractCallTransitionLogic(
 			final TransactionContext txnCtx,
@@ -125,7 +123,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validateSemantics;
 	}
 
 	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {

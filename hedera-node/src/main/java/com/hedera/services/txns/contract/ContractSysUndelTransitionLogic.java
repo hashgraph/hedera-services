@@ -55,8 +55,6 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 	private final LegacySystemUndeleter delegate;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	@Inject
 	public ContractSysUndelTransitionLogic(
 			final OptionValidator validator,
@@ -102,7 +100,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractSysUndelTxn) {

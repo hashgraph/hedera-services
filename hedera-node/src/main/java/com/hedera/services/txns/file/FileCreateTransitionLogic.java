@@ -59,8 +59,6 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	@Inject
 	public FileCreateTransitionLogic(
 			final HederaFs hfs,
@@ -107,7 +105,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum assessedValidity(FileCreateTransactionBody op) {

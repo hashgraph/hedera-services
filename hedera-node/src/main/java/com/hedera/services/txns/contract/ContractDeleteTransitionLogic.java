@@ -56,8 +56,6 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	@Inject
 	public ContractDeleteTransitionLogic(
 			final HederaLedger ledger,
@@ -113,7 +111,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {

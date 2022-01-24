@@ -63,9 +63,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> preSignatureValidationSemanticCheck =
-			this::validatePreSignatureValidation;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -311,7 +308,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return preSignatureValidationSemanticCheck;
+		return this::validatePreSignatureValidation;
 	}
 
 	/**

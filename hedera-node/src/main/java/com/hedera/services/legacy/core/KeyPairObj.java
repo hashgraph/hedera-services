@@ -32,7 +32,7 @@ public class KeyPairObj implements Serializable {
 	private static final long serialVersionUID = 9146375644904969927L;
 	private String publicKey;
 
-	public KeyPairObj(String publicKey) {
+	public KeyPairObj(final String publicKey) {
 		this.publicKey = publicKey;
 	}
 
@@ -41,8 +41,8 @@ public class KeyPairObj implements Serializable {
 	}
 
 	private PublicKey getPublicKey() throws IllegalArgumentException, InvalidKeySpecException {
-		byte[] pubKeybytes = CommonUtils.unhex(publicKey);
-		X509EncodedKeySpec pencoded = new X509EncodedKeySpec(pubKeybytes);
+		final var pubKeybytes = CommonUtils.unhex(publicKey);
+		final var pencoded = new X509EncodedKeySpec(pubKeybytes);
 		return new EdDSAPublicKey(pencoded);
 	}
 }
