@@ -111,7 +111,7 @@ jobs:
         run: |
           cd test-clients
           sleep 45s
-          mvn test -Dargs="-s Contract op codes" -DskipTests -Pe2e-tests
+          mvn test -Dargs="-s Autorenew, Compose, Consensus" -DskipTests -Pe2e-tests
 
 
   e2e-second-subset:
@@ -160,55 +160,55 @@ jobs:
         run: |
           cd test-clients
           sleep 45s
-          mvn test -Dargs="-s Contract" -DskipTests -Pe2e-tests
+          mvn test -Dargs="-s Contract, Contract op codes, Contract records" -DskipTests -Pe2e-tests
 
-#  e2e-third-subset:
-#    needs: [build]
-#    runs-on: ubuntu-latest
-#
-#    services:
-#      postgres:
-#        image: postgres:latest
-#        env:
-#          POSTGRES_DB: fcfs
-#          POSTGRES_PASSWORD: password
-#          POSTGRES_USER: swirlds
-#          PGDATA: /var/lib/postgresql/data/pgdata
-#          POSTGRES_PORT: 5432
-#        ports:
-#          - 5432:5432
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#
-#    steps:
-#      - uses: actions/checkout@v2 # checkout current branch
-#
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '17'
-#          distribution: 'adopt'
-#          cache: maven
-#
-#      - name: Build docker images # build the  image for hedera-node
-#        run: bash compose-build.sh
-#
-#      - name: Start network # start 3 node network
-#        run: docker-compose -f docker-compose-ci.yml up -d
-#
-#      - name: Download build artifact
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: build
-#
-#      - name: Run E2E Specs (Reconnect, Record, Regression, Schedule, Streaming, Throttling, Token) # run selected e2e specs, after sleeping for 45s
-#        run: |
-#          cd test-clients
-#          sleep 45s
-#          mvn test -Dargs="-s Reconnect, Record, Regression, Schedule, Streaming, Throttling, Token" -DskipTests -Pe2e-tests
+  e2e-third-subset:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2 # checkout current branch
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: maven
+
+      - name: Build docker images # build the  image for hedera-node
+        run: bash compose-build.sh
+
+      - name: Start network # start 3 node network
+        run: docker-compose -f docker-compose-ci.yml up -d
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build
+
+      - name: Run E2E Specs (Reconnect, Record, Regression, Schedule, Streaming, Throttling, Token) # run selected e2e specs, after sleeping for 45s
+        run: |
+          cd test-clients
+          sleep 45s
+          mvn test -Dargs="-s Crypto, Fees" -DskipTests -Pe2e-tests
           
           
 
