@@ -24,8 +24,6 @@ import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.MetadataMapFactory;
-import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -35,11 +33,12 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,9 +58,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -103,9 +103,8 @@ class StateChildrenSigMetadataLookupTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
-
-	private MerkleMap<String, MerkleOptionalBlob> storage;
-	private Map<FileID, HFileMeta> metaMap;
+	@Mock
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 
 	private StateChildrenSigMetadataLookup subject;
 
@@ -366,7 +365,7 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	@Test
-	void returnsExtantFileMeta() {
+	void returnsExtantFileMeta() throws IOException {
 		setupNonSpecialFileTest();
 		givenFile(knownFile, false, expiry, wacl);
 
@@ -381,7 +380,6 @@ class StateChildrenSigMetadataLookupTest {
 	@Test
 	void failsOnMissingFileMeta() {
 		setupNonSpecialFileTest();
-		givenFile(knownFile, false, expiry, wacl);
 
 		final var result = subject.fileSigningMetaFor(unknownFile, null);
 
@@ -398,14 +396,19 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	private void setupNonSpecialFileTest() {
-		storage = new MerkleMap<>();
 		given(stateChildren.storage()).willReturn(storage);
-		metaMap = MetadataMapFactory.metaMapFrom(new FcBlobsBytesStore(MerkleOptionalBlob::new, () -> storage));
 	}
 
-	private void givenFile(final FileID fid, final boolean isDeleted, final long expiry, final JKey wacl) {
+	private void givenFile(
+			final FileID fid,
+			final boolean isDeleted,
+			final long expiry,
+			final JKey wacl
+	) throws IOException {
 		final var meta = new HFileMeta(isDeleted, wacl, expiry);
-		metaMap.put(fid, meta);
+		final var num = EntityNum.fromLong(fid.getFileNum());
+		given(storage.get(new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, num.intValue())))
+				.willReturn(new VirtualBlobValue(meta.serialize()));
 	}
 
 	private static final FileID knownFile = IdUtils.asFile("0.0.898989");

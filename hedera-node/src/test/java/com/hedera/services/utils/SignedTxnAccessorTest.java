@@ -33,6 +33,8 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -61,9 +63,11 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
@@ -74,6 +78,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,6 +122,23 @@ class SignedTxnAccessorTest {
 		assertThrows(UnsupportedOperationException.class, subject::getSpanMap);
 		assertThrows(UnsupportedOperationException.class, () -> subject.setSigMeta(null));
 		assertThrows(UnsupportedOperationException.class, subject::getSpanMapAccessor);
+	}
+
+	@Test
+	@SuppressWarnings("uncheckeed")
+	void getsCryptoSigMappingFromKnownRationalizedMeta() {
+		final var subject = mock(TxnAccessor.class);
+		final RationalizedSigMeta sigMeta = mock(RationalizedSigMeta.class);
+		final Function<byte[], TransactionSignature> mockFn = mock(Function.class);
+		given(sigMeta.pkToVerifiedSigFn()).willReturn(mockFn);
+		given(subject.getSigMeta()).willReturn(sigMeta);
+
+		doCallRealMethod().when(subject).getRationalizedPkToCryptoSigFn();
+
+		assertThrows(IllegalStateException.class, subject::getRationalizedPkToCryptoSigFn);
+
+		given(sigMeta.couldRationalizeOthers()).willReturn(true);
+		assertSame(mockFn, subject.getRationalizedPkToCryptoSigFn());
 	}
 
 	@Test
@@ -541,6 +563,34 @@ class SignedTxnAccessorTest {
 		assertEquals(memo.getBytes().length, expandedMeta.getMemoSize());
 		assertEquals(25, expandedMeta.getMaxAutomaticAssociations());
 		assertTrue(expandedMeta.hasProxy());
+	}
+
+	@Test
+	void getGasLimitWorksForCreate() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCreateInstance(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(123456789L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void getGasLimitWorksForCall() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertEquals(123456789L, subject.getGasLimitForContractTx());
 	}
 
 	private Transaction signedCryptoCreateTxn() {

@@ -23,7 +23,7 @@ package com.hedera.services;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.grpc.GrpcStarter;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -266,7 +266,6 @@ class ServicesMainTest {
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
-		given(app.latestSignedState()).willReturn(latestSignedState);
 		given(currentPlatformStatus.get()).willReturn(MAINTENANCE);
 		// and:
 		subject.init(platform, nodeId);
@@ -276,7 +275,6 @@ class ServicesMainTest {
 
 		// then:
 		verify(signedState).logSummary();
-		verify(latestSignedState).replaceChildrenFrom(signedState, consensusNow);
 	}
 
 	@Test
@@ -285,7 +283,6 @@ class ServicesMainTest {
 
 		given(app.platformStatus()).willReturn(currentPlatformStatus);
 		given(app.balancesExporter()).willReturn(balancesExporter);
-		given(app.latestSignedState()).willReturn(latestSignedState);
 		given(app.nodeId()).willReturn(nodeId);
 		given(balancesExporter.isTimeToExport(consensusNow)).willReturn(true);
 		given(currentPlatformStatus.get()).willReturn(ACTIVE);

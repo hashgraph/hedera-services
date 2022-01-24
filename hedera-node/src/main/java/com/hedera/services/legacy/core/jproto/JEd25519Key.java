@@ -29,6 +29,7 @@ import java.util.Arrays;
  */
 public class JEd25519Key extends JKey {
 	public static final int ED25519_BYTE_LENGTH = 32;
+
 	private byte[] ed25519;
 
 	public JEd25519Key(byte[] ed25519) {

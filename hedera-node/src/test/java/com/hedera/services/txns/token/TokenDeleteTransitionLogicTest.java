@@ -80,7 +80,7 @@ class TokenDeleteTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(token).delete();
-		verify(typedTokenStore).persistToken(token);
+		verify(typedTokenStore).commitToken(token);
 		verify(sigImpactHistorian).markEntityChanged(tokenId.num());
 	}
 
@@ -93,7 +93,7 @@ class TokenDeleteTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID);
 
 		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
+		verify(typedTokenStore, never()).commitToken(token);
 	}
 
 	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
@@ -109,7 +109,7 @@ class TokenDeleteTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
 
 		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
+		verify(typedTokenStore, never()).commitToken(token);
 	}
 
 	@Test

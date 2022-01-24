@@ -21,14 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -37,84 +29,28 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.given;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAssociateTransitionLogicTest {
-	private AccountID account = IdUtils.asAccount("0.0.2");
-	private TokenID firstToken = IdUtils.asToken("1.2.3");
-	private TokenID secondToken = IdUtils.asToken("2.3.4");
-	private Id accountId = new Id(0, 0, 2);
-	private Id firstTokenId = new Id(1, 2, 3);
-	private Id secondTokenId = new Id(2, 3, 4);
-
-	@Mock
-	private Account modelAccount;
-	@Mock
-	private Token firstModelToken;
-	@Mock
-	private Token secondModelToken;
-	@Mock
-	private TokenRelationship firstModelTokenRel;
-	@Mock
-	private TokenRelationship secondModelTokenRel;
-	@Mock
-	private TypedTokenStore tokenStore;
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private PlatformTxnAccessor accessor;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-
+	private final AccountID account = IdUtils.asAccount("0.0.2");
+	private final TokenID firstToken = IdUtils.asToken("1.2.3");
+	private final TokenID secondToken = IdUtils.asToken("2.3.4");
 	private TransactionBody tokenAssociateTxn;
 	private TokenAssociateTransitionLogic subject;
 
+	@Mock private TransactionContext txnCtx;
+	@Mock private AssociateLogic associateLogic;
+
 	@BeforeEach
 	private void setup() {
-		subject = new TokenAssociateTransitionLogic(accountStore, tokenStore, txnCtx, dynamicProperties);
-	}
-
-	@Test
-	void appliesExpectedTransition() {
-		// setup:
-		InOrder inOrder = Mockito.inOrder(modelAccount, accountStore, tokenStore);
-
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
-		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
-		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
-		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(123);
-		// and:
-		List<Token> tokens = List.of(firstModelToken, secondModelToken);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		inOrder.verify(modelAccount).associateWith(tokens, 123, false);
-		inOrder.verify(accountStore).persistAccount(modelAccount);
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
+		subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
 	}
 
 	@Test

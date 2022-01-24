@@ -23,11 +23,12 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
-import com.hedera.services.ledger.accounts.HashMapBackingNfts;
-import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.backing.HashMapBackingNfts;
+import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -46,12 +47,12 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -70,7 +71,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,6 +99,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,9 +108,8 @@ class LedgerBalanceChangesTest {
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
-
-	private TokenStore tokenStore;
-	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
+	private HederaTokenStore tokenStore;
 	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations =
@@ -120,6 +120,7 @@ class LedgerBalanceChangesTest {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransferLogic transferLogic;
 
 	@Mock
 	private EntityIdSource ids;
@@ -132,9 +133,11 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private AccountRecordsHistorian historian;
 	@Mock
-	private UniqTokenViewsManager tokenViewsManager;
+	private UniqueTokenViewsManager tokenViewsManager;
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private MutableEntityAccess mutableEntityAccess;
+	@Mock
+	private AutoCreationLogic autoCreationLogic;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
@@ -153,15 +156,17 @@ class LedgerBalanceChangesTest {
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
-		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
-		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
+		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(aNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(aModel));
+		backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
+
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqTokenViewsManager(
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueOwnershipAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
@@ -172,37 +177,21 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
-
+				nftsLedger,
+				backingTokens);
+		transferLogic = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, tokenViewsManager, dynamicProperties, validator,
+				autoCreationLogic, historian);
 		tokenStore.rebuildViews();
 
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties,
-				accountsLedger, autoAccountCreator);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
+				dynamicProperties, accountsLedger, transferLogic, autoCreationLogic);
+		subject.setMutableEntityAccess(mutableEntityAccess);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(tokenViewsManager);
-	}
-
-	@Test
-	void rejectsContractInAccountAmounts() {
-		givenInitialBalancesAndOwnership();
-		backingAccounts.getRef(aModel).setSmartContract(true);
-
-		// when:
-		subject.begin();
-		// and:
-
-		assertFailsWith(
-				() -> subject.doZeroSum(fixtureChanges()),
-				ResponseCodeEnum.INVALID_ACCOUNT_ID);
-
-		// then:
-		subject.commit();
-
-		// and:
-		assertInitialBalanceUnchanged();
 	}
 
 	@Test
@@ -227,11 +216,11 @@ class LedgerBalanceChangesTest {
 	void undoCreationsOnFailure() {
 		givenInitialBalancesAndOwnership();
 		backingAccounts.remove(aModel);
-		given(autoAccountCreator.reclaimPendingAliases()).willReturn(true);
-		// when:
+		given(autoCreationLogic.reclaimPendingAliases()).willReturn(true);
+
 		subject.begin();
 		accountsLedger.create(AccountID.newBuilder().setAccountNum(1).build());
-		// and:
+
 		assertFailsWith(
 				() -> subject.doZeroSum(fixtureChanges()),
 				ResponseCodeEnum.INVALID_ACCOUNT_ID);
@@ -278,13 +267,13 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsMissingToken() {
 		// setup:
-		tokens.clear();
-		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
+		backingTokens = new HashMapBackingTokens();
+		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
+		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqTokenViewsManager(
-				() -> uniqueTokenOwnerships,
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueOwnershipAssociations,
+				() -> uniqueOwnershipTreasuryAssociations,
 				() -> uniqueOwnershipTreasuryAssociations,
 				false, true);
 		tokenStore = new HederaTokenStore(
@@ -293,15 +282,19 @@ class LedgerBalanceChangesTest {
 				sideEffectsTracker,
 				viewManager,
 				dynamicProperties,
-				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				backingTokens);
 
+		transferLogic = new TransferLogic(
+				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
+				sideEffectsTracker, viewManager, dynamicProperties, validator, autoCreationLogic, historian);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProperties,
-				accountsLedger, autoAccountCreator);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
+				dynamicProperties, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 		subject.setTokenViewsManager(viewManager);
+		subject.setMutableEntityAccess(mutableEntityAccess);
 		tokenStore.rebuildViews();
 
 		givenInitialBalancesAndOwnership();
@@ -410,7 +403,7 @@ class LedgerBalanceChangesTest {
 		backingAccounts.put(validAliasAccountWithId, validAliasAccount);
 		backingAccounts.put(funding, fundingAccount);
 
-		given(autoAccountCreator.create(any(), any())).willAnswer(invocationOnMock -> {
+		given(autoCreationLogic.create(any(), eq(accountsLedger))).willAnswer(invocationOnMock -> {
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(validAliasEntityNum.toGrpcAccountId());
 			return Pair.of(OK, 100L);
@@ -452,7 +445,7 @@ class LedgerBalanceChangesTest {
 						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
 						.build());
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-		given(syntheticTxnFactory.cryptoCreate(any(), anyLong())).willReturn(mockCreateTxn);
+		given(syntheticTxnFactory.createAccount(any(), anyLong())).willReturn(mockCreateTxn);
 		given(entityIdSource.newAccountId(any()))
 				.willReturn(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(99).build());
 		given(recordsHistorian.nextChildRecordSourceId()).willReturn(123);

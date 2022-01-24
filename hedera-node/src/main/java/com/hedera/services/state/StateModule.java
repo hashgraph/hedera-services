@@ -20,15 +20,14 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.NftsByOwner;
 import com.hedera.services.state.annotations.NftsByType;
 import com.hedera.services.state.annotations.TreasuryNftsByType;
@@ -48,7 +47,6 @@ import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -59,6 +57,11 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
@@ -78,7 +81,9 @@ import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -138,6 +143,12 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
+	public static VirtualMapFactory provideVirtualMapFactory() {
+		return new VirtualMapFactory(JasperDbBuilder::new);
+	}
+
+	@Provides
+	@Singleton
 	static Pause providePause() {
 		return SleepingPause.SLEEPING_PAUSE;
 	}
@@ -184,16 +195,16 @@ public interface StateModule {
 	static StateView provideCurrentView(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			NodeLocalProperties nodeLocalProperties,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeLocalProperties,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
@@ -201,29 +212,22 @@ public interface StateModule {
 	static Supplier<StateView> provideStateViews(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			NodeLocalProperties nodeLocalProperties,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return () -> new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeLocalProperties,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
 	@Singleton
 	@WorkingState
 	static StateAccessor provideWorkingState() {
-		return new StateAccessor();
-	}
-
-	@Provides
-	@Singleton
-	@LatestSignedState
-	static StateAccessor provideLatestSignedState() {
 		return new StateAccessor();
 	}
 
@@ -237,7 +241,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<MerkleMap<String, MerkleOptionalBlob>> provideWorkingStorage(
+	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::storage;
@@ -316,6 +320,14 @@ public interface StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::specialFiles;
+	}
+
+	@Provides
+	@Singleton
+	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+			@WorkingState StateAccessor accessor
+	) {
+		return accessor::contractStorage;
 	}
 
 	@Provides

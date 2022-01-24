@@ -20,9 +20,10 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -97,17 +98,22 @@ class GetAccountInfoAnswerTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private OptionValidator optionValidator;
+	@Mock
+	private MerkleToken token;
+	@Mock
+	private MerkleToken deletedToken;
+	@Mock
+	private NetworkInfo networkInfo;
+	@Mock
+	private AliasManager aliasManager;
 
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private String node = "0.0.3";
 	private String memo = "When had I my own will?";
 	private String payer = "0.0.12345";
 	private AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
 	private String target = payer;
-	@Mock
-	private MerkleToken token;
-	@Mock
-	private MerkleToken deletedToken;
 	TokenID firstToken = tokenWith(555),
 			secondToken = tokenWith(666),
 			thirdToken = tokenWith(777),
@@ -119,10 +125,6 @@ class GetAccountInfoAnswerTest {
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
-	@Mock
-	private NodeLocalProperties nodeProps;
-	@Mock
-	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -161,12 +163,13 @@ class GetAccountInfoAnswerTest {
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
+
 		view = new StateView(
 				tokenStore,
 				scheduleStore,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				networkInfo);
 
 		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
 	}
@@ -240,6 +243,7 @@ class GetAccountInfoAnswerTest {
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);

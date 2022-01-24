@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -78,7 +77,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		this.stateChildren = stateChildren;
 		this.tokenMetaTransform = tokenMetaTransform;
 
-		final var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, stateChildren::storage);
+		final var blobStore = new FcBlobsBytesStore(stateChildren::storage);
 		this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);
 	}
 

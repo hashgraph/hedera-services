@@ -22,12 +22,13 @@ package com.hedera.services.txns.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -39,23 +40,24 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.db.ServicesRepositoryRoot;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -64,9 +66,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-	private long gas = 1_234L;
+	private int gas = 1_234;
 	private long sent = 1_234L;
-
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -81,7 +82,9 @@ class ContractCallTransitionLogicTest {
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
 	@Mock
-	private ServicesRepositoryRoot repositoryRoot;
+	private GlobalDynamicProperties properties;
+	@Mock
+	private CodeCache codeCache;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
@@ -95,7 +98,8 @@ class ContractCallTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
-				txnCtx, accountStore, sigImpactHistorian, worldState, recordService, evmTxProcessor, repositoryRoot);
+				txnCtx, accountStore, worldState,
+				recordService, evmTxProcessor, properties, codeCache, sigImpactHistorian);
 	}
 
 	@Test
@@ -119,19 +123,17 @@ class ContractCallTransitionLogicTest {
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
-		given(evmTxProcessor.execute(
-				senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY, txnCtx.consensusTime()))
-				.willReturn(results);
-		given(worldState.persist()).willReturn(List.of(target));
+		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime())).willReturn(results);
+		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
-		verify(worldState).persist();
+		verify(worldState).persistProvisionalContractCreations();
 	}
 
 	@Test
@@ -155,13 +157,12 @@ class ContractCallTransitionLogicTest {
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(bytecode);
 		var results = TransactionProcessingResult.successful(
 				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);
-		given(worldState.persist()).willReturn(List.of(target));
+		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
 
@@ -172,10 +173,53 @@ class ContractCallTransitionLogicTest {
 	}
 
 	@Test
+	void successfulPreFetch() throws ExecutionException {
+		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
+		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
+
+		given(accessor.getTxn()).willReturn(txnBody);
+		given(txnBody.getContractCall()).willReturn(ccTxnBody);
+		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+
+		// when:
+		subject.preFetch(accessor);
+
+		// expect:
+		verify(codeCache).getIfPresent(any(Address.class));
+	}
+
+	@Test
+	void codeCacheThrowsExceptionDuringGet() throws ExecutionException {
+		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
+		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
+
+		given(accessor.getTxn()).willReturn(txnBody);
+		given(txnBody.getContractCall()).willReturn(ccTxnBody);
+		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
+
+		// when:
+		subject.preFetch(accessor);
+
+		// expect:
+		verify(codeCache).getIfPresent(any(Address.class));
+	}
+
+	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
+		given(properties.maxGas()).willReturn(gas + 1);
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCallTxn));
+	}
+
+	@Test
+	void providingGasOverLimitReturnsCorrectPrecheck() {
+		givenValidTxnCtx();
+		given(properties.maxGas()).willReturn(gas - 1);
+		// expect:
+		assertEquals(MAX_GAS_LIMIT_EXCEEDED,
+				subject.semanticCheck().apply(contractCallTxn));
 	}
 
 	@Test
@@ -197,28 +241,6 @@ class ContractCallTransitionLogicTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
-	}
-
-	@Test
-	void throwsWhenBytecodeIsEmpty() {
-		// setup:
-		givenValidTxnCtx();
-		// and:
-		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		// and:
-		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
-				.willReturn(contractAccount);
-		// and:
-		given(repositoryRoot.getCode(contractAccount.getId().asEvmAddress().toArray())).willReturn(
-				Bytes.EMPTY.toArray());
-
-		// when:
-		final var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
-
-		// then:
-		assertEquals(CONTRACT_BYTECODE_EMPTY, exception.getResponseCode());
 	}
 
 	private void givenValidTxnCtx() {

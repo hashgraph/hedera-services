@@ -21,8 +21,16 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.AbstractAnswer;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.StaticEntityAccess;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -39,6 +47,7 @@ import java.util.Optional;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -47,12 +56,22 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	public static final String CONTRACT_CALL_LOCAL_CTX_KEY =
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
-	private final CallLocalExecutor callLocalExecutor;
+	private final AccountStore accountStore;
+	private final EntityIdSource ids;
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final NodeLocalProperties nodeProperties;
+	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
 
 	@Inject
 	public ContractCallLocalAnswer(
-			CallLocalExecutor callLocalExecutor,
-			OptionValidator validator) {
+			final EntityIdSource ids,
+			final AccountStore accountStore,
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties,
+			final NodeLocalProperties nodeProperties,
+			final CallLocalEvmTxProcessor callLocalEvmTxProcessor
+	) {
 		super(
 				ContractCallLocal,
 				query -> query.getContractCallLocal().getHeader().getPayment(),
@@ -62,17 +81,24 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					var op = query.getContractCallLocal();
 					if (op.getGas() < 0) {
 						return CONTRACT_NEGATIVE_GAS;
+					} else if (op.getGas() > dynamicProperties.maxGas()) {
+						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
 						return validator.queryableContractStatus(op.getContractID(), view.contracts());
 					}
 				});
 
-		this.callLocalExecutor = callLocalExecutor;
+		this.ids = ids;
+		this.validator = validator;
+		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
+		this.nodeProperties = nodeProperties;
+		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
 	}
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		return responseFor(query, validity, cost, NO_QUERY_CTX);
+		return responseFor(query, view, validity, cost, NO_QUERY_CTX);
 	}
 
 	@Override
@@ -83,11 +109,12 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			long cost,
 			Map<String, Object> queryCtx
 	) {
-		return responseFor(query, validity, cost, Optional.of(queryCtx));
+		return responseFor(query, view, validity, cost, Optional.of(queryCtx));
 	}
 
 	private Response responseFor(
 			Query query,
+			StateView view,
 			ResponseCodeEnum validity,
 			long cost,
 			Optional<Map<String, Object>> queryCtx
@@ -102,7 +129,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				setAnswerOnly(response, op, cost, queryCtx);
+				setAnswerOnly(response, view, op, cost, queryCtx);
 			}
 		}
 
@@ -114,6 +141,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	@SuppressWarnings("unchecked")
 	private void setAnswerOnly(
 			ContractCallLocalResponse.Builder response,
+			StateView view,
 			ContractCallLocalQuery op,
 			long cost,
 			Optional<Map<String, Object>> queryCtx
@@ -130,7 +158,12 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				var callLocalResponse = callLocalExecutor.execute(op);
+				final var entityAccess = new StaticEntityAccess(view, validator, dynamicProperties);
+				final var codeCache = new CodeCache(nodeProperties, entityAccess);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
+				callLocalEvmTxProcessor.setWorldState(worldState);
+
+				final var callLocalResponse = CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op);
 				response.mergeFrom(withCid(callLocalResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));

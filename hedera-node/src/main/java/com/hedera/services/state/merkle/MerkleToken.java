@@ -48,7 +48,6 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
 public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;
@@ -398,6 +397,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 
 	public Optional<JKey> freezeKey() {
 		return Optional.ofNullable(freezeKey);
+	}
+
+	public JKey freezeKeyUnsafe() {
+		return freezeKey;
 	}
 
 	public boolean hasFreezeKey() {

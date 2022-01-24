@@ -117,8 +117,8 @@ class CreationTest {
 		subject.persist();
 
 		verify(tokenStore).persistNew(provisionalToken);
-		verify(tokenStore).persistTokenRelationships(List.of(newRel));
-		verify(accountStore).persistAccount(treasury);
+		verify(tokenStore).commitTokenRelationships(List.of(newRel));
+		verify(accountStore).commitAccount(treasury);
 	}
 
 	@Test

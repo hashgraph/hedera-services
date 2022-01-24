@@ -78,11 +78,10 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 					a.setBalance(((Number) v).longValue());
 				} catch (ClassCastException cce) {
 					throw new IllegalArgumentException(
-							"Wrong argument type! Argument needs to be of type int or long. Actual value: "
-									+ v.toString(), cce);
+							"Wrong argument type! Argument needs to be of type int or long. Actual value: " + v, cce);
 				} catch (NegativeAccountBalanceException nabe) {
 					throw new IllegalArgumentException(
-							"Argument 'v=" + v.toString() + "' would cause account 'a=" + a
+							"Argument 'v=" + v + "' would cause account 'a=" + a
 									+ "' to have a negative balance!", nabe);
 				}
 			};
@@ -190,6 +189,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getAlreadyUsedAutoAssociations;
+		}
+	},
+	NUM_CONTRACT_KV_PAIRS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, n) -> a.setNumContractKvPairs((int) n);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNumContractKvPairs;
 		}
 	},
 	ALIAS {

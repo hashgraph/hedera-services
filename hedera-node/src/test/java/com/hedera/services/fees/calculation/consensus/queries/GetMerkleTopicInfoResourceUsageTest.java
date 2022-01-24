@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.consensus.queries;
 
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
@@ -60,20 +59,18 @@ class GetMerkleTopicInfoResourceUsageTest {
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	private static final TopicID topicId = asTopic("0.0.1234");
 	private GetTopicInfoResourceUsage subject;
-	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
 	void setup() {
 		topics = mock(MerkleMap.class);
-		nodeProps = mock(NodeLocalProperties.class);
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

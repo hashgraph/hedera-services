@@ -37,9 +37,9 @@ import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.NFTS_BY_TYPE;
-import static com.hedera.services.store.tokens.views.UniqTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.TargetFcotmr.NFTS_BY_OWNER;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.TargetFcotmr.NFTS_BY_TYPE;
+import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.TargetFcotmr.TREASURY_NFTS_BY_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +61,7 @@ class UniqTokenViewsManagerTest {
 	private MerkleMap<EntityNum, MerkleToken> realTokens;
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> realNfts;
 
-	private UniqTokenViewsManager subject;
+	private UniqueTokenViewsManager subject;
 
 	@Test
 	void everythingNoopsWithTreasuryTrackingSubject() {
@@ -470,27 +470,27 @@ class UniqTokenViewsManagerTest {
 	}
 
 	private void setupTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(
+		subject = new UniqueTokenViewsManager(
 				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, false, true);
 	}
 
 	private void setupNonTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(
+		subject = new UniqueTokenViewsManager(
 				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, false, false);
 	}
 
 	private void setupNoopTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(
+		subject = new UniqueTokenViewsManager(
 				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, true, true);
 	}
 
 	private void setupNoopNonTreasuryTrackingSubject() {
-		subject = new UniqTokenViewsManager(
+		subject = new UniqueTokenViewsManager(
 				() -> nftsByType, () -> nftsByOwner, () -> treasuryNftsByType, true, false);
 	}
 
 	private PendingChange change(
-			UniqTokenViewsManager.TargetFcotmr target,
+			UniqueTokenViewsManager.TargetFcotmr target,
 			int keyCode,
 			long valueCode,
 			boolean associate

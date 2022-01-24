@@ -24,7 +24,7 @@ package com.hedera.services.store.tokens.views;
  *
  */
 
-public record PendingChange(UniqTokenViewsManager.TargetFcotmr targetFcotmr,
+public record PendingChange(UniqueTokenViewsManager.TargetFcotmr targetFcotmr,
 							int keyCode,
 							long valueCode,
 							boolean associate) {

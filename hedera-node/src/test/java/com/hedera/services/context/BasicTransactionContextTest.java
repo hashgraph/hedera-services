@@ -597,9 +597,33 @@ class BasicTransactionContextTest {
 	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
 		given(accessor.isTriggeredTxn()).willReturn(true);
-
-		// when:
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	@Test
+	void hasContractResultWorksForCreateWithResult() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().build();
+		subject.setCreateResult(result);
+		assertTrue(subject.hasContractResult());
+	}
+
+	@Test
+	void hasContractResultWorksWithoutResult() {
+		assertFalse(subject.hasContractResult());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCreate() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		subject.setCreateResult(result);
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+	}
+
+	@Test
+	void getGasUsedForContractTXWorksForCall() {
+		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		subject.setCallResult(result);
+		assertEquals(123456789L, subject.getGasUsedForContractTxn());
 	}
 
 	private ExpirableTxnRecord.Builder buildExpectedRecord(

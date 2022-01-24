@@ -44,8 +44,8 @@ import static java.util.stream.Collectors.toSet;
 public interface PropertySource {
 	Logger log = LogManager.getLogger(PropertySource.class);
 
-	Function<String, Object> AS_INT = Integer::valueOf;
-	Function<String, Object> AS_LONG = Long::valueOf;
+	Function<String, Object> AS_INT = s -> Integer.valueOf(s.replace("_", ""));
+	Function<String, Object> AS_LONG = s -> Long.valueOf(s.replace("_", ""));
 	Function<String, Object> AS_DOUBLE = Double::valueOf;
 	Function<String, Object> AS_STRING = s -> s;
 	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());

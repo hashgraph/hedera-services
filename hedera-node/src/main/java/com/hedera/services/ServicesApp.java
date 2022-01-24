@@ -38,16 +38,14 @@ import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
-import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.SigsModule;
-import com.hedera.services.sigs.order.SignedStateSigReqs;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
-import com.hedera.services.state.annotations.LatestSignedState;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -57,6 +55,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.validation.LedgerValidator;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.StoresModule;
@@ -65,6 +64,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransactionsModule;
 import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.submission.SubmissionModule;
 import com.hedera.services.utils.NamedDigestFactory;
@@ -108,21 +108,22 @@ import java.util.function.Supplier;
 		PropertiesModule.class,
 		ThrottlingModule.class,
 		SubmissionModule.class,
-		TransactionsModule.class,
+		TransactionsModule.class
 })
 public interface ServicesApp {
 	/* Needed by ServicesState */
 	HashLogger hashLogger();
 	ProcessLogic logic();
-	ExpansionHelper expansionHelper();
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
-	SignedStateSigReqs signedStateSigReqs();
+	VirtualMapFactory virtualMapFactory();
+	SigReqsManager sigReqsManager();
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
 	@WorkingState StateAccessor workingState();
+	PrefetchProcessor prefetchProcessor();
 
 	/* Needed by ServicesMain */
 	Pause pause();
@@ -145,7 +146,6 @@ public interface ServicesApp {
 	SystemAccountsCreator sysAccountsCreator();
 	Optional<PrintStream> consoleOut();
 	ReconnectCompleteListener reconnectListener();
-	@LatestSignedState StateAccessor latestSignedState();
 	StateWriteToDiskCompleteListener stateWriteToDiskListener();
 	InvalidSignedStateListener issListener();
 	Supplier<NotificationEngine> notificationEngine();

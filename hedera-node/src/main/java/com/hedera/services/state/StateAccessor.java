@@ -21,36 +21,33 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.context.ImmutableStateChildren;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
-
-import java.time.Instant;
+import com.swirlds.virtualmap.VirtualMap;
 
 public class StateAccessor {
-	private volatile StateChildren children = new MutableStateChildren();
+	private final MutableStateChildren children = new MutableStateChildren();
 
 	public StateAccessor() {
 		/* No-op */
-	}
-
-	public StateAccessor(final ServicesState initialState) {
-		updateChildrenFrom(initialState);
 	}
 
 	/**
@@ -65,36 +62,7 @@ public class StateAccessor {
 	 * 		the new working state to update children from
 	 */
 	public void updateChildrenFrom(final ServicesState state) {
-		if (children instanceof ImmutableStateChildren) {
-			throw new IllegalStateException("Can only replace mutable children");
-		}
-		mapStateOnto(state, (MutableStateChildren) children);
-	}
-
-	/**
-	 * Replaces this accessor's state children references with new references from given state
-	 * (which in our usage will always be the latest signed state).
-	 *
-	 * @param state
-	 * 		the latest signed state to replace children from
-	 */
-	public void replaceChildrenFrom(final ServicesState state, final Instant signedAt) {
-		children = new ImmutableStateChildren(
-				state.accounts(),
-				state.topics(),
-				state.tokens(),
-				state.uniqueTokens(),
-				state.scheduleTxs(),
-				state.storage(),
-				state.tokenAssociations(),
-				state.uniqueTokenAssociations(),
-				state.uniqueOwnershipAssociations(),
-				state.uniqueTreasuryOwnershipAssociations(),
-				state.networkCtx(),
-				state.addressBook(),
-				state.specialFiles(),
-				state.runningHashLeaf(),
-				signedAt);
+		children.updateFrom(state);
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -105,9 +73,13 @@ public class StateAccessor {
 		return children.topics();
 	}
 
-	public MerkleMap<String, MerkleOptionalBlob> storage() {
+	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
 		return children.storage();
 	}
+
+        public VirtualMap<ContractKey, ContractValue> contractStorage() {
+                return children.contractStorage();
+        }
 
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return children.tokens();
@@ -155,22 +127,5 @@ public class StateAccessor {
 
 	public StateChildren children() {
 		return children;
-	}
-
-	private static void mapStateOnto(final ServicesState state, final MutableStateChildren children) {
-		children.setAccounts(state.accounts());
-		children.setTopics(state.topics());
-		children.setStorage(state.storage());
-		children.setTokens(state.tokens());
-		children.setTokenAssociations(state.tokenAssociations());
-		children.setSchedules(state.scheduleTxs());
-		children.setNetworkCtx(state.networkCtx());
-		children.setAddressBook(state.addressBook());
-		children.setSpecialFiles(state.specialFiles());
-		children.setUniqueTokens(state.uniqueTokens());
-		children.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		children.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		children.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
-		children.setRunningHashLeaf(state.runningHashLeaf());
 	}
 }

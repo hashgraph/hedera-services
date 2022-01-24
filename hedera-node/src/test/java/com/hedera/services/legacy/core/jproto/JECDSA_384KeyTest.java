@@ -22,7 +22,9 @@ package com.hedera.services.legacy.core.jproto;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JECDSA_384KeyTest {
@@ -39,9 +41,13 @@ class JECDSA_384KeyTest {
 
 	@Test
 	void nonEmptyJECDSA_384KeyTest() {
-		JECDSA_384Key key = new JECDSA_384Key(new byte[1]);
+		final var desiredRepr = "<JECDSA_384Key: ecdsa384Key hex=4e4f4e53454e5345>";
+		final var mockKey = "NONSENSE".getBytes();
+		JECDSA_384Key key = new JECDSA_384Key(mockKey);
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
-		assertTrue(key.hasECDSA384Key());
+		assertSame(mockKey, key.getECDSA384());
+		assertEquals(desiredRepr, key.toString());
+        assertTrue(key.hasECDSA384Key());
 	}
 }

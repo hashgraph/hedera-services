@@ -31,8 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TopicTest {
-
-
 	@Test
 	void createsOkTopic() {
 		final var id = Id.DEFAULT;

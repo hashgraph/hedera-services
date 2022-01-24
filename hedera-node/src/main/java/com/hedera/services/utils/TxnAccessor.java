@@ -37,8 +37,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Defines a type that gives access to several commonly referenced
@@ -58,6 +60,13 @@ public interface TxnAccessor {
     }
     default RationalizedSigMeta getSigMeta() {
         throw new UnsupportedOperationException();
+    }
+    default Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
+    	final var sigMeta = getSigMeta();
+    	if (!sigMeta.couldRationalizeOthers()) {
+    	    throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization failed");
+        }
+    	return sigMeta.pkToVerifiedSigFn();
     }
 
     default BaseTransactionMeta baseUsageMeta() {
@@ -89,6 +98,13 @@ public interface TxnAccessor {
     boolean canTriggerTxn();
     boolean isTriggeredTxn();
     ScheduleID getScheduleRef();
+
+    /**
+     * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
+     * {@link HederaFunctionality#ContractCreate} transaction
+     * @return - the gasLimit value of the transaction
+     */
+    long getGasLimitForContractTx();
 
     default SwirldTransaction getPlatformTxn() {
         throw new UnsupportedOperationException();

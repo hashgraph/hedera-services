@@ -55,6 +55,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -221,6 +222,12 @@ public final class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
 			NetworkGetExecutionTime
+	);
+
+	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+			ContractCallLocal,
+			ContractCall,
+			ContractCreate
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -409,7 +416,7 @@ public final class MiscUtils {
 		if (o instanceof FCQueue) {
 			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
-			return o.toString();
+			return Objects.toString(o);
 		}
 	}
 
@@ -517,6 +524,18 @@ public final class MiscUtils {
 			return BASE_STAT_NAMES.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
 			return "NotImplemented";
+		}
+	}
+
+	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
+		final var oldSecs = start.getEpochSecond();
+		final var newNanos = start.getNano() + nanosOff;
+		if (newNanos < 0) {
+			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
+		} else if (newNanos >= ONE_SEC_IN_NANOS) {
+			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
+		} else {
+			return Instant.ofEpochSecond(oldSecs, newNanos);
 		}
 	}
 
@@ -660,18 +679,6 @@ public final class MiscUtils {
 		throw new UnknownHederaFunctionality();
 	}
 
-	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
-		final var oldSecs = start.getEpochSecond();
-		final var newNanos = start.getNano() + nanosOff;
-		if (newNanos < 0) {
-			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
-		} else if (newNanos >= ONE_SEC_IN_NANOS) {
-			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
-		} else {
-			return Instant.ofEpochSecond(oldSecs, newNanos);
-		}
-	}
-
 	public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
 		return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
 	}
@@ -811,6 +818,17 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	/**
+	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 *
+	 * @param hederaFunctionality
+	 * 		- the {@link HederaFunctionality} to verify
+	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
+	 */
+	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
+		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 
 	/**

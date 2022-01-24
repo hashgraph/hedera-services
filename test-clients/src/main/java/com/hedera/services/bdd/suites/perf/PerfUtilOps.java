@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +43,15 @@ public class PerfUtilOps {
 			var ciProps = spec.setup().ciPropertiesMap();
 			if (ciProps.has(prop)) {
 				value.set(ciProps.getInteger(prop));
+			}
+		});
+	}
+
+	public static HapiSpecOperation mgmtOfBooleanProp(AtomicBoolean value, String prop) {
+		return withOpContext((spec, opLog) -> {
+			var ciProps = spec.setup().ciPropertiesMap();
+			if (ciProps.has(prop)) {
+				value.set(ciProps.getBoolean(prop));
 			}
 		});
 	}

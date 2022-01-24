@@ -26,7 +26,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;

@@ -75,7 +75,7 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 		loadedToken.delete();
 
 		/* --- Persist the updated model --- */
-		tokenStore.persistToken(loadedToken);
+		tokenStore.commitToken(loadedToken);
 		sigImpactHistorian.markEntityChanged(grpcTokenId.getTokenNum());
 	}
 
