@@ -199,12 +199,12 @@ public class DecodingFacade {
 		}
 	}
 
-	public ERC20 decodeBalanceOf(final Bytes input) {
+	public BalanceOfWrapper decodeBalanceOf(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
 
 		final var account = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
 
-		return new ERC20(account, null, 0L);
+		return new BalanceOfWrapper(account);
 	}
 
 //	public ERC20 decodeTokenTransfer(final Bytes input) {

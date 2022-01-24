@@ -334,8 +334,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
-		public void setCode(Bytes var1) {
-			codeCache.putCode(address, var1);
+		public void setCode(final Bytes code) {
+			codeCache.putCode(address, code);
 		}
 	}
 

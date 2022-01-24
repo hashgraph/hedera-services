@@ -5,5 +5,5 @@ import org.hyperledger.besu.evm.account.Account;
 
 public interface AccountForToken extends Account {
 
-	void setCode(Bytes var1);
+	void setCode(Bytes code);
 }
