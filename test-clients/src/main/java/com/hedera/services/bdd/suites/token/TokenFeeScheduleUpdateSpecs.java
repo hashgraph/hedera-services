@@ -265,7 +265,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										newTokenCollector))
 				).then(
 						getTokenInfo(token)
-								// TODO fix this .hasCustom(fixedHbarFeeInSchedule(newHbarAmount, aliasedHbarCollector))
+								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, aliasedHbarCollector,true))
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(

@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -65,6 +66,11 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	@Override
 	public SigningOrderResult<ResponseCodeEnum> forInvalidPayer() {
 		return MISSING_PAYER_RESULT;
+	}
+
+	@Override
+	public SigningOrderResult<ResponseCodeEnum> forInvalidSchedulePayer() {
+		return INVALID_SCHEDULE_PAYER_RESULT;
 	}
 
 	@Override
@@ -134,6 +140,8 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_ACCOUNT_RESULT =
 			new SigningOrderResult<>(INVALID_ACCOUNT_ID);
+	static final SigningOrderResult<ResponseCodeEnum> INVALID_SCHEDULE_PAYER_RESULT =
+			new SigningOrderResult<>(INVALID_SCHEDULE_PAYER_ID);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_PAYER_RESULT =
 			new SigningOrderResult<>(INVALID_PAYER_ACCOUNT_ID);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_ERROR_RESULT =

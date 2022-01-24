@@ -2601,7 +2601,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
+		assertEquals(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID, summary.getErrorReport());
 	}
 
 	@Test

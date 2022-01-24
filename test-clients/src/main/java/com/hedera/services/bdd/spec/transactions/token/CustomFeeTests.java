@@ -33,6 +33,25 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.bui
 
 public class CustomFeeTests {
 	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
+			final long amount,
+			String collector,
+			final boolean isAliasedCollector
+	) {
+		return (spec, actual) -> {
+			var resolvedCollector = "";
+			if (isAliasedCollector) {
+				final var key = spec.registry().getKey(collector);
+				final var accountID = spec.registry().getAccountID(key.toByteString().toStringUtf8());
+				resolvedCollector += accountID.getShardNum() + "." + accountID.getRealmNum() + "." + accountID.getAccountNum();
+			} else {
+				resolvedCollector = collector;
+			}
+			final var expected = CustomFeeSpecs.builtFixedHbar(amount, resolvedCollector, spec);
+			failUnlessPresent("fixed ℏ", actual, expected);
+		};
+	}
+
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
 			long amount,
 			String collector
 	) {

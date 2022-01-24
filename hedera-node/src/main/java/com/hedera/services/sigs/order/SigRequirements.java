@@ -992,7 +992,7 @@ public class SigRequirements {
 				required,
 				linkedRefs);
 		if (!couldAddPayer) {
-			return factory.forInvalidAccount();
+			return factory.forInvalidSchedulePayer();
 		}
 		int after = required.size();
 		if (after > before) {
