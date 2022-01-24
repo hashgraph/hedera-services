@@ -194,4 +194,12 @@ class JKeyTest {
 		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
 		assertFalse(key.getECDSA384().isEmpty());
 	}
+
+	@Test
+	void convertsRSA3072Key() {
+		ByteString rsa3072Bytes = ByteString.copyFromUtf8("test");
+		JKey jkey = new JRSA_3072Key(rsa3072Bytes.toByteArray());
+		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
+		assertFalse(key.getRSA3072().isEmpty());
+	}
 }
