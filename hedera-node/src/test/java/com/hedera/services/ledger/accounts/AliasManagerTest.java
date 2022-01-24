@@ -108,14 +108,14 @@ class AliasManagerTest {
 
 	@Test
 	void looksUpAccountIds() {
-		EntityNum a = new EntityNum(1);
-		EntityNum b = new EntityNum(2);
-		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
-		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
-		AccountID aId = AccountID.newBuilder().setAlias(aliasA).build();
-		AccountID bId = AccountID.newBuilder().setAlias(aliasB).build();
-		AccountID invalidId = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("dummy")).build();
-		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
+		final EntityNum a = new EntityNum(1);
+		final EntityNum b = new EntityNum(2);
+		final ByteString aliasA = ByteString.copyFromUtf8("aaaa");
+		final ByteString aliasB = ByteString.copyFromUtf8("bbbb");
+		final AccountID aId = AccountID.newBuilder().setAlias(aliasA).build();
+		final AccountID bId = AccountID.newBuilder().setAlias(aliasB).build();
+		final AccountID invalidId = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("dummy")).build();
+		final Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
 			put(aliasA, a);
 			put(aliasB, b);
 		}};

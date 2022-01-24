@@ -103,18 +103,18 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				positiveSpecs(),
+				positiveSpecs(),
 				negativeSpecs()
 		);
 	}
 
 	private List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-//				cryptoWithInvalidAliasTxnPayer(),
-//				consensusWithInvalidAliasAsPayer(),
-				schedulesWithInvalidAliasAsPayer()
-//				tokensWithInvalidAliasAsPayer()
-//				contractsWithInvalidAliasAsPayer()
+				cryptoWithInvalidAliasTxnPayer(),
+				consensusWithInvalidAliasAsPayer(),
+				schedulesWithInvalidAliasAsPayer(),
+				tokensWithInvalidAliasAsPayer(),
+				contractsWithInvalidAliasAsPayer()
 		);
 	}
 

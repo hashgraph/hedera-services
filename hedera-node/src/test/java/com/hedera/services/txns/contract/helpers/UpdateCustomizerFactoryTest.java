@@ -94,7 +94,8 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
-		given(ledger.lookupAndValidateAliasedId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(newProxy, OK));
+		given(ledger.lookUpAndValidateAliasedId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+				AliasLookup.of(newProxy, OK));
 
 		// when:
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);
@@ -125,7 +126,7 @@ class UpdateCustomizerFactoryTest {
 				.setExpirationTime(newExpiryTime)
 				.build();
 
-		given(ledger.lookupAndValidateAliasedId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAndValidateAliasedId(newProxy, INVALID_PROXY_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(newProxy, INVALID_PROXY_ACCOUNT_ID));
 
 		var result = subject.customizerFor(mutableContract, optionValidator, op, ledger);

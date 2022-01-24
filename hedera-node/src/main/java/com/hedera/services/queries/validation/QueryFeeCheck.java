@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -58,10 +57,10 @@ public class QueryFeeCheck {
 
 	@Inject
 	public QueryFeeCheck(
-			OptionValidator validator,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			AliasManager aliasManager
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
@@ -69,7 +68,8 @@ public class QueryFeeCheck {
 		this.aliasManager = aliasManager;
 	}
 
-	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
+	public ResponseCodeEnum nodePaymentValidity(final List<AccountAmount> transfers,
+			final long queryFee, final AccountID node) {
 		var plausibility = transfersPlausibility(transfers);
 		if (plausibility != OK) {
 			return plausibility;
@@ -94,7 +94,7 @@ public class QueryFeeCheck {
 		return OK;
 	}
 
-	ResponseCodeEnum transfersPlausibility(List<AccountAmount> transfers) {
+	ResponseCodeEnum transfersPlausibility(final List<AccountAmount> transfers) {
 		if (Optional.ofNullable(transfers).map(List::size).orElse(0) == 0) {
 			return INVALID_ACCOUNT_AMOUNTS;
 		}
@@ -119,7 +119,7 @@ public class QueryFeeCheck {
 		}
 	}
 
-	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
+	ResponseCodeEnum adjustmentPlausibility(final AccountAmount adjustment) {
 		var lookupResult = aliasManager.lookUpAccount(adjustment.getAccountID());
 		if (lookupResult.response() != OK) {
 			return lookupResult.response();
@@ -153,11 +153,8 @@ public class QueryFeeCheck {
 	 * 		the transaction body to validate
 	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
-	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-		final var payerAccountId = txn.getTransactionID().getAccountID();
-
-
-		final var result = aliasManager.lookUpPayer(payerAccountId);
+	public ResponseCodeEnum validateQueryPaymentTransfers(final TransactionBody txn) {
+		final var result = aliasManager.lookUpPayer(txn.getTransactionID().getAccountID());
 		if (result.response() != OK) {
 			return result.response();
 		}
@@ -172,7 +169,7 @@ public class QueryFeeCheck {
 		for (AccountAmount accountAmount : transfers) {
 			final var amountValidation = aliasManager.lookUpAccount(accountAmount.getAccountID());
 			if (amountValidation.response() != OK) {
-				return INVALID_ACCOUNT_ID;
+				return amountValidation.response();
 			}
 			var id = amountValidation.resolvedId();
 
@@ -195,7 +192,7 @@ public class QueryFeeCheck {
 		return OK;
 	}
 
-	private ResponseCodeEnum balanceCheck(@Nullable MerkleAccount payingAccount, long req) {
+	private ResponseCodeEnum balanceCheck(final @Nullable MerkleAccount payingAccount, final long req) {
 		if (payingAccount == null) {
 			return ACCOUNT_ID_DOES_NOT_EXIST;
 		}

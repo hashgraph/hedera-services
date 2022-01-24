@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,9 +44,9 @@ public class DissociateLogic {
 
 	@Inject
 	public DissociateLogic(OptionValidator validator,
-						   TypedTokenStore tokenStore,
-						   AccountStore accountStore,
-						   DissociationFactory dissociationFactory) {
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
+			DissociationFactory dissociationFactory) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
@@ -55,7 +55,7 @@ public class DissociateLogic {
 
 	public void dissociate(AccountID accountID, List<TokenID> tokenIDList) {
 		final var accountNum = accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum());
-		final var accountId = new Id(accountID.getShardNum(), accountID.getRealmNum(), accountNum);
+		final var accountId = Id.fromResolvedAccountNum(accountID, accountNum);
 
 		/* --- Load the model objects --- */
 		final var account = accountStore.loadAccount(accountId);

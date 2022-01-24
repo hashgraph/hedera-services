@@ -27,8 +27,11 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,14 +109,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			final var initialTxnId = chunkInfo.getInitialTransactionID();
-			final var chunkAccountIDLookup = aliasManager.lookUpPayer(initialTxnId.getAccountID());
-
-			if (
-					chunkAccountIDLookup.response() != OK ||
-					!chunkAccountIDLookup.resolvedId().equals(payer) ||
-					(1 == chunkInfo.getNumber() && !initialTxnId.equals(txnId))
-			) {
+			if (!isValidChunkID(chunkInfo, payer, txnId)) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}
@@ -143,5 +139,14 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SEMANTIC_RUBBER_STAMP;
+	}
+
+	private boolean isValidChunkID(final ConsensusMessageChunkInfo chunkInfo,
+			final AccountID payer, final TransactionID txnId) {
+		final var initialTxnId = chunkInfo.getInitialTransactionID();
+		final var chunkAccountIDLookup = aliasManager.lookUpPayer(initialTxnId.getAccountID());
+		return chunkAccountIDLookup.response() == OK &&
+				chunkAccountIDLookup.resolvedId().equals(payer) &&
+				(1 != chunkInfo.getNumber() || initialTxnId.equals(txnId));
 	}
 }

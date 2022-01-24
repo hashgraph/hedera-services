@@ -130,7 +130,7 @@ class CryptoUpdateTransitionLogicTest {
 		withRubberstampingValidator();
 
 		subject = new CryptoUpdateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
-		given(ledger.lookupAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.lookUpAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
 	}
 
 	@Test
@@ -275,9 +275,9 @@ class CryptoUpdateTransitionLogicTest {
 	void failsIfInvalidAccount() {
 		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
-		given(ledger.lookupAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET,
+		given(ledger.lookUpAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET,
 				INVALID_ACCOUNT_ID));
-		given(ledger.lookupAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(TARGET, INVALID_ACCOUNT_ID));
 
 		subject.doStateTransition();
@@ -469,8 +469,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(aliasAccountPayer))
 				.build();
 		given(ledger.exists(PAYER)).willReturn(true);
-		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookUpAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
@@ -490,8 +490,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(aliasAccountPayer))
 				.build();
 		given(ledger.exists(PAYER)).willReturn(true);
-		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
+		given(ledger.lookUpAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PAYER, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
@@ -511,11 +511,11 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(aliasAccountPayer)
 						.setProxyAccountID(aliasedProxyID))
 				.build();
-		given(ledger.lookupAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
-		given(ledger.lookupAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.lookUpAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAndValidateAliasedId(aliasedProxyID, INVALID_PROXY_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
+		given(ledger.lookUpAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
 				AliasLookup.of(TARGET, OK));
 
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
@@ -609,9 +609,9 @@ class CryptoUpdateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
-		given(ledger.lookupAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
-		given(ledger.lookupAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
-		given(ledger.lookupAndValidateAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAndValidateAliasedId(TARGET, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(TARGET, OK));
+		given(ledger.lookUpAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
+		given(ledger.lookUpAndValidateAliasedId(PROXY, INVALID_PROXY_ACCOUNT_ID)).willReturn(AliasLookup.of(PROXY, OK));
 		given(validator.isValidAlias(ALIAS_KEY)).willReturn(true);
 	}
 

@@ -111,17 +111,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		var op = contractCreateTxn.getContractCreateInstance();
 
-		final var grpcSender = contractCreateTxn.getTransactionID().getAccountID();
-		final var senderLookup= hederaLedger.lookupAliasedId(grpcSender, INVALID_PAYER_ACCOUNT_ID);
-		final var senderId = Id.fromGrpcAccount(senderLookup.resolvedId());
-
+		final var senderId = resolvedSenderId(contractCreateTxn.getTransactionID().getAccountID());
 		var proxyAccount = Id.DEFAULT;
 
 		/* ---- validate -- */
 		if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
-			final var result = hederaLedger.lookupAndValidateAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
-			validateTrue(OK == result.response(), INVALID_PROXY_ACCOUNT_ID);
-			proxyAccount = Id.fromGrpcAccount(result.resolvedId());
+			proxyAccount = resolvedProxyId(op.getProxyAccountID());
 		}
 
 		var key = op.hasAdminKey()
@@ -180,7 +175,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		recordService.externaliseEvmCreateTransaction(result);
 	}
 
-
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasContractCreateInstance;
@@ -229,5 +223,16 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		} catch (IllegalArgumentException e) {
 			throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
 		}
+	}
+
+	private Id resolvedSenderId(final AccountID grpcSender) {
+		final var senderLookup = hederaLedger.lookUpAliasedId(grpcSender, INVALID_PAYER_ACCOUNT_ID);
+		return Id.fromGrpcAccount(senderLookup.resolvedId());
+	}
+
+	private Id resolvedProxyId(final AccountID proxyAccountID) {
+		final var result = hederaLedger.lookUpAndValidateAliasedId(proxyAccountID, INVALID_PROXY_ACCOUNT_ID);
+		validateTrue(OK == result.response(), INVALID_PROXY_ACCOUNT_ID);
+		return Id.fromGrpcAccount(result.resolvedId());
 	}
 }

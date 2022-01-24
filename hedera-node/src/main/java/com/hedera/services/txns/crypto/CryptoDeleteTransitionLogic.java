@@ -82,7 +82,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 
-			var result = ledger.lookupAndValidateAliasedId(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
+			var result = ledger.lookUpAndValidateAliasedId(op.getDeleteAccountID(), INVALID_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;
@@ -95,7 +95,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			result = ledger.lookupAndValidateAliasedId(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+			result = ledger.lookUpAndValidateAliasedId(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
 			if (result.response() != OK) {
 				txnCtx.setStatus(result.response());
 				return;

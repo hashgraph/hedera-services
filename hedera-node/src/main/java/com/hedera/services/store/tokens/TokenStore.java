@@ -79,9 +79,9 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	boolean matchesTokenDecimals(TokenID tId, int expectedDecimals);
 
-	AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse);
+	AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
-	AliasLookup lookupAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse);
+	AliasLookup lookUpAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse);
 
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;

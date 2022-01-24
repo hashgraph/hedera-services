@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.merkle.map.MerkleMap;
@@ -78,14 +79,14 @@ public class SolvencyPrecheck {
 
 	@Inject
 	public SolvencyPrecheck(
-			FeeExemptions feeExemptions,
-			FeeCalculator feeCalculator,
-			OptionValidator validator,
-			PrecheckVerifier precheckVerifier,
-			Supplier<StateView> stateView,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			AliasManager aliasManager
+			final FeeExemptions feeExemptions,
+			final FeeCalculator feeCalculator,
+			final OptionValidator validator,
+			final PrecheckVerifier precheckVerifier,
+			final Supplier<StateView> stateView,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final AliasManager aliasManager
 	) {
 		this.accounts = accounts;
 		this.validator = validator;
@@ -97,18 +98,16 @@ public class SolvencyPrecheck {
 		this.aliasManager = aliasManager;
 	}
 
-	TxnValidityAndFeeReq assessSansSvcFees(SignedTxnAccessor accessor) {
+	TxnValidityAndFeeReq assessSansSvcFees(final SignedTxnAccessor accessor) {
 		return assess(accessor, false);
 	}
 
-	TxnValidityAndFeeReq assessWithSvcFees(SignedTxnAccessor accessor) {
+	TxnValidityAndFeeReq assessWithSvcFees(final SignedTxnAccessor accessor) {
 		return assess(accessor, true);
 	}
 
-	private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-		final var payerLookup = aliasManager.lookUpPayer(accessor.getPayer());
-		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
-		final var payerStatus = queryableAccountStatus(payerEntity, accounts.get());
+	private TxnValidityAndFeeReq assess(final SignedTxnAccessor accessor, final boolean includeSvcFee) {
+		final var payerStatus = getResolvedPayerStatus(accessor.getPayer());
 		if (payerStatus != OK) {
 			return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
 		}
@@ -125,7 +124,8 @@ public class SolvencyPrecheck {
 		return solvencyOfVerifiedPayer(accessor, includeSvcFee);
 	}
 
-	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
+	private TxnValidityAndFeeReq solvencyOfVerifiedPayer(final SignedTxnAccessor accessor,
+			final boolean includeSvcFee) {
 		final var payerId = EntityNum.fromAccountId(
 				aliasManager.lookUpPayer(accessor.getPayer()).resolvedId());
 		final var payerAccount = accounts.get().get(payerId);
@@ -158,11 +158,11 @@ public class SolvencyPrecheck {
 		}
 	}
 
-	private long totalOf(FeeObject fees, boolean includeSvcFee) {
+	private long totalOf(final FeeObject fees, final boolean includeSvcFee) {
 		return (includeSvcFee ? fees.getServiceFee() : 0) + fees.getNodeFee() + fees.getNetworkFee();
 	}
 
-	private ResponseCodeEnum checkSigs(SignedTxnAccessor accessor) {
+	private ResponseCodeEnum checkSigs(final SignedTxnAccessor accessor) {
 		try {
 			return precheckVerifier.hasNecessarySignatures(accessor) ? OK : INVALID_SIGNATURE;
 		} catch (KeyPrefixMismatchException ignore) {
@@ -172,5 +172,11 @@ public class SolvencyPrecheck {
 		} catch (Exception ignore) {
 			return INVALID_SIGNATURE;
 		}
+	}
+
+	private ResponseCodeEnum getResolvedPayerStatus(final AccountID payer) {
+		final var payerLookup = aliasManager.lookUpPayer(payer);
+		final var payerEntity = EntityNum.fromAccountId(payerLookup.resolvedId());
+		return queryableAccountStatus(payerEntity, accounts.get());
 	}
 }

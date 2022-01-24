@@ -165,8 +165,7 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? accounts.get().get(
-				fromAccountId(aliasManager.lookUpPayer(accessor.getPayer()).resolvedId())).getAccountKey()
+				? accounts.get().get(fromAccountId(resolvedPayer())).getAccountKey()
 				: EMPTY_KEY;
 	}
 
@@ -175,7 +174,7 @@ public class BasicTransactionContext implements TransactionContext {
 		if (!isPayerSigKnownActive) {
 			throw new IllegalStateException("No active payer!");
 		}
-		return aliasManager.lookUpPayer(accessor().getPayer()).resolvedId();
+		return resolvedPayer();
 	}
 
 	@Override
@@ -335,6 +334,10 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public long getGasUsedForContractTxn() {
 		return contractFunctionResult.getGasUsed();
+	}
+
+	private AccountID resolvedPayer() {
+		return aliasManager.lookUpPayer(accessor.getPayer()).resolvedId();
 	}
 
 	/* --- Used by unit tests --- */

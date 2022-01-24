@@ -68,11 +68,7 @@ public class CallLocalExecutor {
 		try {
 			TransactionBody body = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
 
-			final var grpcSender = body.getTransactionID().getAccountID();
-			final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
-					grpcSender.getAccountNum());
-			final var senderId = new Id(grpcSender.getShardNum(), grpcSender.getRealmNum(), senderAccountNum);
-
+			final var senderId = resolvedSender(body, accountStore);
 			final var contractId = Id.fromGrpcContract(op.getContractID());
 
 			/* --- Load the model objects --- */
@@ -106,5 +102,12 @@ public class CallLocalExecutor {
 
 			return ContractCallLocalResponse.newBuilder().setHeader(responseHeader).build();
 		}
+	}
+
+	private static Id resolvedSender(TransactionBody body, AccountStore accountStore) {
+		final var grpcSender = body.getTransactionID().getAccountID();
+		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
+				grpcSender.getAccountNum());
+		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
 	}
 }

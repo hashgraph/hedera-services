@@ -109,14 +109,12 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public AliasLookup lookupAndValidateAliasedId(final AccountID grpcId,
-			final ResponseCodeEnum response) {
+	public AliasLookup lookUpAndValidateAliasedId(final AccountID grpcId, final ResponseCodeEnum response) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public AliasLookup lookupAliasedId(final AccountID grpcId,
-			final ResponseCodeEnum response) {
+	public AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum response) {
 		throw new UnsupportedOperationException();
 	}
 

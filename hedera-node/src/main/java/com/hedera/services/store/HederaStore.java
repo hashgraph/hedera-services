@@ -72,19 +72,6 @@ public abstract class HederaStore {
 		return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
 	}
 
-	public AliasLookup lookupAliasedId(final AccountID grpcId, final ResponseCodeEnum response) {
-		return aliasManager.lookUpAccount(grpcId, response);
-	}
-
-	public AliasLookup lookupAndValidateAliasedId(final AccountID grpcId, ResponseCodeEnum errResponse) {
-		final var lookUpResult = lookupAliasedId(grpcId, errResponse);
-		if (lookUpResult.response() != OK) {
-			return lookUpResult;
-		}
-		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
-		return AliasLookup.of(lookUpResult.resolvedId(), validity);
-	}
-
 	protected ResponseCodeEnum checkAccountUsability(AccountID aId) {
 		if (!accountsLedger.exists(aId)) {
 			return INVALID_ACCOUNT_ID;
@@ -95,5 +82,19 @@ public abstract class HederaStore {
 		} else {
 			return OK;
 		}
+	}
+
+	/* --- Alias look up helpers --- */
+	public AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum response) {
+		return aliasManager.lookUpAccount(grpcId, response);
+	}
+
+	public AliasLookup lookUpAndValidateAliasedId(final AccountID grpcId, ResponseCodeEnum errResponse) {
+		final var lookUpResult = lookUpAliasedId(grpcId, errResponse);
+		if (lookUpResult.response() != OK) {
+			return lookUpResult;
+		}
+		final var validity = usableOrElse(lookUpResult.resolvedId(), errResponse);
+		return AliasLookup.of(lookUpResult.resolvedId(), validity);
 	}
 }

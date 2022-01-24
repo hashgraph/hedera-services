@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,9 +77,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenWipe();
 		final var targetTokenId = Id.fromGrpcToken(op.getToken());
-		final var grpcId = op.getAccount();
-		final var accountNum = accountStore.getResolvedAccountNum(grpcId.getAlias(), grpcId.getAccountNum());
-		final var targetAccountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), accountNum);
+		final var targetAccountId = resolvedTarget(op.getAccount());
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetTokenId);
@@ -130,5 +129,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 				op.getSerialNumbersList(),
 				validator::maxBatchSizeWipeCheck
 		);
+	}
+
+	private Id resolvedTarget(final AccountID grpcId) {
+		final var accountNum = accountStore.getResolvedAccountNum(grpcId.getAlias(), grpcId.getAccountNum());
+		return Id.fromResolvedAccountNum(grpcId, accountNum);
 	}
 }

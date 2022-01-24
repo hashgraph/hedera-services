@@ -216,20 +216,16 @@ public class FcCustomFee implements SelfSerializable {
 	 * provided from grpc {@link CustomFee} form to subMerkle form {@link FcCustomFee}
 	 *
 	 * @param source
-	 * 			The grpc customFee
+	 * 		The grpc customFee
 	 * @param accountStore
-	 * 			AccountStore to look up the accountNum of the aliased FeeCollector.
-	 * @return
-	 * 			FcCustomFee representation of the provided grpcCustomFee
+	 * 		AccountStore to look up the accountNum of the aliased FeeCollector.
+	 * @return FcCustomFee representation of the provided grpcCustomFee
 	 */
 	public static FcCustomFee fromGrpc(CustomFee source, AccountStore accountStore) {
 		final var isSpecified = source.hasFixedFee() || source.hasFractionalFee() || source.hasRoyaltyFee();
 		validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 
-		final var grpcFeeCollector = source.getFeeCollectorAccountId();
-		final var resolvedFeeCollectorNum = accountStore.getResolvedAccountNum(
-				grpcFeeCollector.getAlias(), grpcFeeCollector.getAccountNum(), INVALID_CUSTOM_FEE_COLLECTOR);
-		final var feeCollector = new EntityId(grpcFeeCollector.getShardNum(), grpcFeeCollector.getRealmNum(), resolvedFeeCollectorNum);
+		final var feeCollector = resolvedFeeCollector(source, accountStore);
 
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
@@ -434,5 +430,12 @@ public class FcCustomFee implements SelfSerializable {
 	private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {
 		dos.writeLong(fee.getUnitsToCollect());
 		dos.writeSerializable(fee.getTokenDenomination(), true);
+	}
+
+	private static EntityId resolvedFeeCollector(final CustomFee source, final AccountStore accountStore) {
+		final var grpcFeeCollector = source.getFeeCollectorAccountId();
+		final var resolvedFeeCollectorNum = accountStore.getResolvedAccountNum(
+				grpcFeeCollector.getAlias(), grpcFeeCollector.getAccountNum(), INVALID_CUSTOM_FEE_COLLECTOR);
+		return new EntityId(grpcFeeCollector.getShardNum(), grpcFeeCollector.getRealmNum(), resolvedFeeCollectorNum);
 	}
 }

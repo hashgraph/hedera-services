@@ -39,8 +39,8 @@ public class AssociateLogic {
 
 	@Inject
 	public AssociateLogic(final TypedTokenStore tokenStore,
-						  final AccountStore accountStore,
-						  final GlobalDynamicProperties dynamicProperties) {
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
@@ -48,7 +48,7 @@ public class AssociateLogic {
 
 	public void associate(final AccountID accountID, final List<TokenID> tokensList) {
 		final var accountNum = accountStore.getResolvedAccountNum(accountID.getAlias(), accountID.getAccountNum());
-		final var accountId = new Id(accountID.getShardNum(), accountID.getRealmNum(), accountNum);
+		final var accountId = Id.fromResolvedAccountNum(accountID, accountNum);
 		final var tokenIds = tokensList.stream().map(Id::fromGrpcToken).toList();
 
 		/* Load the models */

@@ -96,7 +96,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			final var result = ledger.lookupAliasedId(
+			final var result = ledger.lookUpAliasedId(
 					cryptoCreateTxn.getTransactionID().getAccountID(), INVALID_PAYER_ACCOUNT_ID);
 			AccountID sponsor = result.resolvedId();
 
@@ -104,7 +104,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			long balance = op.getInitialBalance();
 
 			if (op.hasProxyAccountID()) {
-				final var proxyLookUp = ledger.lookupAndValidateAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
+				final var proxyLookUp = ledger.lookUpAndValidateAliasedId(op.getProxyAccountID(),
+						INVALID_PROXY_ACCOUNT_ID);
 				if (proxyLookUp.response() != OK) {
 					txnCtx.setStatus(proxyLookUp.response());
 					return;
@@ -138,7 +139,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 				.isReceiverSigRequired(op.getReceiverSigRequired())
 				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
 		if (op.hasProxyAccountID()) {
-			final var result = ledger.lookupAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
+			final var result = ledger.lookUpAliasedId(op.getProxyAccountID(), INVALID_PROXY_ACCOUNT_ID);
 			customizer.proxy(EntityId.fromGrpcAccountId(result.resolvedId()));
 		}
 		return customizer;
