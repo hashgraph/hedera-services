@@ -34,8 +34,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Singleton
@@ -50,7 +52,7 @@ public class AnswerFunctions {
 	/**
 	 * Returns the most recent payer records available for an account in the given {@link StateView}.
 	 *
-	 * Note that at most {@link GlobalDynamicProperties#maxNumQueryableRecords()} records will be available,
+	 * Note that at <b>most</b> {@link GlobalDynamicProperties#maxNumQueryableRecords()} records will be available,
 	 * even if the given account has paid for more than this number of transactions in the last 180 seconds.
 	 *
 	 * @param view the view of the world state to get payer records from
@@ -66,7 +68,7 @@ public class AnswerFunctions {
 		final var numAvailable = targetAccount.numRecords();
 		final var maxQueryable = dynamicProperties.maxNumQueryableRecords();
 		return numAvailable <= maxQueryable
-				? allFrom(targetAccount, numAvailable)
+				? recordsFrom(targetAccount, numAvailable)
 				: mostRecentFrom(targetAccount, maxQueryable, numAvailable);
 	}
 
@@ -84,18 +86,44 @@ public class AnswerFunctions {
 	}
 
 	/* --- Internal helpers --- */
-	private List<TransactionRecord> allFrom(final MerkleAccount account, final int n) {
+	/**
+	 * Returns up to {@code n} payer records from an account in gRPC form.
+	 *
+	 * @param account the account of interest
+	 * @param n the expected number of records in the account
+	 * @return the available records
+	 */
+	private List<TransactionRecord> recordsFrom(final MerkleAccount account, final int n) {
 		return mostRecentFrom(account, n, n);
 	}
 
+	/**
+	 * Returns up to the last {@code m}-of-{@code n} payer records from an account in gRPC form.
+	 *
+	 * Since records are added FIFO to the payer account, the last records are the most recent;
+	 * and presumably the most interesting.
+	 *
+	 * If the given {@link MerkleAccount} is from the working state (as in release 0.22), then
+	 * this method acts on a best-effort basis, and returns only the relevant records it could
+	 * iterate over before hitting a {@link ConcurrentModificationException} or {@link NoSuchElementException}.
+	 *
+	 * @param account the account of interest
+	 * @param m the maximum number of records to return
+	 * @param n the expected number of records in the account
+	 * @return the available records
+	 */
 	private List<TransactionRecord> mostRecentFrom(final MerkleAccount account, final int m, final int n) {
 		final List<TransactionRecord> ans = new ArrayList<>();
 		final Iterator<ExpirableTxnRecord> iter = account.recordIterator();
-		for (int i = 0, cutoff = n - m; i < n; i++) {
-			final var nextRecord = iter.next();
-			if (i >= cutoff) {
-				ans.add(nextRecord.asGrpc());
+		try {
+			for (int i = 0, cutoff = n - m; i < n; i++) {
+				final var nextRecord = iter.next();
+				if (i >= cutoff) {
+					ans.add(nextRecord.asGrpc());
+				}
 			}
+		} catch (ConcurrentModificationException | NoSuchElementException ignore) {
+			/* Records expired while we were iterating the list, return only what we could find. */
 		}
 		return ans;
 	}

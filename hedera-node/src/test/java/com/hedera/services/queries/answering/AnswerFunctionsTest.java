@@ -121,6 +121,38 @@ class AnswerFunctionsTest {
 	}
 
 	@Test
+	void returnsAsManyRecordsAsAvailableOnConcurrentModification() {
+		setupAccountsView();
+		givenRecordCount(10);
+		targetRecords.remove(0);
+		targetRecords.remove(1);
+		given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
+
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setAccountID(targetId.toGrpcAccountId())
+				.build();
+		final var actual = subject.mostRecentRecords(view, op);
+
+		assertEquals(Collections.emptyList(), actual);
+	}
+
+	@Test
+	void returnsAsManyRecordsAsAvailableOnNoSuchElement() {
+		setupAccountsView();
+		given(accounts.get(targetId)).willReturn(targetAccount);
+		given(targetAccount.numRecords()).willReturn(10);
+		given(targetAccount.recordIterator()).willReturn(targetRecords.iterator());
+		given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
+
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setAccountID(targetId.toGrpcAccountId())
+				.build();
+		final var actual = subject.mostRecentRecords(view, op);
+
+		assertEquals(Collections.emptyList(), actual);
+	}
+
+	@Test
 	void returnsEmptyOptionalWhenProblematic() {
 		final var validQuery = txnRecordQuery(absentTxnId);
 		given(recordCache.getPriorityRecord(absentTxnId)).willReturn(null);
