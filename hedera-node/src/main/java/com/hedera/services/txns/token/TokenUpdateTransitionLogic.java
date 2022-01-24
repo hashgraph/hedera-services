@@ -66,8 +66,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenUpdateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final boolean allowChangedTreasuryToOwnNfts;
 	private final TokenStore store;
 	private final HederaLedger ledger;
@@ -112,7 +110,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var outcome = OK;
+		ResponseCodeEnum outcome;
 		MerkleToken token = store.get(id);
 
 		if (op.hasExpiry() && !validator.isValidExpiry(op.getExpiry())) {
@@ -209,7 +207,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

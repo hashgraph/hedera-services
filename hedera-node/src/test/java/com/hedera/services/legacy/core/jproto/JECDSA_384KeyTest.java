@@ -41,12 +41,13 @@ class JECDSA_384KeyTest {
 
 	@Test
 	void nonEmptyJECDSA_384KeyTest() {
-		final var desiredRepr = "<JECDSA_384Key: ECDSA_384Key hex=4e4f4e53454e5345>";
+		final var desiredRepr = "<JECDSA_384Key: ecdsa384Key hex=4e4f4e53454e5345>";
 		final var mockKey = "NONSENSE".getBytes();
 		JECDSA_384Key key = new JECDSA_384Key(mockKey);
 		assertFalse(key.isEmpty());
 		assertTrue(key.isValid());
 		assertSame(mockKey, key.getECDSA384());
 		assertEquals(desiredRepr, key.toString());
+        assertTrue(key.hasECDSA384Key());
 	}
 }

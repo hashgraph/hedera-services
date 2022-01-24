@@ -39,6 +39,7 @@ public class TokenRevokeKycResourceUsage implements TxnResourceUsageEstimator {
 
 	@Inject
 	public TokenRevokeKycResourceUsage() {
+		// Default constructor
 	}
 
 	@Override

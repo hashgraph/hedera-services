@@ -54,31 +54,31 @@ import java.util.function.Predicate;
 import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
 
 @Module
-public abstract class SigsModule {
+public interface SigsModule {
 	@Binds
 	@Singleton
-	public abstract SoliditySigsVerifier provideSoliditySigsVerifier(TxnAwareSoliditySigsVerifier txnAwareSoliditySigsVerifier);
+	SoliditySigsVerifier provideSoliditySigsVerifier(TxnAwareSoliditySigsVerifier txnAwareSoliditySigsVerifier);
 
 	@Binds
 	@Singleton
-	public abstract SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
+	SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
 
 	@Provides
 	@Singleton
-	public static SyncVerifier provideSyncVerifier(Platform platform) {
+	static SyncVerifier provideSyncVerifier(Platform platform) {
 		return platform.getCryptography()::verifySync;
 	}
 
 	@Provides
 	@Singleton
-	public static BiPredicate<JKey, TransactionSignature> provideValidityTest(SyncVerifier syncVerifier) {
+	static BiPredicate<JKey, TransactionSignature> provideValidityTest(SyncVerifier syncVerifier) {
 		return new OnlyIfSigVerifiableValid(syncVerifier);
 	}
 
 	@Provides
 	@Singleton
 	@WorkingStateSigReqs
-	public static SigRequirements provideWorkingStateSigReqs(
+	static SigRequirements provideWorkingStateSigReqs(
 			final FileNumbers fileNumbers,
 			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
@@ -91,25 +91,25 @@ public abstract class SigsModule {
 
 	@Provides
 	@Singleton
-	public static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
+	static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
 		return PrecheckUtils.queryPaymentTestFor(nodeInfo);
 	}
 
 	@Provides
 	@Singleton
-	public static Predicate<ResponseCodeEnum> provideTerminalSigStatusTest() {
+	static Predicate<ResponseCodeEnum> provideTerminalSigStatusTest() {
 		return TERMINAL_SIG_STATUSES;
 	}
 
 	@Provides
 	@Singleton
-	public static PayerSigValidity providePayerSigValidity() {
+	static PayerSigValidity providePayerSigValidity() {
 		return HederaKeyActivation::payerSigIsActive;
 	}
 
 	@Provides
 	@Singleton
-	public static ExpansionHelper provideExpansionHelper() {
+	static ExpansionHelper provideExpansionHelper() {
 		return HederaToPlatformSigOps::expandIn;
 	}
 }

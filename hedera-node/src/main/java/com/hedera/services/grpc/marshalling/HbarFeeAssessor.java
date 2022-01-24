@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HbarFeeAssessor {
 	@Inject
 	public HbarFeeAssessor() {
+		// Default constructor
 	}
 
 	public ResponseCodeEnum assess(

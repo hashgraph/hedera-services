@@ -53,11 +53,13 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	/**
 	 * This method returns fee matrices for contract create transaction
 	 *
-	 * @param txBody transaction body
-	 * @param sigValObj signature value object
-	 *
+	 * @param txBody
+	 * 		transaction body
+	 * @param sigValObj
+	 * 		signature value object
 	 * @return fee data
-	 * @throws InvalidTxBodyException when transaction body is invalid
+	 * @throws InvalidTxBodyException
+	 * 		when transaction body is invalid
 	 */
 	public FeeData getContractCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {
@@ -129,21 +131,21 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		if (contractCreate.getMemo() != null) {
 			memoSize = contractCreate.getMemoBytes().size();
 		}
-		int contractCreateBodySize =
-                BASIC_CONTRACT_CREATE_SIZE + adminKeySize + proxyAcctID + constructParamSize + newRealmAdminKeySize + memoSize;
-
-		return contractCreateBodySize;
+		return BASIC_CONTRACT_CREATE_SIZE + adminKeySize + proxyAcctID + constructParamSize + newRealmAdminKeySize + memoSize;
 	}
 
 	/**
 	 * This method returns fee matrices for contract update transaction
 	 *
-	 * @param txBody transaction body
-	 * @param contractExpiryTime contract expiration time
-	 * @param sigValObj signature value object
-	 *
+	 * @param txBody
+	 * 		transaction body
+	 * @param contractExpiryTime
+	 * 		contract expiration time
+	 * @param sigValObj
+	 * 		signature value object
 	 * @return fee data
-	 * @throws InvalidTxBodyException when transaction body is invalid
+	 * @throws InvalidTxBodyException
+	 * 		when transaction body is invalid
 	 */
 	public FeeData getContractUpdateTxFeeMatrices(TransactionBody txBody,
 			Timestamp contractExpiryTime, SigValueObj sigValObj) throws InvalidTxBodyException {
@@ -188,11 +190,13 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	/**
 	 * This method returns fee matrices for contract call transaction
 	 *
-	 * @param txBody transaction body
-	 * @param sigValObj signature value object
+	 * @param txBody
+	 * 		transaction body
+	 * @param sigValObj
+	 * 		signature value object
 	 * @return fee data
-	 *
-	 * @throws InvalidTxBodyException when transaction body is invalid
+	 * @throws InvalidTxBodyException
+	 * 		when transaction body is invalid
 	 */
 	public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {
@@ -232,10 +236,12 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	/**
 	 * This method returns fee matrices for contract call local
 	 *
-	 * @param funcParamSize function parameter size
-	 * @param contractFuncResult contract function result
-	 * @param responseType response type
-	 *
+	 * @param funcParamSize
+	 * 		function parameter size
+	 * @param contractFuncResult
+	 * 		contract function result
+	 * @param responseType
+	 * 		response type
 	 * @return fee data
 	 */
 	public FeeData getContractCallLocalFeeMatrices(int funcParamSize,
@@ -292,8 +298,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	/**
 	 * This method returns fee matrices for contract call local
 	 *
-	 * @param funcParamSize function parameter size
-	 *
+	 * @param funcParamSize
+	 * 		function parameter size
 	 * @return fee data
 	 */
 	public FeeData getCostContractCallLocalFeeMatrices(int funcParamSize) {
@@ -395,9 +401,10 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	/**
 	 * This method returns the fee matrices for contract byte code query
 	 *
-	 * @param byteCodeSize byte code size
-	 * @param responseType response type
-	 *
+	 * @param byteCodeSize
+	 * 		byte code size
+	 * @param responseType
+	 * 		response type
 	 * @return fee data
 	 */
 	public FeeData getContractByteCodeQueryFeeMatrices(int byteCodeSize, ResponseType responseType) {
@@ -467,8 +474,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		 */
 		int txRecordListsize = 0;
 		if (transRecord != null) {
-			for (TransactionRecord record : transRecord) {
-				txRecordListsize = txRecordListsize + getTransactionRecordSize(record);
+			for (TransactionRecord rec : transRecord) {
+				txRecordListsize = txRecordListsize + getTransactionRecordSize(rec);
 			}
 		}
 		bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
