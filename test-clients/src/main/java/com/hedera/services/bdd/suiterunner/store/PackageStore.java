@@ -256,17 +256,17 @@ public class PackageStore extends SuiteStore {
 		));
 
 		suites.put(CONTRACT_OP_CODES_SUITES, () -> List.of(
-//				new BalanceOperationSuite(),
-//				new CallCodeOperationSuite(),
-//				new CallOperationSuite(),
-//				new CreateOperationSuite(),
-//				new DelegateCallOperationSuite(),
-//				new ExtCodeCopyOperationSuite(),
-//				new ExtCodeHashOperationSuite(),
-//				new ExtCodeSizeOperationSuite(),
-//				new GlobalPropertiesSuite(),
-				new SStoreSuite()
-//				new StaticCallOperationSuite()
+				new BalanceOperationSuite(),
+				new CallCodeOperationSuite(),
+				new CallOperationSuite(),
+				new CreateOperationSuite(),
+				new DelegateCallOperationSuite(),
+				new ExtCodeCopyOperationSuite(),
+				new ExtCodeHashOperationSuite(),
+				new ExtCodeSizeOperationSuite(),
+				new GlobalPropertiesSuite(),
+				new SStoreSuite(),
+				new StaticCallOperationSuite()
 		));
 
 		suites.put(CONTRACT_RECORDS_SUITES, () -> List.of(

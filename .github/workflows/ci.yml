@@ -111,7 +111,7 @@ jobs:
         run: |
           cd test-clients
           sleep 45s
-          mvn test -Dargs="-s Contract op codes" -DskipTests -Pe2e-tests
+          mvn test -Dargs="-s Contract op codes, Contract" -DskipTests -Pe2e-tests
 
 
 #  e2e-second-subset:
