@@ -50,9 +50,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -74,10 +72,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
@@ -172,7 +170,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										.newTotalSupply(2469134L)
 										.tokenTransfers(
 												changingFungibleBalances()
-														.including(fungibleToken, GENESIS, amount)
+														.including(fungibleToken, DEFAULT_PAYER, amount)
 										)
 						)
 				);
@@ -241,7 +239,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(10 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(mintContractByteCode).payingWith(theAccount),
 						updateLargeFile(theAccount, mintContractByteCode,
@@ -334,7 +332,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(theRecipient).maxAutomaticTokenAssociations(1),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(nonFungibleToken)
@@ -451,7 +449,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("RollbackOnFailedAssociateAfterNonFungibleMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(theRecipient),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(innerContract),
