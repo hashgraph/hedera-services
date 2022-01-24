@@ -116,8 +116,8 @@ public abstract class JKey {
 			rv = new JRSA_3072Key(pubKeyBytes);
 		} else if (key.getContractID().getContractNum() != 0) {
 			rv = new JContractIDKey(key.getContractID());
-		} else if (key.getDelegateContractID().getContractNum() != 0) {
-			rv = new JDelegateContractIDKey(key.getDelegateContractID());
+		} else if (key.getDelegatableContractId().getContractNum() != 0) {
+			rv = new JDelegateContractIDKey(key.getDelegatableContractId());
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + key);
 		}
@@ -145,7 +145,7 @@ public abstract class JKey {
 		} else if (jkey.hasContractID()) {
 			rv = Key.newBuilder().setContractID(jkey.getContractIDKey().getContractID()).build();
 		} else if (jkey.hasDelegateContractID()) {
-			rv = Key.newBuilder().setDelegateContractID(jkey.getDelegateContractIDKey().getContractID()).build();
+			rv = Key.newBuilder().setDelegatableContractId(jkey.getDelegateContractIDKey().getContractID()).build();
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + jkey);
 		}

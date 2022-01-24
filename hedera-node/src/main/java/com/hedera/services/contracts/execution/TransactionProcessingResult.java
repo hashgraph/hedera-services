@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -224,10 +225,8 @@ public class TransactionProcessingResult {
 						.setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
 						.setValueRead(ByteString.copyFrom(changePair.getLeft().toArrayUnsafe()));
 				Bytes changePairRight = changePair.getRight();
-				if (changePairRight == null) {
-					stateChange.setReadOnly(true);
-				} else {
-					stateChange.setValueWritten(ByteString.copyFrom(changePairRight.toArrayUnsafe()));
+				if (changePairRight != null) {
+					stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.toArrayUnsafe())).build());
 				}
 				contractChanges.addStorageChanges(stateChange.build());
 			});

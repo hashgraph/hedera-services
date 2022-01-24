@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -265,7 +266,7 @@ public class SolidityFnResult implements SelfSerializable {
 								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
 								sc -> Pair.of(
 										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
-										sc.getWriteModeCase() == StorageChange.WriteModeCase.READONLY ? null :
+										!sc.hasValueWritten() ? null :
 												Bytes.wrap(sc.getValueWritten().toByteArray()).trimLeadingZeros()),
 								(l, r) -> l,
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
@@ -301,10 +302,8 @@ public class SolidityFnResult implements SelfSerializable {
 				Pair<Bytes, Bytes> value = slotChange.getValue();
 				storageChange.setValueRead(ByteString.copyFrom(value.getLeft().toArrayUnsafe()));
 				Bytes valueRight = value.getRight();
-				if (valueRight == null) {
-					storageChange.setReadOnly(true);
-				} else {
-					storageChange.setValueWritten(ByteString.copyFrom(valueRight.toArrayUnsafe()));
+				if (valueRight != null) {
+					storageChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(valueRight.toArrayUnsafe())).build());
 				}
 				contractStateChange.addStorageChanges(storageChange.build());
 			}

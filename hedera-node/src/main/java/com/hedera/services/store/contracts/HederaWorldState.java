@@ -303,10 +303,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> storageChanges = new TreeMap<>(BytesComparator.INSTANCE);
-		final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 		Gas sbhRefund = Gas.ZERO;
 
-		private Gas sbhRefund = Gas.ZERO;
 
 		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
 			super(world, trackingLedgers);

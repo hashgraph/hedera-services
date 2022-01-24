@@ -95,7 +95,7 @@ public class SigControl implements Serializable {
 		} else if (nature == CONTRACT_ID) {
 			return key.hasContractID();
 		} else if (nature == DELEGATE_CONTRACT_ID) {
-			return key.hasDelegateContractID();
+			return key.hasDelegatableContractId();
 		} else {
 			KeyList composite = KeyFactory.getCompositeList(key);
 			if (composite.getKeysCount() == childControls.length) {

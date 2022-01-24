@@ -416,7 +416,7 @@ public class KeyFactory implements Serializable {
 					break;
 				case DELEGATE_CONTRACT_ID:
 					final var dcid = asContractId(sc.delegateContract(), spec);
-					generated = Key.newBuilder().setDelegateContractID(dcid).build();
+					generated = Key.newBuilder().setDelegatableContractId(dcid).build();
 					break;
 				case LIST:
 					generated = Key.newBuilder()
