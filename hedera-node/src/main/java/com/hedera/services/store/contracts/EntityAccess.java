@@ -31,6 +31,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 
 import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
 
@@ -78,6 +79,8 @@ public interface EntityAccess {
 	boolean isDetached(AccountID id);
 
 	boolean isExtant(AccountID id);
+
+	boolean isTokenAccount(Address address);
 
 	/* --- Storage access --- */
 	void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);

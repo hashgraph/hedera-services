@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
@@ -74,6 +75,12 @@ public class CodeCache {
             }
         }
         return code;
+    }
+
+    public void putCode(final Address address, final Bytes bytecode) {
+        final var cacheKey = new BytesKey(address.toArray());
+        final var code = new Code(bytecode, Hash.hash(bytecode));
+        cache.put(cacheKey, code);
     }
 
     public void invalidate(Address address) {

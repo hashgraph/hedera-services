@@ -37,7 +37,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -57,6 +56,7 @@ import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenParsedFromSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
@@ -68,6 +68,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
+	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+	private static final String REDIRECT_FOR_TOKEN_SIGNATURE_BYTECODE_PATTERN = "eeeeeeee";
+	private static final String REDIRECT_FOR_TOKEN_SIGNATURE = "618dc65e";
+	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
+			"6080604052348015600f57600080fd5b506000610167905077eeeeeeeefefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+
 
 	@Inject
 	public HederaWorldState(
@@ -148,22 +154,33 @@ public class HederaWorldState implements HederaMutableWorldState {
 	@Override
 	public WorldStateAccount get(Address address) {
 		final var accountID = accountParsedFromSolidityAddress(address);
-		if (!isGettable(accountID)) {
+
+		final boolean isToken = entityAccess.isTokenAccount(address);
+		if (!isGettable(accountID) && !isToken) {
 			return null;
 		}
 
-		final long expiry = entityAccess.getExpiry(accountID);
-		final long balance = entityAccess.getBalance(accountID);
-		final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
-				entityAccess.getProxy(accountID));
+		WorldStateAccount stateAccount;
+		if(!isToken) {
+			final long expiry = entityAccess.getExpiry(accountID);
+			final long balance = entityAccess.getBalance(accountID);
+			final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
+			stateAccount = new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
+					entityAccess.getProxy(accountID));
+		} else {
+			stateAccount = new WorldStateAccount(address, Wei.of(0), 0, 0,
+					EntityId.fromGrpcTokenId(tokenParsedFromSolidityAddress(address)));
+			stateAccount.setCode(Bytes.fromHexString(TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN,
+					address.toUnprefixedHexString()).replace(REDIRECT_FOR_TOKEN_SIGNATURE_BYTECODE_PATTERN, REDIRECT_FOR_TOKEN_SIGNATURE)));
+		}
+		return stateAccount;
 	}
 
 	private boolean isGettable(final AccountID id) {
 		return entityAccess.isExtant(id) && !entityAccess.isDeleted(id) && !entityAccess.isDetached(id);
 	}
 
-	public class WorldStateAccount implements Account {
+	public class WorldStateAccount implements AccountForToken {
 		private final Wei balance;
 		private final AccountID account;
 		private final Address address;
@@ -299,6 +316,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private Code getCodeInternal() {
 			final var code = codeCache.getIfPresent(address);
 			return (code == null) ? EMPTY_CODE : code;
+		}
+
+		@Override
+		public void setCode(Bytes var1) {
+			codeCache.putCode(address, var1);
 		}
 	}
 
