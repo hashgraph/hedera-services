@@ -483,27 +483,6 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	void failsTryingToUpdateAlias() {
-		givenTxnCtx(EnumSet.of(ALIAS));
-		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
-				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
-						.setAccountIDToUpdate(aliasAccountPayer))
-				.build();
-		given(ledger.exists(PAYER)).willReturn(true);
-		given(ledger.lookUpAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(AliasLookup.of(PAYER, OK));
-		given(ledger.lookUpAndValidateAliasedId(aliasAccountPayer, INVALID_ACCOUNT_ID)).willReturn(
-				AliasLookup.of(PAYER, OK));
-
-		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.alias(PAYER)).willReturn(aliasAccountPayer.getAlias());
-
-		subject.doStateTransition();
-
-		verify(txnCtx).setStatus(ALIAS_IS_IMMUTABLE);
-	}
-
-	@Test
 	void acceptsAliasedProxyAccountIDToUpdate() {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
