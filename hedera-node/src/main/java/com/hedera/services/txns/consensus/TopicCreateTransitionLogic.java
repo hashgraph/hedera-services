@@ -88,10 +88,8 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
 		final var memo = op.getMemo();
 		final var autoRenewPeriod = op.getAutoRenewPeriod();
-		final var autoRenewId = op.getAutoRenewAccount();
 
 		/* --- Validate --- */
-		final var autoRenewAccountId = resolvedAutoRenewAccount(autoRenewId);
 		final var payerAccountId = resolvedPayerId(payerId);
 
 		final var memoValidationResult = validator.memoCheck(memo);
@@ -100,6 +98,7 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
 		validateTrue(validator.isValidAutoRenewPeriod(autoRenewPeriod), AUTORENEW_DURATION_NOT_IN_RANGE);
 		Account autoRenewAccount = null;
 		if (op.hasAutoRenewAccount()) {
+			final var autoRenewAccountId = resolvedAutoRenewAccount(op.getAutoRenewAccount());
 			autoRenewAccount = accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
 			validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
 			validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
