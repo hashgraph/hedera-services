@@ -52,6 +52,7 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -61,6 +62,7 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -161,6 +163,36 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+	//redirectForToken(address token, bytes memory data)
+	protected static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
+
+	//name()
+	protected static final int ABI_ID_NAME = 0x06fdde03;
+	//symbol()
+	protected static final int ABI_ID_SYMBOL = 0x95d89b41;
+	//decimals()
+	protected static final int ABI_ID_DECIMALS = 0x313ce567;
+	//totalSupply()
+	protected static final int ABI_ID_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
+	//balanceOf(address account)
+	protected static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
+	//transfer(address recipient, uint256 amount)
+	protected static final int ABI_ID_TOKEN_TRANSFER = 0xa9059cbb;
+
+	//ownerOf(uint256 tokenId)
+	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
+    //tokenOfOwnerByIndex(address owner,uint256 index)
+	protected static final int ABI_ID_NFT_OF_OWNER_BY_INDEX = 0x2f745c59;
+	//tokenByIndex(uint256 index)
+	protected static final int ABI_ID_NFT_BY_INDEX = 0x4f6ccce7;
+	//transferFrom(address from, address to, uint256 tokenId)
+	protected static final int ABI_ID_TRANSFER_FROM_NFT = 0x23b872dd;
+	//safeTransferFrom(address from, address to, uint256 tokenId)
+	protected static final int ABI_ID_SAFE_TRANSFER_FROM_NFT = 0x42842e0e;
+	//safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
+	protected static final int ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT = 0xb88d4fde;
+	//tokenURI(uint256 tokenId)
+	private static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
 	private int functionId;
 	private Precompile precompile;
@@ -259,6 +291,71 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				decodeInput(input);
 				/*-- 10K --*/
 				gasRequirement = Gas.of(defaultGasPrice);
+				break;
+			}
+			case ABI_ID_REDIRECT_FOR_TOKEN: {
+				var tokenAddress = input.slice(32, 64);
+				var nestedInput = input.slice(64);
+
+				switch (nestedInput.getInt(0)) {
+					case ABI_ID_NAME: {
+
+					}
+
+					case ABI_ID_SYMBOL: {
+
+					}
+
+					case ABI_ID_DECIMALS: {
+
+					}
+
+					case ABI_ID_TOTAL_SUPPLY_TOKEN: {
+						this.precompile = new TotalSupplyPrecompile();
+						decodeInput(tokenAddress);
+						/*-- 10K --*/
+						gasRequirement = Gas.of(defaultGasPrice);
+						break;
+					}
+
+					case ABI_ID_BALANCE_OF_TOKEN: {
+
+					}
+
+					case ABI_ID_TOKEN_TRANSFER: {
+
+					}
+
+					case ABI_ID_OWNER_OF_NFT: {
+
+					}
+
+					case ABI_ID_NFT_OF_OWNER_BY_INDEX: {
+
+					}
+
+					case ABI_ID_NFT_BY_INDEX: {
+
+					}
+
+					case ABI_ID_TRANSFER_FROM_NFT: {
+
+					}
+
+					case ABI_ID_SAFE_TRANSFER_FROM_NFT: {
+
+					}
+
+					case ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT: {
+
+					}
+
+					case ABI_ID_TOKEN_URI_NFT: {
+
+					}
+
+				}
+
 				break;
 			}
 			default:
@@ -571,6 +668,43 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return result;
 		}
 	}
+
+	protected class TotalSupplyPrecompile implements Precompile {
+		private TokenID tokenID;
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			final var address = Address.wrap(
+					Bytes.wrap(input).slice(12, 20));
+			tokenID = EntityIdUtils.tokenParsedFromSolidityAddress(address.toArray());
+			return TransactionBody.newBuilder();
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final MessageFrame frame,
+				final WorldLedgers ledgers
+		) {
+			Objects.requireNonNull(tokenID);
+
+			/* --- Check required signatures --- */
+			final var tokenId = Id.fromGrpcToken(tokenID);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+			final var sideEffects = sideEffectsFactory.get();
+
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+			final var tokenId = Id.fromGrpcToken(tokenID);
+			Token token = new Token(tokenId);
+
+			return UInt256.valueOf(token.getTotalSupply());
+		}
+	}
+
 
 	protected class TransferPrecompile implements Precompile {
 		private List<TokenTransferWrapper> transferOp;
