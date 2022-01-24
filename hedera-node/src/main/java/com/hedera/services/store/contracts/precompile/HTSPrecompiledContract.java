@@ -239,6 +239,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 		prepareComputation(input);
 
+		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
+
 		if (this.precompile == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
