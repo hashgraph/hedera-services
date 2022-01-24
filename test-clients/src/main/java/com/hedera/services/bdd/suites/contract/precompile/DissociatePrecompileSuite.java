@@ -204,29 +204,34 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(zeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.gas(250_000)
 														.via("dissociateZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(zeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.gas(250_000)
 														.via("dissociateZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(nonZeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.gas(250_000)
 														.via("dissociateNonZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(nonZeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.gas(250_000)
 														.via("dissociateNonZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
+														.gas(250_000)
 														.payingWith(TOKEN_TREASURY)
 										)
 						)
@@ -286,6 +291,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("nestedDissociateTxn")
+														.gas(600_000)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged()
 										)
@@ -345,6 +351,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 																asAddress(knowableTokenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("multipleDissociationTxn")
+														.gas(250_000)
 														.hasKnownStatus(SUCCESS),
 												getTxnRecord("multipleDissociationTxn").andAllChildRecords().logged()
 										)

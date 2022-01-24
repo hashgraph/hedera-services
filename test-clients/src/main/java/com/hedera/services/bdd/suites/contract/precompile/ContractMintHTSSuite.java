@@ -208,6 +208,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).then(
 						contractCall(hwMint, HW_MINT_CALL_ABI)
 								.via(firstMintTxn)
+								.gas(250_000)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(nonFungibleToken).hasTotalSupply(1),
@@ -218,7 +219,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(contractKey),
 						getTokenInfo(nonFungibleToken).logged(),
 						contractCall(hwMint, HW_MINT_CALL_ABI)
-								.via(secondMintTxn),
+								.via(secondMintTxn)
+								.gas(250_000),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(nonFungibleToken).hasTotalSupply(2),
 						getTokenNftInfo(nonFungibleToken, 2L).logged()
@@ -306,6 +308,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(theContract, MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI,
 								Arrays.asList("Test metadata 1", "Test metadata 2"))
 								.via(firstMintTxn).payingWith(theAccount)
+								.gas(250_000)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
 						getTxnRecord(firstMintTxn).hasPriority(
@@ -370,6 +373,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														.payingWith(GENESIS)
 														.alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
+														.gas(250_000)
 														.hasKnownStatus(SUCCESS),
 												getTxnRecord(nestedTransferTxn).andAllChildRecords().logged()
 										)
@@ -483,6 +487,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														Arrays.asList("Test metadata 1"))
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(nestedMintTxn)
+														.gas(250_000)
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
 												getTxnRecord(nestedMintTxn).andAllChildRecords().logged()
 										)
