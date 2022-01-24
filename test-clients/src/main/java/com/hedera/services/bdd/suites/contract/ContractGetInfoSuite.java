@@ -61,7 +61,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 						contractCreate("defaultContract")
 								.adminKey("adminKey")
 								.entityMemo(MEMO)
-								.autoRenewSecs(555L)
+								.autoRenewSecs(6999999L)
 				).when().then(
 						getContractInfo("defaultContract")
 								.hasExpectedLedgerId("0x03")

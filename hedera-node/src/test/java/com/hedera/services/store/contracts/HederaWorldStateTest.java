@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -75,6 +76,8 @@ class HederaWorldStateTest {
 	private EntityIdSource ids;
 	@Mock
 	private EntityAccess entityAccess;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -87,7 +90,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian);
 	}
 
 	@Test
@@ -302,6 +305,21 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	void failsFastIfDeletionsHappenOnStaticWorld() {
+		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
+		final var tbd = IdUtils.asAccount("0.0.321");
+		final var tbdAddress = EntityIdUtils.asTypedSolidityAddress(tbd);
+		givenNonNullWorldLedgers();
+
+		var actualSubject = subject.updater();
+		var mockTbdAccount = mock(Address.class);
+		actualSubject.getSponsorMap().put(tbdAddress, mockTbdAccount);
+		actualSubject.deleteAccount(tbdAddress);
+
+		assertFailsWith(actualSubject::commit,  ResponseCodeEnum.FAIL_INVALID);
+	}
+
+	@Test
 	void staticInnerUpdaterWorksAsExpected() {
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdBalance = 123L;
@@ -321,6 +339,7 @@ class HederaWorldStateTest {
 		actualSubject.commit();
 		verify(worldLedgers).commit();
 		verify(entityAccess).adjustBalance(tbd, -tbdBalance);
+		verify(sigImpactHistorian).markEntityChanged(tbd.getAccountNum());
 
 		actualSubject.getSponsorMap().put(Address.ZERO, mockTbdAccount);
 		actualSubject.revert();

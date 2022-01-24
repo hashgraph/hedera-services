@@ -21,9 +21,11 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -97,6 +99,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -178,6 +181,10 @@ class TransferPrecompilesTest {
 	private DissociationFactory dissociationFactory;
 	@Mock
 	private ImpliedTransfersMeta impliedTransfersMeta;
+	@Mock
+	private FeeCalculator feeCalculator;
+	@Mock
+	private StateView stateView;
 
 	private HTSPrecompiledContract subject;
 
@@ -186,7 +193,8 @@ class TransferPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
+				() -> feeCalculator, stateView);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -203,7 +211,6 @@ class TransferPrecompilesTest {
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
 				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
@@ -211,7 +218,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -220,14 +227,13 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
@@ -255,7 +261,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -267,14 +273,40 @@ class TransferPrecompilesTest {
 	}
 
 	@Test
+	void abortsIfImpliedCustomFeesCannotBeAssessed() {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+
+		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
+				.willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferList));
+
+		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+				.willReturn(impliedTransfers);
+		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+		given(impliedTransfersMeta.code()).willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+
+		// when:
+		subject.prepareComputation(pretendArguments);
+		final var result = subject.computeInternal(frame);
+		final var statusResult = UInt256.valueOf(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS.getNumber());
+		assertEquals(statusResult, result);
+	}
+
+	@Test
 	void transferTokenWithSenderOnlyHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListSenderOnly)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments))
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
@@ -303,7 +335,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -316,12 +348,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferTokenWithReceiverOnlyHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferTokens(pretendArguments)).willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
@@ -349,7 +380,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -362,12 +393,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferNftsHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList))).willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFTs(pretendArguments)).willReturn(Collections.singletonList(nftsTransferList));
@@ -396,7 +426,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -412,14 +442,13 @@ class TransferPrecompilesTest {
 		final var recipientAddr = Address.ALTBN128_ADD;
 		final var senderId = Id.fromGrpcAccount(sender);
 		final var receiverId = Id.fromGrpcAccount(receiver);
-		givenFrameContext();
+		givenMinimalFrameContext();
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeTransferNFT(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -448,7 +477,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -469,12 +498,11 @@ class TransferPrecompilesTest {
 
 	@Test
 	void cryptoTransferHappyPathWorks() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList))).willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 		given(sigsVerifier.hasActiveKey(any(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(decoder.decodeCryptoTransfer(pretendArguments)).willReturn(Collections.singletonList(nftTransferList));
@@ -503,7 +531,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -517,7 +545,7 @@ class TransferPrecompilesTest {
 
 	@Test
 	void transferFailsAndCatchesProperly() {
-		givenFrameContext();
+		givenMinimalFrameContext();
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
@@ -547,14 +575,13 @@ class TransferPrecompilesTest {
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-		given(cryptoTransferTransactionBody.getTokenTransfersCount()).willReturn(1);
 
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID))
 				.when(transferLogic)
 				.doZeroSum(tokenTransferChanges);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -570,7 +597,7 @@ class TransferPrecompilesTest {
 		given(decoder.decodeTransferToken(pretendArguments)).willThrow(new IndexOutOfBoundsException());
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
-		assertThrows(InvalidTransactionException.class, () -> subject.gasRequirement(pretendArguments));
+		assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments));
 	}
 
 	private void givenFrameContext() {
@@ -581,6 +608,14 @@ class TransferPrecompilesTest {
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
 		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+	}
+
+	private void givenMinimalFrameContext() {
+		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

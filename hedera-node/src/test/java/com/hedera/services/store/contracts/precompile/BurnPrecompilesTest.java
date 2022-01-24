@@ -21,15 +21,18 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -80,7 +83,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invali
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
@@ -93,7 +95,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class BurnPrecompilesTest {
-
 	@Mock
 	private Bytes pretendArguments;
 	@Mock
@@ -156,6 +157,10 @@ class BurnPrecompilesTest {
 	private DissociationFactory dissociationFactory;
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private FeeCalculator feeCalculator;
+	@Mock
+	private StateView stateView;
 
 	private HTSPrecompiledContract subject;
 
@@ -164,7 +169,8 @@ class BurnPrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
+				() -> feeCalculator, stateView);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -178,8 +184,9 @@ class BurnPrecompilesTest {
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
+		given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(invalidSigResult, result);
@@ -201,8 +208,12 @@ class BurnPrecompilesTest {
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
+		final var receiptBuilder = TxnReceipt.newBuilder()
+				.setNewTotalSupply(123L);
+		given(mockRecordBuilder.getReceiptBuilder()).willReturn(receiptBuilder);
+		given(encoder.encodeBurnSuccess(123L)).willReturn(successResult);
 
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(successResult, result);
@@ -226,9 +237,9 @@ class BurnPrecompilesTest {
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
-		given(encoder.getBurnSuccessfulResultFromReceipt(49)).willReturn(burnSuccessResultWith49Supply);
+		given(encoder.encodeBurnSuccess(49)).willReturn(burnSuccessResultWith49Supply);
 
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(burnSuccessResultWith49Supply, result);
@@ -250,14 +261,8 @@ class BurnPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
-		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
-		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
-		given(frame.getMessageFrameStack()).willReturn(frameDeque);
-		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
-		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
-		given(frame.getMessageFrameStack().descendingIterator().next()).willReturn(parentFrame);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

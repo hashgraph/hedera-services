@@ -33,11 +33,10 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkInfoTest {
-
 	@Mock
-	PropertySource properties;
+	private PropertySource properties;
 
-	NetworkInfo subject;
+	private NetworkInfo subject;
 
 	@BeforeEach
 	void setUp() {
@@ -45,17 +44,9 @@ class NetworkInfoTest {
 	}
 
 	@Test
-	void getsDefaultLedgerIdWhenMissingProperty() {
-		given(properties.containsProperty("ledger.id")).willReturn(false);
-
-		assertEquals(ByteString.copyFromUtf8("0x03"), subject.ledgerId());
-	}
-
-	@Test
 	void getsLedgerIdFromProperties() {
 		final var ledgerId = "0xff";
 		final var ledgerID = ByteString.copyFromUtf8(ledgerId);
-		given(properties.containsProperty("ledger.id")).willReturn(true);
 		given(properties.getStringProperty("ledger.id")).willReturn(ledgerId);
 
 		assertEquals(ledgerID, subject.ledgerId());

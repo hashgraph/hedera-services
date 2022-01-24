@@ -61,7 +61,7 @@ public class ContractResources {
 	public static final String SIMPLE_UPDATE = bytecodePath("SimpleUpdate");
 	public static final String LOGS = bytecodePath("Logs");
 	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
-
+	public static final String WORKING_HOURS_USER_BYTECODE_PATH = bytecodePath("WorkingHours");
 	public static final String CALLING_CONTRACT = bytecodePath("CallingContract");
 	public static final String GLOBAL_PROPERTIES = bytecodePath("GlobalProperties");
 	public static final String BALANCE_CHECKER_CONTRACT = bytecodePath("BalanceChecker");
@@ -80,7 +80,7 @@ public class ContractResources {
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
-	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("OrdinaryCalls");
+	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("HTSCalls");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
 	public static final String HBAR_FEE_TRANSFER = bytecodePath("HBARFeeTransfer");
 	public static final String TRANSFERER = bytecodePath("Transferer");
@@ -108,6 +108,16 @@ public class ContractResources {
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
 	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
 
+
+	public static final String WORKING_HOURS_CONS = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_treasury\"," +
+			"\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String WORKING_HOURS_TAKE_TICKET = "{\"inputs\":[],\"name\":\"takeTicket\"," +
+			"\"outputs\":[{\"internalType\":\"int64\",\"name\":\"serialNumber\",\"type\":\"int64\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WORKING_HOURS_WORK_TICKET = "{\"inputs\":[{\"internalType\":\"int64\"," +
+			"\"name\":\"ticketNum\",\"type\":\"int64\"}],\"name\":\"workTicket\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
 			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +

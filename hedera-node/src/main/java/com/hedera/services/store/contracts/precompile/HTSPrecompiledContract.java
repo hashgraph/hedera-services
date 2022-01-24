@@ -24,10 +24,12 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -61,11 +63,17 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,6 +86,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -87,12 +96,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -105,7 +116,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of("Error decoding precompile input".getBytes());
+	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
+			"Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
@@ -165,6 +177,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
+	private final Provider<FeeCalculator> feeCalculator;
+	private Gas gasRequirement = Gas.ZERO;
+	private final StateView currentView;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -178,7 +193,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final ExpiringCreations creator,
 			final DissociationFactory dissociationFactory,
-			final ImpliedTransfersMarshal impliedTransfersMarshal
+			final ImpliedTransfersMarshal impliedTransfersMarshal,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView
 	) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
@@ -191,78 +208,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.dynamicProperties = dynamicProperties;
 		this.dissociationFactory = dissociationFactory;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
+		this.feeCalculator = feeCalculator;
+		this.currentView = currentView;
+	}
+
+	private long gasFeeInTinybars(final TransactionBody.Builder txBody, Instant consensusTime) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txBody.build().toByteString())
+				.setSigMap(SignatureMap.getDefaultInstance())
+				.build();
+		final var txn = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
+
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+		return fees.getServiceFee();
 	}
 
 	@Override
-	public Gas gasRequirement(final Bytes input) {
-		this.precompile = null;
-		this.transactionBody = null;
-
-		this.functionId = input.getInt(0);
-		var defaultGasPrice = dynamicProperties.htsDefaultGasCost();
-		Gas gasRequirement = Gas.of(defaultGasPrice);
-
-		switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER,
-					ABI_ID_TRANSFER_TOKENS,
-					ABI_ID_TRANSFER_TOKEN,
-					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT: {
-				this.precompile = new TransferPrecompile();
-				decodeInput(input);
-				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
-				/*-- 10K if only one transfer or 5K per index --*/
-				if (transfersCount <= 1) {
-					gasRequirement = Gas.of(defaultGasPrice);
-				} else {
-					gasRequirement = Gas.of((defaultGasPrice / 2) * transfersCount);
-				}
-				break;
-			}
-			case ABI_ID_MINT_TOKEN: {
-				this.precompile = new MintPrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_BURN_TOKEN: {
-				this.precompile = new BurnPrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_ASSOCIATE_TOKENS: {
-				this.precompile = new MultiAssociatePrecompile();
-				decodeInput(input);
-				/*-- 10K per index --*/
-				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenAssociate().getTokensCount());
-				break;
-			}
-			case ABI_ID_ASSOCIATE_TOKEN: {
-				this.precompile = new AssociatePrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_DISSOCIATE_TOKENS: {
-				this.precompile = new MultiDissociatePrecompile();
-				decodeInput(input);
-				/*-- 10K per index --*/
-				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenDissociate().getTokensCount());
-				break;
-			}
-			case ABI_ID_DISSOCIATE_TOKEN: {
-				this.precompile = new DissociatePrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			default:
-		}
+	public Gas gasRequirement(final Bytes bytes) {
 		return gasRequirement;
 	}
 
@@ -272,11 +237,57 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
-		if (this.precompile == null || this.transactionBody == null) {
+		prepareComputation(input);
+
+		if (this.precompile == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		}
+
+		computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
+
 		return computeInternal(messageFrame);
+	}
+
+	void computeGasRequirement(final long blockTimestamp) {
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+				blockTimestamp).build();
+		long feeInTinybars = gasFeeInTinybars(
+				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
+		long gasPriceTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall,
+				timestamp);
+		Gas baseCost = Gas.of((feeInTinybars + gasPriceTinybars - 1) / gasPriceTinybars);
+
+		// charge premium
+		gasRequirement = baseCost.plus((baseCost.dividedBy(5)));
+	}
+
+	void prepareComputation(final Bytes input) {
+		this.precompile = null;
+		this.transactionBody = null;
+
+		this.functionId = input.getInt(0);
+		this.gasRequirement = null;
+
+		this.precompile =
+				switch (functionId) {
+					case ABI_ID_CRYPTO_TRANSFER,
+							ABI_ID_TRANSFER_TOKENS,
+							ABI_ID_TRANSFER_TOKEN,
+							ABI_ID_TRANSFER_NFTS,
+							ABI_ID_TRANSFER_NFT -> new TransferPrecompile();
+					case ABI_ID_MINT_TOKEN -> new MintPrecompile();
+					case ABI_ID_BURN_TOKEN -> new BurnPrecompile();
+					case ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile();
+					case ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile();
+					case ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
+					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
+					default -> null;
+				};
+		if (precompile != null) {
+			decodeInput(input);
+		}
 	}
 
 	/* --- Helpers --- */
@@ -300,7 +311,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return UInt256.valueOf(status.getNumber());
 	}
 
-	private void decodeInput(Bytes input) {
+	void decodeInput(Bytes input) {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
 			this.transactionBody = this.precompile.body(input);
@@ -311,27 +322,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected Bytes computeInternal(
-			final MessageFrame frame
-	) {
+	protected Bytes computeInternal(final MessageFrame frame) {
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
 		final var ledgers = updater.wrappedTrackingLedgers();
 
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
-
 		try {
-			childRecord = this.precompile.run(frame, ledgers);
-			result = this.precompile.calculateResult(childRecord);
+			childRecord = precompile.run(frame, ledgers);
+			result = precompile.getSuccessResultFor(childRecord);
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
-			result = resultFrom(status);
+			result = precompile.getFailureResultFor(status);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
-			result = resultFrom(FAIL_INVALID);
+			result = precompile.getFailureResultFor(FAIL_INVALID);
 		}
 
 		/*-- The updater here should always have a parent updater --*/
@@ -424,13 +432,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	/* --- The precompile implementations --- */
 	interface Precompile {
-		TransactionBody.Builder body(final Bytes input);
+		TransactionBody.Builder body(Bytes input);
 
-		ExpirableTxnRecord.Builder run(final MessageFrame frame,
-									   final WorldLedgers ledgers);
+		ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers);
 
-		default Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
+		default Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
 			return SUCCESS_RESULT;
+		}
+
+		default Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return resultFrom(status);
 		}
 	}
 
@@ -491,7 +502,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs =  validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
+			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
@@ -562,13 +573,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
-			Bytes result = Precompile.super.calculateResult(childRecord);
-			if (childRecord.getReceiptBuilder() != null) {
-				result = encoder.getMintSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply(),
-						childRecord.getReceiptBuilder().getSerialNumbers());
-			}
-			return result;
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final var receiptBuilder = childRecord.getReceiptBuilder();
+			validateTrue(receiptBuilder != null, FAIL_INVALID);
+			return encoder.encodeMintSuccess(
+					childRecord.getReceiptBuilder().getNewTotalSupply(),
+					childRecord.getReceiptBuilder().getSerialNumbers());
+		}
+
+		@Override
+		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+			return encoder.encodeMintFailure(status);
 		}
 	}
 
@@ -591,7 +606,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			this.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			return syntheticTxn;
 		}
-
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
@@ -641,7 +655,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var change = changes.get(i);
 				final var units = change.units();
 				if (change.isForNft() || units < 0) {
-					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKey);
+					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(),
+							sigsVerifier::hasActiveKey);
 					validateTrue(hasSenderSig, INVALID_SIGNATURE);
 				}
 				if (i >= numExplicitChanges) {
@@ -650,11 +665,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
-					hasReceiverSigIfReq = validateKey(frame, asTypedSolidityAddress(change.counterPartyAccountId()),
+					final var counterPartyAddress = asTypedSolidityAddress(change.counterPartyAccountId());
+					hasReceiverSigIfReq = validateKey(frame, counterPartyAddress,
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {
-					hasReceiverSigIfReq = validateKey(
-                                            frame, change.getAccount().asEvmAddress(), sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
+					hasReceiverSigIfReq = validateKey(frame, change.getAccount().asEvmAddress(),
+							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				}
 				validateTrue(hasReceiverSigIfReq, INVALID_SIGNATURE);
 			}
@@ -757,67 +773,104 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes calculateResult(ExpirableTxnRecord.Builder childRecord) {
-			Bytes result = Precompile.super.calculateResult(childRecord);
-			if (childRecord.getReceiptBuilder() != null) {
-				result = encoder.getBurnSuccessfulResultFromReceipt(childRecord.getReceiptBuilder().getNewTotalSupply());
-			}
-			return result;
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			final var receiptBuilder = childRecord.getReceiptBuilder();
+			validateTrue(receiptBuilder != null, FAIL_INVALID);
+			return encoder.encodeBurnSuccess(childRecord.getReceiptBuilder().getNewTotalSupply());
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return encoder.encodeBurnFailure(status);
 		}
 	}
 
 	/**
-	 * We check the current frame properties to determine one of the following 3 cases:
+	 * Checks if a key implicit in a target address is active in the current frame using a {@link
+	 * ContractActivationTest}.
 	 *
-	 *	1. We have a delegatecall to the precompile. We check the recipient address (address of the contract that
-	 * 	invoked the precompile)  of the current frame (precompile frame) against a Delegate Contract ID signature.
-	 *  2. We have a call to the precompile, but the contract that called the precompile has been invoked from a
-	 *  delegatecall. We check the sender address of the current frame (the address that made the delegatecall)
-	 *  against a Delegate Contract ID signature.
-	 *  3. All the rest cases. We check the sender address of the current frame against a Contract ID
-	 *  signature or a Delegate Contract ID signature.
+	 * We massage the current frame a bit to ensure that a precompile being executed via delegate call is tested as
+	 * such.
+	 * There are three cases.
+	 * <ol>
+	 *     <li>The precompile is being executed via a delegate call, so the current frame's <b>recipient</b>
+	 *     (not sender) is really the "active" contract that can match a {@code delegatable_contract_id} key; or,
+	 *     <li>The precompile is being executed via a call, but the calling code was executed via
+	 *     a delegate call, so although the current frame's sender <b>is</b> the "active" contract, it must
+	 *     be evaluated using an activation test that restricts to {@code delegatable_contract_id} keys; or,</li>
+	 *     <li>The precompile is being executed via a call, and the calling code is being executed as
+	 *     part of a non-delegate call.</li>
+	 * </ol>
 	 *
-	 * @param frame current frame
-	 * @param target the element to test for key activation
-	 * @param function the function which should be invoked for key validation
-	 * @return boolean value showing whether we have a valid key
+	 * @param frame
+	 * 		current frame
+	 * @param target
+	 * 		the element to test for key activation
+	 * @param activationTest
+	 * 		the function which should be invoked for key validation
+	 * @return whether the implied key is active
 	 */
-	private boolean validateKey(final MessageFrame frame,final Address target,
-									   final TetraFunction<Address, Address, Address, Address, Boolean> function) {
-		final var contract = frame.getContractAddress();
+	private boolean validateKey(
+			final MessageFrame frame,
+			final Address target,
+			final ContractActivationTest activationTest
+	) {
 		final var recipient = frame.getRecipientAddress();
+		final var contract = frame.getContractAddress();
 		final var sender = frame.getSenderAddress();
 
-		final var parentFrame = getParentFrame(frame);
-		final var isCurrentFrameWithDelegateCall = isFrameWithDelegateCall(frame);
-		final var isParentFrameWithDelegateCall = parentFrame.isPresent() && isFrameWithDelegateCall(parentFrame.get());
-
-		if(isCurrentFrameWithDelegateCall) {
-			return function.apply(target, recipient, contract, recipient);
-		} else if(isParentFrameWithDelegateCall) {
-			final var recipientFromParent = parentFrame.get().getRecipientAddress();
-			return function.apply(target, recipientFromParent, contract, sender);
+		if (isDelegateCall(frame)) {
+			return activationTest.apply(target, recipient, contract, recipient);
 		} else {
-			return function.apply (target, recipient, contract, sender);
+			final var parentFrame = getParentFrame(frame);
+			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
+				final var parentRecipient = parentFrame.get().getRecipientAddress();
+				return activationTest.apply(target, parentRecipient, contract, sender);
+			} else {
+				return activationTest.apply(target, recipient, contract, sender);
+			}
 		}
 	}
 
 	@FunctionalInterface
-	private interface TetraFunction<S, T, U, V, R> {
-		R apply(S s, T t, U u, V v);
+	private interface ContractActivationTest {
+		/**
+		 * Returns whether a key implicit in the target address is active, given an idealized message
+		 * frame in which:
+		 * <ul>
+		 * 	 <li>The {@code recipient} address is the account receiving the call operation; and,</li>
+		 * 	 <li>The {@code contract} address is the account with the code being executed; and,</li>
+		 * 	 <li>Any {@code ContractID} or {@code delegatable_contract_id} key that matches the
+		 *     {@code activeContract} address should be considered active (modulo whether the recipient
+		 * 	 and contract imply a delegate call).</li>
+		 * </ul>
+		 *
+		 * Note the target address might not imply an account key, but e.g. a token supply key.
+		 *
+		 * @param target
+		 * 		an address with an implicit key understood by this implementation
+		 * @param recipient
+		 * 		the idealized account receiving the call operation
+		 * @param contract
+		 * 		the idealized account whose code is being executed
+		 * @param activeContract
+		 * 		the contract address that can activate a contract or delegatable contract key
+		 * @return whether the implicit key has an active signature in this context
+		 */
+		boolean apply(Address target, Address recipient, Address contract, Address activeContract);
 	}
 
 	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {
 		final var it = currentFrame.getMessageFrameStack().descendingIterator();
 
-		if(it.hasNext()) {
+		if (it.hasNext()) {
 			it.next();
 		} else {
 			return Optional.empty();
 		}
 
 		MessageFrame parentFrame;
-		if(it.hasNext()) {
+		if (it.hasNext()) {
 			parentFrame = it.next();
 		} else {
 			return Optional.empty();
@@ -826,7 +879,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return Optional.of(parentFrame);
 	}
 
-	private boolean isFrameWithDelegateCall(final MessageFrame frame) {
+	private boolean isDelegateCall(final MessageFrame frame) {
 		final var contract = frame.getContractAddress();
 		final var recipient = frame.getRecipientAddress();
 		return !contract.equals(recipient);

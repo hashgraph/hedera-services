@@ -367,16 +367,17 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return toFreezeAndKycValidity;
 			}
 
+			final var tid = nftId.tokenId();
+			final var tokenTreasury = backingTokens.getImmutableRef(tid).treasury();
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (owner.equals(EntityId.MISSING_ENTITY_ID)) {
-				final var tid = nftId.tokenId();
-				owner = this.backingTokens.getImmutableRef(tid).treasury();
+				owner = tokenTreasury;
 			}
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 
-			updateLedgers(nftId, from, to, tId, owner);
+			updateLedgers(nftId, from, to, owner, tokenTreasury.toGrpcAccountId());
 			return OK;
 		});
 	}
@@ -385,8 +386,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final NftId nftId,
 			final AccountID from,
 			final AccountID to,
-			final TokenID tId,
-			final EntityId owner
+			final EntityId owner,
+			final AccountID tokenTreasury
 	) {
 		final var nftType = nftId.tokenId();
 		final var fromRel = asTokenRel(from, nftType);
@@ -396,7 +397,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
 		final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
 		final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
-		final var isTreasuryReturn = isTreasuryForToken(to, tId);
+		final var isTreasuryReturn = tokenTreasury.equals(to);
 		if (isTreasuryReturn) {
 			nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
 		} else {
@@ -414,7 +415,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (isTreasuryReturn) {
 			uniqueTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
 		} else {
-			final var isTreasuryExit = isTreasuryForToken(from, tId);
+			final var isTreasuryExit = tokenTreasury.equals(from);
 			if (isTreasuryExit) {
 				uniqueTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
 			} else {
