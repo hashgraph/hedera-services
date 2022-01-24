@@ -59,6 +59,8 @@ public class GetTxnRecordAnswer implements AnswerService {
 			GetTxnRecordAnswer.class.getSimpleName() + "_duplicateRecords";
 	public static final String CHILD_RECORDS_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_childRecords";
+	public static final String PAYER_RECORDS_CTX_KEY =
+			GetTxnRecordAnswer.class.getSimpleName() + "_payerRecords";
 
 	@Inject
 	public GetTxnRecordAnswer(

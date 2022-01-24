@@ -22,19 +22,27 @@ package com.hedera.services.queries.answering;
 
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
@@ -45,6 +53,7 @@ import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -55,11 +64,61 @@ class AnswerFunctionsTest {
 	@Mock
 	private StateView view;
 	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
 	private RecordCache recordCache;
+	@Mock
+	private MerkleAccount targetAccount;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
-	private AnswerFunctions subject = new AnswerFunctions();
+	private List<ExpirableTxnRecord> targetRecords = new ArrayList<>();
+	private AnswerFunctions subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new AnswerFunctions(dynamicProperties);
+	}
+
+	@Test
+	void returnsEmptyListForMissingAccount() {
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setAccountID(targetId.toGrpcAccountId())
+				.build();
+		setupAccountsView();
+
+		assertSame(Collections.emptyList(), subject.mostRecentRecords(view, op));
+	}
+
+	@Test
+	void returnsAllRecordsIfWithinMaxQueryable() {
+		setupAccountsView();
+		givenRecordCount(3);
+		given(dynamicProperties.maxNumQueryableRecords()).willReturn(4);
+
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setAccountID(targetId.toGrpcAccountId())
+				.build();
+		final var actual = subject.mostRecentRecords(view, op);
+
+		final var expected = ExpirableTxnRecord.allToGrpc(targetRecords);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void returnsOnlyMostRecentRecordsIfTotalNotWithinMaxQueryable() {
+		setupAccountsView();
+		givenRecordCount(10);
+		given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
+
+		final var op = CryptoGetAccountRecordsQuery.newBuilder()
+				.setAccountID(targetId.toGrpcAccountId())
+				.build();
+		final var actual = subject.mostRecentRecords(view, op);
+
+		final var expected = ExpirableTxnRecord.allToGrpc(targetRecords.subList(8, 10));
+		assertEquals(expected, actual);
+	}
 
 	@Test
 	void returnsEmptyOptionalWhenProblematic() {
@@ -94,6 +153,19 @@ class AnswerFunctionsTest {
 				null);
 	}
 
+	private void givenRecordCount(final int n) {
+		given(accounts.get(targetId)).willReturn(targetAccount);
+		for (int i = 0; i < n; i++) {
+			targetRecords.add(ExpirableTxnRecordTestHelper.fromGprc(grpcRecord.toBuilder()
+					.setConsensusTimestamp(Timestamp.newBuilder()
+							.setSeconds(firstConsSecond + i))
+							.build()));
+		}
+		given(targetAccount.numRecords()).willReturn(n);
+		given(targetAccount.recordIterator()).willReturn(targetRecords.iterator());
+	}
+
+	private static final EntityNum targetId = EntityNum.fromLong(12345L);
 	private static final TransactionID targetTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
@@ -102,11 +174,12 @@ class AnswerFunctionsTest {
 			.setAccountID(asAccount("3.2.1"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
+	private static final long firstConsSecond = 1_234_567L;
 	private static final TransactionRecord grpcRecord = TransactionRecord.newBuilder()
 			.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
 			.setTransactionID(targetTxnId)
 			.setMemo("Dim galleries, dusk winding stairs got past...")
-			.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
+			.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(firstConsSecond))
 			.setTransactionFee(555L)
 			.setTransferList(withAdjustments(
 					asAccount("0.0.2"), -2L,

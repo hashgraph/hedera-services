@@ -142,6 +142,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(52, subject.changeHistorianMemorySecs());
 		assertEquals(53, subject.maxAggregateContractKvPairs());
 		assertEquals(54, subject.maxIndividualContractKvPairs());
+		assertEquals(55, subject.maxNumQueryableRecords());
 	}
 
 	@Test
@@ -339,6 +340,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
 		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
 		given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
+		given(properties.getIntProperty("ledger.records.maxQueryableByAccount")).willReturn(i + 54);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
