@@ -39,8 +39,6 @@ import java.util.Base64;
  * Common utilities.
  */
 public final class CommonUtils {
-	private static final Logger log = LogManager.getLogger(CommonUtils.class);
-
 	private CommonUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
