@@ -55,10 +55,12 @@ class RequestBuilderTest {
 	private final long gas = 1234L;
 	private final ByteString transactionBody = ByteString.copyFromUtf8("0x00120");
 	private final ResponseType responseType = ResponseType.ANSWER_STATE_PROOF;
-	private final ByteString hash = ByteString.copyFromUtf8("952e79e36a5fe25bd015c3a2ce85f318690c2c1fcb834c89ef06a84ba4d179c0");
+	private final ByteString hash = ByteString.copyFromUtf8(
+			"952e79e36a5fe25bd015c3a2ce85f318690c2c1fcb834c89ef06a84ba4d179c0");
 	private final Key validED25519Key = Key.newBuilder()
 			.setEd25519(
-					ByteString.copyFromUtf8("a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771")
+					ByteString.copyFromUtf8(
+							"a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771")
 			).build();
 	private final KeyList keyList = KeyList.newBuilder().addKeys(validED25519Key).build();
 	private final Timestamp startTime = Timestamp.newBuilder().setSeconds(1234L).build();
@@ -216,7 +218,6 @@ class RequestBuilderTest {
 				contractId,
 				gas,
 				functionResult,
-				0L,
 				maxResultSize,
 				transaction,
 				responseType);
@@ -282,7 +283,8 @@ class RequestBuilderTest {
 
 	@Test
 	void assertGetAccountLiveHashQuery() {
-		var infoQuery = RequestBuilder.getAccountLiveHashQuery(accountId, hash.toByteArray(), transaction, responseType);
+		var infoQuery = RequestBuilder.getAccountLiveHashQuery(accountId, hash.toByteArray(), transaction,
+				responseType);
 
 		assertEquals(accountId, infoQuery.getCryptoGetLiveHash().getAccountID());
 		assertEquals(hash, infoQuery.getCryptoGetLiveHash().getHash());
@@ -392,7 +394,8 @@ class RequestBuilderTest {
 
 	@Test
 	void assertGetContractIdBuild() {
-		var contractID = RequestBuilder.getContractIdBuild(contractId.getContractNum(), contractId.getRealmNum(), contractId.getShardNum());
+		var contractID = RequestBuilder.getContractIdBuild(contractId.getContractNum(), contractId.getRealmNum(),
+				contractId.getShardNum());
 		assertEquals(contractId.getShardNum(), contractID.getShardNum());
 		assertEquals(contractId.getRealmNum(), contractID.getRealmNum());
 		assertEquals(contractId.getContractNum(), contractID.getContractNum());
@@ -455,7 +458,6 @@ class RequestBuilderTest {
 				transactionDuration,
 				generateRecord,
 				memo,
-				thresholdValue,
 				keyList,
 				initBal,
 				sendRecordThreshold,
@@ -597,7 +599,8 @@ class RequestBuilderTest {
 				nodeId.getAccountNum(),
 				nodeId.getRealmNum(),
 				nodeId.getShardNum(),
-				transactionFee, startTime, fileExpiration, transactionDuration, generateRecord, memo, hash, fileID, keyList);
+				transactionFee, startTime, fileExpiration, transactionDuration, generateRecord, memo, hash, fileID,
+				keyList);
 
 		var tb = TransactionBody.parseFrom(transaction.getBodyBytes());
 		assertEquals(memo, tb.getMemo());
@@ -632,7 +635,8 @@ class RequestBuilderTest {
 				nodeId.getAccountNum(),
 				nodeId.getRealmNum(),
 				nodeId.getShardNum(),
-				transactionFee, startTime, transactionDuration, generateRecord, memo, senderAccountNum, amountSend, receiverAccountNum, amountReceived);
+				transactionFee, startTime, transactionDuration, generateRecord, memo, senderAccountNum, amountSend,
+				receiverAccountNum, amountReceived);
 
 		var tb = TransactionBody.parseFrom(transaction.getBodyBytes());
 		assertEquals(memo, tb.getMemo());
@@ -647,9 +651,11 @@ class RequestBuilderTest {
 		assertEquals(accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
 		assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
 		assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
-		assertEquals(senderAccountNum, tb.getCryptoTransfer().getTransfers().getAccountAmounts(0).getAccountID().getAccountNum());
+		assertEquals(senderAccountNum,
+				tb.getCryptoTransfer().getTransfers().getAccountAmounts(0).getAccountID().getAccountNum());
 		assertEquals(amountSend, tb.getCryptoTransfer().getTransfers().getAccountAmounts(0).getAmount());
-		assertEquals(receiverAccountNum, tb.getCryptoTransfer().getTransfers().getAccountAmounts(1).getAccountID().getAccountNum());
+		assertEquals(receiverAccountNum,
+				tb.getCryptoTransfer().getTransfers().getAccountAmounts(1).getAccountID().getAccountNum());
 		assertEquals(amountReceived, tb.getCryptoTransfer().getTransfers().getAccountAmounts(1).getAmount());
 	}
 
@@ -795,7 +801,7 @@ class RequestBuilderTest {
 				Duration.getDefaultInstance(),
 				false,
 				"MEMO",
-				5678l, 5555l,-70000l,
+				5678l, 5555l, -70000l,
 				ByteString.copyFromUtf8("aaaa"), 70000l));
 	}
 }

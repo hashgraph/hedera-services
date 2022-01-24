@@ -27,9 +27,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,9 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 @Singleton
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
-
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
-			this::validatePreSignatureValidation;
 
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
@@ -248,11 +245,11 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 		var topicId = op.getTopicID();
 		try {
-			if (op.hasAdminKey()  && !applyNewAdminKey(op, topicId, topic)) {
+			if (op.hasAdminKey() && !applyNewAdminKey(op, topicId, topic)) {
 				return false;
 			}
 
-			if (op.hasSubmitKey()  && !applyNewSubmitKey(op)) {
+			if (op.hasSubmitKey() && !applyNewSubmitKey(op)) {
 				return false;
 			}
 		} catch (DecoderException e) {
@@ -311,7 +308,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK;
+		return this::validatePreSignatureValidation;
 	}
 
 	/**

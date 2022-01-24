@@ -52,6 +52,7 @@ public class ScheduleOpsUsage {
 
 	@Inject
 	public ScheduleOpsUsage() {
+		// Default constructor
 	}
 
 	public FeeData scheduleInfoUsage(Query scheduleInfo, ExtantScheduleContext ctx) {

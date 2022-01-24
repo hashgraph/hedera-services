@@ -38,6 +38,7 @@ import java.util.Optional;
 public class AnswerFunctions {
 	@Inject
 	public AnswerFunctions() {
+		// Default Constructor
 	}
 
 	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
