@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-//Notice: for successful compile HederaResponseCodes needs to be converted from abstract contract to library
 import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
@@ -18,7 +17,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe crypto transfer failed!");
     }
 
-    function safeMintToken(address token, uint64 amount, bytes[] memory metadata) internal
+    function safeMintToken(IHederaTokenService token, uint64 amount, bytes[] memory metadata) internal
     returns (uint64 newTotalSupply, int64[] memory serialNumbers) {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.delegatecall(
@@ -31,7 +30,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe mint failed!");
     }
 
-    function safeBurnToken(address token, uint64 amount, int64[] memory serialNumbers) internal
+    function safeBurnToken(IHederaTokenService token, uint64 amount, int64[] memory serialNumbers) internal
     returns (uint64 newTotalSupply)
     {
         int32 responseCode;
@@ -54,7 +53,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple associations failed!");
     }
 
-    function safeAssociateToken(address account, address token) internal {
+    function safeAssociateToken(IHederaTokenService token, address account) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.associateToken.selector,
@@ -72,7 +71,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe multiple dissociations failed!");
     }
 
-    function safeDissociateToken(address account, address token) internal {
+    function safeDissociateToken(IHederaTokenService token, address account) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.dissociateToken.selector,
@@ -81,7 +80,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe single dissociation failed!");
     }
 
-    function safeTransferTokens(address token, address[] memory accountIds, int64[] memory amounts) internal {
+    function safeTransferTokens(IHederaTokenService token, address[] memory accountIds, int64[] memory amounts) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferTokens.selector,
@@ -90,7 +89,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe tokens transfer failed!");
     }
 
-    function safeTransferNFTs(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) internal {
+    function safeTransferNFTs(IHederaTokenService token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFTs.selector,
@@ -99,7 +98,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe NFTs transfer failed!");
     }
 
-    function safeTransferToken(address token, address sender, address receiver, int64 amount) internal {
+    function safeTransferToken(IHederaTokenService token, address sender, address receiver, int64 amount) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferToken.selector,
@@ -108,7 +107,7 @@ library SafeHTS {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe token transfer failed!");
     }
 
-    function safeTransferNFT(address token, address sender, address receiver, int64 serialNumber) internal {
+    function safeTransferNFT(IHederaTokenService token, address sender, address receiver, int64 serialNumber) internal {
         int32 responseCode;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.transferNFT.selector,
