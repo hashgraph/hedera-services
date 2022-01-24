@@ -76,7 +76,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -512,10 +511,6 @@ public class HederaLedger {
 
 
 	/* ---- Alias lookup helpers */
-	public AliasLookup lookupAliasedId(final AccountID grpcId) {
-		return tokenStore.lookUpAliasedId(grpcId, INVALID_ACCOUNT_ID);
-	}
-
 	public AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
 		return tokenStore.lookUpAliasedId(grpcId, errResponse);
 	}

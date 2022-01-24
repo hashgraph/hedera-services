@@ -88,7 +88,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.lookUpAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
 		verify(tokenStore).lookUpAndValidateAliasedId(testId, INVALID_ACCOUNT_ID);
 
-		subject.lookupAliasedId(testId);
+		subject.lookUpAliasedId(testId, INVALID_ACCOUNT_ID);
 		verify(tokenStore, times(2)).lookUpAliasedId(testId, INVALID_ACCOUNT_ID);
 	}
 
