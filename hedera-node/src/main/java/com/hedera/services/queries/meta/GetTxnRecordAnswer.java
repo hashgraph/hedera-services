@@ -43,8 +43,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -186,7 +186,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 		final var fallbackId = validation.resolvedId();
 
 		if (fallbackId.equals(AccountID.getDefaultInstance()) || validation.response() != OK) {
-			return INVALID_PAYER_ACCOUNT_ID;
+			return PAYER_ACCOUNT_NOT_FOUND;
 		}
 
 		return optionValidator.queryableAccountStatus(fallbackId, view.accounts());

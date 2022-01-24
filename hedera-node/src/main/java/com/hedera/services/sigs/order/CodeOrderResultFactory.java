@@ -31,7 +31,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -39,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
@@ -143,7 +143,7 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_SCHEDULE_PAYER_RESULT =
 			new SigningOrderResult<>(INVALID_SCHEDULE_PAYER_ID);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_PAYER_RESULT =
-			new SigningOrderResult<>(INVALID_PAYER_ACCOUNT_ID);
+			new SigningOrderResult<>(PAYER_ACCOUNT_NOT_FOUND);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_ERROR_RESULT =
 			new SigningOrderResult<>(INVALID_SIGNATURE);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_PAYER_ERROR_RESULT =

@@ -146,7 +146,6 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		final var schedulingAccountLookup = buildAndLookupID(schedule.schedulingAccount(),
 				schedule.getSchedulingAccountAlias(), INVALID_SCHEDULE_ACCOUNT_ID);
 		if (OK != schedulingAccountLookup.response()) {
-			// this will never happen.
 			return failure(schedulingAccountLookup.response());
 		}
 

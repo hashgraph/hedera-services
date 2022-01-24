@@ -38,8 +38,8 @@ import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart, reconnect.
@@ -134,14 +134,14 @@ public class AliasManager {
 	/* --- Helpers for lookup --- */
 
 	/**
-	 * Look up aliased payer accountID and if it doesn't exist returns INVALID_PAYER_ACCOUNT_ID
+	 * Look up aliased payer accountID and if it doesn't exist returns PAYER_ACCOUNT_NOT_FOUND
 	 *
 	 * @param id
 	 * 		payer accountID to look up
 	 * @return result from alias look up
 	 */
 	public AliasLookup lookUpPayer(final AccountID id) {
-		return lookUpAccount(id, INVALID_PAYER_ACCOUNT_ID);
+		return lookUpAccount(id, PAYER_ACCOUNT_NOT_FOUND);
 	}
 
 	/**

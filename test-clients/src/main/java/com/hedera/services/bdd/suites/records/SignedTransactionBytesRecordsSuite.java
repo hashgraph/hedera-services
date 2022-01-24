@@ -37,9 +37,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
 public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
@@ -86,9 +86,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 								.asTxnWithOnlySigMap()
 								.hasPrecheck(INVALID_TRANSACTION_BODY)
 				).then(
-						getTxnRecord("failedCryptoTransaction").hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID),
-						getTxnRecord("failedFileTransaction").hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID),
-						getTxnRecord("failedContractTransaction").hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID)
+						getTxnRecord("failedCryptoTransaction").hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+						getTxnRecord("failedFileTransaction").hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+						getTxnRecord("failedContractTransaction").hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 

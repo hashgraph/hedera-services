@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.bui
 public class CustomFeeTests {
 	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
 			final long amount,
-			String collector,
+			final String collector,
 			final boolean isAliasedCollector
 	) {
 		return (spec, actual) -> {

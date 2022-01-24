@@ -81,7 +81,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -283,7 +282,7 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 				)
 				.then(
 						getTxnRecord("TokenCreate").payingWith(alias).hasPayerAliasNum(alias)
-								.logged().hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID)
+								.logged().hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 
@@ -307,7 +306,7 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 								.via("topicDelete").hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				).then(
 						getTxnRecord("createTopicTxn").payingWith(alias).hasPayerAliasNum(alias).logged()
-								.hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID)
+								.hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 
@@ -339,7 +338,7 @@ public class TransactionIDSuiteWithAlias extends HapiApiSuite {
 				).then(
 						getTxnRecord("createTxn").payingWith(alias)
 								.hasPayerAliasNum(alias).logged()
-								.hasCostAnswerPrecheck(INVALID_PAYER_ACCOUNT_ID)
+								.hasCostAnswerPrecheck(PAYER_ACCOUNT_NOT_FOUND)
 				);
 	}
 
