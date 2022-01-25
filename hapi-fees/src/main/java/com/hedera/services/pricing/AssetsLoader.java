@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
@@ -34,7 +35,7 @@ import java.util.Map;
  *
  * Please see the individual methods for details.
  */
-class AssetsLoader {
+public class AssetsLoader {
 	private static final String CAPACITIES_RESOURCE = "capacities.json";
 	private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";
 	private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";
@@ -42,6 +43,10 @@ class AssetsLoader {
 	private Map<UsableResource, BigDecimal> cachedCapacities = null;
 	private Map<HederaFunctionality, BigDecimal> cachedConstWeights = null;
 	private Map<HederaFunctionality, Map<SubType, BigDecimal>> cachedCanonicalPrices = null;
+
+	@Inject
+	public AssetsLoader() {
+	}
 
 	/**
 	 * Loads a map that, for each supported operation, gives the fraction of that
@@ -116,7 +121,7 @@ class AssetsLoader {
 	 * @throws IOException
 	 * 		if the backing JSON resource cannot be loaded
 	 */
-	Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
+	public Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
 		if (cachedCanonicalPrices != null) {
 			return cachedCanonicalPrices;
 		}

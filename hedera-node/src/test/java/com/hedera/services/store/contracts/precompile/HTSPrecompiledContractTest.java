@@ -105,6 +105,8 @@ class HTSPrecompiledContractTest {
 	private FeeCalculator feeCalculator;
 	@Mock
 	private StateView stateView;
+	@Mock
+	private PrecompilePricingUtils precompilePricingUtils;
 
 	private HTSPrecompiledContract subject;
 
@@ -112,7 +114,9 @@ class HTSPrecompiledContractTest {
 	private static final long TEST_SERVICE_FEE = 5_000_000;
 	private static final long TEST_NETWORK_FEE = 400_000;
 	private static final long TEST_NODE_FEE = 300_000;
-	private static final long EXPECTED_GAS_PRICE = TEST_SERVICE_FEE / DEFAULT_GAS_PRICE * 6 / 5;
+
+	private static final long EXPECTED_GAS_PRICE =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
 
 	@BeforeEach
 	void setUp() {
@@ -120,7 +124,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView);
+				() -> feeCalculator, stateView, precompilePricingUtils);
 	}
 
 	@Test
@@ -286,6 +290,7 @@ class HTSPrecompiledContractTest {
 	void gasRequirementReturnsCorrectValueForAssociateTokens() {
 		// given
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
+		given(decoder.decodeMultipleAssociations(any())).willReturn(associateOp);
 		final var builder = TokenAssociateTransactionBody.newBuilder();
 		builder.setAccount(multiDissociateOp.accountId());
 		builder.addAllTokens(multiDissociateOp.tokenIds());

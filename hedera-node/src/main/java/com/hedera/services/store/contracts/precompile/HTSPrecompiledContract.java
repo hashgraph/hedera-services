@@ -101,6 +101,12 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.BURN_NFT;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -180,6 +186,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final Provider<FeeCalculator> feeCalculator;
 	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
+	private final PrecompilePricingUtils precompilePricingUtils;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -195,8 +202,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final DissociationFactory dissociationFactory,
 			final ImpliedTransfersMarshal impliedTransfersMarshal,
 			final Provider<FeeCalculator> feeCalculator,
-			final StateView currentView
-	) {
+			final StateView currentView,
+			final PrecompilePricingUtils precompilePricingUtils) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
 		this.encoder = encoder;
@@ -210,6 +217,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 		this.feeCalculator = feeCalculator;
 		this.currentView = currentView;
+		this.precompilePricingUtils = precompilePricingUtils;
 	}
 
 	private long gasFeeInTinybars(final TransactionBody.Builder txBody, Instant consensusTime) {
@@ -223,7 +231,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
-		return fees.getServiceFee();
+		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
 	@Override
@@ -254,15 +262,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	void computeGasRequirement(final long blockTimestamp) {
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(
 				blockTimestamp).build();
-		long feeInTinybars = gasFeeInTinybars(
+		long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+
+		long calculatedFeeInTinybars = gasFeeInTinybars(
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
-		long gasPriceTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall,
-				timestamp);
-		Gas baseCost = Gas.of((feeInTinybars + gasPriceTinybars - 1) / gasPriceTinybars);
+
+		long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+
+
+		// convert to gas cost
+		Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
 		// charge premium
-		gasRequirement = baseCost.plus((baseCost.dividedBy(5)));
+		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
 	}
 
 	void prepareComputation(final Bytes input) {
@@ -438,6 +452,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers);
 
+		long getMinimumFeeInTinybars(Timestamp consensusTime);
+
 		default Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
 			return SUCCESS_RESULT;
 		}
@@ -473,6 +489,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(associateOp);
+			int associations = Math.max(1, associateOp.tokenIds().size());
+
+			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime) * associations;
 		}
 	}
 
@@ -517,6 +541,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(dissociateOp);
+			int associations = Math.max(1, dissociateOp.tokenIds().size());
+
+			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime) * associations;
 		}
 	}
 
@@ -572,6 +604,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(mintOp);
+
+			switch (mintOp.type()) {
+				case FUNGIBLE_COMMON:
+					return precompilePricingUtils.getMinimumPriceInTinybars(MINT_FUNGIBLE, consensusTime);
+				case NON_FUNGIBLE_UNIQUE:
+					int nftsMinted = Math.max(mintOp.metadata().size(), 1);
+					return precompilePricingUtils.getMinimumPriceInTinybars(MINT_NFT, consensusTime) * nftsMinted;
+				default:
+					return PrecompilePricingUtils.COST_PROHIBITIVE;
+			}
 		}
 
 		@Override
@@ -735,6 +782,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.setAmount(amount)
 					.build();
 		}
+
+		@Override
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+			Objects.requireNonNull(transferOp);
+			long accumulatedCost = 0;
+			// For fungable there are always at least two operations, so only charge half for each operation
+			long nftHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
+					PrecompilePricingUtils.GasCostType.TRANSFER_NFT, consensusTime) / 2;
+			// NFTs are atomic, one line can do it.
+			long fungibleHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
+					PrecompilePricingUtils.GasCostType.TRANSFER_NFT, consensusTime);
+			for (var transfer : transferOp) {
+				//FIXME figure out how to detect custom fees.
+				accumulatedCost += transfer.fungibleTransfers().size() * fungibleHalfTxCost;
+				accumulatedCost += transfer.nftExchanges().size() * nftHalfTxCost;
+			}
+			return accumulatedCost;
+		}
+
 	}
 
 	protected class BurnPrecompile implements Precompile {
@@ -772,6 +838,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(burnOp);
+			switch (burnOp.type()) {
+				case FUNGIBLE_COMMON:
+					return precompilePricingUtils.getMinimumPriceInTinybars(BURN_FUNGIBLE, consensusTime);
+				case NON_FUNGIBLE_UNIQUE:
+					int nftsMinted = Math.max(burnOp.serialNos().size(), 1);
+					return precompilePricingUtils.getMinimumPriceInTinybars(BURN_NFT, consensusTime) * nftsMinted;
+				default:
+					return PrecompilePricingUtils.COST_PROHIBITIVE;
+			}
 		}
 
 		@Override

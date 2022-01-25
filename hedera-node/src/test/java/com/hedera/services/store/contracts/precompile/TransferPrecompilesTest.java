@@ -185,6 +185,8 @@ class TransferPrecompilesTest {
 	private FeeCalculator feeCalculator;
 	@Mock
 	private StateView stateView;
+	@Mock
+	private PrecompilePricingUtils precompilePricingUtils;
 
 	private HTSPrecompiledContract subject;
 
@@ -194,7 +196,7 @@ class TransferPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView);
+				() -> feeCalculator, stateView, precompilePricingUtils);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
