@@ -26,10 +26,13 @@ jobs:
 
     steps:
       - name: Install Docker
-        run:
+        run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
           brew cask install docker
-          sudo docker –version
+
+      - name: Check Docker version
+        run: |
+        sudo docker –version
 
       - name: Checkout Repository
         uses: actions/checkout@v2
