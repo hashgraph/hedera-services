@@ -43,6 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -80,7 +81,7 @@ class CallLocalExecutorTest {
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), null /*//FIXME*/);
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), Collections.emptyMap());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -100,7 +101,7 @@ class CallLocalExecutorTest {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
 				.failed(0, 0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE),
-						null /*//FIXME*/);
+						Collections.emptyMap());
 		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -119,8 +120,7 @@ class CallLocalExecutorTest {
 	void processingReturnsInvalidSolidityAddressHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
-						null /*//FIXME*/);
+				.failed(0, 0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap());
 		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -139,7 +139,7 @@ class CallLocalExecutorTest {
 	void processingReturnsRevertReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty(), null /*//FIXME*/);
+				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty(), Collections.emptyMap());
 		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
