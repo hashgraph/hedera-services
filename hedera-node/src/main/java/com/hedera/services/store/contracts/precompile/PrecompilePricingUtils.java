@@ -1,7 +1,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -15,7 +14,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -34,44 +32,35 @@ public class PrecompilePricingUtils {
 	 * In this case $1 Million Dollars.
 	 */
 	static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
-	private final UsagePricesProvider usagePricesProvider;
 	private final HbarCentExchange exchange;
 	Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
 
 	@Inject
 	public PrecompilePricingUtils(
 			AssetsLoader assetsLoader,
-			final UsagePricesProvider usagePricesProvider,
 			final HbarCentExchange exchange) {
-		this.usagePricesProvider = usagePricesProvider;
 		this.exchange = exchange;
 
 		canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
+		Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
 		try {
-			var canonicalPrices = assetsLoader.loadCanonicalPrices();
-			for (var costType : GasCostType.values()) {
-				if (canonicalPrices.containsKey(costType.functionality)) {
-					BigDecimal costInUSD = canonicalPrices.get(costType.functionality).get(costType.subtype);
-					if (costInUSD != null) {
-						canonicalOperationCostsInTinyCents.put(costType,
-								costInUSD.multiply(USD_TO_TINYCENTS).longValue());
-					}
+			canonicalPrices = assetsLoader.loadCanonicalPrices();
+		} catch (IOException e) {
+			throw new RuntimeException("Canonical prices for precompiles are not available", e);
+		}
+		for (var costType : GasCostType.values()) {
+			if (canonicalPrices.containsKey(costType.functionality)) {
+				BigDecimal costInUSD = canonicalPrices.get(costType.functionality).get(costType.subtype);
+				if (costInUSD != null) {
+					canonicalOperationCostsInTinyCents.put(costType,
+							costInUSD.multiply(USD_TO_TINYCENTS).longValue());
 				}
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
 	private long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
 		return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
-	}
-
-	private long getMinimumGasPriceInTinyCents(GasCostType gasCostType, Timestamp timestamp) {
-		var priceInTinyCents = getCanonicalPriceInTinyCents(gasCostType);
-		long tinyCentsPerGas =
-				usagePricesProvider.defaultPricesGiven(ContractCall, timestamp).getServicedata().getGas();
-		return (priceInTinyCents + tinyCentsPerGas - 1) / tinyCentsPerGas;
 	}
 
 	public long getMinimumPriceInTinybars(GasCostType gasCostType, Timestamp timestamp) {

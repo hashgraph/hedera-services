@@ -46,6 +46,7 @@ public class AssetsLoader {
 
 	@Inject
 	public AssetsLoader() {
+		// empty constructor for @Inject annotation.
 	}
 
 	/**

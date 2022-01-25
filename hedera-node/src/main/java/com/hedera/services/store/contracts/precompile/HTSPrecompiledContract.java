@@ -104,8 +104,6 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
-import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.BURN_NFT;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
@@ -501,10 +499,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			Objects.requireNonNull(associateOp);
-			int associations = Math.max(1, associateOp.tokenIds().size());
-
-			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime) * associations;
+			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
 		}
 	}
 
@@ -553,10 +548,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			Objects.requireNonNull(dissociateOp);
-			int associations = Math.max(1, dissociateOp.tokenIds().size());
-
-			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime) * associations;
+			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
 		}
 	}
 
@@ -618,15 +610,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			Objects.requireNonNull(mintOp);
 
-			switch (mintOp.type()) {
-				case FUNGIBLE_COMMON:
-					return precompilePricingUtils.getMinimumPriceInTinybars(MINT_FUNGIBLE, consensusTime);
-				case NON_FUNGIBLE_UNIQUE:
-					int nftsMinted = Math.max(mintOp.metadata().size(), 1);
-					return precompilePricingUtils.getMinimumPriceInTinybars(MINT_NFT, consensusTime) * nftsMinted;
-				default:
-					return PrecompilePricingUtils.COST_PROHIBITIVE;
-			}
+			return precompilePricingUtils.getMinimumPriceInTinybars(
+					(mintOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
 		}
 
 		@Override
@@ -815,14 +800,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			Objects.requireNonNull(transferOp);
 			long accumulatedCost = 0;
-			// For fungable there are always at least two operations, so only charge half for each operation
+			boolean customFees = impliedTransfers.getAssessedCustomFees().size() > 0;
+			// For fungible there are always at least two operations, so only charge half for each operation
 			long nftHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
-					PrecompilePricingUtils.GasCostType.TRANSFER_NFT, consensusTime) / 2;
+					customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES :
+							PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
+					consensusTime) / 2;
 			// NFTs are atomic, one line can do it.
 			long fungibleHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
-					PrecompilePricingUtils.GasCostType.TRANSFER_NFT, consensusTime);
+					customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES :
+							PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
+					consensusTime);
 			for (var transfer : transferOp) {
-				//FIXME figure out how to detect custom fees.
 				accumulatedCost += transfer.fungibleTransfers().size() * fungibleHalfTxCost;
 				accumulatedCost += transfer.nftExchanges().size() * nftHalfTxCost;
 			}
@@ -871,15 +860,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			Objects.requireNonNull(burnOp);
-			switch (burnOp.type()) {
-				case FUNGIBLE_COMMON:
-					return precompilePricingUtils.getMinimumPriceInTinybars(BURN_FUNGIBLE, consensusTime);
-				case NON_FUNGIBLE_UNIQUE:
-					int nftsMinted = Math.max(burnOp.serialNos().size(), 1);
-					return precompilePricingUtils.getMinimumPriceInTinybars(BURN_NFT, consensusTime) * nftsMinted;
-				default:
-					return PrecompilePricingUtils.COST_PROHIBITIVE;
-			}
+			return precompilePricingUtils.getMinimumPriceInTinybars(
+					(burnOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
 		}
 
 		@Override
