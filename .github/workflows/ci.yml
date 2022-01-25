@@ -7,22 +7,22 @@ jobs:
 
     runs-on: macos-latest
 
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_DB: fcfs
-          POSTGRES_PASSWORD: password
-          POSTGRES_USER: swirlds
-          PGDATA: /var/lib/postgresql/data/pgdata
-          POSTGRES_PORT: 5432
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+#    services:
+#      postgres:
+#        image: postgres:latest
+#        env:
+#          POSTGRES_DB: fcfs
+#          POSTGRES_PASSWORD: password
+#          POSTGRES_USER: swirlds
+#          PGDATA: /var/lib/postgresql/data/pgdata
+#          POSTGRES_PORT: 5432
+#        ports:
+#          - 5432:5432
+#        options: >-
+#          --health-cmd pg_isready
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
 
     steps:
       - name: Install Docker
