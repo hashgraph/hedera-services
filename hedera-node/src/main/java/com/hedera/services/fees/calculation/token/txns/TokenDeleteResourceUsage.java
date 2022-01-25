@@ -39,6 +39,7 @@ public class TokenDeleteResourceUsage implements TxnResourceUsageEstimator {
 
 	@Inject
 	public TokenDeleteResourceUsage() {
+		// Default constructor
 	}
 
 	@Override

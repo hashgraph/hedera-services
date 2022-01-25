@@ -174,7 +174,7 @@ public class SmartContractRequestHandler {
 				} catch (Exception e) {
 					receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
 					if (log.isDebugEnabled()) {
-						log.debug("systemUndelete exception: can't serialize or deserialize! tx=" + txBody, e);
+						log.debug("systemUndelete exception: can't serialize or deserialize! tx= {} {}", txBody, e);
 					}
 				}
 			}
@@ -221,9 +221,7 @@ public class SmartContractRequestHandler {
 			if (validity == SUCCESS) {
 				validity = ledger.exists(beneficiary) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
 				if (validity == SUCCESS) {
-					validity = ledger.isDeleted(beneficiary)
-							? (ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED)
-							: SUCCESS;
+					validity = validateIfDeleted(beneficiary);
 				}
 			}
 			if (validity == SUCCESS) {
@@ -240,6 +238,13 @@ public class SmartContractRequestHandler {
 				transaction.getTransactionID(),
 				getTimestamp(consensusTime),
 				transactionReceipt).build();
+	}
+
+	private ResponseCodeEnum validateIfDeleted(final AccountID beneficiary) {
+		if (!ledger.isDeleted(beneficiary)) {
+			return SUCCESS;
+		}
+		return ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED;
 	}
 
 	private ResponseCodeEnum validateContractDelete(ContractDeleteTransactionBody op) {

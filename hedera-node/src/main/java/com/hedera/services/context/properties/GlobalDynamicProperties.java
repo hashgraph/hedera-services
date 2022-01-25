@@ -96,6 +96,7 @@ public class GlobalDynamicProperties {
 	private boolean expandSigsFromLastSignedState;
 	private long maxAggregateContractKvPairs;
 	private int maxIndividualContractKvPairs;
+	private int maxMostRecentQueryableRecords;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -174,6 +175,7 @@ public class GlobalDynamicProperties {
 		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
 		maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
 		maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
+		maxMostRecentQueryableRecords = properties.getIntProperty("ledger.records.maxQueryableByAccount");
 	}
 
 	public int maxTokensPerAccount() {
@@ -402,5 +404,9 @@ public class GlobalDynamicProperties {
 
 	public int maxIndividualContractKvPairs() {
 		return maxIndividualContractKvPairs;
+	}
+
+	public int maxNumQueryableRecords() {
+		return maxMostRecentQueryableRecords;
 	}
 }

@@ -114,7 +114,7 @@ public class JKeySerializer {
 
 			stream.writeInt(keys.size());
 
-			if (keys.size() > 0) {
+			if (!keys.isEmpty()) {
 				for (JKey key : keys) {
 					stream.write(serialize(key));
 				}

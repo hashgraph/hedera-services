@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,10 +46,12 @@ public class JEd25519Key extends JKey {
 		return ((null == ed25519) || (0 == ed25519.length));
 	}
 
+	@Override
 	public byte[] getEd25519() {
 		return ed25519;
 	}
 
+	@Override
 	public boolean hasEd25519Key() {
 		return true;
 	}
@@ -59,11 +61,7 @@ public class JEd25519Key extends JKey {
 		if (isEmpty()) {
 			return false;
 		} else {
-			if (ed25519.length != ED25519_BYTE_LENGTH) {
-				return false;
-			} else {
-				return true;
-			}
+			return ed25519.length == ED25519_BYTE_LENGTH;
 		}
 	}
 

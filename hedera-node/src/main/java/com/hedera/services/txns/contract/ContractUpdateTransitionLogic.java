@@ -56,8 +56,6 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private final UpdateCustomizerFactory customizerFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	public ContractUpdateTransitionLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
@@ -104,7 +102,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {

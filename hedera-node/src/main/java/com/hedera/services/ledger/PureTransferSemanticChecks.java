@@ -61,6 +61,7 @@ import static java.math.BigInteger.ZERO;
 public class PureTransferSemanticChecks {
 	@Inject
 	public PureTransferSemanticChecks() {
+		// Default constructor
 	}
 
 	public ResponseCodeEnum fullPureValidation(

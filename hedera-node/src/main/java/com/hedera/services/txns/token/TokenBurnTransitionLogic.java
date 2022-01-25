@@ -48,8 +48,6 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final BurnLogic burnLogic;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	@Inject
 	public TokenBurnTransitionLogic(
 			OptionValidator validator,
@@ -82,7 +80,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
