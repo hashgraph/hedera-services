@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MixedHTSPrecompileTestsSuite.class);
 
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String A_TOKEN = "TokenA";
 
@@ -90,7 +91,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 						fileCreate(nestedContract).path(ContractResources.CALLED_CONTRACT),
 						contractCreate(nestedContract)
 								.bytecode(nestedContract)
-								.gas(100_000),
+								.gas(GAS_TO_OFFER),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -100,7 +101,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode("associateDissociateContractByteCode")
 														.via("associateTxn")
-														.gas(200_000),
+														.gas(GAS_TO_OFFER),
 												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
 														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 										)
@@ -108,7 +109,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 				).when(
 						contractCall(theContract, ContractResources.ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN)
 								.payingWith(theAccount)
-								.gas(500_000)
+								.gas(GAS_TO_OFFER)
 								.via("associateMethodCall"),
 						childRecordsCheck("associateMethodCall",
 								SUCCESS,

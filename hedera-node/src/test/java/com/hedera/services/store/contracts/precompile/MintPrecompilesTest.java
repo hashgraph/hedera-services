@@ -159,6 +159,8 @@ class MintPrecompilesTest {
 	private FeeCalculator feeCalculator;
 	@Mock
 	private StateView stateView;
+	@Mock
+	private PrecompilePricingUtils precompilePricingUtils;
 
 	private HTSPrecompiledContract subject;
 
@@ -168,7 +170,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView);
+				() -> feeCalculator, stateView, precompilePricingUtils);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

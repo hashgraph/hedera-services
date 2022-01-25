@@ -65,6 +65,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -84,6 +85,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
+
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 	private static final String TOKEN_TREASURY = "treasury";
@@ -254,7 +257,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 										)
 						)
 				).then(
@@ -293,13 +296,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(accountID.get()), invalidAbiArgument)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -320,6 +323,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
 				.given(
+						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties"),
 						newKeyNamed(FREEZE_KEY),
 						newKeyNamed(KYC_KEY),
 						cryptoCreate(ACCOUNT)
@@ -368,7 +372,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												)
 														.payingWith(ACCOUNT)
 														.via("MultipleTokensAssociationsTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
 										)
 						)
@@ -417,7 +421,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("nestedAssociateTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
 										)
 						)
@@ -463,13 +467,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
-														.gas(500_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
@@ -479,7 +483,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)),
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")
 				);
 	}
 
