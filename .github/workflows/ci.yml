@@ -25,6 +25,11 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Install Docker
+        run:
+          brew cask install docker
+          sudo docker –version
+
       - name: Checkout Repository
         uses: actions/checkout@v2
 
