@@ -70,6 +70,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class DelegatePrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DelegatePrecompileSuite.class);
+
+    private static final long GAS_TO_OFFER = 4_000_000L;
     private static final KeyShape SIMPLE_AND_DELEGATE_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
             DELEGATE_CONTRACT);
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, DELEGATE_CONTRACT);
@@ -129,7 +131,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -155,7 +157,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
                                                 newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME).shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
@@ -166,7 +168,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         asAddress(receiverID.get()), 1L)
                                                         .payingWith(GENESIS)
                                                         .via("delegateTransferCallWithDelegateContractKeyTxn")
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
 
@@ -192,7 +194,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -212,7 +214,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
@@ -221,7 +223,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         asAddress(vanillaTokenTokenID.get()), 0, List.of(1L))
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithDelegateContractKeyTxn")
-                                                        .gas(5_000_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 childRecordsCheck("delegateBurnCallWithDelegateContractKeyTxn", SUCCESS, recordWith()
                                                         .status(SUCCESS)
@@ -249,7 +251,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -267,7 +269,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
@@ -276,7 +278,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                                                         asAddress(vanillaTokenTokenID.get()), 1)
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithDelegateContractKeyTxn")
-                                                        .gas(5_000_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 childRecordsCheck("delegateBurnCallWithDelegateContractKeyTxn", SUCCESS, recordWith()
                                                         .status(SUCCESS)

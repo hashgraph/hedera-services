@@ -72,6 +72,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoTransferHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
+
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String FUNGIBLE_TOKEN = "TokenA";
 	private static final String NFT_TOKEN = "Token_NFT";
@@ -136,7 +138,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						contractCreate(transferGateway, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(initcode)
 								.payingWith(GENESIS)
-								.gas(300_000L)
+								.gas(GAS_TO_OFFER)
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
@@ -169,7 +171,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 									))
 											.payingWith(GENESIS)
 											.via(repeatedIdsPrecompileXferTxn)
-											.gas(1_000_000L));
+											.gas(GAS_TO_OFFER));
 						}),
 						getTxnRecord(repeatedIdsPrecompileXferTxn)
 								.andAllChildRecords()
@@ -211,7 +213,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -232,7 +234,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 															accountAmount(sender, -amountToBeSent),
 															accountAmount(receiver, amountToBeSent)).build()).payingWith(
 													GENESIS)
-													.via(cryptoTransferTxn).gas(1_000_000L));
+													.via(cryptoTransferTxn).gas(GAS_TO_OFFER));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
 						getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
@@ -278,7 +280,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -300,7 +302,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 															accountAmount(sender, -50L),
 															accountAmount(receiver, 30L),
 															accountAmount(receiver2, 20L)).build())
-													.gas(200_000L)
+													.gas(GAS_TO_OFFER)
 													.payingWith(GENESIS)
 													.via(cryptoTransferTxn));
 								}),
@@ -357,7 +359,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -376,7 +378,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 													tokenTransferList().forToken(token).
 															withNftTransfers(nftTransfer(sender, receiver,
 																	1L)).build()).payingWith(GENESIS)
-													.via(cryptoTransferTxn));
+													.via(cryptoTransferTxn).gas(GAS_TO_OFFER));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
 						getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
@@ -434,7 +436,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -459,7 +461,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 																	nftTransfer(sender, receiver, 1L),
 																	nftTransfer(sender2, receiver2, 2L))
 															.build()).payingWith(GENESIS)
-													.via(cryptoTransferTxn));
+													.via(cryptoTransferTxn).gas(GAS_TO_OFFER));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
 						getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
@@ -524,7 +526,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -559,7 +561,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 																					nonFungibleTokenReceiver,
 																					1L)).build())
 															.build()).payingWith(GENESIS)
-													.via(cryptoTransferTxn));
+													.via(cryptoTransferTxn)
+													.gas(GAS_TO_OFFER));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
 						getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
@@ -632,7 +635,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, CRYPTO_TRANSFER_CONS_ABI)
 								.bytecode(cryptoTransferFileByteCode).payingWith(GENESIS)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						withOpContext(
 								(spec, opLog) ->
@@ -669,7 +672,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 																					2L)).
 																	build())
 															.build()).payingWith(GENESIS)
-													.via(cryptoTransferTxn));
+													.via(cryptoTransferTxn).gas(GAS_TO_OFFER));
 								}),
 						getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
 						getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),

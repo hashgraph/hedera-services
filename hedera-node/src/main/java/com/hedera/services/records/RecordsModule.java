@@ -9,9 +9,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,32 +43,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 @Module
-public abstract class RecordsModule {
+public interface RecordsModule {
 	@Binds
 	@Singleton
-	public abstract AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
+	AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
 
 	@Provides
 	@Singleton
-	public static Map<TransactionID, TxnIdRecentHistory> txnHistories() {
+	static Map<TransactionID, TxnIdRecentHistory> txnHistories() {
 		return new ConcurrentHashMap<>();
 	}
 
 	@Provides
 	@Singleton
-	public static Cache<TransactionID, Boolean> provideCache(RecordCacheFactory recordCacheFactory) {
+	static Cache<TransactionID, Boolean> provideCache(RecordCacheFactory recordCacheFactory) {
 		return recordCacheFactory.getCache();
 	}
 
 	@Provides
 	@Singleton
-	public static Consumer<RunningHash> provideRunningHashUpdate(@WorkingState StateAccessor stateAccessor) {
+	static Consumer<RunningHash> provideRunningHashUpdate(@WorkingState StateAccessor stateAccessor) {
 		return runningHash -> stateAccessor.runningHashLeaf().setRunningHash(runningHash);
 	}
 
 	@Provides
 	@Singleton
-	public static RecordStreamManager provideRecordStreamManager(
+	static RecordStreamManager provideRecordStreamManager(
 			final Platform platform,
 			final MiscRunningAvgs runningAvgs,
 			final NodeLocalProperties nodeLocalProperties,

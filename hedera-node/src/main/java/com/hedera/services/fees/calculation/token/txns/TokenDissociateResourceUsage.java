@@ -41,6 +41,7 @@ public class TokenDissociateResourceUsage implements TxnResourceUsageEstimator {
 
 	@Inject
 	public TokenDissociateResourceUsage() {
+		// Default constructor
 	}
 
 	@Override

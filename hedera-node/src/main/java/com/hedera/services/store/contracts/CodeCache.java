@@ -77,12 +77,6 @@ public class CodeCache {
         return code;
     }
 
-    public void putCode(final Address address, final Bytes bytecode) {
-        final var cacheKey = new BytesKey(address.toArray());
-        final var code = new Code(bytecode, Hash.hash(bytecode));
-        cache.put(cacheKey, code);
-    }
-
     public void invalidate(Address address) {
         cache.invalidate(new BytesKey(address.toArray()));
     }

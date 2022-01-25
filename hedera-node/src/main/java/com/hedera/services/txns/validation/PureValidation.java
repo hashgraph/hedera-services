@@ -66,9 +66,12 @@ public final class PureValidation {
 		final var account = accounts.get(entityNum);
 
 		return Optional.ofNullable(account)
-				.map(v -> v.isDeleted()
-						? ACCOUNT_DELETED
-						: (v.isSmartContract() ? INVALID_ACCOUNT_ID : OK))
+				.map(v -> {
+					if (v.isDeleted()) {
+						return ACCOUNT_DELETED;
+					}
+					return v.isSmartContract() ? INVALID_ACCOUNT_ID : OK;
+				})
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
@@ -79,9 +82,12 @@ public final class PureValidation {
 		final var contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
-				.map(v -> v.isDeleted()
-						? CONTRACT_DELETED
-						: (!v.isSmartContract() ? INVALID_CONTRACT_ID : OK))
+				.map(v -> {
+					if (v.isDeleted()) {
+						return CONTRACT_DELETED;
+					}
+					return !v.isSmartContract() ? INVALID_CONTRACT_ID : OK;
+				})
 				.orElse(INVALID_CONTRACT_ID);
 	}
 

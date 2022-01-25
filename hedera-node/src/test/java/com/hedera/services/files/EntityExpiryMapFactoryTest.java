@@ -125,8 +125,9 @@ class EntityExpiryMapFactoryTest {
 
 	@Test
 	void throwsIaeOnNonsense() {
+		final var bytes = "wtf".getBytes();
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> EntityExpiryMapFactory.toLong("wtf".getBytes()));
+		assertThrows(IllegalArgumentException.class, () -> EntityExpiryMapFactory.toLong(bytes));
 	}
 
 	@Test

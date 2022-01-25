@@ -130,6 +130,7 @@ public class CopyOnWriteIds {
 	 *
 	 * @param grpcIds
 	 * 		the ids to add
+	 * @deprecated
 	 */
 	@Deprecated
 	public void addAll(Set<TokenID> grpcIds) {
@@ -181,7 +182,8 @@ public class CopyOnWriteIds {
 
 	/* --- Helpers --- */
 	void remove(Predicate<long[]> removalFilter) {
-		int n = size(), newN = 0;
+		int n = size();
+		int newN = 0;
 		for (int i = 0; i < n; i++) {
 			if (!removalFilter.test(nativeIdAt(i))) {
 				newN++;
@@ -233,7 +235,8 @@ public class CopyOnWriteIds {
 	}
 
 	private int logicalIndexOf(long[] shardRealmNum) {
-		int lo = 0, hi = ids.length / NUM_ID_PARTS - 1;
+		int lo = 0;
+		int hi = ids.length / NUM_ID_PARTS - 1;
 		while (lo <= hi) {
 			int mid = lo + (hi - lo) / 2;
 			int comparison = compareImplied(mid, shardRealmNum);
@@ -249,9 +252,11 @@ public class CopyOnWriteIds {
 	}
 
 	private int compareImplied(int at, long[] nativeId) {
-		long numA = ids[num(at)], numB = nativeId[NUM_OFFSET];
+		long numA = ids[num(at)];
+		long numB = nativeId[NUM_OFFSET];
 		if (numA == numB) {
-			long realmA = ids[realm(at)], realmB = nativeId[REALM_OFFSET];
+			long realmA = ids[realm(at)];
+			long realmB = nativeId[REALM_OFFSET];
 			if (realmA == realmB) {
 				return Long.compare(ids[shard(at)], nativeId[SHARD_OFFSET]);
 			} else {

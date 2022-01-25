@@ -140,6 +140,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.fundingAccount", 98L),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
+			entry("ledger.records.maxQueryableByAccount", 180),
 			entry("ledger.transfers.maxLen", 10),
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
