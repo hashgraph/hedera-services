@@ -244,7 +244,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Take a ticket */
 						contractCall(workingHours, WORKING_HOURS_TAKE_TICKET)
 								.payingWith(user)
-								.gas(400_000)
+								.gas(4_000_000)
 								.via(ticketTaking)
 								.alsoSigningWithFullPrefix(treasury)
 								.exposingResultTo(result -> {
@@ -256,11 +256,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Our ticket number is 3 (b/c of the two pre-mints), so we must call
 						 * work twice before the contract will actually accept our ticket. */
 						sourcing(() ->
-								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get()).payingWith(
-										user)),
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
+										.payingWith(user)),
 						getAccountBalance(user).hasTokenBalance(ticketToken, 1L),
 						sourcing(() ->
 								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
 										.payingWith(user)
 										.via(ticketWorking)),
 						getAccountBalance(user).hasTokenBalance(ticketToken, 0L),
