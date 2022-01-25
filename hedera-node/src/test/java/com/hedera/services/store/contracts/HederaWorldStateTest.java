@@ -66,6 +66,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -435,8 +436,8 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(entityAccess).isExtant(accountID);
-		verify(entityAccess).putStorage(accountID, storageKey, storageValue);
-		verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
+		verify(entityAccess, times(2)).putStorage(accountID, storageKey, storageValue);
+		verify(entityAccess, times(2)).putStorage(accountID, secondStorageKey, secondStorageValue);
 		// and:
 		verify(entityAccess).storeCode(accountID, code);
 	}
