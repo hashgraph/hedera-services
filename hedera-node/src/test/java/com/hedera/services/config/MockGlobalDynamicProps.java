@@ -246,4 +246,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public boolean isAutoCreationEnabled() {
 		return true;
 	}
+
+	@Override
+	public int maxNumQueryableRecords() {
+		return 1;
+	}
 }

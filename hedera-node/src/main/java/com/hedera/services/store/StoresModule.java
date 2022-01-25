@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,31 +57,31 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Singleton;
 
 @Module
-public abstract class StoresModule {
+public interface StoresModule {
 	@Binds
 	@Singleton
-	public abstract UniqTokenViewFactory bindTokenViewFactory(ConfigDrivenUniqTokenViewFactory configDrivenFactory);
+	UniqTokenViewFactory bindTokenViewFactory(ConfigDrivenUniqTokenViewFactory configDrivenFactory);
 
 	@Binds
 	@Singleton
-	public abstract TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
+	TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
 
 	@Binds
 	@Singleton
-	public abstract BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
 
 	@Binds
 	@Singleton
-	public abstract BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
+	BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
 			BackingTokenRels backingTokenRels);
 
 	@Binds
 	@Singleton
-	public abstract ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
+	ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
+	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
 			BackingStore<NftId, MerkleUniqueToken> backingNfts
 	) {
 		return new TransactionalLedger<>(
@@ -105,7 +105,7 @@ public abstract class StoresModule {
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
+	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
 			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
@@ -131,13 +131,13 @@ public abstract class StoresModule {
 
 	@Provides
 	@AreFcotmrQueriesDisabled
-	public static boolean provideAreFcotmrQueriesDisabled(final @CompositeProps PropertySource properties) {
+	static boolean provideAreFcotmrQueriesDisabled(final @CompositeProps PropertySource properties) {
 		return !properties.getBooleanProperty("tokens.nfts.areQueriesEnabled");
 	}
 
 	@Provides
 	@AreTreasuryWildcardsEnabled
-	public static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
+	static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
 	}
 

@@ -173,10 +173,11 @@ class FractionalFeeAssessorTest {
 	void failsFastOnPositiveAdjustment() {
 		// given:
 		vanillaTrigger.adjustUnits(Long.MAX_VALUE);
+		final List<FcCustomFee> list = List.of();
 
 		// expect:
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.assessAllFractional(vanillaTrigger, List.of(), changeManager, accumulator));
+				() -> subject.assessAllFractional(vanillaTrigger, list, changeManager, accumulator));
 	}
 
 	@Test

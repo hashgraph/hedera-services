@@ -63,8 +63,6 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	private final Supplier<MerkleSpecialFiles> specialFiles;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validateBasics;
-
 	@Inject
 	public FreezeTransitionLogic(
 			final UpgradeActions upgradeActions,
@@ -115,7 +113,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validateBasics;
 	}
 
 	private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {

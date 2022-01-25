@@ -28,11 +28,14 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 
+import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
 public final class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
@@ -54,12 +57,21 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
-		return usageGivenType(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> queryCtx) {
+		return usageFor(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType(), queryCtx);
 	}
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		return usageFor(query, view, type, null);
+	}
+
+	private FeeData usageFor(
+			final Query query,
+			final StateView view,
+			final ResponseType stateProofType,
+			@Nullable final Map<String, Object> queryCtx
+	) {
 		final var op = query.getCryptoGetAccountRecords();
 		final var target = fromAccountId(op.getAccountID());
 		if (!view.accounts().containsKey(target)) {
@@ -69,7 +81,8 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
 			 * status code); so just return the default {@code FeeData} here. */
 			return FeeData.getDefaultInstance();
 		}
-		final var records = answerFunctions.accountRecords(view, op);
-		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, type);
+		final var records = answerFunctions.mostRecentRecords(view, op);
+		putIfNotNull(queryCtx, PAYER_RECORDS_CTX_KEY, records);
+		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, stateProofType);
 	}
 }

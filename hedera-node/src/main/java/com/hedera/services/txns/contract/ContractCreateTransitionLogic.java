@@ -74,8 +74,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	@Inject
 	public ContractCreateTransitionLogic(
 			final HederaFs hfs,
@@ -172,7 +170,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractCreateTxn) {

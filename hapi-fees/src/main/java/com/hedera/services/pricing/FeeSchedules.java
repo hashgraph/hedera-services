@@ -37,8 +37,8 @@ import static java.math.RoundingMode.HALF_UP;
  * Given an operation and type, generates the "fee schedule" entry of
  * the node, network, and service resource prices for that operation.
  */
-class FeeSchedules {
-	static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
+public class FeeSchedules {
+	public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 	static final BigDecimal FEE_SCHEDULE_MULTIPLIER = BigDecimal.valueOf(1_000L);
 
 	private static final AssetsLoader ASSETS_LOADER = new AssetsLoader();

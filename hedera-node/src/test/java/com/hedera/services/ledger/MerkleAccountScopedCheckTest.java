@@ -132,6 +132,6 @@ class MerkleAccountScopedCheckTest {
 	void throwsAsExpected() {
 		var iae = assertThrows(IllegalArgumentException.class,
 				() -> subject.getEffective(AUTO_RENEW_PERIOD, account, null, changeSet));
-		assertEquals("Property "+ AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
+		assertEquals("Invalid Property "+ AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
 	}
 }

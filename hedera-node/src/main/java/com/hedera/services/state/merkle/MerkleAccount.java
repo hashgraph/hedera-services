@@ -36,7 +36,7 @@ import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -328,8 +328,11 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNumContractKvPairs(numContractKvPairs);
 	}
 
-	/* --- Helpers --- */
-	public List<ExpirableTxnRecord> recordList() {
-		return new ArrayList<>(records());
+	public Iterator<ExpirableTxnRecord> recordIterator() {
+		return records().iterator();
+	}
+
+	public int numRecords() {
+		return records().size();
 	}
 }
