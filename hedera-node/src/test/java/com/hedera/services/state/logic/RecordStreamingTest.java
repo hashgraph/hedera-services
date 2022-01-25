@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Optional;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.mockito.BDDMockito.given;
@@ -45,7 +45,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class RecordStreamingTest {
-	private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private static final Instant topLevelConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -57,12 +57,37 @@ class RecordStreamingTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private TxnAccessor accessor;
+	@Mock
+	private RecordStreamObject firstFollowingChildRso;
+	@Mock
+	private RecordStreamObject secondFollowingChildRso;
+	@Mock
+	private RecordStreamObject firstPrecedingChildRso;
 
 	private RecordStreaming subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new RecordStreaming(txnCtx, nonBlockingHandoff, runningHashUpdate, recordsHistorian);
+	}
+
+	@Test
+	void streamsChildRecordsAtExpectedTimes() {
+		given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
+		given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(
+				firstPrecedingChildRso));
+		given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
+		given(recordsHistorian.getFollowingChildRecords()).willReturn(List.of(
+				firstFollowingChildRso, secondFollowingChildRso));
+		given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
+		given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
+		given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
+
+		subject.run();
+
+		verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
+		verify(nonBlockingHandoff).offer(firstFollowingChildRso);
+		verify(nonBlockingHandoff).offer(secondFollowingChildRso);
 	}
 
 	@Test
@@ -78,11 +103,11 @@ class RecordStreamingTest {
 	void streamsWhenAvail() {
 		final var txn = Transaction.getDefaultInstance();
 		final var lastRecord = ExpirableTxnRecord.newBuilder().build();
-		final var expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
+		final var expectedRso = new RecordStreamObject(lastRecord, txn, topLevelConsTime);
 		given(accessor.getSignedTxnWrapper()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));
+		given(txnCtx.consensusTime()).willReturn(topLevelConsTime);
+		given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
 		given(nonBlockingHandoff.offer(expectedRso))
 				.willReturn(false)
 				.willReturn(true);

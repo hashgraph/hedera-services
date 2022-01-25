@@ -63,8 +63,6 @@ public class FreezeTransitionLogic implements TransitionLogic {
 	private final Supplier<MerkleSpecialFiles> specialFiles;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validateBasics;
-
 	@Inject
 	public FreezeTransitionLogic(
 			final UpgradeActions upgradeActions,
@@ -115,7 +113,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validateBasics;
 	}
 
 	private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
@@ -133,8 +131,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 				return validate(op, effectiveNow, false);
 			case PREPARE_UPGRADE:
 				return validate(op, null, true);
-			case FREEZE_UPGRADE:
-			case TELEMETRY_UPGRADE:
+			case FREEZE_UPGRADE, TELEMETRY_UPGRADE:
 				return validate(op, effectiveNow, true);
 			default:
 				return INVALID_FREEZE_TRANSACTION_BODY;
@@ -225,7 +222,8 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
 		final var fileMatches = op.getUpdateFile().getFileNum() == curNetworkCtx.getPreparedUpdateFileNum();
 		validateTrue(fileMatches, UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED);
-		final var hashMatches = Arrays.equals(op.getFileHash().toByteArray(), curNetworkCtx.getPreparedUpdateFileHash());
+		final var hashMatches = Arrays.equals(op.getFileHash().toByteArray(),
+				curNetworkCtx.getPreparedUpdateFileHash());
 		validateTrue(hashMatches, UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
 
 		final var isHashUnchanged = curNetworkCtx.isPreparedFileHashValidGiven(specialFiles.get());

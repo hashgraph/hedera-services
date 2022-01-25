@@ -21,11 +21,13 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -37,8 +39,10 @@ import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -50,7 +54,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
-	private final String account;
+	private String account;
+	private String aliasKeySource = null;
 	private Optional<String> registryEntry = Optional.empty();
 	private List<String> absentRelationships = new ArrayList<>();
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
@@ -61,9 +66,22 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Long> ownedNfts = Optional.empty();
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
+	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
+	private boolean assertAliasKeyMatches = false;
+	private boolean assertAccountIDIsNotAlias = false;
+	private ReferenceType referenceType;
 
 	public HapiGetAccountInfo(String account) {
-		this.account = account;
+		this(account, ReferenceType.REGISTRY_NAME);
+	}
+
+	public HapiGetAccountInfo(String reference, ReferenceType type) {
+		this.referenceType = type;
+		if (type == ReferenceType.ALIAS_KEY_NAME) {
+			aliasKeySource = reference;
+		} else {
+			account = reference;
+		}
 	}
 
 	@Override
@@ -76,6 +94,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo hasExpectedAliasKey() {
+		assertAliasKeyMatches = true;
+		return this;
+	}
+
+	public HapiGetAccountInfo hasExpectedAccountID() {
+		assertAccountIDIsNotAlias = true;
+		return this;
+	}
+
 	public HapiGetAccountInfo plusCustomLog(BiConsumer<AccountInfo, Logger> custom) {
 		customLog = Optional.of(custom);
 		return this;
@@ -83,6 +111,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	public HapiGetAccountInfo exposingExpiry(LongConsumer obs) {
 		this.exposingExpiryTo = Optional.of(obs);
+		return this;
+	}
+
+	public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
+		this.idObserver = Optional.of(obs);
 		return this;
 	}
 
@@ -129,6 +162,18 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		final var actualInfo = response.getCryptoGetInfo().getAccountInfo();
+		if (assertAliasKeyMatches) {
+			Objects.requireNonNull(aliasKeySource);
+			final var expected = spec.registry().getKey(aliasKeySource).toByteString();
+			Assertions.assertEquals(expected, actualInfo.getAlias());
+		}
+		if (assertAccountIDIsNotAlias) {
+			Objects.requireNonNull(aliasKeySource);
+			final var expectedKeyForAccount = spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
+			final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
+			Assertions.assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
+			Assertions.assertEquals(expectedID, actualInfo.getAccountID());
+		}
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
@@ -153,6 +198,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			}
 			Assertions.assertEquals(actualCount, usedCount);
 		});
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	@Override
@@ -163,9 +209,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
 			exposingExpiryTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getExpirationTime().getSeconds()));
 			exposingBalanceTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
+			idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
 		}
 		if (verboseLoggingOn) {
-			log.info("Info for '" + account + "': " + response.getCryptoGetInfo().getAccountInfo());
+			log.info("Info for '" + repr() + "': " + response.getCryptoGetInfo().getAccountInfo());
 		}
 		if (customLog.isPresent()) {
 			customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);
@@ -183,9 +230,17 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	}
 
 	private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		AccountID target;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			target = AccountID.newBuilder()
+					.setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+					.build();
+		} else {
+			target = TxnUtils.asId(account, spec);
+		}
 		CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-				.setAccountID(TxnUtils.asId(account, spec))
+				.setAccountID(target)
 				.build();
 		return Query.newBuilder().setCryptoGetInfo(query).build();
 	}
@@ -200,4 +255,12 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return super.toStringHelper().add("account", account);
 	}
 
+
+	private String repr() {
+		if (referenceType == ReferenceType.REGISTRY_NAME) {
+			return account;
+		} else {
+			return "KeyAlias(" + aliasKeySource + ")";
+		}
+	}
 }

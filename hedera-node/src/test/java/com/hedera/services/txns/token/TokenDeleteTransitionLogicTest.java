@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -55,6 +56,7 @@ class TokenDeleteTransitionLogicTest {
 	private Token token;
 
 	private TransactionBody tokenDeleteTxn;
+	private SigImpactHistorian sigImpactHistorian;
 	private TokenDeleteTransitionLogic subject;
 
 	@BeforeEach
@@ -62,7 +64,8 @@ class TokenDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
+		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore, sigImpactHistorian);
 		token = mock(Token.class);
 	}
 
@@ -77,7 +80,8 @@ class TokenDeleteTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(token).delete();
-		verify(typedTokenStore).persistToken(token);
+		verify(typedTokenStore).commitToken(token);
+		verify(sigImpactHistorian).markEntityChanged(tokenId.num());
 	}
 
 	@Test
@@ -89,7 +93,7 @@ class TokenDeleteTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID);
 
 		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
+		verify(typedTokenStore, never()).commitToken(token);
 	}
 
 	private void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
@@ -105,7 +109,7 @@ class TokenDeleteTransitionLogicTest {
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
 
 		verify(token, never()).delete();
-		verify(typedTokenStore, never()).persistToken(token);
+		verify(typedTokenStore, never()).commitToken(token);
 	}
 
 	@Test

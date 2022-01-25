@@ -56,9 +56,9 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public EntityId(Id id) {
-		this.shard = id.getShard();
-		this.realm = id.getRealm();
-		this.num = id.getNum();
+		this.shard = id.shard();
+		this.realm = id.realm();
+		this.num = id.num();
 	}
 
 	public EntityId(long shard, long realm, long num) {
@@ -79,7 +79,8 @@ public class EntityId implements SelfSerializable {
 	/**
 	 * Builds an entity id from its encoded format.
 	 *
-	 * @param code the compressed representation
+	 * @param code
+	 * 		the compressed representation
 	 * @return the equivalent entity id
 	 */
 	public static EntityId fromIdentityCode(int code) {
@@ -129,7 +130,7 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public boolean matches(Id id) {
-		return shard == id.getShard() && realm == id.getRealm() && num == id.getNum();
+		return shard == id.shard() && realm == id.realm() && num == id.num();
 	}
 
 	@Override

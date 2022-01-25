@@ -168,7 +168,11 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 	}
 
 	private boolean removesAutoRenewAccount(TokenUpdateTransactionBody op) {
-		return op.hasAutoRenewAccount() && op.getAutoRenewAccount().equals(AccountID.getDefaultInstance());
+		return op.hasAutoRenewAccount() && designatesAccountRemoval(op.getAutoRenewAccount());
+	}
+
+	private boolean designatesAccountRemoval(AccountID id) {
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0 && id.getAlias().isEmpty();
 	}
 
 	private void updateCurrentRb(long amount) {

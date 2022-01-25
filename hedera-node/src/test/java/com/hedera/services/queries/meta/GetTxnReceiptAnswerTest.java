@@ -9,9 +9,9 @@ package com.hedera.services.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -82,6 +82,27 @@ class GetTxnReceiptAnswerTest {
 		recordCache = mock(RecordCache.class);
 
 		subject = new GetTxnReceiptAnswer(recordCache);
+	}
+
+	@Test
+	void returnsChildrenIfRequested() {
+		// setup:
+		Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, false, true);
+		var childReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
+
+		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
+		given(recordCache.getChildReceipts(validTxnId)).willReturn(childReceipts);
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetReceiptResponse opResponse = response.getTransactionGetReceipt();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
+		assertEquals(receipt.toGrpc(), opResponse.getReceipt());
+		assertEquals(childReceipts, opResponse.getChildTransactionReceiptsList());
 	}
 
 	@Test
@@ -209,10 +230,15 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	private Query queryWith(TransactionID txnId, ResponseType type, boolean duplicates) {
+		return queryWith(txnId, type, duplicates, false);
+	}
+
+	private Query queryWith(TransactionID txnId, ResponseType type, boolean duplicates, boolean children) {
 		TransactionGetReceiptQuery.Builder op = TransactionGetReceiptQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(type))
 				.setTransactionID(txnId)
-				.setIncludeDuplicates(duplicates);
+				.setIncludeDuplicates(duplicates)
+				.setIncludeChildReceipts(children);
 		return Query.newBuilder().setTransactionGetReceipt(op).build();
 	}
 

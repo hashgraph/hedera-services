@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -38,12 +39,14 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -62,19 +65,39 @@ import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+@Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
+	private final CodeCache codeCache;
 
 	@Inject
 	public HederaWorldState(
 			final EntityIdSource ids,
-			final EntityAccess entityAccess
+			final EntityAccess entityAccess,
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
+		this.codeCache = codeCache;
+		this.sigImpactHistorian = sigImpactHistorian;
+	}
+
+	public HederaWorldState(
+			final EntityIdSource ids,
+			final EntityAccess entityAccess,
+			final CodeCache codeCache
+	) {
+		this.ids = ids;
+		this.entityAccess = entityAccess;
+		this.codeCache = codeCache;
+		this.sigImpactHistorian = null;
 	}
 
 	@Override
@@ -208,7 +231,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Bytes getCode() {
-			return entityAccess.fetchCode(account);
+			return getCodeInternal().getBytes();
 		}
 
 		public EntityId getProxyAccount() {
@@ -226,7 +249,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Hash getCodeHash() {
-			return Hash.hash(this.getCode());
+			return getCodeInternal().getCodeHash();
 		}
 
 		@Override
@@ -291,6 +314,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		public AccountID getAccount() {
 			return account;
+		}
+
+		private Code getCodeInternal() {
+			final var code = codeCache.getIfPresent(address);
+			return (code == null) ? EMPTY_CODE : code;
 		}
 	}
 
@@ -357,27 +385,27 @@ public class HederaWorldState implements HederaMutableWorldState {
 		public void commit() {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			final var entityAccess = wrapped.entityAccess;
+			final var impactHistorian = wrapped.sigImpactHistorian;
 
-			/* ⚠️ Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
+			commitSizeLimitedStorageTo(entityAccess);
+
+			/* Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
 			 * needed to make sure the record's ℏ transfer list is constructed properly---the
 			 * finishing call to trackingLedgers().commits() at the end of this method will persist
-			 * all the same information.
-			 *
-			 * Once record-keeping logic is property extracted from HederaLedger, we can probably
-			 * drop these spawn() and adjustBalance() calls.*/
+			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountParsedFromSolidityAddress(address);
-				final var deletedBalance= entityAccess.getBalance(accountId);
+				validateTrue(impactHistorian != null, FAIL_INVALID);
+				impactHistorian.markEntityChanged(accountId.getAccountNum());
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
+				final var deletedBalance = entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
 
-				if (!entityAccess.isExtant(accountId)) {
-					wrapped.provisionalContractCreations.add(asContract(accountId));
-					entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
-				}
+				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
 
@@ -397,12 +425,38 @@ public class HederaWorldState implements HederaMutableWorldState {
 				}
 			}
 
+			entityAccess.recordNewKvUsageTo(trackingAccounts());
 			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			this commit() persists all of that information without any additional use of the deletedAccounts
 			or updatedAccounts collections. */
 			trackingLedgers().commit();
 
 			wrapped.sponsorMap.putAll(sponsorMap);
+		}
+
+		private void ensureExistence(
+				final AccountID accountId,
+				final EntityAccess entityAccess,
+				final List<ContractID> provisionalContractCreations
+		) {
+			if (!entityAccess.isExtant(accountId)) {
+				provisionalContractCreations.add(asContract(accountId));
+				entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
+			}
+		}
+
+		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
+			for (final var updatedAccount : getUpdatedAccounts()) {
+				final var accountId = accountParsedFromSolidityAddress(updatedAccount.getAddress());
+				/* Note that we don't have the equivalent of an account-scoped storage trie, so we can't
+				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
+				 * this in our global state expiration implementation.) */
+				final var kvUpdates = updatedAccount.getUpdatedStorage();
+				if (!kvUpdates.isEmpty()) {
+					kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
+				}
+			}
+			entityAccess.flushStorage();
 		}
 
 		@Override

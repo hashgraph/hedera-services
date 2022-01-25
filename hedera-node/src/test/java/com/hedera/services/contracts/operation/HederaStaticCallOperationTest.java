@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -69,12 +71,14 @@ class HederaStaticCallOperationTest {
 	private SoliditySigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
+	@Mock
+	private Map<String, PrecompiledContract> precompiledContractMap;
 
 	private HederaStaticCallOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaStaticCallOperation(calc, sigsVerifier, addressValidator);
+		subject = new HederaStaticCallOperation(calc, sigsVerifier, addressValidator, precompiledContractMap);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 
@@ -117,10 +121,13 @@ class HederaStaticCallOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
+		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+		
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.empty(), opRes.getHaltReason());
 		assertEquals(opRes.getGasCost().get(), cost);

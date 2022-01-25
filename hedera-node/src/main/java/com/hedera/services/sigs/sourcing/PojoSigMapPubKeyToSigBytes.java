@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
-import java.util.function.BiConsumer;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.
@@ -51,7 +50,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	@Override
-	public byte[] sigBytesFor(byte[] pubKey) throws Exception {
+	public byte[] sigBytesFor(byte[] pubKey) throws KeyPrefixMismatchException {
 		var chosenSigBytesIndex = MISSING_SIG_BYTES_INDEX;
 		byte[] sigBytes = EMPTY_SIG;
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
@@ -73,10 +72,10 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	@Override
-	public void forEachUnusedSigWithFullPrefix(BiConsumer<byte[], byte[]> keySigObs) {
+	public void forEachUnusedSigWithFullPrefix(final SigObserver observer) {
 		for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
 			if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-				keySigObs.accept(pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
+				observer.accept(pojoSigMap.keyType(i), pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
 			}
 		}
 	}
@@ -99,6 +98,9 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	}
 
 	public static boolean beginsWith(byte[] pubKey, byte[] prefix) {
+		if (pubKey.length < prefix.length) {
+			return false;
+		}
 		int n = prefix.length;
 		return Arrays.equals(prefix, 0, n, pubKey, 0, n);
 	}

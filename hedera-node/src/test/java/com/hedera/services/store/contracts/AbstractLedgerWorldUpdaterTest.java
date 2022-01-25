@@ -21,22 +21,28 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
-import com.hedera.services.ledger.accounts.HashMapBackingNfts;
-import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.backing.HashMapBackingNfts;
+import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -61,6 +67,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractLedgerWorldUpdaterTest {
@@ -83,6 +91,8 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -92,6 +102,37 @@ class AbstractLedgerWorldUpdaterTest {
 		setupLedgers();
 
 		subject = new MockLedgerWorldUpdater(worldState, ledgers);
+	}
+
+	@Test
+	void usesSameSourceIdAcrossMultipleManagedRecords() {
+		final var sourceId = 123;
+		final var firstRecord = ExpirableTxnRecord.newBuilder();
+		final var secondRecord = ExpirableTxnRecord.newBuilder();
+		final var firstSynthBuilder = TransactionBody.newBuilder();
+		final var secondSynthBuilder = TransactionBody.newBuilder();
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+		subject.manageInProgressRecord(recordsHistorian, firstRecord, firstSynthBuilder);
+		subject.manageInProgressRecord(recordsHistorian, secondRecord, secondSynthBuilder);
+
+		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord);
+		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord);
+	}
+
+	@Test
+	void revertsSourceIdsIfCreated() {
+		final var sourceId = 123;
+		final var aRecord = ExpirableTxnRecord.newBuilder();
+
+		given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+		subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+		subject.revert();
+
+		verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
 	}
 
 	@Test
@@ -288,6 +329,11 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
+		final var tokensLedger = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				new HashMapBackingTokens(),
+				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
@@ -297,8 +343,9 @@ class AbstractLedgerWorldUpdaterTest {
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
 		nftsLedger.begin();
+		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger);
+		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private void setupWellKnownAccounts() {

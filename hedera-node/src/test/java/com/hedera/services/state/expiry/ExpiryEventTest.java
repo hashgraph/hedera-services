@@ -29,7 +29,7 @@ class ExpiryEventTest {
 
 	@Test
 	void expiryEventToStringWorks() {
-		var desired = "ExpiryEvent{id=something, expiry=1234567}";
+		var desired = "ExpiryEvent[id=something, expiry=1234567]";
 
 		// when:
 		var actual = expiryEvent.toString();

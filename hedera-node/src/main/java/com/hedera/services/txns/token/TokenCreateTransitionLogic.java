@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
@@ -58,8 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
  */
 @Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
 	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
 	private Creation.CreationFactory creationFactory = Creation::new;
@@ -68,6 +67,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -80,6 +80,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties,
 			final EntityIdSource ids,
+			final SigImpactHistorian sigImpactHistorian,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.validator = validator;
@@ -88,6 +89,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		this.ids = ids;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
@@ -109,6 +111,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		/* --- Record activity in the transaction context --- */
 		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
+		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());
 	}
 
 	@Override
@@ -118,17 +121,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
@@ -197,7 +190,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			validity = validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
 			return validity;
 		} else {
-			if (op.getExpiry().getSeconds() <= txnCtx.consensusTime().getEpochSecond()) {
+			final var curConsTime = txnCtx.consensusTime();
+			if (curConsTime != null && op.getExpiry().getSeconds() <= curConsTime.getEpochSecond()) {
 				return INVALID_EXPIRATION_TIME;
 			}
 		}

@@ -20,6 +20,7 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -32,26 +33,22 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 
 class PrecheckKeyReqsTest {
 	private List<JKey> keys;
 	private PrecheckKeyReqs subject;
 	private SigRequirements keyOrder;
-	private SigRequirements keyOrderModuloRetry;
 	private final List<JKey> PAYER_KEYS = List.of(new JKeyList());
 	private final List<JKey> OTHER_KEYS = List.of(new JKeyList(), new JKeyList());
-	private final List<JKey> ALL_KEYS = Stream.of(PAYER_KEYS, OTHER_KEYS).flatMap(List::stream).collect(toList());
 	private final TransactionBody txn = TransactionBody.getDefaultInstance();
 	private final Predicate<TransactionBody> FOR_QUERY_PAYMENT = ignore -> true;
 	private final Predicate<TransactionBody> FOR_NON_QUERY_PAYMENT = ignore -> false;
@@ -60,14 +57,13 @@ class PrecheckKeyReqsTest {
 	@BeforeEach
 	private void setup() {
 		keyOrder = mock(SigRequirements.class);
-		keyOrderModuloRetry = mock(SigRequirements.class);
 	}
 
 	@Test
 	void throwsGenericExceptionAsExpected() {
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
+		given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(factory.forGeneralError());
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
@@ -79,7 +75,7 @@ class PrecheckKeyReqsTest {
 	void throwsInvalidAccountAsExpected() {
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
+		given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
 				.willReturn(factory.forMissingAccount());
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
@@ -108,16 +104,19 @@ class PrecheckKeyReqsTest {
 		// then:
 		verify(keyOrder).keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrder);
-		verifyNoInteractions(keyOrderModuloRetry);
 		assertEquals(keys, PAYER_KEYS);
 	}
 
 	@Test
 	void usesBothOrderForQueryPayments() throws Exception {
+		final JKey key1 = new JEd25519Key("firstKey".getBytes());
+		final JKey key2 = new JEd25519Key("secondKey".getBytes());
+		final JKey key3 = new JEd25519Key("thirdKey".getBytes());
+		final JKey key4 = new JEd25519Key("firstKey".getBytes());
 		given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
-		given(keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-				.willReturn(new SigningOrderResult<>(OTHER_KEYS));
+				.willReturn(new SigningOrderResult<>(List.of(key1)));
+		given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
+				.willReturn(new SigningOrderResult<>(List.of(key2, key3, key4)));
 		givenImpliedSubject(FOR_QUERY_PAYMENT);
 
 		// when:
@@ -125,13 +124,15 @@ class PrecheckKeyReqsTest {
 
 		// then:
 		verify(keyOrder).keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
+		verify(keyOrder).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		verifyNoMoreInteractions(keyOrder);
-		verify(keyOrderModuloRetry).keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
-		verifyNoMoreInteractions(keyOrderModuloRetry);
-		assertEquals(keys, ALL_KEYS);
+		assertEquals(3, keys.size());
+		assertTrue(keys.contains(key1));
+		assertTrue(keys.contains(key2));
+		assertTrue(keys.contains(key3));
 	}
 
 	private void givenImpliedSubject(Predicate<TransactionBody> isQueryPayment) {
-		subject = new PrecheckKeyReqs(keyOrder, keyOrderModuloRetry, isQueryPayment);
+		subject = new PrecheckKeyReqs(keyOrder, isQueryPayment);
 	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
@@ -61,7 +62,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
@@ -101,6 +101,24 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
+	void canUndoCreations() {
+		subject.begin();
+
+		subject.create(2L);
+
+		subject.undoCreations();
+
+		subject.commit();
+
+		verify(backingAccounts, never()).put(any(), any());
+	}
+
+	@Test
+	void canUndoCreationsOnlyInTxn() {
+		assertThrows(IllegalStateException.class, subject::undoCreations);
+	}
+
+	@Test
 	void rollbackClearsChanges() {
 		given(backingAccounts.contains(1L)).willReturn(true);
 
@@ -134,6 +152,18 @@ class TransactionalLedgerTest {
 		assertEquals(newAccount1, account);
 		// and:
 		verify(backingAccounts).getRef(1L);
+	}
+
+	@Test
+	void zombieIsResurrectedIfPutAgain() {
+		subject.begin();
+
+		subject.create(1L);
+		subject.destroy(1L);
+		subject.put(1L, account1);
+
+		subject.commit();
+		verify(backingAccounts).put(1L, account1);
 	}
 
 	@Test
@@ -304,7 +334,7 @@ class TransactionalLedgerTest {
 		subject.set(1L, LONG, 3L);
 
 		// when:
-		long value = (long)subject.get(1L, LONG);
+		long value = (long) subject.get(1L, LONG);
 
 		// then:
 		verify(backingAccounts, times(2)).contains(1L);
@@ -347,7 +377,7 @@ class TransactionalLedgerTest {
 		subject.set(2L, OBJ, things[2]);
 
 		// when:
-		boolean flag = (boolean)subject.get(2L, FLAG);
+		boolean flag = (boolean) subject.get(2L, FLAG);
 
 		// then:
 		assertFalse(flag);
@@ -516,5 +546,23 @@ class TransactionalLedgerTest {
 		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
 		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
 		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
+	}
+
+	@Test
+	void idSetPropagatesCallToEntities() {
+		Set<Long> idSet = Set.of(1L, 2L, 3L);
+		given(backingAccounts.idSet()).willReturn(idSet);
+
+		assertEquals(idSet, subject.idSet());
+		verify(backingAccounts).idSet();
+	}
+
+	@Test
+	void sizePropagatesCallToEntities() {
+		var size = 23L;
+		given(backingAccounts.size()).willReturn(size);
+
+		assertEquals(size, subject.size());
+		verify(backingAccounts).size();
 	}
 }

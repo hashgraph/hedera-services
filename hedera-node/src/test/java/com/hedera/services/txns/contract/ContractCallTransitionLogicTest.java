@@ -25,7 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -69,11 +69,8 @@ class ContractCallTransitionLogicTest {
 	private int gas = 1_234;
 	private long sent = 1_234L;
 
-
 	@Mock
 	private TransactionContext txnCtx;
-	@Mock
-	private EntityIdSource entityIdSource;
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
@@ -88,6 +85,8 @@ class ContractCallTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private CodeCache codeCache;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -98,7 +97,9 @@ class ContractCallTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCallTransitionLogic(txnCtx, entityIdSource, accountStore, worldState, recordService, evmTxProcessor, properties, codeCache);
+		subject = new ContractCallTransitionLogic(
+				txnCtx, accountStore, worldState,
+				recordService, evmTxProcessor, properties, codeCache, sigImpactHistorian);
 	}
 
 	@Test
@@ -169,6 +170,7 @@ class ContractCallTransitionLogicTest {
 		// then:
 		verify(evmTxProcessor).execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime());
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
 	}
 
 	@Test
@@ -184,7 +186,7 @@ class ContractCallTransitionLogicTest {
 		subject.preFetch(accessor);
 
 		// expect:
-		verify(codeCache).get(any(Address.class));
+		verify(codeCache).getIfPresent(any(Address.class));
 	}
 
 	@Test
@@ -195,13 +197,13 @@ class ContractCallTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getContractCall()).willReturn(ccTxnBody);
 		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
-		given(codeCache.get(any(Address.class))).willThrow(new RuntimeException("oh no"));
+		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
 
 		// when:
 		subject.preFetch(accessor);
 
 		// expect:
-		verify(codeCache).get(any(Address.class));
+		verify(codeCache).getIfPresent(any(Address.class));
 	}
 
 	@Test
@@ -240,18 +242,6 @@ class ContractCallTransitionLogicTest {
 
 		// expect:
 		assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
-	}
-
-	@Test
-	void reclaimMethodDelegates() {
-		subject.reclaimCreatedIds();
-		verify(entityIdSource).reclaimProvisionalIds();
-	}
-
-	@Test
-	void resetMethodDelegates() {
-		subject.resetCreatedIds();
-		verify(entityIdSource).resetProvisionalIds();
 	}
 
 	private void givenValidTxnCtx() {

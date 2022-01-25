@@ -30,7 +30,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -109,6 +111,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				worksAsExpectedWithDefaultScheduleId(),
 				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
+				validateSignersInInfo()
 		});
 	}
 
@@ -127,18 +130,39 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec bodyOnlyCreation() {
-		return defaultHapiSpec("BodyOnlyCreation")
+		return customHapiSpec("bodyOnlyCreation").withProperties(Map.of(
+						"default.keyAlgorithm", "SECP256K1"))
 				.given(
 						cryptoCreate("sender")
 				).when(
 						scheduleCreate("onlyBody",
 								cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 1))
 						)
-								.recordingScheduledTxn()
+								.recordingScheduledTxn(),
+						scheduleSign("onlyBody").alsoSigningWith("sender")
 				).then(
 						getScheduleInfo("onlyBody")
 								.hasScheduleId("onlyBody")
+								.hasRecordedScheduledTxn().logged()
+				);
+	}
+
+	private HapiApiSpec validateSignersInInfo() {
+		return customHapiSpec("validSchedule").withProperties(Map.of(
+						"default.keyAlgorithm", "SECP256K1"))
+				.given(
+						cryptoCreate("sender")
+				).when(
+						scheduleCreate("validSchedule",
+								cryptoTransfer(tinyBarsFromTo("sender", GENESIS, 1))
+						)
+								.recordingScheduledTxn(),
+						scheduleSign("validSchedule").alsoSigningWith("sender")
+				).then(
+						getScheduleInfo("validSchedule")
+								.hasScheduleId("validSchedule")
 								.hasRecordedScheduledTxn()
+								.hasSignatories("sender")
 				);
 	}
 

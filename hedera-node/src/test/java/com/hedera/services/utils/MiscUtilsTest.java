@@ -36,6 +36,7 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
@@ -179,10 +180,12 @@ import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.scheduledFunctionOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -220,6 +223,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
@@ -256,7 +260,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -280,11 +283,20 @@ class MiscUtilsTest {
 	SolidityFnResult solidityFnResult;
 
 	@Test
+	void canUnpackTime() {
+		final long seconds = 1_234_567L;
+		final int nanos = 890;
+		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
+		final var expected = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+		assertEquals(expected, MiscUtils.asTimestamp(packedTime));
+	}
+
+	@Test
 	void forEachDropInWorksAsExpected() {
 		// setup:
 		final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> testMm = new MerkleMap<>();
-		@SuppressWarnings("unchecked")
-		final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(BiConsumer.class);
+		@SuppressWarnings("unchecked") final BiConsumer<FcLong, KeyedMerkleLong<FcLong>> mockConsumer = BDDMockito.mock(
+				BiConsumer.class);
 		// and:
 		final var key1 = new FcLong(1L);
 		final var key2 = new FcLong(2L);
@@ -327,13 +339,14 @@ class MiscUtilsTest {
 
 	@Test
 	void asFcKeyUncheckedTranslatesExceptions() {
-		assertThrows(IllegalArgumentException.class,
-				() -> MiscUtils.asFcKeyUnchecked(Key.getDefaultInstance()));
+		final var key = Key.getDefaultInstance();
+		assertThrows(IllegalArgumentException.class, () -> MiscUtils.asFcKeyUnchecked(key));
 	}
 
 	@Test
 	void asFcKeyReturnsEmptyOnUnparseableKey() {
-		assertTrue(asUsableFcKey(Key.getDefaultInstance()).isEmpty());
+		final var key = Key.getDefaultInstance();
+		assertTrue(asUsableFcKey(key).isEmpty());
 	}
 
 	@Test
@@ -370,13 +383,14 @@ class MiscUtilsTest {
 	@Test
 	void translatesDecoderException() {
 		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
-
-		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(new LegacyEd25519KeyReader() {
+		final var reader = new LegacyEd25519KeyReader() {
 			@Override
 			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
 				return "This is not actually hex!";
 			}
-		}, tmpLoc, "START_ACCOUNT"));
+		};
+
+		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(reader, tmpLoc, "START_ACCOUNT"));
 	}
 
 	@Test
@@ -591,7 +605,8 @@ class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
+					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
@@ -700,7 +715,7 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void getsExpectedTxnFunctionality() throws UnknownHederaFunctionality {
+	void getsExpectedTxnFunctionality() {
 		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>>
 				setters = new HashMap<>() {{
 			put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
@@ -757,6 +772,25 @@ class MiscUtilsTest {
 	}
 
 	@Test
+	void getsExpectedScheduledTxnFunctionality() {
+		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
+				setters = new HashMap<>() {{
+			put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
+			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
+			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
+			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+		}};
+
+		setters.forEach((function, setter) -> {
+			final var txn = SchedulableTransactionBody.newBuilder();
+			setter.setDefaultInstanceFor(txn);
+			assertEquals(function, scheduledFunctionOf(txn.build()));
+		});
+
+		assertEquals(NONE, scheduledFunctionOf(SchedulableTransactionBody.getDefaultInstance()));
+	}
+
+	@Test
 	void hashCorrectly() throws IllegalArgumentException {
 		final var testBytes = "test bytes".getBytes();
 		final var expectedHash = com.swirlds.common.CommonUtils.unhex(
@@ -793,6 +827,32 @@ class MiscUtilsTest {
 	}
 
 	@Test
+	void managesOffsetsAsExpected() {
+		final var sec = 1_234_567L;
+		final Instant wellBeforeBoundary = Instant.ofEpochSecond(sec - 1, 500_000_000);
+		final Instant beforeBoundary = Instant.ofEpochSecond(sec - 1, 999_999_999);
+		final Instant onBoundary = Instant.ofEpochSecond(sec, 0);
+		final Instant inTheMiddle = Instant.ofEpochSecond(sec, 500_000_000);
+
+		assertEquals(beforeBoundary, nonNegativeNanosOffset(onBoundary, -1));
+		assertEquals(wellBeforeBoundary, nonNegativeNanosOffset(onBoundary, -500_000_000));
+		assertEquals(onBoundary, nonNegativeNanosOffset(beforeBoundary, +1));
+		assertEquals(inTheMiddle.minusNanos(1), nonNegativeNanosOffset(inTheMiddle, -1));
+		assertEquals(inTheMiddle.plusNanos(1), nonNegativeNanosOffset(inTheMiddle, +1));
+	}
+
+	@Test
+	void rejectsNonPrimitiveProtoKeys() {
+		assertFalse(MiscUtils.isSerializedProtoKey(Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))))
+				.build()
+				.toByteString()));
+		assertFalse(MiscUtils.isSerializedProtoKey(ByteString.copyFromUtf8("NONSENSE")));
+	}
+
+	@Test
 	void contractCallIsConsensusThrottled() {
 		assertTrue(isGasThrottled(ContractCall));
 	}
@@ -802,6 +862,7 @@ class MiscUtilsTest {
 		assertTrue(isGasThrottled(ContractCreate));
 	}
 
+	@SuppressWarnings("unchecked")
 	public static class BodySetter<T, B> {
 		private final Class<T> type;
 
@@ -845,8 +906,7 @@ class MiscUtilsTest {
 
 	private static void writeB64EncodedKeyPair(final File file, final KeyPair keyPair) throws IOException {
 		final var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		final var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		final var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+		final var keyPairObj = new KeyPairObj(hexPublicKey);
 		final var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
 
 		final var baos = new ByteArrayOutputStream();

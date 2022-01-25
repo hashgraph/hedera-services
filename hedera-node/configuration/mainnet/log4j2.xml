@@ -3,13 +3,13 @@
 <Configuration status="WARN" monitorInterval="600">
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n"/>
+      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n"/>
     </Console>
 
     <RollingFile name="RollingFile" fileName="output/hgcaa.log"
       filePattern="output/hgcaa.log-%d{yyyy-MM-dd}-%i.log">
       <PatternLayout>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
         <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -21,7 +21,7 @@
       filePattern="output/queries.log-%d{yyyy-MM-dd}-%i.log">
       <BurstFilter level="INFO" rate="50" maxBurst="500"/>
       <PatternLayout>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
         <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -32,7 +32,7 @@
     <RollingFile name="fileLog" fileName="output/swirlds.log"
       filePattern="output/swirlds.log-%d{yyyy-MM-dd}-%i.log">
       <PatternLayout>
-        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg%n</pattern>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
         <SizeBasedTriggeringPolicy size="100 MB"/>
@@ -57,7 +57,7 @@
 	  -->
       <Filters>
         <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
-        <!-- Intentially left disabled by default -->
+        <!-- Intentionally left disabled by default -->
         <!-- <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />-->
 
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
@@ -132,6 +132,10 @@
         <MarkerFilter marker="MERKLE_HASHING"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+
+        <!-- JasperDB & Virtual Merkle -->
+        <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
       </Filters>

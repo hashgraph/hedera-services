@@ -10,19 +10,19 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.21.0-SNAPSHOT</version>
+    <version>0.22.0-SNAPSHOT</version>
   </parent>
 
   <properties>
     <maven-assembly.version>3.3.0</maven-assembly.version>
 
-    <bouncycastle.version>1.69</bouncycastle.version>
+    <bouncycastle.version>1.70</bouncycastle.version>
     <BIP39.version>2019.01.27</BIP39.version>
     <picocli.version>4.6.2</picocli.version>
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
-    <snakeyaml.version>1.29</snakeyaml.version>
-    <besu.version>21.10.2</besu.version>
+    <snakeyaml.version>1.30</snakeyaml.version>
+    <besu.version>21.10.9</besu.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -235,7 +235,7 @@
           </execution>
         </executions>
       </plugin>
-    </plugins>
+	</plugins>
   </build>
 
   <repositories>
@@ -259,6 +259,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.esaulpaugh</groupId>
+      <artifactId>headlong</artifactId>
+    </dependency>
+    <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
       <version>${picocli.version}</version>
@@ -266,22 +270,20 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.21.0-SNAPSHOT</version>
+      <version>0.22.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.21.0-SNAPSHOT</version>
+      <version>0.22.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

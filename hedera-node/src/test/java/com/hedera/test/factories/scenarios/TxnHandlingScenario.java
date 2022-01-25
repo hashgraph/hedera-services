@@ -20,6 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -370,11 +371,15 @@ public interface TxnHandlingScenario {
 	String MISSING_ACCOUNT_ID = "0.0.321321";
 	AccountID MISSING_ACCOUNT = asAccount(MISSING_ACCOUNT_ID);
 
+	String CURRENTLY_UNUSED_ALIAS = "currentlyUnusedAlias";
+
 	String NO_RECEIVER_SIG_ID = "0.0.1337";
+	String NO_RECEIVER_SIG_ALIAS = "noReceiverSigReqAlias";
 	AccountID NO_RECEIVER_SIG = asAccount(NO_RECEIVER_SIG_ID);
 	KeyTree NO_RECEIVER_SIG_KT = withRoot(ed25519());
 
 	String RECEIVER_SIG_ID = "0.0.1338";
+	String RECEIVER_SIG_ALIAS = "receiverSigReqAlias";
 	AccountID RECEIVER_SIG = asAccount(RECEIVER_SIG_ID);
 	KeyTree RECEIVER_SIG_KT = withRoot(list(ed25519(), threshold(1, ed25519(), ed25519())));
 
@@ -484,6 +489,8 @@ public interface TxnHandlingScenario {
 
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
+	ByteString FIRST_TOKEN_SENDER_LITERAL_ALIAS = ByteString.copyFromUtf8("firstTokenSender");
+	AccountID FIRST_TOKEN_SENDER_ALIAS = AccountID.newBuilder().setAlias(FIRST_TOKEN_SENDER_LITERAL_ALIAS).build();
 	String SECOND_TOKEN_SENDER_ID = "0.0.999";
 	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
 	String TOKEN_RECEIVER_ID = "0.0.1111";

@@ -39,7 +39,8 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 	@Override
 	public void track(K id, long expiry) {
 		if (expiry < now) {
-			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id, now));
+			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id,
+					now));
 		}
 		now = expiry;
 		allExpiries.add(new ExpiryEvent<>(id, expiry));
@@ -59,7 +60,7 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!",
 					now));
 		}
-		return allExpiries.removeFirst().getId();
+		return allExpiries.removeFirst().id();
 	}
 
 	Deque<ExpiryEvent<K>> getAllExpiries() {

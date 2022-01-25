@@ -28,7 +28,6 @@ import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
-import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
@@ -44,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
@@ -59,6 +59,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
+import java.security.interfaces.ECPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
@@ -270,6 +272,8 @@ public class KeyFactory implements Serializable {
 	}
 
 	public class PrimitiveSigning {
+		private byte[] keccak256Digest;
+
 		private final byte[] data;
 		private final Set<String> used = new HashSet<>();
 		private final List<Entry<Key, SigControl>> authors;
@@ -291,7 +295,7 @@ public class KeyFactory implements Serializable {
 			switch (controller.getNature()) {
 				case SIG_OFF:
 				case CONTRACT_ID:
-				case DELEGATE_CONTRACT_ID:
+				case DELEGATABLE_CONTRACT_ID:
 					break;
 				case SIG_ON:
 					signIfNecessary(key);
@@ -305,14 +309,32 @@ public class KeyFactory implements Serializable {
 			}
 		}
 
-		private void signIfNecessary(Key key) throws Throwable {
-			byte[] pubKey = key.getEd25519().toByteArray();
-			String pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
-			if (!used.contains(pubKeyHex)) {
-				PrivateKey signer = pkMap.get(pubKeyHex);
-				byte[] sig = SignatureGenerator.signBytes(data, signer);
-				keySigs.add(new AbstractMap.SimpleEntry<>(pubKey, sig));
-				used.add(pubKeyHex);
+		private void signIfNecessary(final Key key) throws Throwable {
+			final var pk = extractPubKey(key);
+			final var hexedPk = com.swirlds.common.CommonUtils.hex(pk);
+			if (!used.contains(hexedPk)) {
+				final var privateKey = pkMap.get(hexedPk);
+				final byte[] sig;
+				if (privateKey instanceof ECPrivateKey) {
+					if (keccak256Digest == null) {
+						keccak256Digest = new Keccak.Digest256().digest(data);
+					}
+					sig = SignatureGenerator.signBytes(keccak256Digest, privateKey);
+				} else {
+					sig = SignatureGenerator.signBytes(data, privateKey);
+				}
+				keySigs.add(new AbstractMap.SimpleEntry<>(pk, sig));
+				used.add(hexedPk);
+			}
+		}
+
+		private byte[] extractPubKey(final Key key) {
+			if (!key.getECDSASecp256K1().isEmpty()) {
+				return key.getECDSASecp256K1().toByteArray();
+			} else if (!key.getEd25519().isEmpty()) {
+				return key.getEd25519().toByteArray();
+			} else {
+				throw new IllegalArgumentException("No supported public key in " + key);
 			}
 		}
 	}
@@ -385,11 +407,17 @@ public class KeyFactory implements Serializable {
 	}
 
 	private class Generation {
+		private final SigControl.KeyAlgo[] algoChoices = {
+			SigControl.KeyAlgo.ED25519, SigControl.KeyAlgo.SECP256K1
+		};
+
 		private final KeyLabel labels;
 		private final SigControl control;
 		private final HapiApiSpec spec;
 		private final KeyGenerator keyGen;
 		private final Map<String, Key> byLabel = new HashMap<>();
+
+		private int nextUnspecifiedAlgo = 0;
 
 		public Generation(HapiApiSpec spec, SigControl control, KeyGenerator keyGen) {
 			this(spec, control, keyGen, KeyLabel.uniquelyLabeling(control));
@@ -414,8 +442,8 @@ public class KeyFactory implements Serializable {
 					final var cid = asContractId(sc.contract(), spec);
 					generated = Key.newBuilder().setContractID(cid).build();
 					break;
-				case DELEGATE_CONTRACT_ID:
-					final var dcid = asContractId(sc.delegateContract(), spec);
+				case DELEGATABLE_CONTRACT_ID:
+					final var dcid = asContractId(sc.delegatableContract(), spec);
 					generated = Key.newBuilder().setDelegatableContractId(dcid).build();
 					break;
 				case LIST:
@@ -432,7 +460,20 @@ public class KeyFactory implements Serializable {
 					if (byLabel.containsKey(label.literally())) {
 						generated = byLabel.get(label.literally());
 					} else {
-						generated = keyGen.genEd25519AndUpdateMap(pkMap);
+						final SigControl.KeyAlgo choice;
+						if (sc.keyAlgo() == SigControl.KeyAlgo.UNSPECIFIED) {
+							final var defaultAlgo = spec.setup().defaultKeyAlgo();
+							if (defaultAlgo != SigControl.KeyAlgo.UNSPECIFIED) {
+								choice = defaultAlgo;
+							} else {
+								/* A spec run with unspecified default algorithm alternates between Ed25519 and ECDSA */
+								choice = algoChoices[nextUnspecifiedAlgo];
+								nextUnspecifiedAlgo = (nextUnspecifiedAlgo + 1) % algoChoices.length;
+							}
+						} else {
+							choice = sc.keyAlgo();
+						}
+						generated = generateByAlgo(choice);
 						byLabel.put(label.literally(), generated);
 					}
 					break;
@@ -441,6 +482,16 @@ public class KeyFactory implements Serializable {
 				controlMap.put(generated, sc);
 			}
 			return generated;
+		}
+
+		private Key generateByAlgo(final SigControl.KeyAlgo algo) {
+			if (algo == SigControl.KeyAlgo.ED25519) {
+				return keyGen.genEd25519AndUpdateMap(pkMap);
+			} else if (algo == SigControl.KeyAlgo.SECP256K1) {
+				return keyGen.genEcdsaSecp256k1AndUpdate(pkMap);
+			} else {
+				throw new IllegalArgumentException(algo + " not supported");
+			}
 		}
 
 		private KeyList composing(KeyLabel[] ls, SigControl[] cs) {
@@ -455,7 +506,7 @@ public class KeyFactory implements Serializable {
 	}
 
 	public Key generate(final HapiApiSpec spec, final KeyType type) {
-		return generate(spec, type, KeyExpansion::genSingleEd25519Key);
+		return generate(spec, type, DEFAULT_KEY_GEN);
 	}
 
 	public Key generate(final HapiApiSpec spec, final KeyType type, final KeyGenerator keyGen) {

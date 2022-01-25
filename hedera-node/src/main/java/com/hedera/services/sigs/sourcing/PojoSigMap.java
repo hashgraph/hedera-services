@@ -27,16 +27,6 @@ public class PojoSigMap {
 	private static final int SIG_BYTES_INDEX = 1;
 	private static final int DATA_PER_SIG_PAIR = 2;
 
-	private enum KeyType {
-		ED25519(32), ECDSA_SECP256K1(33);
-
-		private final int length;
-
-		KeyType(final int length) {
-			this.length = length;
-		}
-	}
-
 	private final KeyType[] keyTypes;
 	private final byte[][][] rawMap;
 
@@ -45,7 +35,6 @@ public class PojoSigMap {
 		this.keyTypes = keyTypes;
 	}
 
-	/* See https://github.com/hashgraph/hedera-services/pull/2487/files for relevant ECDSA support work */
 	public static PojoSigMap fromGrpc(final SignatureMap sigMap) {
 		final var n = sigMap.getSigPairCount();
 		final var rawMap = new byte[n][DATA_PER_SIG_PAIR][];
@@ -53,8 +42,13 @@ public class PojoSigMap {
 		for (var i = 0; i < n; i++) {
 			final var sigPair = sigMap.getSigPair(i);
 			rawMap[i][PUB_KEY_PREFIX_INDEX] = sigPair.getPubKeyPrefix().toByteArray();
-			rawMap[i][SIG_BYTES_INDEX] = sigPair.getEd25519().toByteArray();
-			keyTypes[i] = KeyType.ED25519;
+			if (!sigPair.getECDSASecp256K1().isEmpty()) {
+				rawMap[i][SIG_BYTES_INDEX] = sigPair.getECDSASecp256K1().toByteArray();
+				keyTypes[i] = KeyType.ECDSA_SECP256K1;
+			} else {
+				rawMap[i][SIG_BYTES_INDEX] = sigPair.getEd25519().toByteArray();
+				keyTypes[i] = KeyType.ED25519;
+			}
 		}
 		return new PojoSigMap(rawMap, keyTypes);
 	}
@@ -63,7 +57,11 @@ public class PojoSigMap {
 		if (i < 0 || i >= rawMap.length) {
 			throw new IllegalArgumentException("Requested prefix at index " + i + ", not in [0, " + rawMap.length + ")");
 		}
-		return keyTypes[i].length == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
+		return keyTypes[i].getLength() == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
+	}
+
+	public KeyType keyType(int i) {
+		return keyTypes[i];
 	}
 
 	public byte[] pubKeyPrefix(int i) {

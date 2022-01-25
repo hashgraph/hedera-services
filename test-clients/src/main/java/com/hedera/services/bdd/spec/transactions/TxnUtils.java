@@ -22,7 +22,9 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -186,6 +188,24 @@ public class TxnUtils {
 		return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
 	}
 
+	public static AccountID asIdForKeyLookUp(String s, HapiApiSpec lookupSpec) {
+		return isIdLiteral(s) ? asAccount(s) :
+				(lookupSpec.registry().hasAccountId(s) ?
+						lookupSpec.registry().getAccountID(s) : lookUpAccount(lookupSpec, s));
+	}
+
+	private static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
+		final var key = spec.registry().getKey(alias);
+		final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
+		return spec.registry().hasAccountId(lookedUpKey) ?
+				spec.registry().getAccountID(lookedUpKey) :
+				asIdWithAlias(key.toByteString());
+	}
+
+	public static AccountID asIdWithAlias(final ByteString s) {
+		return asAccount(s);
+	}
+
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}
@@ -208,7 +228,7 @@ public class TxnUtils {
 
 	public static String txnToString(Transaction txn) {
 		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(txn);
+			return toReadableString(txn);
 		} catch (InvalidProtocolBufferException e) {
 			log.error("Got Grpc protocol buffer error: ", e);
 		}
@@ -418,10 +438,10 @@ public class TxnUtils {
 				.stream()
 				.map(aa -> String.format(
 						"%s %s %s%s",
-						HapiPropertySource.asAccountString(aa.getAccountID()),
+						HapiPropertySource.asAliasableAccountString(aa.getAccountID()),
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
-						BigInteger.valueOf(aa.getAmount()).abs().toString()))
+						BigInteger.valueOf(aa.getAmount()).abs()))
 				.collect(toList())
 				.toString();
 	}
@@ -555,5 +575,20 @@ public class TxnUtils {
 
 	public static String nAscii(int n) {
 		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(joining());
+	}
+
+	/**
+	 * Generates a human readable string for grpc transaction.
+	 *
+	 * @param grpcTransaction
+	 * 		GRPC transaction
+	 * @return generated readable string
+	 * @throws InvalidProtocolBufferException
+	 * 		when protocol buffer is invalid
+	 */
+	public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
+		TransactionBody body = extractTransactionBody(grpcTransaction);
+		return "body=" + TextFormat.shortDebugString(body) + "; sigs="
+				+ TextFormat.shortDebugString(com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMap(grpcTransaction));
 	}
 }

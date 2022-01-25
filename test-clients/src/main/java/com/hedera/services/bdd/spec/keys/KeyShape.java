@@ -30,11 +30,17 @@ import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
 
 public class KeyShape extends SigControl {
 	public static final KeyShape SIMPLE = new KeyShape(Nature.SIG_ON);
+	public static final KeyShape ED25519 = new KeyShape(Nature.SIG_ON, KeyAlgo.ED25519);
+	public static final KeyShape SECP256K1 = new KeyShape(Nature.SIG_ON, KeyAlgo.SECP256K1);
 	public static final KeyShape CONTRACT = new KeyShape(CONTRACT_ID);
-	public static final KeyShape DELEGATE_CONTRACT = new KeyShape(Nature.DELEGATE_CONTRACT_ID);
+	public static final KeyShape DELEGATE_CONTRACT = new KeyShape(Nature.DELEGATABLE_CONTRACT_ID);
 
 	protected KeyShape(SigControl.Nature nature) {
 		super(nature);
+	}
+
+	protected KeyShape(SigControl.Nature nature, KeyAlgo keyAlgo) {
+		super(nature, keyAlgo);
 	}
 
 	protected KeyShape(SigControl... childControls) {
@@ -124,7 +130,16 @@ public class KeyShape extends SigControl {
 			if (!(control instanceof SigControl)) {
 				throw new IllegalArgumentException("Shape is simple but multiple controls given!");
 			}
-			return (SigControl) control;
+			final var reqControl = (SigControl) control;
+			switch (keyAlgo) {
+				default:
+				case UNSPECIFIED:
+					return reqControl.getNature() == Nature.SIG_ON ? SigControl.ON : SigControl.OFF;
+				case ED25519:
+					return reqControl.getNature() == Nature.SIG_ON ? SigControl.ED25519_ON : SigControl.ED25519_OFF;
+				case SECP256K1:
+					return reqControl.getNature() == Nature.SIG_ON ? SigControl.SECP256K1_ON : SigControl.SECP256K1_OFF;
+			}
 		} else if (this == CONTRACT || this == DELEGATE_CONTRACT) {
 			if (!(control instanceof String)) {
 				throw new IllegalArgumentException(

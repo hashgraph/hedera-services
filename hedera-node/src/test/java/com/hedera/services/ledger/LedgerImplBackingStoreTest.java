@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,8 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.accounts.HashMapTestAccounts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.HashMapTestAccounts;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
@@ -67,20 +67,6 @@ class LedgerImplBackingStoreTest {
 				TestAccount::new,
 				backingTestAccounts,
 				new ChangeSummaryManager<>());
-	}
-
-	@Test
-	void doesntSupportIdSet() {
-		givenFirstOrderSubject();
-
-		assertThrows(UnsupportedOperationException.class, subject::idSet);
-	}
-
-	@Test
-	void doesntSupportGettingImmutableRefs() {
-		givenFirstOrderSubject();
-
-		assertThrows(UnsupportedOperationException.class, () -> subject.getImmutableRef(1L));
 	}
 
 	@Test

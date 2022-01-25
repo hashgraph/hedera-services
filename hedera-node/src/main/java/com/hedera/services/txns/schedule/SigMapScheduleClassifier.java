@@ -23,7 +23,6 @@ package com.hedera.services.txns.schedule;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.ArrayList;
@@ -44,25 +43,25 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
 /**
  * Provides a best-effort attempt to classify the signing outcomes of the
- * Ed25519 keys linked to the active schedule. (That is, the Ed25519 keys that
+ * primitive keys linked to the active schedule. (That is, the primitive keys that
  * compose the Hedera keys prerequisite to the active scheduled transaction.)
  *
- * Note that if a linked Ed25519 key did provide a valid signature, it will
+ * Note that if a linked primitive key did provide a valid signature, it will
  * never cause the {@code validScheduleKeys} method to return an empty
- * {@code Optional}. And in general, a valid signature with an unrelated Ed25519
+ * {@code Optional}. And in general, a valid signature with an unrelated primitive
  * key will <i>also</i> not cause the {@code validScheduleKeys} method to return
  * an empty {@code Optional}.
  *
  * But it <i>is</i> possible for collisions in public key prefixes to make
- * it appear that a valid signature with an unrelated Ed25519 key was
+ * it appear that a valid signature with an unrelated primitive key was
  * actually an invalid signature with a linked key. See for example the
  * {@code ScheduleSignSpecs.overlappingKeysTreatedAsExpected()} in
  * the {@code test-clients} module.
  */
 public class SigMapScheduleClassifier {
 	/**
-	 * Returns the list of Ed25519 keys linked to the active schedule that
-	 * had valid signatures on the active transaction. If a linked Ed25519
+	 * Returns the list of primitive keys linked to the active schedule that
+	 * had valid signatures on the active transaction. If a linked primitive
 	 * key was expanded to an invalid signature, returns an empty {@code Optional}
 	 * to indicate some signatures were invalid.
 	 *
@@ -77,24 +76,24 @@ public class SigMapScheduleClassifier {
 	 * @param sigMap
 	 * 		the active transaction's signature map
 	 * @param sigsFn
-	 * 		the active mapping from Ed25519 keys to expanded signatures
+	 * 		the active mapping from primitive keys to expanded signatures
 	 * @param scheduleCryptoSigs
-	 * 		a traversal accepting a visitor to the Ed25519 keys linked to the active schedule
-	 * @return the list of linked Ed25519 with valid signatures, if none appears to have given an invalid signature
+	 * 		a traversal accepting a visitor to the primitive keys linked to the active schedule
+	 * @return the list of linked primitive keys with valid signatures, if none seems to have given an invalid signature
 	 */
 	Optional<List<JKey>> validScheduleKeys(
-			List<JKey> topLevelKeys,
-			SignatureMap sigMap,
-			Function<byte[], TransactionSignature> sigsFn,
-			Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs
+			final List<JKey> topLevelKeys,
+			final SignatureMap sigMap,
+			final Function<byte[], TransactionSignature> sigsFn,
+			final Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs
 	) {
-		List<JKey> valid = new ArrayList<>();
+		final List<JKey> valid = new ArrayList<>();
 
-		for (SignaturePair sp : sigMap.getSigPairList()) {
+		for (final var sp : sigMap.getSigPairList()) {
 			var prefix = sp.getPubKeyPrefix().toByteArray();
-			var classification = new MutableSigClassification();
+			final var classification = new MutableSigClassification();
 
-			for (var key : topLevelKeys) {
+			for (final var key : topLevelKeys) {
 				updateForTopLevel(key, prefix, classification, sigsFn);
 			}
 			updateForScheduled(prefix, valid, classification, scheduleCryptoSigs);
@@ -108,20 +107,19 @@ public class SigMapScheduleClassifier {
 	}
 
 	private void updateForScheduled(
-			byte[] prefix,
-			List<JKey> valid,
-			MutableSigClassification classification,
-			Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs
+			final byte[] prefix,
+			final List<JKey> valid,
+			final MutableSigClassification classification,
+			final Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs
 	) {
 		scheduleCryptoSigs.accept((key, sig) -> {
-			if (beginsWith(key.getEd25519(), prefix)) {
-				if (sig != INVALID_MISSING_SIG) {
-					if (sig.getSignatureStatus() == VALID) {
-						classification.considerSetting(VALID_SCHEDULED_TXN_MATCH);
-						valid.add(key);
-					} else {
-						classification.considerSetting(INVALID_SCHEDULED_TXN_MATCH);
-					}
+			final var pk = key.primitiveKeyIfPresent();
+			if (beginsWith(pk, prefix) && sig != INVALID_MISSING_SIG) {
+				if (sig.getSignatureStatus() == VALID) {
+					classification.considerSetting(VALID_SCHEDULED_TXN_MATCH);
+					valid.add(key);
+				} else {
+					classification.considerSetting(INVALID_SCHEDULED_TXN_MATCH);
 				}
 			}
 		});
@@ -134,9 +132,9 @@ public class SigMapScheduleClassifier {
 			Function<byte[], TransactionSignature> sigsFn
 	) {
 		visitSimpleKeys(topLevelKey, key -> {
-			byte[] ed25519 = key.getEd25519();
-			if (beginsWith(ed25519, prefix)) {
-				var sig = sigsFn.apply(ed25519);
+			final var pk = key.primitiveKeyIfPresent();
+			if (beginsWith(pk, prefix)) {
+				var sig = sigsFn.apply(pk);
 				if (sig != INVALID_MISSING_SIG) {
 					classification.considerSetting(TOP_LEVEL_MATCH);
 				}

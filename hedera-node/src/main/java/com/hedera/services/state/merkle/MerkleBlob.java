@@ -65,8 +65,8 @@ public class MerkleBlob extends AbstractMerkleLeaf implements Keyed<BlobKey> {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeInt(blobKey.getType().ordinal());
-		out.writeLong(blobKey.getEntityNum());
+		out.writeInt(blobKey.type().ordinal());
+		out.writeLong(blobKey.entityNum());
 		out.writeByteArray(data);
 	}
 

@@ -51,6 +51,7 @@ import java.math.BigInteger;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -156,12 +157,18 @@ class StaticEntityAccessTest {
 	}
 
 	@Test
-	void mutatorsThrows() {
+	void mutatorsAndTransactionalSemanticsThrows() {
 		assertThrows(UnsupportedOperationException.class, () -> subject.spawn(id, 0, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.adjustBalance(id, 10L));
 		assertThrows(UnsupportedOperationException.class, () -> subject.putStorage(id, uint256Key, uint256Key));
 		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
+		assertThrows(UnsupportedOperationException.class, () -> subject.begin());
+		assertThrows(UnsupportedOperationException.class, () -> subject.commit());
+		assertThrows(UnsupportedOperationException.class, () -> subject.rollback());
+		assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
+		assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
+		assertThrows(UnsupportedOperationException.class, subject::flushStorage);
 	}
 
 	@Test
@@ -201,7 +208,7 @@ class StaticEntityAccessTest {
 	void fetchWithValueWorks() {
 		given(blobs.get(blobKey)).willReturn(blobVal);
 
-		final var blobBytes = subject.fetchCode(id);
+		final var blobBytes = subject.fetchCodeIfPresent(id);
 
 		final var expectedVal = Bytes.of(blobVal.getData());
 		assertEquals(expectedVal, blobBytes);
@@ -209,8 +216,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void fetchWithoutValueReturnsNull() {
-		final var blobBytes = subject.fetchCode(id);
-		assertEquals(Bytes.EMPTY, blobBytes);
+		assertNull(subject.fetchCodeIfPresent(id));
 	}
 
 	@Test

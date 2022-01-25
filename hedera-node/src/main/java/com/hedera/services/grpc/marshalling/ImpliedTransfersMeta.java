@@ -21,8 +21,11 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
@@ -31,6 +34,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Encapsulates the validity of a CryptoTransfer transaction, given a choice of two parameters: the maximum
@@ -46,37 +50,76 @@ import java.util.List;
  * validation result.
  */
 public class ImpliedTransfersMeta {
+	private static final int NO_AUTO_CREATIONS = 0;
+
+	private final int numAutoCreations;
 	private final ResponseCodeEnum code;
 	private final ValidationProps validationProps;
 	private final List<CustomFeeMeta> customFeeMeta;
+	private final Map<ByteString, EntityNum> resolutions;
 
 	public ImpliedTransfersMeta(
-			ValidationProps validationProps,
-			ResponseCodeEnum code,
-			List<CustomFeeMeta> customFeeMeta
+			final ValidationProps validationProps,
+			final ResponseCodeEnum code,
+			final List<CustomFeeMeta> customFeeMeta,
+			final Map<ByteString, EntityNum> resolutions
+	) {
+		this(validationProps, code, customFeeMeta, resolutions, NO_AUTO_CREATIONS);
+	}
+
+	public ImpliedTransfersMeta(
+			final ValidationProps validationProps,
+			final ResponseCodeEnum code,
+			final List<CustomFeeMeta> customFeeMeta,
+			final Map<ByteString, EntityNum> resolutions,
+			final int numAutoCreations
 	) {
 		this.code = code;
-		this.validationProps = validationProps;
+		this.resolutions = resolutions;
 		this.customFeeMeta = customFeeMeta;
+		this.validationProps = validationProps;
+		this.numAutoCreations = numAutoCreations;
+	}
+
+	public Map<ByteString, EntityNum> getResolutions() {
+		return resolutions;
+	}
+
+	public int getNumAutoCreations() {
+		return numAutoCreations;
 	}
 
 	public List<CustomFeeMeta> getCustomFeeMeta() {
 		return customFeeMeta;
 	}
 
-	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
+	public boolean wasDerivedFrom(
+			final GlobalDynamicProperties dynamicProperties,
+			final CustomFeeSchedules customFeeSchedules,
+			final AliasManager aliasManager
+	) {
+		if (!resolutions.isEmpty()) {
+			for (final var entry : resolutions.entrySet()) {
+				final var past = entry.getValue();
+				final var present = aliasManager.lookupIdBy(entry.getKey());
+				if (!past.equals(present)) {
+					return false;
+				}
+			}
+		}
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
 						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
 						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
-						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled()) &&
+						(validationProps.isAutoCreationEnabled == dynamicProperties.isAutoCreationEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
 		for (var meta : customFeeMeta) {
-			final var tokenId = meta.getTokenId();
+			final var tokenId = meta.tokenId();
 			var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
 			if (!meta.equals(newCustomMeta)) {
 				return false;
@@ -109,66 +152,18 @@ public class ImpliedTransfersMeta {
 				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
 				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
 				.add("areNftsEnabled", validationProps.areNftsEnabled)
+				.add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
 				.add("tokenFeeSchedules", customFeeMeta)
 				.toString();
 	}
 
-	public static class ValidationProps {
-		private final int maxHbarAdjusts;
-		private final int maxTokenAdjusts;
-		private final int maxOwnershipChanges;
-		private final int maxNestedCustomFees;
-		private final int maxXferBalanceChanges;
-		private final boolean areNftsEnabled;
-
-		public ValidationProps(
-				int maxHbarAdjusts,
-				int maxTokenAdjusts,
-				int maxOwnershipChanges,
-				int maxNestedCustomFees,
-				int maxXferBalanceChanges,
-				boolean areNftsEnabled
-		) {
-			this.maxHbarAdjusts = maxHbarAdjusts;
-			this.maxTokenAdjusts = maxTokenAdjusts;
-			this.maxOwnershipChanges = maxOwnershipChanges;
-			this.maxNestedCustomFees = maxNestedCustomFees;
-			this.maxXferBalanceChanges = maxXferBalanceChanges;
-			this.areNftsEnabled = areNftsEnabled;
-		}
-
-		public int getMaxHbarAdjusts() {
-			return maxHbarAdjusts;
-		}
-
-		public int getMaxTokenAdjusts() {
-			return maxTokenAdjusts;
-		}
-
-		public int getMaxOwnershipChanges() {
-			return maxOwnershipChanges;
-		}
-
-		public int getMaxNestedCustomFees() {
-			return maxNestedCustomFees;
-		}
-
-		public int getMaxXferBalanceChanges() {
-			return maxXferBalanceChanges;
-		}
-
-		public boolean areNftsEnabled() {
-			return areNftsEnabled;
-                }
-
-		@Override
-		public boolean equals(Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
-		}
-
-		@Override
-		public int hashCode() {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
+	public static record ValidationProps(
+			int maxHbarAdjusts,
+			int maxTokenAdjusts,
+			int maxOwnershipChanges,
+			int maxNestedCustomFees,
+			int maxXferBalanceChanges,
+			boolean areNftsEnabled,
+			boolean isAutoCreationEnabled) {
 	}
 }

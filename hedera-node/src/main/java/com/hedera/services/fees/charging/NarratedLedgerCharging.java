@@ -58,6 +58,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private long totalOfferedFee;
 	private long totalCharged;
 	private boolean payerExempt;
+	private boolean serviceFeeCharged;
 	private AccountID grpcNodeId;
 	private AccountID grpcPayerId;
 	private EntityNum nodeId;
@@ -95,6 +96,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		nodeId = nodeInfo.accountKeyOf(submittingNodeId);
 		grpcNodeId = nodeInfo.accountOf(submittingNodeId);
 		payerExempt = feeExemptions.hasExemptPayer(accessor);
+		serviceFeeCharged = false;
 		totalCharged = 0L;
 		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	}
@@ -163,6 +165,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
 		totalCharged = nodeFee + networkFee + serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
+		serviceFeeCharged = true;
 	}
 
 	@Override
@@ -173,6 +176,20 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
 		totalCharged = serviceFee;
 		ledger.adjustBalance(grpcPayerId, -totalCharged);
+		serviceFeeCharged = true;
+	}
+
+	@Override
+	public void refundPayerServiceFee() {
+		if (payerExempt) {
+			return;
+		}
+		if (!serviceFeeCharged) {
+			throw new IllegalStateException("NarratedCharging asked to refund service fee to un-charged payer");
+		}
+		ledger.adjustBalance(dynamicProperties.fundingAccount(), -serviceFee);
+		ledger.adjustBalance(grpcPayerId, +serviceFee);
+		totalCharged -= serviceFee;
 	}
 
 	@Override

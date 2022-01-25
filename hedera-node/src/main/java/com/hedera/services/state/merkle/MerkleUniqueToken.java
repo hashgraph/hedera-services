@@ -24,8 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -36,8 +36,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 
 /**
@@ -82,10 +82,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	/**
 	 * Constructs a Merkle-usable unique token (NFT) from primitive values.
 	 *
-	 * @param ownerCode the number of the owning entity as an unsigned {@code int}
-	 * @param metadata the metadata of the unique token
-	 * @param packedCreationTime the "packed" representation of the consensus time at which the token was minted
-	 * @param numbers the packed representation of the token type number and serial number
+	 * @param ownerCode
+	 * 		the number of the owning entity as an unsigned {@code int}
+	 * @param metadata
+	 * 		the metadata of the unique token
+	 * @param packedCreationTime
+	 * 		the "packed" representation of the consensus time at which the token was minted
+	 * @param numbers
+	 * 		the packed representation of the token type number and serial number
 	 */
 	public MerkleUniqueToken(
 			int ownerCode,
@@ -195,6 +199,18 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		return new RichInstant(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
 	}
 
+	public void setMetadata(final byte[] metadata) {
+		this.metadata = metadata;
+	}
+
+	public long getPackedCreationTime() {
+		return packedCreationTime;
+	}
+
+	public void setPackedCreationTime(final long packedCreationTime) {
+		this.packedCreationTime = packedCreationTime;
+	}
+
 	public boolean isTreasuryOwned() {
 		return ownerCode == TREASURY_OWNER_CODE;
 	}
@@ -206,6 +222,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	@Override
 	public void setKey(EntityNumPair phl) {
-		this.numbers = phl.getValue();
+		this.numbers = phl.value();
 	}
 }

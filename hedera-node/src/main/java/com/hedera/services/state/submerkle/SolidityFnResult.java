@@ -187,12 +187,12 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		var that = (SolidityFnResult) o;
 		return gasUsed == that.gasUsed &&
-			   Objects.equals(contractId, that.contractId) &&
-			   Arrays.equals(result, that.result) &&
-			   Objects.equals(error, that.error) &&
-			   Arrays.equals(bloom, that.bloom) &&
-			   Objects.equals(logs, that.logs) &&
-			   Objects.equals(createdContractIds, that.createdContractIds);
+				Objects.equals(contractId, that.contractId) &&
+				Arrays.equals(result, that.result) &&
+				Objects.equals(error, that.error) &&
+				Arrays.equals(bloom, that.bloom) &&
+				Objects.equals(logs, that.logs) &&
+				Objects.equals(createdContractIds, that.createdContractIds);
 	}
 
 	@Override
@@ -258,7 +258,7 @@ public class SolidityFnResult implements SelfSerializable {
 				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
-				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).collect(toList()),
+				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()),
 				that.getStateChangesList().stream().collect(Collectors.toMap(
 						csc -> Address.wrap(Bytes.wrap(asSolidityAddress(csc.getContractID()))),
@@ -288,10 +288,10 @@ public class SolidityFnResult implements SelfSerializable {
 			grpc.setContractID(contractId.toGrpcContractId());
 		}
 		if (isNotEmpty(logs)) {
-			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()));
+			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).toList());
 		}
 		if (isNotEmpty(createdContractIds)) {
-			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()));
+			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
 		for (var stateChanges : stateChanges.entrySet()) {
 			var contractStateChange = ContractStateChange.newBuilder().setContractID(

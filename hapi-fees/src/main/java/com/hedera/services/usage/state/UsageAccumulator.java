@@ -110,8 +110,8 @@ public class UsageAccumulator {
 	}
 
 	public void resetForTransaction(BaseTransactionMeta baseMeta, SigUsage sigUsage) {
-		final int memoBytes = baseMeta.getMemoUtf8Bytes();
-		final int numTransfers = baseMeta.getNumExplicitTransfers();
+		final int memoBytes = baseMeta.memoUtf8Bytes();
+		final int numTransfers = baseMeta.numExplicitTransfers();
 
 		gas = sbs = sbpr = 0;
 

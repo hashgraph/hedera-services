@@ -43,8 +43,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class NftAdjustmentsTest {
-	private final AccountID sender = AccountID.getDefaultInstance();
-	private final AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
+	private final AccountID sender = AccountID.newBuilder().setAccountNum(1).build();
+	private final AccountID recipient = AccountID.newBuilder().setAccountNum(3).build();
 
 	private NftAdjustments subject;
 
@@ -106,7 +106,7 @@ class NftAdjustmentsTest {
 	@Test
 	void toStringWorks() {
 		givenCanonicalSubject();
-		var str = "NftAdjustments{readable=[1 0.0.0 1.2.3]}";
+		var str = "NftAdjustments{readable=[1 0.0.1 0.0.3]}";
 		assertEquals(str, subject.toString());
 	}
 

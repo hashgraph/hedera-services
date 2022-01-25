@@ -1,6 +1,5 @@
 package com.hedera.services.bdd.suites.crypto;
 
-
 /*-
  * ‌
  * Hedera Services Node
@@ -40,7 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class TransferWithCustomFees extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TransferWithCustomFees.class);
@@ -57,6 +55,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	private final String hbarCollector = "hbarFee";
 	private final String htsCollector = "denomFee";
 	private final String tokenReceiver = "receiver";
+	private final String tokenTreasury = "tokenTreasury";
 
 	private final String tokenOwner = "tokenOwner";
 
@@ -66,10 +65,10 @@ public class TransferWithCustomFees extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				transferWithFixedCustomFeeSchedule(),
-				transferWithFractinalCustomFeeSchedule(),
-				transferWithInsufficientCustomFees()
+		return List.of(new HapiApiSpec[]{
+						transferWithFixedCustomFeeSchedule(),
+						transferWithFractinalCustomFeeSchedule(),
+						transferWithInsufficientCustomFees()
 				}
 		);
 	}
@@ -78,12 +77,10 @@ public class TransferWithCustomFees extends HapiApiSuite {
 		return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
 				.given(
 						cryptoCreate(htsCollector),
-						cryptoCreate(hbarCollector)
-								.balance(0L),
+						cryptoCreate(hbarCollector).balance(0L),
+						cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
 						cryptoCreate(tokenReceiver),
-
-						cryptoCreate(tokenOwner)
-								.balance(ONE_MILLION_HBARS),
+						cryptoCreate(tokenTreasury),
 
 						tokenCreate(feeDenom)
 								.treasury(tokenOwner)
@@ -92,17 +89,18 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						tokenAssociate(htsCollector, feeDenom),
 
 						tokenCreate(token)
-								.treasury(tokenOwner)
+								.treasury(tokenTreasury)
 								.initialSupply(tokenTotal)
 								.withCustom(fixedHbarFee(hbarFee, hbarCollector))
 								.withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
 
-						tokenAssociate(tokenReceiver, token)
+						tokenAssociate(tokenReceiver, token),
+						tokenAssociate(tokenOwner, token),
+						cryptoTransfer(moving(1000, token).between(tokenTreasury, tokenOwner))
 				).when(
 						cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(tokenOwner)
-
 				).then(
 						getAccountBalance(tokenOwner)
 								.hasTokenBalance(token, 999)
@@ -114,13 +112,11 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	public HapiApiSpec transferWithFractinalCustomFeeSchedule() {
 		return defaultHapiSpec("transferWithCustomFeeScheduleHappyPath")
 				.given(
-						cryptoCreate(htsCollector),
-						cryptoCreate(hbarCollector)
-								.balance(0L),
+						cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(hbarCollector).balance(0L),
 						cryptoCreate(tokenReceiver),
-
-						cryptoCreate(tokenOwner)
-								.balance(ONE_MILLION_HBARS),
+						cryptoCreate(tokenTreasury),
+						cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
 
 						tokenCreate(feeDenom)
 								.treasury(tokenOwner)
@@ -129,8 +125,9 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						tokenAssociate(htsCollector, feeDenom),
 
 						tokenCreate(token)
-								.treasury(tokenOwner)
+								.treasury(tokenTreasury)
 								.initialSupply(tokenTotal)
+								.payingWith(htsCollector)
 								.withCustom(fixedHbarFee(hbarFee, hbarCollector))
 								.withCustom(fractionalFee(
 										numerator, denominator,
@@ -138,9 +135,10 @@ public class TransferWithCustomFees extends HapiApiSuite {
 										htsCollector)),
 
 						tokenAssociate(tokenReceiver, token),
-						tokenAssociate(htsCollector, token)
+						tokenAssociate(tokenOwner, token),
+						cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner))
 				).when(
-						cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
+						cryptoTransfer(moving(3, token).between(tokenOwner, tokenReceiver))
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(tokenOwner)
 				).then(
@@ -159,6 +157,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						cryptoCreate(hbarCollector)
 								.balance(0L),
 						cryptoCreate(tokenReceiver),
+						cryptoCreate(tokenTreasury),
 
 						cryptoCreate(tokenOwner)
 								.balance(ONE_MILLION_HBARS),
@@ -170,11 +169,13 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						tokenAssociate(htsCollector, feeDenom),
 
 						tokenCreate(token)
-								.treasury(tokenOwner)
+								.treasury(tokenTreasury)
 								.initialSupply(tokenTotal)
 								.withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
 
-						tokenAssociate(tokenReceiver, token)
+						tokenAssociate(tokenReceiver, token),
+						tokenAssociate(tokenOwner, token),
+						cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner))
 				).when().then(
 						cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
 								.fee(ONE_HUNDRED_HBARS)

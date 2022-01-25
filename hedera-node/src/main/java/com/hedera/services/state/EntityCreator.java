@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.time.Instant;
 import java.util.List;
@@ -63,7 +64,7 @@ public interface EntityCreator {
 			long submittingMember);
 
 	/**
-	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing the active transaction.
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given top-level transaction.
 	 *
 	 * @param fee
 	 * 		the fee to include the record
@@ -79,9 +80,9 @@ public interface EntityCreator {
 	 * 		the custom fees assessed during the transaction
 	 * @param sideEffectsTracker
 	 * 		the side effects tracked throughout the transaction
-	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
 	 */
-	ExpirableTxnRecord.Builder createExpiringRecord(
+	ExpirableTxnRecord.Builder createTopLevelRecord(
 			long fee,
 			byte[] hash,
 			TxnAccessor accessor,
@@ -91,13 +92,34 @@ public interface EntityCreator {
 			SideEffectsTracker sideEffectsTracker);
 
 	/**
-	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given synthetic transaction.
+	 *
+	 * @param assessedCustomFees the custom fees assessed during the transaction
+	 * @param sideEffectsTracker the side effects tracked throughout the transaction
+	 * @param memo memo to be used for transaction
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
+	 */
+	ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
+			List<FcAssessedCustomFee> assessedCustomFees,
+			SideEffectsTracker sideEffectsTracker,
+			String memo);
+
+	/**
+	 * Returns a {@link ExpirableTxnRecord.Builder} summarizing a failed synthetic transaction.
+	 *
+	 * @param failureReason the cause of the failure
+	 * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
+	 */
+	ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(ResponseCodeEnum failureReason);
+
+	/**
+	 * Returns a {@link ExpirableTxnRecord.Builder} for a transaction that failed due to an internal error.
 	 *
 	 * @param accessor
 	 * 		transaction accessor
 	 * @param consensusTimestamp
 	 * 		consensus timestamp
-	 * @return a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
+	 * @return a record of a invalid failure transaction
 	 */
-	ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp);
+	ExpirableTxnRecord.Builder createInvalidFailureRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

@@ -37,5 +37,27 @@ public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
 		public Function<MerkleUniqueToken, Object> getter() {
 			return MerkleUniqueToken::getOwner;
 		}
+	},
+	CREATION_TIME {
+		@Override
+		public BiConsumer<MerkleUniqueToken, Object> setter() {
+			return (t, o) -> t.setPackedCreationTime((long) o);
+		}
+
+		@Override
+		public Function<MerkleUniqueToken, Object> getter() {
+			return MerkleUniqueToken::getPackedCreationTime;
+		}
+	},
+	METADATA {
+		@Override
+		public BiConsumer<MerkleUniqueToken, Object> setter() {
+			return (t, o) -> t.setMetadata((byte[]) o);
+		}
+
+		@Override
+		public Function<MerkleUniqueToken, Object> getter() {
+			return MerkleUniqueToken::getMetadata;
+		}
 	}
 }

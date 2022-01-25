@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -44,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,11 +55,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -143,6 +144,29 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void createsSuccessfulSyntheticRecordAsExpected() {
+		setupTracker();
+		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
+		final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
+
+		final var record = subject.createSuccessfulSyntheticRecord(
+				customFeesCharged,
+				sideEffectsTracker,
+				EMPTY_MEMO);
+
+		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+		assertEquals(tokensExpected, record.getTokens());
+		assertEquals(tokenAdjustmentsExpected, record.getTokenAdjustments());
+		assertEquals(customFeesCharged, record.getAssessedCustomFees());
+	}
+
+	@Test
+	void createsFailedSyntheticRecordAsExpected() {
+		final var record = subject.createUnsuccessfulSyntheticRecord(INSUFFICIENT_ACCOUNT_BALANCE);
+		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE.toString(), record.getReceiptBuilder().getStatus());
+	}
+
+	@Test
 	void addsToPayerRecordsAndTracks() {
 		// setup:
 		final var key = EntityNum.fromAccountId(effPayer);
@@ -158,34 +182,66 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
-	void noopFormDoesNothing() {
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
-						null, null, 0L, submittingMember));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
-		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringRecord(0L, null, null, null,
-						null, null, null));
-	}
-
-	@Test
 	void validateBuildFailedExpiringRecord() {
 		setUpForExpiringRecordBuilder();
 		given(accessor.getHash()).willReturn(hash);
 
-		final var builder = subject.buildFailedExpiringRecord(accessor, timestamp);
+		final var builder = subject.createInvalidFailureRecord(accessor, timestamp);
 		final var actualRecord = builder.build();
 
 		validateCommonFields(actualRecord, receiptBuilderWith(FAIL_INVALID));
 	}
 
 	@Test
-	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
-		setupTrackerNoTokenChanges();
+	void includesMintedSerialNos() {
+		final var mockMints = List.of(1L, 2L);
+		setupTrackerNoUnitOrOwnershipChanges();
 		setUpForExpiringRecordBuilder();
 
-		final var created = subject.createExpiringRecord(
+		given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertArrayEquals(mockMints.stream().mapToLong(l -> l).toArray(), created.getReceipt().getSerialNumbers());
+	}
+
+	@Test
+	void includesAutoCreatedAliases() {
+		final var mockAlias = ByteString.copyFromUtf8("make-believe");
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
+		given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
+		given(sideEffectsTracker.getNewAccountAlias()).willReturn(mockAlias);
+
+		final var created = subject.createTopLevelRecord(
+				totalFee,
+				hash,
+				accessor,
+				timestamp,
+				receiptBuilder,
+				customFeesCharged,
+				sideEffectsTracker).build();
+
+		assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
+		assertEquals(mockAlias, created.getAlias());
+	}
+
+	@Test
+	void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
+		setupTrackerNoUnitOrOwnershipChanges();
+		setUpForExpiringRecordBuilder();
+
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,
@@ -217,7 +273,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
 		given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
 
-		final var created = subject.createExpiringRecord(
+		final var created = subject.createTopLevelRecord(
 				totalFee,
 				hash,
 				accessor,
@@ -247,7 +303,7 @@ class ExpiringCreationsTest {
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(netTokenChanges);
 	}
 
-	private void setupTrackerNoTokenChanges() {
+	private void setupTrackerNoUnitOrOwnershipChanges() {
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(transfers);
 		given(sideEffectsTracker.getTrackedAutoAssociations()).willReturn(newTokenAssociations);
 		given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(List.of());

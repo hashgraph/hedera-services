@@ -22,13 +22,14 @@ package com.hedera.services.txns.consensus;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,27 +63,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
-			this::validatePreSignatureValidation;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext transactionContext;
 	private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
 	public TopicUpdateTransitionLogic(
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
-			OptionValidator validator,
-			TransactionContext transactionContext,
-			HederaLedger ledger
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+			final OptionValidator validator,
+			final TransactionContext transactionContext,
+			final HederaLedger ledger,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.accounts = accounts;
 		this.ledger = ledger;
 		this.topics = topics;
 		this.validator = validator;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.transactionContext = transactionContext;
 	}
 
@@ -91,7 +92,8 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		var transactionBody = transactionContext.accessor().getTxn();
 		var op = transactionBody.getConsensusUpdateTopic();
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
+		final var target = op.getTopicID();
+		var topicStatus = validator.queryableTopicStatus(target, topics.get());
 		if (topicStatus != OK) {
 			transactionContext.setStatus(topicStatus);
 			return;
@@ -110,6 +112,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		var mutableTopic = topics.get().getForModify(topicId);
 		applyNewFields(op, mutableTopic);
 		transactionContext.setStatus(SUCCESS);
+		sigImpactHistorian.markEntityChanged(target.getTopicNum());
 	}
 
 	private boolean wantsToMutateNonExpiryField(ConsensusUpdateTopicTransactionBody op) {
@@ -233,7 +236,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private boolean designatesAccountRemoval(AccountID id) {
-		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0;
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0 && id.getAlias().isEmpty();
 	}
 
 	private boolean canApplyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
@@ -242,11 +245,11 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 		var topicId = op.getTopicID();
 		try {
-			if (op.hasAdminKey()  && !applyNewAdminKey(op, topicId, topic)) {
+			if (op.hasAdminKey() && !applyNewAdminKey(op, topicId, topic)) {
 				return false;
 			}
 
-			if (op.hasSubmitKey()  && !applyNewSubmitKey(op)) {
+			if (op.hasSubmitKey() && !applyNewSubmitKey(op)) {
 				return false;
 			}
 		} catch (DecoderException e) {
@@ -305,7 +308,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK;
+		return this::validatePreSignatureValidation;
 	}
 
 	/**

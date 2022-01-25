@@ -50,7 +50,6 @@ public class GasLimitBucketThrottle {
      * @return true if there is enough capacity, false if the transaction should be throttled
      */
     public boolean allow(long txGasLimit, long elapsedNanos) {
-
         if (elapsedNanos >= ONE_SECOND_IN_NANOSECONDS) {
             bucket.leak(bucket.totalCapacity());
         } else if (elapsedNanos > 0) {

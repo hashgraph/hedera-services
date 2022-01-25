@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.services.txns.schedule;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -43,7 +45,6 @@ import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,9 +58,10 @@ class SigMapScheduleClassifierTest {
 			.build();
 	static SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(aPair).build();
 
-	static JKey a = new JEd25519Key(pretendKeyStartingWith(aPrefix));
+	static JKey a = new JECDSASecp256k1Key(pretendKeyStartingWith(aPrefix));
 	static JKey both = new JEd25519Key(pretendKeyStartingWith(abPrefix));
 	static JKey neither = new JEd25519Key(pretendKeyStartingWith(cPrefix));
+	static JKey incomparable = new JContractIDKey(0, 0, 1234);
 
 	@Mock
 	Function<byte[], TransactionSignature> sigsFn;
@@ -67,8 +69,16 @@ class SigMapScheduleClassifierTest {
 	SigMapScheduleClassifier subject = new SigMapScheduleClassifier();
 
 	@Test
+	void returnsEmptyOptionalIfNonPrimitiveInner() {
+		var answer = subject.validScheduleKeys(List.of(incomparable), sigMap, sigsFn, new MatchingInvalidASig());
+
+		// then:
+		assertEquals(Optional.empty(), answer);
+	}
+
+	@Test
 	void returnsEmptyOptionalIfInvalidInner() {
-		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(INVALID_MISSING_SIG);
+		given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(INVALID_MISSING_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
@@ -79,7 +89,7 @@ class SigMapScheduleClassifierTest {
 
 	@Test
 	void ignoresInvalidInnerIfMatchingOuter() {
-		given(sigsFn.apply(eq(a.getEd25519()))).willReturn(VALID_SIG);
+		given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(VALID_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
@@ -120,7 +130,7 @@ class SigMapScheduleClassifierTest {
 
 	private static class ValidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
+				(byte) 0xAB
 		};
 
 		public ValidSignature() {
@@ -135,7 +145,7 @@ class SigMapScheduleClassifierTest {
 
 	private static class PresentInvalidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
+				(byte) 0xAB
 		};
 
 		public PresentInvalidSignature() {

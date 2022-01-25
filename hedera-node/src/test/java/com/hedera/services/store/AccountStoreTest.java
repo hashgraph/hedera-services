@@ -23,6 +23,7 @@ package com.hedera.services.store;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -31,8 +32,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,8 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
@@ -61,7 +60,7 @@ class AccountStoreTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	private BackingStore<AccountID, MerkleAccount> accounts;
 
 	private AccountStore subject;
 
@@ -69,7 +68,7 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
-		subject = new AccountStore(validator, dynamicProperties, () -> accounts);
+		subject = new AccountStore(validator, dynamicProperties, accounts);
 	}
 
 	@Test
@@ -155,11 +154,11 @@ class AccountStoreTest {
 		// when:
 		model.associateWith(List.of(aThirdToken), Integer.MAX_VALUE, false);
 		// and:
-		subject.persistAccount(model);
+		subject.commitAccount(model);
 
 		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
-		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
+//		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 		// and:
 		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
 	}
@@ -211,19 +210,18 @@ class AccountStoreTest {
 		model.incrementUsedAutomaticAssocitions();
 
 		// and:
-		subject.persistAccount(model);
+		subject.commitAccount(model);
 
 		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
-		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 	}
 
 	private void setupWithAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.get(anId)).willReturn(anAccount);
+		given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
 	private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
-		given(accounts.getForModify(anId)).willReturn(anAccount);
+		given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
 	}
 
 	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {
@@ -264,7 +262,7 @@ class AccountStoreTest {
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
-	private final Id proxy = new Id(0,0, miscProxyAccount);
+	private final Id proxy = new Id(0, 0, miscProxyAccount);
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);
 	private final Account autoRenewAccount = new Account(autoRenewId);

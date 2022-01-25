@@ -58,6 +58,7 @@ public class CryptoOpsUsage {
 
 	@Inject
 	public CryptoOpsUsage() {
+		// Default constructor
 	}
 
 	public void cryptoTransferUsage(
@@ -71,7 +72,7 @@ public class CryptoOpsUsage {
 		final int tokenMultiplier = xferMeta.getTokenMultiplier();
 
 		/* BPT calculations shouldn't include any custom fee payment usage */
-		int totalXfers = baseMeta.getNumExplicitTransfers();
+		int totalXfers = baseMeta.numExplicitTransfers();
 		int weightedTokensInvolved = tokenMultiplier * xferMeta.getNumTokensInvolved();
 		int weightedTokenXfers = tokenMultiplier * xferMeta.getNumFungibleTokenTransfers();
 		long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
@@ -166,7 +167,7 @@ public class CryptoOpsUsage {
 
 		var lifeTime = cryptoCreateMeta.getLifeTime();
 
-		if(maxAutomaticTokenAssociations > 0) {
+		if (maxAutomaticTokenAssociations > 0) {
 			baseSize += INT_SIZE;
 		}
 

@@ -63,8 +63,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			GlobalDynamicProperties dynamicProperties,
 			ImpliedTransfersMarshal impliedTransfersMarshal,
 			PureTransferSemanticChecks transferSemanticChecks,
-			ExpandHandleSpanMapAccessor spanMapAccessor
-	) {
+			ExpandHandleSpanMapAccessor spanMapAccessor) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
 		this.spanMapAccessor = spanMapAccessor;
@@ -82,6 +81,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		validateTrue(outcome == OK, outcome);
 
 		final var changes = impliedTransfers.getAllBalanceChanges();
+
 		ledger.doZeroSum(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
@@ -118,7 +118,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 					dynamicProperties.maxNftTransfersLen(),
 					dynamicProperties.maxCustomFeeDepth(),
 					dynamicProperties.maxXferBalanceChanges(),
-					dynamicProperties.areNftsEnabled());
+					dynamicProperties.areNftsEnabled(),
+					dynamicProperties.isAutoCreationEnabled());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
 					op.getTransfers(), op.getTokenTransfersList(), validationProps);

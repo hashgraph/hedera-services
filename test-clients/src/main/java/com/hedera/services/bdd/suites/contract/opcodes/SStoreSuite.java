@@ -265,7 +265,7 @@ public class SStoreSuite extends HapiApiSuite {
 							final var gasUsedForPermanentHoldTx = spec.registry()
 									.getTransactionRecord("permHoldTxRec").getContractCallResult().getGasUsed();
 
-							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 3000L);
+							Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
 							Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
 						}),
 						UtilVerbs.resetAppPropertiesTo(

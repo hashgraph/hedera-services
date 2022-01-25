@@ -85,7 +85,7 @@ class EntityNumPairTest {
 	@Test
 	void returnsCorrectNumPairIfValidLong() {
 		final var expectedVal = BitPackUtils.packedNums(2, 2);
-		assertEquals(expectedVal, fromLongs(2, 2).getValue());
+		assertEquals(expectedVal, fromLongs(2, 2).value());
 	}
 
 	@Test

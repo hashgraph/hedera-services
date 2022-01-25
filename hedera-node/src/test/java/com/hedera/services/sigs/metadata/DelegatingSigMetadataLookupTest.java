@@ -22,7 +22,6 @@ package com.hedera.services.sigs.metadata;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -62,7 +61,7 @@ class DelegatingSigMetadataLookupTest {
 	void setup() {
 		tokenStore = mock(TokenStore.class);
 
-		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
+		subject = DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
 	}
 
 	@Test
@@ -90,7 +89,7 @@ class DelegatingSigMetadataLookupTest {
 	@Test
 	void returnsExpectedMetaIfPresent() {
 		token.setFreezeKey(freezeKey);
-		final var expected = TokenSigningMetadata.from(token);
+		final var expected = TokenMetaUtils.signingMetaFrom(token);
 		given(tokenStore.resolve(id)).willReturn(id);
 		given(tokenStore.get(id)).willReturn(token);
 
@@ -98,6 +97,6 @@ class DelegatingSigMetadataLookupTest {
 
 		assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
 		assertEquals(expected.adminKey(), result.metadata().adminKey());
-		assertEquals(expected.optionalFreezeKey(), result.metadata().optionalFreezeKey());
+		assertEquals(expected.freezeKey(), result.metadata().freezeKey());
 	}
 }

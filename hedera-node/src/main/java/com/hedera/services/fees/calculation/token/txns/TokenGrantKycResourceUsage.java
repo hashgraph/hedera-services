@@ -39,6 +39,7 @@ public class TokenGrantKycResourceUsage implements TxnResourceUsageEstimator {
 
 	@Inject
 	public TokenGrantKycResourceUsage() {
+		// Default constructor
 	}
 
 	@Override

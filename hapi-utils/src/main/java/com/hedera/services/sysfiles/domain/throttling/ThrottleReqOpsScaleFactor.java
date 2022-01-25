@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.domain.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,15 +22,7 @@ package com.hedera.services.sysfiles.domain.throttling;
 
 import com.google.common.base.MoreObjects;
 
-public class ThrottleReqOpsScaleFactor {
-	private final int numerator;
-	private final int denominator;
-
-	private ThrottleReqOpsScaleFactor(int numerator, int denominator) {
-		this.numerator = numerator;
-		this.denominator = denominator;
-	}
-
+public record ThrottleReqOpsScaleFactor(int numerator, int denominator) {
 	public static ThrottleReqOpsScaleFactor from(String literal) {
 		final var splitIndex = literal.indexOf(':');
 		if (splitIndex == -1) {
@@ -66,25 +58,5 @@ public class ThrottleReqOpsScaleFactor {
 	public int hashCode() {
 		var result = Integer.hashCode(numerator);
 		return 31 * result + Integer.hashCode(denominator);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o == null || ThrottleReqOpsScaleFactor.class != o.getClass()) {
-			return false;
-		}
-		var that = (ThrottleReqOpsScaleFactor) o;
-		return this.numerator == that.numerator && this.denominator == that.denominator;
-	}
-
-	public int getNumerator() {
-		return numerator;
-	}
-
-	public int getDenominator() {
-		return denominator;
 	}
 }

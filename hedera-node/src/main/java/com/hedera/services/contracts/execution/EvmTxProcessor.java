@@ -55,7 +55,6 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
@@ -134,9 +133,7 @@ abstract class EvmTxProcessor {
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
-		precompiledContractMap.forEach((k, v) -> precompileContractRegistry.put(Address.fromHexString(k), v));
-
-		this.messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry);
+		this.messageCallProcessor = new HederaMessageCallProcessor(evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
 				gasCalculator,
 				evm,

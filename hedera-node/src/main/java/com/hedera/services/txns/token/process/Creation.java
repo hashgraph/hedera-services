@@ -9,9 +9,9 @@ package com.hedera.services.txns.token.process;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A process object to help discriminate the stages of token creation.
@@ -130,13 +129,18 @@ public class Creation {
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.persistTokenRelationships(newRels);
-		newRels.forEach(rel -> accountStore.persistAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newRels);
+		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newRels.stream().map(TokenRelationship::asAutoAssociation).collect(toList());
+		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
+
+	public Id newTokenId() {
+		return provisionalId;
+	}
+
 
 	/* --- Only used by unit tests --- */
 	void setProvisionalId(Id provisionalId) {
@@ -157,10 +161,6 @@ public class Creation {
 
 	void setNewRels(List<TokenRelationship> newRels) {
 		this.newRels = newRels;
-	}
-
-	Id getProvisionalId() {
-		return provisionalId;
 	}
 
 	Account getTreasury() {

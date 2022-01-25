@@ -45,10 +45,10 @@ class FcmCustomFeeSchedulesTest {
 
 	private final EntityId aTreasury = new EntityId(0, 0, 12);
 	private final EntityId bTreasury = new EntityId(0, 0, 13);
-	private final EntityId tokenA = new EntityId(0,0,1);
-	private final EntityId tokenB = new EntityId(0,0,2);
-	private final EntityId feeCollector = new EntityId(0,0,3);
-	private final EntityId missingToken = new EntityId(0,0,4);
+	private final EntityId tokenA = new EntityId(0, 0, 1);
+	private final EntityId tokenB = new EntityId(0, 0, 2);
+	private final EntityId feeCollector = new EntityId(0, 0, 3);
+	private final EntityId missingToken = new EntityId(0, 0, 4);
 	private final MerkleToken aToken = new MerkleToken();
 	private final MerkleToken bToken = new MerkleToken();
 
@@ -75,11 +75,11 @@ class FcmCustomFeeSchedulesTest {
 		final var missingTokenFees = subject.lookupMetaFor(missingToken.asId());
 
 		// expect:
-		assertEquals(aToken.customFeeSchedule(), tokenAFees.getCustomFees());
-		assertEquals(aTreasury, tokenAFees.getTreasuryId().asEntityId());
-		assertEquals(bToken.customFeeSchedule(), tokenBFees.getCustomFees());
-		assertEquals(bTreasury, tokenBFees.getTreasuryId().asEntityId());
-		assertSame(Collections.emptyList(), missingTokenFees.getCustomFees());
+		assertEquals(aToken.customFeeSchedule(), tokenAFees.customFees());
+		assertEquals(aTreasury, tokenAFees.treasuryId().asEntityId());
+		assertEquals(bToken.customFeeSchedule(), tokenBFees.customFees());
+		assertEquals(bTreasury, tokenBFees.treasuryId().asEntityId());
+		assertSame(Collections.emptyList(), missingTokenFees.customFees());
 	}
 
 	@Test

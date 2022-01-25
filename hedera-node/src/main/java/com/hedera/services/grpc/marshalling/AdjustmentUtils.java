@@ -106,7 +106,6 @@ public final class AdjustmentUtils {
 		return adjustedChange(account, MISSING_ID, denom, amount, manager);
 	}
 
-
 	private static BalanceChange includedHtsChange(
 			final Id account,
 			final Id denom,

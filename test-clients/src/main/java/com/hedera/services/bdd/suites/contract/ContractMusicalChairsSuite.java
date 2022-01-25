@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,6 +74,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 		List<HapiSpecOperation> then = new ArrayList<>();
 
 		////// Create contract //////
+		given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
 		given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
 		given.add(fileCreate("bytecode").path(ContractResources.MUSICAL_CHAIRS_CONTRACT));
 		given.add(withOpContext((spec, opLog) ->
@@ -117,6 +119,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 								.has(resultWith().resultThruAbi(ContractResources.MUSICAL_CHAIRS_WHO_IS_ON_THE_BUBBLE,
 										isLiteralResult(new Object[] { asAddress(
 												spec.registry().getAccountID("Player13")) }))))));
+		then.add(UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 
 		return defaultHapiSpec("playGame")
 				.given(given.toArray(HapiSpecOperation[]::new))

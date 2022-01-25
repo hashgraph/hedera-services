@@ -21,7 +21,9 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -60,32 +62,38 @@ public class RenewalHelper {
 	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
 
 	private final TokenStore tokenStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
-	/* Only needed for interoperability, will be removed during refactor */
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	private MerkleAccount lastClassifiedAccount = null;
 	private EntityNum lastClassifiedEntityId;
 
+	private AliasManager aliasManager;
+
 	@Inject
 	public RenewalHelper(
-			TokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
-			BackingStore<AccountID, MerkleAccount> backingAccounts
+			final TokenStore tokenStore,
+			final SigImpactHistorian sigImpactHistorian,
+			final GlobalDynamicProperties dynamicProperties,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AliasManager aliasManager
 	) {
 		this.tokens = tokens;
 		this.tokenStore = tokenStore;
 		this.accounts = accounts;
 		this.tokenRels = tokenRels;
 		this.dynamicProperties = dynamicProperties;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.backingAccounts = backingAccounts;
+		this.aliasManager = aliasManager;
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
@@ -141,8 +149,13 @@ public class RenewalHelper {
 			}
 		}
 
-		/* When refactoring to remove this backingAccounts, please remove the account from accounts instead.*/
+		/* Remove the entry from auto created accounts map if there is an entry in the map */
+		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
+			sigImpactHistorian.markAliasChanged(lastClassifiedAccount.getAlias());
+		}
+
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
+		sigImpactHistorian.markEntityChanged(lastClassifiedEntityId.longValue());
 
 		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
 

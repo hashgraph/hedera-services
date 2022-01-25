@@ -6,7 +6,7 @@ services on the Platform.
 ## Overview
 
 Each node serves a gRPC API defined by the _*.proto_ files in the 
-[`hapi-proto`](../hapi-proto) directory of this Git repository. This 
+[`hapi-proto`](https://github.com/hashgraph/hedera-protobufs-java/tree/main/src/main/proto). This 
 API consists of two types of operations:
 
 1. **Transactions** - requests to mutate the state of the network; for example,
@@ -16,10 +16,10 @@ example, to get the contents of a file.
 
 ### Permissions
 The network state consists of entities---accounts, topics, contracts, and files---that
-are controlled by zero or more Ed25519 keypairs arranged in a hierarchy called
+are controlled by zero or more Ed25519/ECDSA(secp256k1) keypairs arranged in a hierarchy called
 a **Hedera key**. (An entity with an empty key is _immutable_.) Mutable entities
 can only be changed by transactions that are signed by the private keys of a
-sufficient subset of the Ed25519 keypairs in their Hedera key.
+sufficient subset of the Ed25519/ECDSA(secp256k1) keypairs in their Hedera key.
 
 ### Fees
 For all transactions and most queries, there is a **fee** that 

@@ -47,6 +47,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -54,11 +55,13 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -79,6 +82,8 @@ class RecordCacheTest {
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 	@Mock
 	private TxnIdRecentHistory recentHistory;
+	@Mock
+	private TxnIdRecentHistory recentChildHistory;
 
 	private RecordCache subject;
 
@@ -100,12 +105,62 @@ class RecordCacheTest {
 	@Test
 	void getsDuplicateRecordsAsExpected() {
 		final var duplicateRecords = List.of(aRecord);
-		given(recentHistory.duplicateRecords()).willReturn(duplicateRecords);
+		given(recentHistory.allDuplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(recentHistory);
 
 		final var actual = subject.getDuplicateRecords(txnIdA);
 
 		assertEquals(List.of(aRecord.asGrpc()), actual);
+	}
+
+	@Test
+	void getsChildRecordsAsExpected() {
+		final var expectedChildren = List.of(aChildRecord.asGrpc());
+
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
+		given(histories.get(txnIdA.toBuilder().setNonce(1).build())).willReturn(recentChildHistory);
+		given(recentChildHistory.priorityRecord()).willReturn(aChildRecord);
+
+		final var actual = subject.getChildRecords(txnIdA);
+
+		assertEquals(expectedChildren, actual);
+	}
+
+	@Test
+	void getsChildReceiptsAsExpected() {
+		final var expectedChildren = List.of(aChildRecord.asGrpc().getReceipt());
+
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
+		given(histories.get(txnIdA.toBuilder().setNonce(1).build())).willReturn(recentChildHistory);
+		given(recentChildHistory.priorityRecord()).willReturn(aChildRecord);
+
+		final var actual = subject.getChildReceipts(txnIdA);
+
+		assertEquals(expectedChildren, actual);
+	}
+
+	@Test
+	void getsNoChildReceiptsIfParentRecordMissingOrUnknownOrHasNoChildren() {
+		assertSame(Collections.emptyList(), subject.getChildReceipts(txnIdA));
+
+		given(histories.get(txnIdA)).willReturn(recentHistory);
+		aRecord.setNumChildRecords((short) 0);
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+
+		assertSame(Collections.emptyList(), subject.getChildReceipts(txnIdA));
+	}
+
+	@Test
+	void worksAroundExpiredChildRecordInExtraordinaryEdgeCase() {
+		given(recentHistory.priorityRecord()).willReturn(aRecord);
+		given(histories.get(txnIdA)).willReturn(recentHistory);
+		given(histories.get(txnIdA.toBuilder().setNonce(1).build())).willReturn(null);
+
+		final var actual = subject.getChildReceipts(txnIdA);
+
+		assertEquals(List.of(), actual);
 	}
 
 	@Test
@@ -117,7 +172,7 @@ class RecordCacheTest {
 	void getsDuplicateReceiptsAsExpected() {
 		final var history = mock(TxnIdRecentHistory.class);
 		final var duplicateRecords = List.of(aRecord);
-		given(history.duplicateRecords()).willReturn(duplicateRecords);
+		given(history.allDuplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		final var duplicateReceipts = subject.getDuplicateReceipts(txnIdA);
@@ -219,7 +274,7 @@ class RecordCacheTest {
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
 
-		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(
 				expectedRecord);
 
@@ -253,7 +308,7 @@ class RecordCacheTest {
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		final var expirableTxnRecord = expirableTxnRecordBuilder.build();
-		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
 		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
 
 		// when:
@@ -311,11 +366,22 @@ class RecordCacheTest {
 			.setExchangeRates(
 					ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate).build()))
 			.build();
+	private static final TxnReceipt knownChildReceipt = TxnReceipt.newBuilder()
+			.setStatus(INVALID_SIGNATURE.name())
+			.build();
 	private final ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
 			.setMemo("Something")
 			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
 			.setReceipt(knownReceipt)
 			.setTxnId(TxnId.fromGrpc(txnIdA))
 			.setFee(123L)
+			.setNumChildRecords((short) 1)
+			.build();
+	private final ExpirableTxnRecord aChildRecord = ExpirableTxnRecord.newBuilder()
+			.setMemo("Something else")
+			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(501L)))
+			.setReceipt(knownChildReceipt)
+			.setTxnId(TxnId.fromGrpc(txnIdA).withNonce(1))
+			.setParentConsensusTime(Instant.ofEpochSecond(500L))
 			.build();
 }

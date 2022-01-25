@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +37,7 @@ import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
@@ -97,7 +97,7 @@ public class NewSpecKey extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		final var keyGen = generator.orElse(KeyExpansion::genSingleEd25519Key);
+		final var keyGen = generator.orElse(DEFAULT_KEY_GEN);
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {

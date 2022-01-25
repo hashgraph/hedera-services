@@ -30,9 +30,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.ReleaseTwentyMigration;
+import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
-import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -69,9 +68,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
-import static com.hedera.services.state.migration.StateChildIndices.SPECIAL_FILES;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_TWENTY_VERSION;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
+import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
+import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -80,17 +80,15 @@ import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
-	public static final String CANONICAL_JDB_LOC = "data/jdb";
-
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	private static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+	public static final ImmutableHash EMPTY_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
 	/* Only over-written when Platform deserializes a legacy version of the state */
-	private int deserializedVersion = StateVersions.CURRENT_VERSION;
+	private int deserializedVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
 
-	/* Only needed for to support migration from a 0.19.x state */
+	/* Only needed for to support migration from a 0.21.x state */
 	private Platform platformForDeferredInit;
 	private AddressBook addressBookForDeferredInit;
 	private SwirldDualState dualStateForDeferredInit;
@@ -114,6 +112,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.metadata = (that.metadata == null) ? null : that.metadata.copy();
 
 		this.platformForDeferredInit = that.platformForDeferredInit;
+		this.dualStateForDeferredInit = that.dualStateForDeferredInit;
 		this.addressBookForDeferredInit = that.addressBookForDeferredInit;
 	}
 
@@ -125,15 +124,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getVersion() {
-		return StateVersions.CURRENT_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version < RELEASE_TWENTY_VERSION) {
-			return StateChildIndices.NUM_PRE_TWENTY_CHILDREN;
-		} else if (version == RELEASE_TWENTY_VERSION) {
-			return StateChildIndices.NUM_TWENTY_CHILDREN;
+		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
+			return StateChildIndices.NUM_PRE_0220_CHILDREN;
+		} else if (version == CURRENT_VERSION) {
+			return StateChildIndices.NUM_0220_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -141,15 +140,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return StateVersions.MINIMUM_SUPPORTED_VERSION;
+		return MINIMUM_SUPPORTED_VERSION;
 	}
 
 	@Override
 	public void initialize() {
-		if (deserializedVersion < StateVersions.RELEASE_0190_VERSION) {
-			final var specialFiles = new MerkleSpecialFiles();
-			setChild(SPECIAL_FILES, specialFiles);
-		}
+                /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
 	}
 
 	@Override
@@ -161,8 +157,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_TWENTY_VERSION) {
-			blobMigrator.migrateFromBinaryObjectStore(this, jdbLoc, deserializedVersionFromState);
+		if (deserializedVersionFromState < RELEASE_0220_VERSION) {
+			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
@@ -170,13 +166,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	/* --- SwirldState --- */
 	@Override
 	public void init(final Platform platform, final AddressBook addressBook, final SwirldDualState dualState) {
-		if (deserializedVersion < RELEASE_TWENTY_VERSION && platform != platformForDeferredInit) {
+		if (deserializedVersion < RELEASE_0220_VERSION && platform != platformForDeferredInit) {
 			/* Due to design issues with the BinaryObjectStore, which will not be finished
 			initializing here, we need to defer initialization until post-FCM migration. */
 			platformForDeferredInit = platform;
 			dualStateForDeferredInit = dualState;
 			addressBookForDeferredInit = addressBook;
-			log.info("Deferring init for 0.19.x -> 0.20.x upgrade on Services node {}", platform.getSelfId());
+			log.info("Deferring init for 0.21.x -> 0.22.x upgrade on Services node {}", platform.getSelfId());
 			return;
 		}
 
@@ -222,17 +218,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void expandSignatures(SwirldTransaction platformTxn) {
+	public void expandSignatures(final SwirldTransaction platformTxn) {
 		try {
 			final var app = metadata.app();
 			final var accessor = app.expandHandleSpan().track(platformTxn);
-
 			// Submit the transaction for any prepare stage processing that can be performed
 			// such as pre-fetching of contract bytecode. This step is performed asynchronously
 			// so get this step started before synchronous signature expansion.
-			app.prefetchProcessor().offer(accessor);
-
-			app.expansionHelper().expandIn(accessor, app.retryingSigReqs(), accessor.getPkToSigsFn());
+			app.prefetchProcessor().submit(accessor);
+			app.sigReqsManager().expandSigsInto(accessor);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Method expandSignatures called with non-gRPC txn", e);
 		} catch (Exception race) {
@@ -252,7 +246,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateFrom(that);
+			metadata.app().workingState().updateChildrenFrom(that);
 		}
 
 		return that;
@@ -286,6 +280,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return parseAccount(memo);
+	}
+
+	public Instant getTimeOfLastHandledTxn() {
+		return networkCtx().consensusTimeOfLastHandledTxn();
+	}
+
+	public int getStateVersion() {
+		return networkCtx().getStateVersion();
 	}
 
 	public void logSummary() {
@@ -371,16 +373,18 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (APPS.includes(selfId)) {
 			app = APPS.get(selfId);
 		} else {
+			final var nodeAddress = addressBook().getAddress(selfId);
+			final var initialHash = runningHashLeaf().getRunningHash().getHash();
 			app = appBuilder.get()
+					.staticAccountMemo(nodeAddress.getMemo())
 					.bootstrapProps(bootstrapProps)
-					.initialState(this)
+					.initialHash(initialHash)
 					.platform(platform)
 					.selfId(selfId)
 					.build();
 			APPS.save(selfId, app);
 		}
 
-		// When migrating from an older state dual state can be null
 		if (dualState == null) {
 			dualState = new DualStateImpl();
 		}
@@ -390,10 +394,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getLastFrozenTime());
 
 		final var stateVersion = networkCtx().getStateVersion();
-		if (stateVersion > StateVersions.CURRENT_VERSION) {
+		if (stateVersion > CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
 					networkCtx().getStateVersion(),
-					StateVersions.CURRENT_VERSION);
+					CURRENT_VERSION);
 			app.systemExits().fail(1);
 		} else {
 			final var maybePostUpgrade = dualState.getFreezeTime() != null;
@@ -402,9 +406,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 			}
-			networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
+			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app);
+			app.workingState().updateChildrenFrom(this);
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -434,7 +439,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
-		final var virtualMapFactory = new VirtualMapFactory(jdbLoc, JasperDbBuilder::new);
+		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
 		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
@@ -458,7 +463,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	private MerkleNetworkContext genesisNetworkCtxWith(long seqStart) {
 		return new MerkleNetworkContext(
-				UNKNOWN_CONSENSUS_TIME,
+				NULL_CONSENSUS_TIME,
 				new SequenceNumber(seqStart),
 				seqStart - 1,
 				new ExchangeRates());
@@ -466,11 +471,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@FunctionalInterface
 	interface BinaryObjectStoreMigrator {
-		void migrateFromBinaryObjectStore(ServicesState initializingState, String jdbcLoc, int deserializedVersion);
+		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
 	}
 
-	private static String jdbLoc = CANONICAL_JDB_LOC;
-	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyMigration::migrateFromBinaryObjectStore;
+	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -478,23 +482,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return metadata;
 	}
 
-	void setMetadata(StateMetadata metadata) {
+	void setMetadata(final StateMetadata metadata) {
 		this.metadata = metadata;
 	}
 
-	void setDeserializedVersion(int deserializedVersion) {
+	void setDeserializedVersion(final int deserializedVersion) {
 		this.deserializedVersion = deserializedVersion;
 	}
 
-	static void setAppBuilder(Supplier<ServicesApp.Builder> appBuilder) {
+	static void setAppBuilder(final Supplier<ServicesApp.Builder> appBuilder) {
 		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setBlobMigrator(BinaryObjectStoreMigrator blobMigrator) {
+	static void setBlobMigrator(final BinaryObjectStoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
-	}
-
-	public static void setJdbLoc(String jdbLoc) {
-		ServicesState.jdbLoc = jdbLoc;
 	}
 }

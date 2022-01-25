@@ -9,9 +9,9 @@ package com.hedera.services.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public void reload() { }
+	public void reload() {
+	}
 
 	@Override
 	public int maxTokensPerAccount() {
@@ -90,7 +91,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 		return 600;
 	}
 
-	public void turnOffBalancesExport()	 {
+	public void turnOffBalancesExport() {
 		exportBalances = false;
 	}
 
@@ -232,7 +233,22 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 		return throttleByGas;
 	}
 
+	@Override
+	public int changeHistorianMemorySecs() {
+		return 20;
+	}
+
 	public void setThrottleByGas(boolean throttleByGas) {
 		this.throttleByGas = throttleByGas;
+        }
+
+	@Override
+	public boolean isAutoCreationEnabled() {
+		return true;
+	}
+
+	@Override
+	public int maxNumQueryableRecords() {
+		return 1;
 	}
 }

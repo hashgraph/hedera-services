@@ -51,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link HederaFs} that stores the contents and metadata of its files in
@@ -215,7 +214,7 @@ public final class TieredHederaFs implements HederaFs {
 		validateUsable(id);
 
 		final var verdict = judge(id, FileUpdateInterceptor::preDelete);
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			final var attr = metadata.get(id);
 			attr.setDeleted(true);
 			metadata.put(id, attr);
@@ -234,37 +233,6 @@ public final class TieredHederaFs implements HederaFs {
 		data.remove(id);
 	}
 
-	public static final class SimpleUpdateResult implements UpdateResult {
-		private final boolean attrChanged;
-		private final boolean fileReplaced;
-		private final ResponseCodeEnum outcome;
-
-		public SimpleUpdateResult(
-				final boolean attrChanged,
-				final boolean fileReplaced,
-				final ResponseCodeEnum outcome
-		) {
-			this.attrChanged = attrChanged;
-			this.fileReplaced = fileReplaced;
-			this.outcome = outcome;
-		}
-
-		@Override
-		public boolean fileReplaced() {
-			return fileReplaced;
-		}
-
-		@Override
-		public ResponseCodeEnum outcome() {
-			return outcome;
-		}
-
-		@Override
-		public boolean attrChanged() {
-			return attrChanged;
-		}
-	}
-
 	private boolean isSpecialFile(FileID fid) {
 		return specialFiles.get().contains(fid);
 	}
@@ -272,7 +240,7 @@ public final class TieredHederaFs implements HederaFs {
 	private UpdateResult uncheckedSetattr(final FileID id, final HFileMeta attr) {
 		final var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
 
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			metadata.put(id, attr);
 		}
 
@@ -281,7 +249,7 @@ public final class TieredHederaFs implements HederaFs {
 
 	private UpdateResult uncheckedUpdate(final FileID id, final byte[] newContents) {
 		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			data.put(id, newContents);
 			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
 		}
@@ -299,7 +267,7 @@ public final class TieredHederaFs implements HederaFs {
 		for (final var interceptor : orderedInterceptors) {
 			final var vote = judgment.apply(interceptor, id);
 			outcome = firstUnsuccessful(outcome, vote.getKey());
-			if (!vote.getValue()) {
+			if (Boolean.TRUE.equals(!vote.getValue())) {
 				should = false;
 				break;
 			}
@@ -313,7 +281,7 @@ public final class TieredHederaFs implements HederaFs {
 				.stream()
 				.filter(interceptor -> interceptor.priorityForCandidate(id).isPresent())
 				.sorted(comparingInt(interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
-				.collect(toList());
+				.toList();
 	}
 
 	public static ResponseCodeEnum firstUnsuccessful(final ResponseCodeEnum... outcomes) {

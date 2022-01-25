@@ -23,11 +23,7 @@ package com.hedera.services.sigs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public interface ExpansionHelper {
-	ResponseCodeEnum expandIn(
-			PlatformTxnAccessor txnAccessor,
-			SigRequirements keyOrderer,
-			PubKeyToSigBytes pkToSigFn);
+	void expandIn(PlatformTxnAccessor txnAccessor, SigRequirements keyOrderer, PubKeyToSigBytes pkToSigFn);
 }

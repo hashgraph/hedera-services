@@ -30,4 +30,8 @@ public interface KeyGenerator {
 	enum Nature { RANDOMIZED, WITH_OVERLAPPING_PREFIXES }
 
 	Key genEd25519AndUpdateMap(Map<String, PrivateKey> mutablePkMap);
+
+	default Key genEcdsaSecp256k1AndUpdate(final Map<String, PrivateKey> mutablePkMap) {
+		throw new UnsupportedOperationException();
+	}
 }

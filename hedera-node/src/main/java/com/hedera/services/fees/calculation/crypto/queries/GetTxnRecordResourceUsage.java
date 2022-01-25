@@ -34,9 +34,11 @@ import com.hederahashgraph.fee.CryptoFeeBuilder;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 
+import static com.hedera.services.queries.meta.GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
@@ -69,33 +71,46 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
 
 	@Override
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
-		return usageFor(query, view, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
+		return usageFor(query, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
 	}
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageFor(query, view, type, null);
+		return usageFor(query, type, null);
 	}
 
 	private FeeData usageFor(
 			final Query query,
-			final StateView view,
-			final ResponseType type,
+			final ResponseType stateProofType,
 			@Nullable final Map<String, Object> queryCtx
 	) {
 		final var op = query.getTransactionGetRecord();
-		final var txnRecord = answerFunctions.txnRecord(recordCache, view, op).orElse(MISSING_RECORD_STANDIN);
-		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, type);
+		final var txnRecord = answerFunctions.txnRecord(recordCache, op).orElse(MISSING_RECORD_STANDIN);
+		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, stateProofType);
 		if (txnRecord != MISSING_RECORD_STANDIN) {
 			putIfNotNull(queryCtx, PRIORITY_RECORD_CTX_KEY, txnRecord);
 			if (op.getIncludeDuplicates()) {
 				final var duplicateRecords = recordCache.getDuplicateRecords(op.getTransactionID());
 				putIfNotNull(queryCtx, DUPLICATE_RECORDS_CTX_KEY, duplicateRecords);
-				for (final var duplicate : duplicateRecords) {
-					final var duplicateUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(duplicate, type);
-					usages = sumFn.apply(usages, duplicateUsage);
-				}
+				usages = accumulatedUsage(usages, stateProofType, duplicateRecords);
 			}
+			if (op.getIncludeChildRecords()) {
+				final var childRecords = recordCache.getChildRecords(op.getTransactionID());
+				putIfNotNull(queryCtx, CHILD_RECORDS_CTX_KEY, childRecords);
+				usages = accumulatedUsage(usages, stateProofType, childRecords);
+			}
+		}
+		return usages;
+	}
+
+	private FeeData accumulatedUsage(
+			FeeData usages,
+			final ResponseType stateProofType,
+			final List<TransactionRecord> extraRecords
+	) {
+		for (final var extra : extraRecords) {
+			final var extraUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(extra, stateProofType);
+			usages = sumFn.apply(usages, extraUsage);
 		}
 		return usages;
 	}

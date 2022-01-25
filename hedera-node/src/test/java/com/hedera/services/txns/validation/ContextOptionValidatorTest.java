@@ -20,6 +20,8 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -108,6 +110,7 @@ class ContextOptionValidatorTest {
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
+	final private ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	PropertySource properties;
 	GlobalDynamicProperties dynamicProperties;
 	private MerkleTopic deletedMerkleTopic;
@@ -149,17 +152,22 @@ class ContextOptionValidatorTest {
 		given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
 		given(topics.get(EntityNum.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
+		NodeInfo nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.selfAccount()).willReturn(thisNodeAccount);
+
+
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new HFileMeta(false, wacl, expiry);
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
 		subject = new ContextOptionValidator(
-				thisNodeAccount, properties, txnCtx, dynamicProperties);
+				nodeInfo, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
 		return FileGetInfoResponse.FileInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();

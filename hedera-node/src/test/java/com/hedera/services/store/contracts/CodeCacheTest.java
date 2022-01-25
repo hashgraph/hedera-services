@@ -55,29 +55,29 @@ class CodeCacheTest {
 
     @Test
     void successfulCreate() {
-        assertNotNull(codeCache.cache);
+        assertNotNull(codeCache.getCache());
     }
 
     @Test
     void getTriggeringLoad() {
-        given(entityAccess.fetchCode(any())).willReturn(Bytes.of("abc".getBytes()));
-        Code code = codeCache.get(Address.fromHexString("0xabc"));
+        given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
+        Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
         assertEquals(Hash.fromHexString("0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"), code.getCodeHash());
     }
 
     @Test
     void getContractNotFound() {
-        given(entityAccess.fetchCode(any())).willReturn(Bytes.EMPTY);
-        Code code = codeCache.get(Address.fromHexString("0xabc"));
+        given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
+        Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
         assertTrue(code.getBytes().isEmpty());
     }
 
     @Test
     void invalidateSuccess() {
-        given(entityAccess.fetchCode(any())).willReturn(Bytes.of("abc".getBytes()));
-        Code code = codeCache.get(Address.fromHexString("0xabc"));
+        given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.of("abc".getBytes()));
+        Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
         assertEquals(1L, codeCache.size());
         codeCache.invalidate(Address.fromHexString("0xabc"));
