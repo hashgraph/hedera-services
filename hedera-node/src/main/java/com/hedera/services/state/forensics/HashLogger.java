@@ -35,6 +35,7 @@ public class HashLogger {
 
 	@Inject
 	public HashLogger() {
+		// Default Constructor
 	}
 
 	public void logHashesFor(ServicesState state) {

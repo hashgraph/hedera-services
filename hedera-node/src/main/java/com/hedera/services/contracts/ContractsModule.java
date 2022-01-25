@@ -78,28 +78,28 @@ import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFr
 @Module(includes = {
 		StoresModule.class
 })
-public abstract class ContractsModule {
+public interface ContractsModule {
 	@Binds
 	@Singleton
-	public abstract HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
+	HederaMutableWorldState provideMutableWorldState(HederaWorldState hederaWorldState);
 
 	@Provides
 	@Singleton
 	@BytecodeSource
-	public static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
+	static Map<byte[], byte[]> provideBytecodeSource(Map<String, byte[]> blobStore) {
 		return bytecodeMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
 	@StorageSource
-	public static Map<byte[], byte[]> provideStorageSource(Map<String, byte[]> blobStore) {
+	static Map<byte[], byte[]> provideStorageSource(Map<String, byte[]> blobStore) {
 		return storageMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
-	public static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
+	static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
 	}
 
@@ -118,75 +118,75 @@ public abstract class ContractsModule {
 	@Provides
 	@Singleton
 	@IntoSet
-	public static Operation provideCreate2Operation(GasCalculator gasCalculator) {
+	static Operation provideCreate2Operation(GasCalculator gasCalculator) {
 		return new InvalidOperation(0xF5, gasCalculator);
 	}
 
 	@Binds
 	@Singleton
-	public abstract GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
+	GasCalculator bindHederaGasCalculatorV20(GasCalculatorHederaV22 gasCalculator);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindBalanceOperation(HederaBalanceOperation balance);
+	Operation bindBalanceOperation(HederaBalanceOperation balance);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
+	Operation bindCallCodeOperation(HederaCallCodeOperation callCode);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCallOperation(HederaCallOperation call);
+	Operation bindCallOperation(HederaCallOperation call);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindCreateOperation(HederaCreateOperation create);
+	Operation bindCreateOperation(HederaCreateOperation create);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
+	Operation bindDelegateCallOperation(HederaDelegateCallOperation delegateCall);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
+	Operation bindExtCodeCopyOperation(HederaExtCodeCopyOperation extCodeCopy);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
+	Operation bindExtCodeHashOperation(HederaExtCodeHashOperation extCodeHash);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
+	Operation bindExtCodeSizeOperation(HederaExtCodeSizeOperation extCodeSize);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
+	Operation bindSelfDestructOperation(HederaSelfDestructOperation selfDestruct);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindSStoreOperation(HederaSStoreOperation sstore);
+	Operation bindSStoreOperation(HederaSStoreOperation sstore);
 
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
+	Operation bindStaticCallOperation(HederaStaticCallOperation staticCall);
 
 
 	@Binds
 	@Singleton
 	@IntoMap
 	@StringKey("0x167")
-	public abstract PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
+	PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
 
 
 	@Provides

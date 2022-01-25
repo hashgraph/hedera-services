@@ -200,7 +200,7 @@ public class TestHelper {
 						payerAccount.getShardNum(), nodeAccount.getAccountNum(),
 						nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
 						transactionFee, timestamp, transactionDuration, generateRecord,
-						memo, keyList.size(), keyList, initialBalance, defaultSendRecordThreshold,
+						memo, keyList, initialBalance, defaultSendRecordThreshold,
 						defaultRecvRecordThreshold, receiverSigRequired, autoRenewPeriod);
 
 
@@ -210,7 +210,7 @@ public class TestHelper {
 			CryptoServiceBlockingStub stub, Logger log, String host)
 			throws InvalidNodeTransactionPrecheckCode {
 		Query query = Query.newBuilder().setTransactionGetReceipt(
-				RequestBuilder.getTransactionGetReceiptQuery(transactionID, ResponseType.ANSWER_ONLY))
+						RequestBuilder.getTransactionGetReceiptQuery(transactionID, ResponseType.ANSWER_ONLY))
 				.build();
 
 		TransactionReceipt rv;

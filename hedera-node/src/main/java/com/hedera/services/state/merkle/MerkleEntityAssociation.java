@@ -38,10 +38,15 @@ public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xce8d38caab2e51dcL;
 
-	private long fromShard, fromRealm, fromNum;
-	private long toShard, toRealm, toNum;
+	private long fromShard;
+	private long fromRealm;
+	private long fromNum;
+	private long toShard;
+	private long toRealm;
+	private long toNum;
 
 	public MerkleEntityAssociation() {
+		// Default constructor
 	}
 
 	public MerkleEntityAssociation(

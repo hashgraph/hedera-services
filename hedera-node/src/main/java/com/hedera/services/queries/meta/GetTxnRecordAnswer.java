@@ -59,6 +59,8 @@ public class GetTxnRecordAnswer implements AnswerService {
 			GetTxnRecordAnswer.class.getSimpleName() + "_duplicateRecords";
 	public static final String CHILD_RECORDS_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_childRecords";
+	public static final String PAYER_RECORDS_CTX_KEY =
+			GetTxnRecordAnswer.class.getSimpleName() + "_payerRecords";
 
 	@Inject
 	public GetTxnRecordAnswer(
@@ -93,7 +95,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 			final ResponseCodeEnum validity,
 			final long cost
 	) {
-		return responseFor(query, view, validity, cost, NO_QUERY_CTX);
+		return responseFor(query, validity, cost, NO_QUERY_CTX);
 	}
 
 	@Override
@@ -104,12 +106,11 @@ public class GetTxnRecordAnswer implements AnswerService {
 			final long cost,
 			final Map<String, Object> queryCtx
 	) {
-		return responseFor(query, view, validity, cost, Optional.of(queryCtx));
+		return responseFor(query, validity, cost, Optional.of(queryCtx));
 	}
 
 	private Response responseFor(
 			final Query query,
-			final StateView view,
 			final ResponseCodeEnum validity,
 			final long cost,
 			final Optional<Map<String, Object>> queryCtx
@@ -124,7 +125,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				setAnswerOnly(response, view, op, queryCtx);
+				setAnswerOnly(response, op, queryCtx);
 			}
 		}
 
@@ -136,7 +137,6 @@ public class GetTxnRecordAnswer implements AnswerService {
 	@SuppressWarnings("unchecked")
 	private void setAnswerOnly(
 			final TransactionGetRecordResponse.Builder response,
-			final StateView view,
 			final TransactionGetRecordQuery op,
 			final Optional<Map<String, Object>> queryCtx
 	) {
@@ -157,7 +157,7 @@ public class GetTxnRecordAnswer implements AnswerService {
 				}
 			}
 		} else {
-			final var txnRecord = answerFunctions.txnRecord(recordCache, view, op);
+			final var txnRecord = answerFunctions.txnRecord(recordCache, op);
 			if (txnRecord.isEmpty()) {
 				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
 			} else {

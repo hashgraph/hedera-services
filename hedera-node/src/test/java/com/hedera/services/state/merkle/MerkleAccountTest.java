@@ -34,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -117,6 +118,22 @@ class MerkleAccountTest {
 	@AfterEach
 	void cleanup() {
 		MerkleAccount.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void returnsExpectedNumPayerRecords() {
+		given(payerRecords.size()).willReturn(123);
+
+		assertEquals(123, subject.numRecords());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void returnsExpectedRecordsIterator() {
+		final Iterator<ExpirableTxnRecord> mockIter = (Iterator<ExpirableTxnRecord>) mock(Iterator.class);
+		given(payerRecords.iterator()).willReturn(mockIter);
+
+		assertSame(mockIter, subject.recordIterator());
 	}
 
 	@Test

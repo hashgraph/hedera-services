@@ -24,10 +24,13 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -61,11 +64,18 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,6 +88,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -87,12 +98,19 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
+import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -166,6 +184,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
+	private final Provider<FeeCalculator> feeCalculator;
+	private Gas gasRequirement = Gas.ZERO;
+	private final StateView currentView;
+	private final PrecompilePricingUtils precompilePricingUtils;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -179,8 +201,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final ExpiringCreations creator,
 			final DissociationFactory dissociationFactory,
-			final ImpliedTransfersMarshal impliedTransfersMarshal
-	) {
+			final ImpliedTransfersMarshal impliedTransfersMarshal,
+			final Provider<FeeCalculator> feeCalculator,
+			final StateView currentView,
+			final PrecompilePricingUtils precompilePricingUtils) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
 		this.encoder = encoder;
@@ -192,78 +216,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.dynamicProperties = dynamicProperties;
 		this.dissociationFactory = dissociationFactory;
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
+		this.feeCalculator = feeCalculator;
+		this.currentView = currentView;
+		this.precompilePricingUtils = precompilePricingUtils;
+	}
+
+	private long gasFeeInTinybars(final TransactionBody.Builder txBody, Instant consensusTime) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txBody.build().toByteString())
+				.setSigMap(SignatureMap.getDefaultInstance())
+				.build();
+		final var txn = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
+
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		precompile.addImplicitCostsIn(accessor);
+		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
 	@Override
-	public Gas gasRequirement(final Bytes input) {
-		this.precompile = null;
-		this.transactionBody = null;
-
-		this.functionId = input.getInt(0);
-		var defaultGasPrice = dynamicProperties.htsDefaultGasCost();
-		Gas gasRequirement = Gas.of(defaultGasPrice);
-
-		switch (functionId) {
-			case ABI_ID_CRYPTO_TRANSFER,
-					ABI_ID_TRANSFER_TOKENS,
-					ABI_ID_TRANSFER_TOKEN,
-					ABI_ID_TRANSFER_NFTS,
-					ABI_ID_TRANSFER_NFT: {
-				this.precompile = new TransferPrecompile();
-				decodeInput(input);
-				var transfersCount = transactionBody.getCryptoTransfer().getTokenTransfersCount();
-				/*-- 10K if only one transfer or 5K per index --*/
-				if (transfersCount <= 1) {
-					gasRequirement = Gas.of(defaultGasPrice);
-				} else {
-					gasRequirement = Gas.of((defaultGasPrice / 2) * transfersCount);
-				}
-				break;
-			}
-			case ABI_ID_MINT_TOKEN: {
-				this.precompile = new MintPrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_BURN_TOKEN: {
-				this.precompile = new BurnPrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_ASSOCIATE_TOKENS: {
-				this.precompile = new MultiAssociatePrecompile();
-				decodeInput(input);
-				/*-- 10K per index --*/
-				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenAssociate().getTokensCount());
-				break;
-			}
-			case ABI_ID_ASSOCIATE_TOKEN: {
-				this.precompile = new AssociatePrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			case ABI_ID_DISSOCIATE_TOKENS: {
-				this.precompile = new MultiDissociatePrecompile();
-				decodeInput(input);
-				/*-- 10K per index --*/
-				gasRequirement = Gas.of((defaultGasPrice) * this.transactionBody.getTokenDissociate().getTokensCount());
-				break;
-			}
-			case ABI_ID_DISSOCIATE_TOKEN: {
-				this.precompile = new DissociatePrecompile();
-				decodeInput(input);
-				/*-- 10K --*/
-				gasRequirement = Gas.of(defaultGasPrice);
-				break;
-			}
-			default:
-		}
+	public Gas gasRequirement(final Bytes bytes) {
 		return gasRequirement;
 	}
 
@@ -273,11 +247,65 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
-		if (this.precompile == null || this.transactionBody == null) {
+		prepareComputation(input);
+
+		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
+
+		if (this.precompile == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		}
+
+		computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
+
 		return computeInternal(messageFrame);
+	}
+
+	void computeGasRequirement(final long blockTimestamp) {
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+				blockTimestamp).build();
+		long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+
+		long calculatedFeeInTinybars = gasFeeInTinybars(
+				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
+
+		long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+
+
+		// convert to gas cost
+		Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+
+		// charge premium
+		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+	}
+
+	void prepareComputation(final Bytes input) {
+		this.precompile = null;
+		this.transactionBody = null;
+
+		this.functionId = input.getInt(0);
+		this.gasRequirement = null;
+
+		this.precompile =
+				switch (functionId) {
+					case ABI_ID_CRYPTO_TRANSFER,
+							ABI_ID_TRANSFER_TOKENS,
+							ABI_ID_TRANSFER_TOKEN,
+							ABI_ID_TRANSFER_NFTS,
+							ABI_ID_TRANSFER_NFT -> new TransferPrecompile();
+					case ABI_ID_MINT_TOKEN -> new MintPrecompile();
+					case ABI_ID_BURN_TOKEN -> new BurnPrecompile();
+					case ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile();
+					case ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile();
+					case ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
+					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
+					default -> null;
+				};
+		if (precompile != null) {
+			decodeInput(input);
+		}
 	}
 
 	/* --- Helpers --- */
@@ -301,7 +329,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return UInt256.valueOf(status.getNumber());
 	}
 
-	private void decodeInput(Bytes input) {
+	void decodeInput(Bytes input) {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
 			this.transactionBody = this.precompile.body(input);
@@ -426,6 +454,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers);
 
+		long getMinimumFeeInTinybars(Timestamp consensusTime);
+
+		default void addImplicitCostsIn(TxnAccessor accessor) {
+			/* No-op */
+		}
+
 		default Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
 			return SUCCESS_RESULT;
 		}
@@ -461,6 +495,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
 		}
 	}
 
@@ -505,6 +544,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
 		}
 	}
 
@@ -563,6 +607,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(mintOp);
+
+			return precompilePricingUtils.getMinimumPriceInTinybars(
+					(mintOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
+		}
+
+		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var receiptBuilder = childRecord.getReceiptBuilder();
 			validateTrue(receiptBuilder != null, FAIL_INVALID);
@@ -578,6 +630,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class TransferPrecompile implements Precompile {
+		private ResponseCodeEnum impliedValidity;
+		private ImpliedTransfers impliedTransfers;
+		private List<BalanceChange> explicitChanges;
 		private List<TokenTransferWrapper> transferOp;
 		private TransactionBody.Builder syntheticTxn;
 
@@ -593,8 +648,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
 						FAIL_INVALID);
 			};
-			this.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			extrapolateDetailsFromSyntheticTxn();
 			return syntheticTxn;
+		}
+
+		@Override
+		public void addImplicitCostsIn(final TxnAccessor accessor) {
+			if (impliedTransfers != null) {
+				reCalculateXferMeta(accessor, impliedTransfers);
+			}
 		}
 
 		@Override
@@ -602,25 +665,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
-			final var op = syntheticTxn.getCryptoTransfer();
-			final var validity = impliedTransfersMarshal.validityWithCurrentProps(op);
-			if (validity != ResponseCodeEnum.OK) {
-				throw new InvalidTransactionException(validity);
+			if (impliedValidity == null) {
+				extrapolateDetailsFromSyntheticTxn();
+			}
+			if (impliedValidity != ResponseCodeEnum.OK) {
+				throw new InvalidTransactionException(impliedValidity);
 			}
 
-			var changes = constructBalanceChanges(transferOp);
 			/* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
-			final var numExplicitChanges = changes.size();
-
-			final var validated = impliedTransfersMarshal.assessCustomFeesAndValidate(
-					0,
-					0,
-					changes,
-					NO_ALIASES,
-					impliedTransfersMarshal.currentProps());
-			final var assessmentStatus = validated.getMeta().code();
+			final var numExplicitChanges = explicitChanges.size();
+			final var assessmentStatus = impliedTransfers.getMeta().code();
 			validateTrue(assessmentStatus == OK, assessmentStatus);
-			changes = validated.getAllBalanceChanges();
+			var changes = impliedTransfers.getAllBalanceChanges();
 
 			final var sideEffects = sideEffectsFactory.get();
 			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
@@ -667,7 +723,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			transferLogic.doZeroSum(changes);
 
-			return creator.createSuccessfulSyntheticRecord(validated.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+			return creator.createSuccessfulSyntheticRecord(
+					impliedTransfers.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+		}
+
+		private void extrapolateDetailsFromSyntheticTxn() {
+			final var op = syntheticTxn.getCryptoTransfer();
+			impliedValidity = impliedTransfersMarshal.validityWithCurrentProps(op);
+			if (impliedValidity != ResponseCodeEnum.OK) {
+				return;
+			}
+			explicitChanges = constructBalanceChanges(transferOp);
+			impliedTransfers = impliedTransfersMarshal.assessCustomFeesAndValidate(
+					0,
+					0,
+					explicitChanges,
+					NO_ALIASES,
+					impliedTransfersMarshal.currentProps());
 		}
 
 		private List<BalanceChange> constructBalanceChanges(final List<TokenTransferWrapper> transferOp) {
@@ -723,6 +795,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.setAmount(amount)
 					.build();
 		}
+
+		@Override
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+			Objects.requireNonNull(transferOp);
+			long accumulatedCost = 0;
+			boolean customFees = impliedTransfers != null && !impliedTransfers.getAssessedCustomFees().isEmpty();
+			// For fungible there are always at least two operations, so only charge half for each operation
+			long nftHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
+					customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES :
+							PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
+					consensusTime) / 2;
+			// NFTs are atomic, one line can do it.
+			long fungibleHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
+					customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES :
+							PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
+					consensusTime);
+			for (var transfer : transferOp) {
+				accumulatedCost += transfer.fungibleTransfers().size() * fungibleHalfTxCost;
+				accumulatedCost += transfer.nftExchanges().size() * nftHalfTxCost;
+			}
+			return accumulatedCost;
+		}
+
 	}
 
 	protected class BurnPrecompile implements Precompile {
@@ -760,6 +855,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			Objects.requireNonNull(burnOp);
+			return precompilePricingUtils.getMinimumPriceInTinybars(
+					(burnOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
 		}
 
 		@Override

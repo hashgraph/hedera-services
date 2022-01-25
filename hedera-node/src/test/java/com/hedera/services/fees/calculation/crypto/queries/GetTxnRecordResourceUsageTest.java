@@ -98,13 +98,13 @@ class GetTxnRecordResourceUsageTest {
 				null);
 
 		answerFunctions = mock(AnswerFunctions.class);
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithDups))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnlyWithDups))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableCostAnswer))
+		given(answerFunctions.txnRecord(recordCache, satisfiableCostAnswer))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, unsatisfiable))
+		given(answerFunctions.txnRecord(recordCache, unsatisfiable))
 				.willReturn(Optional.empty());
 		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(desiredRecord));
 
@@ -119,7 +119,7 @@ class GetTxnRecordResourceUsageTest {
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithChildrenNoDups))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnlyWithChildrenNoDups))
 				.willReturn(Optional.of(desiredRecord));
 
 		subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
@@ -199,7 +199,7 @@ class GetTxnRecordResourceUsageTest {
 		final var queryCtx = new HashMap<String, Object>();
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
 				.willReturn(Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, view, queryCtx);

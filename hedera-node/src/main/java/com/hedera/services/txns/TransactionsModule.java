@@ -9,9 +9,9 @@ package com.hedera.services.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,28 +61,28 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 		ContractLogicModule.class,
 		ConsensusLogicModule.class
 })
-public abstract class TransactionsModule {
+public interface TransactionsModule {
 	@Binds
 	@Singleton
-	public abstract SubmissionFlow bindSubmissionFlow(BasicSubmissionFlow basicSubmissionFlow);
+	SubmissionFlow bindSubmissionFlow(BasicSubmissionFlow basicSubmissionFlow);
 
 	@Binds
 	@Singleton
-	public abstract OptionValidator bindOptionValidator(ContextOptionValidator contextOptionValidator);
+	OptionValidator bindOptionValidator(ContextOptionValidator contextOptionValidator);
 
 	@Binds
 	@Singleton
-	public abstract CustomFeeSchedules bindCustomFeeSchedules(FcmCustomFeeSchedules fcmCustomFeeSchedules);
+	CustomFeeSchedules bindCustomFeeSchedules(FcmCustomFeeSchedules fcmCustomFeeSchedules);
 
 	@Provides
 	@Singleton
-	public static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager) {
+	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager) {
 		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager);
 	}
 
 	@Provides
 	@Singleton
-	public static ContractSysDelTransitionLogic.LegacySystemDeleter provideLegacySystemDeleter(
+	static ContractSysDelTransitionLogic.LegacySystemDeleter provideLegacySystemDeleter(
 			SmartContractRequestHandler contracts
 	) {
 		return contracts::systemDelete;
@@ -90,7 +90,7 @@ public abstract class TransactionsModule {
 
 	@Provides
 	@Singleton
-	public static ContractSysUndelTransitionLogic.LegacySystemUndeleter provideLegacySystemUndeleter(
+	static ContractSysUndelTransitionLogic.LegacySystemUndeleter provideLegacySystemUndeleter(
 			SmartContractRequestHandler contracts
 	) {
 		return contracts::systemUndelete;
@@ -99,7 +99,7 @@ public abstract class TransactionsModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(SystemDelete)
-	public static List<TransitionLogic> provideSystemDeleteLogic(
+	static List<TransitionLogic> provideSystemDeleteLogic(
 			FileSysDelTransitionLogic fileSysDelTransitionLogic,
 			ContractSysDelTransitionLogic contractSysDelTransitionLogic
 	) {
@@ -109,7 +109,7 @@ public abstract class TransactionsModule {
 	@Provides
 	@IntoMap
 	@FunctionKey(SystemUndelete)
-	public static List<TransitionLogic> provideSystemUndeleteLogic(
+	static List<TransitionLogic> provideSystemUndeleteLogic(
 			FileSysUndelTransitionLogic fileSysUndelTransitionLogic,
 			ContractSysUndelTransitionLogic contractSysUndelTransitionLogic
 	) {

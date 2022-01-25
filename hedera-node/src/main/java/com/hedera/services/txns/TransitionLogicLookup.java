@@ -54,8 +54,10 @@ public class TransitionLogicLookup {
 	/**
 	 * Returns the {@link TransitionLogic}, if any, relevant to the given txn.
 	 *
-	 * @param function the HederaFunctionality that txn requires.
-	 * @param txn the txn to find logic for.
+	 * @param function
+	 * 		the HederaFunctionality that txn requires.
+	 * @param txn
+	 * 		the txn to find logic for.
 	 * @return relevant transition logic, if it exists.
 	 */
 	public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
@@ -67,7 +69,7 @@ public class TransitionLogicLookup {
 			return Optional.empty();
 		}
 		return Optional.ofNullable(transitions.get(function))
-				.flatMap(transitions -> from(transitions, txn));
+				.flatMap(trans -> from(trans, txn));
 	}
 
 	private Optional<TransitionLogic> from(List<TransitionLogic> transitions, TransactionBody txn) {
