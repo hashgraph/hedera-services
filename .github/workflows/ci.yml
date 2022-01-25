@@ -7,31 +7,24 @@ jobs:
 
     runs-on: macos-latest
 
-#    services:
-#      postgres:
-#        image: postgres:latest
-#        env:
-#          POSTGRES_DB: fcfs
-#          POSTGRES_PASSWORD: password
-#          POSTGRES_USER: swirlds
-#          PGDATA: /var/lib/postgresql/data/pgdata
-#          POSTGRES_PORT: 5432
-#        ports:
-#          - 5432:5432
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-      - name: Install Docker
-        run: |
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-            brew update
-            brew cask install docker
-            sudo docker –version
-
       - name: Checkout Repository
         uses: actions/checkout@v2
 
@@ -58,6 +51,12 @@ jobs:
           path: |
             **/target/*.jar
             **/target/pom.xml
+
+      - name: Install Docker
+        run:
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+          brew cask install docker
+          sudo docker –version
 
   javadoc:
     needs: [build]
