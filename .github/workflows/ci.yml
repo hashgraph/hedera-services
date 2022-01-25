@@ -53,7 +53,7 @@ jobs:
 
   javadoc:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 17
@@ -68,7 +68,7 @@ jobs:
 
   e2e-first-subset:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     services:
       postgres:
@@ -116,7 +116,7 @@ jobs:
 
   e2e-second-subset:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     services:
       postgres:
@@ -164,7 +164,7 @@ jobs:
 
   e2e-third-subset:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     services:
       postgres:
