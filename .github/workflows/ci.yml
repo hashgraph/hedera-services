@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Install Docker
         run:
-          brew install docker-machine docker
+          brew cask install docker
           sudo docker –version
 
       - name: Checkout Repository
