@@ -504,14 +504,14 @@ public class TypedTokenStore {
 		mutableToken.setExpiry(token.getExpiry());
 	}
 
-	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
-		if (_autoRenewId != null) {
-			final var autoRenewId = new Id(_autoRenewId.shard(), _autoRenewId.realm(), _autoRenewId.num());
-			final var autoRenew = accountStore.loadAccount(autoRenewId);
+	private void initModelAccounts(Token token, EntityId treasuryId, @Nullable EntityId autoRenewId) {
+		if (autoRenewId != null) {
+			final var autoRenewIdentifier = new Id(autoRenewId.shard(), autoRenewId.realm(), autoRenewId.num());
+			final var autoRenew = accountStore.loadAccount(autoRenewIdentifier);
 			token.setAutoRenewAccount(autoRenew);
 		}
-		final var treasuryId = new Id(_treasuryId.shard(), _treasuryId.realm(), _treasuryId.num());
-		final var treasury = accountStore.loadAccount(treasuryId);
+		final var treasuryIdentifier = new Id(treasuryId.shard(), treasuryId.realm(), treasuryId.num());
+		final var treasury = accountStore.loadAccount(treasuryIdentifier);
 		token.setTreasury(treasury);
 	}
 

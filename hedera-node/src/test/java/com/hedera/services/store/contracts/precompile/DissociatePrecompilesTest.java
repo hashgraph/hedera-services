@@ -21,9 +21,11 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -156,6 +158,10 @@ class DissociatePrecompilesTest {
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private TokenDissociateTransactionBody transactionBody;
+	@Mock
+	private FeeCalculator feeCalculator;
+	@Mock
+	private StateView stateView;
 
 	private HTSPrecompiledContract subject;
 
@@ -164,7 +170,8 @@ class DissociatePrecompilesTest {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal);
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
+				() -> feeCalculator, stateView);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
@@ -184,7 +191,7 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -213,7 +220,7 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -234,8 +241,6 @@ class DissociatePrecompilesTest {
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(transactionBody.getTokensCount()).willReturn(1);
-		given(mockSynthBodyBuilder.getTokenDissociate()).willReturn(transactionBody);
 		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
@@ -249,7 +254,7 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.gasRequirement(pretendArguments);
+		subject.prepareComputation(pretendArguments);
 		final var result = subject.computeInternal(frame);
 
 		// then:

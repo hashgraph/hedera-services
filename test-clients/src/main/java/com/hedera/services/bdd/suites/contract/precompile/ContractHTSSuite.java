@@ -237,12 +237,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).when(
 						contractCall(CONTRACT, ZENOS_BANK_DEPOSIT_TOKENS, 50)
 								.payingWith(ACCOUNT)
-								.gas(100_000)
+								.gas(250_000)
 								.via("zeno"),
 						contractCall(CONTRACT, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(RECEIVER)
 								.alsoSigningWithFullPrefix(CONTRACT)
-								.gas(100_000)
+								.gas(250_000)
 								.via("receiverTx")
 				).then(
 						childRecordsCheck("zeno",

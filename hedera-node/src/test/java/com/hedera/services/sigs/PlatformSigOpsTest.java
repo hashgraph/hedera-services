@@ -156,7 +156,7 @@ class PlatformSigOpsTest {
 
 	@Test
 	void failsOnInsufficientSigs() throws Throwable {
-		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(Exception.class);
+		given(sigBytes.sigBytesFor(any())).willReturn(MOCK_SIG).willThrow(KeyPrefixMismatchException.class);
 
 		final var result = createCryptoSigsFrom(pubKeys, sigBytes, sigFactory);
 

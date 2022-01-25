@@ -339,13 +339,14 @@ class MiscUtilsTest {
 
 	@Test
 	void asFcKeyUncheckedTranslatesExceptions() {
-		assertThrows(IllegalArgumentException.class,
-				() -> MiscUtils.asFcKeyUnchecked(Key.getDefaultInstance()));
+		final var key = Key.getDefaultInstance();
+		assertThrows(IllegalArgumentException.class, () -> MiscUtils.asFcKeyUnchecked(key));
 	}
 
 	@Test
 	void asFcKeyReturnsEmptyOnUnparseableKey() {
-		assertTrue(asUsableFcKey(Key.getDefaultInstance()).isEmpty());
+		final var key = Key.getDefaultInstance();
+		assertTrue(asUsableFcKey(key).isEmpty());
 	}
 
 	@Test
@@ -382,13 +383,14 @@ class MiscUtilsTest {
 	@Test
 	void translatesDecoderException() {
 		final String tmpLoc = "src/test/resources/PretendKeystore.txt";
-
-		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(new LegacyEd25519KeyReader() {
+		final var reader = new LegacyEd25519KeyReader() {
 			@Override
 			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
 				return "This is not actually hex!";
 			}
-		}, tmpLoc, "START_ACCOUNT"));
+		};
+
+		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(reader, tmpLoc, "START_ACCOUNT"));
 	}
 
 	@Test
@@ -904,8 +906,7 @@ class MiscUtilsTest {
 
 	private static void writeB64EncodedKeyPair(final File file, final KeyPair keyPair) throws IOException {
 		final var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
-		final var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
-		final var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
+		final var keyPairObj = new KeyPairObj(hexPublicKey);
 		final var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
 
 		final var baos = new ByteArrayOutputStream();

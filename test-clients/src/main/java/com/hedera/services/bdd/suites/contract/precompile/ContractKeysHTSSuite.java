@@ -69,7 +69,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -104,7 +103,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -277,8 +275,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000))),
-                        getTxnRecord("creationTx").logged()
+                                                        .gas(88_000)))
                 )
                 .when(
                         newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, theContract))),
@@ -595,8 +592,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticDissociateCallTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("staticDissociateCallTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -975,8 +971,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .via("staticAssociateCallTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("staticAssociateCallTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -1039,8 +1034,6 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 )
                                 .newTotalSupply(10)
                         ),
-
-                        getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
                         getTokenInfo(fungibleToken).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
                 );
@@ -1102,7 +1095,6 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .newTotalSupply(10)
                         ),
 
-                        getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
                         getTokenInfo(fungibleToken).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
                 );
@@ -1135,8 +1127,6 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
                                                         .gas(88_000),
-                                                getTxnRecord("creationTx").logged(),
-
                                                 newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
                                                         CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("contractKey"),
@@ -1154,8 +1144,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS)
                                                         .payingWith(GENESIS)
                                                         .gas(48_000)
-                                                        .via("distributeTx"),
-                                                getTxnRecord("distributeTx").andAllChildRecords().logged()))
+                                                        .via("distributeTx")))
                 ).then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1199,8 +1188,6 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
                                                         .gas(88_000),
-                                                getTxnRecord("creationTx").logged(),
-
                                                 newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
                                                         CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("delegateContractKey"),
@@ -1218,8 +1205,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS)
                                                         .payingWith(GENESIS)
                                                         .gas(48_000)
-                                                        .via("distributeTx"),
-                                                getTxnRecord("distributeTx").andAllChildRecords().logged()))
+                                                        .via("distributeTx")))
                 ).then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1266,6 +1252,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
+                                                        .gas(300_000)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1306,6 +1293,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1355,6 +1343,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 
                                                 cryptoTransfer(
@@ -1365,6 +1354,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyHappyTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1373,7 +1363,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
                         childRecordsCheck("tokenDissociateWithDelegateContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
                 );
     }
 
@@ -1415,6 +1405,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 
                                                 cryptoTransfer(
@@ -1425,6 +1416,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithContractKeyHappyTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1433,7 +1425,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
                         childRecordsCheck("tokenDissociateWithContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
                 );
     }
 
@@ -1464,8 +1456,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000))),
-                        getTxnRecord("creationTx").logged()
+                                                        .gas(88_000)))
                 )
                 .when(
 
@@ -1532,8 +1523,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateAssociateCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("delegateAssociateCallWithDelegateContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -1582,8 +1572,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateDissociateCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("delegateDissociateCallWithDelegateContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -1621,22 +1610,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycNFTAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("kycNFTAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -1679,14 +1668,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateFromTreasuryFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("tokenDissociateFromTreasuryFailedTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("tokenDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 cryptoTransfer(
                                                         moving(1, VANILLA_TOKEN)
@@ -1695,8 +1684,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 cryptoTransfer(
                                                         moving(1, VANILLA_TOKEN)
                                                                 .between(ACCOUNT, TOKEN_TREASURY)),
@@ -1704,8 +1693,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyHappyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("tokenDissociateWithDelegateContractKeyHappyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1717,7 +1706,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
                         childRecordsCheck("tokenDissociateWithDelegateContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
                 );
     }
 
@@ -1753,15 +1742,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateWithDelegateContractKeyTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenTokenAssociateWithDelegateContractKeyTxn").andAllChildRecords().logged(),
                                                 tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("UnfrozenTokenAssociateWithDelegateContractKeyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("UnfrozenTokenAssociateWithDelegateContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1769,7 +1758,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(ACCOUNT_FROZEN_FOR_TOKEN)),
                         childRecordsCheck("UnfrozenTokenAssociateWithDelegateContractKeyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN)
                 );
     }
 
@@ -1803,15 +1792,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycTokenDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 tokenAssociate(ACCOUNT, KYC_TOKEN),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenDissociateWithDelegateContractKeyHappyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("kycTokenDissociateWithDelegateContractKeyHappyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1819,7 +1808,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
                         childRecordsCheck("kycTokenDissociateWithDelegateContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN)
                 );
     }
 
@@ -1858,14 +1847,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateFromTreasuryFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("NFTDissociateFromTreasuryFailedTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("NFTDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 cryptoTransfer(movingUnique(VANILLA_TOKEN, 1)
                                                         .between(TOKEN_TREASURY, ACCOUNT)),
@@ -1873,16 +1862,16 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroNFTBalanceDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("nonZeroNFTBalanceDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 cryptoTransfer(movingUnique(VANILLA_TOKEN, 1)
                                                         .between(ACCOUNT, TOKEN_TREASURY)),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateWithDelegateContractKeyHappyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("NFTDissociateWithDelegateContractKeyHappyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1894,7 +1883,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(ACCOUNT_STILL_OWNS_NFTS)),
                         childRecordsCheck("NFTDissociateWithDelegateContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
                 );
     }
 
@@ -1931,15 +1920,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateWithDelegateContractKeyTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenNFTAssociateWithDelegateContractKeyTxn").andAllChildRecords().logged(),
                                                 tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("UnfrozenNFTAssociateWithDelegateContractKeyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("UnfrozenNFTAssociateWithDelegateContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1947,7 +1936,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(ACCOUNT_FROZEN_FOR_TOKEN)),
                         childRecordsCheck("UnfrozenNFTAssociateWithDelegateContractKeyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN)
                 );
     }
 
@@ -1982,15 +1971,15 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTDissociateWithDelegateContractKeyFailedTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycNFTDissociateWithDelegateContractKeyFailedTxn").andAllChildRecords().logged(),
                                                 tokenAssociate(ACCOUNT, KYC_TOKEN),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTDissociateWithDelegateContractKeyHappyTxn")
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("kycNFTDissociateWithDelegateContractKeyHappyTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(SUCCESS)
                                         )
                         )
                 ).then(
@@ -1998,7 +1987,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 .status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
                         childRecordsCheck("kycNFTDissociateWithDelegateContractKeyHappyTxn", SUCCESS, recordWith()
                                 .status(SUCCESS)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN).logged()
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN)
                 );
     }
 
@@ -2031,22 +2020,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenNFTAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("frozenNFTAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -2085,22 +2074,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("vanillaNFTAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("vanillaNFTAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("vanillaNFTSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -2140,22 +2129,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycTokenAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("kycTokenAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("kycTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -2197,22 +2186,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenTokenAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("frozenTokenAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("frozenTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -2250,22 +2239,22 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateFailsTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("vanillaTokenAssociateFailsTxn").andAllChildRecords().logged(),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
+                                                        .gas(250_000)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("vanillaTokenAssociateTxn").andAllChildRecords().logged(),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenSecondAssociateFailsTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord("vanillaTokenSecondAssociateFailsTxn").andAllChildRecords().logged()
+                                                        .gas(250_000)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
                 ).then(
@@ -2316,8 +2305,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateAssociateCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("delegateAssociateCallWithContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -2366,8 +2354,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateDissociateCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000),
-                                                getTxnRecord("delegateDissociateCallWithContractKeyTxn").andAllChildRecords().logged()
+                                                        .gas(5_000_000)
                                         )
                         )
                 ).then(
@@ -2404,11 +2391,8 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000))),
-                        getTxnRecord("creationTx").logged()
-                )
+                                                        .gas(88_000))))
                 .when(
-
                         newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, theContract))),
                         tokenUpdate(TOKEN)
                                 .supplyKey("contractKey"),
@@ -2536,8 +2520,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode(outerContract)
 														.via("creationTx")
-														.gas(100_000))),
-						getTxnRecord("creationTx").logged()
+														.gas(100_000)))
 				)
 				.when(
 						withOpContext(
@@ -2547,30 +2530,27 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(delegateContractDelegateContractKey).shape(delegateContractDelegateContractShape.signedWith(sigs(ON,
 														innerContract, outerContract))),
 												tokenUpdate(fungibleToken)
-														.supplyKey(delegateContractDelegateContractKey).logged(),
+														.supplyKey(delegateContractDelegateContractKey),
 												contractCall(outerContract,
 														ContractResources.BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via("burnCallAfterNestedMintCallWithPrecompileCall").logged(),
+														.via("burnCallAfterNestedMintCallWithPrecompileCall"),
 												contractCall(outerContract,
 														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via(
-																"burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall").logged(),
+														.via("burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall"),
 												contractCall(outerContract,
 														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via(
-																"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall").logged(),
+														.via("burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall"),
 												contractCall(outerContract,
 														ContractResources.BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via(
-																"burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall").logged()
+														.via("burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall")
 										)),
 						withOpContext(
 								(spec, opLog) ->
@@ -2579,24 +2559,24 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(contractDelegateContractKey).shape(contractDelegateContractShape.signedWith(sigs(ON,
 														innerContract, outerContract))),
 												tokenUpdate(fungibleToken)
-														.supplyKey(contractDelegateContractKey).logged(),
+														.supplyKey(contractDelegateContractKey),
 												contractCall(outerContract,
 														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via("burnDelegateCallAfterNestedMintCallWithPrecompileCall").logged(),
+														.via("burnDelegateCallAfterNestedMintCallWithPrecompileCall"),
 												contractCall(outerContract,
 														ContractResources.BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
 														.via(
-																"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall").logged(),
+																"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall"),
 												contractCall(outerContract,
 														ContractResources.BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
 														.via(
-																"burnCallAfterNestedMintDelegateCallWithPrecompileCall").logged()
+																"burnCallAfterNestedMintDelegateCallWithPrecompileCall")
 
 										)),
 						withOpContext(
@@ -2606,11 +2586,11 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 												newKeyNamed(contractDelegateContractKey).shape(contractDelegateContractShape.signedWith(sigs(ON,
 														outerContract, innerContract))),
 												tokenUpdate(fungibleToken)
-														.supplyKey(contractDelegateContractKey).logged(),
+														.supplyKey(contractDelegateContractKey),
 												contractCall(outerContract, ContractResources.BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
 														1, asAddress(spec.registry().getTokenID(fungibleToken)))
 														.payingWith(theAccount)
-														.via("burnCallAfterNestedMintCallWithPrecompileDelegateCall").logged()
+														.via("burnCallAfterNestedMintCallWithPrecompileDelegateCall")
 										)),
 						childRecordsCheck("burnCallAfterNestedMintCallWithPrecompileCall", SUCCESS, recordWith()
 										.status(SUCCESS)

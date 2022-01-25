@@ -24,9 +24,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -55,8 +55,6 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public ContractDeleteTransitionLogic(
@@ -113,7 +111,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {

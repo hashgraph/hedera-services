@@ -211,7 +211,7 @@ class TxnRateFeeMultiplierSourceTest {
 
 	@Test
 	void toStringIndicatesUnavailableConfig() {
-		final var desired = "The new cutoffs for congestion pricing are: <N/A>";
+		final var desired = "The new cutoffs for congestion pricing are :  <N/A>";
 
 		subject.logReadableCutoffs();
 
@@ -220,7 +220,7 @@ class TxnRateFeeMultiplierSourceTest {
 
 	@Test
 	void toStringHasExpectedCutoffsMsg() {
-		final var desired = "The new cutoffs for congestion pricing are:\n" +
+		final var desired = "The new cutoffs for congestion pricing are : \n" +
 				"  (A) When logical TPS exceeds:\n" +
 				"    900.00 TPS, multiplier is 10x\n" +
 				"    950.00 TPS, multiplier is 25x\n" +

@@ -44,8 +44,6 @@ public class TokenUnpauseTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 
-	private final Function<TransactionBody, ResponseCodeEnum> semanticCheck = this::validate;
-
 	@Inject
 	public TokenUnpauseTransitionLogic(
 			final TypedTokenStore tokenStore,
@@ -80,7 +78,7 @@ public class TokenUnpauseTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return semanticCheck;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

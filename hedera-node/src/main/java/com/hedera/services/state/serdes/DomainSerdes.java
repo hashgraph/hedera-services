@@ -50,11 +50,11 @@ public class DomainSerdes {
 	}
 
 	public void writeNullableString(String msg, SerializableDataOutputStream out) throws IOException {
-		writeNullable(msg, out, (_msg, _out) -> _out.writeNormalisedString(_msg));
+		writeNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
 	}
 
 	public String readNullableString(SerializableDataInputStream in, int maxLen) throws IOException {
-		return readNullable(in, (_in) -> _in.readNormalisedString(maxLen));
+		return readNullable(in, input -> input.readNormalisedString(maxLen));
 	}
 
 	public <T> void writeNullable(
@@ -96,9 +96,9 @@ public class DomainSerdes {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void serializeId(EntityId id, DataOutputStream _out) throws IOException {
-		var out = (SerializableDataOutputStream) _out;
-		out.writeSerializable(id, true);
+	public void serializeId(EntityId id, DataOutputStream out) throws IOException {
+		var outVal = (SerializableDataOutputStream) out;
+		outVal.writeSerializable(id, true);
 	}
 
 	public RichInstant deserializeLegacyTimestamp(DataInputStream in) throws IOException {

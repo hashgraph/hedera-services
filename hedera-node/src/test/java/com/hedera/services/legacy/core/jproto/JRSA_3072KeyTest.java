@@ -40,7 +40,7 @@ class JRSA_3072KeyTest {
 
 	@Test
 	void nonEmptyJRSA_3072KeyTest() {
-		final var desiredRepr = "<JRSA_3072Key: RSA_3072Key hex=4e4f4e53454e5345>";
+		final var desiredRepr = "<JRSA_3072Key: rsa3072Key hex=4e4f4e53454e5345>";
 		final var mockKey = "NONSENSE".getBytes();
 		JRSA_3072Key key = new JRSA_3072Key(mockKey);
 		assertFalse(key.isEmpty());
