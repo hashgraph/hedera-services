@@ -75,6 +75,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 public class DissociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
+
+	private static final long GAS_TO_OFFER = 4_000_000L;
+
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
 	private static final String OUTER_CONTRACT = "Nested Associate/Dissociate Contract";
@@ -181,7 +184,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCreate(THE_CONTRACT)
 														.bytecode(THE_CONTRACT)
-														.gas(100_000),
+														.gas(GAS_TO_OFFER),
 												tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
 												tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
 												tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
@@ -204,34 +207,34 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(zeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(zeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(nonZeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
 														.payingWith(nonZeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
 														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get()))
 														.alsoSigningWithFullPrefix(MULTI_KEY)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.payingWith(TOKEN_TREASURY)
 										)
 						)
@@ -271,7 +274,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
 						contractCreate(INNER_CONTRACT)
 								.bytecode(INNER_CONTRACT)
-								.gas(100_000),
+								.gas(GAS_TO_OFFER),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -285,13 +288,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
 														getNestedContractAddress(INNER_CONTRACT, spec))
 														.bytecode(OUTER_CONTRACT)
-														.gas(100_000),
+														.gas(GAS_TO_OFFER),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(OUTER_CONTRACT, NESTED_TOKEN_DISSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("nestedDissociateTxn")
-														.gas(600_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged()
 										)
@@ -341,7 +344,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCreate(THE_CONTRACT)
 														.bytecode(THE_CONTRACT)
-														.gas(100_000),
+														.gas(GAS_TO_OFFER),
 												tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
@@ -351,7 +354,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 																asAddress(knowableTokenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("multipleDissociationTxn")
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												getTxnRecord("multipleDissociationTxn").andAllChildRecords().logged()
 										)

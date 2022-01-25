@@ -83,6 +83,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class ContractHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
 
+	private static final long GAS_TO_OFFER = 4_000_000L;
+
 	private static final String CONTRACT = "theContract";
 	private static final String NESTED = "theNestedContract";
 
@@ -148,7 +150,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("HSCS_PREC_017_rollback_after_insufficient_balance")
 				.given(
 						newKeyNamed(supplyKey),
-						cryptoCreate(alice).balance(3 * ONE_HBAR),
+						cryptoCreate(alice).balance(10 * ONE_HBAR),
 						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(treasuryForToken).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
@@ -157,7 +159,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(treasuryForToken)
-								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
+								.withCustom(fixedHbarFee(4 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
 						fileCreate("bytecode").payingWith(bob),
@@ -171,7 +173,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 														.payingWith(bob)
 														.bytecode("bytecode")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						tokenAssociate(alice, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
 						tokenAssociate(theContract, tokenWithHbarFee),
@@ -192,7 +194,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													1L, 2L)
 													.payingWith(alice)
 													.alsoSigningWithFullPrefix(alice)
-													.gas(70_000)
+													.gas(GAS_TO_OFFER)
 													.via("contractCallTxn")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								})
@@ -230,19 +232,19 @@ public class ContractHTSSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
 						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
 						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
 				).when(
 						contractCall(CONTRACT, ZENOS_BANK_DEPOSIT_TOKENS, 50)
 								.payingWith(ACCOUNT)
-								.gas(250_000)
+								.gas(GAS_TO_OFFER)
 								.via("zeno"),
 						contractCall(CONTRACT, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(RECEIVER)
 								.alsoSigningWithFullPrefix(CONTRACT)
-								.gas(250_000)
+								.gas(GAS_TO_OFFER)
 								.via("receiverTx")
 				).then(
 						childRecordsCheck("zeno",
@@ -291,14 +293,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000));
+													.gas(GAS_TO_OFFER));
 								}),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
 						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
@@ -323,7 +325,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray()
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(GAS_TO_OFFER)
 													.via("distributeTx"));
 								})
 
@@ -380,14 +382,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000));
+													.gas(GAS_TO_OFFER));
 								})
 				).when(
 						withOpContext(
@@ -410,7 +412,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(110_000)
+													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
@@ -426,7 +428,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(110_000)
+													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
@@ -441,7 +443,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.payingWith(ACCOUNT)
-													.gas(110_000)
+													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
 													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
@@ -523,14 +525,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000L));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000L));
+													.gas(GAS_TO_OFFER));
 								})
 				).when(
 						withOpContext(
@@ -553,7 +555,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(GAS_TO_OFFER)
 													.via("distributeTx")
 													.alsoSigningWithFullPrefix(FEE_COLLECTOR)
 													.hasKnownStatus(SUCCESS));
@@ -569,7 +571,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(FEE_COLLECTOR))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(GAS_TO_OFFER)
 													.via("missingSignatureTx")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
@@ -584,7 +586,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													asAddress(spec.registry().getAccountID(RECEIVER))
 											)
 													.payingWith(ACCOUNT)
-													.gas(200_000)
+													.gas(GAS_TO_OFFER)
 													.via("failingChildFrameTx")
 													.alsoSigningWithFullPrefix(RECEIVER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
@@ -650,14 +652,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000));
+													.gas(GAS_TO_OFFER));
 								}),
 						tokenAssociate(CONTRACT, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
@@ -678,7 +680,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													1L
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(GAS_TO_OFFER)
 													.via("distributeTx"));
 								})
 
@@ -723,14 +725,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(NESTED,
 													spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000));
+													.gas(GAS_TO_OFFER));
 								}),
 						tokenAssociate(CONTRACT, List.of(NFT)),
 						tokenAssociate(RECEIVER, List.of(NFT)),
@@ -755,7 +757,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													theSerialNumbers
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(GAS_TO_OFFER)
 													.via("distributeTx"));
 								})
 
@@ -799,14 +801,14 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(spec, contractCreate(NESTED)
 											.payingWith(ACCOUNT)
 											.bytecode("nestedBytecode")
-											.gas(100_000));
+											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
 													getNestedContractAddress(NESTED, spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
-													.gas(100_000));
+													.gas(GAS_TO_OFFER));
 								}),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
 						tokenAssociate(CONTRACT, List.of(A_TOKEN)),
@@ -830,7 +832,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 													amounts.toArray()
 											)
 													.payingWith(ACCOUNT)
-													.gas(48_000)
+													.gas(GAS_TO_OFFER)
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 													.via("distributeTx"));
 								})

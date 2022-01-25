@@ -25,16 +25,22 @@ import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -70,6 +76,27 @@ public class GetAccountRecordsAnswer implements AnswerService {
 			final ResponseCodeEnum validity,
 			final long cost
 	) {
+		return responseFor(query, view, validity, cost, null);
+	}
+
+	@Override
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost,
+			final Map<String, Object> queryCtx
+	) {
+		return responseFor(query, view, validity, cost, queryCtx);
+	}
+
+	private Response responseFor(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost,
+			final @Nullable Map<String, Object> queryCtx
+	) {
 		final var op = query.getCryptoGetAccountRecords();
 		final var response = CryptoGetAccountRecordsResponse.newBuilder();
 
@@ -81,15 +108,29 @@ public class GetAccountRecordsAnswer implements AnswerService {
 				response.setAccountID(op.getAccountID());
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				response.setHeader(answerOnlyHeader(OK));
-				response.setAccountID(op.getAccountID());
-				response.addAllRecords(answerFunctions.accountRecords(view, op));
+				setAnswerOnly(response, view, op, queryCtx);
 			}
 		}
 
 		return Response.newBuilder()
 				.setCryptoGetAccountRecords(response)
 				.build();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setAnswerOnly(
+			final CryptoGetAccountRecordsResponse.Builder response,
+			final StateView view,
+			final CryptoGetAccountRecordsQuery op,
+			final @Nullable Map<String, Object> queryCtx
+	) {
+		response.setHeader(answerOnlyHeader(OK));
+		response.setAccountID(op.getAccountID());
+		if (queryCtx != null && queryCtx.containsKey(PAYER_RECORDS_CTX_KEY)) {
+			response.addAllRecords((List<TransactionRecord>) queryCtx.get(PAYER_RECORDS_CTX_KEY));
+		} else {
+			response.addAllRecords(answerFunctions.mostRecentRecords(view, op));
+		}
 	}
 
 	@Override
@@ -112,6 +153,6 @@ public class GetAccountRecordsAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		final var paymentTxn = query.getCryptoGetAccountRecords().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 }

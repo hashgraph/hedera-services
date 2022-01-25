@@ -45,10 +45,10 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class LedgerModule {
+public interface LedgerModule {
 	@Binds
 	@Singleton
-	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+	BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
 	@Binds
 	@Singleton
@@ -56,7 +56,7 @@ public abstract class LedgerModule {
 
 	@Provides
 	@Singleton
-	public static HederaLedger provideHederaLedger(
+	static HederaLedger provideHederaLedger(
 			final TokenStore tokenStore,
 			final ScheduleStore scheduleStore,
 			final EntityCreator creator,
