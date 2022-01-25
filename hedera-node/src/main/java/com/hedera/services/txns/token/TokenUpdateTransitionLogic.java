@@ -111,7 +111,6 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var outcome = OK;
 		MerkleToken token = tokenStore.get(id);
 
 		if (op.hasExpiry() && !validator.isValidExpiry(op.getExpiry())) {
@@ -134,7 +133,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		outcome = autoRenewAttachmentCheck(op, token);
+		var outcome = autoRenewAttachmentCheck(op, token);
 		if (outcome != OK) {
 			txnCtx.setStatus(outcome);
 			return;
