@@ -800,7 +800,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			Objects.requireNonNull(transferOp);
 			long accumulatedCost = 0;
-			boolean customFees = impliedTransfers.getAssessedCustomFees().size() > 0;
+			boolean customFees = impliedTransfers != null && impliedTransfers.getAssessedCustomFees().size() > 0;
 			// For fungible there are always at least two operations, so only charge half for each operation
 			long nftHalfTxCost = precompilePricingUtils.getMinimumPriceInTinybars(
 					customFees ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES :
