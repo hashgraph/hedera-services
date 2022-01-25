@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_SYSTEM_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
@@ -258,7 +259,7 @@ public class SmartContractRequestHandler {
 
 	private AccountID getBeneficiary(ContractDeleteTransactionBody op) {
 		if (op.hasTransferAccountID()) {
-			return op.getTransferAccountID();
+			return ledger.lookUpAliasedId(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID).resolvedId();
 		} else if (op.hasTransferContractID()) {
 			return asAccount(op.getTransferContractID());
 		}

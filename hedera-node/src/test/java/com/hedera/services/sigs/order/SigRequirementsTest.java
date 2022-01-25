@@ -276,6 +276,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -860,7 +861,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+		assertEquals(INVALID_TRANSFER_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1363,7 +1364,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+		assertEquals(INVALID_TRANSFER_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test

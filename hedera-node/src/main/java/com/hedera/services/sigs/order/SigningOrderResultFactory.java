@@ -165,4 +165,11 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingTokenTreasury();
+
+	/**
+	 * Report an invalid transfer account encountered when transferring any funds of an account/contract being deleted.
+	 *
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forInvalidTransferAccount();
 }

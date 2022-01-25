@@ -365,7 +365,7 @@ public class SigRequirements {
 			var beneficiary = op.getTransferAccountID();
 			var beneficiaryResult = sigMetaLookup.aliasableAccountSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
-				return factory.forInvalidAccount();
+				return factory.forInvalidTransferAccount();
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
 				required.add(beneficiaryResult.metadata().key());
 			}
@@ -530,7 +530,7 @@ public class SigRequirements {
 		if (!payer.equals(beneficiary)) {
 			var beneficiaryResult = sigMetaLookup.aliasableAccountSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
-				return factory.forMissingAccount();
+				return factory.forInvalidTransferAccount();
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
 				required = mutable(required);
 				required.add(beneficiaryResult.metadata().key());

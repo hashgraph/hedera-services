@@ -165,7 +165,6 @@ public class AliasManager {
 	 * @return result from alias look up
 	 */
 	public AliasLookup lookUpAccount(final AccountID grpcId, final ResponseCodeEnum errResponse) {
-		final var defaultResponse = OK;
 		AccountID id = grpcId;
 
 		if (isAlias(grpcId)) {
@@ -176,6 +175,6 @@ public class AliasManager {
 			id = accountNum.toGrpcAccountId();
 		}
 
-		return AliasLookup.of(id, defaultResponse);
+		return AliasLookup.of(id, OK);
 	}
 }

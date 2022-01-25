@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -138,6 +139,11 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 		return MISSING_TOKEN_TREASURY;
 	}
 
+	@Override
+	public SigningOrderResult<ResponseCodeEnum> forInvalidTransferAccount() {
+		return INVALID_TRANSFER_ACCOUNT;
+	}
+
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_ACCOUNT_RESULT =
 			new SigningOrderResult<>(INVALID_ACCOUNT_ID);
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_SCHEDULE_PAYER_RESULT =
@@ -172,4 +178,6 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(INVALID_CUSTOM_FEE_COLLECTOR);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_TREASURY =
 			new SigningOrderResult<>(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+	static final SigningOrderResult<ResponseCodeEnum> INVALID_TRANSFER_ACCOUNT =
+			new SigningOrderResult<>(INVALID_TRANSFER_ACCOUNT_ID);
 }
