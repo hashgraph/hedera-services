@@ -1,6 +1,6 @@
 name: Hedera Services CI
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
@@ -25,6 +25,11 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Install Docker
+        run: |
+            brew install docker-machine docker
+            sudo docker –version
+
       - uses: actions/checkout@v2
 
       - name: Set up JDK 17
@@ -52,7 +57,7 @@ jobs:
             **/target/pom.xml
 
   javadoc:
-    needs: [build]
+    needs: [ build ]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -67,7 +72,7 @@ jobs:
         run: mvn javadoc:javadoc -DskipTests
 
   e2e-first-subset:
-    needs: [build]
+    needs: [ build ]
     runs-on: macos-latest
 
     services:
@@ -115,7 +120,7 @@ jobs:
 
 
   e2e-second-subset:
-    needs: [build]
+    needs: [ build ]
     runs-on: macos-latest
 
     services:
@@ -163,7 +168,7 @@ jobs:
           mvn test -Dargs="-s Contract, Contract op codes, Contract records" -DskipTests -Pe2e-tests
 
   e2e-third-subset:
-    needs: [build]
+    needs: [ build ]
     runs-on: macos-latest
 
     services:
