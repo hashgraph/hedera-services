@@ -1,33 +1,37 @@
 name: Hedera Services CI
 
-on: [ push ]
+on: [push]
 
 jobs:
   build:
+
     runs-on: macos-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: fcfs
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: swirlds
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PORT: 5432
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Install Docker
-        run: |
-            brew install docker-machine docker
-            sudo docker –version
-      services:
-        postgres:
-          image: postgres:latest
-          env:
-            POSTGRES_DB: fcfs
-            POSTGRES_PASSWORD: password
-            POSTGRES_USER: swirlds
-            PGDATA: /var/lib/postgresql/data/pgdata
-            POSTGRES_PORT: 5432
-          ports:
-            - 5432:5432
-          options: >-
-            --health-cmd pg_isready
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
+        run:
+          brew install docker-machine docker
+          sudo docker –version
 
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
       - name: Set up JDK 17
         uses: actions/setup-java@v2
@@ -54,7 +58,7 @@ jobs:
             **/target/pom.xml
 
   javadoc:
-    needs: [ build ]
+    needs: [build]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -69,7 +73,7 @@ jobs:
         run: mvn javadoc:javadoc -DskipTests
 
   e2e-first-subset:
-    needs: [ build ]
+    needs: [build]
     runs-on: macos-latest
 
     services:
@@ -117,7 +121,7 @@ jobs:
 
 
   e2e-second-subset:
-    needs: [ build ]
+    needs: [build]
     runs-on: macos-latest
 
     services:
@@ -165,8 +169,8 @@ jobs:
           mvn test -Dargs="-s Contract, Contract op codes, Contract records" -DskipTests -Pe2e-tests
 
   e2e-third-subset:
-    needs: [ build ]
-    runs-on: macos-latest
+    needs: [build]
+    runs-on: ubuntu-latest
 
     services:
       postgres:
