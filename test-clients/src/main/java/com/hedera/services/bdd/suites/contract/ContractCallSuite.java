@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -87,6 +88,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -187,6 +189,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var ticketToken = "ticketToken";
 		final var adminKey = "admin";
 		final var treasury = "treasury";
+		final var user = "user";
 		final var newSupplyKey = "newSupplyKey";
 
 		final var ticketTaking = "ticketTaking";
@@ -203,6 +206,9 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(adminKey),
 						cryptoCreate(treasury),
+						// we need a new user, expiry to 1 Jan 2100 costs 11M gas for token associate
+						cryptoCreate(user),
+						cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, user)),
 						tokenCreate(ticketToken)
 								.treasury(treasury)
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -237,22 +243,29 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						/* Take a ticket */
 						contractCall(workingHours, WORKING_HOURS_TAKE_TICKET)
+								.payingWith(user)
+								.gas(4_000_000)
 								.via(ticketTaking)
 								.alsoSigningWithFullPrefix(treasury)
 								.exposingResultTo(result -> {
 									log.info("Explicit mint result is {}", result);
 									ticketSerialNo.set(((BigInteger) result[0]).longValueExact());
 								}),
-						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						getTxnRecord(ticketTaking),
+						getAccountBalance(user).hasTokenBalance(ticketToken, 1L),
 						/* Our ticket number is 3 (b/c of the two pre-mints), so we must call
-						* work twice before the contract will actually accept our ticket. */
-						sourcing(() ->
-								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())),
-						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 1L),
+						 * work twice before the contract will actually accept our ticket. */
 						sourcing(() ->
 								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
+										.payingWith(user)),
+						getAccountBalance(user).hasTokenBalance(ticketToken, 1L),
+						sourcing(() ->
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
+										.payingWith(user)
 										.via(ticketWorking)),
-						getAccountBalance(DEFAULT_PAYER).hasTokenBalance(ticketToken, 0L),
+						getAccountBalance(user).hasTokenBalance(ticketToken, 0L),
 						getTokenInfo(ticketToken).hasTotalSupply(1L),
 						/* Review the history */
 						getTxnRecord(ticketTaking).andAllChildRecords().logged(),
@@ -267,7 +280,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		final var insert2To8 = "insert2To8";
 		final var insert3To16 = "insert3To16";
 		final var remove2 = "remove2";
-		final var gasToOffer = 4_000_000;
+		final var gasToOffer = 400_000;
 
 		return defaultHapiSpec("ImapUserExercise")
 				.given(

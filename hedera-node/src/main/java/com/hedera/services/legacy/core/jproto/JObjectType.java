@@ -20,7 +20,9 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mapping of Class name and Object Id
@@ -32,7 +34,7 @@ public enum JObjectType {
 	FC_CONTRACT_ID_KEY, FC_DELEGATE_CONTRACT_ID_KEY,
 	FC_FILE_INFO, FC_ECDSA_SECP256K1_KEY;
 
-	private static final HashMap<JObjectType, Long> LOOKUP_TABLE = new HashMap<>();
+	private static final Map<JObjectType, Long> LOOKUP_TABLE = new EnumMap<>(JObjectType.class);
 	private static final HashMap<Long, JObjectType> REV_LOOKUP_TABLE = new HashMap<>();
 
 	static {

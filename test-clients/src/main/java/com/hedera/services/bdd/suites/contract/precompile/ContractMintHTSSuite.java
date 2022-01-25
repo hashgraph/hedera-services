@@ -50,9 +50,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -74,14 +72,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
+
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
@@ -149,7 +149,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(hwMint, HW_MINT_CONS_ABI, fungibleNum.get())
 								.bytecode(hwMintInitcode)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
 								.via(firstMintTxn)
@@ -204,10 +204,11 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(hwMint, HW_MINT_CONS_ABI, nonFungibleNum.get())
 								.bytecode(hwMintInitCode)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(hwMint, HW_MINT_CALL_ABI)
 								.via(firstMintTxn)
+								.gas(GAS_TO_OFFER)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(nonFungibleToken).hasTotalSupply(1),
@@ -218,7 +219,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(contractKey),
 						getTokenInfo(nonFungibleToken).logged(),
 						contractCall(hwMint, HW_MINT_CALL_ABI)
-								.via(secondMintTxn),
+								.via(secondMintTxn)
+								.gas(GAS_TO_OFFER),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(nonFungibleToken).hasTotalSupply(2),
 						getTokenNftInfo(nonFungibleToken, 2L).logged()
@@ -254,7 +256,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, MINT_CONS_ABI, fungibleNum.get())
 								.bytecode(mintContractByteCode).payingWith(theAccount)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(theContract, MINT_FUNGIBLE_WITH_EVENT_CALL_ABI, amount)
 								.via(firstMintTxn).payingWith(theAccount)
@@ -301,11 +303,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).when(
 						sourcing(() -> contractCreate(theContract, MINT_CONS_ABI, nonFungibleNum.get())
 								.bytecode(mintContractByteCode).payingWith(theAccount)
-								.gas(300_000L))
+								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(theContract, MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI,
 								Arrays.asList("Test metadata 1", "Test metadata 2"))
 								.via(firstMintTxn).payingWith(theAccount)
+								.gas(GAS_TO_OFFER)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
 						getTxnRecord(firstMintTxn).hasPriority(
@@ -347,7 +350,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						updateLargeFile(theAccount, outerContract, extractByteCode(ContractResources.NESTED_MINT_CONTRACT)),
 						contractCreate(innerContract)
 								.bytecode(innerContract)
-								.gas(100_000)
+								.gas(GAS_TO_OFFER)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -357,7 +360,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														getNestedContractAddress(innerContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
-														.gas(300_000),
+														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
 												cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
@@ -370,6 +373,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														.payingWith(GENESIS)
 														.alsoSigningWithFullPrefix(multiKey)
 														.via(nestedTransferTxn)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												getTxnRecord(nestedTransferTxn).andAllChildRecords().logged()
 										)
@@ -415,7 +419,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												contractCreate(theContract, MINT_CONS_ABI,
 														asAddress(spec.registry().getTokenID(fungibleToken)))
 														.bytecode(theContract)
-														.gas(100_000L),
+														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														theContract))),
 												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
@@ -463,7 +467,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(multiKey),
 						contractCreate(innerContract)
 								.bytecode(innerContract)
-								.gas(100_000L)
+								.gas(GAS_TO_OFFER)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -473,7 +477,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														getNestedContractAddress(innerContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
-														.gas(100_000L),
+														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_CONTRACT_KEY_NAME).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
 												cryptoUpdate(theAccount).key(DELEGATE_CONTRACT_KEY_NAME),
@@ -483,6 +487,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														Arrays.asList("Test metadata 1"))
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(nestedMintTxn)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
 												getTxnRecord(nestedMintTxn).andAllChildRecords().logged()
 										)

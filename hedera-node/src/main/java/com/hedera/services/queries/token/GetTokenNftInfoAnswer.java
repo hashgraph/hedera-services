@@ -49,6 +49,7 @@ public class GetTokenNftInfoAnswer implements AnswerService {
 
 	@Inject
 	public GetTokenNftInfoAnswer() {
+		// Default constructor
 	}
 
 	@Override
