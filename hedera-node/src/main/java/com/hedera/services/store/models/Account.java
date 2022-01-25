@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
@@ -65,6 +66,7 @@ public class Account {
 	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private long autoRenewSecs;
+	private ByteString alias = ByteString.EMPTY;
 	private JKey key;
 	private String memo = "";
 	private Id proxy;
@@ -119,7 +121,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -140,12 +142,12 @@ public class Account {
 
 		final Set<Id> uniqueIds = new HashSet<>();
 		for (var token : tokens) {
-			final var id = token.getId();
-			validateFalse(associatedTokens.contains(id), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			final var tokenId = token.getId();
+			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 			if (automaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
-			uniqueIds.add(id);
+			uniqueIds.add(tokenId);
 		}
 
 		associatedTokens.addAllIds(uniqueIds);
@@ -217,6 +219,7 @@ public class Account {
 				.add("ownedNfts", ownedNfts)
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
+				.add("alias", getAlias().toStringUtf8())
 				.toString();
 	}
 
@@ -283,4 +286,13 @@ public class Account {
 	public void setProxy(final Id proxy) {
 		this.proxy = proxy;
 	}
+
+	public ByteString getAlias() {
+		return alias;
+	}
+
+	public void setAlias(final ByteString alias) {
+		this.alias = alias;
+	}
+
 }

@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,8 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.files.SimpleUpdateResult;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -45,9 +46,9 @@ import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -56,8 +57,9 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class FileSysUndelTransitionLogicTest {
-	enum TargetType { VALID, MISSING, DELETED }
-	enum OldExpiryType { NONE, FUTURE, PAST }
+	enum TargetType {VALID, MISSING, DELETED}
+
+	enum OldExpiryType {NONE, FUTURE, PAST}
 
 	long now = Instant.now().getEpochSecond();
 	long lifetime = 1_000_000L;
@@ -69,7 +71,7 @@ class FileSysUndelTransitionLogicTest {
 	FileID missing = IdUtils.asFile("0.0.75231");
 	FileID deleted = IdUtils.asFile("0.0.666");
 
-	HederaFs.UpdateResult success = new TieredHederaFs.SimpleUpdateResult(
+	HederaFs.UpdateResult success = new SimpleUpdateResult(
 			true,
 			false,
 			SUCCESS);
@@ -82,6 +84,7 @@ class FileSysUndelTransitionLogicTest {
 	PlatformTxnAccessor accessor;
 
 	HederaFs hfs;
+	SigImpactHistorian sigImpactHistorian;
 	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
 
@@ -96,6 +99,7 @@ class FileSysUndelTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		oldExpiries = mock(Map.class);
+		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(undeleted)).willReturn(true);
@@ -104,13 +108,13 @@ class FileSysUndelTransitionLogicTest {
 		given(hfs.getattr(undeleted)).willReturn(attr);
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
 
-		subject = new FileSysUndelTransitionLogic(hfs, oldExpiries, txnCtx);
+		subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx);
 	}
 
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries);
+		InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
 
 		givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
 		// and:
@@ -125,6 +129,7 @@ class FileSysUndelTransitionLogicTest {
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
 		inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
+		inOrder.verify(sigImpactHistorian).markEntityChanged(deleted.getFileNum());
 	}
 
 	@Test

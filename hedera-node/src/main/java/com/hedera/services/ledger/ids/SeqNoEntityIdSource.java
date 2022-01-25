@@ -116,9 +116,8 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
 	@Override
 	public void reclaimProvisionalIds() {
-		final var curSeqNo = seqNo.get();
 		while (provisionalIds != 0) {
-			curSeqNo.decrement();
+			seqNo.get().decrement();
 			--provisionalIds;
 		}
 	}
@@ -128,6 +127,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 		provisionalIds = 0;
 	}
 
+	/* --- Only used by unit tests --- */
 	int getProvisionalIds() {
 		return provisionalIds;
 	}

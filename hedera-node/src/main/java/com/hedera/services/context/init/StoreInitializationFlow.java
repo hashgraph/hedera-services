@@ -20,16 +20,18 @@ package com.hedera.services.context.init;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,33 +48,40 @@ public class StoreInitializationFlow {
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
-	private final UniqTokenViewsManager uniqTokenViewsManager;
+	private final AliasManager aliasManager;
+	private final UniqueTokenViewsManager uniqTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 
 	@Inject
 	public StoreInitializationFlow(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			@WorkingState StateAccessor stateAccessor,
-			UniqTokenViewsManager uniqTokenViewsManager,
-			BackingStore<AccountID, MerkleAccount> backingAccounts,
-			BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
+			final TokenStore tokenStore,
+			final ScheduleStore scheduleStore,
+			final AliasManager aliasManager,
+			final @WorkingState StateAccessor stateAccessor,
+			final UniqueTokenViewsManager uniqTokenViewsManager,
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final BackingStore<TokenID, MerkleToken> backingTokens,
+			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
+		this.backingTokens = backingTokens;
 		this.stateAccessor = stateAccessor;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
+		this.aliasManager = aliasManager;
 		this.uniqTokenViewsManager = uniqTokenViewsManager;
 	}
 
 	public void run() {
 		backingTokenRels.rebuildFromSources();
 		backingAccounts.rebuildFromSources();
+		backingTokens.rebuildFromSources();
 		backingNfts.rebuildFromSources();
 		log.info("Backing stores rebuilt");
 
@@ -82,5 +91,8 @@ public class StoreInitializationFlow {
 
 		uniqTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
 		log.info("Unique token views rebuilt");
+
+		aliasManager.rebuildAliasesMap(stateAccessor.accounts());
+		log.info("Account aliases map rebuilt");
 	}
 }

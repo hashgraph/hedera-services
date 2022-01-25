@@ -23,11 +23,12 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.TxnAccessor;
@@ -51,40 +52,37 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
 	private final AccountStore accountStore;
-	private final EntityIdSource ids;
 	private final TransactionContext txnCtx;
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final CodeCache codeCache;
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validateSemantics;
+	private final SigImpactHistorian sigImpactHistorian;
 
 	@Inject
 	public ContractCallTransitionLogic(
-			TransactionContext txnCtx,
-			EntityIdSource ids,
-			AccountStore accountStore,
-			HederaMutableWorldState worldState,
-			TransactionRecordService recordService,
-			CallEvmTxProcessor evmTxProcessor,
-			GlobalDynamicProperties properties,
-			CodeCache codeCache
+			final TransactionContext txnCtx,
+			final AccountStore accountStore,
+			final HederaWorldState worldState,
+			final TransactionRecordService recordService,
+			final CallEvmTxProcessor evmTxProcessor,
+			final GlobalDynamicProperties properties,
+			final CodeCache codeCache,
+			final SigImpactHistorian sigImpactHistorian
 	) {
 		this.txnCtx = txnCtx;
-		this.ids = ids;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
 		this.codeCache = codeCache;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
 	public void doStateTransition() {
-
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
@@ -112,17 +110,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */
+		for (final var createdContract : createdContracts) {
+			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
+		}
 		recordService.externaliseEvmCallTransaction(result);
-	}
-
-	@Override
-	public void reclaimCreatedIds() {
-		ids.reclaimProvisionalIds();
-	}
-
-	@Override
-	public void resetCreatedIds() {
-		ids.resetProvisionalIds();
 	}
 
 	@Override
@@ -132,7 +123,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validateSemantics;
 	}
 
 	private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
@@ -158,7 +149,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var address = contractId.asEvmAddress();
 
 		try {
-			codeCache.get(address);
+			codeCache.getIfPresent(address);
 		} catch(RuntimeException e) {
 			log.warn("Exception while attempting to pre-fetch code for {}", address);
 		}

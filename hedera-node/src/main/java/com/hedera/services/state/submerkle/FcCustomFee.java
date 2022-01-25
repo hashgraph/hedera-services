@@ -121,7 +121,7 @@ public class FcCustomFee implements SelfSerializable {
 				return fixedFeeSpec.usedDenomWildcard();
 			case ROYALTY_FEE:
 				if (royaltyFeeSpec.hasFallbackFee()) {
-					return royaltyFeeSpec.getFallbackFee().usedDenomWildcard();
+					return royaltyFeeSpec.fallbackFee().usedDenomWildcard();
 				}
 		}
 		return false;
@@ -268,9 +268,9 @@ public class FcCustomFee implements SelfSerializable {
 			final var spec = royaltyFeeSpec;
 			final var royaltyBuilder = RoyaltyFee.newBuilder()
 					.setExchangeValueFraction(Fraction.newBuilder()
-							.setNumerator(spec.getNumerator())
-							.setDenominator(spec.getDenominator()));
-			final var fallback = spec.getFallbackFee();
+							.setNumerator(spec.numerator())
+							.setDenominator(spec.denominator()));
+			final var fallback = spec.fallbackFee();
 			if (fallback != null) {
 				royaltyBuilder.setFallbackFee(fallback.asGrpc());
 			}
@@ -394,13 +394,13 @@ public class FcCustomFee implements SelfSerializable {
 			dos.writeBoolean(fractionalFeeSpec.isNetOfTransfers());
 		} else {
 			dos.writeByte(ROYALTY_CODE);
-			dos.writeLong(royaltyFeeSpec.getNumerator());
-			dos.writeLong(royaltyFeeSpec.getDenominator());
-			if (royaltyFeeSpec.getFallbackFee() == null) {
+			dos.writeLong(royaltyFeeSpec.numerator());
+			dos.writeLong(royaltyFeeSpec.denominator());
+			if (royaltyFeeSpec.fallbackFee() == null) {
 				dos.writeBoolean(false);
 			} else {
 				dos.writeBoolean(true);
-				serializeFixed(royaltyFeeSpec.getFallbackFee(), dos);
+				serializeFixed(royaltyFeeSpec.fallbackFee(), dos);
 			}
 		}
 		dos.writeSerializable(feeCollector, true);

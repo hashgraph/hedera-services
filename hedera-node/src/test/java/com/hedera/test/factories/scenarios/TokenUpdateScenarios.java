@@ -23,6 +23,7 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenUpdateFactory.newSignedTokenUpdate;
 
 public enum TokenUpdateScenarios implements TxnHandlingScenario {
@@ -43,6 +44,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newTreasury(TOKEN_TREASURY)
+							.get()
+			));
+		}
+	},
+	UPDATE_REPLACING_TREASURY_AS_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newTreasury(DEFAULT_PAYER)
 							.get()
 			));
 		}
@@ -119,6 +131,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
 							.updating(MISSING_TOKEN)
+							.newAutoRenew(MISC_ACCOUNT)
 							.get()
 			));
 		}
@@ -140,6 +153,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(MISC_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newAutoRenew(DEFAULT_PAYER)
 							.get()
 			));
 		}

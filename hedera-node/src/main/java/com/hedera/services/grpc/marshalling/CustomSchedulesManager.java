@@ -38,7 +38,7 @@ public class CustomSchedulesManager {
 		CustomFeeMeta extantMeta = null;
 		if (!allManagedMeta.isEmpty()) {
 			for (var meta : allManagedMeta) {
-				if (token.equals(meta.getTokenId())) {
+				if (token.equals(meta.tokenId())) {
 					extantMeta = meta;
 					break;
 				}

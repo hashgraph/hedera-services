@@ -25,11 +25,44 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
+	CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAccountToAlias(FIRST_TOKEN_SENDER_ID, CURRENTLY_UNUSED_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAliasToAlias(CURRENTLY_UNUSED_ALIAS, NO_RECEIVER_SIG_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromAccountToAlias(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
 	CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
@@ -41,6 +74,16 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		}
 	},
 	CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(RECEIVER_SIG_KT)
+							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
@@ -101,10 +144,10 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
-							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(DEFAULT_PAYER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
-							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
+							.nonPayerKts(SECOND_TOKEN_SENDER_KT)
 							.get()
 			));
 		}
@@ -172,12 +215,23 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER_ALIAS, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, RECEIVER_SIG)
+							.changingOwner(ROYALTY_TOKEN_NFT, SECOND_TOKEN_SENDER, DEFAULT_PAYER)
 							.get()
 			));
 		}

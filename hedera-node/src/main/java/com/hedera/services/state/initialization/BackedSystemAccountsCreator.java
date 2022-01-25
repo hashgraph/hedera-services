@@ -26,7 +26,7 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -79,11 +79,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			BackingStore<AccountID, MerkleAccount> accounts,
 			AddressBook addressBook
 	) {
-		long N = properties.getIntProperty("ledger.numSystemAccounts");
+		long systemAccounts = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
 		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
-		for (long num = 1; num <= N; num++) {
+		for (long num = 1; num <= systemAccounts; num++) {
 			var id = STATIC_PROPERTIES.scopedAccountWith(num);
 			if (accounts.contains(id)) {
 				continue;

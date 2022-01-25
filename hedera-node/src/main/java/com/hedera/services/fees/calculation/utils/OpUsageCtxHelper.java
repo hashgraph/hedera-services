@@ -23,18 +23,19 @@ package com.hedera.services.fees.calculation.utils;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.FileAppendMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
@@ -61,16 +62,19 @@ public class OpUsageCtxHelper {
 	private final FileNumbers fileNumbers;
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public OpUsageCtxHelper(
 			final StateView workingView,
 			final FileNumbers fileNumbers,
-			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+			final AliasManager aliasManager
 	) {
 		this.tokens = tokens;
 		this.fileNumbers = fileNumbers;
 		this.workingView = workingView;
+		this.aliasManager = aliasManager;
 	}
 
 	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
@@ -106,7 +110,7 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate());
+		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager);
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -169,7 +173,7 @@ public class OpUsageCtxHelper {
 				numFractionalFees++;
 			} else {
 				final var royaltyFee = fee.getRoyaltyFeeSpec();
-				final var fallbackFee = royaltyFee.getFallbackFee();
+				final var fallbackFee = royaltyFee.fallbackFee();
 				if (fallbackFee != null) {
 					if (fallbackFee.getTokenDenomination() != null) {
 						numRoyaltyHtsFallbackFees++;

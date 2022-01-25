@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -69,12 +71,14 @@ class HederaCallCodeOperationTest {
 	private SoliditySigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
+	@Mock
+	private Map<String, PrecompiledContract> precompiledContractMap;
 
 	private HederaCallCodeOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator);
+		subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
 		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
 	}
 
@@ -120,11 +124,13 @@ class HederaCallCodeOperationTest {
 		given(evmMsgFrame.stackSize()).willReturn(20);
 		given(evmMsgFrame.getRemainingGas()).willReturn(cost);
 		given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
@@ -155,8 +161,11 @@ class HederaCallCodeOperationTest {
 		// and:
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any())).willReturn(false);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(false);
 		given(addressValidator.test(any(), any())).willReturn(true);
+
+		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
 		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE), opRes.getHaltReason());

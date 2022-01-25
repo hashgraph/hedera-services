@@ -58,7 +58,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 		getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
 		wrapped.deletedAccounts.addAll(getDeletedAccounts());
 
-		/* We need to commit the ledgers first to make sure at any accounts we created exist in the parent,
+		/* We need to commit the ledgers first to make sure that any accounts we created exist in the parent,
 		* so that any set(..., BALANCE, ...) calls made by the UpdateTrackingLedgerAccounts below will be
 		* harmless repetitions of the balances we just flushed via commit(). */
 		trackingLedgers().commit();

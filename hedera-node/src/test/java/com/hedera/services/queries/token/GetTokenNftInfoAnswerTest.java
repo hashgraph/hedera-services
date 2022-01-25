@@ -72,6 +72,7 @@ class GetTokenNftInfoAnswerTest {
 	private long fee = 1_234L;
 	private AccountID owner = asAccount("3.4.5");
 	private ByteString metadata = ByteString.copyFromUtf8("some metadata");
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
 	StateView view;
 	OptionValidator optionValidator;
@@ -83,6 +84,7 @@ class GetTokenNftInfoAnswerTest {
 	@BeforeEach
 	void setup() {
 		info = TokenNftInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setNftID(nftId)
 				.setCreationTime(Timestamp.newBuilder().setSeconds(1).setNanos(2))
 				.setAccountID(owner)

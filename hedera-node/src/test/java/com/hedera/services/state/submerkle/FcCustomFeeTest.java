@@ -147,7 +147,7 @@ class FcCustomFeeTest {
 		assertFalse(subject.requiresCollectorAutoAssociation());
 
 		given(royaltyFeeSpec.hasFallbackFee()).willReturn(true);
-		given(royaltyFeeSpec.getFallbackFee()).willReturn(fixedFeeSpec);
+		given(royaltyFeeSpec.fallbackFee()).willReturn(fixedFeeSpec);
 		given(fixedFeeSpec.usedDenomWildcard()).willReturn(true);
 
 		assertTrue(subject.requiresCollectorAutoAssociation());

@@ -58,13 +58,13 @@ public class BalanceSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec getBalance(String accountID) {
-		return HapiApiSpec.customHapiSpec(("getBalance"))
+		return HapiApiSpec.customHapiSpec("getBalance")
 				.withProperties(specConfig)
 				.given().when()
 				.then(
 						getAccountBalance(accountID)
 								.noLogging()
-								.yahcliLogging()
+								.withYahcliLogging()
 				);
 	}
 

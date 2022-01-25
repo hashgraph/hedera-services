@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.utils.EntityIdUtils;
@@ -146,7 +146,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		isInTransaction = true;
 	}
 
-	void undoChangesOfType(List<P> properties) {
+	public void undoChangesOfType(List<P> properties) {
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot undo changes, no transaction is active");
 		}
@@ -160,6 +160,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				}
 			}
 		}
+	}
+
+	public void undoCreations() {
+		if (!isInTransaction) {
+			throw new IllegalStateException("Cannot undo created keys, no transaction is active");
+		}
+		createdKeys.clear();
 	}
 
 	public void rollback() {
@@ -231,16 +238,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 		final EnumMap<P, Object> changeSet = changes.get(id);
 		final boolean hasPendingChanges = changeSet != null;
-		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
 			if (commitInterceptor != null) {
-				changeManager.persistWithObserver(id, changeSet, account, commitInterceptor);
+				changeManager.persistWithObserver(id, changeSet, entity, commitInterceptor);
 			} else {
-				changeManager.persist(changeSet, account);
+				changeManager.persist(changeSet, entity);
 			}
 		}
 
-		return account;
+		return entity;
 	}
 
 	@Override
@@ -308,7 +315,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	@Override
 	public A getImmutableRef(K id) {
-		throw new UnsupportedOperationException("This BackingStore implementation only support getRef()");
+		return getRef(id);
 	}
 
 	/**
@@ -318,6 +325,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	public void put(K id, A entity) {
 		throwIfNotInTxn();
 
+		if (isZombie(id)) {
+			deadEntities.remove(id);
+		}
 		/* The ledger wrapping us may have created an entity we don't have; so catch up on that if necessary. */
 		if (!exists(id)) {
 			create(id);
@@ -349,11 +359,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	@Override
 	public Set<K> idSet() {
-		throw new UnsupportedOperationException("Use of BackingStore.idSet() is an anti-pattern");
+		return entities.idSet();
+	}
+
+	@Override
+	public long size() {
+		return entities.size();
 	}
 
 	/* --- Helpers --- */
-	ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
+	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
 		if (!exists(id)) {
 			return INVALID_ACCOUNT_ID;
 		}
@@ -437,6 +452,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return changes;
 	}
 
+	List<K> getCreations() {
+		return createdKeys;
+	}
+
 	private void flushListed(final List<K> l) {
 		if (!l.isEmpty()) {
 			for (final var key : l) {
@@ -466,7 +485,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("No active transaction!");
 		}
 		if (existsOrIsPendingCreation(id)) {
-			throw new IllegalArgumentException("An account already exists with key '" + id + "'!");
+			throw new IllegalArgumentException("An entity already exists with key '" + id + "'!");
 		}
 	}
 

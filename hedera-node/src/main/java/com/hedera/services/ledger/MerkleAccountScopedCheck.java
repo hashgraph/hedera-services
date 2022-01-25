@@ -43,7 +43,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 
 	private BalanceChange balanceChange;
 
-	MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
@@ -71,10 +71,6 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet
 	) {
-		if ((boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet)) {
-			return ResponseCodeEnum.INVALID_ACCOUNT_ID;
-		}
-
 		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
 			return ResponseCodeEnum.ACCOUNT_DELETED;
 		}
@@ -118,7 +114,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
 			case EXPIRY:
 				return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
+			default:
+				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
-		throw new IllegalArgumentException("Property " + prop + " cannot be validated in scoped check");
 	}
 }

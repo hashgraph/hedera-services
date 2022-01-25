@@ -130,9 +130,8 @@ class MerkleAccountTokensTest {
 
 	@Test
 	void rejectsIndivisibleParts() {
-		Assertions.assertThrows(
-				IllegalArgumentException.class,
-				() -> new MerkleAccountTokens(new CopyOnWriteIds(new long[MerkleAccountTokens.NUM_ID_PARTS + 1])));
+		final var idLength = new long[MerkleAccountTokens.NUM_ID_PARTS + 1];
+		Assertions.assertThrows(IllegalArgumentException.class, () -> new CopyOnWriteIds(idLength));
 	}
 
 	@Test

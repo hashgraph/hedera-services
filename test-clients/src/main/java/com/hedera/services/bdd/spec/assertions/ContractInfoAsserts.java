@@ -148,6 +148,15 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts numKvPairs(int expectedKvPairs) {
+		/* EVM storage maps 32-byte keys to 32-byte values */
+		final long numStorageBytes = expectedKvPairs * 64L;
+		registerProvider((spec, o) -> {
+			assertEquals(numStorageBytes, object2ContractInfo(o).getStorage(), "Bad storage size!");
+		});
+		return this;
+	}
+
 	private ContractInfo object2ContractInfo(Object o) {
 		return (ContractInfo) o;
 	}

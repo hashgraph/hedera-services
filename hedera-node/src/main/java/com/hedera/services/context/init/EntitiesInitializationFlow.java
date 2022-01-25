@@ -20,6 +20,7 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.swirlds.blob.BinaryObjectStore;
@@ -36,15 +37,18 @@ public class EntitiesInitializationFlow {
 
 	private final ExpiryManager expiries;
 	private final NetworkCtxManager networkCtxManager;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Supplier<BinaryObjectStore> binaryObjectStore;
 
 	@Inject
 	public EntitiesInitializationFlow(
-			ExpiryManager expiries,
-			NetworkCtxManager networkCtxManager,
-			Supplier<BinaryObjectStore> binaryObjectStore
+			final ExpiryManager expiries,
+			final SigImpactHistorian sigImpactHistorian,
+			final NetworkCtxManager networkCtxManager,
+			final Supplier<BinaryObjectStore> binaryObjectStore
 	) {
 		this.expiries = expiries;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.networkCtxManager = networkCtxManager;
 		this.binaryObjectStore = binaryObjectStore;
 	}
@@ -55,6 +59,9 @@ public class EntitiesInitializationFlow {
 		/* Use any entities stored in state to rebuild queue of expired entities. */
 		expiries.reviewExistingShortLivedEntities();
 		log.info("Short-lived entities reviewed");
+
+		sigImpactHistorian.invalidateCurrentWindow();
+		log.info("Signature impact history invalidated");
 
 		/* Re-initialize the "observable" system files; that is, the files which have
 	 	associated callbacks managed by the SysFilesCallback object. We explicitly

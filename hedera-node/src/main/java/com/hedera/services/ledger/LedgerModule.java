@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,19 +22,22 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -42,31 +45,31 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class LedgerModule {
+public interface LedgerModule {
 	@Binds
 	@Singleton
-	public abstract BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+	BackingStore<AccountID, MerkleAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+
+	@Binds
+	@Singleton
+	public abstract BackingStore<TokenID, MerkleToken> bindBackingTokens(BackingTokens backingTokens);
 
 	@Provides
 	@Singleton
-	public static HederaLedger provideHederaLedger(
+	static HederaLedger provideHederaLedger(
 			final TokenStore tokenStore,
 			final ScheduleStore scheduleStore,
 			final EntityCreator creator,
 			final EntityIdSource ids,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqTokenViewsManager uniqTokenViewsManager,
+			final UniqueTokenViewsManager uniqueTokenViewsManager,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			final AutoCreationLogic autoCreationLogic,
+			final TransferLogic transferLogic
 	) {
-		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
-				new TransactionalLedger<>(
-						AccountProperty.class,
-						MerkleAccount::new,
-						backingAccounts,
-						new ChangeSummaryManager<>());
 		final var ledger = new HederaLedger(
 				tokenStore,
 				ids,
@@ -75,8 +78,10 @@ public abstract class LedgerModule {
 				sideEffectsTracker,
 				recordsHistorian,
 				dynamicProperties,
-				accountsLedger);
-		ledger.setTokenViewsManager(uniqTokenViewsManager);
+				accountsLedger,
+				transferLogic,
+				autoCreationLogic);
+		ledger.setTokenViewsManager(uniqueTokenViewsManager);
 		scheduleStore.setAccountsLedger(accountsLedger);
 		scheduleStore.setHederaLedger(ledger);
 		return ledger;

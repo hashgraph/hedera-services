@@ -13,37 +13,20 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt-get install -y apt-utils;
-            sudo apt install -y curl;
-            sudo apt install -y python3.7;
-            sudo rm /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install -y python3-pip;
-            pip3 install --upgrade pip;
-            pip3 -q install matplotlib;
-            sudo apt-get install -y python3-setuptools;
-            pip3 install awscli;
-      - run:
-          name: Install gcloud cli
-          command: |
-            apt-get update || apt-get update;
-            curl https://sdk.cloud.google.com > install.sh;
-            bash install.sh --disable-prompts;
+            apt update -y;
+            apt install -y net-tools;
+            apt install -y apt-utils;
+            rm -f /usr/bin/python3;
+            ln -s /usr/bin/python3.7 /usr/bin/python3;
+            python3 -m pip -q install matplotlib;
+            python3 -m pip install awscli;
       - run:
           name: Authenticate gcloud cli
           command: |
-            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
-            source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
-            sudo apt-get install gcc python3-dev python3-setuptools -y;
-            sudo pip3 uninstall crcmod;
-            sudo pip3 install --no-cache-dir -U crcmod;
 
   ######################################################################################################################
   # Command Name:                     shell_extract_file_into_variable
@@ -257,7 +240,6 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
@@ -299,11 +281,8 @@ commands:
           name: Import the Google Cloud Service  Account
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
-            set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
-
 
   ######################################################################################################################
   # Command Name:                     jrs_history_retrieve
@@ -440,7 +419,6 @@ commands:
           command: |
             set -x
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
 
             if [[ ! -d "<< parameters.result_path >>" ]]; then exit 13; fi
 
@@ -536,7 +514,7 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ls -l /swirlds-platform/regression
             cd /swirlds-platform
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
@@ -613,7 +591,6 @@ commands:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
@@ -624,14 +601,16 @@ executors:
         type: string
         default: ""
     docker:
-      - image: qnswirlds/java-builder:0.1.3
-      - image: postgres:10
+      - image: gcr.io/swirlds-registry/cci-openjdk-infer:17-b20211206
+      - image: postgres:10.17-alpine
         environment:
           POSTGRES_USER: swirlds
           POSTGRES_PASSWORD: password
           POSTGRES_DB: fcfs
     environment:
-      MAVEN_OPTS: -Xmx3200m
+      MAVEN_OPTS: -Xmx5200m
+      LC_ALL: C.UTF-8
+      DEBIAN_FRONTEND: noninteractive
       IN_CIRCLE_CI: true
       REPO: /repo
       WORKFLOW-NAME: << parameters.workflow-name >>
@@ -652,7 +631,7 @@ executors:
         type: string
         default: ""
     docker:
-      - image: qnswirlds/java-builder:0.1.3
+      - image: gcr.io/swirlds-registry/cci-openjdk-regression:17-b20211206
     environment:
       TF_DIR: << parameters.tf_dir >>
       IN_CIRCLE_CI: true
@@ -664,6 +643,24 @@ executors:
     working_directory: /repo
 
 workflows:
+  GCP_Machine_Cleanup:
+    triggers:
+      - schedule:
+          cron: "0 2,8,14,20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - jrs_gcp_machine_cleanup:
+          name: GCP-Machine-Cleanup
+          context: Slack
+          project_name: "hedera-regression"
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -675,7 +672,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -698,7 +694,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/20N_20C/
@@ -722,7 +717,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -746,7 +740,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -762,11 +755,11 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "30 9 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -815,11 +808,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 9 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -867,11 +860,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 10 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -880,6 +873,121 @@ workflows:
           result_path: results/4N_1C/Restart
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Restart-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
+    triggers:
+      - schedule:
+          cron: "0 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Rhel7-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel7-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-Rhel8-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-Rhel8-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Update-CentOS7-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 3 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/Update
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Update-CentOS7-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
+    triggers:
+      - schedule:
+          cron: "0 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_4C/CryptoInvalidAccounts
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -940,7 +1048,7 @@ workflows:
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -956,14 +1064,60 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "30 10 * * *"
+          cron: "15 23 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbort
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 23 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
+    triggers:
+      - schedule:
+          cron: "30 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -983,11 +1137,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 9 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1007,11 +1161,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "40 11 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1030,11 +1184,11 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 9 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1053,11 +1207,11 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "55 10 * * *"
+          cron: "55 6 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1073,22 +1227,22 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Weekly-Services-Query-Restart-Performance-6N-6C:
+  GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "0 10 * * 2"
+          cron: "0 6 * * 2"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/QueryPerf
+          result_path: results/7N_7C/QueryPerf
           config_type: "weekly"
-          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Weekly-Services-Query-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1099,11 +1253,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 11 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1119,22 +1273,22 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
+  GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
-          cron: "40 8 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C"
+          workflow-name: "GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1143,22 +1297,22 @@ workflows:
                 at: /
 
 
-  GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
+  GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "30 8 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_6C/Performance
+          result_path: results/7N_7C/Performance
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-6N-6C"
+          workflow-name: "GCP-Daily-Services-HTS-Restart-Performance-7N-7C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1169,11 +1323,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 11 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1189,22 +1343,45 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
+  GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 11 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/ReconnectCorrectness
+          result_path: results/6N_1C/NIReconnectCorrectness
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/NDReconnectCorrectness
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1215,11 +1392,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "25 12 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
-                - vm-plus-020-test.3
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1327,8 +1504,8 @@ jobs:
       - run:
           name: Upload codecov
           command: |
-            apt-get update
-            apt-get install -y curl
+            apt update -y
+            apt install -y curl
             bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
@@ -1351,9 +1528,9 @@ jobs:
           name: Install tools for Sonar scan
           command: |
             export DEBIAN_FRONTEND=noninteractive
-            apt-get update && \
-            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
-            apt-get install -y jq libjq1 libonig4 curl && \
+            apt update -y && \
+            apt install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt install -y jq libjq1 libonig4 curl && \
             echo | cpan && \
             cpan install CPAN && \
             cpan install Mozilla::CA && \
@@ -1390,7 +1567,7 @@ jobs:
       - run:
           name: Generate javadocs
           command: |
-            cd /repo; export JAVA_HOME="/usr/local/java/jdk-12.0.2"; mvn javadoc:javadoc
+            cd /repo; export JAVA_HOME="/usr/local/java/jdk-17"; mvn javadoc:javadoc
 
   build-platform-and-services:
     parameters:
@@ -1526,10 +1703,6 @@ jobs:
       - when:
           condition: << parameters.automated_run >>
           steps:
-            - run:
-                name: setup env
-                command: |
-                  source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             - jrs_history_retrieve:
                 bucket_name: << parameters.summary_bucket >>
                 summary_path: << parameters.summary_path >>
@@ -1564,3 +1737,26 @@ jobs:
             else
               exit 0
             fi
+
+  jrs_gcp_machine_cleanup:
+    parameters:
+      runtime:
+        type: string
+        default: ci-test-executor
+      project_name:
+        type: string
+        default: "hedera-regression"
+    executor: << parameters.runtime >>
+    steps:
+      - gcp_import_credentials:
+          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+          keyfile_variable: GCLOUD_SERVICE_KEY
+          project_variable: GOOGLE_PROJECT_ID
+      - checkout
+      - run:
+          name: Cleanup GCP Instance Groups
+          command: |
+            set -x
+            cd /repo;
+            chmod 755 /repo/.circleci/scripts/clean_up_instances.sh;
+            .circleci/scripts/clean_up_instances.sh << parameters.project_name >>;

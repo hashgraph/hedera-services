@@ -35,24 +35,27 @@ public class HashLogger {
 
 	@Inject
 	public HashLogger() {
+		// Default Constructor
 	}
 
 	public void logHashesFor(ServicesState state) {
-		log.info("[SwirldState Hashes]\n" +
-						"  Overall                :: {}\n" +
-						"  Accounts               :: {}\n" +
-						"  Storage                :: {}\n" +
-						"  Topics                 :: {}\n" +
-						"  Tokens                 :: {}\n" +
-						"  TokenAssociations      :: {}\n" +
-						"  SpecialFiles           :: {}\n" +
-						"  ScheduledTxs           :: {}\n" +
-						"  NetworkContext         :: {}\n" +
-						"  AddressBook            :: {}\n" +
-						"  RecordsRunningHashLeaf :: {}\n" +
-						"    ↪ Running hash       :: {}\n" +
-						"  UniqueTokens           :: {}\n" +
-						"  ContractStorage        :: {}",
+		final var summaryTpl = """
+				[SwirldState Hashes] 
+				Overall                :: {}
+				Accounts               :: {}
+				Storage                :: {}
+				Topics                 :: {}
+				Tokens                 :: {}
+				TokenAssociations      :: {}
+				SpecialFiles           :: {}
+				ScheduledTxs           :: {}
+				NetworkContext         :: {}
+				AddressBook            :: {}
+				RecordsRunningHashLeaf :: {}
+				  ↪ Running hash       :: {}
+				UniqueTokens           :: {}
+				ContractStorage        :: {}""";
+		log.info(summaryTpl,
 				state.getHash(),
 				state.accounts().getHash(),
 				UNAVAILABLE_VIRTUAL_MAP_HASH,

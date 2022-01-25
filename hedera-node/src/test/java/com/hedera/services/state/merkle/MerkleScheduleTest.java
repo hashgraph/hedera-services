@@ -30,6 +30,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -108,6 +109,18 @@ public class MerkleScheduleTest {
 	}
 
 	@Test
+	void recognizesMissingFunction() {
+		final var noneBodyBytes = parentTxn.toBuilder()
+				.setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
+				.build()
+				.toByteArray();
+
+		subject = MerkleSchedule.from(noneBodyBytes, expiry);
+
+		assertEquals(HederaFunctionality.NONE, subject.scheduledFunction());
+	}
+
+	@Test
 	void factoryWorks() {
 		assertFalse(subject.isDeleted());
 		assertFalse(subject.isExecuted());
@@ -122,12 +135,14 @@ public class MerkleScheduleTest {
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 		assertEquals(number, subject.getKey().intValue());
+		assertEquals(HederaFunctionality.CryptoDelete, subject.scheduledFunction());
 	}
 
 	@Test
 	void factoryTranslatesImpossibleParseError() {
+		final var bytes = "NONSENSE".getBytes();
 		final var iae = assertThrows(IllegalArgumentException.class,
-				() -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
+				() -> MerkleSchedule.from(bytes, 0L));
 		assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
 	}
 
@@ -161,22 +176,22 @@ public class MerkleScheduleTest {
 
 	@Test
 	void notaryWorks() {
-		assertFalse(subject.hasValidEd25519Signature(fpk));
-		assertFalse(subject.hasValidEd25519Signature(spk));
-		assertFalse(subject.hasValidEd25519Signature(tpk));
+		assertFalse(subject.hasValidSignatureFor(fpk));
+		assertFalse(subject.hasValidSignatureFor(spk));
+		assertFalse(subject.hasValidSignatureFor(tpk));
 
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(tpk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(tpk);
 
-		assertTrue(subject.hasValidEd25519Signature(fpk));
-		assertFalse(subject.hasValidEd25519Signature(spk));
-		assertTrue(subject.hasValidEd25519Signature(tpk));
+		assertTrue(subject.hasValidSignatureFor(fpk));
+		assertFalse(subject.hasValidSignatureFor(spk));
+		assertTrue(subject.hasValidSignatureFor(tpk));
 	}
 
 	@Test
 	void witnessOnlyTrueIfNewSignatory() {
-		assertTrue(subject.witnessValidEd25519Signature(fpk));
-		assertFalse(subject.witnessValidEd25519Signature(fpk));
+		assertTrue(subject.witnessValidSignature(fpk));
+		assertFalse(subject.witnessValidSignature(fpk));
 	}
 
 	@Test
@@ -186,9 +201,9 @@ public class MerkleScheduleTest {
 
 	@Test
 	void signatoriesArePublished() {
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(spk);
-		subject.witnessValidEd25519Signature(tpk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(spk);
+		subject.witnessValidSignature(tpk);
 
 		assertTrue(subject.signatories().containsAll(signatories));
 	}
@@ -197,8 +212,8 @@ public class MerkleScheduleTest {
 	void serializeWorks() throws IOException {
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(serdes, out);
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(spk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(spk);
 		subject.markDeleted(resolutionTime);
 
 		subject.serialize(out);
@@ -217,13 +232,13 @@ public class MerkleScheduleTest {
 	@Test
 	void deserializeWorksPre0180() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(spk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(spk);
 		subject.markExecuted(resolutionTime);
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
+		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
 		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
@@ -247,13 +262,13 @@ public class MerkleScheduleTest {
 	@Test
 	void deserializeWorksPost0180() throws IOException {
 		final var fin = mock(SerializableDataInputStream.class);
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(spk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(spk);
 		subject.markExecuted(resolutionTime);
 		given(fin.readLong()).willReturn(subject.expiry());
 		given(fin.readInt()).willReturn(2).willReturn(number);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
-		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
+		given(fin.readByteArray(MerkleSchedule.MAX_NUM_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
 		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
@@ -286,7 +301,7 @@ public class MerkleScheduleTest {
 		final var other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
 		other.markExecuted(resolutionTime);
 		other.markDeleted(resolutionTime);
-		other.witnessValidEd25519Signature(fpk);
+		other.witnessValidSignature(fpk);
 
 		assertEquals(subject, other);
 		assertEquals(subject.hashCode(), other.hashCode());
@@ -330,9 +345,9 @@ public class MerkleScheduleTest {
 
 	@Test
 	void validToString() {
-		subject.witnessValidEd25519Signature(fpk);
-		subject.witnessValidEd25519Signature(spk);
-		subject.witnessValidEd25519Signature(tpk);
+		subject.witnessValidSignature(fpk);
+		subject.witnessValidSignature(spk);
+		subject.witnessValidSignature(tpk);
 		subject.markDeleted(resolutionTime);
 
 		final var expected = "MerkleSchedule{"
@@ -378,12 +393,12 @@ public class MerkleScheduleTest {
 	@Test
 	void copyWorks() {
 		subject.markDeleted(resolutionTime);
-		subject.witnessValidEd25519Signature(tpk);
+		subject.witnessValidSignature(tpk);
 		final var copySubject = subject.copy();
 
 		assertTrue(copySubject.isDeleted());
 		assertFalse(copySubject.isExecuted());
-		assertTrue(copySubject.hasValidEd25519Signature(tpk));
+		assertTrue(copySubject.hasValidSignatureFor(tpk));
 
 		assertEquals(subject.toString(), copySubject.toString());
 		assertNotSame(subject.signatories(), copySubject.signatories());
@@ -405,12 +420,12 @@ public class MerkleScheduleTest {
 	void cavWorks() {
 		subject.markDeleted(resolutionTime);
 		subject.markExecuted(resolutionTime);
-		subject.witnessValidEd25519Signature(tpk);
+		subject.witnessValidSignature(tpk);
 		final var cavSubject = subject.toContentAddressableView();
 
 		assertFalse(cavSubject.isDeleted());
 		assertFalse(cavSubject.isExecuted());
-		assertFalse(cavSubject.hasValidEd25519Signature(tpk));
+		assertFalse(cavSubject.hasValidSignatureFor(tpk));
 
 		assertNotEquals(subject.toString(), cavSubject.toString());
 		assertTrue(cavSubject.signatories().isEmpty());

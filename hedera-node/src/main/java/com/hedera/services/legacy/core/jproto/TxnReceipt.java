@@ -38,8 +38,9 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
 
 public class TxnReceipt implements SelfSerializable {
@@ -47,11 +48,15 @@ public class TxnReceipt implements SelfSerializable {
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
 	private static final int MAX_SERIAL_NUMBERS = 1024; // Is this number enough?
 
+	public static final String SUCCESS_LITERAL = SUCCESS.name();
+	public static final String REVERTED_SUCCESS_LITERAL = REVERTED_SUCCESS.name();
+
 	static final TxnId MISSING_SCHEDULED_TXN_ID = null;
 	static final byte[] MISSING_RUNNING_HASH = null;
 	static final long[] MISSING_SERIAL_NUMBERS = null;
 	static final long MISSING_TOPIC_SEQ_NO = 0L;
 	static final long MISSING_RUNNING_HASH_VERSION = 0L;
+	static final long MISSING_NEW_TOTAL_SUPPLY = -1L;
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_090_VERSION = 3;
@@ -76,13 +81,13 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId contractId;
 	EntityId scheduleId;
 	ExchangeRates exchangeRates;
-	long newTotalSupply = -1L;
+	long newTotalSupply = MISSING_NEW_TOTAL_SUPPLY;
 	long[] serialNumbers;
 
 	public TxnReceipt() {
 	}
 
-	public TxnReceipt(Builder builder) {
+	public TxnReceipt(final Builder builder) {
 		this.status = builder.status;
 		this.accountId = builder.accountId;
 		this.fileId = builder.fileId;
@@ -99,12 +104,13 @@ public class TxnReceipt implements SelfSerializable {
 		this.runningHashVersion = builder.runningHashVersion;
 		this.newTotalSupply = builder.newTotalSupply;
 		this.scheduledTxnId = builder.scheduledTxnId;
-		this.serialNumbers = ((builder.serialNumbers != MISSING_SERIAL_NUMBERS) && (builder.serialNumbers.length > 0))
-				? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
+
+		final var hasSerialNumbers = (builder.serialNumbers != MISSING_SERIAL_NUMBERS)
+				&& (builder.serialNumbers.length > 0);
+		this.serialNumbers = hasSerialNumbers ? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
 	}
 
 	/* --- SelfSerializable --- */
-
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -175,6 +181,10 @@ public class TxnReceipt implements SelfSerializable {
 
 	public String getStatus() {
 		return status;
+	}
+
+	public ResponseCodeEnum getEnumStatus() {
+		return ResponseCodeEnum.valueOf(status);
 	}
 
 	public EntityId getAccountId() {
@@ -379,7 +389,7 @@ public class TxnReceipt implements SelfSerializable {
 
 		if (txReceipt.getSerialNumbers() != MISSING_SERIAL_NUMBERS) {
 			builder.addAllSerialNumbers(
-					Arrays.stream(txReceipt.getSerialNumbers()).boxed().collect(Collectors.toList()));
+					Arrays.stream(txReceipt.getSerialNumbers()).boxed().toList());
 		}
 		return builder.build();
 	}
@@ -404,78 +414,151 @@ public class TxnReceipt implements SelfSerializable {
 		private TxnId scheduledTxnId;
 		private long[] serialNumbers;
 
-		public Builder setStatus(String status) {
+		public void revert() {
+			if (SUCCESS_LITERAL.equals(status)) {
+				status = REVERTED_SUCCESS_LITERAL;
+			}
+
+			accountId = null;
+			contractId = null;
+			fileId = null;
+			tokenId = null;
+			topicId = null;
+			scheduleId = null;
+			scheduledTxnId = null;
+
+			serialNumbers = null;
+			topicRunningHash = null;
+
+			newTotalSupply = MISSING_NEW_TOTAL_SUPPLY;
+			runningHashVersion = MISSING_RUNNING_HASH_VERSION;
+			topicSequenceNumber = MISSING_TOPIC_SEQ_NO;
+		}
+
+		public Builder setStatus(final String status) {
 			this.status = status;
 			return this;
 		}
 
-		public Builder setAccountId(EntityId accountId) {
+		public Builder setAccountId(final EntityId accountId) {
 			this.accountId = accountId;
 			return this;
 		}
 
-		public Builder setFileId(EntityId fileId) {
+		public Builder setFileId(final EntityId fileId) {
 			this.fileId = fileId;
 			return this;
 		}
 
-		public Builder setContractId(EntityId contractId) {
+		public Builder setContractId(final EntityId contractId) {
 			this.contractId = contractId;
 			return this;
 		}
 
-		public Builder setTokenId(EntityId tokenId) {
+		public Builder setTokenId(final EntityId tokenId) {
 			this.tokenId = tokenId;
 			return this;
 		}
 
-		public Builder setScheduleId(EntityId scheduleId) {
+		public Builder setScheduleId(final EntityId scheduleId) {
 			this.scheduleId = scheduleId;
 			return this;
 		}
 
-		public Builder setExchangeRates(ExchangeRates exchangeRates) {
+		public Builder setExchangeRates(final ExchangeRates exchangeRates) {
 			this.exchangeRates = exchangeRates;
 			return this;
 		}
 
-		public Builder setTopicId(EntityId topicId) {
+		public Builder setTopicId(final EntityId topicId) {
 			this.topicId = topicId;
 			return this;
 		}
 
-		public Builder setTopicSequenceNumber(long topicSequenceNumber) {
+		public Builder setTopicSequenceNumber(final long topicSequenceNumber) {
 			this.topicSequenceNumber = topicSequenceNumber;
 			return this;
 		}
 
-		public Builder setTopicRunningHash(byte[] topicRunningHash) {
+		public Builder setTopicRunningHash(final byte[] topicRunningHash) {
 			this.topicRunningHash = topicRunningHash;
 			return this;
 		}
 
-		public Builder setRunningHashVersion(long runningHashVersion) {
+		public Builder setRunningHashVersion(final long runningHashVersion) {
 			this.runningHashVersion = runningHashVersion;
 			return this;
 		}
 
-		public Builder setNewTotalSupply(long newTotalSupply) {
+		public Builder setNewTotalSupply(final long newTotalSupply) {
 			this.newTotalSupply = newTotalSupply;
 			return this;
 		}
 
-		public Builder setScheduledTxnId(TxnId scheduledTxnId) {
+		public Builder setScheduledTxnId(final TxnId scheduledTxnId) {
 			this.scheduledTxnId = scheduledTxnId;
 			return this;
 		}
 
-		public Builder setSerialNumbers(long[] serialNumbers) {
+		public Builder setSerialNumbers(final long[] serialNumbers) {
 			this.serialNumbers = serialNumbers;
 			return this;
 		}
 
 		public TxnReceipt build() {
 			return new TxnReceipt(this);
+		}
+
+		public String getStatus() {
+			return status;
+		}
+
+		public EntityId getAccountId() {
+			return accountId;
+		}
+
+		public EntityId getFileId() {
+			return fileId;
+		}
+
+		public EntityId getContractId() {
+			return contractId;
+		}
+
+		public EntityId getTokenId() {
+			return tokenId;
+		}
+
+		public EntityId getScheduleId() {
+			return scheduleId;
+		}
+
+		public EntityId getTopicId() {
+			return topicId;
+		}
+
+		public long getTopicSequenceNumber() {
+			return topicSequenceNumber;
+		}
+
+		public byte[] getTopicRunningHash() {
+			return topicRunningHash;
+		}
+
+		public long getRunningHashVersion() {
+			return runningHashVersion;
+		}
+
+		public long getNewTotalSupply() {
+			return newTotalSupply;
+		}
+
+		public TxnId getScheduledTxnId() {
+			return scheduledTxnId;
+		}
+
+		public long[] getSerialNumbers() {
+			return serialNumbers;
 		}
 	}
 }

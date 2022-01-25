@@ -9,9 +9,9 @@ package com.hedera.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.context.ServicesNodeType;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
@@ -73,7 +72,6 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.SystemExits;
-import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
@@ -98,153 +96,144 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 @Module(includes = HandleLogicModule.class)
-public abstract class StateModule {
+public interface StateModule {
 	@Binds
 	@Singleton
-	public abstract SystemExits bindSystemExits(JvmSystemExits systemExits);
+	SystemExits bindSystemExits(JvmSystemExits systemExits);
 
 	@Binds
 	@Singleton
-	public abstract ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+	ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
 
 	@Binds
 	@Singleton
-	public abstract StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
+	StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
 			StateWriteToDiskListener stateWriteToDiskListener);
 
 	@Binds
 	@Singleton
-	public abstract LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
+	LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
 
 	@Binds
 	@Singleton
-	public abstract EntityCreator bindEntityCreator(ExpiringCreations creator);
+	EntityCreator bindEntityCreator(ExpiringCreations creator);
 
 	@Binds
 	@Singleton
-	public abstract BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
+	BalancesExporter bindBalancesExporter(SignedStateBalancesExporter signedStateBalancesExporter);
 
 	@Binds
 	@Singleton
-	public abstract SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
+	SystemFilesManager bindSysFilesManager(HfsSystemFilesManager hfsSystemFilesManager);
 
 	@Binds
 	@Singleton
-	public abstract AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
+	AccountsExporter bindAccountsExporter(ToStringAccountsExporter toStringAccountsExporter);
 
 	@Binds
 	@Singleton
-	public abstract SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
+	SystemAccountsCreator bindSystemAccountsCreator(BackedSystemAccountsCreator backedCreator);
 
 	@Binds
 	@Singleton
-	public abstract InvalidSignedStateListener bindIssListener(IssListener issListener);
+	InvalidSignedStateListener bindIssListener(IssListener issListener);
 
 	@Provides
 	@Singleton
 	public static VirtualMapFactory provideVirtualMapFactory() {
-		return new VirtualMapFactory("data/jdb", JasperDbBuilder::new);
+		return new VirtualMapFactory(JasperDbBuilder::new);
 	}
 
 	@Provides
 	@Singleton
-	public static Pause providePause() {
+	static Pause providePause() {
 		return SleepingPause.SLEEPING_PAUSE;
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<Charset> provideNativeCharset() {
+	static Supplier<Charset> provideNativeCharset() {
 		return Charset::defaultCharset;
 	}
 
 	@Provides
 	@Singleton
-	public static NamedDigestFactory provideDigestFactory() {
+	static NamedDigestFactory provideDigestFactory() {
 		return MessageDigest::getInstance;
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<NotificationEngine> provideNotificationEngine() {
+	static Supplier<NotificationEngine> provideNotificationEngine() {
 		return NotificationFactory::getEngine;
 	}
 
 	@Provides
 	@Singleton
-	public static Optional<PrintStream> providePrintStream(Platform platform) {
+	static Optional<PrintStream> providePrintStream(Platform platform) {
 		final var console = platform.createConsole(true);
 		return Optional.ofNullable(console).map(c -> c.out);
 	}
 
 	@Provides
 	@Singleton
-	public static Address provideNodeAddress(Supplier<AddressBook> book, long selfId) {
-		return book.get().getAddress(selfId);
-	}
-
-	@Provides
-	public static ServicesNodeType provideNodeType(Address nodeAddress) {
-		return nodeAddress.getStake() > 0 ? STAKED_NODE : ZERO_STAKE_NODE;
-	}
-
-	@Provides
-	@Singleton
-	public static UnaryOperator<byte[]> provideSigner(Platform platform) {
+	static UnaryOperator<byte[]> provideSigner(Platform platform) {
 		return platform::sign;
 	}
 
 	@Provides
 	@Singleton
-	public static NodeId provideNodeId(Platform platform) {
+	static NodeId provideNodeId(Platform platform) {
 		return platform.getSelfId();
 	}
 
 	@Provides
 	@Singleton
-	public static StateView provideCurrentView(
+	static StateView provideCurrentView(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<StateView> provideStateViews(
+	static Supplier<StateView> provideStateViews(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
 			UniqTokenViewFactory uniqTokenViewFactory,
-			@WorkingState StateAccessor workingState
+			@WorkingState StateAccessor workingState,
+			NetworkInfo networkInfo
 	) {
 		return () -> new StateView(
 				tokenStore,
 				scheduleStore,
 				workingState.children(),
-				uniqTokenViewFactory);
+				uniqTokenViewFactory,
+				networkInfo);
 	}
 
 	@Provides
 	@Singleton
 	@WorkingState
-	public static StateAccessor provideWorkingState(ServicesState initialState) {
-		return new StateAccessor(initialState);
+	static StateAccessor provideWorkingState() {
+		return new StateAccessor();
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
+	static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::accounts;
@@ -252,7 +241,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
+	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::storage;
@@ -260,7 +249,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
+	static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::topics;
@@ -268,7 +257,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
+	static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokens;
@@ -276,7 +265,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
+	static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::tokenAssociations;
@@ -284,7 +273,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
+	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::schedules;
@@ -292,7 +281,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
+	static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokens;
@@ -301,7 +290,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByType
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokenAssociations;
@@ -310,7 +299,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@NftsByOwner
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipAssociations;
@@ -319,7 +308,7 @@ public abstract class StateModule {
 	@Provides
 	@Singleton
 	@TreasuryNftsByType
-	public static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
+	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueOwnershipTreasuryAssociations;
@@ -327,7 +316,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
+	static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::specialFiles;
@@ -343,7 +332,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
+	static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::networkCtx;
@@ -351,7 +340,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<AddressBook> provideWorkingAddressBook(
+	static Supplier<AddressBook> provideWorkingAddressBook(
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::addressBook;
@@ -359,7 +348,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static EntityIdSource provideWorkingEntityIdSource(
+	static EntityIdSource provideWorkingEntityIdSource(
 			@WorkingState StateAccessor accessor
 	) {
 		return new SeqNoEntityIdSource(() -> accessor.networkCtx().seqNo());
@@ -367,7 +356,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<ExchangeRates> provideWorkingMidnightRates(
+	static Supplier<ExchangeRates> provideWorkingMidnightRates(
 			@WorkingState StateAccessor accessor
 	) {
 		return () -> accessor.networkCtx().midnightRates();
@@ -375,7 +364,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<SequenceNumber> provideWorkingSeqNo(
+	static Supplier<SequenceNumber> provideWorkingSeqNo(
 			@WorkingState StateAccessor accessor
 	) {
 		return () -> accessor.networkCtx().seqNo();
@@ -383,7 +372,7 @@ public abstract class StateModule {
 
 	@Provides
 	@Singleton
-	public static Supplier<JKey> provideSystemFileKey(
+	static Supplier<JKey> provideSystemFileKey(
 			LegacyEd25519KeyReader b64KeyReader,
 			@CompositeProps PropertySource properties
 	) {

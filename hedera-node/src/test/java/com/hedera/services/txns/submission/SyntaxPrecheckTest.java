@@ -114,6 +114,21 @@ class SyntaxPrecheckTest {
 	}
 
 	@Test
+	void rejectsUseOfNonceField() {
+		// setup:
+		txn = txn.toBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setNonce(12).build())
+				.build();
+
+		// when:
+		var status = subject.validate(txn);
+
+		// then:
+		assertEquals(TRANSACTION_ID_FIELD_NOT_ALLOWED, status);
+	}
+
+	@Test
 	void rejectsDuplicateTxnId() {
 		given(recordCache.isReceiptPresent(txnId)).willReturn(true);
 

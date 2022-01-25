@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -89,31 +90,45 @@ class StateAccessorTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateAccessor(state);
+		subject = new StateAccessor();
+		subject.updateChildrenFrom(state);
 	}
 
 	@Test
 	void childrenGetUpdatedAsExpected() {
-		given(state.accounts()).willReturn(accounts);
-		given(state.storage()).willReturn(storage);
-		given(state.topics()).willReturn(topics);
-		given(state.tokens()).willReturn(tokens);
-		given(state.tokenAssociations()).willReturn(tokenAssociations);
-		given(state.scheduleTxs()).willReturn(scheduleTxs);
-		given(state.networkCtx()).willReturn(networkCtx);
-		given(state.addressBook()).willReturn(addressBook);
-		given(state.specialFiles()).willReturn(specialFiles);
-		given(state.uniqueTokens()).willReturn(uniqueTokens);
-		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
-		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
-		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
-		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
-		given(state.contractStorage()).willReturn(contractStorage);
+		givenStateWithMockChildren();
 
-		// when:
-		subject.updateFrom(state);
+		subject.updateChildrenFrom(state);
 
-		// then:
+		assertChildrenAreExpectedMocks();
+	}
+
+	@Test
+	void settersWorkAsExpected() {
+		givenStateWithMockChildren();
+
+		final var mutableChildren = (MutableStateChildren) subject.children();
+
+		mutableChildren.setAccounts(state.accounts());
+		mutableChildren.setContractStorage(state.contractStorage());
+		mutableChildren.setStorage(state.storage());
+		mutableChildren.setTopics(state.topics());
+		mutableChildren.setTokens(state.tokens());
+		mutableChildren.setTokenAssociations(state.tokenAssociations());
+		mutableChildren.setSchedules(state.scheduleTxs());
+		mutableChildren.setNetworkCtx(state.networkCtx());
+		mutableChildren.setAddressBook(state.addressBook());
+		mutableChildren.setSpecialFiles(state.specialFiles());
+		mutableChildren.setUniqueTokens(state.uniqueTokens());
+		mutableChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		mutableChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		mutableChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
+		mutableChildren.setRunningHashLeaf(state.runningHashLeaf());
+
+		assertChildrenAreExpectedMocks();
+	}
+
+	private void assertChildrenAreExpectedMocks() {
 		assertSame(accounts, subject.accounts());
 		assertSame(storage, subject.storage());
 		assertSame(topics, subject.topics());
@@ -129,6 +144,24 @@ class StateAccessorTest {
 		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
 		assertSame(contractStorage, subject.contractStorage());
+	}
+
+	private void givenStateWithMockChildren() {
+		given(state.accounts()).willReturn(accounts);
+		given(state.storage()).willReturn(storage);
+		given(state.topics()).willReturn(topics);
+		given(state.tokens()).willReturn(tokens);
+		given(state.tokenAssociations()).willReturn(tokenAssociations);
+		given(state.scheduleTxs()).willReturn(scheduleTxs);
+		given(state.networkCtx()).willReturn(networkCtx);
+		given(state.addressBook()).willReturn(addressBook);
+		given(state.specialFiles()).willReturn(specialFiles);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
+		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
+		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
+		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
+		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.contractStorage()).willReturn(contractStorage);
 	}
 
 	@Test

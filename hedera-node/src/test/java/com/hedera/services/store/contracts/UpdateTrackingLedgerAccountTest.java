@@ -69,7 +69,8 @@ class UpdateTrackingLedgerAccountTest {
 
 	@BeforeEach
 	void setUp() {
-		parentState = new HederaWorldState(ids, entityAccess);
+		CodeCache codeCache = new CodeCache(0, entityAccess);
+		parentState = new HederaWorldState(ids, entityAccess, codeCache);
 	}
 
 	@Test
@@ -122,7 +123,7 @@ class UpdateTrackingLedgerAccountTest {
 	@Test
 	void getsWrappedCodeHashIfConstructedWithAccount() {
 		final var mockCode = Bytes.minimalBytes(4321L);
-		given(entityAccess.fetchCode(targetId)).willReturn(mockCode);
+		given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(mockCode);
 
 		final var account = parentState.new WorldStateAccount(
 				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
@@ -150,7 +151,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void hasCodeDelegatesToWrappedIfNotUpdated() {
-		given(entityAccess.fetchCode(targetId)).willReturn(Bytes.EMPTY);
+		given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(Bytes.EMPTY);
 
 		final var account = parentState.new WorldStateAccount(
 				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);

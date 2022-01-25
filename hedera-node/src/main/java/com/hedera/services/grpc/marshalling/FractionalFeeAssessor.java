@@ -107,7 +107,7 @@ public class FractionalFeeAssessor {
 		int n = credits.size();
 		final var nums = new long[n];
 		for (int i = 0; i < n; i++) {
-			nums[i] = credits.get(i).getAccount().getNum();
+			nums[i] = credits.get(i).getAccount().num();
 		}
 		return nums;
 	}
@@ -142,7 +142,8 @@ public class FractionalFeeAssessor {
 	}
 
 	long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {
-		final var nominalFee = AdjustmentUtils.safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
+		final var nominalFee = AdjustmentUtils.safeFractionMultiply(spec.getNumerator(), spec.getDenominator(),
+				initialUnits);
 		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
 		if (spec.getMaximumUnitsToCollect() > 0) {
 			effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());

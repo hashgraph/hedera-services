@@ -23,11 +23,13 @@ package com.hedera.services.fees.calculation.contract.queries;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.StaticEntityAccess;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -58,6 +60,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
+	private final NodeLocalProperties nodeProperties;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final CallLocalEvmTxProcessor evmTxProcessor;
 
@@ -65,6 +68,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	public ContractCallLocalResourceUsage(
 			final SmartContractFeeBuilder usageEstimator,
 			final GlobalDynamicProperties properties,
+			final NodeLocalProperties nodeProperties,
 			final AccountStore accountStore,
 			final CallLocalEvmTxProcessor evmTxProcessor,
 			final EntityIdSource ids,
@@ -75,6 +79,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		this.ids = ids;
 		this.validator = validator;
 		this.properties = properties;
+		this.nodeProperties = nodeProperties;
 		this.usageEstimator = usageEstimator;
 	}
 
@@ -102,7 +107,8 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 				response = dummyResponse(op.getContractID());
 			} else {
 				final var entityAccess = new StaticEntityAccess(view, validator, properties);
-				final var worldState = new HederaWorldState(ids, entityAccess);
+				final var codeCache = new CodeCache(nodeProperties, entityAccess);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				evmTxProcessor.setWorldState(worldState);
 
 				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op);

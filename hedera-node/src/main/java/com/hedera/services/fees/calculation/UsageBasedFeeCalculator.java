@@ -27,6 +27,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -82,13 +83,14 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	@Inject
 	public UsageBasedFeeCalculator(
-			AutoRenewCalcs autoRenewCalcs,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			FeeMultiplierSource feeMultiplierSource,
-			PricedUsageCalculator pricedUsageCalculator,
-			Set<QueryResourceUsageEstimator> queryUsageEstimators,
-			Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
+			final AutoRenewCalcs autoRenewCalcs,
+			final HbarCentExchange exchange,
+			final AutoCreationLogic autoCreationLogic,
+			final UsagePricesProvider usagePrices,
+			final FeeMultiplierSource feeMultiplierSource,
+			final PricedUsageCalculator pricedUsageCalculator,
+			final Set<QueryResourceUsageEstimator> queryUsageEstimators,
+			final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
@@ -97,6 +99,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		this.txnUsageEstimators = txnUsageEstimators;
 		this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
 		this.pricedUsageCalculator = pricedUsageCalculator;
+
+		autoCreationLogic.setFeeCalculator(this);
 	}
 
 	@Override
@@ -106,7 +110,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+	public RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,
 			long requestedRenewal,
 			Instant now

@@ -26,9 +26,11 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.TxnAccessor;
@@ -57,11 +59,14 @@ public class NetworkCtxManager {
 
 	private final int issResetPeriod;
 
+	private long gasUsedThisConsSec = 0L;
 	private boolean consensusSecondJustChanged = false;
 
 	private final IssEventInfo issInfo;
+	private final MiscRunningAvgs runningAvgs;
 	private final HapiOpCounters opCounters;
 	private final HbarCentExchange exchange;
+	private final NarratedCharging narratedCharging;
 	private final SystemFilesManager systemFilesManager;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -73,16 +78,18 @@ public class NetworkCtxManager {
 
 	@Inject
 	public NetworkCtxManager(
-			IssEventInfo issInfo,
-			NodeLocalProperties nodeLocalProperties,
-			HapiOpCounters opCounters,
-			HbarCentExchange exchange,
-			SystemFilesManager systemFilesManager,
-			FeeMultiplierSource feeMultiplierSource,
-			GlobalDynamicProperties dynamicProperties,
-			@HandleThrottle FunctionalityThrottling handleThrottling,
-			Supplier<MerkleNetworkContext> networkCtx,
-			TransactionContext txnCtx
+			final IssEventInfo issInfo,
+			final NodeLocalProperties nodeLocalProperties,
+			final HapiOpCounters opCounters,
+			final HbarCentExchange exchange,
+			final SystemFilesManager systemFilesManager,
+			final FeeMultiplierSource feeMultiplierSource,
+			final GlobalDynamicProperties dynamicProperties,
+			final @HandleThrottle FunctionalityThrottling handleThrottling,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final TransactionContext txnCtx,
+			final MiscRunningAvgs runningAvgs,
+			final NarratedCharging narratedCharging
 	) {
 		issResetPeriod = nodeLocalProperties.issResetPeriod();
 
@@ -90,10 +97,12 @@ public class NetworkCtxManager {
 		this.opCounters = opCounters;
 		this.exchange = exchange;
 		this.networkCtx = networkCtx;
+		this.narratedCharging = narratedCharging;
 		this.systemFilesManager = systemFilesManager;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
 		this.dynamicProperties = dynamicProperties;
+		this.runningAvgs = runningAvgs;
 		this.txnCtx = txnCtx;
 	}
 
@@ -166,22 +175,48 @@ public class NetworkCtxManager {
 	 * 		the accessor for the transaction
 	 * @return whether processing can continue for this transaction
 	 */
-	public ResponseCodeEnum prepareForIncorporating(TxnAccessor accessor) {
+	public ResponseCodeEnum prepareForIncorporating(final TxnAccessor accessor) {
 		/* We unconditionally evaluate the throttle to track network usage for congestion pricing
 		 * purposes. (Note that since a gas-throttled transaction does not take up any capacity
 		 * in the "normal" throttle buckets, it actually reduces congestion by a tiny amount.)  */
 		handleThrottling.shouldThrottleTxn(accessor);
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
 
-		return handleThrottling.wasLastTxnGasThrottled() ? CONSENSUS_GAS_EXHAUSTED : OK;
+		if (handleThrottling.wasLastTxnGasThrottled()) {
+			narratedCharging.refundPayerServiceFee();
+			return CONSENSUS_GAS_EXHAUSTED;
+		}
+		return OK;
 	}
 
+	/**
+	 * Callback used by the processing flow to notify the context manager it should update any network
+	 * context that derives from the side effects of handled transactions.
+	 *
+	 * At present, this context includes:
+	 * <ol>
+	 *     <li>The {@code *Handled} counts.</li>
+	 *     <li>The {@code gasPerConsSec} running average.</li>
+	 *     <li>The "in-handle" throttles.</li>
+	 *     <li>The congestion pricing multiplier.</li>
+	 * </ol>
+	 *
+	 * @param op the type of transaction just handled
+	 */
 	public void finishIncorporating(HederaFunctionality op) {
 		opCounters.countHandled(op);
+		if (consensusSecondJustChanged) {
+			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
+			gasUsedThisConsSec = 0L;
+		}
 
-		if (isGasThrottled(op) && dynamicProperties.shouldThrottleByGas() && txnCtx.hasContractResult()) {
-			handleThrottling.leakUnusedGasPreviouslyReserved(
-					txnCtx.accessor().getGasLimitForContractTx() - txnCtx.getGasUsedForContractTxn());
+		if (isGasThrottled(op) && txnCtx.hasContractResult()) {
+			final var gasUsed = txnCtx.getGasUsedForContractTxn();
+			gasUsedThisConsSec += gasUsed;
+			if (dynamicProperties.shouldThrottleByGas()) {
+				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
+				handleThrottling.leakUnusedGasPreviouslyReserved(excessAmount);
+			}
 		}
 
 		var networkCtxNow = networkCtx.get();
@@ -193,8 +228,21 @@ public class NetworkCtxManager {
 		return LocalDateTime.ofInstant(now, UTC).getDayOfYear() == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
 	}
 
+	/* --- Only used in unit tests --- */
 	int getIssResetPeriod() {
 		return issResetPeriod;
+	}
+
+	void setConsensusSecondJustChanged(boolean consensusSecondJustChanged) {
+		this.consensusSecondJustChanged = consensusSecondJustChanged;
+	}
+
+	long getGasUsedThisConsSec() {
+		return gasUsedThisConsSec;
+	}
+
+	void setGasUsedThisConsSec(long gasUsedThisConsSec) {
+		this.gasUsedThisConsSec = gasUsedThisConsSec;
 	}
 
 	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {

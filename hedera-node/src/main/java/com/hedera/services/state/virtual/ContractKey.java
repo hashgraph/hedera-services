@@ -20,9 +20,11 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -60,6 +62,10 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
 	public ContractKey() {
 		// there has to be a default constructor for deserialize
+	}
+
+	public static ContractKey from(final AccountID id, final UInt256 key) {
+		return new ContractKey(id.getAccountNum(), key.toArray());
 	}
 
 	public ContractKey(long contractId, long key) {

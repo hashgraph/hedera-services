@@ -36,16 +36,16 @@ import com.swirlds.common.crypto.SignatureType;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SigFactory.signUnchecked;
 import static com.hedera.test.factories.sigs.SigMapGenerator.withAlternatingUniqueAndFullPrefixes;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,9 +58,9 @@ import static org.mockito.Mockito.mock;
 class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
 	private final KeyTree payerKt =
-			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ed25519(true), ed25519(true)));
+			KeyTree.withRoot(list(ed25519(true), ecdsa384Secp256k1(true), ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyTree otherKt =
-			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true)));
+			KeyTree.withRoot(list(ed25519(true), ecdsa384Secp256k1(true), ecdsa384Secp256k1(true)));
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
 
 	@Test
@@ -86,7 +86,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 
 		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
 		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
-		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+		subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
 			numUnusedFullPrefixSigs.getAndIncrement();
 		});
 		assertEquals(2, numUnusedFullPrefixSigs.get());
@@ -109,7 +109,7 @@ class PojoSigMapPubKeyToSigBytesTest {
 
 		assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
 		final var numUnusedFullPrefixSigs = new AtomicInteger(0);
-		subject.forEachUnusedSigWithFullPrefix((pubKey, sig) -> {
+		subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
 			numUnusedFullPrefixSigs.getAndIncrement();
 		});
 		assertEquals(4, numUnusedFullPrefixSigs.get());
@@ -122,7 +122,8 @@ class PojoSigMapPubKeyToSigBytesTest {
 				.payerKt(payerKt)
 				.nonPayerKts(otherKt)
 				.get();
-		PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(
+				SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
@@ -153,14 +154,18 @@ class PojoSigMapPubKeyToSigBytesTest {
 		kt.traverseLeaves(leaf -> {
 			byte[] pubKey = pubKeyFor(leaf, factory);
 			byte[] sigBytes = EMPTY_SIG;
-			byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
 			try {
 				sigBytes = subject.sigBytesFor(pubKey);
 			} catch (Exception e) {
 				thrown.set(e);
 			}
-			if (thrown.get() == null) {
-				assertThat(List.of(sigBytes), contains(expectedSigBytes));
+			if (pubKey.length == 32) {
+				byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
+				if (thrown.get() == null) {
+					assertArrayEquals(expectedSigBytes, sigBytes);
+				}
+			} else {
+				assertTrue(sigBytes.length >= 64);
 			}
 		});
 		if (thrown.get() != null) {
@@ -172,6 +177,8 @@ class PojoSigMapPubKeyToSigBytesTest {
 		Key key = leaf.asKey(factory);
 		if (key.getEd25519() != ByteString.EMPTY) {
 			return key.getEd25519().toByteArray();
+		} else if (key.getECDSASecp256K1() != ByteString.EMPTY) {
+			return key.getECDSASecp256K1().toByteArray();
 		} else if (key.getECDSA384() != ByteString.EMPTY) {
 			return key.getECDSA384().toByteArray();
 		} else if (key.getRSA3072() != ByteString.EMPTY) {
@@ -185,11 +192,9 @@ class PojoSigMapPubKeyToSigBytesTest {
 			return EMPTY_SIG;
 		} else {
 			if (leaf.getSigType() == SignatureType.ED25519) {
-				return SigFactory.signUnchecked(data, factory.lookupPrivateKey(leaf.asKey(factory)));
+				return signUnchecked(data, factory.lookupPrivateKey(leaf.asKey(factory)));
 			} else if (leaf.getSigType() == SignatureType.RSA) {
 				return SigFactory.NONSENSE_RSA_SIG;
-			} else if (leaf.getSigType() == SignatureType.ECDSA) {
-				return SigFactory.NONSENSE_ECDSA_SIG;
 			}
 			throw new AssertionError("Impossible leaf type!");
 		}

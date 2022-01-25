@@ -20,9 +20,8 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
@@ -68,13 +67,15 @@ class GetTxnRecordResourceUsageTest {
 	private static final TransactionGetRecordQuery satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
 	private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithDups =
 			txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
+	private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithChildrenNoDups =
+			txnRecordQuery(targetTxnId, ANSWER_ONLY, false, true);
 	private static final TransactionGetRecordQuery satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
 	private static final TransactionGetRecordQuery unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
 	private static final Query satisfiableAnswerOnlyQuery = queryOf(satisfiableAnswerOnly);
 	private static final Query satisfiableAnswerOnlyWithDupsQuery = queryOf(satisfiableAnswerOnlyWithDups);
+	private static final Query satisfiableAnswerOnlyWithChildrenQuery = queryOf(satisfiableAnswerOnlyWithChildrenNoDups);
 	private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
 
-	private NodeLocalProperties nodeProps;
 	private StateView view;
 	private RecordCache recordCache;
 	private CryptoFeeBuilder usageEstimator;
@@ -88,26 +89,44 @@ class GetTxnRecordResourceUsageTest {
 
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
-		nodeProps = mock(NodeLocalProperties.class);
-		final var children = new StateChildren();
+		final var children = new MutableStateChildren();
 		view = new StateView(
 				null,
 				null,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		answerFunctions = mock(AnswerFunctions.class);
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithDups))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnlyWithDups))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableCostAnswer))
+		given(answerFunctions.txnRecord(recordCache, satisfiableCostAnswer))
 				.willReturn(Optional.of(desiredRecord));
-		given(answerFunctions.txnRecord(recordCache, view, unsatisfiable))
+		given(answerFunctions.txnRecord(recordCache, unsatisfiable))
 				.willReturn(Optional.empty());
 		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(desiredRecord));
 
 		subject = new GetTxnRecordResourceUsage(recordCache, answerFunctions, usageEstimator);
+	}
+
+	@Test
+	void setsChildRecordsInQueryCtxIfAppropos() {
+		final var answerOnlyUsage = mock(FeeData.class);
+		final var queryCtx = new HashMap<String, Object>();
+		final var mockedStatic = mockStatic(FeeCalcUtils.class);
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(desiredRecord));
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnlyWithChildrenNoDups))
+				.willReturn(Optional.of(desiredRecord));
+
+		subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
+
+		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
+
+		mockedStatic.close();
 	}
 
 	@Test
@@ -180,7 +199,7 @@ class GetTxnRecordResourceUsageTest {
 		final var queryCtx = new HashMap<String, Object>();
 		given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
-		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
+		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
 				.willReturn(Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, view, queryCtx);

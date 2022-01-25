@@ -32,21 +32,19 @@ import java.io.UncheckedIOException;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VirtualMapFactoryTest {
-	private final String jdbDataLoc = "test/jdb";
-	;
 	private final ThrowingJdbFactoryBuilder jdbFactory = new ThrowingJdbFactoryBuilder();
 
-	VirtualMapFactory factory;
+	private VirtualMapFactory subject;
 
 	@BeforeEach
 	void setUp() {
-		factory = new VirtualMapFactory(jdbDataLoc, jdbFactory);
+		subject = new VirtualMapFactory(jdbFactory);
 	}
 
 	@Test
 	void propagatesUncheckedFromBuilder() {
-		assertThrows(UncheckedIOException.class, () -> factory.newVirtualizedBlobs());
-		assertThrows(UncheckedIOException.class, () -> factory.newVirtualizedStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
+		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedStorage());
 	}
 
 	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {

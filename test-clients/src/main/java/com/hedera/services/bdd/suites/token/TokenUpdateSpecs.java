@@ -117,7 +117,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newTreasuryMustSign(),
 						newTreasuryMustBeAssociated(),
 						tokensCanBeMadeImmutableWithEmptyKeyList(),
-						updateHappyPath(),
 						updateNftTreasuryHappyPath(),
 						updateTokenTreasuryRequiresZeroTokenBalance(),
 						validatesMissingAdminKey(),
@@ -126,6 +125,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						/* HIP-18 */
 						canUpdateFeeScheduleKeyWithAdmin(),
 						updateUniqueTreasuryWithNfts(),
+						updateHappyPath(),
 				}
 		);
 	}

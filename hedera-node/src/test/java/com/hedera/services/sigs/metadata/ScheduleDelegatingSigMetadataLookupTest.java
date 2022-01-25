@@ -20,7 +20,6 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleScheduleTest;
@@ -29,7 +28,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +41,6 @@ import static org.mockito.Mockito.mock;
 class ScheduleDelegatingSigMetadataLookupTest {
     final int TX_BYTES_LENGTH = 64;
 
-    byte[] transactionBody = TxnUtils.randomUtf8Bytes(TX_BYTES_LENGTH);
     EntityId schedulingAccount = new EntityId(1,2, 3);
     RichInstant schedulingTXValidStart = new RichInstant(123, 456);
 
@@ -67,7 +64,7 @@ class ScheduleDelegatingSigMetadataLookupTest {
 
         scheduleStore = mock(ScheduleStore.class);
 
-        subject = SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
+        subject = DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore);
     }
 
     @Test

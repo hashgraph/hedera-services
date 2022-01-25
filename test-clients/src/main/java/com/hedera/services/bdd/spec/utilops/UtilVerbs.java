@@ -20,10 +20,13 @@ package com.hedera.services.bdd.spec.utilops;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.SequentialID;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
@@ -66,7 +69,9 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Assertions;
 
@@ -103,6 +108,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -125,6 +131,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -137,6 +144,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.lang.System.arraycopy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UtilVerbs {
@@ -365,6 +373,31 @@ public class UtilVerbs {
 				CustomSpecAssert.allRunFor(spec, subOp);
 			}
 		});
+	}
+
+	public static HapiSpecOperation childRecordsCheck(String parentTxnId,
+			ResponseCodeEnum parentalStatus,
+			TransactionRecordAsserts... childRecordAsserts) {
+		return withOpContext(
+				(spec, opLog) -> {
+					var distributeTx = getTxnRecord(parentTxnId);
+					allRunFor(spec, distributeTx);
+
+					var distributeTxId = distributeTx.getResponseRecord().getTransactionID();
+					SequentialID sequentialID = new SequentialID(distributeTxId);
+
+					for (TransactionRecordAsserts childRecordAssert : childRecordAsserts) {
+						childRecordAssert.txnId(sequentialID.nextChild());
+					}
+
+					allRunFor(spec, getTxnRecord(parentTxnId).andAllChildRecords()
+							.hasPriority(recordWith().status(parentalStatus).txnId(distributeTxId))
+							.hasChildRecords(childRecordAsserts).logged());
+				});
+	}
+
+	public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
+		return childRecordsCheck(parentTxnId, parentalStatus);
 	}
 
 	public static Setting from(String name, String value) {
@@ -625,6 +658,7 @@ public class UtilVerbs {
 					final var newPosition = position + bytesThisAppend;
 					final var appendSubOp = fileAppend(fileName)
 							.content(contents.substring(position, newPosition).toByteArray())
+							.fee(ONE_HUNDRED_HBARS)
 							.noLogging()
 							.payingWith(payer)
 							.signedBy(payer)
@@ -929,5 +963,94 @@ public class UtilVerbs {
 				.stream()
 				.map(aa -> new AbstractMap.SimpleEntry<>(asAccountString(aa.getAccountID()), aa.getAmount()))
 				.collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
+	}
+
+	public static TokenTransferListBuilder tokenTransferList() {
+		return new TokenTransferListBuilder();
+	}
+
+	public static TokenTransferListsBuilder tokenTransferLists() {
+		return new TokenTransferListsBuilder();
+	}
+
+	public static class TokenTransferListBuilder {
+		private Tuple tokenTransferList;
+		private byte[] token;
+		private boolean isSingleList = true;
+
+		public TokenTransferListBuilder isSingleList(final boolean isSingleList) {
+			this.isSingleList = isSingleList;
+			return this;
+		}
+
+		public TokenTransferListBuilder forToken(final TokenID token) {
+			this.token = getAddressWithFilledEmptyBytes(asAddress(token));
+			return this;
+		}
+
+		public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, accountAmounts, new Tuple[] { })
+				});
+			} else {
+				this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] { });
+			}
+			return this;
+		}
+
+		public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+			if (isSingleList) {
+				this.tokenTransferList = Tuple.singleton(new Tuple[] {
+						Tuple.of(token, new Tuple[] { }, nftTransfers)
+				});
+			} else {
+				this.tokenTransferList = Tuple.of(token, new Tuple[] { }, nftTransfers);
+			}
+			return this;
+		}
+
+		public Tuple build() {
+			return tokenTransferList;
+		}
+	}
+
+	public static class TokenTransferListsBuilder {
+		private Tuple tokenTransferLists;
+
+		public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
+			this.tokenTransferLists =
+					Tuple.singleton(tokenTransferLists);
+			return this;
+		}
+
+		public Tuple build() {
+			return tokenTransferLists;
+		}
+	}
+
+	public static Tuple accountAmount(
+			final AccountID account,
+			final Long amount) {
+		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(account));
+
+		return Tuple.of(account32,
+				amount);
+	}
+
+	public static Tuple nftTransfer(
+			final AccountID sender, final AccountID receiver,
+			final Long serialNumber) {
+		final byte[] account32 = getAddressWithFilledEmptyBytes(asAddress(sender));
+		final byte[] receiver32 = getAddressWithFilledEmptyBytes(asAddress(receiver));
+
+		return Tuple.of(account32, receiver32,
+				serialNumber);
+	}
+
+	private static byte[] getAddressWithFilledEmptyBytes(final byte[] address20) {
+		final var address32 = new byte[32];
+		arraycopy(address20, 0, address32, 12, 20);
+		return address32;
 	}
 }

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -149,8 +150,15 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void parsesLegacyCorrectly() throws Exception {
+		final Key aPrimitiveKey = Key.newBuilder()
+				.setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+				.build();
+		final ByteString aNewAlias = aPrimitiveKey.toByteString();
+		final AliasManager aliasManager = mock(AliasManager.class);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+
 		final long offeredFee = 100_000_000L;
-		var transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
+		var xferNoAliases = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
 				offeredFee,
 				Timestamp.getDefaultInstance(),
@@ -159,23 +167,48 @@ class SignedTxnAccessorTest {
 				zeroByteMemo,
 				5678l, -70000l,
 				5679l, 70000l);
-		transaction = transaction.toBuilder()
+		xferNoAliases = xferNoAliases.toBuilder()
 				.setSigMap(expectedMap)
 				.build();
-		final var body = CommonUtils.extractTransactionBody(transaction);
+		var xferWithAutoCreation = RequestBuilder.getHbarCryptoTransferRequestToAlias(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				offeredFee,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				zeroByteMemo,
+				5678l, -70000l,
+				aNewAlias, 70000l);
+		xferWithAutoCreation = xferWithAutoCreation.toBuilder()
+				.setSigMap(expectedMap)
+				.build();
+		var xferWithAliasesNoAutoCreation = RequestBuilder.getTokenTransferRequestToAlias(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				offeredFee,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				zeroByteMemo,
+				5678l, 5555l, -70000l,
+				ByteString.copyFromUtf8("aaaa"), 70000l);
+		xferWithAliasesNoAutoCreation = xferWithAliasesNoAutoCreation.toBuilder()
+				.setSigMap(expectedMap)
+				.build();
+		final var body = CommonUtils.extractTransactionBody(xferNoAliases);
 
-		final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+		var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
+		accessor.countAutoCreationsWith(aliasManager);
 		final var txnUsageMeta = accessor.baseUsageMeta();
 
-		assertEquals(transaction, accessor.getSignedTxnWrapper());
-		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
+		assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
+		assertArrayEquals(xferNoAliases.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertEquals(offeredFee, accessor.getOfferedFee());
-		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
+		assertArrayEquals(CommonUtils.noThrowSha384HashOf(xferNoAliases.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
 		assertArrayEquals("irst".getBytes(), accessor.getPkToSigsFn().sigBytesFor("f".getBytes()));
 		assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
@@ -185,7 +218,16 @@ class SignedTxnAccessorTest {
 		assertEquals(zeroByteMemo, accessor.getMemo());
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
-		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+		assertEquals(0, accessor.getNumAutoCreations());
+		assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
+
+		accessor = SignedTxnAccessor.uncheckedFrom(xferWithAutoCreation);
+		accessor.countAutoCreationsWith(aliasManager);
+		assertEquals(1, accessor.getNumAutoCreations());
+
+		accessor = SignedTxnAccessor.uncheckedFrom(xferWithAliasesNoAutoCreation);
+		accessor.countAutoCreationsWith(aliasManager);
+		assertEquals(0, accessor.getNumAutoCreations());
 	}
 
 	@Test
@@ -200,6 +242,16 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+	}
+
+	@Test
+	void canGetSetNumAutoCreations() {
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+		assertFalse(accessor.areAutoCreationsCounted());
+		accessor.setNumAutoCreations(2);
+		assertEquals(2, accessor.getNumAutoCreations());
+		assertTrue(accessor.areAutoCreationsCounted());
+		accessor.setNumAutoCreations(2);
 	}
 
 	@Test
@@ -352,7 +404,7 @@ class SignedTxnAccessorTest {
 
 		final var submitMeta = subject.availSubmitUsageMeta();
 
-		assertEquals(message.length(), submitMeta.getNumMsgBytes());
+		assertEquals(message.length(), submitMeta.numMsgBytes());
 	}
 
 	@Test

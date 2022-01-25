@@ -95,8 +95,9 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 				return;
 			}
 
-			var result = hfs.append(target, data);
-			txnCtx.setStatus(result.outcome());
+			final var result = hfs.append(target, data);
+			final var status = result.outcome();
+			txnCtx.setStatus(status);
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {

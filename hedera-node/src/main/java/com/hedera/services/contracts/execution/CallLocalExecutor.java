@@ -33,6 +33,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 
+import javax.inject.Singleton;
 import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -42,7 +43,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
  * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
  * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
  */
-public final class CallLocalExecutor {
+@Singleton
+public class CallLocalExecutor {
 	private CallLocalExecutor() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
