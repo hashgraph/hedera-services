@@ -20,6 +20,7 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 
 import java.nio.charset.StandardCharsets;
@@ -33,12 +34,14 @@ public class ExtantCryptoContext {
 	private final Key currentKey;
 	private final long currentExpiry;
 	private final String currentMemo;
+	private final ByteString currentAlias;
 	private final boolean currentlyHasProxy;
 	private final int currentMaxAutomaticAssociations;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
 		currentMemo = builder.currentMemo;
+		currentAlias = builder.currentAlias;
 		currentExpiry = builder.currentExpiry;
 		currentKey = builder.currentKey;
 		currentlyHasProxy = builder.currentlyHasProxy;
@@ -48,6 +51,7 @@ public class ExtantCryptoContext {
 	public long currentNonBaseRb() {
 		return (long) (currentlyHasProxy ? BASIC_ENTITY_ID_SIZE : 0)
 				+ currentMemo.getBytes(StandardCharsets.UTF_8).length
+				+ currentAlias.size()
 				+ getAccountKeyStorageSize(currentKey)
 				+ (currentMaxAutomaticAssociations == 0 ? 0 : INT_SIZE);
 	}
@@ -66,6 +70,10 @@ public class ExtantCryptoContext {
 
 	public String currentMemo() {
 		return currentMemo;
+	}
+
+	public ByteString currentAlias() {
+		return currentAlias;
 	}
 
 	public boolean currentlyHasProxy() {
@@ -87,15 +95,17 @@ public class ExtantCryptoContext {
 		private static final int KEY_MASK = 1 << 3;
 		private static final int TOKEN_RELS_MASK = 1 << 4;
 		private static final int MAX_AUTO_ASSOCIATIONS_MASK = 1 << 5;
+		private static final int ALIAS_MASK = 1 << 6;
 
 		private static final int ALL_FIELDS_MASK =
-				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK;
+				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK | ALIAS_MASK;
 
 		private int mask = 0;
 
 		private int currentNumTokenRels;
 		private Key currentKey;
 		private String currentMemo;
+		private ByteString currentAlias;
 		private boolean currentlyHasProxy;
 		private long currentExpiry;
 		private int currentMaxAutomaticAssociations;
@@ -125,6 +135,12 @@ public class ExtantCryptoContext {
 		public ExtantCryptoContext.Builder setCurrentMemo(String currentMemo) {
 			this.currentMemo = currentMemo;
 			mask |= MEMO_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentAlias(ByteString currentAlias) {
+			this.currentAlias = currentAlias;
+			mask |= ALIAS_MASK;
 			return this;
 		}
 

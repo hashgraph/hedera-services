@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -39,6 +40,7 @@ class CryptoUpdateMetaTest {
 	private final long keyBytes = 123;
 	private final long msgBytes = 1_234;
 	private final long memoSize = 20;
+	private final long aliasSize = 32;
 	private final long now = 1_234_567;
 	private final long expiry = 2_234_567;
 	private final boolean hasProxy = true;
@@ -47,13 +49,15 @@ class CryptoUpdateMetaTest {
 
 	@Test
 	void allGettersAndToStringWork() {
-		var expected = "CryptoUpdateMeta{keyBytesUsed=123, msgBytesUsed=1234, memoSize=20, effectiveNow=1234567, " +
+		var expected = "CryptoUpdateMeta{keyBytesUsed=123, msgBytesUsed=1234, memoSize=20, aliasSize=32, " +
+				"effectiveNow=1234567, " +
 				"expiry=2234567, hasProxy=true, maxAutomaticAssociations=12, hasMaxAutomaticAssociations=true}";
 
 		final var subject = new CryptoUpdateMeta.Builder()
 				.keyBytesUsed(keyBytes)
 				.msgBytesUsed(msgBytes)
 				.memoSize(memoSize)
+				.aliasSize(aliasSize)
 				.effectiveNow(now)
 				.expiry(expiry)
 				.hasProxy(hasProxy)
@@ -64,6 +68,7 @@ class CryptoUpdateMetaTest {
 		assertEquals(keyBytes, subject.getKeyBytesUsed());
 		assertEquals(msgBytes, subject.getMsgBytesUsed());
 		assertEquals(memoSize, subject.getMemoSize());
+		assertEquals(aliasSize, subject.getAliasSize());
 		assertEquals(now, subject.getEffectiveNow());
 		assertEquals(expiry, subject.getExpiry());
 		assertTrue(subject.hasProxy());
@@ -78,6 +83,7 @@ class CryptoUpdateMetaTest {
 				.keyBytesUsed(keyBytes)
 				.msgBytesUsed(msgBytes)
 				.memoSize(memoSize)
+				.aliasSize(aliasSize)
 				.effectiveNow(now)
 				.expiry(expiry)
 				.hasProxy(hasProxy)
@@ -89,6 +95,7 @@ class CryptoUpdateMetaTest {
 				.keyBytesUsed(keyBytes)
 				.msgBytesUsed(msgBytes)
 				.memoSize(memoSize)
+				.aliasSize(aliasSize)
 				.effectiveNow(now)
 				.expiry(expiry)
 				.hasProxy(hasProxy)
@@ -103,21 +110,23 @@ class CryptoUpdateMetaTest {
 	@Test
 	void calculatesSizesAsExpected() {
 		final var memo = "updateMemo";
+		final var alias = ByteString.copyFromUtf8("dummy");
 		final var accountID = AccountID.newBuilder().setAccountNum(1_234L).build();
 		final var proxyID = AccountID.newBuilder().setAccountNum(1_230L).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(
 						CryptoUpdateTransactionBody.newBuilder()
-						.setMemo(StringValue.of(memo))
-						.setMaxAutomaticTokenAssociations(Int32Value.of(5))
-						.setProxyAccountID(proxyID)
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(expiry))
-						.setAccountIDToUpdate(accountID)
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+								.setMemo(StringValue.of(memo))
+								.setAlias(alias)
+								.setMaxAutomaticTokenAssociations(Int32Value.of(5))
+								.setProxyAccountID(proxyID)
+								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(expiry))
+								.setAccountIDToUpdate(accountID)
+								.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				).build();
 
 		final var expectedMsgBytes = BASIC_ENTITY_ID_SIZE + memo.length() + LONG_SIZE
-				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE + alias.size();
 
 		final var subject = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(),
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
@@ -125,6 +134,7 @@ class CryptoUpdateMetaTest {
 		assertEquals(0, subject.getKeyBytesUsed());
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
 		assertEquals(memo.length(), subject.getMemoSize());
+		assertEquals(alias.size(), subject.getAliasSize());
 		assertEquals(expiry, subject.getExpiry());
 		assertTrue(subject.hasProxy());
 		assertTrue(subject.hasMaxAutomaticAssociations());

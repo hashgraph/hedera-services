@@ -65,6 +65,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentKey(details.getKey())
 				.setCurrentMemo(details.getMemo())
+				.setCurrentAlias(details.getAlias())
 				.setCurrentExpiry(details.getExpirationTime().getSeconds())
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())

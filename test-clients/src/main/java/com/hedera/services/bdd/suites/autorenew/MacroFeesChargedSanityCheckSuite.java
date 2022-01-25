@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.autorenew;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -93,12 +94,14 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 
 		final var target = "czar";
 		final String crazyMemo = "Calmer than you are!";
+		final ByteString someAlias = ByteString.copyFromUtf8("some random alias");
 
 		final ExtantCryptoContext cryptoCtx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(0L)
 				.setCurrentKey(Key.newBuilder().setEd25519(copyFromUtf8(randomUppercase(32))).build())
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(crazyMemo)
+				.setCurrentAlias(someAlias)
 				.setCurrentNumTokenRels(0)
 				.build();
 
@@ -141,6 +144,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 		final long startBalance = ONE_HUNDRED_HBARS;
 		final var target = "czar";
 		final String crazyMemo = "Calmer than you are!";
+		final ByteString someAlias = ByteString.copyFromUtf8("some random alias");
 		final AtomicLong initialExpiry = new AtomicLong();
 		final AtomicLong finalExpiry = new AtomicLong();
 		final AtomicLong finalBalance = new AtomicLong();
@@ -153,6 +157,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 				.setCurrentKey(Key.newBuilder().setEd25519(copyFromUtf8(randomUppercase(32))).build())
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(crazyMemo)
+				.setCurrentAlias(someAlias)
 				.setCurrentNumTokenRels(0)
 				.build();
 

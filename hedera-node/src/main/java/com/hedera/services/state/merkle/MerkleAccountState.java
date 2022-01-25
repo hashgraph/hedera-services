@@ -59,7 +59,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final String DEFAULT_MEMO = "";
-	private static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
+	public static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
 
 	private JKey key;
 	private long expiry;

@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
@@ -97,6 +98,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AccessorBasedUsagesTest {
 	private final String memo = "Even the most cursory inspection would yield that...";
+	private final ByteString alias = ByteString.copyFromUtf8("alias");
 	private final long now = 1_234_567L;
 	private final SigUsage sigUsage = new SigUsage(1, 2, 3);
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
@@ -351,6 +353,7 @@ class AccessorBasedUsagesTest {
 				.keyBytesUsed(123)
 				.msgBytesUsed(1_234)
 				.memoSize(100)
+				.aliasSize(32)
 				.effectiveNow(now)
 				.expiry(1_234_567L)
 				.hasProxy(false)
@@ -360,6 +363,7 @@ class AccessorBasedUsagesTest {
 		final var cryptoContext = ExtantCryptoContext.newBuilder()
 				.setCurrentKey(Key.getDefaultInstance())
 				.setCurrentMemo(memo)
+				.setCurrentAlias(alias)
 				.setCurrentExpiry(now)
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)

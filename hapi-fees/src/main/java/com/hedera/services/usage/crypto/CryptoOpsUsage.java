@@ -97,6 +97,7 @@ public class CryptoOpsUsage {
 		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraRb = 0;
 		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
+		extraRb += ctx.currentAlias().size();
 		extraRb += getAccountKeyStorageSize(ctx.currentKey());
 		if (ctx.currentlyHasProxy()) {
 			extraRb += BASIC_ENTITY_ID_SIZE;
@@ -128,6 +129,8 @@ public class CryptoOpsUsage {
 		var newKeyBytes = cryptoUpdateMeta.getKeyBytesUsed();
 		newVariableBytes += newKeyBytes == 0 ? getAccountKeyStorageSize(ctx.currentKey()) : newKeyBytes;
 		newVariableBytes += (cryptoUpdateMeta.hasProxy() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
+		var newAliasSize = cryptoUpdateMeta.getAliasSize();
+		newVariableBytes += newAliasSize != 0 ? newAliasSize : ctx.currentAlias().size();
 
 		long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;

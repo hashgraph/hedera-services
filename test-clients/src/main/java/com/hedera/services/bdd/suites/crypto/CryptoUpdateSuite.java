@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
@@ -110,26 +109,26 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						updateWithUniqueSigs(),
-						updateWithOverlappingSigs(),
-						updateWithOneEffectiveSig(),
-						canUpdateMemo(),
-						updateFailsWithInsufficientSigs(),
-						cannotSetThresholdNegative(),
-						updateWithEmptyKeyFails(),
-						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-						updateFailsWithContractKey(),
-						updateFailsWithOverlyLongLifetime(),
-						updateFailsWithInvalidMaxAutoAssociations(),
+//						updateWithUniqueSigs(),
+//						updateWithOverlappingSigs(),
+//						updateWithOneEffectiveSig(),
+//						canUpdateMemo(),
+//						updateFailsWithInsufficientSigs(),
+//						cannotSetThresholdNegative(),
+//						updateWithEmptyKeyFails(),
+//						updateFailsIfMissingSigs(),
+//						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
+//						updateFailsWithContractKey(),
+//						updateFailsWithOverlyLongLifetime(),
+//						updateFailsWithInvalidMaxAutoAssociations(),
 						usdFeeAsExpected(),
-						canUpdateUsingAlias(),
-						canUpdateProxyUsingAlias(),
-				        failsWhenInvalidAliasedIdGiven(),
-				        invalidProxyAliasFails(),
-						canUpdateIfAliasNotPresent(),
-						failsUpdatingAliasIfPresent(),
-						failsUpdatingNonPrimitiveKeyAlias()
+//						canUpdateUsingAlias(),
+//						canUpdateProxyUsingAlias(),
+//						failsWhenInvalidAliasedIdGiven(),
+//						invalidProxyAliasFails(),
+//						canUpdateIfAliasNotPresent(),
+//						failsUpdatingAliasIfPresent(),
+//						failsUpdatingNonPrimitiveKeyAlias()
 				}
 		);
 	}
@@ -291,17 +290,21 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec usdFeeAsExpected() {
 		double autoAssocSlotPrice = 0.0018;
 		double baseFee = 0.00022;
+		double aliasUpdatePrice = 0.00008;
 		double plusOneSlotFee = baseFee + autoAssocSlotPrice;
 		double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
+		double plusAliasFee = baseFee + aliasUpdatePrice;
 
 		final var baseTxn = "baseTxn";
 		final var plusOneTxn = "plusOneTxn";
 		final var plusTenTxn = "plusTenTxn";
+		final var plusAliasTxn = "plusAliasTxn";
 
 		AtomicLong expiration = new AtomicLong();
 		return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
 				.given(
 						newKeyNamed("key").shape(SIMPLE),
+						newKeyNamed("alias").logged(),
 						cryptoCreate("payer")
 								.key("key")
 								.balance(1_000 * ONE_HBAR),
@@ -312,6 +315,12 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.blankMemo()
 								.payingWith("payer"),
 						cryptoCreate("autoAssocTarget")
+								.key("key")
+								.balance(100 * ONE_HBAR)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+								.blankMemo()
+								.payingWith("payer"),
+						cryptoCreate("aliasToBeUpdatedAccount")
 								.key("key")
 								.balance(100 * ONE_HBAR)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
@@ -337,12 +346,21 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.payingWith("autoAssocTarget")
 								.blankMemo()
 								.maxAutomaticAssociations(11)
-								.via(plusTenTxn)
+								.via(plusTenTxn),
+
+						// Fees for updating alias
+						cryptoUpdate("aliasToBeUpdatedAccount")
+								.payingWith("aliasToBeUpdatedAccount")
+								.blankMemo()
+								.newAlias("alias")
+								.signedBy("alias", "aliasToBeUpdatedAccount")
+								.via(plusAliasTxn).logged()
 				)
 				.then(
 						validateChargedUsd(baseTxn, baseFee),
 						validateChargedUsd(plusOneTxn, plusOneSlotFee),
-						validateChargedUsd(plusTenTxn, plusTenSlotsFee)
+						validateChargedUsd(plusTenTxn, plusTenSlotsFee),
+						validateChargedUsd(plusAliasTxn, plusAliasFee)
 				);
 	}
 

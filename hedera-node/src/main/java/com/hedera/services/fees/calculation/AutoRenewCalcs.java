@@ -132,6 +132,7 @@ public class AutoRenewCalcs {
 				.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
 				.setCurrentlyHasProxy(account.getProxy() != null)
 				.setCurrentMemo(account.getMemo())
+				.setCurrentAlias(account.getAlias())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())
 				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.build();

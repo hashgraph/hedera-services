@@ -78,6 +78,7 @@ class CryptoOpsUsageTest {
 	private long expiry = now + secs;
 	private Key key = KeyUtils.A_COMPLEX_KEY;
 	private String memo = "That abler soul, which thence doth flow";
+	private ByteString alias = ByteString.copyFromUtf8("alias");
 	private AccountID proxy = IdUtils.asAccount("0.0.75231");
 	private int maxAutoAssociations = 123;
 	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
@@ -125,6 +126,7 @@ class CryptoOpsUsageTest {
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(expiry)
 				.setCurrentMemo(memo)
+				.setCurrentAlias(alias)
 				.setCurrentKey(key)
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
@@ -144,6 +146,7 @@ class CryptoOpsUsageTest {
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ BASIC_ENTITY_ID_SIZE
 						+ memo.length()
+						+ alias.size()
 						+ getAccountKeyStorageSize(key)
 						+ numTokenRels * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship());
 	}
@@ -215,6 +218,7 @@ class CryptoOpsUsageTest {
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(expiry)
 				.setCurrentMemo(memo)
+				.setCurrentAlias(alias)
 				.setCurrentKey(key)
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
@@ -240,10 +244,12 @@ class CryptoOpsUsageTest {
 		long oldExpiry = expiry - 1_234L;
 		String oldMemo = "Lettuce";
 		int oldMaxAutoAssociations = maxAutoAssociations - 5;
+		ByteString oldAlias = ByteString.EMPTY;
 
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(oldExpiry)
 				.setCurrentMemo(oldMemo)
+				.setCurrentAlias(oldAlias)
 				.setCurrentKey(oldKey)
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
@@ -252,11 +258,11 @@ class CryptoOpsUsageTest {
 
 		long keyBytesUsed = getAccountKeyStorageSize(key);
 		long msgBytesUsed = BASIC_ENTITY_ID_SIZE + memo.getBytes().length + keyBytesUsed
-				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE + alias.size();
 
 		expected.addBpt(msgBytesUsed);
 
-		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE;
+		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE + alias.size();
 		long tokenRelBytes = numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
@@ -299,10 +305,12 @@ class CryptoOpsUsageTest {
 		Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
 		long oldExpiry = expiry - 1_234L;
 		String oldMemo = "Lettuce";
+		ByteString oldAlias = ByteString.EMPTY;
 
 		var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(oldExpiry)
 				.setCurrentMemo(oldMemo)
+				.setCurrentAlias(oldAlias)
 				.setCurrentKey(oldKey)
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
@@ -311,11 +319,11 @@ class CryptoOpsUsageTest {
 
 		long keyBytesUsed = getAccountKeyStorageSize(key);
 		long msgBytesUsed = BASIC_ENTITY_ID_SIZE + memo.getBytes().length + keyBytesUsed
-				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE;
+				+ LONG_SIZE + BASIC_ENTITY_ID_SIZE + alias.size();
 
 		expected.addBpt(msgBytesUsed);
 
-		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE;
+		long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE + alias.size();
 		long tokenRelBytes = numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
@@ -349,6 +357,7 @@ class CryptoOpsUsageTest {
 				/* The proxy account */
 				+ BASIC_ENTITY_ID_SIZE
 				+ memo.length()
+				+ alias.size()
 				+ FeeBuilder.getAccountKeyStorageSize(key)
 				+ (maxAutoAssociations != 0 ? INT_SIZE : 0);
 	}
@@ -358,6 +367,7 @@ class CryptoOpsUsageTest {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setProxyAccountID(proxy)
 				.setMemo(StringValue.newBuilder().setValue(memo))
+				.setAlias(alias)
 				.setKey(key)
 				.build();
 		setUpdateTxn();
@@ -368,6 +378,7 @@ class CryptoOpsUsageTest {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setProxyAccountID(proxy)
 				.setMemo(StringValue.newBuilder().setValue(memo))
+				.setAlias(alias)
 				.setKey(key)
 				.setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
 				.build();

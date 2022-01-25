@@ -45,6 +45,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_ALIAS;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
@@ -116,6 +117,7 @@ public class OpUsageCtxHelper {
 			cryptoContext = ExtantCryptoContext.newBuilder()
 					.setCurrentKey(details.getKey())
 					.setCurrentMemo(details.getMemo())
+					.setCurrentAlias(details.getAlias())
 					.setCurrentExpiry(details.getExpirationTime().getSeconds())
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
@@ -125,6 +127,7 @@ public class OpUsageCtxHelper {
 			cryptoContext = ExtantCryptoContext.newBuilder()
 					.setCurrentExpiry(txn.getTransactionID().getTransactionValidStart().getSeconds())
 					.setCurrentMemo(DEFAULT_MEMO)
+					.setCurrentAlias(DEFAULT_ALIAS)
 					.setCurrentKey(Key.getDefaultInstance())
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)

@@ -35,6 +35,7 @@ public class CryptoUpdateMeta {
 	private final long keyBytesUsed;
 	private final long msgBytesUsed;
 	private final long memoSize;
+	private final long aliasSize;
 	private final long effectiveNow;
 	private final long expiry;
 	private final boolean hasProxy;
@@ -45,6 +46,7 @@ public class CryptoUpdateMeta {
 		keyBytesUsed = builder.keyBytesUsed;
 		msgBytesUsed = builder.msgBytesUsed;
 		memoSize = builder.memoSize;
+		aliasSize = builder.aliasSize;
 		effectiveNow = builder.effectiveNow;
 		expiry = builder.expiry;
 		hasProxy = builder.hasProxy;
@@ -56,6 +58,7 @@ public class CryptoUpdateMeta {
 		keyBytesUsed = cryptoUpdateTxnBody.hasKey() ? getAccountKeyStorageSize(cryptoUpdateTxnBody.getKey()) : 0;
 		msgBytesUsed = bytesUsedInTxn(cryptoUpdateTxnBody) + keyBytesUsed;
 		memoSize = cryptoUpdateTxnBody.hasMemo() ? cryptoUpdateTxnBody.getMemo().getValueBytes().size() : 0;
+		aliasSize = !cryptoUpdateTxnBody.getAlias().isEmpty() ? cryptoUpdateTxnBody.getAlias().size() : 0;
 		effectiveNow = transactionValidStartSecs;
 		expiry = cryptoUpdateTxnBody.getExpirationTime().getSeconds();
 		hasProxy = cryptoUpdateTxnBody.hasProxyAccountID();
@@ -73,6 +76,10 @@ public class CryptoUpdateMeta {
 
 	public long getMemoSize() {
 		return memoSize;
+	}
+
+	public long getAliasSize() {
+		return aliasSize;
 	}
 
 	public long getEffectiveNow() {
@@ -98,6 +105,7 @@ public class CryptoUpdateMeta {
 	private int bytesUsedInTxn(CryptoUpdateTransactionBody op) {
 		return BASIC_ENTITY_ID_SIZE
 				+ op.getMemo().getValueBytes().size()
+				+ op.getAlias().size()
 				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
 				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
 				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0)
@@ -108,6 +116,7 @@ public class CryptoUpdateMeta {
 		private long keyBytesUsed;
 		private long msgBytesUsed;
 		private long memoSize;
+		private long aliasSize;
 		private long effectiveNow;
 		private long expiry;
 		private boolean hasProxy;
@@ -130,6 +139,11 @@ public class CryptoUpdateMeta {
 
 		public CryptoUpdateMeta.Builder memoSize(long memoSize) {
 			this.memoSize = memoSize;
+			return this;
+		}
+
+		public CryptoUpdateMeta.Builder aliasSize(long aliasSize) {
+			this.aliasSize = aliasSize;
 			return this;
 		}
 
@@ -179,6 +193,7 @@ public class CryptoUpdateMeta {
 				.add("keyBytesUsed", keyBytesUsed)
 				.add("msgBytesUsed", msgBytesUsed)
 				.add("memoSize", memoSize)
+				.add("aliasSize", aliasSize)
 				.add("effectiveNow", effectiveNow)
 				.add("expiry", expiry)
 				.add("hasProxy", hasProxy)

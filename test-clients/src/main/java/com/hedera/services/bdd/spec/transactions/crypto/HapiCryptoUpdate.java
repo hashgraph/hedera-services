@@ -250,6 +250,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						.setCurrentNumTokenRels(info.getTokenRelationshipsCount())
 						.setCurrentExpiry(info.getExpirationTime().getSeconds())
 						.setCurrentMemo(info.getMemo())
+						.setCurrentAlias(info.getAlias())
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
