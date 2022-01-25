@@ -27,6 +27,12 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 
 public class PrecompilePricingUtils {
 
+	static class CanonicalOperationsUnloadbleException extends RuntimeException {
+		public CanonicalOperationsUnloadbleException(Exception e) {
+			super("Canonical prices for precompiles are not available", e);
+		}
+	}
+
 	/**
 	 * If we lack an entry (because of a bad data load), return a value that cannot reasonably be paid.
 	 * In this case $1 Million Dollars.
@@ -46,7 +52,7 @@ public class PrecompilePricingUtils {
 		try {
 			canonicalPrices = assetsLoader.loadCanonicalPrices();
 		} catch (IOException e) {
-			throw new RuntimeException("Canonical prices for precompiles are not available", e);
+			throw new CanonicalOperationsUnloadbleException(e);
 		}
 		for (var costType : GasCostType.values()) {
 			if (canonicalPrices.containsKey(costType.functionality)) {
