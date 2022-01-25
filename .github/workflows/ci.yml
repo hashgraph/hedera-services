@@ -32,7 +32,7 @@ jobs:
 
       - name: Check Docker version
         run: |
-        sudo docker –version
+          sudo docker –version
 
       - name: Checkout Repository
         uses: actions/checkout@v2
