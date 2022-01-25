@@ -52,12 +52,6 @@ jobs:
             **/target/*.jar
             **/target/pom.xml
 
-      - name: Install Docker
-        run:
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-          brew cask install docker
-          sudo docker –version
-
   javadoc:
     needs: [build]
     runs-on: macos-latest
