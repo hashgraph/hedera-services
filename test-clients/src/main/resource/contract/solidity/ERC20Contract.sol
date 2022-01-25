@@ -32,4 +32,14 @@ contract ERC20Contract {
     function transferFrom(address token, address sender, address recipient, uint256 amount) public {
         IERC20(token).transferFrom(sender, recipient, amount);
     }
+
+    //Not supported operations - should return a failure
+
+    function allowance(address token, address owner, address spender) public {
+        IERC20(token).allowance(owner, spender);
+    }
+
+    function approve(address token, address spender, uint256 amount) public {
+        IERC20(token).approve(spender, amount);
+    }
 }
