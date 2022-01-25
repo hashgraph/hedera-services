@@ -114,7 +114,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
 			case EXPIRY:
 				return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
+			default:
+				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
-		throw new IllegalArgumentException("Property " + prop + " cannot be validated in scoped check");
 	}
 }

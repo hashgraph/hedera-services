@@ -472,7 +472,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 			throws Exception {
 		Transaction paymentTx = createQueryHeaderTransfer(payerAccount, fee);
 		Query contractCallLocal = RequestBuilder
-				.getContractCallLocalQuery(contractToCall, 250000L, callData, 0L, 5000, paymentTx,
+				.getContractCallLocalQuery(contractToCall, 250000L, callData, 5000, paymentTx,
 						resposeType);
 
 		Response callResp = stub.contractCallLocalMethod(contractCallLocal);

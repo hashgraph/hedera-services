@@ -41,8 +41,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
  */
 @Singleton
 public class TokenDissociateTransitionLogic implements TransitionLogic {
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final TransactionContext txnCtx;
 	private final DissociateLogic dissociateLogic;
 
@@ -68,7 +66,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

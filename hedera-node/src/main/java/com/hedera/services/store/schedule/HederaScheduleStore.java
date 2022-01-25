@@ -205,10 +205,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	public Pair<ScheduleID, MerkleSchedule> lookupSchedule(final byte[] bodyBytes) {
 		final var schedule = MerkleSchedule.from(bodyBytes, 0L);
 
-		if (isCreationPending()) {
-			if (schedule.equals(pendingCreation)) {
-				return Pair.of(pendingId, pendingCreation);
-			}
+		if (isCreationPending() && schedule.equals(pendingCreation)) {
+			return Pair.of(pendingId, pendingCreation);
 		}
 		if (extantSchedules.containsKey(schedule)) {
 			final var extantId = extantSchedules.get(schedule);
@@ -285,10 +283,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 		if (schedule.isExecuted()) {
 			return SCHEDULE_ALREADY_EXECUTED;
 		}
-		if (requiresMutability) {
-			if (schedule.adminKey().isEmpty()) {
-				return SCHEDULE_IS_IMMUTABLE;
-			}
+		if (requiresMutability && schedule.adminKey().isEmpty()) {
+			return SCHEDULE_IS_IMMUTABLE;
 		}
 
 		return OK;

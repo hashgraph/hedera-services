@@ -161,7 +161,7 @@ class GetTxnRecordAnswerTest {
 	void getsRecordWhenAvailable() {
 		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 		final var sensibleQuery = queryOf(op);
-		given(answerFunctions.txnRecord(recordCache, view, op))
+		given(answerFunctions.txnRecord(recordCache, op))
 				.willReturn(Optional.of(cachedTargetRecord));
 
 		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -185,7 +185,7 @@ class GetTxnRecordAnswerTest {
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
-		verify(answerFunctions, never()).txnRecord(any(), any(), any());
+		verify(answerFunctions, never()).txnRecord(any(), any());
 	}
 
 	@Test
@@ -229,14 +229,14 @@ class GetTxnRecordAnswerTest {
 		final var opResponse = response.getTransactionGetRecord();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(answerFunctions, never()).txnRecord(any(), any(), any());
+		verify(answerFunctions, never()).txnRecord(any(), any());
 	}
 
 	@Test
 	void getsDuplicateRecordsWhenRequested() {
 		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
 		final var sensibleQuery = queryOf(op);
-		given(answerFunctions.txnRecord(recordCache, view, op))
+		given(answerFunctions.txnRecord(recordCache, op))
 				.willReturn(Optional.of(cachedTargetRecord));
 		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
 
@@ -253,7 +253,7 @@ class GetTxnRecordAnswerTest {
 	void getsChildRecordsWhenRequested() {
 		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, false, true);
 		final var sensibleQuery = queryOf(op);
-		given(answerFunctions.txnRecord(recordCache, view, op))
+		given(answerFunctions.txnRecord(recordCache, op))
 				.willReturn(Optional.of(cachedTargetRecord));
 		given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
 
@@ -270,7 +270,7 @@ class GetTxnRecordAnswerTest {
 	void recognizesUnavailableRecordFromMiss() {
 		final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
 		final var sensibleQuery = queryOf(op);
-		given(answerFunctions.txnRecord(recordCache, view, op))
+		given(answerFunctions.txnRecord(recordCache, op))
 				.willReturn(Optional.empty());
 
 		final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -327,7 +327,7 @@ class GetTxnRecordAnswerTest {
 	void syntaxCheckOkForFindableRecord() {
 		final var op = txnRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
 		final var query = queryOf(op);
-		given(answerFunctions.txnRecord(recordCache, view, op)).willReturn(Optional.of(cachedTargetRecord));
+		given(answerFunctions.txnRecord(recordCache, op)).willReturn(Optional.of(cachedTargetRecord));
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
 		given(aliasManager.lookUpPayer(targetTxnId.getAccountID())).willReturn(
 				AliasLookup.of(targetTxnId.getAccountID(), OK));

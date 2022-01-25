@@ -142,12 +142,12 @@ public class Account {
 
 		final Set<Id> uniqueIds = new HashSet<>();
 		for (var token : tokens) {
-			final var id = token.getId();
-			validateFalse(associatedTokens.contains(id), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			final var tokenId = token.getId();
+			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 			if (automaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
-			uniqueIds.add(id);
+			uniqueIds.add(tokenId);
 		}
 
 		associatedTokens.addAllIds(uniqueIds);

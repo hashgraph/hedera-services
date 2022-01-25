@@ -9,9 +9,9 @@ package com.hedera.services.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,7 +50,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
 	private long multiplier = DEFAULT_MULTIPLIER;
 	private long previousMultiplier = DEFAULT_MULTIPLIER;
-	private long[][] activeTriggerValues = {};
+	private long[][] activeTriggerValues = { };
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private CongestionMultipliers activeConfig = NO_CONFIG;
 
@@ -217,11 +217,11 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	void logMultiplierChange(long prev, long cur) {
-		if (prev == DEFAULT_MULTIPLIER)	{
-			log.info("Congestion pricing beginning w/ " + cur + "x multiplier");
+		if (prev == DEFAULT_MULTIPLIER) {
+			log.info("Congestion pricing beginning w/ {}x multiplier", cur);
 		} else {
 			if (cur > prev) {
-				log.info("Congestion pricing continuing, reached " + cur + "x multiplier");
+				log.info("Congestion pricing continuing, reached {}x multiplier", cur);
 			} else if (cur == DEFAULT_MULTIPLIER) {
 				log.info("Congestion pricing ended");
 			}
@@ -229,6 +229,6 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 	}
 
 	void logReadableCutoffs() {
-		log.info("The new cutoffs for congestion pricing are:" + this);
+		log.info("The new cutoffs for congestion pricing are : {}", this);
 	}
 }

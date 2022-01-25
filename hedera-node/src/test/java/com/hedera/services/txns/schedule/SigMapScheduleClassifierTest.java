@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,6 @@ import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,7 +78,7 @@ class SigMapScheduleClassifierTest {
 
 	@Test
 	void returnsEmptyOptionalIfInvalidInner() {
-		given(sigsFn.apply(eq(a.getECDSASecp256k1Key()))).willReturn(INVALID_MISSING_SIG);
+		given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(INVALID_MISSING_SIG);
 
 		// when:
 		var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
@@ -131,7 +130,7 @@ class SigMapScheduleClassifierTest {
 
 	private static class ValidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
+				(byte) 0xAB
 		};
 
 		public ValidSignature() {
@@ -146,7 +145,7 @@ class SigMapScheduleClassifierTest {
 
 	private static class PresentInvalidSignature extends TransactionSignature {
 		private static byte[] MEANINGLESS_BYTE = new byte[] {
-				(byte)0xAB
+				(byte) 0xAB
 		};
 
 		public PresentInvalidSignature() {

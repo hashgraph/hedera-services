@@ -123,9 +123,10 @@ class DissociationTest {
 
 	@Test
 	void requiresUpdateDoneBeforeRevealingRels() {
+		final var list = new ArrayList<TokenRelationship>();
 		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-		assertThrows(IllegalStateException.class, () -> subject.addUpdatedModelRelsTo(new ArrayList<>()));
+		assertThrows(IllegalStateException.class, () -> subject.addUpdatedModelRelsTo(list));
 	}
 
 	@Test

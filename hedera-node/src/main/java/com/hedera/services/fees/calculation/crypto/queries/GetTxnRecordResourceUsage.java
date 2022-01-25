@@ -71,24 +71,21 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
 
 	@Override
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
-		return usageFor(query, view, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
+		return usageFor(query, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
 	}
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageFor(query, view, type, null);
+		return usageFor(query, type, null);
 	}
 
 	private FeeData usageFor(
 			final Query query,
-			final StateView view,
 			final ResponseType stateProofType,
 			@Nullable final Map<String, Object> queryCtx
 	) {
 		final var op = query.getTransactionGetRecord();
-		final var txnRecord = answerFunctions
-				.txnRecord(recordCache, view, op)
-				.orElse(MISSING_RECORD_STANDIN);
+		final var txnRecord = answerFunctions.txnRecord(recordCache, op).orElse(MISSING_RECORD_STANDIN);
 		var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, stateProofType);
 		if (txnRecord != MISSING_RECORD_STANDIN) {
 			putIfNotNull(queryCtx, PRIORITY_RECORD_CTX_KEY, txnRecord);
