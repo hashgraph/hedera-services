@@ -81,7 +81,8 @@ class CallLocalExecutorTest {
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), Collections.emptyMap());
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
+						Collections.emptyMap());
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
