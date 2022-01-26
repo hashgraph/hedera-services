@@ -22,13 +22,12 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.AbstractCreateOperation;
 
 import javax.inject.Inject;
 
@@ -41,13 +40,20 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
  *
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
-public class HederaCreateOperation extends AbstractCreateOperation {
-	boolean checkSuperCost;
-
+public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 	@Inject
-	public HederaCreateOperation(final GasCalculator gasCalculator) {
-		super(0xF0, "ħCREATE", 3, 1, 1, gasCalculator);
-		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
+	public HederaCreateOperation(
+			final GasCalculator gasCalculator,
+			final SyntheticTxnFactory syntheticTxnFactory
+	) {
+		super(
+				0xF0,
+				"ħCREATE",
+				3,
+				1,
+				1,
+				gasCalculator,
+				syntheticTxnFactory);
 	}
 
 	@Override
@@ -58,18 +64,15 @@ public class HederaCreateOperation extends AbstractCreateOperation {
 		final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
 
 		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
-		long durationInSeconds = Math.max(0, HederaOperationUtil.computeExpiryForNewContract(frame) - frame.getBlockValues().getTimestamp());
+		long durationInSeconds = Math.max(0,
+				HederaOperationUtil.computeExpiryForNewContract(frame) - frame.getBlockValues().getTimestamp());
 		long gasPrice = frame.getGasPrice().toLong();
 
 		long storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;
 		long storageCost = Math.round((double) storageCostTinyBars / (double) gasPrice);
 
 		Gas gasCost = gasCalculator().createOperationGasCost(frame).plus(Gas.of(storageCost).plus(memoryGasCost));
-		if (checkSuperCost) {
-			return gasCost.max(this.gasCalculator().createOperationGasCost(frame));
-		} else {
-			return gasCost;
-		}
+		return gasCost.max(this.gasCalculator().createOperationGasCost(frame));
 	}
 
 	@Override
