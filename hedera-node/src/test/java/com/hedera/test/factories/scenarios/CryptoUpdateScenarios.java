@@ -24,6 +24,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SignedTxnFactory.ALIAS_PUBKEY_BYTESTRING;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
@@ -128,6 +129,24 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 					newSignedCryptoUpdate(TREASURY_PAYER_ID)
 							.payer(TREASURY_PAYER_ID)
 							.newAccountKt(NEW_ACCOUNT_KT)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_NEW_ALIAS_SELF_PAID_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(DEFAULT_PAYER_ID)
+							.newAlias(ALIAS_PUBKEY_BYTESTRING)
+							.get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_NEW_ALIAS_KEY_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(MISC_ACCOUNT_ID)
+							.newAlias(ALIAS_PUBKEY_BYTESTRING)
 							.get()
 			));
 		}

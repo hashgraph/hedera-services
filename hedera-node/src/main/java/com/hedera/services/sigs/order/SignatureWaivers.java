@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,8 @@ public interface SignatureWaivers {
 	/**
 	 * Advises if the target file's WACL must sign a given file append.
 	 *
-	 * @param fileAppendTxn a file append transaction
+	 * @param fileAppendTxn
+	 * 		a file append transaction
 	 * @return whether the target file's WACL must sign
 	 */
 	boolean isAppendFileWaclWaived(TransactionBody fileAppendTxn);
@@ -37,7 +38,8 @@ public interface SignatureWaivers {
 	/**
 	 * Advises if the target file's WACL must sign a given file update.
 	 *
-	 * @param fileUpdateTxn a file update transaction
+	 * @param fileUpdateTxn
+	 * 		a file update transaction
 	 * @return whether the target file's WACL must sign
 	 */
 	boolean isTargetFileWaclWaived(TransactionBody fileUpdateTxn);
@@ -45,7 +47,8 @@ public interface SignatureWaivers {
 	/**
 	 * Advises if the new WACL in a given file update transaction must sign.
 	 *
-	 * @param fileUpdateTxn a file update transaction
+	 * @param fileUpdateTxn
+	 * 		a file update transaction
 	 * @return whether the new WACL from the transaction must sign
 	 */
 	boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn);
@@ -53,7 +56,8 @@ public interface SignatureWaivers {
 	/**
 	 * Advises if the target account's key must sign a given crypto update.
 	 *
-	 * @param cryptoUpdateTxn a crypto update transaction
+	 * @param cryptoUpdateTxn
+	 * 		a crypto update transaction
 	 * @return whether the target account's key must sign
 	 */
 	boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn);
@@ -61,8 +65,17 @@ public interface SignatureWaivers {
 	/**
 	 * Advises if the new key for an account must sign a given crypto update.
 	 *
-	 * @param cryptoUpdateTxn a crypto update transaction
+	 * @param cryptoUpdateTxn
+	 * 		a crypto update transaction
 	 * @return whether the new key from the transaction must sign
 	 */
 	boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn);
+
+	/**
+	 * Advises if key of the alias being updated should sign the given crypto update.
+	 *
+	 * @param cryptoUpdateTxn a crypto update transaction
+	 * @return whether the key of the alias being updated must sign
+	 */
+	boolean isAliasKeyWaived(TransactionBody cryptoUpdateTxn);
 }

@@ -20,6 +20,8 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -84,6 +86,16 @@ public enum TestContextValidator implements OptionValidator {
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isValidAlias(final ByteString alias) {
+		try {
+			final var key = Key.parseFrom(alias);
+			return !key.getECDSASecp256K1().isEmpty() || !key.getEd25519().isEmpty();
+		} catch (InvalidProtocolBufferException ignore) {
+			return false;
+		}
 	}
 
 	@Override

@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
@@ -60,6 +61,7 @@ import java.util.List;
 
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -464,6 +466,10 @@ public class HederaLedger {
 
 	public String memo(AccountID id) {
 		return (String) accountsLedger.get(id, MEMO);
+	}
+
+	public ByteString alias(AccountID id) {
+		return (ByteString) accountsLedger.get(id, ALIAS);
 	}
 
 	public boolean isPendingCreation(AccountID id) {

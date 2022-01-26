@@ -94,6 +94,18 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 		}
 	}
 
+	@Override
+	public boolean isAliasKeyWaived(TransactionBody cryptoUpdateTxn) {
+		assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
+		final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate) == AUTHORIZED;
+		if (!isAuthorized) {
+			return false;
+		} else {
+			final var targetAlias = cryptoUpdateTxn.getCryptoUpdateAccount().getAlias();
+			return targetAlias.isEmpty();
+		}
+	}
+
 	private void assertTypeExpectation(boolean isExpectedType) {
 		if (!isExpectedType) {
 			throw new IllegalArgumentException("Given transaction is not of the expected type");

@@ -195,6 +195,10 @@ public class TxnUtils {
 						lookupSpec.registry().getAccountID(s) : lookUpAccount(lookupSpec, s));
 	}
 
+	public static ByteString aliasKeyNamed(String alias, HapiApiSpec lookupSpec){
+		return lookupSpec.registry().getKey(alias).toByteString();
+	}
+
 	private static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
 		final var key = spec.registry().getKey(alias);
 		return asIdWithAlias(key.toByteString());

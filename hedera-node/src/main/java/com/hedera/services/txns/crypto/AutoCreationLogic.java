@@ -211,7 +211,7 @@ public class AutoCreationLogic {
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
-	private Key asPrimitiveKeyUnchecked(final ByteString alias) {
+	public static Key asPrimitiveKeyUnchecked(final ByteString alias) {
 		try {
 			return Key.parseFrom(alias);
 		} catch (InvalidProtocolBufferException internal) {

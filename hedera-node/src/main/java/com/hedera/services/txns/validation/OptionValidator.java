@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -57,6 +58,8 @@ public interface OptionValidator {
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+
+	boolean isValidAlias(ByteString alias);
 
 	JKey attemptDecodeOrThrow(Key k);
 

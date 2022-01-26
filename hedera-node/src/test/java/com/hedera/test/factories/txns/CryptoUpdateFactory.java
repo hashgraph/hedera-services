@@ -20,6 +20,7 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -32,6 +33,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 public class CryptoUpdateFactory extends SignedTxnFactory<CryptoUpdateFactory> {
 	private final String account;
 	private Optional<KeyTree> newAccountKt = Optional.empty();
+	private Optional<ByteString> newAlias = Optional.empty();
 
 	public CryptoUpdateFactory(String account) {
 		this.account = account;
@@ -55,11 +57,17 @@ public class CryptoUpdateFactory extends SignedTxnFactory<CryptoUpdateFactory> {
 		CryptoUpdateTransactionBody.Builder op = CryptoUpdateTransactionBody.newBuilder()
 				.setAccountIDToUpdate(asAccount(account));
 		newAccountKt.ifPresent(kt -> op.setKey(kt.asKey(keyFactory)));
+		newAlias.ifPresent(alias -> op.setAlias(alias));
 		txn.setCryptoUpdateAccount(op);
 	}
 
 	public CryptoUpdateFactory newAccountKt(KeyTree newAccountKt) {
 		this.newAccountKt = Optional.of(newAccountKt);
+		return this;
+	}
+
+	public CryptoUpdateFactory newAlias(ByteString alias) {
+		this.newAlias = Optional.of(alias);
 		return this;
 	}
 }
