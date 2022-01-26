@@ -22,9 +22,11 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.store.StoresModule;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -43,7 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 
-@Module
+@Module(includes = {StoresModule.class})
 public final class ContractLogicModule {
 
 	@Provides
@@ -87,11 +89,12 @@ public final class ContractLogicModule {
 	public static List<TransitionLogic> provideContractUpdateLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
-			final TransactionContext txntCtx,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var contractUpdateTransitionLogic = new ContractUpdateTransitionLogic(
-				ledger, validator, txntCtx, new UpdateCustomizerFactory(), accounts);
+				ledger, validator, sigImpactHistorian, txnCtx, new UpdateCustomizerFactory(), accounts);
 		return List.of(contractUpdateTransitionLogic);
 	}
 

@@ -43,7 +43,6 @@ import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static java.util.stream.Collectors.toList;
 
 @Singleton
 public class RecordCache {
@@ -105,9 +104,10 @@ public class RecordCache {
 
 	public TxnReceipt getPriorityReceipt(final TransactionID txnId) {
 		final var recentHistory = histories.get(txnId);
-		return recentHistory != null
-				? receiptFrom(recentHistory)
-				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
+		if (recentHistory != null) {
+			return receiptFrom(recentHistory);
+		}
+		return timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null;
 	}
 
 	public List<TransactionRecord> getDuplicateRecords(final TransactionID txnId) {
@@ -115,7 +115,7 @@ public class RecordCache {
 	}
 
 	public List<TransactionReceipt> getDuplicateReceipts(final TransactionID txnId) {
-		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
+		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).toList();
 	}
 
 	public List<TransactionReceipt> getChildReceipts(final TransactionID txnId) {
@@ -158,10 +158,10 @@ public class RecordCache {
 		if (recentHistory == null) {
 			return Collections.emptyList();
 		} else {
-			return recentHistory.duplicateRecords()
+			return recentHistory.allDuplicateRecords()
 					.stream()
 					.map(ExpirableTxnRecord::asGrpc)
-					.collect(toList());
+					.toList();
 		}
 	}
 

@@ -36,6 +36,7 @@ import com.swirlds.common.stream.TimestampStreamFileWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -105,8 +106,8 @@ public class RecordStreamManager {
 	 * 		the node-local property source, which says four things: (1) is the record stream enabled?,
 	 * 		(2) how many seconds should elapse before creating the next record file,
 	 * 		and (3) how large a capacity the record stream blocking queue should have.
-	 * @param nodeScopedRecordLogDir
-	 * 		the direct file folder for writing record stream files
+	 * @param accountMemo
+	 * 		the account of this node from the address book memo
 	 * @param initialHash
 	 * 		the initial hash
 	 * @throws NoSuchAlgorithmException
@@ -118,9 +119,10 @@ public class RecordStreamManager {
 			final Platform platform,
 			final MiscRunningAvgs runningAvgs,
 			final NodeLocalProperties nodeLocalProperties,
-			final String nodeScopedRecordLogDir,
+			final String accountMemo,
 			final Hash initialHash
 	) throws NoSuchAlgorithmException, IOException {
+		final var nodeScopedRecordLogDir = effLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
 			// the directory to which record stream files are written
 			Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
@@ -255,6 +257,13 @@ public class RecordStreamManager {
 			streamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 			log.info("RecordStreamManager::setStartWriteAtCompleteWindow: {}", startWriteAtCompleteWindow);
 		}
+	}
+
+	public static String effLogDir(String baseDir, final String accountMemo) {
+		if (!baseDir.endsWith(File.separator)) {
+			baseDir += File.separator;
+		}
+		return baseDir + "record" + accountMemo;
 	}
 
 	/**

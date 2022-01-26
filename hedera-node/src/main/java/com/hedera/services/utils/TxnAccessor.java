@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -28,6 +29,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -35,8 +37,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Defines a type that gives access to several commonly referenced
@@ -46,6 +50,8 @@ public interface TxnAccessor {
     int sigMapSize();
     int numSigPairs();
     SignatureMap getSigMap();
+    void setExpandedSigStatus(ResponseCodeEnum status);
+    ResponseCodeEnum getExpandedSigStatus();
     default PubKeyToSigBytes getPkToSigsFn() {
         throw new UnsupportedOperationException();
     }
@@ -54,6 +60,13 @@ public interface TxnAccessor {
     }
     default RationalizedSigMeta getSigMeta() {
         throw new UnsupportedOperationException();
+    }
+    default Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
+    	final var sigMeta = getSigMeta();
+    	if (!sigMeta.couldRationalizeOthers()) {
+    	    throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization failed");
+        }
+    	return sigMeta.pkToVerifiedSigFn();
     }
 
     default BaseTransactionMeta baseUsageMeta() {
@@ -86,6 +99,13 @@ public interface TxnAccessor {
     boolean isTriggeredTxn();
     ScheduleID getScheduleRef();
 
+    /**
+     * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
+     * {@link HederaFunctionality#ContractCreate} transaction
+     * @return - the gasLimit value of the transaction
+     */
+    long getGasLimitForContractTx();
+
     default SwirldTransaction getPlatformTxn() {
         throw new UnsupportedOperationException();
     }
@@ -102,4 +122,7 @@ public interface TxnAccessor {
     int getNumAutoCreations();
     boolean areAutoCreationsCounted();
     void countAutoCreationsWith(AliasManager aliasManager);
+
+    void setLinkedRefs(LinkedRefs linkedRefs);
+    LinkedRefs getLinkedRefs();
 }

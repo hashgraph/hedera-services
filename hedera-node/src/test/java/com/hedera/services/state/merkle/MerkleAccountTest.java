@@ -34,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -65,6 +66,7 @@ class MerkleAccountTest {
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
+	private static final int kvPairs = 123;
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
@@ -106,7 +108,8 @@ class MerkleAccountTest {
 				proxy,
 				number,
 				autoAssociationMetadata,
-				alias);
+				alias,
+				kvPairs);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -115,6 +118,22 @@ class MerkleAccountTest {
 	@AfterEach
 	void cleanup() {
 		MerkleAccount.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void returnsExpectedNumPayerRecords() {
+		given(payerRecords.size()).willReturn(123);
+
+		assertEquals(123, subject.numRecords());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void returnsExpectedRecordsIterator() {
+		final Iterator<ExpirableTxnRecord> mockIter = (Iterator<ExpirableTxnRecord>) mock(Iterator.class);
+		given(payerRecords.iterator()).willReturn(mockIter);
+
+		assertSame(mockIter, subject.recordIterator());
 	}
 
 	@Test
@@ -171,6 +190,7 @@ class MerkleAccountTest {
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
+		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 	}
 
 	@Test
@@ -202,6 +222,7 @@ class MerkleAccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		subject.setNftsOwned(2L);
 		subject.setAlias(alias);
+		subject.setNumContractKvPairs(kvPairs);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -215,6 +236,7 @@ class MerkleAccountTest {
 		verify(delegate).setNumber(number);
 		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociations);
 		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		verify(delegate).setNumContractKvPairs(kvPairs);
 		verify(delegate).setNftsOwned(2L);
 		verify(delegate).setAlias(alias);
 	}

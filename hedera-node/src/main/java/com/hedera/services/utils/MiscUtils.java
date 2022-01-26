@@ -55,6 +55,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -98,6 +99,8 @@ import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTI
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -187,7 +190,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -220,6 +222,12 @@ public final class MiscUtils {
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
 			NetworkGetExecutionTime
+	);
+
+	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
+			ContractCallLocal,
+			ContractCall,
+			ContractCreate
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -348,7 +356,7 @@ public final class MiscUtils {
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
-		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).collect(toList()));
+		return canonicalRepr(Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
 	}
 
 	private static AccountAmount negationOf(final AccountAmount adjustment) {
@@ -362,7 +370,7 @@ public final class MiscUtils {
 				.filter(e -> e.getValue() != 0)
 				.sorted(comparing(Map.Entry::getKey, HederaLedger.ACCOUNT_ID_COMPARATOR))
 				.map(e -> AccountAmount.newBuilder().setAccountID(e.getKey()).setAmount(e.getValue()).build())
-				.collect(toList());
+				.toList();
 	}
 
 	public static String readableTransferList(final TransferList accountAmounts) {
@@ -374,7 +382,7 @@ public final class MiscUtils {
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 
@@ -383,10 +391,10 @@ public final class MiscUtils {
 				.stream()
 				.map(nftTransfer -> String.format(
 						"%s %s %s",
-						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
+						nftTransfer.getSerialNumber(),
 						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
 						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
-				.collect(toList())
+				.toList()
 				.toString();
 	}
 
@@ -408,7 +416,7 @@ public final class MiscUtils {
 		if (o instanceof FCQueue) {
 			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
-			return o.toString();
+			return Objects.toString(o);
 		}
 	}
 
@@ -438,6 +446,13 @@ public final class MiscUtils {
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}
+	}
+
+	public static Timestamp asTimestamp(final long packedTime) {
+		return Timestamp.newBuilder()
+				.setSeconds(unsignedHighOrder32From(packedTime))
+				.setNanos(signedLowOrder32From(packedTime))
+				.build();
 	}
 
 	public static Timestamp asTimestamp(final Instant when) {
@@ -509,6 +524,18 @@ public final class MiscUtils {
 			return BASE_STAT_NAMES.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
 			return "NotImplemented";
+		}
+	}
+
+	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
+		final var oldSecs = start.getEpochSecond();
+		final var newNanos = start.getNano() + nanosOff;
+		if (newNanos < 0) {
+			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
+		} else if (newNanos >= ONE_SEC_IN_NANOS) {
+			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
+		} else {
+			return Instant.ofEpochSecond(oldSecs, newNanos);
 		}
 	}
 
@@ -652,18 +679,6 @@ public final class MiscUtils {
 		throw new UnknownHederaFunctionality();
 	}
 
-	public static Instant nonNegativeNanosOffset(final Instant start, final int nanosOff) {
-		final var oldSecs = start.getEpochSecond();
-		final var newNanos = start.getNano() + nanosOff;
-		if (newNanos < 0) {
-			return Instant.ofEpochSecond(oldSecs - 1, ONE_SEC_IN_NANOS + newNanos);
-		} else if (newNanos >= ONE_SEC_IN_NANOS) {
-			return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
-		} else {
-			return Instant.ofEpochSecond(oldSecs, newNanos);
-		}
-	}
-
 	public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
 		return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
 	}
@@ -803,6 +818,17 @@ public final class MiscUtils {
 		if (null != map) {
 			map.put(key, value);
 		}
+	}
+
+	/**
+	 * Verifies whether a {@link HederaFunctionality} should be throttled by the consensus throttle
+	 *
+	 * @param hederaFunctionality
+	 * 		- the {@link HederaFunctionality} to verify
+	 * @return - whether this {@link HederaFunctionality} should be throttled by the consensus throttle
+	 */
+	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
+		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
 	}
 
 	/**

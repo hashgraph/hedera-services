@@ -65,7 +65,8 @@ public class RecordStreamManagerTest {
 
 	private static final long recordsLogPeriod = 5;
 	private static final int recordStreamQueueCapacity = 100;
-	private static final String recordStreamDir = "recordStreamTest/record0.0.3";
+	private static final String baseLogDir = "recordStreamTest/";
+	private static final String recordMemo = "0.0.3";
 
 	private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
 	private static final String INITIALIZE_QUEUE_EMPTY = "after initialization, hash queue should be empty";
@@ -104,18 +105,18 @@ public class RecordStreamManagerTest {
 				platform,
 				runningAvgsMock,
 				disabledProps,
-				recordStreamDir,
+				recordMemo,
 				INITIAL_RANDOM_HASH);
 		enableStreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,
 				enabledProps,
-				recordStreamDir,
+				recordMemo,
 				INITIAL_RANDOM_HASH);
 	}
 
 	private static void configProps(NodeLocalProperties props) {
-		given(props.recordLogDir()).willThrow(IllegalStateException.class);
+		given(props.recordLogDir()).willReturn(baseLogDir);
 		given(props.recordLogPeriod()).willReturn(recordsLogPeriod);
 		given(props.recordStreamQueueCapacity()).willReturn(recordStreamQueueCapacity);
 	}
@@ -226,5 +227,16 @@ public class RecordStreamManagerTest {
 		assertThat(logCaptor.infoLogs(), contains(
 				"RecordStream inFreeze is set to be false",
 				"RecordStream inFreeze is set to be true"));
+	}
+
+	@Test
+	void computesExpectedLogDirs() {
+		final var memo = "0.0.3";
+		final var withoutSeparatorSuffix = "somewhere/else";
+		final var withSeparatorSuffix = "somewhere/else/";
+		final var expected = "somewhere/else/record0.0.3";
+
+		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
+		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
 	}
 }

@@ -156,7 +156,8 @@ class DeterministicThrottleTest {
 
 		subject.allow(1, now);
 
-		assertThrows(IllegalArgumentException.class, () -> subject.allow(1, now.minusNanos(1)));
+		final var current = now.minusNanos(1);
+		assertThrows(IllegalArgumentException.class, () -> subject.allow(1, current));
 		assertDoesNotThrow(() -> subject.allow(1, now));
 	}
 
@@ -255,7 +256,8 @@ class DeterministicThrottleTest {
 
 		assertEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, aLast));
 		assertNotEquals(null, a);
-		assertNotEquals(new Object(), a);
+		assertNotEquals(a, new Object());
+
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast));
 		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast));
 

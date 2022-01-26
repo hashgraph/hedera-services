@@ -71,16 +71,17 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				updateWithBothMemoSettersWorks(),
-				updatingExpiryWorks(),
-				rejectsExpiryTooFarInTheFuture(),
-				updateAutoRenewWorks(),
-				updateAdminKeyWorks(),
-				canMakeContractImmutableWithEmptyKeyList(),
-				givenAdminKeyMustBeValid(),
-				fridayThe13thSpec(),
-				updateDoesNotChangeBytecode()
+		return List.of(new HapiApiSpec[] {
+						updateWithBothMemoSettersWorks(),
+						updatingExpiryWorks(),
+						rejectsExpiryTooFarInTheFuture(),
+						updateAutoRenewWorks(),
+						updateAdminKeyWorks(),
+						canMakeContractImmutableWithEmptyKeyList(),
+						givenAdminKeyMustBeValid(),
+						fridayThe13thSpec(),
+						updateDoesNotChangeBytecode()
+				}
 		);
 	}
 
@@ -144,16 +145,16 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed("admin"),
 						contractCreate("contract")
 								.adminKey("admin")
-								.autoRenewSecs(ONE_MONTH)
+								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 				)
 				.when(
 						contractUpdate("contract")
-								.newAutoRenew(ONE_MONTH + ONE_DAY)
+								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
 				)
 				.then(
 						getContractInfo("contract")
 								.has(contractWith()
-										.autoRenew(ONE_MONTH + ONE_DAY))
+										.autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
 				);
 	}
 
@@ -344,7 +345,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				)
 				.then(
 						withOpContext((spec, log) -> {
-							var op = getContractBytecode("contract").hasBytecode(spec.registry().getBytes("initialBytecode"));
+							var op = getContractBytecode("contract").hasBytecode(
+									spec.registry().getBytes("initialBytecode"));
 							allRunFor(spec, op);
 						})
 				);

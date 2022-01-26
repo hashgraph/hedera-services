@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Encapsulates the state and operations of a Hedera token.
@@ -71,7 +70,8 @@ import static java.util.stream.Collectors.toList;
  * <b>NOTE:</b> Some operations only apply to specific token types.
  * For example, a {@link Token#mint(TokenRelationship, long, boolean)}
  * call only makes sense for a token of type {@code FUNGIBLE_COMMON}; the
- * signature for a {@code NON_FUNGIBLE_UNIQUE} is {@link Token#mint(OwnershipTracker, TokenRelationship, List, RichInstant)}.
+ * signature for a {@code NON_FUNGIBLE_UNIQUE} is {@link Token#mint(OwnershipTracker, TokenRelationship, List,
+ * RichInstant)}.
  */
 public class Token {
 	private final Id id;
@@ -168,7 +168,7 @@ public class Token {
 		token.setDecimals(op.getDecimals());
 		token.setName(op.getName());
 		token.setFrozenByDefault(op.getFreezeDefault());
-		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).collect(toList()));
+		token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
 		token.setPaused(false);
 
 		token.setNew(true);
@@ -357,8 +357,12 @@ public class Token {
 		return rel;
 	}
 
-	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode,
-			boolean ignoreSupplyKey) {
+	private void changeSupply(
+			final TokenRelationship treasuryRel,
+			final long amount,
+			final ResponseCodeEnum negSupplyCode,
+			final boolean ignoreSupplyKey
+	) {
 		validateTrue(treasuryRel != null, FAIL_INVALID,
 				"Cannot mint with a null treasuryRel");
 		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID,
@@ -497,6 +501,7 @@ public class Token {
 	public void setPauseKey(final JKey pauseKey) {
 		this.pauseKey = pauseKey;
 	}
+
 	/* supply is changed only after the token is created */
 	public boolean hasChangedSupply() {
 		return supplyHasChanged && !isNew;

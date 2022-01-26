@@ -45,8 +45,8 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
@@ -494,14 +494,13 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {
 		return records.stream()
 				.map(ExpirableTxnRecord::asGrpc)
-				.collect(toList());
+				.toList();
 	}
 
 	public TransactionRecord asGrpc() {
 		var grpc = TransactionRecord.newBuilder();
 
 		grpc.setTransactionFee(fee);
-
 		if (receipt != null) {
 			grpc.setReceipt(TxnReceipt.convert(receipt));
 		}
@@ -529,23 +528,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (tokens != NO_TOKENS) {
 			setGrpcTokens(grpc, tokens, tokenAdjustments, nftTokenAdjustments);
 		}
-
 		if (scheduleRef != NO_SCHEDULE_REF) {
 			grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
 		}
-
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
 			grpc.addAllAssessedCustomFees(
-					assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).collect(toList()));
+					assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).toList());
 		}
-
 		if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
 			grpc.addAllAutomaticTokenAssociations(
-					newTokenAssociations.stream().map(FcTokenAssociation::toGrpc).collect(toList()));
+					newTokenAssociations.stream().map(FcTokenAssociation::toGrpc).toList());
 		}
-
 		if (alias != MISSING_ALIAS) {
 			grpc.setAlias(alias);
+		}
+		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
+			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
 		}
 
 		return grpc.build();

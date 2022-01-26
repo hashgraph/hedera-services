@@ -30,11 +30,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+
 public final class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
 
 	private static final String LEGACY_PATH_TEMPLATE = "/%d/k%d";
-	private static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/k(\\d+)");
+	public static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/k(\\d+)");
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 
@@ -58,7 +60,7 @@ public final class MetadataMapFactory {
 		assert flag;
 
 		return FileID.newBuilder()
-				.setShardNum(0)
+				.setShardNum(STATIC_PROPERTIES.getShard())
 				.setRealmNum(Long.parseLong(matcher.group(REALM_INDEX)))
 				.setFileNum(Long.parseLong(matcher.group(ACCOUNT_INDEX)))
 				.build();

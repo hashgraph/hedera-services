@@ -20,9 +20,10 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.StateChildren;
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -36,10 +37,18 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -69,8 +78,7 @@ class GetAccountRecordsAnswerTest {
 	private OptionValidator optionValidator;
 
 	private GetAccountRecordsAnswer subject;
-
-	private NodeLocalProperties nodeProps;
+	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -90,19 +98,18 @@ class GetAccountRecordsAnswerTest {
 		accounts = mock(MerkleMap.class);
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
-		nodeProps = mock(NodeLocalProperties.class);
-		final StateChildren children = new StateChildren();
+		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		view = new StateView(
 				null,
 				null,
-				nodeProps,
 				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY);
+				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
+				null);
 
 		optionValidator = mock(OptionValidator.class);
 
-		subject = new GetAccountRecordsAnswer(new AnswerFunctions(), optionValidator);
+		subject = new GetAccountRecordsAnswer(new AnswerFunctions(dynamicProperties), optionValidator);
 	}
 
 	@Test
@@ -136,7 +143,41 @@ class GetAccountRecordsAnswerTest {
 		final var response = subject.responseGiven(query, view, OK, fee);
 
 		validate(response, OK, ANSWER_ONLY, 0L);
-		assertEquals(ExpirableTxnRecord.allToGrpc(payerAccount.recordList()),
+		final List<ExpirableTxnRecord> availableRecords = new ArrayList<>();
+		payerAccount.recordIterator().forEachRemaining(availableRecords::add);
+		/* The MockGlobalDynamicProps maxNumQueryableRecords is 1 */
+		assertEquals(
+				List.of(availableRecords.get(availableRecords.size() - 1).asGrpc()),
+				response.getCryptoGetAccountRecords().getRecordsList());
+	}
+
+	@Test
+	void getsTheAccountRecordsIfMissingFromQueryFtx() {
+		final var query = validQuery(ANSWER_ONLY, fee, target);
+
+		final var response = subject.responseGiven(query, view, OK, fee, Collections.emptyMap());
+
+		validate(response, OK, ANSWER_ONLY, 0L);
+		final List<ExpirableTxnRecord> availableRecords = new ArrayList<>();
+		payerAccount.recordIterator().forEachRemaining(availableRecords::add);
+		assertEquals(
+				List.of(availableRecords.get(availableRecords.size() - 1).asGrpc()),
+				response.getCryptoGetAccountRecords().getRecordsList());
+	}
+
+	@Test
+	void getsTheAccountRecordsFromQueryFtxIfPResent() {
+		final Map<String, Object> queryCtx = new HashMap<>();
+		final var query = validQuery(ANSWER_ONLY, fee, target);
+		final List<TransactionRecord> availableRecords = new ArrayList<>();
+		payerAccount.recordIterator().forEachRemaining(rec -> availableRecords.add(rec.asGrpc()));
+		queryCtx.put(PAYER_RECORDS_CTX_KEY, availableRecords);
+
+		final var response = subject.responseGiven(query, view, OK, fee, queryCtx);
+
+		validate(response, OK, ANSWER_ONLY, 0L);
+		assertEquals(
+				availableRecords,
 				response.getCryptoGetAccountRecords().getRecordsList());
 	}
 

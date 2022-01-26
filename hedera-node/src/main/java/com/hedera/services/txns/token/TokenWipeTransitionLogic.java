@@ -54,7 +54,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public TokenWipeTransitionLogic(
@@ -94,10 +93,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
 		}
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationships(List.of(accountRel));
-		tokenStore.persistTrackers(ownershipTracker);
-		accountStore.persistAccount(account);
+		tokenStore.commitToken(token);
+		tokenStore.commitTokenRelationships(List.of(accountRel));
+		tokenStore.commitTrackers(ownershipTracker);
+		accountStore.commitAccount(account);
 	}
 
 	@Override
@@ -107,7 +106,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {

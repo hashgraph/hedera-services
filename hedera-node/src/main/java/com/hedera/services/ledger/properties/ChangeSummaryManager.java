@@ -20,6 +20,8 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
+import com.hedera.services.ledger.PropertyChangeObserver;
+
 import java.util.Map;
 
 /**
@@ -36,11 +38,11 @@ public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> 
 	 * Updates the changeset summary for the given property to the given value.
 	 *
 	 * @param changes
-	 * 		the total changeset summary so far.
+	 * 		the total changeset summary so far
 	 * @param property
-	 * 		the property in the family whose changeset should be updated.
+	 * 		the property in the family whose changeset should be updated
 	 * @param value
-	 * 		the new value that summarizes the changeset.
+	 * 		the new value that summarizes the changeset
 	 */
 	public void update(final Map<P, Object> changes, final P property, final Object value) {
 		changes.put(property, value);
@@ -50,13 +52,42 @@ public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> 
 	 * Flush a changeset summary to a given object.
 	 *
 	 * @param changes
-	 * 		the summary of changes made to the relevant property family.
+	 * 		the summary of changes made to the relevant property family
 	 * @param account
-	 * 		the account to receive the net changes.
+	 * 		the account to receive the net changes
 	 */
 	public void persist(final Map<P, Object> changes, final A account) {
 		changes.entrySet().forEach(entry ->
 				entry.getKey().setter().accept(account, entry.getValue())
+		);
+	}
+
+	/**
+	 * Flush a changeset summary to a given object, notifying the given observer of each change.
+	 *
+	 * @param id
+	 * 		the id to communicate to the observer
+	 * @param changes
+	 * 		the summary of changes made to the relevant property family.
+	 * @param account
+	 * 		the account to receive the net changes
+	 * @param changeObserver
+	 * 		the observer to be notified of the changes
+	 * @param <K>
+	 * 		the type of id used to identify this account
+	 */
+	public <K> void persistWithObserver(
+			final K id,
+			final Map<P, Object> changes,
+			final A account,
+			final PropertyChangeObserver<K, P> changeObserver
+	) {
+		changes.entrySet().forEach(entry -> {
+					final var property = entry.getKey();
+					final var newValue = entry.getValue();
+					property.setter().accept(account, newValue);
+					changeObserver.newProperty(id, property, newValue);
+				}
 		);
 	}
 }

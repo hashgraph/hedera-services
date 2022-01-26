@@ -21,7 +21,6 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
@@ -32,7 +31,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -77,7 +75,6 @@ class TxnAwareRecordsHistorianTest {
 	final private AccountID b = asAccount("0.0.2222");
 	final private AccountID c = asAccount("0.0.3333");
 	final private AccountID effPayer = asAccount("0.0.5555");
-	final private JKey effPayerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	final private long nows = 1_234_567L;
 	final private int nanos = 999_999_999;
 	final private Instant topLevelNow = Instant.ofEpochSecond(nows, 999_999_999);
@@ -139,7 +136,7 @@ class TxnAwareRecordsHistorianTest {
 
 		subject.trackFollowingChildRecord(1, TransactionBody.newBuilder(), followingRecordFrom1);
 		subject.trackFollowingChildRecord(2, TransactionBody.newBuilder(), followingRecordFrom2);
-		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom2);
+		subject.trackPrecedingChildRecord(1, TransactionBody.newBuilder(), precedingRecordFrom1);
 		subject.trackPrecedingChildRecord(2, TransactionBody.newBuilder(), precedingRecordFrom2);
 		subject.revertChildRecordsFromSource(2);
 
@@ -220,6 +217,7 @@ class TxnAwareRecordsHistorianTest {
 		verify(topLevelRecord).excludeHbarChangesFrom(precedingBuilder);
 		verify(topLevelRecord).setNumChildRecords((short) 2);
 		verify(followingBuilder).setConsensusTime(RichInstant.fromJava(expectedFollowTime));
+		verify(followingBuilder).setParentConsensusTime(topLevelNow);
 		verify(precedingBuilder).setConsensusTime(RichInstant.fromJava(expectedPrecedingTime));
 		verify(precedingBuilder).setTxnId(expectedPrecedingChildId);
 		verify(followingBuilder).setTxnId(expectedFollowingChildId);

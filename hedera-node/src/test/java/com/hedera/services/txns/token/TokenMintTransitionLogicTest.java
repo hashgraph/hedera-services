@@ -23,20 +23,10 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,117 +43,43 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TokenMintTransitionLogicTest {
 	private final long amount = 123L;
 	private final TokenID grpcId = IdUtils.asToken("1.2.3");
-	private final Id id = new Id(1, 2, 3);
-	private final Id treasuryId = new Id(2, 4, 6);
-	private final Account treasury = new Account(treasuryId);
 
-	@Mock
-	private Token token;
-	@Mock
-	private TypedTokenStore store;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private TxnAccessor accessor;
+	@Mock
+	private TransactionBody transactionBody;
+	@Mock
+	private TokenMintTransactionBody mintTransactionBody;
 	@Mock
 	private OptionValidator validator;
 	@Mock
-	private AccountStore accountStore;
-	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private MintLogic mintLogic;
 
-	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
 
 	private TokenMintTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
-	}
-
-	@Test
-	void followsHappyPath() {
-		// setup:
-		treasuryRel = new TokenRelationship(token, treasury);
-
-		givenValidTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(token).mint(treasuryRel, amount, false);
-		verify(store).persistToken(token);
-		verify(store).persistTokenRelationships(List.of(treasuryRel));
-	}
-
-	@Test
-	void validatesMintCap() {
-		// setup:
-		final long curTotal = 100L;
-		final long unacceptableTotal = 101L;
-
-		givenValidUniqueTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(store.currentMintedNfts()).willReturn(curTotal);
-		given(validator.isPermissibleTotalNfts(unacceptableTotal)).willReturn(false);
-
-		// expect:
-		assertFailsWith(() -> subject.doStateTransition(), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
-	}
-
-	@Test
-	void followsUniqueHappyPath() {
-		// setup:
-		final long curTotal = 99L;
-		final long acceptableTotal = 100L;
-		treasuryRel = new TokenRelationship(token, treasury);
-
-		givenValidUniqueTxnCtx();
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id)).willReturn(token);
-		given(token.getTreasury()).willReturn(treasury);
-		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(store.currentMintedNfts()).willReturn(curTotal);
-		given(txnCtx.consensusTime()).willReturn(Instant.now());
-		given(validator.isPermissibleTotalNfts(acceptableTotal)).willReturn(true);
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));
-		verify(store).persistToken(token);
-		verify(store).persistTokenRelationships(List.of(treasuryRel));
-		verify(store).persistTrackers(any(OwnershipTracker.class));
-		verify(accountStore).persistAccount(any(Account.class));
+		subject = new TokenMintTransitionLogic(validator, txnCtx, dynamicProperties, mintLogic);
 	}
 
 	@Test
@@ -270,6 +186,26 @@ class TokenMintTransitionLogicTest {
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
+	@Test
+	void callsMintLogicWithCorrectParams() {
+		var consensus = Instant.now();
+		var grpcId = IdUtils.asToken("0.0.1");
+		var amount = 4321L;
+		var count = 3;
+		List<ByteString> metadataList = List.of(ByteString.copyFromUtf8("test"), ByteString.copyFromUtf8("test test"));
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensus);
+		given(accessor.getTxn()).willReturn(transactionBody);
+		given(transactionBody.getTokenMint()).willReturn(mintTransactionBody);
+		given(mintTransactionBody.getToken()).willReturn(grpcId);
+		given(mintTransactionBody.getAmount()).willReturn(amount);
+		given(mintTransactionBody.getMetadataCount()).willReturn(count);
+		given(mintTransactionBody.getMetadataList()).willReturn(metadataList);
+		subject.doStateTransition();
+
+		verify(mintLogic).mint(Id.fromGrpcToken(grpcId), count, amount, metadataList, consensus);
+	}
+
 	private void givenValidTxnCtx() {
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
@@ -312,10 +248,5 @@ class TokenMintTransitionLogicTest {
 								.setAmount(0)
 								.build()
 				).build();
-	}
-
-	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
 	}
 }

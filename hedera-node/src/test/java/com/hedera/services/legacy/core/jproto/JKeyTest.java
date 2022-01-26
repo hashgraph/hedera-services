@@ -99,6 +99,10 @@ class JKeyTest {
 
 		assertSame(mockEd25519.getEd25519(), mockEd25519.primitiveKeyIfPresent());
 		assertSame(mockSecp256k1.getECDSASecp256k1Key(), mockSecp256k1.primitiveKeyIfPresent());
+		assertEquals(0, mockEd25519.getECDSASecp256k1Key().length);
+		assertEquals(0, mockSecp256k1.getEd25519().length);
+		assertEquals(0, mockSecp256k1.getECDSA384().length);
+		assertEquals(0, mockSecp256k1.getRSA3072().length);
 	}
 
 	@Test
@@ -181,5 +185,21 @@ class JKeyTest {
 		JKey jkey = new JECDSASecp256k1Key(edcsaSecp256K1Bytes.toByteArray());
 		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
 		assertFalse(key.getECDSASecp256K1().isEmpty());
+	}
+
+	@Test
+	void convertsECDSA384BasicKey() {
+		ByteString ecdsa384Bytes = ByteString.copyFromUtf8("test");
+		JKey jkey = new JECDSA_384Key(ecdsa384Bytes.toByteArray());
+		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
+		assertFalse(key.getECDSA384().isEmpty());
+	}
+
+	@Test
+	void convertsRSA3072Key() {
+		ByteString rsa3072Bytes = ByteString.copyFromUtf8("test");
+		JKey jkey = new JRSA_3072Key(rsa3072Bytes.toByteArray());
+		var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));
+		assertFalse(key.getRSA3072().isEmpty());
 	}
 }

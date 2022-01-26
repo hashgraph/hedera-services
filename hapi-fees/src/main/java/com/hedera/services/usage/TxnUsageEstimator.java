@@ -9,9 +9,9 @@ package com.hedera.services.usage;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,13 @@ public class TxnUsageEstimator {
 	private final TransactionBody txn;
 	private final EstimatorUtils utils;
 
-	private long bpt, vpt, rbs, sbs, gas, tv, networkRbs;
+	private long bpt;
+	private long vpt;
+	private long rbs;
+	private long sbs;
+	private long gas;
+	private long tv;
+	private long networkRbs;
 
 	public TxnUsageEstimator(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils) {
 		this.txn = txn;

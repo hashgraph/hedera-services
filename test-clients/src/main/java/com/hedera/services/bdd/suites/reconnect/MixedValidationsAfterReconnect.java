@@ -54,7 +54,7 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
 		String sender = "0.0.1002";
 		String receiver = "0.0.1003";
-		String lastlyCreatedAccount = "0.0.21003";
+		String lastlyCreatedAccount = "0.0.21013";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
 						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
@@ -78,9 +78,9 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validateTopicInfo() {
-		String firstlyCreatedTopic = "0.0.21004";
-		String lastlyCreatedTopic = "0.0.41003";
-		String invalidTopicId = "0.0.41004";
+		String firstlyCreatedTopic = "0.0.21014";
+		String lastlyCreatedTopic = "0.0.41013";
+		String invalidTopicId = "0.0.41014";
 		String topicIdWithMessagesSubmittedTo = "0.0.30000";
 		byte[] emptyRunningHash = new byte[48];
 		return defaultHapiSpec("ValidateTopicInfo")
@@ -98,9 +98,9 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validateFileInfo() {
-		String firstlyCreatedFile = "0.0.41004";
-		String lastlyCreatedFile = "0.0.42003";
-		String invalidFileId = "0.0.42004";
+		String firstlyCreatedFile = "0.0.41014";
+		String lastlyCreatedFile = "0.0.42013";
+		String invalidFileId = "0.0.42014";
 		return defaultHapiSpec("ValidateFileInfo")
 				.given().when().then(
 						getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),

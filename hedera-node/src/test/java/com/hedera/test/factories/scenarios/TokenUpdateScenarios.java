@@ -131,6 +131,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
 							.updating(MISSING_TOKEN)
+							.newAutoRenew(MISC_ACCOUNT)
 							.get()
 			));
 		}

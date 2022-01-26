@@ -22,6 +22,11 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +71,20 @@ class ExpirableTxnRecordBuilderTest {
 		final var result = subject.build();
 		assertEquals(12, result.getNumChildRecords());
 		assertEquals(packedParentConsTime, result.getPackedParentConsensusTime());
+	}
+
+	@Test
+	void parentConsensusTimeMappedToAndFromGrpc() {
+		final var grpcRecord = TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder().setAccountID(IdUtils.asAccount("0.0.3")))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+				.setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
+				.setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
+				.build();
+
+		final var subject = ExpirableTxnRecordTestHelper.fromGprc(grpcRecord);
+
+		assertEquals(grpcRecord, subject.asGrpc());
 	}
 
 	@Test
@@ -202,13 +221,6 @@ class ExpirableTxnRecordBuilderTest {
 
 	@Test
 	void revertOnlyPossibleWithReceiptBuilder() {
-		subject.setReceipt(new TxnReceipt());
-
-		assertThrows(IllegalStateException.class, subject::revert);
-	}
-
-	@Test
-	void buildWithAlias(){
 		subject.setReceipt(new TxnReceipt());
 
 		assertThrows(IllegalStateException.class, subject::revert);

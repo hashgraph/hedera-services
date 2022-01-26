@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,7 @@ class DefaultAccountLookupTest {
 	private AliasManager aliasManager;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	
+
 	private DefaultAccountLookup subject;
 
 	@BeforeEach
@@ -74,10 +74,10 @@ class DefaultAccountLookupTest {
 		final var unmatchedResult = subject.aliasableSafeLookup(unmatchedAlias);
 
 		assertTrue(explicitResult.succeeded());
-		Assertions.assertSame(EMPTY_KEY, explicitResult.metadata().getKey());
+		Assertions.assertSame(EMPTY_KEY, explicitResult.metadata().key());
 
 		assertTrue(matchedResult.succeeded());
-		Assertions.assertSame(EMPTY_KEY, matchedResult.metadata().getKey());
+		Assertions.assertSame(EMPTY_KEY, matchedResult.metadata().key());
 
 		assertFalse(unmatchedResult.succeeded());
 		assertEquals(KeyOrderingFailure.MISSING_ACCOUNT, unmatchedResult.failureIfAny());

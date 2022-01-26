@@ -20,6 +20,7 @@ package com.hedera.services.queries.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -69,6 +70,7 @@ class GetContractInfoAnswerTest {
 	private String payer = "0.0.12345";
 	private String target = "0.0.123";
 	private long fee = 1_234L;
+	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
 	OptionValidator optionValidator;
 	StateView view;
@@ -81,6 +83,7 @@ class GetContractInfoAnswerTest {
 	@BeforeEach
 	void setup() {
 		info = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setLedgerId(ledgerId)
 				.setContractID(IdUtils.asContract(target))
 				.setContractAccountID(EntityIdUtils.asSolidityAddressHex(IdUtils.asAccount(target)))
 				.setMemo("Stay cold...")

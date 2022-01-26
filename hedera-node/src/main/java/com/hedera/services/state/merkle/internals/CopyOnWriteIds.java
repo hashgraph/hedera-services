@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle.internals;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -130,6 +130,7 @@ public class CopyOnWriteIds {
 	 *
 	 * @param grpcIds
 	 * 		the ids to add
+	 * @deprecated
 	 */
 	@Deprecated
 	public void addAll(Set<TokenID> grpcIds) {
@@ -160,7 +161,8 @@ public class CopyOnWriteIds {
 	/**
 	 * Overwrite the managed multiset with the given sequence of {@code (num, realm, shard)} ids.
 	 *
-	 * @param ids the sequence of {@code (num, realm, shard)} ids to overwrite
+	 * @param ids
+	 * 		the sequence of {@code (num, realm, shard)} ids to overwrite
 	 */
 	public void setNativeIds(long[] ids) {
 		this.ids = ids;
@@ -180,7 +182,8 @@ public class CopyOnWriteIds {
 
 	/* --- Helpers --- */
 	void remove(Predicate<long[]> removalFilter) {
-		int n = size(), newN = 0;
+		int n = size();
+		int newN = 0;
 		for (int i = 0; i < n; i++) {
 			if (!removalFilter.test(nativeIdAt(i))) {
 				newN++;
@@ -232,7 +235,8 @@ public class CopyOnWriteIds {
 	}
 
 	private int logicalIndexOf(long[] shardRealmNum) {
-		int lo = 0, hi = ids.length / NUM_ID_PARTS - 1;
+		int lo = 0;
+		int hi = ids.length / NUM_ID_PARTS - 1;
 		while (lo <= hi) {
 			int mid = lo + (hi - lo) / 2;
 			int comparison = compareImplied(mid, shardRealmNum);
@@ -248,9 +252,11 @@ public class CopyOnWriteIds {
 	}
 
 	private int compareImplied(int at, long[] nativeId) {
-		long numA = ids[num(at)], numB = nativeId[NUM_OFFSET];
+		long numA = ids[num(at)];
+		long numB = nativeId[NUM_OFFSET];
 		if (numA == numB) {
-			long realmA = ids[realm(at)], realmB = nativeId[REALM_OFFSET];
+			long realmA = ids[realm(at)];
+			long realmB = nativeId[REALM_OFFSET];
 			if (realmA == realmB) {
 				return Long.compare(ids[shard(at)], nativeId[SHARD_OFFSET]);
 			} else {
@@ -276,7 +282,7 @@ public class CopyOnWriteIds {
 	}
 
 	private long[] asNativeId(Id id) {
-		return new long[] { id.getNum(), id.getRealm(), id.getShard() };
+		return new long[] { id.num(), id.realm(), id.shard() };
 	}
 
 	private List<long[]> asNativeIds(Set<TokenID> grpcIds) {

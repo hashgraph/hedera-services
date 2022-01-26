@@ -30,25 +30,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AliasManagerTest {
+	private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
+	private static final EntityNum num = EntityNum.fromLong(1234L);
+
 	@Test
 	void createAliasAddsToMap() {
-		final var alias = ByteString.copyFromUtf8("aaaa");
-		final var num = EntityNum.fromLong(1234L);
-
-
 		final var subject = new AliasManager();
-		subject.createAlias(alias, num);
+		subject.link(alias, num);
 
 		assertEquals(Map.of(alias, num), subject.getAliases());
 	}
 
 	@Test
+	void forgetAliasRemovesFromMap() {
+		final var subject = new AliasManager();
+		subject.getAliases().put(alias, num);
+
+		subject.unlink(alias);
+
+		assertFalse(subject.getAliases().containsKey(alias));
+	}
+
+	@Test
 	void settersAndGettersWork() {
-		EntityNum a = new EntityNum(1);
-		EntityNum b = new EntityNum(2);
+		final var a = new EntityNum(1);
+		final var b = new EntityNum(2);
 		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
 		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
 		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{

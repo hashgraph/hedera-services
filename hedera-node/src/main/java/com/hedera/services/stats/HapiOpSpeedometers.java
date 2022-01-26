@@ -23,14 +23,14 @@ package com.hedera.services.stats;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
-import com.swirlds.platform.StatsSpeedometer;
+import com.swirlds.common.statistics.StatsSpeedometer;
 
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 
 import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
 import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_DESC_TPL;
@@ -52,10 +52,10 @@ public class HapiOpSpeedometers {
 	private final SpeedometerFactory speedometer;
 	private final Function<HederaFunctionality, String> statNameFn;
 
-	final Map<HederaFunctionality, Long> lastReceivedOpsCount = new HashMap<>();
-	final Map<HederaFunctionality, Long> lastHandledTxnsCount = new HashMap<>();
-	final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new HashMap<>();
-	final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new HashMap<>();
+	final Map<HederaFunctionality, Long> lastReceivedOpsCount = new EnumMap<>(HederaFunctionality.class);
+	final Map<HederaFunctionality, Long> lastHandledTxnsCount = new EnumMap<>(HederaFunctionality.class);
+	final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new EnumMap<>(HederaFunctionality.class);
+	final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new EnumMap<>(HederaFunctionality.class);
 	Long lastReceivedDeprecatedTxnCount;
 
 	final EnumMap<HederaFunctionality, StatsSpeedometer> receivedOps = new EnumMap<>(HederaFunctionality.class);
@@ -78,18 +78,18 @@ public class HapiOpSpeedometers {
 		Arrays.stream(allFunctions.get())
 				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
 				.forEach(function -> {
-			receivedOps.put(function, new StatsSpeedometer(halfLife));
-			lastReceivedOpsCount.put(function, 0L);
-			if (QUERY_FUNCTIONS.contains(function)) {
-				answeredQueries.put(function, new StatsSpeedometer(halfLife));
-				lastAnsweredQueriesCount.put(function, 0L);
-			} else {
-				submittedTxns.put(function, new StatsSpeedometer(halfLife));
-				lastSubmittedTxnsCount.put(function, 0L);
-				handledTxns.put(function, new StatsSpeedometer(halfLife));
-				lastHandledTxnsCount.put(function, 0L);
-			}
-		});
+					receivedOps.put(function, new StatsSpeedometer(halfLife));
+					lastReceivedOpsCount.put(function, 0L);
+					if (QUERY_FUNCTIONS.contains(function)) {
+						answeredQueries.put(function, new StatsSpeedometer(halfLife));
+						lastAnsweredQueriesCount.put(function, 0L);
+					} else {
+						submittedTxns.put(function, new StatsSpeedometer(halfLife));
+						lastSubmittedTxnsCount.put(function, 0L);
+						handledTxns.put(function, new StatsSpeedometer(halfLife));
+						lastHandledTxnsCount.put(function, 0L);
+					}
+				});
 		receivedDeprecatedTxns = new StatsSpeedometer(halfLife);
 		lastReceivedDeprecatedTxnCount = 0L;
 	}
@@ -118,7 +118,7 @@ public class HapiOpSpeedometers {
 			String nameTpl,
 			String descTpl
 	) {
-		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet()) {
 			var baseName = statNameFn.apply(entry.getKey());
 			var fullName = String.format(nameTpl, baseName);
 			var description = String.format(descTpl, baseName);
@@ -139,12 +139,12 @@ public class HapiOpSpeedometers {
 	private void updateSpeedometers(
 			Map<HederaFunctionality, StatsSpeedometer> speedometers,
 			Map<HederaFunctionality, Long> lastMeasurements,
-			Function<HederaFunctionality, Long> currMeasurement
+			ToLongFunction<HederaFunctionality> currMeasurement
 	) {
-		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet()) {
 			var function = entry.getKey();
 			long last = lastMeasurements.get(function);
-			long curr = currMeasurement.apply(function);
+			long curr = currMeasurement.applyAsLong(function);
 			entry.getValue().update((double) curr - last);
 			lastMeasurements.put(function, curr);
 		}

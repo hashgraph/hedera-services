@@ -177,8 +177,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	private void revert(final int sourceId, final List<InProgressChildRecord> childRecords) {
 		for (final var inProgress : childRecords) {
-			if (inProgress.getSourceId() == sourceId) {
-				inProgress.getRecordBuilder().revert();
+			if (inProgress.sourceId() == sourceId) {
+				inProgress.recordBuilder().revert();
 			}
 		}
 	}
@@ -198,14 +198,19 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		final var parentId = topLevel.getTxnId();
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
-			final var child = inProgress.getRecordBuilder();
+			final var child = inProgress.recordBuilder();
 			topLevel.excludeHbarChangesFrom(child);
 
 			child.setTxnId(parentId.withNonce(nextNonce++));
 			final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * (i + 1));
 			child.setConsensusTime(RichInstant.fromJava(childConsTime));
+			/* Mirror node team prefers we only set a parent consensus time for records that FOLLOW
+			 * the top-level transaction. This might change for future use cases. */
+			if (sigNum > 0) {
+				child.setParentConsensusTime(consensusNow);
+			}
 
-			final var synthTxn = synthFrom(inProgress.getSyntheticBody(), child);
+			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
 			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
@@ -246,9 +251,10 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final AccountID effPayer,
 			final TransactionID txnId,
 			final long submittingMember,
-			final long expiry
+			final long consensusSecond
 	) {
-		final var expiringRecord = creator.saveExpiringRecord(effPayer, baseRecord, expiry, submittingMember);
+		final var expiringRecord = creator.saveExpiringRecord(
+				effPayer, baseRecord, consensusSecond, submittingMember);
 		recordCache.setPostConsensus(txnId, baseRecord.getEnumStatus(), expiringRecord);
 	}
 }

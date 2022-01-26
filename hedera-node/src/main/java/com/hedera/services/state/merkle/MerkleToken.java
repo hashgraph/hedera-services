@@ -46,10 +46,8 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
-import static java.util.stream.Collectors.toList;
 
 public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;
@@ -401,6 +399,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return Optional.ofNullable(freezeKey);
 	}
 
+	public JKey freezeKeyUnsafe() {
+		return freezeKey;
+	}
+
 	public boolean hasFreezeKey() {
 		return freezeKey != UNUSED_KEY;
 	}
@@ -679,7 +681,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 
 	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
 		throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
-		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
+		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).toList();
 	}
 
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {

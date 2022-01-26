@@ -51,7 +51,7 @@ public class ZeroStakeAnswerFlow implements AnswerFlow {
 	public Response satisfyUsing(AnswerService service, Query query) {
 		var view = stateViews.get();
 
-		if (throttles.shouldThrottleQuery(service.canonicalFunction())) {
+		if (throttles.shouldThrottleQuery(service.canonicalFunction(), query)) {
 			return service.responseGiven(query, view, BUSY);
 		}
 

@@ -20,6 +20,8 @@ package com.hedera.services.throttles;
  * ‍
  */
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
+
 /**
  * A throttle that enforces a transaction rate with resolution of 1/1000th
  * of a transaction. Throttling decisions are made based on the capacity
@@ -55,15 +57,19 @@ package com.hedera.services.throttles;
 public class BucketThrottle {
 	private static final int DEFAULT_BURST_PERIOD = 1;
 
-	public static long capacityUnitsPerTxn() {
-		return CAPACITY_UNITS_PER_TXN;
-	}
-
 	static final long MS_PER_SEC = 1_000L;
 	static final long MTPS_PER_TPS = 1_000L;
 	static final long NTPS_PER_MTPS = 1_000_000L;
 	static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
 	static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
+
+	public static long capacityUnitsPerTxn() {
+		return CAPACITY_UNITS_PER_TXN;
+	}
+
+	public static long capacityUnitsPerMs(final long mtps) {
+		return mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / MS_PER_SEC;
+	}
 
 	private final long mtps;
 	private final DiscreteLeakyBucket bucket;
@@ -147,10 +153,5 @@ public class BucketThrottle {
 
 	long mtps() {
 		return mtps;
-	}
-
-	public static boolean productWouldOverflow(long multiplier, long multiplicand) {
-		final var maxMultiplier = Long.MAX_VALUE / multiplicand;
-		return multiplier > maxMultiplier;
 	}
 }

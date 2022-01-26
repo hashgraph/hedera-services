@@ -13,37 +13,20 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt-get install sudo;
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt-get install -y apt-utils;
-            sudo apt install -y curl;
-            sudo apt install -y python3.7;
-            sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install -y python3-pip;
-            pip3 install --upgrade pip;
-            pip3 -q install matplotlib;
-            sudo apt-get install -y python3-setuptools;
-            pip3 install awscli;
-      - run:
-          name: Install gcloud cli
-          command: |
-            apt-get update || apt-get update;
-            curl https://sdk.cloud.google.com > install.sh;
-            bash install.sh --disable-prompts;
+            apt update -y;
+            apt install -y net-tools;
+            apt install -y apt-utils;
+            rm -f /usr/bin/python3;
+            ln -s /usr/bin/python3.7 /usr/bin/python3;
+            python3 -m pip -q install matplotlib;
+            python3 -m pip install awscli;
       - run:
           name: Authenticate gcloud cli
           command: |
-            echo 'export PATH=/root/google-cloud-sdk/bin:$PATH' >> /root/.bashrc;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc;
-            source /root/google-cloud-sdk/path.bash.inc;
             echo $GCLOUD_SERVICE_KEY > /tmp/gcloud-service-key.json;
             gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json;
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID};
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE};
-            sudo apt-get install gcc python3-dev python3-setuptools -y;
-            sudo pip3 uninstall crcmod;
-            sudo pip3 install --no-cache-dir -U crcmod;
 
   ######################################################################################################################
   # Command Name:                     shell_extract_file_into_variable
@@ -257,7 +240,6 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
@@ -299,11 +281,8 @@ commands:
           name: Import the Google Cloud Service  Account
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc
             echo "${<< parameters.keyfile_variable >>}" > "/tmp/gcloud_account_key.json"
-            set -x
             gcloud auth activate-service-account "${<< parameters.username_variable >>}" --key-file="/tmp/gcloud_account_key.json" --project="${<< parameters.project_variable >>}"
-
 
   ######################################################################################################################
   # Command Name:                     jrs_history_retrieve
@@ -440,7 +419,6 @@ commands:
           command: |
             set -x
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
 
             if [[ ! -d "<< parameters.result_path >>" ]]; then exit 13; fi
 
@@ -536,7 +514,7 @@ commands:
           name: "Execute JRS Regression (<< parameters.config_file >>)"
           command: |
             set -x
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
+            ls -l /swirlds-platform/regression
             cd /swirlds-platform
             REGRESSION_PATH="<< parameters.regression_path >>"
             if [[ ! -d "${REGRESSION_PATH}" ]]; then exit 15; fi
@@ -613,7 +591,6 @@ commands:
           no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
-            source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             ./regression_services_circleci.sh configs/services/suites/daily/<< parameters.experiment-name >>.json /repo
 
 executors:
@@ -654,7 +631,7 @@ executors:
         type: string
         default: ""
     docker:
-      - image: gcr.io/swirlds-registry/cci-openjdk-infer:17-b20211206
+      - image: gcr.io/swirlds-registry/cci-openjdk-regression:17-b20211206
     environment:
       TF_DIR: << parameters.tf_dir >>
       IN_CIRCLE_CI: true
@@ -666,6 +643,24 @@ executors:
     working_directory: /repo
 
 workflows:
+  GCP_Machine_Cleanup:
+    triggers:
+      - schedule:
+          cron: "0 2,8,14,20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - jrs_gcp_machine_cleanup:
+          name: GCP-Machine-Cleanup
+          context: Slack
+          project_name: "hedera-regression"
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -677,7 +672,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -700,7 +694,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/20N_20C/
@@ -724,7 +717,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -748,7 +740,6 @@ workflows:
     jobs:
       - build-platform-and-services
       - jrs-regression:
-          runtime: build-executor
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/15N_15C/
@@ -974,6 +965,29 @@ workflows:
           result_path: results/4N_2C/Update
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Crypto-Update-CentOS7-4N-2C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+  GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
+    triggers:
+      - schedule:
+          cron: "0 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_4C/CryptoInvalidAccounts
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C"
           requires:
             - build-platform-and-services
           pre-steps:
@@ -1490,8 +1504,8 @@ jobs:
       - run:
           name: Upload codecov
           command: |
-            apt-get update
-            apt-get install -y curl
+            apt update -y
+            apt install -y curl
             bash <(wget -O - https://codecov.io/bash)
       - persist_to_workspace:
           root: /
@@ -1514,9 +1528,9 @@ jobs:
           name: Install tools for Sonar scan
           command: |
             export DEBIAN_FRONTEND=noninteractive
-            apt-get update && \
-            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
-            apt-get install -y jq libjq1 libonig4 curl && \
+            apt update -y && \
+            apt install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt install -y jq libjq1 libonig4 curl && \
             echo | cpan && \
             cpan install CPAN && \
             cpan install Mozilla::CA && \
@@ -1689,10 +1703,6 @@ jobs:
       - when:
           condition: << parameters.automated_run >>
           steps:
-            - run:
-                name: setup env
-                command: |
-                  source /root/.bashrc; source /root/google-cloud-sdk/completion.bash.inc; source /root/google-cloud-sdk/path.bash.inc;
             - jrs_history_retrieve:
                 bucket_name: << parameters.summary_bucket >>
                 summary_path: << parameters.summary_path >>
@@ -1727,3 +1737,26 @@ jobs:
             else
               exit 0
             fi
+
+  jrs_gcp_machine_cleanup:
+    parameters:
+      runtime:
+        type: string
+        default: ci-test-executor
+      project_name:
+        type: string
+        default: "hedera-regression"
+    executor: << parameters.runtime >>
+    steps:
+      - gcp_import_credentials:
+          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+          keyfile_variable: GCLOUD_SERVICE_KEY
+          project_variable: GOOGLE_PROJECT_ID
+      - checkout
+      - run:
+          name: Cleanup GCP Instance Groups
+          command: |
+            set -x
+            cd /repo;
+            chmod 755 /repo/.circleci/scripts/clean_up_instances.sh;
+            .circleci/scripts/clean_up_instances.sh << parameters.project_name >>;

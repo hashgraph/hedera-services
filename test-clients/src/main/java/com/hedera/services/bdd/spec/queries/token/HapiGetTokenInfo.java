@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -374,6 +375,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getPauseKey(n),
 				"Wrong token pause key!",
 				registry);
+
+		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	private <T, R> void assertFor(

@@ -43,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
@@ -181,7 +182,7 @@ class HederaSStoreOperationTest {
 		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
 		frameDeque.add(messageFrame);
 		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-		given(messageFrame.getContextVariable("expiry")).willReturn(Optional.of(expectedExpiry));
+		given(messageFrame.getContextVariable("expiry")).willReturn(OptionalLong.of(expectedExpiry));
 		given(messageFrame.getContextVariable("sbh")).willReturn(5L);
 		given(messageFrame.getBlockValues()).willReturn(hederaBlockValues);
 		given(messageFrame.getGasPrice()).willReturn(Wei.of(50000L));

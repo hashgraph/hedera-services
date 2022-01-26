@@ -21,9 +21,10 @@ package com.hedera.services.queries.answering;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
@@ -31,43 +32,99 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Singleton
 public class AnswerFunctions {
+	private final GlobalDynamicProperties dynamicProperties;
+
 	@Inject
-	public AnswerFunctions() {
+	public AnswerFunctions(GlobalDynamicProperties dynamicProperties) {
+		this.dynamicProperties = dynamicProperties;
 	}
 
-	public List<TransactionRecord> accountRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
-		final var key = EntityNum.fromAccountId(op.getAccountID());
-		final var account = view.accounts().get(key);
-		return ExpirableTxnRecord.allToGrpc(account.recordList());
-	}
-
-	public Optional<TransactionRecord> txnRecord(
-			final RecordCache recordCache,
-			final StateView view,
-			final TransactionGetRecordQuery query
-	) {
-		final var txnId = query.getTransactionID();
-		final var expirableTxnRecord = recordCache.getPriorityRecord(txnId);
-		if (expirableTxnRecord != null) {
-			return Optional.of(expirableTxnRecord.asGrpc());
-		} else {
-			try {
-				final var id = txnId.getAccountID();
-				final var account = view.accounts().get(EntityNum.fromAccountId(id));
-				final var searchableId = TxnId.fromGrpc(txnId);
-				return account.recordList()
-						.stream()
-						.filter(r -> r.getTxnId().equals(searchableId))
-						.findAny()
-						.map(ExpirableTxnRecord::asGrpc);
-			} catch (final Exception ignore) {
-				return Optional.empty();
-			}
+	/**
+	 * Returns the most recent payer records available for an account in the given {@link StateView}.
+	 *
+	 * Note that at <b>most</b> {@link GlobalDynamicProperties#maxNumQueryableRecords()} records will be available,
+	 * even if the given account has paid for more than this number of transactions in the last 180 seconds.
+	 *
+	 * @param view the view of the world state to get payer records from
+	 * @param op the query with the target payer account
+	 * @return the most recent available records for the given payer
+	 */
+	public List<TransactionRecord> mostRecentRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
+		final var targetId = EntityNum.fromAccountId(op.getAccountID());
+		final var targetAccount = view.accounts().get(targetId);
+		if (targetAccount == null) {
+			return Collections.emptyList();
 		}
+		final var numAvailable = targetAccount.numRecords();
+		final var maxQueryable = dynamicProperties.maxNumQueryableRecords();
+		return numAvailable <= maxQueryable
+				? recordsFrom(targetAccount, numAvailable)
+				: mostRecentFrom(targetAccount, maxQueryable, numAvailable);
+	}
+
+	/**
+	 * Returns the record of the requested transaction from the given {@link RecordCache}, if available.
+	 *
+	 * @param recordCache the cache to get the record from
+	 * @param op the query with the target transaction id
+	 * @return the transaction record if available
+	 */
+	public Optional<TransactionRecord> txnRecord(final RecordCache recordCache, final TransactionGetRecordQuery op) {
+		final var txnId = op.getTransactionID();
+		final var expirableTxnRecord = recordCache.getPriorityRecord(txnId);
+		return Optional.ofNullable(expirableTxnRecord).map(ExpirableTxnRecord::asGrpc);
+	}
+
+	/* --- Internal helpers --- */
+	/**
+	 * Returns up to {@code n} payer records from an account in gRPC form.
+	 *
+	 * @param account the account of interest
+	 * @param n the expected number of records in the account
+	 * @return the available records
+	 */
+	private List<TransactionRecord> recordsFrom(final MerkleAccount account, final int n) {
+		return mostRecentFrom(account, n, n);
+	}
+
+	/**
+	 * Returns up to the last {@code m}-of-{@code n} payer records from an account in gRPC form.
+	 *
+	 * Since records are added FIFO to the payer account, the last records are the most recent;
+	 * and presumably the most interesting.
+	 *
+	 * If the given {@link MerkleAccount} is from the working state (as in release 0.22), then
+	 * this method acts on a best-effort basis, and returns only the relevant records it could
+	 * iterate over before hitting a {@link ConcurrentModificationException} or {@link NoSuchElementException}.
+	 *
+	 * @param account the account of interest
+	 * @param m the maximum number of records to return
+	 * @param n the expected number of records in the account
+	 * @return the available records
+	 */
+	private List<TransactionRecord> mostRecentFrom(final MerkleAccount account, final int m, final int n) {
+		final List<TransactionRecord> ans = new ArrayList<>();
+		final Iterator<ExpirableTxnRecord> iter = account.recordIterator();
+		try {
+			for (int i = 0, cutoff = n - m; i < n; i++) {
+				final var nextRecord = iter.next();
+				if (i >= cutoff) {
+					ans.add(nextRecord.asGrpc());
+				}
+			}
+		} catch (ConcurrentModificationException | NoSuchElementException ignore) {
+			/* Records expired while we were iterating the list, return only what we could find. */
+		}
+		return ans;
 	}
 }

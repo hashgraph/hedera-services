@@ -23,13 +23,15 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -55,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static java.util.stream.Collectors.toList;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int PRE_RELEASE_0180_VERSION = 1;
@@ -149,12 +151,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	}
 
 	/* Object */
+
 	/**
 	 * Two {@code MerkleSchedule}s are identical as long as they agree on
 	 * the transaction being scheduled, the admin key used to manage it,
 	 * and the memo to accompany it.
 	 *
-	 * @param o the object to check for equality
+	 * @param o
+	 * 		the object to check for equality
 	 * @return whether {@code this} and {@code o} are identical
 	 */
 	@Override
@@ -189,7 +193,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
-				.add("signatories", signatories.stream().map(CommonUtils::hex).collect(toList()))
+				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
 				.add("adminKey", describe(adminKey));
 		if (resolutionTime != null) {
 			helper.add("resolutionTime", resolutionTime);
@@ -384,6 +388,14 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 			throw new IllegalStateException("Schedule not executed, cannot return execution time!");
 		}
 		return resolutionTime.toGrpc();
+	}
+
+	public HederaFunctionality scheduledFunction() {
+		try {
+			return MiscUtils.functionOf(ordinaryScheduledTxn);
+		} catch (UnknownHederaFunctionality ignore) {
+			return NONE;
+		}
 	}
 
 	public TransactionBody ordinaryViewOfScheduledTxn() {

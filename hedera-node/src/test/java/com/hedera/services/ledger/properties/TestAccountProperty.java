@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 	FLAG {
 		@Override
 		public BiConsumer<TestAccount, Object> setter() {
-			return (a, f) -> a.setFlag((boolean)f);
+			return (a, f) -> a.setFlag((boolean) f);
 		}
 
 		@Override
@@ -40,7 +40,7 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 	LONG {
 		@Override
 		public BiConsumer<TestAccount, Object> setter() {
-			return (a, v) -> a.setValue((long)v);
+			return (a, v) -> a.setValue((long) v);
 		}
 
 		@Override
@@ -57,6 +57,17 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 		@Override
 		public Function<TestAccount, Object> getter() {
 			return TestAccount::getThing;
+		}
+	},
+	TOKEN_LONG {
+		@Override
+		public BiConsumer<TestAccount, Object> setter() {
+			return (a, v) -> a.setTokenThing((long) v);
+		}
+
+		@Override
+		public Function<TestAccount, Object> getter() {
+			return TestAccount::getTokenThing;
 		}
 	},
 }

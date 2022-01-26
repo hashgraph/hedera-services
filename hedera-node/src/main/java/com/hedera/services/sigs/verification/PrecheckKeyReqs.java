@@ -22,8 +22,7 @@ package com.hedera.services.sigs.verification;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.sigs.annotations.PayerSigReqs;
-import com.hedera.services.sigs.annotations.RetryingSigReqs;
+import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,18 +52,15 @@ public class PrecheckKeyReqs {
 			ACCOUNT_ID_DOES_NOT_EXIST
 	);
 
-	private final SigRequirements keyOrder;
-	private final SigRequirements keyOrderModuloRetry;
+	private final SigRequirements sigReqs;
 	private final Predicate<TransactionBody> isQueryPayment;
 
 	@Inject
 	public PrecheckKeyReqs(
-			@PayerSigReqs SigRequirements keyOrder,
-			@RetryingSigReqs SigRequirements keyOrderModuloRetry,
-			Predicate<TransactionBody> isQueryPayment
+			final @WorkingStateSigReqs SigRequirements sigReqs,
+			final Predicate<TransactionBody> isQueryPayment
 	) {
-		this.keyOrder = keyOrder;
-		this.keyOrderModuloRetry = keyOrderModuloRetry;
+		this.sigReqs = sigReqs;
 		this.isQueryPayment = isQueryPayment;
 	}
 
@@ -90,7 +86,7 @@ public class PrecheckKeyReqs {
 	}
 
 	private void addPayerKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-		final var payerResult = keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
+		final var payerResult = sigReqs.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
 		if (payerResult.hasErrorReport()) {
 			throw new InvalidPayerAccountException();
 		}
@@ -98,7 +94,7 @@ public class PrecheckKeyReqs {
 	}
 
 	private void addQueryPaymentKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-		final var otherResult = keyOrderModuloRetry.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
+		final var otherResult = sigReqs.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
 		if (otherResult.hasErrorReport()) {
 			final var errorStatus = otherResult.getErrorReport();
 			if (INVALID_ACCOUNT_STATUSES.contains(errorStatus)) {

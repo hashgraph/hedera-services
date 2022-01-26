@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides the state transition for updating token fee schedule.
@@ -53,8 +52,6 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
 
@@ -88,7 +85,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		final var customFees = op.getCustomFeesList()
 				.stream()
 				.map(grpcFeeConverter)
-				.collect(toList());
+				.toList();
 		customFees.forEach(fee -> {
 			fee.validateWith(token, accountStore, tokenStore);
 			fee.nullOutCollector();
@@ -96,7 +93,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistToken(token);
+		tokenStore.commitToken(token);
 	}
 
 	@Override
@@ -106,7 +103,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody txnBody) {

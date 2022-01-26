@@ -121,7 +121,7 @@ public class Account {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS );
+		validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
@@ -142,12 +142,12 @@ public class Account {
 
 		final Set<Id> uniqueIds = new HashSet<>();
 		for (var token : tokens) {
-			final var id = token.getId();
-			validateFalse(associatedTokens.contains(id), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			final var tokenId = token.getId();
+			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 			if (automaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
-			uniqueIds.add(id);
+			uniqueIds.add(tokenId);
 		}
 
 		associatedTokens.addAllIds(uniqueIds);
@@ -219,7 +219,7 @@ public class Account {
 				.add("ownedNfts", ownedNfts)
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
-				.add("alias", getAlias())
+				.add("alias", getAlias().toStringUtf8())
 				.toString();
 	}
 

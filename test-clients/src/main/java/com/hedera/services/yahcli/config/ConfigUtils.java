@@ -34,6 +34,7 @@ import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
 import com.hedera.services.yahcli.suites.FreezeHelperSuite;
 import com.hedera.services.yahcli.suites.RekeySuite;
 import com.hedera.services.yahcli.suites.SchedulesValidationSuite;
+import com.hedera.services.yahcli.suites.SendSuite;
 import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
 import com.hedera.services.yahcli.suites.SysFileUploadSuite;
 import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
@@ -143,7 +144,7 @@ public class ConfigUtils {
 	}
 
 	public static ConfigManager configFrom(Yahcli yahcli) throws IOException {
-		System.out.println("setting loglevel to : " + yahcli.getLogLevel());
+		System.out.println("Log level is " + yahcli.getLogLevel());
 		setLogLevels(yahcli.getLogLevel());
 		var config = ConfigManager.from(yahcli);
 		config.assertNoMissingDefaults();
@@ -168,7 +169,8 @@ public class ConfigUtils {
 				HapiTxnOp.class,
 				HapiGetFileContents.class,
 				HapiApiSpec.class,
-				VersionInfoSpec.class
+				VersionInfoSpec.class,
+				SendSuite.class
 		).forEach(cls -> setLogLevel(cls, logLevel));
 	}
 

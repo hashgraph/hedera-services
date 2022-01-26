@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ImpliedTransfersMarshal {
@@ -89,17 +91,20 @@ public class ImpliedTransfersMarshal {
 		if (aliasCheck.test(op)) {
 			final var aliasResolver = aliasResolverFactory.get();
 			op = aliasResolver.resolve(op, aliasManager);
+			numAutoCreations = aliasResolver.perceivedAutoCreations();
+			if (numAutoCreations > 0 && !props.isAutoCreationEnabled()) {
+				return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
+			}
 			if (aliasResolver.perceivedMissingAliases() > 0) {
 				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
 			} else if (aliasResolver.perceivedInvalidCreations() > 0) {
 				return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ALIAS_KEY);
 			} else {
 				resolvedAliases = aliasResolver.resolutions();
-				numAutoCreations = aliasResolver.perceivedAutoCreations();
 			}
 		}
 
-		final var validity = checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props);
+		final var validity = validityWithCurrentProps(op);
 		if (validity != OK) {
 			return ImpliedTransfers.invalid(props, validity);
 		}
@@ -117,6 +122,20 @@ public class ImpliedTransfersMarshal {
 		final var hbarOnly = changes.size();
 		appendToken(op, changes);
 
+		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
+	}
+
+	public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
+		return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps());
+	}
+
+	public ImpliedTransfers assessCustomFeesAndValidate(
+			final int hbarOnly,
+			final int numAutoCreations,
+			final List<BalanceChange> changes,
+			final Map<ByteString, EntityNum> resolvedAliases,
+			final ImpliedTransfersMeta.ValidationProps props
+	) {
 		/* Construct the process objects for custom fee charging */
 		final var changeManager = changeManagerFactory.from(changes, hbarOnly);
 		final var schedulesManager = schedulesManagerFactory.apply(customFeeSchedules);
@@ -146,9 +165,18 @@ public class ImpliedTransfersMarshal {
 		for (var xfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = xfers.getToken();
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
+
+			boolean decimalsSet = false;
 			for (var aa : xfers.getTransfersList()) {
-				changes.add(changingFtUnits(tokenId, grpcTokenId, aa));
+				var change = changingFtUnits(tokenId, grpcTokenId, aa);
+				// set only for the first balance change of the token with expectedDecimals
+				if (xfers.hasExpectedDecimals() && !decimalsSet) {
+					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
+					decimalsSet = true;
+				}
+				changes.add(change);
 			}
+
 			for (var oc : xfers.getNftTransfersList()) {
 				if (ownershipChanges == null) {
 					ownershipChanges = new ArrayList<>();
@@ -170,13 +198,14 @@ public class ImpliedTransfersMarshal {
 		return false;
 	}
 
-	private ImpliedTransfersMeta.ValidationProps currentProps() {
+	public ImpliedTransfersMeta.ValidationProps currentProps() {
 		return new ImpliedTransfersMeta.ValidationProps(
 				dynamicProperties.maxTransferListSize(),
 				dynamicProperties.maxTokenTransferListSize(),
 				dynamicProperties.maxNftTransfersLen(),
 				dynamicProperties.maxCustomFeeDepth(),
 				dynamicProperties.maxXferBalanceChanges(),
-				dynamicProperties.areNftsEnabled());
+				dynamicProperties.areNftsEnabled(),
+				dynamicProperties.isAutoCreationEnabled());
 	}
 }

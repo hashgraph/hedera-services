@@ -23,11 +23,12 @@ package com.hedera.services.ledger;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
-import com.hedera.services.ledger.accounts.HashMapBackingNfts;
-import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.backing.HashMapBackingNfts;
+import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -36,8 +37,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewsManager;
+import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -58,13 +60,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	private static final long thisSecond = 1_234_567L;
 
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreationLogic;
 
 	@BeforeEach
 	void setup() {
@@ -92,7 +95,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var viewManager = new UniqTokenViewsManager(
+		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,
 				() -> uniqueTokenTreasuryOwnerships,
@@ -103,11 +106,13 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				sideEffectsTracker,
 				viewManager,
 				new MockGlobalDynamicProps(),
-				() -> tokens,
 				tokenRelsLedger,
-				nftsLedger);
+				nftsLedger,
+				new HashMapBackingTokens());
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger, autoAccountCreator);
+				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger,
+				transferLogic, autoCreationLogic);
+		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
 	}
 
 	@Test

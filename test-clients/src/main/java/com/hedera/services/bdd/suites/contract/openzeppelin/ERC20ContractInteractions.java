@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
@@ -213,15 +214,5 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                             allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom, transferFrom, getCreateRecord, getTransferRecord, getApproveRecord, getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
                         })
                 );
-    }
-
-    private ByteString extractByteCode(String path) {
-        try {
-            final var bytes = Files.readAllBytes(Path.of(path));
-            return ByteString.copyFrom(bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ByteString.EMPTY;
-        }
     }
 }

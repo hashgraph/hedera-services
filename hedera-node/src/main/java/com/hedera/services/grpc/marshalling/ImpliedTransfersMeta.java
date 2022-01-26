@@ -113,12 +113,13 @@ public class ImpliedTransfersMeta {
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
 						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
 						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
-						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled()) &&
+						(validationProps.isAutoCreationEnabled == dynamicProperties.isAutoCreationEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
 		for (var meta : customFeeMeta) {
-			final var tokenId = meta.getTokenId();
+			final var tokenId = meta.tokenId();
 			var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
 			if (!meta.equals(newCustomMeta)) {
 				return false;
@@ -151,66 +152,18 @@ public class ImpliedTransfersMeta {
 				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
 				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
 				.add("areNftsEnabled", validationProps.areNftsEnabled)
+				.add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
 				.add("tokenFeeSchedules", customFeeMeta)
 				.toString();
 	}
 
-	public static class ValidationProps {
-		private final int maxHbarAdjusts;
-		private final int maxTokenAdjusts;
-		private final int maxOwnershipChanges;
-		private final int maxNestedCustomFees;
-		private final int maxXferBalanceChanges;
-		private final boolean areNftsEnabled;
-
-		public ValidationProps(
-				int maxHbarAdjusts,
-				int maxTokenAdjusts,
-				int maxOwnershipChanges,
-				int maxNestedCustomFees,
-				int maxXferBalanceChanges,
-				boolean areNftsEnabled
-		) {
-			this.maxHbarAdjusts = maxHbarAdjusts;
-			this.maxTokenAdjusts = maxTokenAdjusts;
-			this.maxOwnershipChanges = maxOwnershipChanges;
-			this.maxNestedCustomFees = maxNestedCustomFees;
-			this.maxXferBalanceChanges = maxXferBalanceChanges;
-			this.areNftsEnabled = areNftsEnabled;
-		}
-
-		public int getMaxHbarAdjusts() {
-			return maxHbarAdjusts;
-		}
-
-		public int getMaxTokenAdjusts() {
-			return maxTokenAdjusts;
-		}
-
-		public int getMaxOwnershipChanges() {
-			return maxOwnershipChanges;
-		}
-
-		public int getMaxNestedCustomFees() {
-			return maxNestedCustomFees;
-		}
-
-		public int getMaxXferBalanceChanges() {
-			return maxXferBalanceChanges;
-		}
-
-		public boolean areNftsEnabled() {
-			return areNftsEnabled;
-                }
-
-		@Override
-		public boolean equals(Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
-		}
-
-		@Override
-		public int hashCode() {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
+	public static record ValidationProps(
+			int maxHbarAdjusts,
+			int maxTokenAdjusts,
+			int maxOwnershipChanges,
+			int maxNestedCustomFees,
+			int maxXferBalanceChanges,
+			boolean areNftsEnabled,
+			boolean isAutoCreationEnabled) {
 	}
 }

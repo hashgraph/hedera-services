@@ -59,10 +59,10 @@ public class EntityNum {
 	}
 
 	public static EntityNum fromModel(Id id) {
-		if (!areValidNums(id.getShard(), id.getRealm())) {
+		if (!areValidNums(id.shard(), id.realm())) {
 			return MISSING_NUM;
 		}
-		return fromLong(id.getNum());
+		return fromLong(id.num());
 	}
 
 	public static EntityNum fromAccountId(AccountID grpc) {
