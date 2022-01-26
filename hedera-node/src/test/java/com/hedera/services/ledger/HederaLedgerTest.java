@@ -68,7 +68,7 @@ import static org.mockito.BDDMockito.verify;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Mock
-	private AutoCreationLogic autoAccountCreator;
+	private AutoCreationLogic autoCreationLogic;
 
 	@BeforeEach
 	private void setup() {
@@ -107,6 +107,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.changeSetSoFar()).willReturn(zeroingGenesis);
 		given(tokenRelsLedger.changeSetSoFar()).willReturn(creatingTreasury);
 		given(nftsLedger.changeSetSoFar()).willReturn(changingOwner);
+		given(mutableEntityAccess.currentManagedChangeSet()).willReturn("NONSENSE");
 
 		final var summary = subject.currentChangeSet();
 
@@ -116,7 +117,9 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 				"--- TOKEN RELATIONSHIPS ---\n" +
 				"{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}\n" +
 				"--- NFTS ---\n" +
-				"{NftId{shard=0, realm=0, num=10000, serialNo=1234}: [OWNER -> EntityId{shard=3, realm=4, num=5}]}";
+				"{NftId{shard=0, realm=0, num=10000, serialNo=1234}: [OWNER -> EntityId{shard=3, realm=4, num=5}]}\n" +
+				"--- TOKENS ---\n" +
+				"NONSENSE";
 		assertEquals(desired, summary);
 	}
 
@@ -172,7 +175,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoAccountCreator);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertTrue(subject.isDetached(genesis));
 	}
@@ -184,7 +187,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoAccountCreator);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 
 		assertFalse(subject.isDetached(genesis));
 	}
@@ -195,7 +198,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
-				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, autoAccountCreator);
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
 		dynamicProps.disableAutoRenew();
 
 		assertFalse(subject.isDetached(genesis));
@@ -350,7 +353,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void forwardsTransactionalSemantics() {
 		subject.setTokenRelsLedger(null);
-		final var inOrder = inOrder(accountsLedger);
+		final var inOrder = inOrder(accountsLedger, mutableEntityAccess);
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
 
 		subject.begin();
@@ -359,8 +362,12 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.rollback();
 
 		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(mutableEntityAccess).begin();
 		inOrder.verify(accountsLedger).commit();
+		inOrder.verify(mutableEntityAccess).commit();
 		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(mutableEntityAccess).begin();
 		inOrder.verify(accountsLedger).rollback();
+		inOrder.verify(mutableEntityAccess).rollback();
 	}
 }

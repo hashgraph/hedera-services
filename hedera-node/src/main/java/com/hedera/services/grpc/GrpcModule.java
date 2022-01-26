@@ -51,14 +51,14 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @Module
-public abstract class GrpcModule {
+public interface GrpcModule {
 	@Binds
 	@Singleton
-	public abstract GrpcServerManager bindGrpcServerManager(NettyGrpcServerManager nettyGrpcServerManager);
+	GrpcServerManager bindGrpcServerManager(NettyGrpcServerManager nettyGrpcServerManager);
 
 	@Provides
 	@ElementsIntoSet
-	public static Set<BindableService> provideBindableServices(
+	static Set<BindableService> provideBindableServices(
 			CryptoController cryptoController,
 			FileController fileController,
 			FreezeController freezeController,
@@ -81,19 +81,19 @@ public abstract class GrpcModule {
 
 	@Provides
 	@Singleton
-	public static Consumer<Thread> provideHookAdder() {
+	static Consumer<Thread> provideHookAdder() {
 		return Runtime.getRuntime()::addShutdownHook;
 	}
 
 	@Provides
 	@Singleton
-	public static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
+	static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(FixedFeeAssessor fixedFeeAssessor) {
 		return new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange);
 	}
 
 	@Provides
 	@Singleton
-	public static ImpliedTransfersMarshal provideImpliedTransfersMarshal(
+	static ImpliedTransfersMarshal provideImpliedTransfersMarshal(
 			FeeAssessor feeAssessor,
 			AliasManager aliasManager,
 			CustomFeeSchedules customFeeSchedules,

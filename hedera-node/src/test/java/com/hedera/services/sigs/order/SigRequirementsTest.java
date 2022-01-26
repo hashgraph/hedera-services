@@ -25,20 +25,19 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -60,6 +59,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
@@ -178,7 +178,6 @@ import static com.hedera.test.factories.scenarios.FileUpdateScenarios.TREASURY_S
 import static com.hedera.test.factories.scenarios.FileUpdateScenarios.VANILLA_FILE_UPDATE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_INVALID_XFER;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NONSENSE;
-import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_NOT_IN_WHITELIST;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_NO_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN;
 import static com.hedera.test.factories.scenarios.ScheduleCreateScenarios.SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER;
@@ -284,6 +283,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -373,10 +373,26 @@ class SigRequirementsTest {
 	private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
+	void forwardsCallsWithoutLinkedRefs() {
+		final var mockTxn = TransactionBody.getDefaultInstance();
+		mockSummaryFactory();
+		final var mockSubject = mock(SigRequirements.class);
+
+		doCallRealMethod().when(mockSubject).keysForPayer(mockTxn, mockSummaryFactory);
+		doCallRealMethod().when(mockSubject).keysForOtherParties(mockTxn, mockSummaryFactory);
+
+		mockSubject.keysForPayer(mockTxn, mockSummaryFactory);
+		mockSubject.keysForOtherParties(mockTxn, mockSummaryFactory);
+
+		verify(mockSubject).keysForPayer(mockTxn, mockSummaryFactory, null);
+		verify(mockSubject).keysForOtherParties(mockTxn, mockSummaryFactory, null);
+	}
+
+	@Test
 	void reportsInvalidPayerId() throws Throwable {
 		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 
 		// when:
 		subject.keysForPayer(txn, mockSummaryFactory);
@@ -389,7 +405,7 @@ class SigRequirementsTest {
 	void reportsGeneralPayerError() throws Throwable {
 		// given:
 		setupForNonStdLookup(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO, EXCEPTION_THROWING_LOOKUP);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 
 		// when:
 		subject.keysForPayer(txn, mockSummaryFactory);
@@ -400,13 +416,12 @@ class SigRequirementsTest {
 
 	@Test
 	void getsCryptoCreateNoReceiverSigReq() throws Throwable {
-		// given:
 		setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO);
+		final var linkedRefs = new LinkedRefs();
 
-		// when:
-		final var summary = subject.keysForPayer(txn, summaryFactory);
+		final var summary = subject.keysForPayer(txn, summaryFactory, linkedRefs);
 
-		// then:
+		assertEquals(PRETEND_SIGNING_TIME, linkedRefs.getSourceSignedAt());
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
 	}
 
@@ -647,7 +662,7 @@ class SigRequirementsTest {
 	@Test
 	void reportsMissingCryptoTransferReceiver() throws Throwable {
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
@@ -669,7 +684,7 @@ class SigRequirementsTest {
 						TopicAdapter.throwingUoe(),
 						id -> null,
 						id -> null));
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -792,7 +807,7 @@ class SigRequirementsTest {
 	void reportsCryptoUpdateMissingAccount() throws Throwable {
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -995,7 +1010,7 @@ class SigRequirementsTest {
 	void reportsMissingFile() throws Throwable {
 		// given:
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1286,7 +1301,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1304,7 +1319,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1448,7 +1463,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1490,7 +1505,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1532,7 +1547,7 @@ class SigRequirementsTest {
 		// given:
 		setupFor(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1586,7 +1601,7 @@ class SigRequirementsTest {
 	void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
 		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -1604,7 +1619,7 @@ class SigRequirementsTest {
 		// given:
 		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
-		aMockSummaryFactory();
+		mockSummaryFactory();
 		// and:
 		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
@@ -2581,19 +2596,6 @@ class SigRequirementsTest {
 	}
 
 	@Test
-	void getsScheduleCreateWithNonwhitelistFunction() throws Throwable {
-		// given:
-		setupFor(SCHEDULE_CREATE_NOT_IN_WHITELIST);
-
-		// when:
-		var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		// then:
-		assertTrue(summary.hasErrorReport());
-		assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, summary.getErrorReport());
-	}
-
-	@Test
 	void getsScheduleCreateWithNonsense() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_NONSENSE);
@@ -2797,14 +2799,13 @@ class SigRequirementsTest {
 								hfsSigMetaLookup,
 								() -> accounts,
 								() -> topics,
-								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
-								SigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
-				new MockGlobalDynamicProps(),
+								DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
+								DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
 				signatureWaivers);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void aMockSummaryFactory() {
+	private void mockSummaryFactory() {
 		mockSummaryFactory = (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
 	}
 

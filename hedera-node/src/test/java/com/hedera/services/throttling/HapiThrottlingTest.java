@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,9 +41,11 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class HapiThrottlingTest {
 	@Mock
-	TimedFunctionalityThrottling delegate;
+	private TimedFunctionalityThrottling delegate;
+	@Mock
+	private Query query;
 
-	HapiThrottling subject;
+	private HapiThrottling subject;
 
 	@BeforeEach
 	void setUp() {
@@ -51,15 +54,15 @@ class HapiThrottlingTest {
 
 	@Test
 	void delegatesQueryWithSomeInstant() {
-		given(delegate.shouldThrottleQuery(any(), any())).willReturn(true);
+		given(delegate.shouldThrottleQuery(any(), any(), any())).willReturn(true);
 
 		// when:
-		var ans = subject.shouldThrottleQuery(ContractCallLocal);
+		var ans = subject.shouldThrottleQuery(ContractCallLocal, query);
 
 		// then:
 		assertTrue(ans);
 		// and:
-		verify(delegate).shouldThrottleQuery(eq(ContractCallLocal), any());
+		verify(delegate).shouldThrottleQuery(eq(ContractCallLocal), any(), any());
 	}
 
 	@Test
@@ -79,10 +82,27 @@ class HapiThrottlingTest {
 	}
 
 	@Test
+	void delegatesConsensusTxnWithSomeInstant() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		given(delegate.shouldThrottleTxn(any(), any())).willReturn(true);
+
+		// when:
+		var ans = subject.shouldThrottleTxn(accessor);
+
+		// then:
+		assertTrue(ans);
+		// and:
+		verify(delegate).shouldThrottleTxn(eq(accessor), any());
+	}
+
+	@Test
 	void unsupportedMethodsThrow() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.activeThrottlesFor(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.allActiveThrottles());
+		assertThrows(UnsupportedOperationException.class, () -> subject.wasLastTxnGasThrottled());
 	}
 
 	@Test
@@ -95,5 +115,25 @@ class HapiThrottlingTest {
 
 		// then:
 		verify(delegate).rebuildFor(defs);
+	}
+
+	@Test
+	void leakUnusedGasCallsDelegateLeakMethod() {
+		//when:
+		subject.leakUnusedGasPreviouslyReserved(12345L);
+
+		//then:
+		verify(delegate).leakUnusedGasPreviouslyReserved(12345L);
+	}
+
+	@Test
+	void gasLimitThrottleThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.gasLimitThrottle());
+	}
+
+	@Test
+	void applyGasConfigTest() {
+		subject.applyGasConfig();
+		verify(delegate).applyGasConfig();
 	}
 }

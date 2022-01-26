@@ -65,7 +65,12 @@
                         "CryptoGetAccountBalance",
                         "TransactionGetReceipt"
                     ],
-                    "opsPerSec": 1000000
+                    "opsPerSec": 10
+                }, {
+                    "operations": [
+                        "GetVersionInfo"
+                    ],
+                    "opsPerSec": 1
                 }
             ]
         }

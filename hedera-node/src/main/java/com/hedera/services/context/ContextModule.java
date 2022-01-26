@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,30 +31,30 @@ import java.time.Instant;
 import java.util.function.Supplier;
 
 @Module
-public abstract class ContextModule {
+public interface ContextModule {
 	@Binds
 	@Singleton
-	public abstract CurrentPlatformStatus bindCurrentPlatformStatus(ContextPlatformStatus contextPlatformStatus);
+	CurrentPlatformStatus bindCurrentPlatformStatus(ContextPlatformStatus contextPlatformStatus);
 
 	@Binds
 	@Singleton
-	public abstract TransactionContext bindTransactionContext(BasicTransactionContext txnCtx);
+	TransactionContext bindTransactionContext(BasicTransactionContext txnCtx);
 
 	@Provides
 	@Singleton
-	public static Supplier<Instant> provideConsensusTime(TransactionContext txnCtx) {
+	static Supplier<Instant> provideConsensusTime(TransactionContext txnCtx) {
 		return txnCtx::consensusTime;
 	}
 
 	@Provides
 	@Singleton
-	public static AccountID provideEffectiveNodeAccount(NodeInfo nodeInfo) {
+	static AccountID provideEffectiveNodeAccount(NodeInfo nodeInfo) {
 		return nodeInfo.hasSelfAccount() ? nodeInfo.selfAccount() : AccountID.getDefaultInstance();
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<BinaryObjectStore> provideBinaryObjectStore() {
+	static Supplier<BinaryObjectStore> provideBinaryObjectStore() {
 		return BinaryObjectStore::getInstance;
 	}
 }

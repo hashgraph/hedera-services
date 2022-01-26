@@ -1,0 +1,22 @@
+{
+    "buckets": [
+        {
+            "name": "ArtificialScarcity",
+            "burstPeriod": 5,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "ContractCall"
+                    ],
+                    "milliOpsPerSec": 800
+                },
+                {
+                    "operations": [
+                        "CryptoTransfer"
+                    ],
+                    "opsPerSec": 100
+                }
+            ]
+        }
+    ]
+}

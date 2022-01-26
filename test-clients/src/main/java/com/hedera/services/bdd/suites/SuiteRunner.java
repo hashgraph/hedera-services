@@ -52,6 +52,16 @@ import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
+import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
@@ -103,6 +113,7 @@ import com.hedera.services.bdd.suites.perf.contract.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallLocalPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractCallPerfSuite;
 import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
+import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
@@ -417,6 +428,17 @@ public class SuiteRunner {
 		put("ContractCallPerfSuite", aof(ContractCallPerfSuite::new));
 		put("ContractPerformanceSuite", aof(ContractPerformanceSuite::new));
 		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+		put("FibonacciPlusLoadProvider", aof(FibonacciPlusLoadProvider::new));
+		put("AssociatePrecompileSuite", aof(AssociatePrecompileSuite::new));
+		put("ContractBurnHTSSuite", aof(ContractBurnHTSSuite::new));
+		put("ContractHTSSuite", aof(ContractHTSSuite::new));
+		put("ContractKeysHTSSuite", aof(ContractKeysHTSSuite::new));
+		put("ContractMintHTSSuite", aof(ContractMintHTSSuite::new));
+		put("CryptoTransferHTSSuite", aof(CryptoTransferHTSSuite::new));
+		put("DelegatePrecompileSuite", aof(DelegatePrecompileSuite::new));
+		put("DissociatePrecompileSuite", aof(DissociatePrecompileSuite::new));
+		put("DynamicGasCostSuite", aof(DynamicGasCostSuite::new));
+		put("MixedHTSPrecompileTestsSuite", aof(MixedHTSPrecompileTestsSuite::new));
 		/* Functional tests - AUTORENEW */
 		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */

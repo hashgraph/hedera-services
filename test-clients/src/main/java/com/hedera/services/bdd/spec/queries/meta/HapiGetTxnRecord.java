@@ -55,6 +55,8 @@ import org.junit.jupiter.api.Assertions;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +78,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -89,13 +90,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private boolean assertNothing = false;
 	private boolean useDefaultTxnId = false;
 	private boolean requestDuplicates = false;
-	private boolean shouldBeTransferFree = false;
 	private boolean requestChildRecords = false;
+	private boolean shouldBeTransferFree = false;
 	private boolean assertOnlyPriority = false;
 	private boolean assertNothingAboutHashes = false;
 	private boolean lookupScheduledFromRegistryId = false;
 	private boolean omitPaymentHeaderOnCostAnswer = false;
-	private boolean hasAliasInChildRecord = false;
 	private List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
@@ -104,6 +104,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
+	private Optional<List<TransactionRecordAsserts>> childRecordsExpectations = Optional.empty();
 	private Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	private Optional<String> creationName = Optional.empty();
 	private Optional<String> saveTxnRecordToRegistry = Optional.empty();
@@ -115,8 +116,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
-	private Optional<Integer> childRecordNumber = Optional.empty();
-	private Optional<String> aliasKey = Optional.empty();
+	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+
+	private static record ExpectedChildInfo(String aliasingKey) {
+	}
+
+	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -133,6 +138,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	@Override
 	protected HapiGetTxnRecord self() {
+		return this;
+	}
+
+	public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
+		this.observer = Optional.of(observer);
 		return this;
 	}
 
@@ -163,13 +173,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord assertingNothingAboutHashes() {
-		assertNothingAboutHashes = true;
+	public HapiGetTxnRecord andAllChildRecords() {
+		requestChildRecords = true;
 		return this;
 	}
 
-	public HapiGetTxnRecord andAllChildRecords() {
-		requestChildRecords = true;
+	public HapiGetTxnRecord assertingNothingAboutHashes() {
+		assertNothingAboutHashes = true;
 		return this;
 	}
 
@@ -179,11 +189,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasAliasInChildRecord(final String validAlias, int num) {
+	public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
 		requestChildRecords = true;
-		hasAliasInChildRecord = true;
-		childRecordNumber = Optional.of(num);
-		aliasKey = Optional.of(validAlias);
+		childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey));
 		return this;
 	}
 
@@ -229,6 +237,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord hasPriority(TransactionRecordAsserts provider) {
 		priorityExpectations = Optional.of(provider);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts ...providers) {
+		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
 
@@ -301,6 +314,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualRecord.getTransferList())));
 	}
 
+	private void assertChildRecords(HapiApiSpec spec, List<TransactionRecord> actualRecords) throws Throwable {
+		if (childRecordsExpectations.isPresent()) {
+			final var expectedChildRecords = childRecordsExpectations.get();
+
+			assertEquals(expectedChildRecords.size(), actualRecords.size(), String.format("Expected %d child records, got %d", expectedChildRecords.size(), actualRecords.size()));
+			for (int i = 0; i < actualRecords.size(); i++) {
+				final var expectedChildRecord = expectedChildRecords.get(i);
+				final var actualChildRecord = actualRecords.get(i);
+
+				ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
+				List<Throwable> errors = asserts.errorsIn(actualChildRecord);
+				rethrowSummaryError(log, "Bad child records!", errors);
+				expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualChildRecord.getTransferList())));
+			}
+		}
+	}
+
 	private void assertDuplicates(HapiApiSpec spec) throws Throwable {
 		if (duplicateExpectations.isPresent()) {
 			var asserts = duplicateExpectations.get().assertsFor(spec);
@@ -357,7 +387,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
-		final var actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+		final var txRecord = response.getTransactionGetRecord();
+		final var actualRecord = txRecord.getTransactionRecord();
+		assertCorrectRecord(spec, actualRecord);
+
+		final var childRecords = txRecord.getChildTransactionRecordsList();
+		assertChildRecords(spec, childRecords);
+	}
+
+	private void assertCorrectRecord(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		assertPriority(spec, actualRecord);
 		if (scheduled || assertOnlyPriority) {
 			return;
@@ -417,10 +455,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 							asTokenId(pair.getLeft(), spec),
 							asId(pair.getRight(), spec), actualNewTokenAssociations));
 		}
-		if (hasAliasInChildRecord) {
-			assertFalse(childRecords.get(childRecordNumber.get()).getAlias().isEmpty());
-			assertEquals(spec.registry().getKey(aliasKey.get()).toByteString().toStringUtf8(),
-					childRecords.get(childRecordNumber.get()).getAlias().toStringUtf8());
+		if (!childExpectations.isEmpty()) {
+			for (final var index : childExpectations.keySet()) {
+				final var expectations = childExpectations.get(index);
+				if (expectations.aliasingKey() != null) {
+					final var childRecord = childRecords.get(index);
+					final var literalKey = spec.registry().getKey(expectations.aliasingKey());
+					assertEquals(literalKey.toByteString().toStringUtf8(), childRecord.getAlias().toStringUtf8());
+				}
+			}
 		}
 	}
 
@@ -548,6 +591,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
 		for (var rec : childRecords) {

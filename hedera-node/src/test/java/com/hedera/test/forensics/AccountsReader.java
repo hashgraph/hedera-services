@@ -67,7 +67,7 @@ public class AccountsReader {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 
-		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
+		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)))) {
 			MerkleMap<EntityNum, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
 			return fcm;
 		}

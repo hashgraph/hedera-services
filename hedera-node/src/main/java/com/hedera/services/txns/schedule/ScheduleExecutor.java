@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public final class ScheduleExecutor {
 	@Inject
 	public ScheduleExecutor() {
+		// Default constructor
 	}
 
 	/**

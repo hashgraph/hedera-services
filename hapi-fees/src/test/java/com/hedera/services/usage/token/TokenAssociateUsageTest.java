@@ -67,7 +67,7 @@ class TokenAssociateUsageTest {
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
 
-		TxnUsage.estimatorFactory = factory;
+		TxnUsage.setEstimatorFactory(factory);
 	}
 
 	@Test

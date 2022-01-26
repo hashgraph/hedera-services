@@ -23,9 +23,9 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
@@ -35,11 +35,13 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -48,16 +50,20 @@ import java.util.Set;
  */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
+	private CodeCache codeCache;
 
 	@Inject
 	public CreateEvmTxProcessor(
-			HederaWorldState worldState,
-			HbarCentExchange exchange,
-			UsagePricesProvider usagePrices,
-			GlobalDynamicProperties globalDynamicProperties,
-			GasCalculator gasCalculator,
-			Set<Operation> hederaOperations) {
-		super(worldState, exchange, usagePrices, globalDynamicProperties, gasCalculator, hederaOperations);
+			final HederaMutableWorldState worldState,
+			final LivePricesSource livePricesSource,
+			final CodeCache codeCache,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final GasCalculator gasCalculator,
+			final Set<Operation> hederaOperations,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		this.codeCache = codeCache;
 	}
 
 	public TransactionProcessingResult execute(
@@ -67,12 +73,22 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes code,
 			final Instant consensusTime,
-			final long expiry) {
+			final long expiry
+	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
-		return super.execute(sender, receiver, gasPrice, providedGasLimit, value, code, true, consensusTime, false, Optional.of(expiry));
+		return super.execute(
+				sender,
+				receiver,
+				gasPrice,
+				providedGasLimit,
+				value,
+				code,
+				true,
+				consensusTime,
+				false,
+				OptionalLong.of(expiry));
 	}
-
 
 	@Override
 	protected HederaFunctionality getFunctionType() {
@@ -80,7 +96,23 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	}
 
 	@Override
-	protected MessageFrame buildInitialFrame(MessageFrame.Builder commonInitialFrame, HederaWorldState.Updater updater, Address to, Bytes payload) {
+	protected MessageFrame buildInitialFrame(
+			final MessageFrame.Builder commonInitialFrame,
+			final HederaWorldUpdater updater,
+			final Address to,
+			final Bytes payload
+	) {
+		// Must invalidate cache for contract address to avoid ISS when a contract create +
+		// call are performed in the same round. Scenario that could cause issue:
+		//
+		// 1. pre-fetch ContractCall - tries to find bytes, caches Bytes.EMPTY
+		// 2. handle ContractCreate - populates bytes into storage
+		// 3. handle ContractCall - fetches bytes from cache, receives Bytes.EMPTY
+		//
+		// Cache invalidation will cause (3) to retrieve the correct bytes.
+		//
+		codeCache.invalidate(to);
+
 		return commonInitialFrame
 				.type(MessageFrame.Type.CONTRACT_CREATION)
 				.address(to)

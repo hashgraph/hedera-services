@@ -29,8 +29,11 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Inject;
+import java.util.Map;
+import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link CallOperation}.
@@ -45,23 +48,29 @@ import javax.inject.Inject;
  */
 public class HederaCallOperation extends CallOperation {
 	private final SoliditySigsVerifier sigsVerifier;
+	private final BiPredicate<Address, MessageFrame> addressValidator;
+	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaCallOperation(
-			SoliditySigsVerifier sigsVerifier,
-			GasCalculator gasCalculator) {
+			final SoliditySigsVerifier sigsVerifier,
+			final GasCalculator gasCalculator,
+			final BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
+		this.addressValidator = addressValidator;
+		this.precompiledContractMap = precompiledContractMap;
 	}
 
 	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
+	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
 				frame,
 				to(frame),
 				() -> cost(frame),
-				() -> super.execute(frame, evm)
-		);
+				() -> super.execute(frame, evm),
+				addressValidator,
+				precompiledContractMap);
 	}
 }

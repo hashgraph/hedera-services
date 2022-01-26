@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,7 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -30,41 +28,34 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
-import java.util.function.Function;
-
-import static com.hedera.services.sigs.metadata.ScheduleSigningMetadata.from;
-import static com.hedera.services.sigs.metadata.TokenSigningMetadata.from;
-import static com.hedera.services.sigs.metadata.lookups.SafeLookupResult.failure;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
+import javax.annotation.Nullable;
+import java.time.Instant;
 
 /**
  * Defines a type able to look up metadata associated to the signing activities
  * of any Hedera entity (account, smart contract, file, topic, or token).
  */
 public interface SigMetadataLookup {
-	Function<
-			TokenStore,
-			Function<TokenID, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
-		TokenID id;
-		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
-				? failure(MISSING_TOKEN)
-				: new SafeLookupResult<>(from(tokenStore.get(id)));
-	};
-	Function<
-			ScheduleStore,
-			Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>> SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
-		ScheduleID id;
-		return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
-				? failure(MISSING_SCHEDULE)
-				: new SafeLookupResult<>(from(scheduleStore.get(id)));
-	};
+	SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
+			FileID id, @Nullable LinkedRefs linkedRefs);
 
-	SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id);
-	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
-	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id);
-	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
-	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id);
-	SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id);
-	SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias);
+	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
+			TopicID id, @Nullable LinkedRefs linkedRefs);
+
+	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
+			TokenID id, @Nullable LinkedRefs linkedRefs);
+
+	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
+			AccountID id, @Nullable LinkedRefs linkedRefs);
+
+	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
+			ScheduleID id, @Nullable LinkedRefs linkedRefs);
+
+	SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(
+			ContractID id, @Nullable LinkedRefs linkedRefs);
+
+	SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
+			AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
+
+	Instant sourceSignedAt();
 }

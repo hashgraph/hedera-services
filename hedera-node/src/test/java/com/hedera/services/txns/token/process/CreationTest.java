@@ -117,8 +117,8 @@ class CreationTest {
 		subject.persist();
 
 		verify(tokenStore).persistNew(provisionalToken);
-		verify(tokenStore).persistTokenRelationships(List.of(newRel));
-		verify(accountStore).persistAccount(treasury);
+		verify(tokenStore).commitTokenRelationships(List.of(newRel));
+		verify(accountStore).commitAccount(treasury);
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class CreationTest {
 
 		assertSame(treasury, subject.getTreasury());
 		assertNull(subject.getAutoRenew());
-		assertEquals(provisionalId, subject.getProvisionalId());
+		assertEquals(provisionalId, subject.newTokenId());
 	}
 
 	@Test

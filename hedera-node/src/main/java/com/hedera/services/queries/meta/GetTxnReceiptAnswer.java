@@ -9,9 +9,9 @@ package com.hedera.services.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 
 @Singleton
 public class GetTxnReceiptAnswer implements AnswerService {
-	private final TransactionID DEFAULT_TXN_ID = TransactionID.getDefaultInstance();
+	private final TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 	private final RecordCache recordCache;
 
 	@Inject
@@ -90,7 +90,7 @@ public class GetTxnReceiptAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		boolean isOk = (!DEFAULT_TXN_ID.equals(query.getTransactionGetReceipt().getTransactionID()));
+		boolean isOk = (!defaultTxnId.equals(query.getTransactionGetReceipt().getTransactionID()));
 
 		return isOk ? OK : INVALID_TRANSACTION_ID;
 	}

@@ -82,8 +82,10 @@ public class BasicTransactionContext implements TransactionContext {
 
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -98,6 +100,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private List<FcAssessedCustomFee> assessedCustomFees;
 
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
+	private ContractFunctionResult contractFunctionResult;
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
@@ -147,6 +150,7 @@ public class BasicTransactionContext implements TransactionContext {
 		ids.resetProvisionalIds();
 		recordSoFar.reset();
 		sideEffectsTracker.reset();
+		contractFunctionResult = null;
 	}
 
 	@Override
@@ -186,14 +190,14 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public ExpirableTxnRecord.Builder recordSoFar() {
-		final var receipt = receiptSoFar();
+		final var receiptBuilder = receiptSoFar();
 		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
 		recordSoFar = creator.createTopLevelRecord(
 				totalFees,
 				hash,
 				accessor,
 				consensusTime,
-				receipt,
+				receiptBuilder,
 				assessedCustomFees,
 				sideEffectsTracker);
 
@@ -274,11 +278,13 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCallResult(final ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(final ContractFunctionResult result) {
+		this.contractFunctionResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
 
@@ -313,6 +319,16 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public List<ExpiringEntity> expiringEntities() {
 		return expiringEntities;
+	}
+
+	@Override
+	public boolean hasContractResult() {
+		return contractFunctionResult != null;
+	}
+
+	@Override
+	public long getGasUsedForContractTxn() {
+		return contractFunctionResult.getGasUsed();
 	}
 
 	/* --- Used by unit tests --- */

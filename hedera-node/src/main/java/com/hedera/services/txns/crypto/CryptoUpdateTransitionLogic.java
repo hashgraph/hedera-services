@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -74,23 +75,24 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -112,6 +114,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 
 			ledger.customize(target, customizer);
+			sigImpactHistorian.markEntityChanged(target.getAccountNum());
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
@@ -132,14 +135,12 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		final var changes = customizer.getChanges();
 		final var keyChanges = customizer.getChanges().keySet();
 
-		if (ledger.isDetached(target)) {
-			if (!keyChanges.equals(EXPIRY_ONLY)) {
-				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-			}
+		if (ledger.isDetached(target) && !keyChanges.equals(EXPIRY_ONLY)) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 
 		if (keyChanges.contains(AccountProperty.EXPIRY)) {
-			final long newExpiry = (long)changes.get(AccountProperty.EXPIRY);
+			final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
 			if (newExpiry < ledger.expiry(target)) {
 				return EXPIRATION_REDUCTION_NOT_ALLOWED;
 			}
@@ -196,7 +197,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {

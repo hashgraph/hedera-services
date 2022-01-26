@@ -42,6 +42,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 @Singleton
 public class AliasManager {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
+
 	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
@@ -49,12 +50,12 @@ public class AliasManager {
 		this.aliases = new HashMap<>();
 	}
 
-	public Map<ByteString, EntityNum> getAliases() {
-		return aliases;
+	public void link(final ByteString alias, final EntityNum num) {
+		aliases.put(alias, num);
 	}
 
-	public void createAlias(final ByteString alias, final EntityNum num) {
-		aliases.put(alias, num);
+	public void unlink(final ByteString alias) {
+		aliases.remove(alias);
 	}
 
 	/**
@@ -80,12 +81,25 @@ public class AliasManager {
 	 * 		entity id that is expired
 	 * @param accounts
 	 * 		current accounts map
+	 * @return whether the alias was forgotten
 	 */
-	public void forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
+	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var alias = accounts.get(expiredId).getAlias();
 		if (!alias.isEmpty()) {
 			aliases.remove(alias);
+			return true;
 		}
+		return false;
+	}
+
+	/**
+	 * Returns if there is an account linked the given alias.
+	 *
+	 * @param alias the alias of interest
+	 * @return whether there is a linked account
+	 */
+	public boolean contains(final ByteString alias) {
+		return aliases.containsKey(alias);
 	}
 
 	/**
@@ -99,12 +113,12 @@ public class AliasManager {
 		return aliases.getOrDefault(alias, MISSING_NUM);
 	}
 
-	/* Only for unit tests */
-	public void setAliases(final Map<ByteString, EntityNum> map) {
-		this.aliases = map;
+	/* --- Only used by unit tests --- */
+	void setAliases(final Map<ByteString, EntityNum> aliases) {
+		this.aliases = aliases;
 	}
 
-	public boolean contains(final ByteString alias) {
-		return aliases.containsKey(alias);
+	Map<ByteString, EntityNum> getAliases() {
+		return aliases;
 	}
 }

@@ -21,11 +21,10 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -119,9 +117,6 @@ class RenewalHelperTest {
 	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
 	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
-	private final HashMap<ByteString, EntityNum> autoAccountsMap = new HashMap();
-
-	private final HederaNumbers nums = new MockHederaNumbers();
 
 	{
 		deletedToken.setDeleted(true);
@@ -142,23 +137,23 @@ class RenewalHelperTest {
 	private TokenStore tokenStore;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private RenewalHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accounts, () -> tokenRels,
-				backingAccounts, aliasManager);
-		addEntitiesToAutoAccountsMap();
+		subject = new RenewalHelper(tokenStore, sigImpactHistorian, dynamicProps,
+				() -> tokens, () -> accounts, () -> tokenRels, backingAccounts, aliasManager);
 	}
 
-	private void addEntitiesToAutoAccountsMap() {
-		autoAccountsMap.put(nonExpiredAccount.getAlias(), EntityNum.fromLong(nonExpiredAccountNum));
-		autoAccountsMap.put(expiredAccountZeroBalance.getAlias(), EntityNum.fromLong(brokeExpiredAccountNum));
-		autoAccountsMap.put(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
-		autoAccountsMap.put(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
-		autoAccountsMap.put(fundingAccount.getAlias(), EntityNum.fromLong(98));
-		aliasManager.setAliases(autoAccountsMap);
+	private void linkWellKnownEntities(final AliasManager liveAliasManager) {
+		liveAliasManager.link(nonExpiredAccount.getAlias(), EntityNum.fromLong(nonExpiredAccountNum));
+		liveAliasManager.link(expiredAccountZeroBalance.getAlias(), EntityNum.fromLong(brokeExpiredAccountNum));
+		liveAliasManager.link(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
+		liveAliasManager.link(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
+		liveAliasManager.link(fundingAccount.getAlias(), EntityNum.fromLong(98));
 	}
 
 	@Test
@@ -280,7 +275,6 @@ class RenewalHelperTest {
 
 	@Test
 	void removesLastClassifiedIfAppropriate() {
-		// setup:
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
@@ -291,19 +285,19 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 		given(accounts.get(expiredKey)).willReturn(expiredAccountZeroBalance);
+		given(aliasManager.forgetAliasIfPresent(expiredKey, accounts)).willReturn(true);
 
-		// when:
 		subject.classify(brokeExpiredAccountNum, now);
-		assertTrue(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
-		// and:
+
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
-		// then:
 		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
+		verify(sigImpactHistorian).markEntityChanged(brokeExpiredAccountNum);
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
+		verify(sigImpactHistorian).markAliasChanged(expiredAccountZeroBalance.getAlias());
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
@@ -317,14 +311,17 @@ class RenewalHelperTest {
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		AliasManager aliasManager = new AliasManager();
-		aliasManager.setAliases(autoAccountsMap);
-		BackingAccounts backingAccounts = new BackingAccounts(() -> accountsMap);
+		AliasManager liveAliasManager = new AliasManager();
+		linkWellKnownEntities(liveAliasManager);
+
+		final var backingAccounts = new BackingAccounts(() -> accountsMap);
 		backingAccounts.put(IdUtils.asAccount("0.0." + nonExpiredAccountNum), nonExpiredAccount);
 		backingAccounts.put(IdUtils.asAccount("0.0." + brokeExpiredAccountNum), expiredAccountZeroBalance);
 
-		subject = new RenewalHelper(tokenStore, dynamicProps, () -> tokens, () -> accountsMap, () -> tokenRels,
-				backingAccounts, aliasManager);
+		subject = new RenewalHelper(
+				tokenStore, sigImpactHistorian, dynamicProps, 
+                                () -> tokens, () -> accountsMap, () -> tokenRels,
+				backingAccounts, liveAliasManager);
 
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
@@ -335,14 +332,13 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 
-		assertTrue(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
+		assertTrue(liveAliasManager.contains(expiredAccountZeroBalance.getAlias()));
 		assertTrue(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
 
 		subject.classify(brokeExpiredAccountNum, now);
 		subject.removeLastClassifiedAccount();
 
 		assertFalse(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
-		assertFalse(autoAccountsMap.containsKey(expiredAccountZeroBalance.getAlias()));
 	}
 
 	@Test

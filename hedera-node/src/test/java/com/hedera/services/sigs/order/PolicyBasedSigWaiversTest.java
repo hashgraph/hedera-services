@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -171,17 +171,18 @@ class PolicyBasedSigWaiversTest {
 
 	@Test
 	void allMethodsRequireExpectedTxnType() {
+		final var txn = TransactionBody.getDefaultInstance();
 		// expect:
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isAppendFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isAppendFileWaclWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetAccountKeyWaived(TransactionBody.getDefaultInstance()));
+				subject.isTargetAccountKeyWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewAccountKeyWaived(TransactionBody.getDefaultInstance()));
+				subject.isNewAccountKeyWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isTargetFileWaclWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isNewFileWaclWaived(txn));
 	}
 
 	private final AccountID treasury = IdUtils.asAccount("0.0.2");

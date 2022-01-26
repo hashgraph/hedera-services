@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -66,23 +67,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final HederaLedger ledger;
 	private final OptionValidator validator;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
-			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties
+			final HederaLedger ledger,
+			final OptionValidator validator,
+			final SigImpactHistorian sigImpactHistorian,
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -94,7 +96,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
 			long balance = op.getInitialBalance();
-			AccountID created = ledger.create(sponsor, balance, asCustomizer(op));
+			final var created = ledger.create(sponsor, balance, asCustomizer(op));
+			sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
@@ -132,7 +135,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {

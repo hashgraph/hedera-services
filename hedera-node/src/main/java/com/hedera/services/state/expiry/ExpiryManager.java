@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -70,6 +71,7 @@ public class ExpiryManager {
 	private final long realm;
 
 	private final ScheduleStore scheduleStore;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules;
@@ -83,6 +85,7 @@ public class ExpiryManager {
 	public ExpiryManager(
 			final ScheduleStore scheduleStore,
 			final HederaNumbers hederaNums,
+			final SigImpactHistorian sigImpactHistorian,
 			final Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<MerkleMap<EntityNum, MerkleSchedule>> schedules
@@ -91,6 +94,7 @@ public class ExpiryManager {
 		this.schedules = schedules;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
+		this.sigImpactHistorian = sigImpactHistorian;
 
 		this.shard = hederaNums.shard();
 		this.realm = hederaNums.realm();
@@ -132,12 +136,12 @@ public class ExpiryManager {
 		txnHistories.clear();
 		payerRecordExpiries.reset();
 
-		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
+		final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		final var currentAccounts = accounts.get();
 		forEach(currentAccounts, (id, account) ->
-				stageExpiringRecords(id.longValue(), account.records(), _payerExpiries));
-		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
-		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
+				stageExpiringRecords(id.longValue(), account.records(), payerExpiries));
+		payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
+		payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
 		txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
 	}
@@ -153,17 +157,17 @@ public class ExpiryManager {
 	public void reviewExistingShortLivedEntities() {
 		shortLivedEntityExpiries.reset();
 
-		final var _shortLivedEntityExpiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
+		final var shortLivedExpiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
 		final var currentSchedules = schedules.get();
 		forEach(currentSchedules, (id, schedule) -> {
 			final Consumer<EntityId> consumer = scheduleStore::expire;
 			final var pair = Pair.of(id.longValue(), consumer);
-			_shortLivedEntityExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
+			shortLivedExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
 
-		_shortLivedEntityExpiries.sort(comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue).
+		shortLivedExpiries.sort(comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue).
 				thenComparing(entry -> entry.getKey().getKey()));
-		_shortLivedEntityExpiries.forEach(entry -> shortLivedEntityExpiries.track(entry.getKey(), entry.getValue()));
+		shortLivedExpiries.forEach(entry -> shortLivedEntityExpiries.track(entry.getKey(), entry.getValue()));
 	}
 
 	void trackRecordInState(final AccountID owner, final long expiry) {
@@ -199,7 +203,9 @@ public class ExpiryManager {
 	private void purgeExpiredShortLivedEntities(final long now) {
 		while (shortLivedEntityExpiries.hasExpiringAt(now)) {
 			final var current = shortLivedEntityExpiries.expireNextAt(now);
-			current.getValue().accept(entityWith(current.getKey()));
+			final var expiredNum = (long) current.getKey();
+			current.getValue().accept(entityWith(expiredNum));
+			sigImpactHistorian.markEntityChanged(expiredNum);
 		}
 	}
 

@@ -104,9 +104,10 @@ public class RecordCache {
 
 	public TxnReceipt getPriorityReceipt(final TransactionID txnId) {
 		final var recentHistory = histories.get(txnId);
-		return recentHistory != null
-				? receiptFrom(recentHistory)
-				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
+		if (recentHistory != null) {
+			return receiptFrom(recentHistory);
+		}
+		return timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null;
 	}
 
 	public List<TransactionRecord> getDuplicateRecords(final TransactionID txnId) {
@@ -157,7 +158,7 @@ public class RecordCache {
 		if (recentHistory == null) {
 			return Collections.emptyList();
 		} else {
-			return recentHistory.duplicateRecords()
+			return recentHistory.allDuplicateRecords()
 					.stream()
 					.map(ExpirableTxnRecord::asGrpc)
 					.toList();

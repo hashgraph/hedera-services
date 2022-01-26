@@ -22,9 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.init.ServicesInitFlow;
-import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -34,10 +32,12 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -71,6 +71,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -84,6 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -95,6 +97,7 @@ class ServicesStateTest {
 	private final Instant creationTime = Instant.ofEpochSecond(1_234_567L, 8);
 	private final Instant consensusTime = Instant.ofEpochSecond(2_345_678L, 9);
 	private final NodeId selfId = new NodeId(false, 1L);
+	private static final String bookMemo = "0.0.4";
 
 	@Mock
 	private HashLogger hashLogger;
@@ -121,15 +124,11 @@ class ServicesStateTest {
 	@Mock
 	private ProcessLogic logic;
 	@Mock
-	private ExpansionHelper expansionHelper;
-	@Mock
 	private PlatformTxnAccessor txnAccessor;
 	@Mock
 	private ExpandHandleSpan expandHandleSpan;
 	@Mock
-	private SigRequirements retryingKeyOrder;
-	@Mock
-	private PubKeyToSigBytes pubKeyToSigBytes;
+	private SigReqsManager sigReqsManager;
 	@Mock
 	private StateAccessor workingState;
 	@Mock
@@ -138,6 +137,10 @@ class ServicesStateTest {
 	private ServicesInitFlow initFlow;
 	@Mock
 	private ServicesApp.Builder appBuilder;
+	@Mock
+	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
+	@Mock
+	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -157,6 +160,7 @@ class ServicesStateTest {
 	@Test
 	void logsSummaryAsExpectedWithAppAvailable() {
 		// setup:
+		final var consTime = Instant.ofEpochSecond(1_234_567L);
 		subject.setMetadata(metadata);
 
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
@@ -164,6 +168,8 @@ class ServicesStateTest {
 		given(metadata.app()).willReturn(app);
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		given(networkContext.consensusTimeOfLastHandledTxn()).willReturn(consTime);
 		given(networkContext.summarizedWith(dualStateAccessor)).willReturn("IMAGINE");
 
 		// when:
@@ -172,6 +178,8 @@ class ServicesStateTest {
 		// then:
 		verify(hashLogger).logHashesFor(subject);
 		assertEquals("IMAGINE", logCaptor.infoLogs().get(0));
+		assertEquals(consTime, subject.getTimeOfLastHandledTxn());
+		assertEquals(StateVersions.CURRENT_VERSION, subject.getStateVersion());
 	}
 
 	@Test
@@ -233,7 +241,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(7)).archive();
+		verify(mockMm, times(6)).archive();
 	}
 
 	@Test
@@ -248,17 +256,16 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
-		given(app.expansionHelper()).willReturn(expansionHelper);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
-		given(app.retryingSigReqs()).willReturn(retryingKeyOrder);
-		given(txnAccessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
+		given(app.prefetchProcessor()).willReturn(prefetchProcessor);
+		given(app.sigReqsManager()).willReturn(sigReqsManager);
 		given(expandHandleSpan.track(transaction)).willReturn(txnAccessor);
 
 		// when:
 		subject.expandSignatures(transaction);
 
 		// then:
-		verify(expansionHelper).expandIn(txnAccessor, retryingKeyOrder, pubKeyToSigBytes);
+		verify(sigReqsManager).expandSigsInto(txnAccessor);
 	}
 
 	@Test
@@ -285,6 +292,7 @@ class ServicesStateTest {
 		subject.setMetadata(metadata);
 
 		given(metadata.app()).willReturn(app);
+		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(app.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.track(transaction)).willThrow(ConcurrentModificationException.class);
 
@@ -343,22 +351,21 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0180() {
+	void minimumVersionIsRelease0190() {
 		// expect:
 		assertEquals(StateVersions.RELEASE_0190_AND_020_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		// expect:
-		assertThrows(IllegalArgumentException.class,
-				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
+				StateChildIndices.NUM_PRE_0220_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0160_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0210_VERSION));
+				StateChildIndices.NUM_0220_CHILDREN,
+				subject.getMinimumChildCount(StateVersions.RELEASE_0220_VERSION));
+		assertThrows(IllegalArgumentException.class,
+				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.CURRENT_VERSION + 1));
 	}
@@ -371,6 +378,17 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void defersInitWhenInitializingFromRelease0190() {
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
+
+		subject.init(platform, addressBook, dualState);
+
+		assertSame(platform, subject.getPlatformForDeferredInit());
+		assertSame(addressBook, subject.getAddressBookForDeferredInit());
+		assertSame(dualState, subject.getDualStateForDeferredInit());
+	}
+
+	@Test
 	void doesntThrowWhenDualStateIsNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
@@ -378,6 +396,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -387,12 +406,31 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0200() {
+	void doesntMigrateWhenInitializingFromRelease0220() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0210_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0210() {
+		ServicesState.setBlobMigrator(blobMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+
+		subject.migrate();
+
+		verify(blobMigrator).migrateFromBinaryObjectStore(
+				subject, StateVersions.RELEASE_0210_VERSION);
+		verify(subject).init(platform, addressBook, dualState);
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
 	}
 
 	@Test
@@ -400,8 +438,11 @@ class ServicesStateTest {
 		// setup:
 		ServicesState.setAppBuilder(() -> appBuilder);
 
+		given(addressBook.getAddress(selfId.getId())).willReturn(address);
+		given(address.getMemo()).willReturn(bookMemo);
 		given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
-		given(appBuilder.initialState(subject)).willReturn(appBuilder);
+		given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
+		given(appBuilder.initialHash(EMPTY_HASH)).willReturn(appBuilder);
 		given(appBuilder.platform(platform)).willReturn(appBuilder);
 		given(appBuilder.selfId(1L)).willReturn(appBuilder);
 		given(appBuilder.build()).willReturn(app);
@@ -409,6 +450,7 @@ class ServicesStateTest {
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(app.workingState()).willReturn(workingState);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -426,15 +468,17 @@ class ServicesStateTest {
 		assertNotNull(subject.scheduleTxs());
 		assertNotNull(subject.networkCtx());
 		assertNotNull(subject.runningHashLeaf());
+		assertNotNull(subject.contractStorage());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
+		verify(workingState).updateChildrenFrom(subject);
 		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
-		verify(appBuilder).initialState(subject);
+		verify(appBuilder).initialHash(EMPTY_HASH);
 		verify(appBuilder).platform(platform);
 		verify(appBuilder).selfId(selfId.getId());
 		// and:
@@ -452,6 +496,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -503,6 +548,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -525,6 +571,7 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -577,7 +624,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		verify(workingState).updateFrom(copy);
+		verify(workingState).updateChildrenFrom(copy);
 	}
 
 	@Test

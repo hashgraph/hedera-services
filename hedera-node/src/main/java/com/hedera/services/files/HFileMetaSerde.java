@@ -47,9 +47,10 @@ public class HFileMetaSerde {
 	}
 
 	public static DomainSerdes serdes = new DomainSerdes();
-	public static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
-	public static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
-	public static Function<OutputStream, SerializableDataOutputStream> serOutFactory = SerializableDataOutputStream::new;
+	private static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
+	private static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
+	private static Function<OutputStream, SerializableDataOutputStream> serOutFactory =
+			SerializableDataOutputStream::new;
 
 	public static byte[] serialize(HFileMeta meta) throws IOException {
 		return streamContentDiscovery.discoverFor(out -> {
@@ -71,16 +72,7 @@ public class HFileMetaSerde {
 		}
 	}
 
-	private static HFileMeta readMemoMeta(DataInputStream in) throws IOException {
-		var serIn = serInFactory.apply(in);
-		var isDeleted = serIn.readBoolean();
-		var expiry = serIn.readLong();
-		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
-		return new HFileMeta(isDeleted, wacl, expiry, memo);
-	}
-
-	private static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
+	static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
 		long objectType = in.readLong();
 		if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
 			throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
@@ -90,11 +82,40 @@ public class HFileMetaSerde {
 		return unpack(in);
 	}
 
+	private static HFileMeta readMemoMeta(DataInputStream in) throws IOException {
+		var serIn = serInFactory.apply(in);
+		var isDeleted = serIn.readBoolean();
+		var expiry = serIn.readLong();
+		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
+		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
+		return new HFileMeta(isDeleted, wacl, expiry, memo);
+	}
+
 	private static HFileMeta unpack(DataInputStream stream) throws IOException {
 		boolean deleted = stream.readBoolean();
 		long expirationTime = stream.readLong();
 		byte[] key = stream.readAllBytes();
 		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
 		return new HFileMeta(deleted, wacl, expirationTime);
+	}
+
+	/* used for unit tests */
+	public static StreamContentDiscovery getStreamContentDiscovery() {
+		return streamContentDiscovery;
+	}
+
+	public static void setStreamContentDiscovery(
+			final StreamContentDiscovery streamContentDiscovery) {
+		HFileMetaSerde.streamContentDiscovery = streamContentDiscovery;
+	}
+
+	public static void setSerInFactory(
+			final Function<InputStream, SerializableDataInputStream> serInFactory) {
+		HFileMetaSerde.serInFactory = serInFactory;
+	}
+
+	public static void setSerOutFactory(
+			final Function<OutputStream, SerializableDataOutputStream> serOutFactory) {
+		HFileMetaSerde.serOutFactory = serOutFactory;
 	}
 }

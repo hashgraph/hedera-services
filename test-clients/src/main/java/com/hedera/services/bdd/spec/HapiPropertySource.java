@@ -20,6 +20,8 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -40,6 +42,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import static java.lang.System.arraycopy;
 
 public interface HapiPropertySource {
 	String get(String property);
@@ -194,8 +198,17 @@ public interface HapiPropertySource {
 				.build();
 	}
 
-	public static String asAccountString(AccountID account) {
+	static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+	}
+
+	static String asAliasableAccountString(final AccountID account) {
+		if (account.getAlias().isEmpty()) {
+			return asAccountString(account);
+		} else {
+			final var literalAlias = account.getAlias().toString();
+			return String.format("%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
+		}
 	}
 
 	static TopicID asTopic(String v) {
@@ -262,5 +275,23 @@ public interface HapiPropertySource {
 	static long[] asDotDelimitedLongArray(String s) {
 		String[] parts = s.split("[.]");
 		return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+	}
+
+	static byte[] asSolidityAddress(final AccountID accountId) {
+		return asSolidityAddress((int) accountId.getAccountNum(), accountId.getRealmNum(), accountId.getAccountNum());
+	}
+
+	static byte[] asSolidityAddress(final TokenID tokenId) {
+		return asSolidityAddress((int) tokenId.getTokenNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+	}
+
+	static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+		final byte[] solidityAddress = new byte[20];
+
+		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+
+		return solidityAddress;
 	}
 }

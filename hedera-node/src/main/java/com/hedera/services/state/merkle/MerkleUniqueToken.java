@@ -199,6 +199,18 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		return new RichInstant(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
 	}
 
+	public void setMetadata(final byte[] metadata) {
+		this.metadata = metadata;
+	}
+
+	public long getPackedCreationTime() {
+		return packedCreationTime;
+	}
+
+	public void setPackedCreationTime(final long packedCreationTime) {
+		this.packedCreationTime = packedCreationTime;
+	}
+
 	public boolean isTreasuryOwned() {
 		return ownerCode == TREASURY_OWNER_CODE;
 	}

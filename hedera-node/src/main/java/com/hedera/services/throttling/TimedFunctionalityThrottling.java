@@ -22,20 +22,33 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 
 import java.time.Instant;
 
 public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
+	/**
+	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	@Override
 	default boolean shouldThrottleTxn(TxnAccessor accessor)  {
 		return shouldThrottleTxn(accessor, Instant.now());
 	}
 
 	@Override
-	default boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
-		return shouldThrottleQuery(queryFunction, Instant.now());
+	default boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
+		return shouldThrottleQuery(queryFunction, Instant.now(), query);
 	}
 
+	/**
+	 * Verifies if the frontend throttle has enough capacity to handle the transaction
+	 * @param accessor - the transaction accessor
+	 * @param now - the instant for which throttlign should be calculated
+	 * @return true if the transaction should be throttled, false if the system can handle the TX execution
+	 */
 	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now);
-	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now);
+
+	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now, Query query);
 }

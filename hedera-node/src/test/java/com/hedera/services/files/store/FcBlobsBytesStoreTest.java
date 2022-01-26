@@ -20,127 +20,118 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey.Type;
+import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.AbstractMap;
-import java.util.Comparator;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class FcBlobsBytesStoreTest {
 	private static final byte[] aData = "BlobA".getBytes();
-	private static final byte[] bData = "BlobB".getBytes();
-	private static final String pathA = "pathA";
-	private static final String pathB = "pathB";
-	private static final MerkleBlobMeta aMeta = new MerkleBlobMeta(pathA);
+	private static final String dataPath = "/0/f112";
+	private static final String metadataPath = "/0/k3";
+	private static final String bytecodePath = "/0/s4";
+	private static final String expiryTimePath = "/0/e5";
+	private VirtualBlobKey pathAKey;
 
-	private MerkleOptionalBlob blobA, blobB;
-	private Function<byte[], MerkleOptionalBlob> blobFactory;
-	private MerkleMap<String, MerkleOptionalBlob> pathedBlobs;
+	private VirtualBlobValue blobA;
+	private VirtualMap<VirtualBlobKey, VirtualBlobValue> pathedBlobs;
 
 	private FcBlobsBytesStore subject;
 
 	@BeforeEach
 	private void setup() {
-		pathedBlobs = mock(MerkleMap.class);
-		blobFactory = mock(Function.class);
+		pathedBlobs = mock(VirtualMap.class);
 
 		givenMockBlobs();
-		given(blobFactory.apply(any()))
-				.willReturn(blobA)
-				.willReturn(blobB);
+		subject = new FcBlobsBytesStore(() -> pathedBlobs);
 
-		subject = new FcBlobsBytesStore(blobFactory, () -> pathedBlobs);
+		pathAKey = subject.at(dataPath);
 	}
 
 	@Test
 	void delegatesClear() {
-		subject.clear();
-
-		verify(pathedBlobs).clear();
+		assertThrows(UnsupportedOperationException.class, subject::clear);
 	}
 
 	@Test
 	void delegatesRemoveOfMissing() {
-		given(pathedBlobs.remove(aMeta)).willReturn(null);
+		given(pathedBlobs.remove(subject.at(dataPath))).willReturn(null);
 
-		assertNull(subject.remove(pathA));
+		assertNull(subject.remove(dataPath));
 	}
 
 	@Test
 	void delegatesRemoveAndReturnsNull() {
-		given(pathedBlobs.remove(aMeta)).willReturn(blobA);
+		given(pathedBlobs.remove(subject.at(dataPath))).willReturn(blobA);
 
-		assertNull(subject.remove(pathA));
+		assertNull(subject.remove(dataPath));
 	}
 
 	@Test
 	void delegatesPutUsingGetForModifyIfExtantBlob() {
-		given(pathedBlobs.containsKey(pathA)).willReturn(true);
-		given(pathedBlobs.getForModify(pathA)).willReturn(blobA);
+		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
+		given(pathedBlobs.getForModify(pathAKey)).willReturn(blobA);
 
-		final var oldBytes = subject.put(pathA, aData);
+		final var oldBytes = subject.put(dataPath, aData);
 
-		verify(pathedBlobs).containsKey(pathA);
-		verify(pathedBlobs).getForModify(pathA);
-		verify(blobA).modify(aData);
+		verify(pathedBlobs).containsKey(pathAKey);
+		verify(pathedBlobs).getForModify(pathAKey);
 
 		assertNull(oldBytes);
 	}
 
 	@Test
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
-		final var keyCaptor = ArgumentCaptor.forClass(String.class);
-		final var valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
-		given(pathedBlobs.containsKey(pathA)).willReturn(false);
+		final var keyCaptor = ArgumentCaptor.forClass(VirtualBlobKey.class);
+		final var valueCaptor = ArgumentCaptor.forClass(VirtualBlobValue.class);
+		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
-		final var oldBytes = subject.put(pathA, aData);
+		final var oldBytes = subject.put(dataPath, aData);
 
-		verify(pathedBlobs).containsKey(pathA);
+		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 
-		assertEquals(pathA, keyCaptor.getValue());
-		assertSame(blobA, valueCaptor.getValue());
+		assertEquals(pathAKey, keyCaptor.getValue());
+		assertSame(blobA.getData(), valueCaptor.getValue().getData());
 		assertNull(oldBytes);
 	}
 
 	@Test
 	void propagatesNullFromGet() {
-		given(pathedBlobs.get(pathA)).willReturn(null);
+		given(pathedBlobs.get(subject.at(dataPath))).willReturn(null);
 
-		assertNull(subject.get(pathA));
+		assertNull(subject.get(dataPath));
 	}
 
 	@Test
 	void delegatesGet() {
-		given(pathedBlobs.get(pathA)).willReturn(blobA);
+		given(pathedBlobs.get(pathAKey)).willReturn(blobA);
 
-		assertArrayEquals(aData, subject.get(pathA));
+		assertArrayEquals(aData, subject.get(dataPath));
 	}
 
 	@Test
 	void delegatesContainsKey() {
-		given(pathedBlobs.containsKey(pathA)).willReturn(true);
+		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
 
-		assertTrue(subject.containsKey(pathA));
+		assertTrue(subject.containsKey(dataPath));
 	}
 
 	@Test
@@ -152,37 +143,19 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	void delegatesSize() {
-		given(pathedBlobs.size()).willReturn(123);
-
-		assertEquals(123, subject.size());
+	void doesNotSupportSize() {
+		assertThrows(UnsupportedOperationException.class, subject::size);
 	}
 
 	@Test
-	void delegatesEntrySet() {
-		final Set<Entry<String, MerkleOptionalBlob>> blobEntries = Set.of(
-				new AbstractMap.SimpleEntry<>(pathA, blobA),
-				new AbstractMap.SimpleEntry<>(pathB, blobB));
-		given(pathedBlobs.entrySet()).willReturn(blobEntries);
-
-		final var entries = subject.entrySet();
-
-		assertEquals(
-				"pathA->BlobA, pathB->BlobB",
-				entries
-						.stream()
-						.sorted(Comparator.comparing(Entry::getKey))
-						.map(entry -> String.format("%s->%s", entry.getKey(), new String(entry.getValue())))
-						.collect(Collectors.joining(", "))
-		);
+	void entrySetThrows() {
+		assertThrows(UnsupportedOperationException.class, subject::entrySet);
 	}
 
 	private void givenMockBlobs() {
-		blobA = mock(MerkleOptionalBlob.class);
-		blobB = mock(MerkleOptionalBlob.class);
+		blobA = mock(VirtualBlobValue.class);
 
 		given(blobA.getData()).willReturn(aData);
-		given(blobB.getData()).willReturn(bData);
 	}
 
 	@Test
@@ -206,7 +179,19 @@ class FcBlobsBytesStoreTest {
 		assertFalse(replaced.getDelegate().isReleased());
 	}
 
-	private MerkleBlobMeta at(final String key) {
-		return new MerkleBlobMeta(key);
+	@Test
+	void validateBlobKeyBasedOnPath() {
+		assertEquals(new VirtualBlobKey(Type.FILE_DATA, 112), subject.at(dataPath));
+		assertEquals(new VirtualBlobKey(Type.FILE_METADATA, 3), subject.at(metadataPath));
+		assertEquals(new VirtualBlobKey(Type.CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
+		assertEquals(new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
+	}
+
+	@Test
+	void validateEntityNumBasedOnPath() {
+		assertEquals(112, getEntityNumFromPath(dataPath));
+		assertEquals(3, getEntityNumFromPath(metadataPath));
+		assertEquals(4, getEntityNumFromPath(bytecodePath));
+		assertEquals(5, getEntityNumFromPath(expiryTimePath));
 	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,18 +21,20 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hedera.services.state.merkle.MerkleToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.Set;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
@@ -54,7 +56,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
@@ -62,32 +63,41 @@ import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
-	Supplier<TestAccount> newAccountFactory;
-	BackingStore<Long, TestAccount> backingAccounts;
-	LedgerCheck scopedCheck;
-	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
-	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+	private final Object[] things = { "a", "b", "c", "d" };
+	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
-	Object[] things = { "a", "b", "c", "d" };
-	MerkleToken token;
-	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	@Mock
+	private BackingStore<Long, TestAccount> backingAccounts;
+	@Mock
+	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
+
+	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
+	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+
 	@BeforeEach
 	private void setup() {
-		token = mock(MerkleToken.class);
-
-		backingAccounts = mock(BackingStore.class);
 		scopedCheck = new TestAccountScopedCheck();
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
-		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class,
-				newAccountFactory,
-				backingAccounts,
-				changeManager);
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager);
+	}
+
+	@Test
+	void commitObserverWorks() {
+		subject.setCommitInterceptor(commitObserver);
+
+		subject.begin();
+		subject.create(1L);
+		subject.set(1L, OBJ, things);
+		subject.set(1L, FLAG, true);
+		subject.commit();
+
+		verify(commitObserver).newProperty(1L, OBJ, things);
+		verify(commitObserver).newProperty(1L, FLAG, true);
+		verifyNoMoreInteractions(commitObserver);
 	}
 
 	@Test
@@ -110,11 +120,13 @@ class TransactionalLedgerTest {
 
 	@Test
 	void rollbackClearsChanges() {
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// given:
 		subject.begin();
 
 		// when:
-		subject.get(1L, OBJ);
+		subject.set(1L, OBJ, new Object());
 		// and:
 		subject.rollback();
 
@@ -124,6 +136,9 @@ class TransactionalLedgerTest {
 
 	@Test
 	void getUsesMutableRefIfPendingChanges() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// given:
 		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing);
 		// and:
@@ -137,6 +152,18 @@ class TransactionalLedgerTest {
 		assertEquals(newAccount1, account);
 		// and:
 		verify(backingAccounts).getRef(1L);
+	}
+
+	@Test
+	void zombieIsResurrectedIfPutAgain() {
+		subject.begin();
+
+		subject.create(1L);
+		subject.destroy(1L);
+		subject.put(1L, account1);
+
+		subject.commit();
+		verify(backingAccounts).put(1L, account1);
 	}
 
 	@Test
@@ -185,6 +212,9 @@ class TransactionalLedgerTest {
 
 	@Test
 	void requiresManualRollbackIfCommitFails() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		willThrow(IllegalStateException.class).given(backingAccounts).put(any(), any());
 
 		// when:
@@ -220,6 +250,10 @@ class TransactionalLedgerTest {
 
 	@Test
 	void existsIfNotMissingAndNotDestroyed() {
+		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingAccounts.contains(2L)).willReturn(false);
+		given(backingAccounts.contains(3L)).willReturn(false);
+
 		// given:
 		subject.begin();
 		subject.create(2L);
@@ -276,6 +310,8 @@ class TransactionalLedgerTest {
 
 	@Test
 	void throwsOnCreationWithExistingAccountId() {
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// given:
 		subject.begin();
 
@@ -291,12 +327,14 @@ class TransactionalLedgerTest {
 
 	@Test
 	void returnsPendingChangePropertiesOfExistingAccounts() {
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// given:
 		subject.begin();
 		subject.set(1L, LONG, 3L);
 
 		// when:
-		long value = (long)subject.get(1L, LONG);
+		long value = (long) subject.get(1L, LONG);
 
 		// then:
 		verify(backingAccounts, times(2)).contains(1L);
@@ -339,7 +377,7 @@ class TransactionalLedgerTest {
 		subject.set(2L, OBJ, things[2]);
 
 		// when:
-		boolean flag = (boolean)subject.get(2L, FLAG);
+		boolean flag = (boolean) subject.get(2L, FLAG);
 
 		// then:
 		assertFalse(flag);
@@ -347,6 +385,11 @@ class TransactionalLedgerTest {
 
 	@Test
 	void reflectsChangeToExistingAccountIfInTransaction() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
+		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L);
+
 		// given:
 		subject.begin();
 
@@ -354,11 +397,13 @@ class TransactionalLedgerTest {
 		subject.set(1L, OBJ, things[0]);
 
 		// expect:
-		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.getFinalized(1L));
+		assertEquals(expected, subject.getFinalized(1L));
 	}
 
 	@Test
 	void canUndoSpecificChange() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
 		// setup:
 		ArgumentCaptor<TestAccount> captor = ArgumentCaptor.forClass(TestAccount.class);
 		final var changesToUndo = List.of(FLAG);
@@ -407,6 +452,9 @@ class TransactionalLedgerTest {
 
 	@Test
 	void dropsPendingChangesAfterRollback() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// given:
 		subject.begin();
 
@@ -425,6 +473,9 @@ class TransactionalLedgerTest {
 
 	@Test
 	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		// setup:
 		var expected2 = new TestAccount(2L, things[2], false);
 
@@ -454,12 +505,17 @@ class TransactionalLedgerTest {
 
 	@Test
 	void reflectsUnchangedAccountIfNoChanges() {
-		// expect:
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
 		assertEquals(account1, subject.getFinalized(1L));
 	}
 
 	@Test
 	void validateHappyPath() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
 		subject.begin();
 		subject.set(1L, LONG, 123L);
 		subject.set(1L, FLAG, false);
@@ -490,5 +546,23 @@ class TransactionalLedgerTest {
 		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
 		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
 		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
+	}
+
+	@Test
+	void idSetPropagatesCallToEntities() {
+		Set<Long> idSet = Set.of(1L, 2L, 3L);
+		given(backingAccounts.idSet()).willReturn(idSet);
+
+		assertEquals(idSet, subject.idSet());
+		verify(backingAccounts).idSet();
+	}
+
+	@Test
+	void sizePropagatesCallToEntities() {
+		var size = 23L;
+		given(backingAccounts.size()).willReturn(size);
+
+		assertEquals(size, subject.size());
+		verify(backingAccounts).size();
 	}
 }

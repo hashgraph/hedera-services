@@ -36,7 +36,7 @@ import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -311,7 +311,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getAlreadyUsedAutomaticAssociations();
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedAutoAssociations) {
+	public void setAlreadyUsedAutomaticAssociations(final int alreadyUsedAutoAssociations) {
 		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
 			throw new IllegalArgumentException(
 					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
@@ -319,8 +319,20 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 	}
 
-	/* --- Helpers --- */
-	public List<ExpirableTxnRecord> recordList() {
-		return new ArrayList<>(records());
+	public int getNumContractKvPairs() {
+		return state().getNumContractKvPairs();
+	}
+
+	public void setNumContractKvPairs(final int numContractKvPairs) {
+		/* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
+		state().setNumContractKvPairs(numContractKvPairs);
+	}
+
+	public Iterator<ExpirableTxnRecord> recordIterator() {
+		return records().iterator();
+	}
+
+	public int numRecords() {
+		return records().size();
 	}
 }

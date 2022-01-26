@@ -75,7 +75,7 @@ public class RecordsSuite extends HapiApiSuite {
 				).when(
 						contractCall("bigBig", ContractResources.PICK_A_BIG_RESULT_ABI, byteArraySize)
 								.payingWith("payer")
-								.gas(300_000L)
+								.gas(400_000L)
 								.via("bigCall")
 				).then(
 						getTxnRecord("bigCall")
