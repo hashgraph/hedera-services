@@ -31,17 +31,17 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FREEZE_SUITES;
-
 public abstract class SuiteStore {
+	protected static final String SUITES_PATH = "com.hedera.services.bdd.suites.";
+
 	protected static final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = new EnumMap<>(SuitePackage.class);
 
-	public Map<SuitePackage, Supplier<List<HapiApiSuite>>> initialize() {
-		initializeSuites();
+	public Map<SuitePackage, Supplier<List<HapiApiSuite>>> initializeCategories(final Set<String> arguments) {
+		initializeSuites(arguments);
 		return suites;
 	}
 
-	protected abstract void initializeSuites();
+	protected abstract void initializeSuites(final Set<String> effectiveArguments);
 
 	public static List<String> getAllCategories = Arrays
 			.stream(SuitePackage.values())
@@ -49,23 +49,25 @@ public abstract class SuiteStore {
 			.collect(Collectors.toList());
 
 	public static boolean isValidCategory(String arg) {
-		return suites.keySet().stream().anyMatch(key -> key.asString.equalsIgnoreCase(arg));
+		return Arrays
+				.stream(SuitePackage.values())
+				.map(value -> value.asString)
+				.anyMatch(string -> string.equalsIgnoreCase(arg));
 	}
 
-	public static List<SuitePackage> getCategories(Set<String> input) {
-		return input
-				.stream()
-				.map(PackageStore::getCategory)
-				.filter(cat -> cat != FREEZE_SUITES)
-				.collect(Collectors.toList());
-	}
+//	TODO: Clarify why the freeze suites are being executed separately
+//	public static List<SuitePackage> getCategories(Set<String> input) {
+//		return input
+//				.stream()
+//				.map(PackageStore::getCategory)
+//				.filter(cat -> cat != FREEZE_SUITES)
+//				.collect(Collectors.toList());
+//	}
 
 	public static SuitePackage getCategory(final String input) {
-		return suites
-				.keySet()
-				.stream()
-				.filter(cat -> cat.asString.equalsIgnoreCase(input))
-				.findFirst()
+		return Arrays
+				.stream(SuitePackage.values())
+				.filter(category -> category.asString.equalsIgnoreCase(input)).findFirst()
 				.orElse(null);
 	}
 

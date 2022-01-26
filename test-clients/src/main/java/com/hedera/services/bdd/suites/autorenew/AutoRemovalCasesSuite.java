@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.autorenew;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suiterunner.reflective_runner.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,6 +50,7 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.en
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
+@AutomatedSuite
 public class AutoRemovalCasesSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoRemovalCasesSuite.class);
 

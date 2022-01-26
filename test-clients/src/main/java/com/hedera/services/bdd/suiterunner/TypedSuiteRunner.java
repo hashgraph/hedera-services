@@ -68,16 +68,17 @@ public class TypedSuiteRunner {
 
 	public static void main(String[] args) {
 		final var store = new PackageStore();
-		suites = store.initialize();
 		final var effectiveArguments = getArguments(args);
-		final var suiteCategories = PackageStore.getCategories(effectiveArguments);
-		var suiteByRunType = distributeByRunType(suiteCategories);
+		suites = store.initializeCategories(effectiveArguments);
+		var suiteByRunType = distributeByRunType(suites.keySet());
 
 		clearLog();
 
 		runSuitesSync(suiteByRunType.get("RunsSync"));
 		runSuitesAsync(suiteByRunType.get("RunsAsync"));
 
+		// TODO: Ask Yoan - can freeze suites be executed with other suites or should be run separately only when running
+		//  	 all suites
 		if (effectiveArguments.contains("Freeze") || runAllSuites) {
 			log.warn(String.format("%1$s Running Freeze suites %1$s", SEPARATOR));
 			runSuitesSync(suites.get(FREEZE_SUITES).get());
@@ -122,24 +123,24 @@ public class TypedSuiteRunner {
 				.collect(toList());
 	}
 
+	// TODO: Break down to smaller methods. God method :)
 	private static Set<String> getArguments(final String[] args) {
 		if (Arrays.stream(args).anyMatch(arg -> arg.toLowerCase().contains("-spt".toLowerCase()))) {
 			runAllSuites = true;
 			log.warn(String.format("%1$s Running all tests except performance tests %1$s", SEPARATOR));
-			return suites
-					.keySet()
-					.stream()
+			return Arrays
+					.stream(SuitePackage.values())
 					.filter(key -> key != PERF_SUITES && key != FREEZE_SUITES)
 					.map(key -> key.asString)
 					.collect(Collectors.toSet());
 		}
 
+		// TODO: Traverse Enum for collecting all the possible arguments
 		if (args.length == 0 || (args.length == 1 && args[0].toLowerCase().contains("-a".toLowerCase()))) {
 			runAllSuites = true;
 			log.warn(String.format("%1$s Running all tests %1$s", SEPARATOR));
-			return suites
-					.keySet()
-					.stream()
+			return Arrays
+					.stream(SuitePackage.values())
 					.filter(key -> key != FREEZE_SUITES)
 					.map(key -> key.asString)
 					.collect(Collectors.toSet());
@@ -160,6 +161,11 @@ public class TypedSuiteRunner {
 
 		arguments.removeAll(wrongArguments);
 
+		// TODO: Handle the case where in the input there are identical packages like "Contract, Contract, Autorenew".
+		//  	 Currently the console output will repeat the identical packages like this:
+		//  	 "Running tests for Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees suites"
+
+		// TODO: Move the console output for the suites to be executed after the suite store initialization.
 		final var argumentsToLog = arguments
 				.stream()
 				.map(PackageStore::getCategory)
@@ -177,7 +183,7 @@ public class TypedSuiteRunner {
 		return Set.copyOf(arguments);
 	}
 
-	private static Map<String, List<HapiApiSuite>> distributeByRunType(final List<SuitePackage> categories) {
+	private static Map<String, List<HapiApiSuite>> distributeByRunType(final Set<SuitePackage> categories) {
 		final Map<String, List<HapiApiSuite>> byRunType =
 				Map.of("RunsSync", new ArrayList<>(), "RunsAsync", new ArrayList<>());
 
@@ -186,8 +192,8 @@ public class TypedSuiteRunner {
 				.map(category -> suites.get(category).get())
 				.flatMap(Collection::stream)
 				.peek(suite -> {
-//					suite.skipClientTearDown();
-//					suite.deferResultsSummary();
+					suite.skipClientTearDown();
+					suite.deferResultsSummary();
 				})
 				.forEach(suite -> {
 					if (suite.canRunAsync()) {
@@ -217,7 +223,7 @@ public class TypedSuiteRunner {
 		console.add(pattern);
 		file.add(pattern);
 
-		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.INFO);
+		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.WARN);
 		rootLogger.add(builder.newAppenderRef("log"));
 		rootLogger.add(builder.newAppenderRef("stdout"));
 

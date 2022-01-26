@@ -1,19 +1,17 @@
 package com.hedera.services.bdd.suiterunner.enums;
 
+// TODO: Contract's string value temporarily renamed from "Contract" to "contract".
+//  	 Ensure, that the logic will continue to work ignoring case
 public enum SuitePackage {
 	ALL("All"),
 	AUTORENEW_SUITES("Autorenew"),
 	COMPOSE_SUITES("Compose"),
 	CONSENSUS_SUITES("Consensus"),
 	CONTRACT_SUITES("Contract"),
-	CONTRACT_OP_CODES_SUITES("Contract op codes"),
-	CONTRACT_RECORDS_SUITES("Contract records"),
 	CRYPTO_SUITES("Crypto"),
 	FEES_SUITES("Fees"),
 
 	FILE_SUITES("File"),
-	FILE_NEGATIVE_SUITES("File negative"),
-	FILE_POSITIVE_SUITES("File positive"),
 	FREEZE_SUITES("Freeze"),
 	ISSUES_SUITES("Issues"),
 	META_SUITES("Meta"),

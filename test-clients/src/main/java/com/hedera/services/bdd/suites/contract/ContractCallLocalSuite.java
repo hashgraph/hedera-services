@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suiterunner.reflective_runner.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -48,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
+@AutomatedSuite
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 

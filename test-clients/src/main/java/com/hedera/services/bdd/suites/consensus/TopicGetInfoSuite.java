@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.consensus;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suiterunner.reflective_runner.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
+@AutomatedSuite
 public class TopicGetInfoSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
 

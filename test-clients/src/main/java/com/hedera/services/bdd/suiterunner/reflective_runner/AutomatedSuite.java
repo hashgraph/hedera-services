@@ -1,8 +1,8 @@
-package com.hedera.services.bdd.suiterunner.store;
+package com.hedera.services.bdd.suiterunner.reflective_runner;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,16 +20,13 @@ package com.hedera.services.bdd.suiterunner.store;
  * ‍
  */
 
-import java.util.Set;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/*	Note to the reviewer:
- *	Will contain a collection of E2E suites, organized by topics.
- * */
-public class TopicStore extends SuiteStore {
-
-	@Override
-	protected void initializeSuites(final Set<String> arguments) {
-	}
-
-
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface AutomatedSuite {
 }
+

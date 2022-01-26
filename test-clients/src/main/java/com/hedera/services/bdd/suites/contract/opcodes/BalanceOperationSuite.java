@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.suiterunner.reflective_runner.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
+@AutomatedSuite
 public class BalanceOperationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
 

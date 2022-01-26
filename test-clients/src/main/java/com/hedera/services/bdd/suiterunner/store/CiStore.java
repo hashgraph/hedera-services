@@ -20,9 +20,11 @@ package com.hedera.services.bdd.suiterunner.store;
  * ‍
  */
 
+import java.util.Set;
+
 public class CiStore extends SuiteStore {
 
 	@Override
-	protected void initializeSuites() {
+	protected void initializeSuites(final Set<String> arguments) {
 	}
 }
