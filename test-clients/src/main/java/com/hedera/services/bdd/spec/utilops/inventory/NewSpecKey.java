@@ -119,9 +119,10 @@ public class NewSpecKey extends UtilOp {
 		}
 		if (verboseLoggingOn && !yahcliLogger) {
 			if (type.orElse(KeyType.SIMPLE) == KeyType.SIMPLE) {
-				log.info("Created simple '{}' w/ Ed25519 public key {}",
+				log.info("Created simple '{}' w/ Ed25519 public key {}, size {} bytes",
 						name,
-						CommonUtils.hex(key.getEd25519().toByteArray()));
+						CommonUtils.hex(key.getEd25519().toByteArray()),
+						key.getEd25519().toByteArray().length);
 			} else {
 				log.info("Created a complex key...");
 			}
