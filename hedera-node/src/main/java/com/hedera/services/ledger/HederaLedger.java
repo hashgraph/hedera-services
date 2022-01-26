@@ -77,6 +77,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 /**
  * Provides a ledger for Hedera Services crypto and smart contract
@@ -347,8 +348,7 @@ public class HederaLedger {
 			AccountID to,
 			long adjustment
 	) {
-		var validity = OK;
-		validity = adjustTokenBalance(from, tId, -adjustment);
+		ResponseCodeEnum validity = adjustTokenBalance(from, tId, -adjustment);
 		if (validity == OK) {
 			validity = adjustTokenBalance(to, tId, adjustment);
 		}
@@ -511,6 +511,10 @@ public class HederaLedger {
 
 
 	/* ---- Alias lookup helpers */
+	public AliasLookup lookUpAliasedPayerId(final AccountID grpcId) {
+		return tokenStore.lookUpAliasedId(grpcId, PAYER_ACCOUNT_NOT_FOUND);
+	}
+
 	public AliasLookup lookUpAliasedId(final AccountID grpcId, final ResponseCodeEnum errResponse) {
 		return tokenStore.lookUpAliasedId(grpcId, errResponse);
 	}

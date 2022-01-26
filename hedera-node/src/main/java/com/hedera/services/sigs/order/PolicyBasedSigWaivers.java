@@ -22,8 +22,8 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.auth.SystemOpAuthorization;
+import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -73,8 +73,7 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
 
 	@Override
 	public boolean isNewFileWaclWaived(TransactionBody fileUpdateTxn) {
-		assertTypeExpectation(fileUpdateTxn.hasFileUpdate());
-		return opPolicies.checkKnownTxn(fileUpdateTxn, FileUpdate) == AUTHORIZED;
+		return isTargetFileWaclWaived(fileUpdateTxn);
 	}
 
 	@Override

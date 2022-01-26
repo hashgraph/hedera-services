@@ -62,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -160,7 +159,7 @@ class SolvencyPrecheckTest {
 	@Test
 	void rejectsUnusablePayerWithAlias() {
 		given(aliasManager.lookUpPayer(payerWithAlias)).willReturn(
-				AliasLookup.of(payerWithAlias, INVALID_PAYER_ACCOUNT_ID));
+				AliasLookup.of(payerWithAlias, PAYER_ACCOUNT_NOT_FOUND));
 		var result = subject.assessWithSvcFees(accessorCoveringAllFeesWithAliasedPayer);
 
 		assertJustValidity(result, PAYER_ACCOUNT_NOT_FOUND);

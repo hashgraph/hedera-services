@@ -108,6 +108,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 				).when(
 						contractCall(theContract, ContractResources.ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN)
 								.payingWith(theAccount)
+								.gas(500_000)
 								.via("associateMethodCall"),
 						childRecordsCheck("associateMethodCall",
 								SUCCESS,

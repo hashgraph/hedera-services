@@ -22,30 +22,37 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 
+import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 @Singleton
 public final class GetAccountRecordsResourceUsage implements QueryResourceUsageEstimator {
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public GetAccountRecordsResourceUsage(
 			final AnswerFunctions answerFunctions,
-			final CryptoFeeBuilder usageEstimator
+			final CryptoFeeBuilder usageEstimator,
+			final AliasManager aliasManager
 	) {
 		this.answerFunctions = answerFunctions;
 		this.usageEstimator = usageEstimator;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -54,14 +61,24 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
 	}
 
 	@Override
-	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
-		return usageGivenType(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType());
+	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> queryCtx) {
+		return usageFor(query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType(), queryCtx);
 	}
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+		return usageFor(query, view, type, null);
+	}
+
+	private FeeData usageFor(
+			final Query query,
+			final StateView view,
+			final ResponseType stateProofType,
+			@Nullable final Map<String, Object> queryCtx
+	) {
 		final var op = query.getCryptoGetAccountRecords();
-		final var target = fromAccountId(op.getAccountID());
+		final var resolvedId = aliasManager.lookUpAccount(op.getAccountID()).resolvedId();
+		final var target = fromAccountId(resolvedId);
 		if (!view.accounts().containsKey(target)) {
 			/* Given the test in {@code GetAccountRecordsAnswer.checkValidity}, this can only be
 			 * missing under the extraordinary circumstance that the desired account expired
@@ -69,7 +86,8 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
 			 * status code); so just return the default {@code FeeData} here. */
 			return FeeData.getDefaultInstance();
 		}
-		final var records = answerFunctions.accountRecords(view, op);
-		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, type);
+		final var records = answerFunctions.mostRecentRecords(view, resolvedId);
+		putIfNotNull(queryCtx, PAYER_RECORDS_CTX_KEY, records);
+		return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, stateProofType);
 	}
 }

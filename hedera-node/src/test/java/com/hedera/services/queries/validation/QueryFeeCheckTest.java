@@ -48,9 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -127,7 +127,7 @@ class QueryFeeCheckTest {
 		given(aliasManager.lookupIdBy(aRichAlias.getAlias())).willReturn(EntityNum.fromAccountId(aRich));
 		given(aliasManager.lookupIdBy(invalidAlias.getAlias())).willReturn(EntityNum.MISSING_NUM);
 		given(aliasManager.lookUpPayer(invalidAlias)).willReturn(
-				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
+				AliasLookup.of(invalidAlias, PAYER_ACCOUNT_NOT_FOUND));
 		given(aliasManager.lookUpPayer(aRich)).willReturn(AliasLookup.of(aRich, OK));
 		given(aliasManager.lookUpAccount(aRich)).willReturn(AliasLookup.of(aRich, OK));
 		given(aliasManager.lookUpAccount(aNode)).willReturn(AliasLookup.of(aNode, OK));
@@ -367,7 +367,7 @@ class QueryFeeCheckTest {
 
 		assertEquals(invalidAlias, body.getTransactionID().getAccountID());
 		assertTrue(checkPayerInTransferList(body, aRichAlias));
-		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.validateQueryPaymentTransfers(body));
+		assertEquals(PAYER_ACCOUNT_NOT_FOUND, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
@@ -512,7 +512,7 @@ class QueryFeeCheckTest {
 			final AccountID payer, final AccountID sender) {
 		given(aliasManager.lookUpPayer(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
 		given(aliasManager.lookUpPayer(invalidAlias)).willReturn(
-				AliasLookup.of(invalidAlias, INVALID_PAYER_ACCOUNT_ID));
+				AliasLookup.of(invalidAlias, PAYER_ACCOUNT_NOT_FOUND));
 		given(aliasManager.lookUpAccount(aRichAlias)).willReturn(AliasLookup.of(aRich, OK));
 		given(aliasManager.lookUpAccount(invalidAlias)).willReturn(AliasLookup.of(invalidAlias, INVALID_ACCOUNT_ID));
 

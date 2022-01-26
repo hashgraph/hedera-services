@@ -214,7 +214,7 @@ public final class TieredHederaFs implements HederaFs {
 		validateUsable(id);
 
 		final var verdict = judge(id, FileUpdateInterceptor::preDelete);
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			final var attr = metadata.get(id);
 			attr.setDeleted(true);
 			metadata.put(id, attr);
@@ -240,7 +240,7 @@ public final class TieredHederaFs implements HederaFs {
 	private UpdateResult uncheckedSetattr(final FileID id, final HFileMeta attr) {
 		final var verdict = judge(id, (interceptor, ignore) -> interceptor.preAttrChange(id, attr));
 
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			metadata.put(id, attr);
 		}
 
@@ -249,7 +249,7 @@ public final class TieredHederaFs implements HederaFs {
 
 	private UpdateResult uncheckedUpdate(final FileID id, final byte[] newContents) {
 		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
-		if (verdict.getValue()) {
+		if (Boolean.TRUE.equals(verdict.getValue())) {
 			data.put(id, newContents);
 			interceptorsFor(id).forEach(interceptor -> interceptor.postUpdate(id, newContents));
 		}
@@ -267,7 +267,7 @@ public final class TieredHederaFs implements HederaFs {
 		for (final var interceptor : orderedInterceptors) {
 			final var vote = judgment.apply(interceptor, id);
 			outcome = firstUnsuccessful(outcome, vote.getKey());
-			if (!vote.getValue()) {
+			if (Boolean.TRUE.equals(!vote.getValue())) {
 				should = false;
 				break;
 			}

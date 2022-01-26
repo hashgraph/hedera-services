@@ -173,17 +173,18 @@ class PolicyBasedSigWaiversTest {
 
 	@Test
 	void allMethodsRequireExpectedTxnType() {
+		final var txn = TransactionBody.getDefaultInstance();
 		// expect:
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isAppendFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isAppendFileWaclWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetAccountKeyWaived(TransactionBody.getDefaultInstance()));
+				subject.isTargetAccountKeyWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewAccountKeyWaived(TransactionBody.getDefaultInstance()));
+				subject.isNewAccountKeyWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isTargetFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isTargetFileWaclWaived(txn));
 		assertThrows(IllegalArgumentException.class, () ->
-				subject.isNewFileWaclWaived(TransactionBody.getDefaultInstance()));
+				subject.isNewFileWaclWaived(txn));
 	}
 
 	private final AccountID treasury = IdUtils.asAccount("0.0.2");

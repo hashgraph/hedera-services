@@ -62,10 +62,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -107,7 +106,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				failsWithTooLongMemo(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				doesntTriggerUntilPayerSigns(),
-				requiresExtantPayer(),
 				rejectsFunctionlessTxn(),
 				whitelistWorks(),
 				preservesRevocationServiceSemanticsForFileDelete(),
@@ -152,7 +150,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
 								.designatingPayerAlias("invalidAlias")
 								.payingWithAlias("schedulingAlias")
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
+								.hasKnownStatus(INVALID_SCHEDULE_PAYER_ID),
 						scheduleCreate("validScheduleWithAlias",
 								cryptoTransfer(tinyBarsFromTo(GENESIS, "sender2", 1)))
 								.designatingPayerAlias("payerAlias")
@@ -288,9 +286,10 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec failsWithNonExistingPayerAccountId() {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
 				.given().when(
-						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
+						scheduleCreate("invalidPayer",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 1)))
 								.designatingPayer("1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(INVALID_SCHEDULE_PAYER_ID)
 				)
 				.then();
 	}
@@ -538,20 +537,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.alsoSigningWith("sender")
 				).then(
 						getAccountBalance("sender").hasTinyBars(1L)
-				);
-	}
-
-	public HapiApiSpec requiresExtantPayer() {
-		return defaultHapiSpec("RequiresExtantPayer")
-				.given().when().then(
-						scheduleCreate(
-								"neverToBe",
-								cryptoCreate("nope")
-										.key(GENESIS)
-										.receiverSigRequired(true)
-						)
-								.designatingPayer("1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
 	}
 

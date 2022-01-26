@@ -67,6 +67,13 @@ public interface SigningOrderResultFactory<T> {
 	SigningOrderResult<T> forInvalidPayer();
 
 	/**
+	 * Report an invalid schedule payer encountered in schedule create txn.
+	 *
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forInvalidSchedulePayer();
+
+	/**
 	 * Report an invalid smart contract encountered when listing signing keys for some txn.
 	 *
 	 * @return the error summary.
@@ -158,4 +165,11 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingTokenTreasury();
+
+	/**
+	 * Report an invalid transfer account encountered when transferring any funds of an account/contract being deleted.
+	 *
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forInvalidTransferAccount();
 }

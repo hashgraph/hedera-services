@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
@@ -125,8 +126,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						usdFeeAsExpectedForUpdatingAlias(),
 						canUpdateUsingAlias(),
 						canUpdateProxyUsingAlias(),
-						failsWhenInvalidAliasedIdGiven(),
-						invalidProxyAliasFails(),
+				        failsWhenInvalidAliasedIdGiven(),
+				        invalidProxyAliasFails(),
 						canUpdateIfAliasNotPresent(),
 						failsUpdatingAliasIfPresent(),
 						failsUpdatingNonPrimitiveKeyAlias()

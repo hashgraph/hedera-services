@@ -20,6 +20,8 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
@@ -42,10 +44,10 @@ public interface PubKeyToSigBytes {
 	 * @param pubKey
 	 * 		a public key whose private key was used to sign some data.
 	 * @return the cryptographic signature that resulted.
-	 * @throws Exception
-	 * 		if the desired cryptographic signature is unavailable.
+	 * @throws KeyPrefixMismatchException
+	 * 		if the desired cryptographic signature doesn't match prefix.
 	 */
-	byte[] sigBytesFor(byte[] pubKey) throws Exception;
+	byte[] sigBytesFor(byte[] pubKey) throws KeyPrefixMismatchException;
 
 	/**
 	 * For each full-public-key-to-signature mapping that has not been used by
@@ -64,7 +66,8 @@ public interface PubKeyToSigBytes {
 	 * {@code ContractCall}; but it will ultimately need to sign, hence requires
 	 * a signature supplied with full public key prefix.
 	 *
-	 * @param obs an observer to be shown all the unused full-public-key-to-signature mappings
+	 * @param obs
+	 * 		an observer to be shown all the unused full-public-key-to-signature mappings
 	 */
 	default void forEachUnusedSigWithFullPrefix(SigObserver obs) {
 		/* No-op */

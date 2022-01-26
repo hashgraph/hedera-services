@@ -57,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -77,8 +76,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final HederaLedger hederaLedger;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
-
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -182,7 +179,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
+		return this::validate;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractCreateTxn) {
@@ -226,7 +223,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private Id resolvedSenderId(final AccountID grpcSender) {
-		final var senderLookup = hederaLedger.lookUpAliasedId(grpcSender, INVALID_PAYER_ACCOUNT_ID);
+		final var senderLookup = hederaLedger.lookUpAliasedPayerId(grpcSender);
 		return Id.fromGrpcAccount(senderLookup.resolvedId());
 	}
 

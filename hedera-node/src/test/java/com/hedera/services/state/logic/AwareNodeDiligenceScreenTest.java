@@ -22,9 +22,9 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.AliasLookup;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -54,12 +54,12 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -225,11 +225,11 @@ class AwareNodeDiligenceScreenTest {
 	void invalidPayerAccountIfAlias() throws InvalidProtocolBufferException {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
-		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, INVALID_PAYER_ACCOUNT_ID));
+		given(aliasManager.lookUpPayer(payerAccountId)).willReturn(AliasLookup.of(payerAccountId, PAYER_ACCOUNT_NOT_FOUND));
 
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-		verify(txnCtx).setStatus(INVALID_PAYER_ACCOUNT_ID);
+		verify(txnCtx).setStatus(PAYER_ACCOUNT_NOT_FOUND);
 	}
 
 	@Test

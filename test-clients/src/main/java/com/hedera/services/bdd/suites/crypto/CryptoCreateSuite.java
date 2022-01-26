@@ -52,12 +52,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -94,12 +92,12 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				syntaxChecksAreAsExpected(),
 				maxAutoAssociationSpec(),
 				usdFeeAsExpected(),
-				createAccountWithMissingAliasedProxy()
+				cannotCreateAccountWithMissingAliasedProxy()
 		);
 	}
 
-	private HapiApiSpec createAccountWithMissingAliasedProxy() {
-		return defaultHapiSpec("createAccountWithMissingAliasedProxy")
+	private HapiApiSpec cannotCreateAccountWithMissingAliasedProxy() {
+		return defaultHapiSpec("cannotCreateAccountWithMissingAliasedProxy")
 				.given(newKeyNamed("randomAlias"))
 				.when()
 				.then(
@@ -123,7 +121,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				).then(
 						cryptoCreate("accountWithAliasProxy")
 								.proxyWithAlias(alias)
-								.hasKnownStatus(SUCCESS)
 				);
 	}
 

@@ -56,7 +56,8 @@ class MetadataMapFactoryTest {
 
 	@Test
 	void toAttrThrowsIaeOnError() {
-		assertThrows(IllegalArgumentException.class, () -> toAttr("NONSENSE".getBytes()));
+		final var bytes = "NONSENSE".getBytes();
+		assertThrows(IllegalArgumentException.class, () -> toAttr(bytes));
 	}
 
 	@Test

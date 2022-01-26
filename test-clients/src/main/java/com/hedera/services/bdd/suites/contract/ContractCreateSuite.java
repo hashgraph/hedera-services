@@ -166,7 +166,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec invalidProxyFails() {
-		return defaultHapiSpec("proxyCanBeUsedAsAlias")
+		return defaultHapiSpec("invalidProxyFails")
 				.given(
 						newKeyNamed("alias"),
 						fileCreate("contractFile")

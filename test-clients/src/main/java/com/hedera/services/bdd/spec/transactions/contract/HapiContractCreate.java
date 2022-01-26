@@ -23,16 +23,15 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -57,6 +56,7 @@ import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
@@ -89,7 +89,8 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Object[]> args = Optional.empty();
 	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	Optional<LongConsumer> newNumObserver = Optional.empty();
-	private Optional<AccountID> proxy = Optional.empty();
+	private Optional<String> proxy = Optional.empty();
+	private ReferenceType proxyReferenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
@@ -197,12 +198,13 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	}
 
 	public HapiContractCreate proxy(String idLit) {
-		proxy = Optional.of(HapiPropertySource.asAccount(idLit));
+		proxy = Optional.of(idLit);
 		return this;
 	}
 
 	public HapiContractCreate proxyWithAlias(String idLit) {
-		proxy = Optional.of(HapiPropertySource.asAccount(ByteString.copyFromUtf8(idLit)));
+		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
+		proxy = Optional.of(idLit);
 		return this;
 	}
 
@@ -275,7 +277,14 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 								b.setAdminKey(adminKey);
 							}
 							b.setFileID(bytecodeFileId);
-							proxy.ifPresent(b::setProxyAccountID);
+							proxy.ifPresent(p -> {
+										if (proxyReferenceType == ReferenceType.ALIAS_KEY_NAME) {
+											b.setProxyAccountID(asAccount(spec.registry().getKey(p).toByteString()));
+										} else {
+											b.setProxyAccountID(spec.registry().getAccountID(p));
+										}
+									}
+							);
 							autoRenewPeriodSecs.ifPresent(p ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p).build()));
 							balance.ifPresent(b::setInitialBalance);

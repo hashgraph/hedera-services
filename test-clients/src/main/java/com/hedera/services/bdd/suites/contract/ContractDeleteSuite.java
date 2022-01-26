@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractU
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -76,25 +75,24 @@ public class ContractDeleteSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec transferAccountContractSpecifiedAsAlias() {
-		final var aliasToBeDeleted = "alias";
-		final var invalidAlias = "invalid";
+		final var alias = "alias";
+		final var invalidAlias = "invalidAlias";
 
 		return defaultHapiSpec("transferAccountContractSpecifiedAsAlias")
 				.given(
-						newKeyNamed(aliasToBeDeleted),
+						newKeyNamed(alias),
 						newKeyNamed(invalidAlias),
 						cryptoCreate("transferAccount").balance(0L),
 
 						contractCreate("toBeDeleted")
 				).when(
-						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS)).via(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS)).via(
 								"autoCreation"),
 						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1)
 				).then(
 						contractDelete("toBeDeleted").transferAccountAliased(invalidAlias)
-								.hasKnownStatus(INVALID_ACCOUNT_ID).logged(), // should be INVALID_TRANSFER_ACCOUNT_ID ??? :|
-
-						contractDelete("toBeDeleted").transferAccount("transferAccount"),
+								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID).logged(),
+						contractDelete("toBeDeleted").transferAccountAliased(alias),
 						getContractInfo("toBeDeleted").hasCostAnswerPrecheck(CONTRACT_DELETED),
 						getContractInfo("toBeDeleted").nodePayment(27_159_182L)
 								.hasAnswerOnlyPrecheck(ResponseCodeEnum.CONTRACT_DELETED)

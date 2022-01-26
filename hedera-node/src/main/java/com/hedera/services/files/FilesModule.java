@@ -9,9 +9,9 @@ package com.hedera.services.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,44 +56,44 @@ import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedPa
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 
 @Module
-public abstract class FilesModule {
+public interface FilesModule {
 	@Binds
 	@Singleton
-	public abstract HederaFs bindHederaFs(TieredHederaFs tieredHederaFs);
+	HederaFs bindHederaFs(TieredHederaFs tieredHederaFs);
 
 	@Provides
 	@Singleton
-	public static Map<String, byte[]> provideBlobStore(Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage) {
+	static Map<String, byte[]> provideBlobStore(Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage) {
 		return new FcBlobsBytesStore(storage);
 	}
 
 	@Provides
 	@Singleton
-	public static Map<FileID, byte[]> provideDataMap(Map<String, byte[]> blobStore) {
+	static Map<FileID, byte[]> provideDataMap(Map<String, byte[]> blobStore) {
 		return dataMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
-	public static Map<FileID, HFileMeta> provideMetadataMap(Map<String, byte[]> blobStore) {
+	static Map<FileID, HFileMeta> provideMetadataMap(Map<String, byte[]> blobStore) {
 		return metaMapFrom(blobStore);
 	}
 
 	@Provides
 	@Singleton
-	public static Consumer<ExchangeRateSet> provideExchangeRateSetUpdate(HbarCentExchange exchange) {
+	static Consumer<ExchangeRateSet> provideExchangeRateSetUpdate(HbarCentExchange exchange) {
 		return exchange::updateRates;
 	}
 
 	@Provides
 	@Singleton
-	public static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> provideLimitChangeTestFactory() {
+	static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> provideLimitChangeTestFactory() {
 		return limitPercent -> (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent);
 	}
 
 	@Provides
 	@ElementsIntoSet
-	public static Set<FileUpdateInterceptor> provideFileUpdateInterceptors(
+	static Set<FileUpdateInterceptor> provideFileUpdateInterceptors(
 			FileNumbers fileNums,
 			SysFileCallbacks sysFileCallbacks,
 			Supplier<AddressBook> addressBook,

@@ -277,12 +277,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -881,7 +882,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+		assertEquals(INVALID_TRANSFER_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -1384,7 +1385,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
+		assertEquals(INVALID_TRANSFER_ACCOUNT_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2622,7 +2623,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertTrue(summary.hasErrorReport());
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, summary.getErrorReport());
+		assertEquals(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID, summary.getErrorReport());
 	}
 
 	@Test
@@ -2814,7 +2815,7 @@ class SigRequirementsTest {
 
 		aliasManager = mock(AliasManager.class);
 		given(aliasManager.lookUpPayer(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS)))
-				.willReturn(AliasLookup.of(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS), INVALID_PAYER_ACCOUNT_ID));
+				.willReturn(AliasLookup.of(asAccountWithAlias(CURRENTLY_UNUSED_ALIAS), PAYER_ACCOUNT_NOT_FOUND));
 		given(aliasManager.lookUpPayer(asAccountWithAlias(NO_RECEIVER_SIG_ALIAS)))
 				.willReturn(AliasLookup.of(NO_RECEIVER_SIG, OK));
 		given(aliasManager.lookUpPayer(asAccountWithAlias(RECEIVER_SIG_ALIAS)))

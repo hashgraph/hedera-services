@@ -157,11 +157,13 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						tokenFreezeAliased(token, validAlias),
 						tokenFreezeAliased(token, invalidAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
 
-						wipeTokenAccountAliased(token, validAlias, 250).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+						tokenUnfreezeAliased(token, validAlias),
+						grantTokenKycAliased(token, validAlias),
+						wipeTokenAccountAliased(token, validAlias, 250),
 						wipeTokenAccountAliased(token, invalidAlias, 250).hasKnownStatus(INVALID_ACCOUNT_ID),
 
 						getAliasedAccountInfo(validAlias)
-								.hasToken(relationshipWith(token).balance(500))
+								.hasToken(relationshipWith(token).balance(250))
 								.logged()
 				);
 	}

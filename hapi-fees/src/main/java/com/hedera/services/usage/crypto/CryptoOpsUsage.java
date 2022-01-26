@@ -58,6 +58,7 @@ public class CryptoOpsUsage {
 
 	@Inject
 	public CryptoOpsUsage() {
+		// Default constructor
 	}
 
 	public void cryptoTransferUsage(
