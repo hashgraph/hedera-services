@@ -15,9 +15,14 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.MarkerManager;
+import org.apache.logging.log4j.ThreadContext;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,6 +32,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.LogUtils.escapeBytes;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -187,6 +193,70 @@ class LogUtilsTest {
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\Ufgffffff"));
 		assertThrows(LogUtils.InvalidEscapeSequenceException.class, () -> LogUtils.unescapeBytes("\\"));
 		assertTrue(LogUtils.unescapeBytes(List.of("\\")).get(0).isEmpty());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"configuration/mainnet/log4j2.xml, false, false, false",
+			"configuration/testnet/log4j2.xml, false, false, false",
+			"configuration/previewnet/log4j2.xml, false, false, false",
+			"configuration/preprod/log4j2.xml, false, false, false",
+			"configuration/dev/log4j2.xml, false, false, false",
+			"configuration/compose/log4j2.xml, false, false, false",
+			"src/test/resources/log4j2-WithMDC-test.xml, true, false, false",
+			"src/test/resources/log4j2-test.xml, false, false, true",
+			"src/test/resources/log4j2-test.xml, false, true, false"
+	})
+	void testLog4jExploit(
+			final String configPath,
+			final boolean lookForFishTagging,
+			final boolean expectJndiLookup,
+			final boolean encodeGrpcBeforeLogging) throws IOException {
+		clearHgcaaLog();
+
+		final var series = "3PO-series";
+		final var userName = "C3PO";
+		final var malUri_toFailLookUp = "${jndi:https://previewnet.mirrornode.hedera.com/api/v1/accounts?account.id=0.0.90}";
+		final var bio = "I am C-3PO, human-cyborg relations. " + malUri_toFailLookUp;
+		final var expectedLog = "We are doomed" + malUri_toFailLookUp;
+		final var expectedMDCFishTags = "[" + series + "] " + "[" + userName + "] " + "[" + bio + "]";
+		final var stackStraceSample = "at org.apache.logging.log4j.core.net.JndiManager.lookup";
+
+
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+		File file = new File(configPath);
+		context.setConfigLocation(file.toURI());
+
+		ThreadContext.put("series", series);
+		ThreadContext.put("username", userName);
+		ThreadContext.put("bio", bio);
+
+		final var toLog = encodeGrpcBeforeLogging ?
+				escapeBytes(ByteString.copyFromUtf8(expectedLog)) :
+				expectedLog;
+		LogManager.getLogger().warn(toLog);
+
+		ThreadContext.clearMap();
+
+		final var actualLog = readHgcaaLog();
+
+		assertTrue(actualLog.contains(toLog));
+
+		// validate that fish tags are generated when configured for.
+		if (lookForFishTagging) {
+			assertTrue(actualLog.contains(expectedMDCFishTags));
+		}
+
+		// the log should contain the jndi lookup stack trace if the log4J is configured to be exploited.
+		if (!expectJndiLookup || encodeGrpcBeforeLogging) {
+			assertFalse(actualLog.contains(stackStraceSample), actualLog);
+		} else {
+			// should expect jndi lookup log4J versions 2.14 and below
+//			assertTrue(actualLog.contains(stackStraceSample));
+
+			// with log4J versions 2.15 and above this jndi lookup is fixed.
+			assertFalse(actualLog.contains(stackStraceSample));
+		}
 	}
 
 	private String readHgcaaLog() throws IOException {
