@@ -214,6 +214,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
 	private int functionId;
+	private boolean isRedirectProxy;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
 	private final Provider<FeeCalculator> feeCalculator;
@@ -275,7 +276,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
-		if (messageFrame.isStatic()) {
+		this.isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+
+		if (messageFrame.isStatic() && !this.isRedirectProxy) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
@@ -388,7 +391,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	void decodeInput(Bytes input) {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
-			this.transactionBody = this.precompile.body(input);
+			this.transactionBody = this.isRedirectProxy ? this.precompile.body(input.slice(24)) :
+					this.precompile.body(input);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
