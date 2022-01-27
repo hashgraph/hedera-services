@@ -101,7 +101,7 @@ class MerkleAccountStateTest {
 	private static final boolean approvedForAll = false;
 	private static final Long tokenAllowanceVal = 1L;
 
-	private static final FcAllowanceId tokenAllowanceKey = new FcAllowanceId(tokenForAllowance, spenderNum);
+	private static final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
 	private static final FcAllowance tokenAllowanceValue = new FcAllowance(tokenAllowanceVal, approvedForAll);
 
 	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
@@ -690,7 +690,7 @@ class MerkleAccountStateTest {
 		final boolean approvedForAll = true;
 		final Long tokenAllowanceVal = 1L;
 
-		final FcAllowanceId tokenAllowanceKey = new FcAllowanceId(tokenForAllowance, spenderNum);
+		final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
 		final FcAllowance tokenAllowanceValue = new FcAllowance(tokenAllowanceVal, approvedForAll);
 
 		otherCryptoAllowances.put(spenderNum, cryptoAllowance);

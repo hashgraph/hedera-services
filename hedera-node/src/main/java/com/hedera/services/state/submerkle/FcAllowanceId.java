@@ -44,7 +44,7 @@ public class FcAllowanceId implements SelfSerializable {
 		/* RuntimeConstructable */
 	}
 
-	public FcAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
+	FcAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
 		this.tokenNum = tokenNum;
 		this.spenderNum = spenderNum;
 	}
@@ -110,5 +110,9 @@ public class FcAllowanceId implements SelfSerializable {
 
 	public EntityNum getSpenderNum() {
 		return spenderNum;
+	}
+
+	public static FcAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
+		return new FcAllowanceId(tokenNum, spenderNum);
 	}
 }
