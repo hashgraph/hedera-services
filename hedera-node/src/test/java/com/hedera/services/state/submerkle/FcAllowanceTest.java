@@ -42,14 +42,14 @@ public class FcAllowanceTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new FcAllowance(allowance, approvedForAll);
+		subject = FcAllowance.from(allowance, approvedForAll);
 	}
 
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = new FcAllowance(3L, false);
-		final var three = new FcAllowance(100L, true);
+		final var two = FcAllowance.from(3L, false);
+		final var three = FcAllowance.from(100L, true);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -99,7 +99,7 @@ public class FcAllowanceTest {
 
 	@Test
 	void serializeWorksWithAllowanceSet() throws IOException {
-		final var subject = new FcAllowance(10L);
+		final var subject = FcAllowance.from(10L);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
@@ -112,7 +112,7 @@ public class FcAllowanceTest {
 
 	@Test
 	void deserializeWorksWithAllowanceSet() throws IOException {
-		final var subject = new FcAllowance(10L);
+		final var subject = FcAllowance.from(10L);
 		final var in = mock(SerializableDataInputStream.class);
 		final var newSubject = new FcAllowance();
 		given(in.readLong()).willReturn(10L);
@@ -125,7 +125,7 @@ public class FcAllowanceTest {
 
 	@Test
 	void serializeWorksWithApprovalSet() throws IOException {
-		final var subject = new FcAllowance(true);
+		final var subject = FcAllowance.from(true);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
@@ -137,7 +137,7 @@ public class FcAllowanceTest {
 
 	@Test
 	void deserializeWorksWithApprovalSet() throws IOException {
-		final var subject = new FcAllowance(true);
+		final var subject = FcAllowance.from(true);
 		final var in = mock(SerializableDataInputStream.class);
 		final var newSubject = new FcAllowance();
 		given(in.readBoolean()).willReturn(false).willReturn(true);
@@ -149,8 +149,8 @@ public class FcAllowanceTest {
 
 	@Test
 	void constructorWorks() {
-		final var noApprovalForAll = new FcAllowance(3L);
-		final var noAllowance = new FcAllowance(true);
+		final var noApprovalForAll = FcAllowance.from(3L);
+		final var noAllowance = FcAllowance.from(true);
 
 		assertEquals(null, noAllowance.getAllowance());
 		assertEquals(true, noAllowance.isApprovedForAll());

@@ -44,14 +44,14 @@ public class FcAllowanceIdTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new FcAllowanceId(tokenNum, spenderNum);
+		subject = FcAllowanceId.from(tokenNum, spenderNum);
 	}
 
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = new FcAllowanceId(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
-		final var three = new FcAllowanceId(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
+		final var two = FcAllowanceId.from(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
+		final var three = FcAllowanceId.from(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);

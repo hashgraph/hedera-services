@@ -43,17 +43,17 @@ public class FcAllowance implements SelfSerializable {
 		/* RuntimeConstructable */
 	}
 
-	public FcAllowance(final long allowance, final boolean approvedForAll) {
+	FcAllowance(final Long allowance, final boolean approvedForAll) {
 		this.allowance = allowance;
 		this.approvedForAll = approvedForAll;
 	}
 
-	public FcAllowance(final long allowance) {
+	FcAllowance(final Long allowance) {
 		this.allowance = allowance;
 		/* approvedForAll will be false */
 	}
 
-	public FcAllowance(final boolean approvedForAll) {
+	FcAllowance(final boolean approvedForAll) {
 		this.approvedForAll = approvedForAll;
 		/* allowance will be null */
 	}
@@ -125,5 +125,17 @@ public class FcAllowance implements SelfSerializable {
 
 	public boolean isApprovedForAll() {
 		return approvedForAll;
+	}
+
+	public static FcAllowance from(final Long allowance, final boolean approvedForAll) {
+		return new FcAllowance(allowance, approvedForAll);
+	}
+
+	public static FcAllowance from(final Long allowance) {
+		return new FcAllowance(allowance);
+	}
+
+	public static FcAllowance from(final boolean approvedForAll) {
+		return new FcAllowance(approvedForAll);
 	}
 }
