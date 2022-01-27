@@ -155,11 +155,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}
 		if (result.isSuccessful()) {
-			final var newContractId = contractParsedFromSolidityAddress(newContractAddress.toArray());
+			final var newEvmAddress = newContractAddress.toArrayUnsafe();
+			final var newContractId = contractParsedFromSolidityAddress(newEvmAddress);
 			sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
 			txnCtx.setCreated(newContractId);
+			recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
+		} else {
+			recordService.externalizeUnsuccessfulEvmCreate(result);
 		}
-		recordService.externaliseEvmCreateTransaction(result);
 	}
 
 

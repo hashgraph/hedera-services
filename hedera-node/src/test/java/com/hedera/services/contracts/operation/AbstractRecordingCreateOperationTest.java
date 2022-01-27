@@ -4,9 +4,11 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -62,8 +64,7 @@ class AbstractRecordingCreateOperationTest {
 	@Mock
 	private MutableAccount mutableAccount;
 	@Mock
-	@SuppressWarnings("rawtypes")
-	private AbstractLedgerWorldUpdater updater;
+	private HederaStackedWorldStateUpdater updater;
 	@Mock
 	private Deque<MessageFrame> stack;
 	@Mock
@@ -76,6 +77,7 @@ class AbstractRecordingCreateOperationTest {
 	private static final Gas childStipend = Gas.of(1_000_000L);
 	private static final Wei gasPrice = Wei.of(1000L);
 	private static final long value = 123_456L;
+	private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
 	private static final Address recipient = Address.BLAKE2B_F_COMPRESSION;
 	private static final Operation.OperationResult EMPTY_RESULT =
 			new Operation.OperationResult(Optional.empty(), Optional.empty());
@@ -170,6 +172,7 @@ class AbstractRecordingCreateOperationTest {
 		givenBuilderPrereqs();
 		given(syntheticTxnFactory.createContractSkeleton()).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(mockRecord);
+		given(updater.idOfLastAllocatedAddress()).willReturn(lastAllocated);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -185,8 +188,11 @@ class AbstractRecordingCreateOperationTest {
 		verify(updater).manageInProgressRecord(recordsHistorian, mockRecord, mockCreation);
 		// and:
 		final var tracker = trackerCaptor.getValue();
-		assertTrue(tracker.hasNewEvmAddress());
+		assertTrue(tracker.hasTrackedContractCreation());
+		assertEquals(lastAllocated, tracker.getTrackedNewContractId());
 		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
+		// and:
+		assertTrue(mockRecord.shouldNotBeExternalized());
 	}
 
 	@Test

@@ -234,8 +234,8 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	@Test
 	void createsValidityTestThatOnlyAcceptsContractIdKeyWhenBothRecipientAndContractAreActive() {
-		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
-		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_SENDER_ADDR);
+		final var uncontrolledId = EntityIdUtils.contractIdFromEvmAddress(Address.BLS12_G1ADD);
+		final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 
@@ -252,8 +252,8 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	@Test
 	void createsValidityTestThatAcceptsDelegateContractIdKeyWithJustRecipientActive() {
-		final var uncontrolledId = EntityIdUtils.contractParsedFromSolidityAddress(Address.BLS12_G1ADD);
-		final var controlledId = EntityIdUtils.contractParsedFromSolidityAddress(PRETEND_SENDER_ADDR);
+		final var uncontrolledId = EntityIdUtils.contractIdFromEvmAddress(Address.BLS12_G1ADD);
+		final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JDelegatableContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 

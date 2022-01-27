@@ -69,12 +69,17 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksNewContract() {
+		final var id = IdUtils.asContract("0.0.123");
 		final var addr = Address.BLAKE2B_F_COMPRESSION;
 
-		subject.trackNewContract(addr);
+		subject.trackNewContract(id, addr);
 
 		assertEquals(ByteString.copyFrom(addr.toArrayUnsafe()), subject.getNewEntityAlias());
-		assertTrue(subject.hasNewEvmAddress());
+		assertTrue(subject.hasTrackedContractCreation());
+		assertEquals(id, subject.getTrackedNewContractId());
+
+		subject.reset();
+		assertFalse(subject.hasTrackedContractCreation());
 	}
 
 	@Test
@@ -136,7 +141,7 @@ class SideEffectsTrackerTest {
 		subject.trackAutoCreation(createdAutoAccount, alias);
 
 		assertTrue(subject.hasTrackedAutoCreation());
-		assertFalse(subject.hasNewEvmAddress());
+		assertFalse(subject.hasTrackedContractCreation());
 		assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
 		assertEquals(alias, subject.getNewEntityAlias());
 

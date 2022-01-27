@@ -592,6 +592,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
 
+		private boolean onlyExternalizedIfSuccessful = false;
+
 		public Builder setFee(long fee) {
 			this.fee = fee;
 			return this;
@@ -822,16 +824,21 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return receiptBuilder;
 		}
 
-		public byte[] getTxnHash() {
-			return txnHash;
-		}
-
 		public TxnId getTxnId() {
 			return txnId;
 		}
 
 		public ByteString getAlias() {
 			return alias;
+		}
+
+		public boolean shouldNotBeExternalized() {
+			return onlyExternalizedIfSuccessful &&
+					!TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
+		}
+
+		public void onlyExternalizeIfSuccessful() {
+			onlyExternalizedIfSuccessful = true;
 		}
 	}
 

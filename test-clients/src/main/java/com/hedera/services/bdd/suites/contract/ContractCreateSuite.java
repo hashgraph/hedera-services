@@ -290,6 +290,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private HapiApiSpec propagatesNestedCreations() {
 		final var call = "callTxn";
+		final var creation = "createTxn";
 		final var initcode = "initcode";
 		final var nestedCreations = "nestedCreations";
 
@@ -297,12 +298,15 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						fileCreate(initcode)
 								.path(ContractResources.NESTED_CREATIONS_PATH),
-						contractCreate(nestedCreations).bytecode(initcode)
+						contractCreate(nestedCreations)
+								.bytecode(initcode)
+								.via(creation)
 				).when(
 						contractCall(nestedCreations, PROPAGATE_NESTED_CREATIONS_ABI)
 								.gas(4_000_000L)
 								.via(call)
 				).then(
+						getTxnRecord(creation).andAllChildRecords().logged(),
 						getTxnRecord(call).andAllChildRecords().logged()
 				);
 	}

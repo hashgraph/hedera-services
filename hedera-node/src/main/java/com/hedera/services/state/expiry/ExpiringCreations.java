@@ -176,7 +176,7 @@ public class ExpiringCreations implements EntityCreator {
 		if (!tokenChanges.isEmpty()) {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
-		if (sideEffectsTracker.hasNewEvmAddress()) {
+		if (sideEffectsTracker.hasTrackedContractCreation()) {
 			final var createResult = new SolidityFnResult();
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());
 			baseRecord.setContractCreateResult(createResult);

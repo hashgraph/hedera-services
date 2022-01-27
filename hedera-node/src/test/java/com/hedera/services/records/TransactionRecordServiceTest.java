@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,9 +57,12 @@ class TransactionRecordServiceTest {
 	private static final Long SBH_REFUND = 234L;
 	private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
 
-	@Mock private TransactionContext txnCtx;
-	@Mock private TransactionProcessingResult processingResult;
-	@Mock private ContractFunctionResult functionResult;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private TransactionProcessingResult processingResult;
+	@Mock
+	private ContractFunctionResult functionResult;
 
 	private TransactionRecordService subject;
 
@@ -69,14 +73,19 @@ class TransactionRecordServiceTest {
 
 	@Test
 	void externalisesEvmCreateTransactionWithSuccess() {
-		// given:
-		givenProcessingResult(true, null);
+		final var mockAddr = Address.ALTBN128_ADD.toArrayUnsafe();
+		given(processingResult.isSuccessful()).willReturn(true);
+		given(processingResult.getGasPrice()).willReturn(1L);
+		given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
+		given(processingResult.getGasUsed()).willReturn(GAS_USED);
+		given(processingResult.toCreationGrpc(mockAddr)).willReturn(functionResult);
 		// when:
-		subject.externaliseEvmCreateTransaction(processingResult);
+		subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr);
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCreateResult(processingResult.toGrpc());
+		verify(txnCtx).setCreateResult(functionResult);
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+		verify(processingResult).toCreationGrpc(mockAddr);
 	}
 
 	@Test
@@ -96,7 +105,7 @@ class TransactionRecordServiceTest {
 		// given:
 		givenProcessingResult(false, null);
 		// when:
-		subject.externaliseEvmCreateTransaction(processingResult);
+		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
@@ -108,7 +117,7 @@ class TransactionRecordServiceTest {
 		// given:
 		givenProcessingResult(false, SELF_DESTRUCT_TO_SELF);
 		// when:
-		subject.externaliseEvmCreateTransaction(processingResult);
+		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(OBTAINER_SAME_CONTRACT_ID);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
@@ -120,7 +129,7 @@ class TransactionRecordServiceTest {
 		// given:
 		givenProcessingResult(false, INVALID_SOLIDITY_ADDRESS);
 		// when:
-		subject.externaliseEvmCreateTransaction(processingResult);
+		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
@@ -132,7 +141,7 @@ class TransactionRecordServiceTest {
 		// given:
 		givenProcessingResult(false, INVALID_SIGNATURE);
 		// when:
-		subject.externaliseEvmCreateTransaction(processingResult);
+		subject.externalizeUnsuccessfulEvmCreate(processingResult);
 		// then:
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
 		verify(txnCtx).setCreateResult(processingResult.toGrpc());
@@ -155,16 +164,20 @@ class TransactionRecordServiceTest {
 		given(processingResult.isSuccessful()).willReturn(false);
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
-		assertEquals( ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+		assertEquals(ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID,
+				ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-		assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+		assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS,
+				ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
-		assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+		assertEquals(ResponseCodeEnum.INVALID_SIGNATURE,
+				ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 		given(processingResult.getHaltReason())
 				.willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-		assertEquals( ResponseCodeEnum.INSUFFICIENT_GAS, ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
+		assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS,
+				ResponseCodeUtil.getStatus(processingResult, ResponseCodeEnum.SUCCESS));
 	}
 
 	private void givenProcessingResult(final boolean isSuccessful, @Nullable final ExceptionalHaltReason haltReason) {

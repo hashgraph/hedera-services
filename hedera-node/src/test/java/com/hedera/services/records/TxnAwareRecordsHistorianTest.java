@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.BDDMockito.any;
@@ -144,6 +145,36 @@ class TxnAwareRecordsHistorianTest {
 		verify(followingRecordFrom2).revert();
 		verify(precedingRecordFrom1, never()).revert();
 		verify(precedingRecordFrom2).revert();
+	}
+
+	@Test
+	void ignoresUnsuccessfulChildRecordIfNotExternalizedOnFailure() {
+		final var mockTopLevelRecord = mock(ExpirableTxnRecord.class);
+		given(mockTopLevelRecord.getEnumStatus()).willReturn(SUCCESS);
+
+		final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
+		given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
+		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
+
+		givenTopLevelContext();
+		given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
+		given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
+
+		given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
+		given(creator.saveExpiringRecord(
+				effPayer,
+				mockTopLevelRecord,
+				nows,
+				submittingMember)).willReturn(mockTopLevelRecord);
+
+		final var followSynthBody = aBuilderWith("FOLLOW");
+		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+		given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
+
+		subject.saveExpirableTransactionRecords();
+		final var followingRsos = subject.getFollowingChildRecords();
+		assertTrue(followingRsos.isEmpty());
 	}
 
 	@Test

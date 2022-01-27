@@ -34,7 +34,6 @@ import java.util.List;
  * Hedera adapted interface for a view over the accounts of the world state and methods for persisting state changes
  */
 public interface HederaMutableWorldState extends WorldState, WorldView {
-
 	/**
 	 * Allocates new Id address based on the realm and shard of the sponsor
 	 * IMPORTANT - The Id must be reclaimed if the MessageFrame reverts

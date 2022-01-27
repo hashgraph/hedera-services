@@ -3,7 +3,7 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -170,12 +170,12 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			/* https://github.com/hashgraph/hedera-services/issues/2807
 			* Add an in-progress record so that if everything succeeds, we can externalize the newly
 			* created contract in the record stream with both its 0.0.X id and its EVM address. */
+			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var sideEffects = new SideEffectsTracker();
-			sideEffects.trackNewContract(childFrame.getContractAddress());
+			sideEffects.trackNewContract(updater.idOfLastAllocatedAddress(), childFrame.getContractAddress());
 			final var childRecord = creator.createSuccessfulSyntheticRecord(
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-			@SuppressWarnings({"rawtypes"})
-			final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+			childRecord.onlyExternalizeIfSuccessful();
 			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxnFactory.createContractSkeleton());
 		} else {
 			frame.setReturnData(childFrame.getOutputData());

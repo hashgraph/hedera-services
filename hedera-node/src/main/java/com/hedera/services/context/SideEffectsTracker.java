@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -68,6 +69,7 @@ public class SideEffectsTracker {
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
+	private ContractID newContractId = null;
 	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
@@ -77,7 +79,8 @@ public class SideEffectsTracker {
 		/* For Dagger2 */
 	}
 
-	public void trackNewContract(final Address evmAddress) {
+	public void trackNewContract(final ContractID contractId, final Address evmAddress) {
+		newContractId = contractId;
 		newEntityAlias = ByteString.copyFrom(evmAddress.toArrayUnsafe());
 	}
 
@@ -201,8 +204,12 @@ public class SideEffectsTracker {
 		return newAccountId;
 	}
 
-	public boolean hasNewEvmAddress() {
-		return newAccountId == null && newEntityAlias.size() == 20;
+	public ContractID getTrackedNewContractId() {
+		return newContractId;
+	}
+
+	public boolean hasTrackedContractCreation() {
+		return newContractId != null;
 	}
 
 	/**
@@ -396,6 +403,7 @@ public class SideEffectsTracker {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 		newAccountId = null;
+		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
 	}
 

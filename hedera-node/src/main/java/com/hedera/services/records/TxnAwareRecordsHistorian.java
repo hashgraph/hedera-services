@@ -199,6 +199,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
 			final var child = inProgress.recordBuilder();
+			if (child.shouldNotBeExternalized()) {
+				continue;
+			}
 			topLevel.excludeHbarChangesFrom(child);
 
 			child.setTxnId(parentId.withNonce(nextNonce++));
