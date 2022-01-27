@@ -22,6 +22,8 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -44,7 +46,9 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 	@Inject
 	public HederaCreateOperation(
 			final GasCalculator gasCalculator,
-			final SyntheticTxnFactory syntheticTxnFactory
+			final EntityCreator creator,
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		super(
 				0xF0,
@@ -53,7 +57,9 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				1,
 				1,
 				gasCalculator,
-				syntheticTxnFactory);
+				creator,
+				syntheticTxnFactory,
+				recordsHistorian);
 	}
 
 	@Override

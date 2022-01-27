@@ -23,6 +23,8 @@ package com.hedera.services.contracts.operation;
  */
 
 
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
@@ -34,7 +36,6 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,12 +81,16 @@ class HederaCreateOperationTest {
 	private Iterator<MessageFrame> iterator;
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private EntityCreator creator;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator, syntheticTxnFactory);
+		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
 	}
 
 	@Test

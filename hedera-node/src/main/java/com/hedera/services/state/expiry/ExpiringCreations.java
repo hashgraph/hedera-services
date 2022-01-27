@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -55,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-	public static final String EMPTY_MEMO = "";
 
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
@@ -167,14 +167,19 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
-			baseRecord.setAlias(sideEffectsTracker.getNewAccountAlias());
+			baseRecord.setAlias(sideEffectsTracker.getNewEntityAlias());
 		}
-
 		final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
 		if (!tokenChanges.isEmpty()) {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
+		}
+		if (sideEffectsTracker.hasNewEvmAddress()) {
+			final var createResult = new SolidityFnResult();
+			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());
+			baseRecord.setContractCreateResult(createResult);
 		}
 
 		return baseRecord;

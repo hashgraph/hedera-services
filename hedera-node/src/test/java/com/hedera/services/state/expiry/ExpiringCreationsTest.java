@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,9 +54,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -144,6 +146,23 @@ class ExpiringCreationsTest {
 	}
 
 	@Test
+	void createsSuccessfulSyntheticRecordAsExpectedWithNewContractAddress() {
+		final var addr = Address.BLAKE2B_F_COMPRESSION;
+		setupTracker();
+		given(sideEffectsTracker.hasNewEvmAddress()).willReturn(true);
+		given(sideEffectsTracker.getNewEntityAlias()).willReturn(ByteString.copyFrom(addr.toArrayUnsafe()));
+
+		final var record = subject.createSuccessfulSyntheticRecord(
+				Collections.emptyList(),
+				sideEffectsTracker,
+				EMPTY_MEMO);
+
+		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+		final var createFnResult = record.getContractCreateResult();
+		assertEquals(addr.toArrayUnsafe(), createFnResult.getEvmAddress());
+	}
+
+	@Test
 	void createsSuccessfulSyntheticRecordAsExpected() {
 		setupTracker();
 		final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
@@ -221,7 +240,7 @@ class ExpiringCreationsTest {
 
 		given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
 		given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
-		given(sideEffectsTracker.getNewAccountAlias()).willReturn(mockAlias);
+		given(sideEffectsTracker.getNewEntityAlias()).willReturn(mockAlias);
 
 		final var created = subject.createTopLevelRecord(
 				totalFee,

@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PROPAGATE_NESTED_CREATIONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -114,28 +115,30 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				createEmptyConstructor(),
-				insufficientPayerBalanceUponCreation(),
-				rejectsInvalidMemo(),
-				rejectsInsufficientFee(),
-				rejectsInvalidBytecode(),
-				revertsNonzeroBalance(),
-				createFailsIfMissingSigs(),
-				rejectsInsufficientGas(),
-				createsVanillaContractAsExpectedWithOmittedAdminKey(),
-				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-				cannotCreateTooLargeContract(),
-				revertedTryExtCallHasNoSideEffects(),
-				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-				cannotSendToNonExistentAccount(),
-				canCallPendingContractSafely(),
-				delegateContractIdRequiredForTransferInDelegateCall(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCreate(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				vanillaSuccess()
+		return List.of(new HapiApiSpec[] {
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						revertedTryExtCallHasNoSideEffects(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						cannotSendToNonExistentAccount(),
+						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
+						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+						minChargeIsTXGasUsedByContractCreate(),
+						gasLimitOverMaxGasLimitFailsPrecheck(),
+						vanillaSuccess(),
+						propagatesNestedCreations(),
+				}
 		);
 	}
 
@@ -282,6 +285,25 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("emptyConstructorTest")
 								.bytecode("contractFile")
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec propagatesNestedCreations() {
+		final var call = "callTxn";
+		final var initcode = "initcode";
+		final var nestedCreations = "nestedCreations";
+
+		return defaultHapiSpec("PropagatesNestedCreations")
+				.given(
+						fileCreate(initcode)
+								.path(ContractResources.NESTED_CREATIONS_PATH),
+						contractCreate(nestedCreations).bytecode(initcode)
+				).when(
+						contractCall(nestedCreations, PROPAGATE_NESTED_CREATIONS_ABI)
+								.gas(4_000_000L)
+								.via(call)
+				).then(
+						getTxnRecord(call).andAllChildRecords().logged()
 				);
 	}
 

@@ -32,6 +32,7 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +65,16 @@ class SideEffectsTrackerTest {
 
 		subject.reset();
 		assertFalse(subject.hasTrackedNewTokenId());
+	}
+
+	@Test
+	void tracksNewContract() {
+		final var addr = Address.BLAKE2B_F_COMPRESSION;
+
+		subject.trackNewContract(addr);
+
+		assertEquals(ByteString.copyFrom(addr.toArrayUnsafe()), subject.getNewEntityAlias());
+		assertTrue(subject.hasNewEvmAddress());
 	}
 
 	@Test
@@ -125,8 +136,9 @@ class SideEffectsTrackerTest {
 		subject.trackAutoCreation(createdAutoAccount, alias);
 
 		assertTrue(subject.hasTrackedAutoCreation());
+		assertFalse(subject.hasNewEvmAddress());
 		assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
-		assertEquals(alias, subject.getNewAccountAlias());
+		assertEquals(alias, subject.getNewEntityAlias());
 
 		subject.reset();
 		assertFalse(subject.hasTrackedAutoCreation());

@@ -1,5 +1,9 @@
 package com.hedera.services.contracts.operation;
 
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -19,14 +23,21 @@ import org.hyperledger.besu.evm.operation.Operation;
 
 import java.util.Optional;
 
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public abstract class AbstractRecordingCreateOperation extends AbstractOperation {
+	private static final int MAX_STACK_DEPTH = 1024;
+
 	protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
 			new Operation.OperationResult(
 					Optional.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 
+	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
+	private final AccountRecordsHistorian recordsHistorian;
 
 	protected AbstractRecordingCreateOperation(
 			final int opcode,
@@ -35,9 +46,13 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			final int stackItemsProduced,
 			final int opSize,
 			final GasCalculator gasCalculator,
-			final SyntheticTxnFactory syntheticTxnFactory
+			final EntityCreator creator,
+			final SyntheticTxnFactory syntheticTxnFactory,
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
+		this.creator = creator;
+		this.recordsHistorian = recordsHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
@@ -52,8 +67,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 		final Optional<Gas> optionalCost = Optional.ofNullable(cost);
 		if (cost != null) {
 			if (frame.isStatic()) {
-				return new Operation.OperationResult(
-						optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+				return haltWith(optionalCost, ILLEGAL_STATE_CHANGE);
 			} else if (frame.getRemainingGas().compareTo(cost) < 0) {
 				return new Operation.OperationResult(
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
@@ -65,7 +79,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 			frame.clearReturnData();
 
-			if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= 1024) {
+			if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
 				fail(frame);
 			} else {
 				spawnChildMessage(frame);
@@ -73,6 +87,10 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 		}
 
 		return new Operation.OperationResult(optionalCost, Optional.empty());
+	}
+
+	static Operation.OperationResult haltWith(final Optional<Gas> optionalCost, final ExceptionalHaltReason reason) {
+		return new Operation.OperationResult(optionalCost, Optional.of(reason));
 	}
 
 	protected abstract Gas cost(final MessageFrame frame);
@@ -148,6 +166,17 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 		if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
 			frame.mergeWarmedUpFields(childFrame);
 			frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
+
+			/* https://github.com/hashgraph/hedera-services/issues/2807
+			* Add an in-progress record so that if everything succeeds, we can externalize the newly
+			* created contract in the record stream with both its 0.0.X id and its EVM address. */
+			final var sideEffects = new SideEffectsTracker();
+			sideEffects.trackNewContract(childFrame.getContractAddress());
+			final var childRecord = creator.createSuccessfulSyntheticRecord(
+					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			@SuppressWarnings({"rawtypes"})
+			final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxnFactory.createContractSkeleton());
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
 			frame.pushStackItem(UInt256.ZERO);
