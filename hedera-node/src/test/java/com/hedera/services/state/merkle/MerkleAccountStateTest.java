@@ -47,6 +47,7 @@ import java.util.Map;
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -773,5 +774,31 @@ class MerkleAccountStateTest {
 		defaultSubject.setMaxAutomaticAssociations(changeMax);
 
 		assertEquals(changeMax, defaultSubject.getMaxAutomaticAssociations());
+	}
+
+	@Test
+	void addingAndRemovingToMapsWork() {
+		final EntityNum spenderNum = EntityNum.fromLong(2000L);
+		final EntityNum tokenForAllowance = EntityNum.fromLong(4000L);
+		final Long cryptoAllowance = 100L;
+		final boolean approvedForAll = false;
+		final Long tokenAllowanceVal = 10L;
+		final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
+
+		subject.addCryptoAllowance(spenderNum, cryptoAllowance);
+		subject.addTokenAllowance(tokenForAllowance, spenderNum, tokenAllowanceVal, approvedForAll);
+
+		assertTrue(subject.getCryptoAllowances().containsKey(spenderNum));
+		assertTrue(subject.getTokenAllowances().containsKey(tokenAllowanceKey));
+		assertEquals(2, subject.getCryptoAllowances().size());
+		assertEquals(2, subject.getTokenAllowances().size());
+
+		subject.removeCryptoAllowance(spenderNum);
+		subject.removeTokenAllowance(tokenForAllowance, spenderNum);
+
+		assertFalse(subject.getCryptoAllowances().containsKey(spenderNum));
+		assertFalse(subject.getTokenAllowances().containsKey(tokenAllowanceKey));
+		assertEquals(1, subject.getCryptoAllowances().size());
+		assertEquals(1, subject.getTokenAllowances().size());
 	}
 }

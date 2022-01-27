@@ -467,4 +467,27 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			tokenAllowances.put(key, value);
 		}
 	}
+
+	/* --- Helper Functions ---*/
+	public void addCryptoAllowance(final EntityNum spender, final Long allowance) {
+		cryptoAllowances.put(spender, allowance);
+	}
+
+	public void addTokenAllowance(
+			final EntityNum tokenNum,
+			final EntityNum spenderNum,
+			final Long allowance,
+			final boolean approvedForAll) {
+		final var key = FcAllowanceId.from(tokenNum, spenderNum);
+		final var value = FcAllowance.from(allowance, approvedForAll);
+		tokenAllowances.put(key, value);
+	}
+
+	public void removeCryptoAllowance(final EntityNum spender) {
+		cryptoAllowances.remove(spender);
+	}
+
+	public void removeTokenAllowance(final EntityNum tokenNum, final EntityNum spenderNum) {
+		tokenAllowances.remove(FcAllowanceId.from(tokenNum, spenderNum));
+	}
 }
