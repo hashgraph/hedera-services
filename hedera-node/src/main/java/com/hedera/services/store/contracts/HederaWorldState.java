@@ -27,7 +27,9 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -50,11 +52,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
@@ -67,6 +71,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final AccountRecordsHistorian recordsHistorian;
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
@@ -76,14 +81,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
 			final CodeCache codeCache,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.recordsHistorian = recordsHistorian;
 	}
 
+	/* Used to manage static calls. */
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
@@ -93,6 +101,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = null;
+		this.recordsHistorian = null;
 	}
 
 	@Override
@@ -106,6 +115,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public void customizeSponsoredAccounts() {
+		Objects.requireNonNull(recordsHistorian, "A static call cannot generated sponsored accounts");
 		sponsorMap.forEach((contract, sponsorAddress) -> {
 			final var createdId = accountParsedFromSolidityAddress(contract);
 			final var sponsorId = accountParsedFromSolidityAddress(sponsorAddress);
@@ -125,6 +135,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 					.isSmartContract(true);
 
 			entityAccess.customize(createdId, customizer);
+			recordsHistorian.customizeSuccessor(
+					ip -> isCreationOf(createdId, ip.recordBuilder()),
+					ip -> customizer.applyToSynthetic(ip.syntheticBody().getContractCreateInstanceBuilder()));
 		});
 		sponsorMap.clear();
 	}
@@ -446,5 +459,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 		public WorldStateAccount getHederaAccount(final Address address) {
 			return getForMutation(address);
 		}
+	}
+
+	private boolean isCreationOf(
+			final AccountID backingId,
+			final ExpirableTxnRecord.Builder recordBuilder
+	) {
+		final var receiptBuilder = recordBuilder.getReceiptBuilder();
+		if (receiptBuilder == null || !SUCCESS_LITERAL.equals(receiptBuilder.getStatus())) {
+			return false;
+		}
+		final var contractId = receiptBuilder.getContractId();
+		return contractId != null && contractId.matches(backingId);
 	}
 }

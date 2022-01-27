@@ -38,6 +38,8 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -173,6 +175,19 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 		nextNonce = USER_TRANSACTION_NONCE + 1;
 		nextSourceId = 1;
+	}
+
+	@Override
+	public void customizeSuccessor(
+			final Predicate<InProgressChildRecord> matcher,
+			final Consumer<InProgressChildRecord> customizer
+	) {
+		for (final var inProgress : followingChildRecords) {
+			if (matcher.test(inProgress)) {
+				customizer.accept(inProgress);
+				return;
+			}
+		}
 	}
 
 	private void revert(final int sourceId, final List<InProgressChildRecord> childRecords) {

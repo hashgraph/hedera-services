@@ -37,7 +37,7 @@ public class PrecompilePricingUtilsTest {
 	@Test
 	void failsToLoadCanonicalPrices() throws IOException {
 		given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
-		assertThrows(PrecompilePricingUtils.CanonicalOperationsUnloadbleException.class,
+		assertThrows(PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
 				() -> new PrecompilePricingUtils(assetLoader, exchange));
 	}
 

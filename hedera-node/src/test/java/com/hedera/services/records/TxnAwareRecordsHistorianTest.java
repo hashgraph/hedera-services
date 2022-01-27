@@ -178,6 +178,22 @@ class TxnAwareRecordsHistorianTest {
 	}
 
 	@Test
+	void customizesMatchingSuccessor() {
+		final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
+		given(txnCtx.consensusTime()).willReturn(topLevelNow);
+
+		final var followSynthBody = aBuilderWith("FOLLOW");
+		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
+		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
+
+		final var n = (short) 123;
+		subject.customizeSuccessor(any -> false, childRecord -> {});
+		subject.customizeSuccessor(any -> true, childRecord -> childRecord.recordBuilder().setNumChildRecords(n));
+
+		verify(followingBuilder).setNumChildRecords(n);
+	}
+
+	@Test
 	void incorporatesChildRecordsIfPresent() {
 		final var mockFollowingRecord = mock(ExpirableTxnRecord.class);
 		final var followingChildNows = nows + 1;

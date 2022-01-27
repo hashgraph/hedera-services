@@ -148,8 +148,10 @@ class ExpiringCreationsTest {
 	@Test
 	void createsSuccessfulSyntheticRecordAsExpectedWithNewContractAddress() {
 		final var addr = Address.BLAKE2B_F_COMPRESSION;
+		final var id = IdUtils.asContract("0.0.12324");
 		setupTracker();
 		given(sideEffectsTracker.hasTrackedContractCreation()).willReturn(true);
+		given(sideEffectsTracker.getTrackedNewContractId()).willReturn(id);
 		given(sideEffectsTracker.getNewEntityAlias()).willReturn(ByteString.copyFrom(addr.toArrayUnsafe()));
 
 		final var record = subject.createSuccessfulSyntheticRecord(
@@ -158,6 +160,7 @@ class ExpiringCreationsTest {
 				EMPTY_MEMO);
 
 		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+		assertEquals(EntityId.fromGrpcContractId(id), record.getReceiptBuilder().getContractId());
 		final var createFnResult = record.getContractCreateResult();
 		assertArrayEquals(addr.toArrayUnsafe(), createFnResult.getEvmAddress());
 	}
