@@ -50,4 +50,22 @@ contract ERC721Contract {
     function transferFrom(address token, address from, address to, uint256 tokenId) public {
         IERC721(token).transferFrom(from, to, tokenId);
     }
+
+    //Not supported operations - should return a failure
+
+    function approve(address token, address to, uint256 tokenId) public {
+        IERC721(token).approve(to, tokenId);
+    }
+
+    function setApprovalForAll(address token, address operator, bool approved) public {
+        IERC721(token).setApprovalForAll(operator, approved);
+    }
+
+    function getApproved(address token, uint256 tokenId) public {
+        IERC721(token).getApproved(tokenId);
+    }
+
+    function isApprovedForAll(address token, address owner, address operator) public {
+        IERC721(token).isApprovedForAll(owner, operator);
+    }
 }

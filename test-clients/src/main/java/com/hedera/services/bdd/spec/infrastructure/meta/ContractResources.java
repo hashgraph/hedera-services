@@ -179,6 +179,18 @@ public class ContractResources {
 	public static final String ERC_721_TRANSFER_FROM_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\"," +
 			"\"name\": \"from\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"to\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"tokenId\"," +
 			"\"type\": \"uint256\"}],\"name\": \"transferFrom\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_APPROVE_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"to\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"approve\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_SET_APPROVAL_FOR_ALL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"operator\",\"type\": \"address\"},{\"internalType\": \"bool\",\"name\": \"approved\",\"type\": \"bool\"}]," +
+			"\"name\": \"setApprovalForAll\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_GET_APPROVED_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"getApproved\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_IS_APPROVED_FOR_ALL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"owner\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"operator\",\"type\": \"address\"}]," +
+			"\"name\": \"isApprovedForAll\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"";
 
 	public static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
 			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnCallAfterNestedMintCallWithPrecompileCall\"," +
