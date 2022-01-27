@@ -146,4 +146,11 @@ public class EntityNum {
 	static boolean areValidNums(long shard, long realm) {
 		return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
 	}
+
+	@Override
+	public String toString() {
+		return "EntityNum{" +
+				"value=" + value +
+				'}';
+	}
 }

@@ -41,6 +41,7 @@ public class FcAllowanceId implements SelfSerializable {
 	private EntityNum spenderNum;
 
 	public FcAllowanceId() {
+		/* RuntimeConstructable */
 	}
 
 	public FcAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
@@ -98,8 +99,8 @@ public class FcAllowanceId implements SelfSerializable {
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
 				.omitNullValues()
-				.add("tokenNum", tokenNum)
-				.add("spenderNum", spenderNum)
+				.add("tokenNum", tokenNum.longValue())
+				.add("spenderNum", spenderNum.longValue())
 				.toString();
 	}
 

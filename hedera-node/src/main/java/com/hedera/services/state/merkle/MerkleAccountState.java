@@ -160,19 +160,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numContractKvPairs = in.readInt();
 		}
 		if (version >= RELEASE_0230_VERSION) {
-			var numCryptoAllowances = in.readInt();
-			while (numCryptoAllowances-- > 0) {
-				final var entityNum = EntityNum.fromLong(in.readLong());
-				final var allowance = in.readLong();
-				cryptoAllowances.put(entityNum, allowance);
-			}
-
-			var numTokenAllowances = in.readInt();
-			while (numTokenAllowances-- > 0) {
-				final FcAllowanceId key = in.readSerializable();
-				final FcAllowance value = in.readSerializable();
-				tokenAllowances.put(key, value);
-			}
+			deserializeAllowances(in);
 		}
 	}
 
@@ -192,16 +180,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
-		out.writeInt(cryptoAllowances.size());
-		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
-			out.writeLong(entry.getKey().longValue());
-			out.writeLong(entry.getValue());
-		}
-		out.writeInt(tokenAllowances.size());
-		for (Map.Entry<FcAllowanceId, FcAllowance> entry : tokenAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeSerializable(entry.getValue(), true);
-		}
+		serializeAllowances(out);
 	}
 
 	/* --- Copyable --- */
@@ -442,9 +421,47 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
+	public Map<FcAllowanceId, FcAllowance> getTokenAllowances() {
+		return tokenAllowances;
+	}
+
+	public void setTokenAllowances(final Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+		assertMutable("tokenAllowances");
+		this.tokenAllowances = tokenAllowances;
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
+		}
+	}
+
+	private void serializeAllowances(final SerializableDataOutputStream out) throws IOException {
+		out.writeInt(cryptoAllowances.size());
+		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
+			out.writeLong(entry.getKey().longValue());
+			out.writeLong(entry.getValue().longValue());
+		}
+		out.writeInt(tokenAllowances.size());
+		for (Map.Entry<FcAllowanceId, FcAllowance> entry : tokenAllowances.entrySet()) {
+			out.writeSerializable(entry.getKey(), true);
+			out.writeSerializable(entry.getValue(), true);
+		}
+	}
+
+	private void deserializeAllowances(final SerializableDataInputStream in) throws IOException {
+		var numCryptoAllowances = in.readInt();
+		while (numCryptoAllowances-- > 0) {
+			final var entityNum = EntityNum.fromLong(in.readLong());
+			final var allowance = in.readLong();
+			cryptoAllowances.put(entityNum, allowance);
+		}
+
+		var numTokenAllowances = in.readInt();
+		while (numTokenAllowances-- > 0) {
+			final FcAllowanceId key = in.readSerializable();
+			final FcAllowance value = in.readSerializable();
+			tokenAllowances.put(key, value);
 		}
 	}
 }
