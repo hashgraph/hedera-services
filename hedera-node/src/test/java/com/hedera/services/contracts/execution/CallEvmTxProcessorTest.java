@@ -22,14 +22,18 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
@@ -41,6 +45,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -167,6 +173,39 @@ class CallEvmTxProcessorTest {
 		assertTrue(result.isSuccessful());
 		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+	}
+
+	@Test
+	void assertSuccessExecutionPopulatesStorageChanges() {
+		givenValidMock();
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		givenSenderWithBalance(350_000L);
+		final var contractAddress = "0xffff";
+		final var slot = 1L;
+		final var oldSlotValue = 4L;
+		final var newSlotValue = 255L;
+		final var updatedAccount = mock(UpdateTrackingAccount.class);
+		given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
+		given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
+		given(updatedAccount.getUpdatedStorage()).willReturn(Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
+		given(updatedAccount.getStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(newSlotValue));
+		doReturn(List.of((updatedAccount))).when(updater).getTouchedAccounts();
+
+		final var result = callEvmTxProcessor.execute(
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+
+		assertTrue(result.isSuccessful());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		assertEquals(1, result.toGrpc().getStateChangesCount());
+		final var contractStateChange = result.toGrpc().getStateChanges(0);
+		assertEquals(EntityIdUtils.contractParsedFromSolidityAddress(Address.fromHexString(contractAddress)),
+				contractStateChange.getContractID());
+		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(slot)).toArrayUnsafe()),
+				contractStateChange.getStorageChanges(0).getSlot());
+		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(oldSlotValue)).toArrayUnsafe()),
+				contractStateChange.getStorageChanges(0).getValueRead());
+		assertEquals(BytesValue.of(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(newSlotValue)).toArrayUnsafe())),
+				contractStateChange.getStorageChanges(0).getValueWritten());
 	}
 
 	@Test
