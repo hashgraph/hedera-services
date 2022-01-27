@@ -1,6 +1,7 @@
 package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -164,14 +165,15 @@ class AbstractRecordingCreateOperationTest {
 	@Test
 	void hasExpectedChildCompletionOnSuccess() {
 		final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-		final var mockRecord = ExpirableTxnRecord.newBuilder();
+		final var liveRecord = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
 		final var mockCreation = TransactionBody.newBuilder()
 				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder());
 		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
 		given(syntheticTxnFactory.createContractSkeleton()).willReturn(mockCreation);
-		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(mockRecord);
+		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastAllocatedAddress()).willReturn(lastAllocated);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
@@ -185,14 +187,14 @@ class AbstractRecordingCreateOperationTest {
 		verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
 		verify(creator).createSuccessfulSyntheticRecord(
 				eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-		verify(updater).manageInProgressRecord(recordsHistorian, mockRecord, mockCreation);
+		verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation);
 		// and:
 		final var tracker = trackerCaptor.getValue();
 		assertTrue(tracker.hasTrackedContractCreation());
 		assertEquals(lastAllocated, tracker.getTrackedNewContractId());
 		assertArrayEquals(Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(), tracker.getNewEntityAlias().toByteArray());
 		// and:
-		assertTrue(mockRecord.shouldNotBeExternalized());
+		assertTrue(liveRecord.shouldNotBeExternalized());
 	}
 
 	@Test
