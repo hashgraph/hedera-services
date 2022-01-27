@@ -33,8 +33,9 @@ class TypedSuiteRunnerTest {
 	//       as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-//		final String[] withSplit = {"-s contract"};
-		final String[] withSplit = {"-s Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees"};
+		final String[] withSplit = {"-s precompile, openzeppelin, opcodes, fees, freeze, negative "};
+//		final String[] withSplit = {"-s Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees"};
+//		final String[] withSplit = {"-s Contract"};
 		final String[] withWrongArguments = {"-s Autorew, Compose, Consensus, Contract, Contct op codes, Contract records, Cryto, Fees"};
 		final String[] withoutSplit = {"Autorenew suites", "Compose suites", "Consensus suites", "LimeChain suites", "meta suites", "Hedera suites"};
 		final String[] allWithSplit = {"-s -a"};

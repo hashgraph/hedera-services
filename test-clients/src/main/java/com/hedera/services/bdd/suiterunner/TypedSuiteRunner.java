@@ -21,10 +21,9 @@ package com.hedera.services.bdd.suiterunner;
  */
 
 
-import com.hedera.services.bdd.suiterunner.enums.SuitePackage;
 import com.hedera.services.bdd.suiterunner.models.SpecReport;
 import com.hedera.services.bdd.suiterunner.models.SuiteReport;
-import com.hedera.services.bdd.suiterunner.store.PackageStore;
+import com.hedera.services.bdd.suiterunner.reflective_runner.utils.SuiteRunnerUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -42,49 +41,67 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.FREEZE_SUITES;
-import static com.hedera.services.bdd.suiterunner.enums.SuitePackage.PERF_SUITES;
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.getReportFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
 import static java.util.stream.Collectors.toList;
 
+// TODO: Ask Yoan - can freeze suites be executed with other suites or should be run separately only when running all suites
+// TODO: Handle invalid flags like -y instead of -a or -sfp instead of -spt
 public class TypedSuiteRunner {
 	public static final String LOG_PATH = "output/log-buffer.log";
 	private static final String SEPARATOR = "====================================";
 	private static final Logger log = redirectLogger();
-	private static Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites;
 	private static final List<SuiteReport> failedSuites = new ArrayList<>();
 	private static boolean runAllSuites = false;
 
 	public static void main(String[] args) {
-		final var store = new PackageStore();
-		final var effectiveArguments = getArguments(args);
-		suites = store.initializeCategories(effectiveArguments);
-		var suiteByRunType = distributeByRunType(suites.keySet());
+		final var packages = SuiteRunnerUtils.getPackages(args);
+		final var suites = SuiteRunnerUtils.getSuites(packages);
+		final var suitesByRunType = distributeByRunType(suites.values());
 
 		clearLog();
+		runSuitesSync(suitesByRunType.get("RunsSync"));
+		runSuitesAsync(suitesByRunType.get("RunsAsync"));
 
-		runSuitesSync(suiteByRunType.get("RunsSync"));
-		runSuitesAsync(suiteByRunType.get("RunsAsync"));
 
-		// TODO: Ask Yoan - can freeze suites be executed with other suites or should be run separately only when running
-		//  	 all suites
-		if (effectiveArguments.contains("Freeze") || runAllSuites) {
-			log.warn(String.format("%1$s Running Freeze suites %1$s", SEPARATOR));
-			runSuitesSync(suites.get(FREEZE_SUITES).get());
-		}
-		clearLog();
-		generateFinalLog();
+// TODO: Document why the freeze tests are being run separately
+
+//		if (effectiveArguments.contains("Freeze") || runAllSuites) {
+//			log.warn(String.format("%1$s Running Freeze suites %1$s", SEPARATOR));
+//			runSuitesSync(suites.get(FREEZE_SUITES).get());
+//		}
+//		clearLog();
+//		generateFinalLog();
+	}
+
+
+
+		private static Map<String, List<HapiApiSuite>> distributeByRunType(final Collection<List<HapiApiSuite>> suites) {
+		final Map<String, List<HapiApiSuite>> byRunType =
+				Map.of("RunsSync", new ArrayList<>(), "RunsAsync", new ArrayList<>());
+
+		suites
+				.stream()
+				.flatMap(Collection::stream)
+				.peek(suite -> {
+					suite.skipClientTearDown();
+					suite.deferResultsSummary();
+				})
+				.forEach(suite -> {
+					if (suite.canRunAsync()) {
+						byRunType.get("RunsAsync").add(suite);
+					} else {
+						byRunType.get("RunsSync").add(suite);
+					}
+				});
+
+		return byRunType;
 	}
 
 	private static void generateFinalLog() {
@@ -123,88 +140,7 @@ public class TypedSuiteRunner {
 				.collect(toList());
 	}
 
-	// TODO: Break down to smaller methods. God method :)
-	private static Set<String> getArguments(final String[] args) {
-		if (Arrays.stream(args).anyMatch(arg -> arg.toLowerCase().contains("-spt".toLowerCase()))) {
-			runAllSuites = true;
-			log.warn(String.format("%1$s Running all tests except performance tests %1$s", SEPARATOR));
-			return Arrays
-					.stream(SuitePackage.values())
-					.filter(key -> key != PERF_SUITES && key != FREEZE_SUITES)
-					.map(key -> key.asString)
-					.collect(Collectors.toSet());
-		}
 
-		// TODO: Traverse Enum for collecting all the possible arguments
-		if (args.length == 0 || (args.length == 1 && args[0].toLowerCase().contains("-a".toLowerCase()))) {
-			runAllSuites = true;
-			log.warn(String.format("%1$s Running all tests %1$s", SEPARATOR));
-			return Arrays
-					.stream(SuitePackage.values())
-					.filter(key -> key != FREEZE_SUITES)
-					.map(key -> key.asString)
-					.collect(Collectors.toSet());
-		}
-
-		var arguments = args[0].contains("-s")
-				? Arrays
-				.stream(args[0].replaceAll("-s ", "").trim().split(",\\s+|,"))
-				.collect(Collectors.toCollection(ArrayList::new))
-				: Arrays
-				.stream(args)
-				.collect(Collectors.toCollection(ArrayList::new));
-
-		final var wrongArguments = arguments
-				.stream()
-				.filter(arg -> !PackageStore.isValidCategory(arg))
-				.collect(Collectors.toList());
-
-		arguments.removeAll(wrongArguments);
-
-		// TODO: Handle the case where in the input there are identical packages like "Contract, Contract, Autorenew".
-		//  	 Currently the console output will repeat the identical packages like this:
-		//  	 "Running tests for Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees suites"
-
-		// TODO: Move the console output for the suites to be executed after the suite store initialization.
-		final var argumentsToLog = arguments
-				.stream()
-				.map(PackageStore::getCategory)
-				.map(cat -> cat.asString)
-				.collect(Collectors.joining(", "));
-
-		if (!wrongArguments.isEmpty()) {
-			log.warn(String.format(
-					"Input arguments are misspelled and/or test suites are missing. Skipping tests for: %s suites",
-					String.join(", ", wrongArguments)));
-		}
-
-		log.warn(String.format("%1$s Running tests for %2$s suites %1$s", SEPARATOR, String.join(", ", argumentsToLog)));
-
-		return Set.copyOf(arguments);
-	}
-
-	private static Map<String, List<HapiApiSuite>> distributeByRunType(final Set<SuitePackage> categories) {
-		final Map<String, List<HapiApiSuite>> byRunType =
-				Map.of("RunsSync", new ArrayList<>(), "RunsAsync", new ArrayList<>());
-
-		categories
-				.stream()
-				.map(category -> suites.get(category).get())
-				.flatMap(Collection::stream)
-				.peek(suite -> {
-					suite.skipClientTearDown();
-					suite.deferResultsSummary();
-				})
-				.forEach(suite -> {
-					if (suite.canRunAsync()) {
-						byRunType.get("RunsAsync").add(suite);
-					} else {
-						byRunType.get("RunsSync").add(suite);
-					}
-				});
-
-		return byRunType;
-	}
 
 	private static Logger redirectLogger() {
 		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
