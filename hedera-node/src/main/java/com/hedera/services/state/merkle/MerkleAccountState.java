@@ -25,12 +25,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAllowance;
+import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -53,7 +57,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0180_VERSION = 7;
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
-	private static final int CURRENT_VERSION = RELEASE_0220_VERSION;
+	static final int RELEASE_0230_VERSION = 10;
+	private static final int CURRENT_VERSION = RELEASE_0230_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -75,6 +80,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
+	private Map<EntityNum, Long> cryptoAllowances;
+	private Map<FcAllowanceId, FcAllowance> tokenAllowances;
 
 	public MerkleAccountState() {
 		/* RuntimeConstructable */
@@ -93,7 +100,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int number,
 			final int autoAssociationMetadata,
 			final ByteString alias,
-			final int numContractKvPairs
+			final int numContractKvPairs,
+			final Map<EntityNum, Long> cryptoAllowances,
+			final Map<FcAllowanceId, FcAllowance> tokenAllowances
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -108,6 +117,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoAssociationMetadata = autoAssociationMetadata;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
+		this.cryptoAllowances = cryptoAllowances;
+		this.tokenAllowances = tokenAllowances;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -148,6 +159,21 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0220_VERSION) {
 			numContractKvPairs = in.readInt();
 		}
+		if (version >= RELEASE_0230_VERSION) {
+			var numCryptoAllowances = in.readInt();
+			while (numCryptoAllowances-- > 0) {
+				final var entityNum = EntityNum.fromLong(in.readLong());
+				final var allowance = in.readLong();
+				cryptoAllowances.put(entityNum, allowance);
+			}
+
+			var numTokenAllowances = in.readInt();
+			while (numTokenAllowances-- > 0) {
+				final FcAllowanceId key = in.readSerializable();
+				final FcAllowance value = in.readSerializable();
+				tokenAllowances.put(key, value);
+			}
+		}
 	}
 
 	@Override
@@ -166,6 +192,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
+		out.writeInt(cryptoAllowances.size());
+		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
+			out.writeLong(entry.getKey().longValue());
+			out.writeLong(entry.getValue());
+		}
+		out.writeInt(tokenAllowances.size());
+		for (Map.Entry<FcAllowanceId, FcAllowance> entry : tokenAllowances.entrySet()) {
+			out.writeSerializable(entry.getKey(), true);
+			out.writeSerializable(entry.getValue(), true);
+		}
 	}
 
 	/* --- Copyable --- */
@@ -184,7 +220,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				number,
 				autoAssociationMetadata,
 				alias,
-				numContractKvPairs);
+				numContractKvPairs,
+				cryptoAllowances,
+				tokenAllowances);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -213,7 +251,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numContractKvPairs == that.numContractKvPairs &&
 				this.autoAssociationMetadata == that.autoAssociationMetadata &&
 				equalUpToDecodability(this.key, that.key) &&
-				Objects.equals(this.alias, that.alias);
+				Objects.equals(this.alias, that.alias) &&
+				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
+				Objects.equals(this.tokenAllowances, that.tokenAllowances);
 	}
 
 	@Override
@@ -231,7 +271,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				nftsOwned,
 				number,
 				autoAssociationMetadata,
-				alias);
+				alias,
+				cryptoAllowances,
+				tokenAllowances);
 	}
 
 	/* --- Bean --- */
@@ -253,6 +295,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", alias.toStringUtf8())
+				.add("cryptoAllowances", cryptoAllowances)
+				.add("tokenAllowances", tokenAllowances)
 				.toString();
 	}
 
@@ -387,6 +431,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
 		assertMutable("alreadyUsedAutomaticAssociations");
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+	}
+
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		assertMutable("cryptoAllowances");
+		this.cryptoAllowances = cryptoAllowances;
 	}
 
 	private void assertMutable(String proximalField) {
