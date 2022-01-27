@@ -27,6 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAllowance;
+import com.hedera.services.state.submerkle.FcAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -38,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
@@ -305,6 +308,24 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
 		state().setMaxAutomaticAssociations(maxAutomaticAssociations);
+	}
+
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return state().getCryptoAllowances();
+	}
+
+	public void setCryptoAllowances(Map<EntityNum, Long> cryptoAllowances) {
+		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
+		state().setCryptoAllowances(cryptoAllowances);
+	}
+
+	public Map<FcAllowanceId, FcAllowance> getTokenAllowances() {
+		return state().getTokenAllowances();
+	}
+
+	public void setTokenAllowances(Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+		throwIfImmutable("Cannot change this account's token allowances if it's immutable.");
+		state().setTokenAllowances(tokenAllowances);
 	}
 
 	public int getAlreadyUsedAutoAssociations() {

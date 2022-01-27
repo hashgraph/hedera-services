@@ -442,6 +442,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
+	public Map<FcAllowanceId, FcAllowance> getTokenAllowances() {
+		return tokenAllowances;
+	}
+
+	public void setTokenAllowances(final Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+		assertMutable("tokenAllowances");
+		this.tokenAllowances = tokenAllowances;
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
