@@ -73,6 +73,7 @@ public class HTSTestsUtil {
 			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
 			MintWrapper.forFungible(fungible, AMOUNT);
+	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 
 	public static final Association multiAssociateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);

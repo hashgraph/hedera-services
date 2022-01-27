@@ -961,8 +961,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 			final var sideEffects = sideEffectsFactory.get();
 
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
@@ -995,8 +995,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 			final var sideEffects = sideEffectsFactory.get();
 
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
@@ -1050,8 +1050,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 			final var sideEffects = sideEffectsFactory.get();
 
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
