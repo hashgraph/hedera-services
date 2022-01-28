@@ -50,6 +50,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -98,7 +99,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -495,7 +495,7 @@ class TransferPrecompilesTest {
 		verify(sigsVerifier)
 				.hasActiveKey(receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr);
 		verify(sigsVerifier, never())
-				.hasActiveKeyOrNoReceiverSigReq(asTypedSolidityAddress(feeCollector), recipientAddr, contractAddr, recipientAddr);
+				.hasActiveKeyOrNoReceiverSigReq(EntityIdUtils.asTypedEvmAddress(feeCollector), recipientAddr, contractAddr, recipientAddr);
 	}
 
 	@Test

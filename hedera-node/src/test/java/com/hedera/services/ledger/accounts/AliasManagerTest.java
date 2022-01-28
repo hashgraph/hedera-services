@@ -23,23 +23,58 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AliasManagerTest {
 	private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
 	private static final EntityNum num = EntityNum.fromLong(1234L);
+	private static final byte[] rawNonMirrorAddress = CommonUtils.unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
+	private static final Address mirrorAddress = num.toEvmAddress();
+
+	final AliasManager subject = new AliasManager();
+
+	@Test
+	void resolvesLinkedNonMirrorAsExpected() {
+		subject.link(ByteString.copyFrom(rawNonMirrorAddress), num);
+		assertEquals(num.toEvmAddress(), subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void resolvesUnlinkedNonMirrorAsExpected() {
+		assertNull(subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void doesntSupportCommitting() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.commit(null));
+	}
+
+	@Test
+	void canLinkAndUnlinkAddresses() {
+		subject.linkIfUnused(nonMirrorAddress, mirrorAddress);
+		assertEquals(Map.of(ByteString.copyFrom(nonMirrorAddress.toArrayUnsafe()), num), subject.getAliases());
+
+		subject.unlinkIfUsed(nonMirrorAddress);
+		assertEquals(Collections.emptyMap(), subject.getAliases());
+	}
 
 	@Test
 	void createAliasAddsToMap() {
-		final var subject = new AliasManager();
 		subject.link(alias, num);
 
 		assertEquals(Map.of(alias, num), subject.getAliases());
@@ -47,7 +82,6 @@ class AliasManagerTest {
 
 	@Test
 	void forgetAliasRemovesFromMap() {
-		final var subject = new AliasManager();
 		subject.getAliases().put(alias, num);
 
 		subject.unlink(alias);
@@ -66,7 +100,6 @@ class AliasManagerTest {
 			put(aliasB, b);
 		}};
 
-		var subject = new AliasManager();
 		assertTrue(subject.getAliases().isEmpty());
 
 		subject.setAliases(expectedMap);
@@ -90,7 +123,6 @@ class AliasManagerTest {
 		liveAccounts.put(withNum, accountWithAlias);
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
-		final var subject = new AliasManager();
 		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 

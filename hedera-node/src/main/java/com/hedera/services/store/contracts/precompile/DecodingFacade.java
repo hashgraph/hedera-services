@@ -294,13 +294,13 @@ public class DecodingFacade {
 	private static AccountID convertAddressBytesToAccountID(final byte[] addressBytes) {
 		final var address = Address.wrap(
 				Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		return EntityIdUtils.accountParsedFromSolidityAddress(address.toArray());
+		return EntityIdUtils.accountIdFromEvmAddress(address.toArray());
 	}
 
 	private static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
 		final var address = Address.wrap(
 				Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		return EntityIdUtils.tokenParsedFromSolidityAddress(address.toArray());
+		return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
 	}
 
 	private List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(

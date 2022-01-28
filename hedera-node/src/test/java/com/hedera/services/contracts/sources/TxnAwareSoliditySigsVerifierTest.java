@@ -50,7 +50,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
-import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -182,7 +181,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				EntityIdUtils.asTypedEvmAddress(smartContract), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
 				PRETEND_SENDER_ADDR);
 
 		assertTrue(contractFlag);
@@ -195,7 +194,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(noSigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
 				PRETEND_SENDER_ADDR);
 
 		assertTrue(noSigRequiredFlag);
@@ -213,7 +212,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
 		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
 				PRETEND_SENDER_ADDR);
 
 		assertTrue(sigRequiredFlag);
@@ -224,7 +223,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 
 		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				asTypedSolidityAddress(payer), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
+				EntityIdUtils.asTypedEvmAddress(payer), PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR);
 
 		assertTrue(payerFlag);
 

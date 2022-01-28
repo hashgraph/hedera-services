@@ -47,6 +47,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -97,8 +98,6 @@ import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
@@ -180,7 +179,7 @@ public class StateView {
 	}
 
 	public Optional<byte[]> bytecodeOf(final ContractID id) {
-		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
+		return Optional.ofNullable(contractBytecode.get(EntityIdUtils.asEvmAddress(id)));
 	}
 
 	public Optional<MerkleToken> tokenWith(final TokenID id) {
@@ -450,7 +449,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(accountID))
+				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
@@ -511,7 +510,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(mirrorId));
+				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(mirrorId));
 		final var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);

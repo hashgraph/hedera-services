@@ -64,6 +64,7 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -109,7 +110,6 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
-import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -711,7 +711,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
-					final var counterPartyAddress = asTypedSolidityAddress(change.counterPartyAccountId());
+					final var counterPartyAddress = EntityIdUtils.asTypedEvmAddress(change.counterPartyAccountId());
 					hasReceiverSigIfReq = validateKey(frame, counterPartyAddress,
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {

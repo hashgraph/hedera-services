@@ -85,7 +85,7 @@ class GetContractInfoAnswerTest {
 		info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setLedgerId(ledgerId)
 				.setContractID(IdUtils.asContract(target))
-				.setContractAccountID(EntityIdUtils.asSolidityAddressHex(IdUtils.asAccount(target)))
+				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
 				.setMemo("Stay cold...")
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.build();

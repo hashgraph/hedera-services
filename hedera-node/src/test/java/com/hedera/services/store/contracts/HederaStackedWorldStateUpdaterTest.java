@@ -70,14 +70,14 @@ class HederaStackedWorldStateUpdaterTest {
 	@Test
 	void allocateNewContractAddress() {
 		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
-		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(
+		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
 				ContractID.newBuilder().setContractNum(1).build())));
 
-		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(sponsoredId)));
+		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
 		final var allocated = subject.allocateNewContractAddress(sponsorAddr);
-		final var sponsorAid = EntityIdUtils.accountParsedFromSolidityAddress(sponsorAddr.toArrayUnsafe());
-		final var allocatedAid = EntityIdUtils.accountParsedFromSolidityAddress(allocated.toArrayUnsafe());
+		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
 		assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
 		assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());

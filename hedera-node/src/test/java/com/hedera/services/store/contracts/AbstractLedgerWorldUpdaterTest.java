@@ -81,8 +81,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private static final Pair<AccountID, TokenID> bbRel = Pair.of(bAccount, bToken);
 	private static final NftId aNft = new NftId(0, 0, 0, 3456);
 	private static final NftId bNft = new NftId(0, 0, 0, 4567);
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
-	private static final Address bAddress = EntityIdUtils.asTypedSolidityAddress(bAccount);
+	private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
+	private static final Address bAddress = EntityIdUtils.asTypedEvmAddress(bAccount);
 	private static final long aaBalance = 1L;
 	private static final long bbBalance = 9L;
 	private static final long aHbarBalance = 1_000L;

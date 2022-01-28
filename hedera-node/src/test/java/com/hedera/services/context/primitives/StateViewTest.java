@@ -47,6 +47,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -101,8 +102,7 @@ import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.services.store.tokens.views.EmptyUniqueTokenView.EMPTY_UNIQUE_TOKEN_VIEW;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -156,7 +156,7 @@ class StateViewTest {
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
-	private final byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(),
+	private final byte[] cidAddress = asEvmAddress((int) cid.getShardNum(), cid.getRealmNum(),
 			cid.getContractNum());
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
@@ -569,7 +569,7 @@ class StateViewTest {
 		assertEquals(contract.getMemo(), info.getMemo());
 		assertEquals(contract.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
 		assertEquals(contract.getBalance(), info.getBalance());
-		assertEquals(asSolidityAddressHex(asAccount(cid)), info.getContractAccountID());
+		assertEquals(EntityIdUtils.asHexedEvmAddress(asAccount(cid)), info.getContractAccountID());
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(rels, info.getTokenRelationshipsList());
 		assertEquals(ledgerId, info.getLedgerId());
@@ -654,7 +654,7 @@ class StateViewTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
+				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();
@@ -682,7 +682,7 @@ class StateViewTest {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
 				.setBalance(tokenAccount.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
+				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
 				.setOwnedNfts(tokenAccount.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
 				.build();

@@ -21,11 +21,14 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,7 +43,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AliasManager {
+public class AliasManager implements ContractAliases {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private Map<ByteString, EntityNum> aliases;
@@ -48,6 +51,28 @@ public class AliasManager {
 	@Inject
 	public AliasManager() {
 		this.aliases = new HashMap<>();
+	}
+
+	@Override
+	public void commit(final @Nullable SigImpactHistorian observer) {
+		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+	}
+
+	@Override
+	public void linkIfUnused(final Address alias, final Address address) {
+		link(ByteString.copyFrom(alias.toArrayUnsafe()), EntityNum.fromEvmAddress(address));
+	}
+
+	@Override
+	public void unlinkIfUsed(final Address alias) {
+		unlink(ByteString.copyFrom(alias.toArrayUnsafe()));
+	}
+
+	@Override
+	public Address resolveForEvm(final Address alias) {
+		final var aliasKey = ByteString.copyFrom(alias.toArrayUnsafe());
+		final var contractNum = aliases.get(aliasKey);
+		return (contractNum == null) ? null : contractNum.toEvmAddress();
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {

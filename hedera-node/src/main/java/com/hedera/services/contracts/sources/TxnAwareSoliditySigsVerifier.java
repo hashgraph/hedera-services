@@ -40,7 +40,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -76,7 +75,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address contract,
 			final Address activeContract
 	) {
-		final var accountId = EntityIdUtils.accountParsedFromSolidityAddress(accountAddress);
+		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
 		final var simpleId = Id.fromGrpcAccount(accountId);
 		final var entityNum = simpleId.asEntityNum();
 		final var account = accounts.get().get(entityNum);
@@ -91,7 +90,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address contract,
 			final Address activeContract
 	) {
-		final var tokenId = EntityIdUtils.tokenParsedFromSolidityAddress(tokenAddress);
+		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
 		final var simpleId = Id.fromGrpcToken(tokenId);
 		final var entityNum = simpleId.asEntityNum();
 		final var token = tokens.get().get(entityNum);
@@ -107,7 +106,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address contract,
 			final Address activeContract
 	) {
-		final var accountId = accountParsedFromSolidityAddress(target);
+		final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}

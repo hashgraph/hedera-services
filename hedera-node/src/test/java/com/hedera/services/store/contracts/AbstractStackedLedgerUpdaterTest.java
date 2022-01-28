@@ -206,7 +206,7 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
+	private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
 	private static final long aExpiry = 1_234_567L;

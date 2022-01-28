@@ -46,7 +46,6 @@ import java.util.Set;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 /**
@@ -154,7 +153,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
 		if (trackingLedgers.areUsable()) {
-			final var accountId = accountParsedFromSolidityAddress(address);
+			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
 		}
 	}
@@ -210,7 +209,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
 		/* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
 		if (property == BALANCE) {
-			final var address = EntityIdUtils.asTypedSolidityAddress(id);
+			final var address = EntityIdUtils.asTypedEvmAddress(id);
 			/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
 			if (deletedAccounts.contains(address)) {
 				throw new IllegalArgumentException(

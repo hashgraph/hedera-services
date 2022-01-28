@@ -182,73 +182,85 @@ public final class EntityIdUtils {
 				.build();
 	}
 
-	public static String asSolidityAddressHex(final AccountID id) {
-		return CommonUtils.hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+	public static String asHexedEvmAddress(final AccountID id) {
+		return CommonUtils.hex(asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
-	public static byte[] asSolidityAddress(final ContractID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+	public static byte[] asEvmAddress(final ContractID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
-	public static byte[] asSolidityAddress(final AccountID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	public static byte[] asEvmAddress(final AccountID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
-	public static Address asTypedSolidityAddress(final AccountID id) {
-		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	public static Address asTypedEvmAddress(final AccountID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
-	public static Address asTypedSolidityAddress(final ContractID id) {
-		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	public static Address asTypedEvmAddress(final ContractID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
-	public static String asSolidityAddressHex(Id id) {
-		return CommonUtils.hex(asSolidityAddress((int) id.shard(), id.realm(), id.num()));
+	public static String asHexedEvmAddress(Id id) {
+		return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
 	}
 
-	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-		final byte[] solidityAddress = new byte[20];
+	public static byte[] asEvmAddress(final int shard, final long realm, final long num) {
+		final byte[] evmAddress = new byte[20];
 
-		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+		arraycopy(Ints.toByteArray(shard), 0, evmAddress, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, evmAddress, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
 
-		return solidityAddress;
+		return evmAddress;
 	}
 
-	public static AccountID accountParsedFromSolidityAddress(final Address address) {
-		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
+	public static long shardFromEvmAddress(final byte[] bytes) {
+		return Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
+	}
+
+	public static long realmFromEvmAddress(final byte[] bytes) {
+		return Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
+	}
+
+	public static long numFromEvmAddress(final byte[] bytes) {
+		return Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
+	}
+
+	public static AccountID accountIdFromEvmAddress(final Address address) {
+		return accountIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
 	public static ContractID contractIdFromEvmAddress(final Address address) {
-		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
+		return contractIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
-	public static TokenID tokenParsedFromSolidityAddress(final Address address) {
-		return tokenParsedFromSolidityAddress(address.toArrayUnsafe());
+	public static TokenID tokenIdFromEvmAddress(final Address address) {
+		return tokenIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
-	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
+	public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
 		return AccountID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setAccountNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(shardFromEvmAddress(bytes))
+				.setRealmNum(realmFromEvmAddress(bytes))
+				.setAccountNum(numFromEvmAddress(bytes))
 				.build();
 	}
 
-	public static ContractID contractParsedFromSolidityAddress(final byte[] solidityAddress) {
+	public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
 		return ContractID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
 				.build();
 	}
 
-	public static TokenID tokenParsedFromSolidityAddress(byte[] solidityAddress) {
+	public static TokenID tokenIdFromEvmAddress(byte[] bytes) {
 		return TokenID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
 				.build();
 	}
 
