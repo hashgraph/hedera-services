@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
 
-class TypedSuiteRunnerTest {
+class TypedSuiteRunnerLauncher {
 //	private final PackageStore packageStore = new PackageStore();
 //	private final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = packageStore.initialize(effectiveArguments);
 
@@ -33,10 +33,11 @@ class TypedSuiteRunnerTest {
 	//       as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		final String[] withSplit = {"-s precompile, openzeppelin, opcodes, fees, freeze, negative "};
+//		final String[] withSplit = {"-s precompile, openzeppelin, freeze, fees, freeze, negative "};
 //		final String[] withSplit = {"-s Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees"};
-//		final String[] withSplit = {"-s Contract"};
-		final String[] withWrongArguments = {"-s Autorew, Compose, Consensus, Contract, Contct op codes, Contract records, Cryto, Fees"};
+		final String[] withSplit = {"-s freeze, contract, fees, spec"};
+		final String[] withWrongArguments = {"-s Autorew, autorenew, MustaFffAAAAAA, Compose, Consensus, Contract, opcodes, records, Cryto, Fees"};
+		final String[] onlyWrongArguments = {"-s dfd, dfdw, dfd"};
 		final String[] withoutSplit = {"Autorenew suites", "Compose suites", "Consensus suites", "LimeChain suites", "meta suites", "Hedera suites"};
 		final String[] allWithSplit = {"-s -a"};
 		final String[] allWithoutSplit = {"-a"};

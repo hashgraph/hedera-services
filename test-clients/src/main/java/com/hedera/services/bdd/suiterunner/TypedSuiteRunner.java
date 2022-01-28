@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suiterunner;
 
 import com.hedera.services.bdd.suiterunner.models.SpecReport;
 import com.hedera.services.bdd.suiterunner.models.SuiteReport;
-import com.hedera.services.bdd.suiterunner.reflective_runner.utils.SuiteRunnerUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -47,45 +46,46 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.getReportFor;
+import static com.hedera.services.bdd.suiterunner.SuiteRunnerService.getPackages;
+import static com.hedera.services.bdd.suiterunner.SuiteRunnerService.getSuites;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
 import static java.util.stream.Collectors.toList;
 
-// TODO: Ask Yoan - can freeze suites be executed with other suites or should be run separately only when running all suites
 // TODO: Handle invalid flags like -y instead of -a or -sfp instead of -spt
 public class TypedSuiteRunner {
 	public static final String LOG_PATH = "output/log-buffer.log";
 	private static final String SEPARATOR = "====================================";
 	private static final Logger log = redirectLogger();
 	private static final List<SuiteReport> failedSuites = new ArrayList<>();
-	private static boolean runAllSuites = false;
 
 	public static void main(String[] args) {
-		final var packages = SuiteRunnerUtils.getPackages(args);
-		final var suites = SuiteRunnerUtils.getSuites(packages);
+		final var packages = getPackages(args);
+		if (packages.isEmpty()) return;
+		final var suites = getSuites(packages);
 		final var suitesByRunType = distributeByRunType(suites.values());
 
 		clearLog();
+
 		runSuitesSync(suitesByRunType.get("RunsSync"));
 		runSuitesAsync(suitesByRunType.get("RunsAsync"));
+		runSuitesSync(suitesByRunType.get("RunFreeze"));
 
-
-// TODO: Document why the freeze tests are being run separately
-
-//		if (effectiveArguments.contains("Freeze") || runAllSuites) {
-//			log.warn(String.format("%1$s Running Freeze suites %1$s", SEPARATOR));
-//			runSuitesSync(suites.get(FREEZE_SUITES).get());
-//		}
-//		clearLog();
-//		generateFinalLog();
+		clearLog();
+		generateFinalLog();
 	}
 
+	private static Map<String, List<HapiApiSuite>> distributeByRunType(final Collection<List<HapiApiSuite>> suites) {
+		final Map<String, List<HapiApiSuite>> byRunType = Map.of(
+				"RunsSync", new ArrayList<>(),
+				"RunsAsync", new ArrayList<>(),
+				"RunFreeze", new ArrayList<>()
+		);
 
-
-		private static Map<String, List<HapiApiSuite>> distributeByRunType(final Collection<List<HapiApiSuite>> suites) {
-		final Map<String, List<HapiApiSuite>> byRunType =
-				Map.of("RunsSync", new ArrayList<>(), "RunsAsync", new ArrayList<>());
-
+		/*	Important:
+			The bellow logic enforces the rule, that freeze tests must be executed after all the other tests and
+			operates under the presumption, that all the freeze tests are always executed in sync mode
+		*/
 		suites
 				.stream()
 				.flatMap(Collection::stream)
@@ -94,14 +94,22 @@ public class TypedSuiteRunner {
 					suite.deferResultsSummary();
 				})
 				.forEach(suite -> {
-					if (suite.canRunAsync()) {
-						byRunType.get("RunsAsync").add(suite);
-					} else {
-						byRunType.get("RunsSync").add(suite);
+					if (isFreeze(suite)) {
+						byRunType.get("RunFreeze").add(suite);
 					}
+					if (!suite.canRunAsync() && !isFreeze(suite)) {
+						byRunType.get("RunsSync").add(suite);
+					} else if (suite.canRunAsync()) {
+						byRunType.get("RunsAsync").add(suite);
+					}
+
 				});
 
 		return byRunType;
+	}
+
+	private static boolean isFreeze(HapiApiSuite suite) {
+		return suite.getClass().getPackageName().contains("freeze");
 	}
 
 	private static void generateFinalLog() {
@@ -139,8 +147,6 @@ public class TypedSuiteRunner {
 				.mapToObj(suites::get)
 				.collect(toList());
 	}
-
-
 
 	private static Logger redirectLogger() {
 		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();

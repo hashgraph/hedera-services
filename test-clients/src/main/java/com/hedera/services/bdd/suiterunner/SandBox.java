@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suiterunner.reflective_runner;
+package com.hedera.services.bdd.suiterunner;
 
 /*-
  * ‌
@@ -20,13 +20,8 @@ package com.hedera.services.bdd.suiterunner.reflective_runner;
  * ‍
  */
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public class SandBox {
+	public static void main(String[] args) {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface AutomatedSuite {
+	}
 }
-

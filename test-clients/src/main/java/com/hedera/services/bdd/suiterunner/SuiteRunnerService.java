@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suiterunner.reflective_runner.utils;
+package com.hedera.services.bdd.suiterunner;
 
 /*-
  * ‌
@@ -38,12 +38,12 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-public class SuiteRunnerUtils {
-	private static final Logger log = LogManager.getLogger(SuiteRunnerUtils.class);
+public class SuiteRunnerService {
+	private static final Logger log = LogManager.getLogger(SuiteRunnerService.class);
 	private static final String SEPARATOR = "====================================";
 	public static Set<String> suitesPaths;
-	public static Map<String, List<HapiApiSuite>> instantiatedSuites = new HashMap<>();
 	public static Set<Object> processedSuites = new HashSet<>();
+	public static Map<String, List<HapiApiSuite>> instantiatedSuites = new HashMap<>();
 	public static boolean runAllSuites;
 
 	public static Set<String> getPackages(String[] args) {
@@ -54,7 +54,7 @@ public class SuiteRunnerUtils {
 			log.warn(String.format("%1$s Running all tests without performance tests %1$s", SEPARATOR));
 			return suitesPaths
 					.stream()
-					.filter(path -> !path.contains("perf") && !path.contains("freeze"))
+					.filter(path -> !path.contains("perf"))
 					.collect(toSet());
 		}
 
@@ -62,9 +62,7 @@ public class SuiteRunnerUtils {
 
 		final var wrongArguments = arguments
 				.stream()
-				.filter(argument -> suitesPaths
-						.stream()
-						.noneMatch(path -> path.contains(argument.toLowerCase())))
+				.filter(argument -> suitesPaths.stream().noneMatch(path -> path.contains(argument.toLowerCase())))
 				.toList();
 
 		if (!wrongArguments.isEmpty()) {
@@ -78,17 +76,23 @@ public class SuiteRunnerUtils {
 
 		return suitesPaths
 				.stream()
-				.filter(path -> !path.contains("perf") && !path.contains("freeze"))
-				.filter(path -> arguments
-						.stream()
-						.anyMatch(argument -> path.contains(argument.toLowerCase())))
+				.filter(path -> !path.contains("perf"))
+				.filter(path -> arguments.stream().anyMatch(argument -> path.contains(argument.toLowerCase())))
 				.collect(toSet());
 	}
 
 	/** If the developer pass a top level package and inner packages, the algorithm will not include in the map the inner
 	 *  package. We operate under the assumption, that the intent of the developer is to run all the suites, contained in
 	 *  the top level package.
+	 *  The method .filter(suite -> suite.getPackageName().equals(path)) is necessary due to the fact, that the operation
+	 *  of collecting the target objects depends on the syb-types (new Reflections(path).getSubTypesOf(HapiApiSuite.class).
+	 *  The Reflections' library will include tests, which are not part of the particular path, because will follow the chain
+	 *  of inheritance.
+	 *  for example: if we intend to include only CryptoTransferThenFreezeTest - without the filter we will inherently include
+	 *  CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest)  and LoadTest (extended by CryptoTransferLoadTest).
 	 * @param paths the paths of the target packages
+	 *
+	 *
 	 */
 	public static Map<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
 
@@ -96,6 +100,7 @@ public class SuiteRunnerUtils {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
 			final var instances = suites
 					.stream()
+					.filter(suite -> suite.getPackageName().equals(path))
 					.filter(suite -> !processedSuites.contains(suite))
 					.map(suite -> {
 						HapiApiSuite instance = null;
@@ -109,13 +114,16 @@ public class SuiteRunnerUtils {
 					.toList();
 
 			if (!instances.isEmpty()) {
-				final var packageName = path.substring(path.lastIndexOf('.') + 1);
+				final var packageName = getPackageName(path);
 				instantiatedSuites.putIfAbsent(packageName, instances);
 			}
 			processedSuites.addAll(suites);
 		}
-
 		return instantiatedSuites;
+	}
+
+	public static boolean runAllTests(String[] arguments) {
+		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
 	}
 
 	/* --- Helpers --- */
@@ -126,10 +134,6 @@ public class SuiteRunnerUtils {
 				.map(Class::getPackageName)
 				.filter(path -> path.contains("suites"))
 				.collect(toSet());
-	}
-
-	public static boolean runAllTests(String[] arguments) {
-		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
 	}
 
 	@NotNull
@@ -144,11 +148,9 @@ public class SuiteRunnerUtils {
 				.distinct()
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
+
+	@NotNull
+	private static String getPackageName(String path) {
+		return path.substring(path.lastIndexOf('.') + 1);
+	}
 }
-
-
-//				.stream()
-//				.sorted()
-//				.toList();
-
-

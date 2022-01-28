@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.autorenew;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suiterunner.reflective_runner.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;

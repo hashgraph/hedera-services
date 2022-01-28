@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suiterunner.reflective_runner;
+package com.hedera.services.bdd.suiterunner.annotations;
 
 /*-
  * ‌
@@ -20,11 +20,13 @@ package com.hedera.services.bdd.suiterunner.reflective_runner;
  * ‍
  */
 
-public class SandBox {
-	public static void main(String[] args) {
-		String a = "com.hedera.services.bdd.suites";
-		String test = "maimun";
-		boolean pred = a.contains(test);
-		System.out.println(pred);
-	}
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface AutomatedSuite {
 }
+
