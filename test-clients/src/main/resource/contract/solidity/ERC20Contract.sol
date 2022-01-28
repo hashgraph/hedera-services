@@ -5,23 +5,23 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract ERC20Contract {
 
-    function name(address token) public {
+    function name(address token) public view {
         IERC20Metadata(token).name();
     }
 
-    function symbol(address token) public {
+    function symbol(address token) public view {
         IERC20Metadata(token).symbol();
     }
 
-    function decimals(address token) public {
+    function decimals(address token) public view {
         IERC20Metadata(token).decimals();
     }
 
-    function totalSupply(address token) public {
+    function totalSupply(address token) public view {
         IERC20(token).totalSupply();
     }
 
-    function balanceOf(address token, address account) public {
+    function balanceOf(address token, address account) public view {
         IERC20(token).balanceOf(account);
     }
 
@@ -35,7 +35,7 @@ contract ERC20Contract {
 
     //Not supported operations - should return a failure
 
-    function allowance(address token, address owner, address spender) public {
+    function allowance(address token, address owner, address spender) public view {
         IERC20(token).allowance(owner, spender);
     }
 

@@ -6,35 +6,27 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 contract ERC721Contract {
 
-    function name(address token) public {
+    function name(address token) public view {
         IERC721Metadata(token).name();
     }
 
-    function symbol(address token) public {
+    function symbol(address token) public view {
         IERC721Metadata(token).symbol();
     }
 
-    function tokenURI(address token, uint256 tokenId) public {
+    function tokenURI(address token, uint256 tokenId) public view {
         IERC721Metadata(token).tokenURI(tokenId);
     }
 
-    function totalSupply(address token) public {
+    function totalSupply(address token) public view {
         IERC721Enumerable(token).totalSupply();
     }
 
-    function tokenByIndex(address token, uint256 index) public {
-        IERC721Enumerable(token).tokenByIndex(index);
-    }
-
-    function tokenOfOwnerByIndex(address token, address owner, uint256 index) public {
-        IERC721Enumerable(token).tokenOfOwnerByIndex(owner, index);
-    }
-
-    function balanceOf(address token, address owner) public {
+    function balanceOf(address token, address owner) public view {
         IERC721(token).balanceOf(owner);
     }
 
-    function ownerOf(address token, uint256 tokenId) public {
+    function ownerOf(address token, uint256 tokenId) public view {
         IERC721(token).ownerOf(tokenId);
     }
 
@@ -61,11 +53,20 @@ contract ERC721Contract {
         IERC721(token).setApprovalForAll(operator, approved);
     }
 
-    function getApproved(address token, uint256 tokenId) public {
+    function getApproved(address token, uint256 tokenId) public view {
         IERC721(token).getApproved(tokenId);
     }
 
-    function isApprovedForAll(address token, address owner, address operator) public {
+    function isApprovedForAll(address token, address owner, address operator) public view {
         IERC721(token).isApprovedForAll(owner, operator);
+    }
+
+
+    function tokenByIndex(address token, uint256 index) public view {
+        IERC721Enumerable(token).tokenByIndex(index);
+    }
+
+    function tokenOfOwnerByIndex(address token, address owner, uint256 index) public view {
+        IERC721Enumerable(token).tokenOfOwnerByIndex(owner, index);
     }
 }
