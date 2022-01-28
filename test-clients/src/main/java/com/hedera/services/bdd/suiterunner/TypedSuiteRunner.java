@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PAS
 import static java.util.stream.Collectors.toList;
 
 // TODO: Handle invalid flags like -y instead of -a or -sfp instead of -spt
+// TODO: Handle console output for running freeze suites
 public class TypedSuiteRunner {
 	public static final String LOG_PATH = "output/log-buffer.log";
 	private static final String SEPARATOR = "====================================";
@@ -61,16 +62,16 @@ public class TypedSuiteRunner {
 
 	public static void main(String[] args) {
 		final var packages = getPackages(args);
+
+// TODO: Refactor to Predicate and beautify this if statement
 		if (packages.isEmpty()) return;
 		final var suites = getSuites(packages);
 		final var suitesByRunType = distributeByRunType(suites.values());
 
 		clearLog();
-
 		runSuitesSync(suitesByRunType.get("RunsSync"));
 		runSuitesAsync(suitesByRunType.get("RunsAsync"));
 		runSuitesSync(suitesByRunType.get("RunFreeze"));
-
 		clearLog();
 		generateFinalLog();
 	}
@@ -99,15 +100,13 @@ public class TypedSuiteRunner {
 					}
 					if (!suite.canRunAsync() && !isFreeze(suite)) {
 						byRunType.get("RunsSync").add(suite);
-					} else if (suite.canRunAsync()) {
+					} else if (suite.canRunAsync() && !isFreeze(suite)) {
 						byRunType.get("RunsAsync").add(suite);
 					}
-
 				});
 
 		return byRunType;
 	}
-
 	private static boolean isFreeze(HapiApiSuite suite) {
 		return suite.getClass().getPackageName().contains("freeze");
 	}
@@ -189,6 +188,3 @@ public class TypedSuiteRunner {
 		}
 	}
 }
-
-
-

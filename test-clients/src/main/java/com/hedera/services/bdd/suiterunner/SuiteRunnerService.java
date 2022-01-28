@@ -30,7 +30,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,7 +41,6 @@ public class SuiteRunnerService {
 	private static final Logger log = LogManager.getLogger(SuiteRunnerService.class);
 	private static final String SEPARATOR = "====================================";
 	public static Set<String> suitesPaths;
-	public static Set<Object> processedSuites = new HashSet<>();
 	public static Map<String, List<HapiApiSuite>> instantiatedSuites = new HashMap<>();
 	public static boolean runAllSuites;
 
@@ -81,9 +79,7 @@ public class SuiteRunnerService {
 				.collect(toSet());
 	}
 
-	/** If the developer pass a top level package and inner packages, the algorithm will not include in the map the inner
-	 *  package. We operate under the assumption, that the intent of the developer is to run all the suites, contained in
-	 *  the top level package.
+	/**
 	 *  The method .filter(suite -> suite.getPackageName().equals(path)) is necessary due to the fact, that the operation
 	 *  of collecting the target objects depends on the syb-types (new Reflections(path).getSubTypesOf(HapiApiSuite.class).
 	 *  The Reflections' library will include tests, which are not part of the particular path, because will follow the chain
@@ -91,17 +87,13 @@ public class SuiteRunnerService {
 	 *  for example: if we intend to include only CryptoTransferThenFreezeTest - without the filter we will inherently include
 	 *  CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest)  and LoadTest (extended by CryptoTransferLoadTest).
 	 * @param paths the paths of the target packages
-	 *
-	 *
 	 */
 	public static Map<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
-
 		for (String path : paths) {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
 			final var instances = suites
 					.stream()
 					.filter(suite -> suite.getPackageName().equals(path))
-					.filter(suite -> !processedSuites.contains(suite))
 					.map(suite -> {
 						HapiApiSuite instance = null;
 						try {
@@ -112,12 +104,7 @@ public class SuiteRunnerService {
 						return instance;
 					})
 					.toList();
-
-			if (!instances.isEmpty()) {
-				final var packageName = getPackageName(path);
-				instantiatedSuites.putIfAbsent(packageName, instances);
-			}
-			processedSuites.addAll(suites);
+			instantiatedSuites.putIfAbsent(path, instances);
 		}
 		return instantiatedSuites;
 	}
@@ -147,10 +134,5 @@ public class SuiteRunnerService {
 				.stream(args)
 				.distinct()
 				.collect(Collectors.toCollection(ArrayList::new));
-	}
-
-	@NotNull
-	private static String getPackageName(String path) {
-		return path.substring(path.lastIndexOf('.') + 1);
 	}
 }
