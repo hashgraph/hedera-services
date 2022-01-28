@@ -61,12 +61,12 @@ public class FcTokenAllowance implements SelfSerializable {
 
 	FcTokenAllowance(final boolean approvedForAll) {
 		this.approvedForAll = approvedForAll;
-		/* allowance will be 0, serialNums is null*/
+		/* serialNums is null*/
 	}
 
 	FcTokenAllowance(final List<Long> serialNumbers) {
 		this.serialNumbers = serialNumbers;
-		/* allowance will be 0, approvedForAll is false */
+		/* approvedForAll is false */
 	}
 
 	@Override
