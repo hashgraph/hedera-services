@@ -97,21 +97,9 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		registerProvider((spec, o) -> {
 			ContractInfo expected = spec.registry().getContractInfo(contract);
 			ContractInfo actual = object2ContractInfo(o);
-			assertEquals(
-					expected.getExpirationTime(),
-					actual.getExpirationTime(),
-					"Bad expiry time!");
-			assertEquals(
-					expected.getAutoRenewPeriod(),
-					actual.getAutoRenewPeriod(),
-					"Bad auto renew period!");
-			assertEquals(expected.getAdminKey(),
-					actual.getAdminKey(),
-					"Bad admin key!");
-			assertEquals(
-					expected.getMemo(),
-					actual.getMemo(),
-					"Bad memo!");
+			assertEquals(expected.getAutoRenewPeriod(), actual.getAutoRenewPeriod(), "Bad auto renew period!");
+			assertEquals(expected.getAdminKey(), actual.getAdminKey(), "Bad admin key!");
+			assertEquals(expected.getMemo(), actual.getMemo(), "Bad memo!");
 		});
 		return this;
 	}

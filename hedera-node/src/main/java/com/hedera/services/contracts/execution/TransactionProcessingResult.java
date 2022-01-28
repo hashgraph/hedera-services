@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -130,8 +131,11 @@ public class TransactionProcessingResult {
 	}
 
 	/**
-	 * Adds a list of created contracts to be externalised as part of the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
-	 * @param createdContracts the list of contractIDs created
+	 * Adds a list of created contracts to be externalised as part of the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
+	 *
+	 * @param createdContracts
+	 * 		the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
@@ -150,7 +154,9 @@ public class TransactionProcessingResult {
 		return gasPrice;
 	}
 
-	public long getGasUsed() { return gasUsed; }
+	public long getGasUsed() {
+		return gasUsed;
+	}
 
 	public long getSbhRefund() {
 		return sbhRefund;
@@ -171,13 +177,23 @@ public class TransactionProcessingResult {
 
 	/**
 	 * Converts the {@link TransactionProcessingResult} into {@link ContractFunctionResult} GRPC model
+	 *
 	 * @return the {@link ContractFunctionResult} model to externalise
 	 */
 	public ContractFunctionResult toGrpc() {
+		return toBaseGrpc().build();
+	}
+
+	public ContractFunctionResult toCreationGrpc(final byte[] newEvmAddress) {
+		return toBaseGrpc().setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(newEvmAddress))).build();
+	}
+
+	private ContractFunctionResult.Builder toBaseGrpc() {
 		final var contractResultBuilder = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed);
 		contractResultBuilder.setContractCallResult(ByteString.copyFrom(output.toArray()));
-		recipient.ifPresent(address -> contractResultBuilder.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
+		recipient.ifPresent(address -> contractResultBuilder.setContractID(
+				EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
 		// Set Revert reason as error message if present, otherwise set halt reason (if present)
 		if (revertReason.isPresent()) {
 			contractResultBuilder.setErrorMessage(revertReason.toString());
@@ -194,9 +210,7 @@ public class TransactionProcessingResult {
 		contractResultBuilder.addAllLogInfo(logInfo);
 
 		/* Populate Created Contract IDs */
-		contractResultBuilder.addAllCreatedContractIDs(createdContracts);
-
-		return contractResultBuilder.build();
+		return contractResultBuilder.addAllCreatedContractIDs(createdContracts);
 	}
 
 	@NotNull

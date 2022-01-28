@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -68,6 +69,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts contract(String contract) {
 		registerIdLookupAssert(contract, r -> r.getContractID(), ContractID.class, "Bad contract!");
+		return this;
+	}
+
+	public ContractFnResultAsserts evmAddress(ByteString expected) {
+		registerProvider((spec, o) -> {
+			final var result = (ContractFunctionResult)	o;
+			Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
+			final var actual = result.getEvmAddress().getValue();
+			Assertions.assertEquals(expected, actual, "Bad EVM address");
+		});
 		return this;
 	}
 

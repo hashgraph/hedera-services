@@ -220,7 +220,7 @@ public final class EntityIdUtils {
 		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 
-	public static ContractID contractParsedFromSolidityAddress(final Address address) {
+	public static ContractID contractIdFromEvmAddress(final Address address) {
 		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
 	}
 

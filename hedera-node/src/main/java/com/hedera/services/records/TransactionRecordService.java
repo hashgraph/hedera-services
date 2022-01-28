@@ -44,7 +44,8 @@ public class TransactionRecordService {
 	 * Currently, the only operation refactored is the TopicCreate.
 	 * This function should be updated correspondingly while refactoring the other Topic operations.
 	 *
-	 * @param topic - the Topic, whose changes have to be included in the receipt
+	 * @param topic
+	 * 		- the Topic, whose changes have to be included in the receipt
 	 */
 	public void includeChangesToTopic(Topic topic) {
 		if (topic.isNew()) {
@@ -54,12 +55,27 @@ public class TransactionRecordService {
 
 	/**
 	 * Updates the record of the active transaction with the {@link TransactionProcessingResult} of the EVM transaction
-	 * @param result the processing result of the EVM transaction
+	 *
+	 * @param result
+	 * 		the processing result of the EVM transaction
 	 */
-	public void externaliseEvmCreateTransaction(TransactionProcessingResult result) {
-		txnCtx.setStatus(getStatus(result, SUCCESS));
+	public void externalizeUnsuccessfulEvmCreate(TransactionProcessingResult result) {
 		txnCtx.setCreateResult(result.toGrpc());
-		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
+		externalizeGenericEvmCreate(result);
+	}
+
+	public void externalizeSuccessfulEvmCreate(
+			final TransactionProcessingResult result,
+			final byte[] newEvmAddress
+	) {
+		txnCtx.setCreateResult(result.toCreationGrpc(newEvmAddress));
+		externalizeGenericEvmCreate(result);
+	}
+
+	private void externalizeGenericEvmCreate(final TransactionProcessingResult result) {
+		txnCtx.setStatus(getStatus(result, SUCCESS));
+		final var finalGasPayment = result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund());
+		txnCtx.addNonThresholdFeeChargedToPayer(finalGasPayment);
 	}
 
 	/**
