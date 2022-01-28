@@ -30,50 +30,61 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
+import java.util.List;
 
-public class FcAllowance implements SelfSerializable {
+/**
+ * Represents the value for {@code nftAllowances} map in {@code MerkleAccountState}.
+ * It consists of the information about the list of serial numbers of a non-fungible token for which
+ * allowance is granted to the spender. If {@code approvedForAll} is true, spender has been
+ * granted access to all instances of the non-fungible token.
+ *
+ * Having allowance on a token will allow the spender to transfer granted token units from the owner's
+ * account.
+ */
+
+public class FcTokenAllowance implements SelfSerializable {
 	static final int RELEASE_023X_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa533950f139L;
 
-	private Long allowance;
 	private boolean approvedForAll;
+	private List<Long> serialNumbers;
 
-	public FcAllowance() {
+	public FcTokenAllowance() {
 		/* RuntimeConstructable */
 	}
 
-	FcAllowance(final Long allowance, final boolean approvedForAll) {
-		this.allowance = allowance;
+	FcTokenAllowance(final boolean approvedForAll, final List<Long> serialNumbers) {
 		this.approvedForAll = approvedForAll;
+		this.serialNumbers = serialNumbers;
 	}
 
-	FcAllowance(final Long allowance) {
-		this.allowance = allowance;
-		/* approvedForAll will be false */
+	FcTokenAllowance(final boolean approvedForAll) {
+		this.approvedForAll = approvedForAll;
+		/* serialNums is null*/
 	}
 
-	FcAllowance(final boolean approvedForAll) {
-		this.approvedForAll = approvedForAll;
-		/* allowance will be null */
+	FcTokenAllowance(final List<Long> serialNumbers) {
+		this.serialNumbers = serialNumbers;
+		/* approvedForAll is false */
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream din, final int i) throws IOException {
-		final var isAllowance = din.readBoolean();
-		if (isAllowance) {
-			allowance = din.readLong();
-		}
 		approvedForAll = din.readBoolean();
+		final var isForSpecificNfts = din.readBoolean();
+		if (isForSpecificNfts) {
+			serialNumbers = din.readLongList(Integer.MAX_VALUE);
+		}
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream dos) throws IOException {
-		dos.writeBoolean(allowance != null);
-		if (allowance != null) {
-			dos.writeLong(allowance);
-		}
 		dos.writeBoolean(approvedForAll);
+		dos.writeBoolean(serialNumbers != null);
+		if (serialNumbers != null) {
+			dos.writeLongList(serialNumbers);
+		}
 	}
 
 	@Override
@@ -91,22 +102,22 @@ public class FcAllowance implements SelfSerializable {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || !obj.getClass().equals(FcAllowance.class)) {
+		if (obj == null || !obj.getClass().equals(FcTokenAllowance.class)) {
 			return false;
 		}
 
-		final var that = (FcAllowance) obj;
+		final var that = (FcTokenAllowance) obj;
 		return new EqualsBuilder()
-				.append(allowance, that.allowance)
 				.append(approvedForAll, that.approvedForAll)
+				.append(serialNumbers, that.serialNumbers)
 				.isEquals();
 	}
 
 	@Override
 	public int hashCode() {
 		return new HashCodeBuilder()
-				.append(allowance)
 				.append(approvedForAll)
+				.append(serialNumbers)
 				.toHashCode();
 	}
 
@@ -114,28 +125,30 @@ public class FcAllowance implements SelfSerializable {
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
 				.omitNullValues()
-				.add("allowance", allowance)
 				.add("approvedForAll", approvedForAll)
+				.add("serialNumbers", serialNumbers)
 				.toString();
-	}
-
-	public Long getAllowance() {
-		return allowance;
 	}
 
 	public boolean isApprovedForAll() {
 		return approvedForAll;
 	}
 
-	public static FcAllowance from(final Long allowance, final boolean approvedForAll) {
-		return new FcAllowance(allowance, approvedForAll);
+	public List<Long> getSerialNumbers() {
+		return serialNumbers;
 	}
 
-	public static FcAllowance from(final Long allowance) {
-		return new FcAllowance(allowance);
+	public static FcTokenAllowance from(
+			final boolean approvedForAll,
+			final List<Long> serialNumbers) {
+		return new FcTokenAllowance(approvedForAll, serialNumbers);
 	}
 
-	public static FcAllowance from(final boolean approvedForAll) {
-		return new FcAllowance(approvedForAll);
+	public static FcTokenAllowance from(final boolean approvedForAll) {
+		return new FcTokenAllowance(approvedForAll);
+	}
+
+	public static FcTokenAllowance from(final List<Long> serialNumbers) {
+		return new FcTokenAllowance(serialNumbers);
 	}
 }

@@ -32,7 +32,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-public class FcAllowanceId implements SelfSerializable {
+/**
+ * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code MerkleAccountState}.
+ * It consists of the information about the token for which allowance is granted to and the spender who is granted the
+ * allowance.
+ *
+ * Having allowance on a token will grant the spender to transfer fungible or non-fungible token units from the owner's
+ * account.
+ */
+public class FcTokenAllowanceId implements SelfSerializable {
 	static final int RELEASE_023X_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf55baa544950f139L;
@@ -40,11 +48,11 @@ public class FcAllowanceId implements SelfSerializable {
 	private EntityNum tokenNum;
 	private EntityNum spenderNum;
 
-	public FcAllowanceId() {
+	public FcTokenAllowanceId() {
 		/* RuntimeConstructable */
 	}
 
-	FcAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
+	FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
 		this.tokenNum = tokenNum;
 		this.spenderNum = spenderNum;
 	}
@@ -76,11 +84,11 @@ public class FcAllowanceId implements SelfSerializable {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || !obj.getClass().equals(FcAllowanceId.class)) {
+		if (obj == null || !obj.getClass().equals(FcTokenAllowanceId.class)) {
 			return false;
 		}
 
-		final var that = (FcAllowanceId) obj;
+		final var that = (FcTokenAllowanceId) obj;
 		return new EqualsBuilder()
 				.append(tokenNum, that.tokenNum)
 				.append(spenderNum, that.spenderNum)
@@ -112,7 +120,7 @@ public class FcAllowanceId implements SelfSerializable {
 		return spenderNum;
 	}
 
-	public static FcAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
-		return new FcAllowanceId(tokenNum, spenderNum);
+	public static FcTokenAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
+		return new FcTokenAllowanceId(tokenNum, spenderNum);
 	}
 }

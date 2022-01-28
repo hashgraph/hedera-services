@@ -28,28 +28,34 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
-public class FcAllowanceTest {
+public class FcTokenAllowanceTest {
 	private Long allowance = 100L;
 	private boolean approvedForAll = true;
-	private FcAllowance subject;
+	private List<Long> serialNums = List.of(1L, 2L);
+	private FcTokenAllowance subject;
 
 	@BeforeEach
 	void setup() {
-		subject = FcAllowance.from(allowance, approvedForAll);
+		subject = FcTokenAllowance.from(approvedForAll, serialNums);
 	}
 
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = FcAllowance.from(3L, false);
-		final var three = FcAllowance.from(100L, true);
+		final var two = FcTokenAllowance.from(false, new ArrayList<>());
+		final var three = FcTokenAllowance.from(true, serialNums);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -63,24 +69,25 @@ public class FcAllowanceTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"FcAllowance{allowance=" + allowance.longValue() + ", approvedForAll=" + approvedForAll + "}",
+				"FcTokenAllowance{approvedForAll="
+						+ approvedForAll + ", serialNumbers=" + serialNums + "}",
 				subject.toString());
 	}
 
 	@Test
 	void gettersWork() {
-		assertEquals(100L, subject.getAllowance());
+		assertEquals(serialNums, subject.getSerialNumbers());
 		assertEquals(true, subject.isApprovedForAll());
 	}
 
 	@Test
 	void deserializeWorksForBothSet() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		final var newSubject = new FcAllowance();
-		given(in.readLong()).willReturn(allowance);
-		given(in.readBoolean()).willReturn(allowance != null).willReturn(approvedForAll);
+		final var newSubject = new FcTokenAllowance();
+		given(in.readBoolean()).willReturn(serialNums != null).willReturn(approvedForAll);
+		given(in.readLongList(Integer.MAX_VALUE)).willReturn(serialNums);
 
-		newSubject.deserialize(in, FcAllowance.CURRENT_VERSION);
+		newSubject.deserialize(in, FcTokenAllowance.CURRENT_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -92,40 +99,38 @@ public class FcAllowanceTest {
 
 		subject.serialize(out);
 
-		inOrder.verify(out).writeBoolean(allowance != null);
-		inOrder.verify(out).writeLong(allowance);
-		inOrder.verify(out).writeBoolean(approvedForAll);
+		inOrder.verify(out, times(2)).writeBoolean(true);
+		inOrder.verify(out).writeLongList(serialNums);
 	}
 
 	@Test
-	void serializeWorksWithAllowanceSet() throws IOException {
-		final var subject = FcAllowance.from(10L);
+	void serializeWorksWithApprovalSet() throws IOException {
+		final var subject = FcTokenAllowance.from(true);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
 		subject.serialize(out);
 
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(out).writeLong(10L);
 		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out, never()).writeLongList(any());
 	}
 
 	@Test
-	void deserializeWorksWithAllowanceSet() throws IOException {
-		final var subject = FcAllowance.from(10L);
+	void deserializeWorksWithApprovalSet() throws IOException {
+		final var subject = FcTokenAllowance.from(true);
 		final var in = mock(SerializableDataInputStream.class);
-		final var newSubject = new FcAllowance();
-		given(in.readLong()).willReturn(10L);
+		final var newSubject = new FcTokenAllowance();
 		given(in.readBoolean()).willReturn(true).willReturn(false);
 
-		newSubject.deserialize(in, FcAllowance.CURRENT_VERSION);
+		newSubject.deserialize(in, FcTokenAllowance.CURRENT_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
 
 	@Test
-	void serializeWorksWithApprovalSet() throws IOException {
-		final var subject = FcAllowance.from(true);
+	void serializeWorksWithSerialNumsSet() throws IOException {
+		final var subject = FcTokenAllowance.from(serialNums);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
@@ -133,36 +138,37 @@ public class FcAllowanceTest {
 
 		inOrder.verify(out).writeBoolean(false);
 		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).writeLongList(serialNums);
 	}
 
 	@Test
-	void deserializeWorksWithApprovalSet() throws IOException {
-		final var subject = FcAllowance.from(true);
+	void deserializeWorksWithSerialNumsSet() throws IOException {
+		final var subject = FcTokenAllowance.from(serialNums);
 		final var in = mock(SerializableDataInputStream.class);
-		final var newSubject = new FcAllowance();
+		final var newSubject = new FcTokenAllowance();
 		given(in.readBoolean()).willReturn(false).willReturn(true);
+		given(in.readLongList(Integer.MAX_VALUE)).willReturn(serialNums);
 
-		newSubject.deserialize(in, FcAllowance.CURRENT_VERSION);
+		newSubject.deserialize(in, FcTokenAllowance.CURRENT_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
 
 	@Test
 	void constructorWorks() {
-		final var noApprovalForAll = FcAllowance.from(3L);
-		final var noAllowance = FcAllowance.from(true);
+		final var withApprovalForAll = FcTokenAllowance.from(true);
+		final var withSerials = FcTokenAllowance.from(List.of(1L, 2L));
 
-		assertEquals(null, noAllowance.getAllowance());
-		assertEquals(true, noAllowance.isApprovedForAll());
+		assertEquals(true, withApprovalForAll.isApprovedForAll());
+		assertEquals(null, withApprovalForAll.getSerialNumbers());
 
-
-		assertEquals(3L, noApprovalForAll.getAllowance());
-		assertEquals(false, noApprovalForAll.isApprovedForAll());
+		assertEquals(false, withSerials.isApprovedForAll());
+		assertEquals(List.of(1L, 2L), withSerials.getSerialNumbers());
 	}
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(FcAllowance.RELEASE_023X_VERSION, subject.getVersion());
-		assertEquals(FcAllowance.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(FcTokenAllowance.RELEASE_023X_VERSION, subject.getVersion());
+		assertEquals(FcTokenAllowance.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }
