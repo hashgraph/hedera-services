@@ -30,9 +30,9 @@ import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -148,7 +148,8 @@ public interface TxnHandlingScenario {
 						newAccount()
 								.balance(DEFAULT_BALANCE)
 								.cryptoAllowances(cryptoAllowances)
-								.tokenAllowances(tokenAllowances)
+								.fungibleTokenAllowances(fungibleTokenAllowances)
+								.nftTokenAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
@@ -563,12 +564,14 @@ public interface TxnHandlingScenario {
 		put(EntityNum.fromAccountId(DEFAULT_PAYER), 500L);
 	}};
 
-	Map<FcAllowanceId, FcAllowance> tokenAllowances = new HashMap<>() {{
-		put(FcAllowanceId.from(
-				EntityNum.fromTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS), EntityNum.fromAccountId(DEFAULT_PAYER)),
-				FcAllowance.from(10_000L));
-		put(FcAllowanceId.from(
+	Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>() {{
+		put(FcTokenAllowanceId.from(
+				EntityNum.fromTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS), EntityNum.fromAccountId(DEFAULT_PAYER)), 10_000L);
+	}};
+
+	Map<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new HashMap<>() {{
+		put(FcTokenAllowanceId.from(
 						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
-				FcAllowance.from(true));
+				FcTokenAllowance.from(true));
 	}};
 }

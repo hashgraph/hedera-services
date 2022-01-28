@@ -37,8 +37,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
@@ -328,32 +328,50 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	@Test
-	void fetchesGrantedTokenAllowance() {
+	void fetchesGrantedFungibleTokenAllowance() {
 		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
-		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+		given(account.getFungibleTokenAllowances()).willReturn(fungibleTokenAllowances);
 
 		assertTrue(subject.resolveAllowanceGrantFor(knownPayer, knownAccount, knownToken));
 	}
 
 	@Test
-	void fetchesGrantedTokenAllowanceFromAliasedAccounts() {
+	void fetchesGrantedFungibleTokenAllowanceFromAliasedAccounts() {
 		final var knownOwnerNum = EntityNum.fromAccountId(knownAccount);
 		final var knownPayerNum = EntityNum.fromAccountId(knownPayer);
 		given(stateChildren.accounts()).willReturn(accounts);
 		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(knownOwnerNum);
 		given(aliasManager.lookupIdBy(payerAlias.getAlias())).willReturn(knownPayerNum);
 		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
-		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+		given(account.getFungibleTokenAllowances()).willReturn(fungibleTokenAllowances);
 
 		assertTrue(subject.resolveAllowanceGrantFor(payerAlias, alias, knownToken));
 	}
 
 	@Test
-	void flagsMissingTokenAllowance() {
+	void flagsMissingFungibleTokenAllowance() {
 		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
-		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+		given(account.getFungibleTokenAllowances()).willReturn(fungibleTokenAllowances);
+
+		assertFalse(subject.resolveAllowanceGrantFor(unKnownPayer, knownAccount, knownToken));
+	}
+
+	@Test
+	void fetchesGrantedNFTTokenAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getNftAllowances()).willReturn(nftTokenAllowances);
+
+		assertTrue(subject.resolveAllowanceGrantFor(knownPayer, knownAccount, knownToken));
+	}
+
+	@Test
+	void flagsMissingNFTTokenAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getNftAllowances()).willReturn(nftTokenAllowances);
 
 		assertFalse(subject.resolveAllowanceGrantFor(unKnownPayer, knownAccount, knownToken));
 	}
@@ -505,14 +523,16 @@ class StateChildrenSigMetadataLookupTest {
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");
 	private static final ScheduleID knownSchedule = IdUtils.asSchedule("0.0.1234");
 	private static final ScheduleID unknownSchedule = IdUtils.asSchedule("0.0.4321");
-	private static final FcAllowanceId payerTokenAllowanceId = FcAllowanceId.from(
+	private static final FcTokenAllowanceId payerTokenAllowanceId = FcTokenAllowanceId.from(
 			EntityNum.fromTokenId(knownToken), EntityNum.fromAccountId(knownPayer));
-	private static final FcAllowance payerTokenAllowance = FcAllowance.from(500L);
+	private static final FcTokenAllowance payerTokenAllowance = FcTokenAllowance.from(true);
 	private static final Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private static final Map<FcAllowanceId, FcAllowance> tokenAllowances = new HashMap<>();
+	private static final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new HashMap<>();
 
 	static {
 		cryptoAllowances.put(EntityNum.fromAccountId(knownPayer), 500L);
-		tokenAllowances.put(payerTokenAllowanceId, payerTokenAllowance);
+		fungibleTokenAllowances.put(payerTokenAllowanceId, 250L);
+		nftTokenAllowances.put(payerTokenAllowanceId, payerTokenAllowance);
 	}
 }

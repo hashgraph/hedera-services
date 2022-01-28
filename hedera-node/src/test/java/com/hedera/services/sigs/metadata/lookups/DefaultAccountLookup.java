@@ -24,7 +24,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -75,8 +75,10 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 		final var ownerNum = isAlias(ownerID) ? aliasManager.lookupIdBy(ownerID.getAlias()) : fromAccountId(ownerID);
 
 		if (tokenID != null) {
-			final var tokenAllowanceMap = accounts.get().get(ownerNum).getTokenAllowances();
-			return tokenAllowanceMap.containsKey(FcAllowanceId.from(EntityNum.fromTokenId(tokenID), payerNum));
+			final var allowanceId = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenID), payerNum);
+			final var fungibleTokenAllowances = accounts.get().get(ownerNum).getFungibleTokenAllowances();
+			final var nftTokenAllowances = accounts.get().get(ownerNum).getNftAllowances();
+			return fungibleTokenAllowances.containsKey(allowanceId) || nftTokenAllowances.containsKey(allowanceId);
 		} else {
 			final var hbarAllowanceMap = accounts.get().get(ownerNum).getCryptoAllowances();
 			return hbarAllowanceMap.containsKey(payerNum);
