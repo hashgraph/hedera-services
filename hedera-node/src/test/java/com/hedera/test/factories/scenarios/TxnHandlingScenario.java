@@ -30,6 +30,8 @@ import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAllowance;
+import com.hedera.services.state.submerkle.FcAllowanceId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -55,7 +57,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
@@ -66,6 +70,7 @@ import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
@@ -138,6 +143,13 @@ public interface TxnHandlingScenario {
 						newAccount()
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(MISC_ACCOUNT_KT).get()
+				).withAccount(
+						OWNER_ACCOUNT_ID,
+						newAccount()
+								.balance(DEFAULT_BALANCE)
+								.cryptoAllowances(cryptoAllowances)
+								.tokenAllowances(tokenAllowances)
+								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
 						newAccount()
@@ -387,6 +399,10 @@ public interface TxnHandlingScenario {
 	AccountID MISC_ACCOUNT = asAccount(MISC_ACCOUNT_ID);
 	KeyTree MISC_ACCOUNT_KT = withRoot(ed25519());
 
+	String OWNER_ACCOUNT_ID = "0.0.1439";
+	AccountID OWNER_ACCOUNT = asAccount(OWNER_ACCOUNT_ID);
+	KeyTree OWNER_ACCOUNT_KT = withRoot(ed25519());
+
 	String SYS_ACCOUNT_ID = "0.0.666";
 
 	String DILIGENT_SIGNING_PAYER_ID = "0.0.1340";
@@ -542,4 +558,17 @@ public interface TxnHandlingScenario {
 	ScheduleID UNKNOWN_SCHEDULE = asSchedule(UNKNOWN_SCHEDULE_ID);
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
+
+	Map<EntityNum, Long> cryptoAllowances = new HashMap<>() {{
+		put(EntityNum.fromAccountId(DEFAULT_PAYER), 500L);
+	}};
+
+	Map<FcAllowanceId, FcAllowance> tokenAllowances = new HashMap<>() {{
+		put(FcAllowanceId.from(
+				EntityNum.fromTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS), EntityNum.fromAccountId(DEFAULT_PAYER)),
+				FcAllowance.from(10_000L));
+		put(FcAllowanceId.from(
+						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
+				FcAllowance.from(true));
+	}};
 }

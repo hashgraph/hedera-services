@@ -581,7 +581,7 @@ public class SigRequirements {
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs)) != NONE) {
+				if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs, xfers.getToken())) != NONE) {
 					return accountFailure(failure, factory);
 				}
 			}
@@ -600,7 +600,7 @@ public class SigRequirements {
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-			if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs)) != NONE) {
+			if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, null)) != NONE) {
 				return accountFailure(failure, factory);
 			}
 		}
@@ -1107,14 +1107,18 @@ public class SigRequirements {
 			final AccountAmount adjust,
 			final List<JKey> required,
 			final boolean autoCreationAllowed,
-			final @Nullable LinkedRefs linkedRefs
+			final @Nullable LinkedRefs linkedRefs,
+			final @Nullable TokenID tokenID
 	) {
 		var account = adjust.getAccountID();
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
-				var meta = result.metadata();
-				if (adjust.getAmount() < 0 || meta.receiverSigRequired()) {
+				final var meta = result.metadata();
+				final var canSkipAddingKey = sigMetaLookup.resolveAllowanceGrantFor(payer, account, tokenID);
+
+				if ((adjust.getAmount() < 0 || meta.receiverSigRequired()) && !canSkipAddingKey) {
+					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
 					required.add(meta.key());
 				}
 			} else {
@@ -1146,9 +1150,10 @@ public class SigRequirements {
 			if (!result.succeeded()) {
 				return result.failureIfAny();
 			}
-			var meta = result.metadata();
+			final var meta = result.metadata();
+			final var canSkipAddingKey = sigMetaLookup.resolveAllowanceGrantFor(payer, party, token);
 			final var isSender = counterparty == null;
-			if (isSender || meta.receiverSigRequired()) {
+			if ((isSender || meta.receiverSigRequired()) && !canSkipAddingKey) {
 				required.add(meta.key());
 			} else {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);

@@ -37,6 +37,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAllowance;
+import com.hedera.services.state.submerkle.FcAllowanceId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
@@ -60,7 +62,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -293,6 +297,68 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	@Test
+	void fetchesGrantedHbarAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getCryptoAllowances()).willReturn(cryptoAllowances);
+
+		assertTrue(subject.resolveAllowanceGrantFor(knownPayer, knownAccount, null));
+	}
+
+	@Test
+	void fetchesGrantedHbarAllowanceFromAliasedAccounts() {
+		final var knownOwnerNum = EntityNum.fromAccountId(knownAccount);
+		final var knownPayerNum = EntityNum.fromAccountId(knownPayer);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(knownOwnerNum);
+		given(aliasManager.lookupIdBy(payerAlias.getAlias())).willReturn(knownPayerNum);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getCryptoAllowances()).willReturn(cryptoAllowances);
+
+		assertTrue(subject.resolveAllowanceGrantFor(payerAlias, alias, null));
+	}
+
+	@Test
+	void flagsMissingHbarAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getCryptoAllowances()).willReturn(cryptoAllowances);
+
+		assertFalse(subject.resolveAllowanceGrantFor(unKnownPayer, knownAccount, null));
+	}
+
+	@Test
+	void fetchesGrantedTokenAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+
+		assertTrue(subject.resolveAllowanceGrantFor(knownPayer, knownAccount, knownToken));
+	}
+
+	@Test
+	void fetchesGrantedTokenAllowanceFromAliasedAccounts() {
+		final var knownOwnerNum = EntityNum.fromAccountId(knownAccount);
+		final var knownPayerNum = EntityNum.fromAccountId(knownPayer);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(knownOwnerNum);
+		given(aliasManager.lookupIdBy(payerAlias.getAlias())).willReturn(knownPayerNum);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+
+		assertTrue(subject.resolveAllowanceGrantFor(payerAlias, alias, knownToken));
+	}
+
+	@Test
+	void flagsMissingTokenAllowance() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+		given(account.getTokenAllowances()).willReturn(tokenAllowances);
+
+		assertFalse(subject.resolveAllowanceGrantFor(unKnownPayer, knownAccount, knownToken));
+	}
+
+	@Test
 	void recognizesMissingToken() {
 		given(stateChildren.tokens()).willReturn(tokens);
 
@@ -420,6 +486,7 @@ class StateChildrenSigMetadataLookupTest {
 	private static final TokenID unknownToken = IdUtils.asToken("0.0.2222");
 	private static final long expiry = 1_234_567L;
 	private static final JKey simple = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+	private static final JKey payerAliadKey = new JEd25519Key("aaaaaaaaaabbbbbbaaaaaaaaaaa".getBytes());
 	private static final JKeyList wacl = new JKeyList(List.of(
 			new JECDSASecp256k1Key("012345789012345789012345789012".getBytes())
 	));
@@ -427,10 +494,25 @@ class StateChildrenSigMetadataLookupTest {
 	private static final AccountID alias = AccountID.newBuilder()
 			.setAlias(asKeyUnchecked(simple).toByteString())
 			.build();
+	private static final AccountID payerAlias = AccountID.newBuilder()
+			.setAlias(asKeyUnchecked(payerAliadKey).toByteString())
+			.build();
+	private static final AccountID knownPayer = IdUtils.asAccount("0.0.1001");
+	private static final AccountID unKnownPayer = IdUtils.asAccount("0.0.1002");
 	private static final AccountID knownAccount = IdUtils.asAccount("0.0.1234");
 	private static final AccountID unknownAccount = IdUtils.asAccount("0.0.4321");
 	private static final ContractID knownContract = IdUtils.asContract("0.0.1234");
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");
 	private static final ScheduleID knownSchedule = IdUtils.asSchedule("0.0.1234");
 	private static final ScheduleID unknownSchedule = IdUtils.asSchedule("0.0.4321");
+	private static final FcAllowanceId payerTokenAllowanceId = FcAllowanceId.from(
+			EntityNum.fromTokenId(knownToken), EntityNum.fromAccountId(knownPayer));
+	private static final FcAllowance payerTokenAllowance = FcAllowance.from(500L);
+	private static final Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
+	private static final Map<FcAllowanceId, FcAllowance> tokenAllowances = new HashMap<>();
+
+	static {
+		cryptoAllowances.put(EntityNum.fromAccountId(knownPayer), 500L);
+		tokenAllowances.put(payerTokenAllowanceId, payerTokenAllowance);
+	}
 }

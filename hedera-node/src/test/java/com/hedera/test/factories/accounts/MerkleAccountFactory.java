@@ -25,7 +25,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAllowance;
+import com.hedera.services.state.submerkle.FcAllowanceId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,6 +60,8 @@ public class MerkleAccountFactory {
 	private Optional<Integer>  alreadyUsedAutoAssociations = Optional.empty();
 	private Optional<Integer>  maxAutoAssociations = Optional.empty();
 	private Optional<ByteString>  alias = Optional.empty();
+	private Optional<Map<EntityNum, Long>> cryptoAllowances = Optional.empty();
+	private Optional<Map<FcAllowanceId, FcAllowance>> tokenAllowances = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private Set<Id> assocTokens = new HashSet<>();
 
@@ -81,6 +87,8 @@ public class MerkleAccountFactory {
 		}
 		value.setTokens(tokens);
 		value.setNumContractKvPairs(numKvPairs);
+		cryptoAllowances.ifPresent(value::setCryptoAllowances);
+		tokenAllowances.ifPresent(value::setTokenAllowances);
 		return value;
 	}
 
@@ -175,6 +183,14 @@ public class MerkleAccountFactory {
 	}
 	public MerkleAccountFactory alreadyUsedAutomaticAssociations(int count) {
 		alreadyUsedAutoAssociations = Optional.of(count);
+		return this;
+	}
+	public MerkleAccountFactory cryptoAllowances(Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = Optional.of(cryptoAllowances);
+		return this;
+	}
+	public MerkleAccountFactory tokenAllowances(Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+		this.tokenAllowances = Optional.of(tokenAllowances);
 		return this;
 	}
 }

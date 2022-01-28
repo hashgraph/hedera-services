@@ -319,4 +319,36 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromTo(OWNER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
+							.get()
+			));
+		}
+	},
+	TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.adjusting(OWNER_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
+							.get()
+			));
+		}
+	},
+	NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.changingOwner(KNOWN_TOKEN_NFT, OWNER_ACCOUNT, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	}
 }

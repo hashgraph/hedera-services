@@ -166,6 +166,12 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
+	public boolean resolveAllowanceGrantFor(final AccountID payerID,
+			final AccountID ownerID, final @Nullable TokenID tokenID) {
+		return accountSigMetaLookup.allowanceGrantLookupFor(payerID, ownerID, tokenID);
+	}
+
+	@Override
 	public Instant sourceSignedAt() {
 		return PRETEND_SIGNING_TIME;
 	}

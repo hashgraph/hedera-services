@@ -50,11 +50,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -134,6 +136,8 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
@@ -150,6 +154,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO;
@@ -255,6 +260,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
@@ -323,6 +329,12 @@ class SigRequirementsTest {
 				@Override
 				public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
 					return fn.apply(idOrAlias);
+				}
+
+				@Override
+				public boolean allowanceGrantLookupFor(final AccountID payerID,
+						final AccountID ownerID, final @Nullable TokenID tokenID) {
+					return false;
 				}
 			};
 		}
@@ -461,6 +473,33 @@ class SigRequirementsTest {
 		// then:
 		assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
 		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForHbarTransfer() throws Throwable {
+		setupFor(CRYPTO_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransfer() throws Throwable {
+		setupFor(TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertFalse(sanityRestored(nonPayerSummary.getOrderedKeys()).contains(OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForNFTTransfer() throws Throwable {
+		setupFor(NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertFalse(sanityRestored(nonPayerSummary.getOrderedKeys()).contains(OWNER_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
