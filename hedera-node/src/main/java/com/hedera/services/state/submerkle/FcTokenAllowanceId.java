@@ -32,6 +32,14 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
+/**
+ * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code MerkleAccountState}.
+ * It consists of the information about the token for which allowance is granted to and the spender who is granted the
+ * allowance.
+ *
+ * Having allowance on a token will grant the spender to transfer fungible or non-fungible token units from the owner's
+ * account.
+ */
 public class FcTokenAllowanceId implements SelfSerializable {
 	static final int RELEASE_023X_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;

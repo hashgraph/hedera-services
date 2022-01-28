@@ -310,24 +310,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setMaxAutomaticAssociations(maxAutomaticAssociations);
 	}
 
-	public Map<EntityNum, Long> getCryptoAllowances() {
-		return state().getCryptoAllowances();
-	}
-
-	public void setCryptoAllowances(Map<EntityNum, Long> cryptoAllowances) {
-		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
-		state().setCryptoAllowances(cryptoAllowances);
-	}
-
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getTokenAllowances() {
-		return state().getTokenAllowances();
-	}
-
-	public void setTokenAllowances(Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances) {
-		throwIfImmutable("Cannot change this account's token allowances if it's immutable.");
-		state().setTokenAllowances(tokenAllowances);
-	}
-
 	public int getAlreadyUsedAutoAssociations() {
 		return state().getAlreadyUsedAutomaticAssociations();
 	}
@@ -347,6 +329,33 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setNumContractKvPairs(final int numContractKvPairs) {
 		/* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
 		state().setNumContractKvPairs(numContractKvPairs);
+	}
+
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return state().getCryptoAllowances();
+	}
+
+	public void setCryptoAllowances(Map<EntityNum, Long> cryptoAllowances) {
+		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
+		state().setCryptoAllowances(cryptoAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return state().getNftAllowances();
+	}
+
+	public void setNftAllowances(Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		throwIfImmutable("Cannot change this account's Nft allowances if it's immutable.");
+		state().setNftAllowances(nftAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return state().getFungibleTokenAllowances();
+	}
+
+	public void setFungibleTokenAllowances(Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
+		state().setFungibleTokenAllowances(fungibleTokenAllowances);
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {

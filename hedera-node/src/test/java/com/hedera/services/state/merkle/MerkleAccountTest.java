@@ -82,14 +82,13 @@ class MerkleAccountTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
-	private static final EntityNum cryptoAllowanceEntity = new EntityNum(1000);
-	private static final Long cryptoAllowance = 10L;
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
 	private Map<EntityNum, Long> cryptoAllowances;
-	private Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances;
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 
 	private MerkleAccountState delegate;
 
@@ -107,7 +106,8 @@ class MerkleAccountTest {
 		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(HashMap.class);
-		tokenAllowances = mock(HashMap.class);
+		nftAllowances = mock(HashMap.class);
+		fungibleTokenAllowances = mock(HashMap.class);
 
 		delegate = mock(MerkleAccountState.class);
 
@@ -122,7 +122,8 @@ class MerkleAccountTest {
 				alias,
 				kvPairs,
 				cryptoAllowances,
-				tokenAllowances);
+				fungibleTokenAllowances,
+				nftAllowances);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -205,7 +206,8 @@ class MerkleAccountTest {
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances(), subject.getCryptoAllowances());
-		assertEquals(state.getTokenAllowances(), subject.getTokenAllowances());
+		assertEquals(state.getFungibleTokenAllowances(), subject.getFungibleTokenAllowances());
+		assertEquals(state.getNftAllowances(), subject.getNftAllowances());
 	}
 
 	@Test
@@ -239,7 +241,8 @@ class MerkleAccountTest {
 		subject.setAlias(alias);
 		subject.setNumContractKvPairs(kvPairs);
 		subject.setCryptoAllowances(cryptoAllowances);
-		subject.setTokenAllowances(tokenAllowances);
+		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
+		subject.setNftAllowances(nftAllowances);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -257,7 +260,8 @@ class MerkleAccountTest {
 		verify(delegate).setNftsOwned(2L);
 		verify(delegate).setAlias(alias);
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
-		verify(delegate).setTokenAllowances(tokenAllowances);
+		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
+		verify(delegate).setNftAllowances(nftAllowances);
 	}
 
 	@Test
