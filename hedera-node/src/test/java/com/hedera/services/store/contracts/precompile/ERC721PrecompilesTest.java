@@ -1,4 +1,23 @@
 package com.hedera.services.store.contracts.precompile;
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -47,6 +66,12 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.OWNER_OF;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.SAFE_TRANSFER_FROM;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.SAFE_TRANSFER_FROM_WITH_DATA;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_URI;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -184,7 +209,7 @@ public class ERC721PrecompilesTest {
     void balanceOf() {
         givenMinimalFrameContext();
         givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0x70a0823100000000000000000000000000000000000000000000000000000000000003ee"));
+        given(pretendArguments.slice(24)).willReturn(BALANCE_OF);
         given(decoder.decodeBalanceOf(pretendArguments)).willReturn(balanceOfOp);
 
         // when:
@@ -198,37 +223,77 @@ public class ERC721PrecompilesTest {
 
     @Test
     void ownerOf() {
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(pretendArguments.slice(24)).willReturn(OWNER_OF);
+
+        // when:
+        subject.prepareComputation(pretendArguments);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
 
     }
 
     @Test
     void safeTransferFromWithData() {
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(pretendArguments.slice(24)).willReturn(SAFE_TRANSFER_FROM_WITH_DATA);
+
+        // when:
+        subject.prepareComputation(pretendArguments);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
 
     }
 
     @Test
     void safeTransferFrom() {
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(pretendArguments.slice(24)).willReturn(SAFE_TRANSFER_FROM);
+
+        // when:
+        subject.prepareComputation(pretendArguments);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
 
     }
 
     @Test
     void transferFrom() {
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(pretendArguments.slice(24)).willReturn(TRANSFER_FROM);
+
+        // when:
+        subject.prepareComputation(pretendArguments);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
 
     }
-
 
     @Test
     void tokenURI() {
+        givenMinimalFrameContext();
+        givenLedgers();
+        given(pretendArguments.slice(24)).willReturn(TOKEN_URI);
 
-    }
+        // when:
+        subject.prepareComputation(pretendArguments);
+        final var result = subject.computeInternal(frame);
 
-    @Test
-    void tokenByIndex() {
+        // then:
+        assertEquals(successResult, result);
 
-    }
-
-    @Test
-    void tokenOfOwnerByIndex() {
 
     }
 
