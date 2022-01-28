@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -101,12 +102,17 @@ class TransactionProcessingResultTest {
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 
+		final var resultAsGrpc = result.toGrpc();
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 		assertEquals(Optional.empty(), result.getHaltReason());
-		assertEquals(expect.getBloom(), result.toGrpc().getBloom());
-		assertEquals(expect.getContractID(), result.toGrpc().getContractID());
-		assertEquals(ByteString.EMPTY, result.toGrpc().getContractCallResult());
-		assertEquals(listOfCreatedContracts, result.toGrpc().getCreatedContractIDsList());
+		assertEquals(expect.getBloom(), resultAsGrpc.getBloom());
+		assertEquals(expect.getContractID(), resultAsGrpc.getContractID());
+		assertEquals(ByteString.EMPTY, resultAsGrpc.getContractCallResult());
+		assertEquals(listOfCreatedContracts, resultAsGrpc.getCreatedContractIDsList());
+
+		final var mockNewAddr = Address.BLAKE2B_F_COMPRESSION.toArrayUnsafe();
+		final var creationResult = result.toCreationGrpc(mockNewAddr);
+		assertEquals(ByteString.copyFrom(mockNewAddr), creationResult.getEvmAddress().getValue());
 	}
 
 	@Test

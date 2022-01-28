@@ -55,7 +55,6 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -104,7 +103,7 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
@@ -197,15 +196,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
 	//transfer(address recipient, uint256 amount)
 	protected static final int ABI_ID_TOKEN_TRANSFER = 0xa9059cbb;
+	//transferFrom(address sender, address recipient, uint256 amount)
+	//transferFrom(address from, address to, uint256 tokenId)
+	protected static final int ABI_ID_TOKEN_TRANSFER_FROM = 0x23b872dd;
 
 	//ownerOf(uint256 tokenId)
 	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
-	//tokenOfOwnerByIndex(address owner,uint256 index)
-	protected static final int ABI_ID_NFT_OF_OWNER_BY_INDEX = 0x2f745c59;
-	//tokenByIndex(uint256 index)
-	protected static final int ABI_ID_NFT_BY_INDEX = 0x4f6ccce7;
-	//transferFrom(address from, address to, uint256 tokenId)
-	protected static final int ABI_ID_TRANSFER_FROM_NFT = 0x23b872dd;
 	//safeTransferFrom(address from, address to, uint256 tokenId)
 	protected static final int ABI_ID_SAFE_TRANSFER_FROM_NFT = 0x42842e0e;
 	//safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
@@ -342,20 +338,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						final var nestedInput = input.slice(24);
 
 						Precompile nestedPrecompile;
-						switch(nestedInput.getInt(0)) {
+						switch (nestedInput.getInt(0)) {
 							case ABI_ID_NAME -> nestedPrecompile = new NamePrecompile(tokenID);
 							case ABI_ID_SYMBOL -> nestedPrecompile = new SymbolPrecompile(tokenID);
 							case ABI_ID_DECIMALS -> nestedPrecompile = new DecimalsPrecompile(tokenID);
 							case ABI_ID_TOTAL_SUPPLY_TOKEN -> nestedPrecompile = new TotalSupplyPrecompile(tokenID);
 							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
-							case ABI_ID_TOKEN_TRANSFER -> nestedPrecompile = null;
-							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = null;
-							case ABI_ID_NFT_OF_OWNER_BY_INDEX -> nestedPrecompile = null;
-							case ABI_ID_NFT_BY_INDEX -> nestedPrecompile = null;
-							case ABI_ID_TRANSFER_FROM_NFT -> nestedPrecompile = null;
-							case ABI_ID_SAFE_TRANSFER_FROM_NFT -> nestedPrecompile = null;
-							case ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT -> nestedPrecompile = null;
-							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = null;
+							case ABI_ID_TOKEN_TRANSFER -> nestedPrecompile = new ERC20TransferPrecompile(tokenID);
+							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID);
+							case ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
+									new TransferFromPrecompile(tokenID);
+							case ABI_ID_SAFE_TRANSFER_FROM_NFT,
+									ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT -> nestedPrecompile =
+									new ERC721SafeTransferFromPrecompile(tokenID);
+							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
 							default -> nestedPrecompile = null;
 						}
 						yield nestedPrecompile;
@@ -937,47 +933,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class BalanceOfPrecompile implements Precompile {
-		private TokenID tokenID;
-		private BalanceOfWrapper balance;
-
-		public BalanceOfPrecompile(final TokenID tokenID) {
-			this.tokenID = tokenID;
-		}
-
-		@Override
-		public TransactionBody.Builder body(final Bytes input) {
-			balance = decoder.decodeBalanceOf(input);
-
-			return TransactionBody.newBuilder();
-		}
-
-		@Override
-		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
-		) {
-			Objects.requireNonNull(tokenID);
-
-			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(tokenID);
-//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-			final var sideEffects = sideEffectsFactory.get();
-
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
-		}
-	}
-
-	protected class ERCAbstractPrecompile implements Precompile {
+	protected abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
 		private TokenID tokenID;
 
-		public ERCAbstractPrecompile(final TokenID tokenID) {
+		public ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
 		}
 
@@ -995,8 +954,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(tokenID);
-//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 			final var sideEffects = sideEffectsFactory.get();
 
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
@@ -1008,58 +967,115 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class NamePrecompile extends ERCAbstractPrecompile {
+	protected abstract class ERCTransferAbstractPrecompile implements Precompile {
+		private TokenID tokenID;
+
+		public ERCTransferAbstractPrecompile(final TokenID tokenID) {
+			this.tokenID = tokenID;
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			return TransactionBody.newBuilder();
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final MessageFrame frame,
+				final WorldLedgers ledgers
+		) {
+			Objects.requireNonNull(tokenID);
+
+			/* --- Check required signatures --- */
+			final var tokenId = Id.fromGrpcToken(tokenID);
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+			final var sideEffects = sideEffectsFactory.get();
+
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+	}
+
+
+	protected class NamePrecompile extends ERCReadOnlyAbstractPrecompile {
 
 		public NamePrecompile(TokenID tokenID) {
 			super(tokenID);
 		}
 	}
 
-	protected class SymbolPrecompile extends ERCAbstractPrecompile {
+	protected class SymbolPrecompile extends ERCReadOnlyAbstractPrecompile {
 
 		public SymbolPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 	}
 
-	protected class TotalSupplyPrecompile extends ERCAbstractPrecompile {
+	protected class DecimalsPrecompile extends ERCReadOnlyAbstractPrecompile {
+
+		public DecimalsPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+	}
+
+	protected class TotalSupplyPrecompile extends ERCReadOnlyAbstractPrecompile {
 
 		public TotalSupplyPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 	}
 
-	protected class DecimalsPrecompile implements Precompile {
-		private TokenID tokenID;
+	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
 
-		public DecimalsPrecompile(final TokenID tokenID) {
-			this.tokenID = tokenID;
+		public TokenURIPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+	}
+
+	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
+
+		public OwnerOfPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+	}
+
+	protected class BalanceOfPrecompile extends ERCReadOnlyAbstractPrecompile {
+		private BalanceOfWrapper balance;
+
+		public BalanceOfPrecompile(final TokenID tokenID) {
+			super(tokenID);
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
+			balance = decoder.decodeBalanceOf(input);
 			return TransactionBody.newBuilder();
 		}
+	}
 
-		@Override
-		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
-		) {
-			Objects.requireNonNull(tokenID);
+	protected class ERC20TransferPrecompile extends ERCTransferAbstractPrecompile {
 
-			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(tokenID);
-//			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-//			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-			final var sideEffects = sideEffectsFactory.get();
-
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		public ERC20TransferPrecompile(final TokenID tokenID) {
+			super(tokenID);
 		}
+	}
 
-		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
+	protected class TransferFromPrecompile extends ERCTransferAbstractPrecompile {
+
+		public TransferFromPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+	}
+
+	protected class ERC721SafeTransferFromPrecompile extends ERCTransferAbstractPrecompile {
+
+		public ERC721SafeTransferFromPrecompile(final TokenID tokenID) {
+			super(tokenID);
 		}
 	}
 

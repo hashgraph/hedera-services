@@ -22,12 +22,15 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
 		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
@@ -37,6 +40,7 @@ public class HederaStackedWorldStateUpdater
 	private final HederaMutableWorldState worldState;
 
 	private Gas sbhRefund = Gas.ZERO;
+	private ContractID lastAllocatedId = null;
 
 	public HederaStackedWorldStateUpdater(
 			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
@@ -49,9 +53,19 @@ public class HederaStackedWorldStateUpdater
 
 	@Override
 	public Address allocateNewContractAddress(final Address sponsor) {
-		Address newAddress = worldState.newContractAddress(sponsor);
+		final var newAddress = worldState.newContractAddress(sponsor);
 		sponsorMap.put(newAddress, sponsor);
+		lastAllocatedId = contractIdFromEvmAddress(newAddress);
 		return newAddress;
+	}
+
+	/**
+	 * Returns the underlying entity id of the last allocated EVM address.
+	 *
+	 * @return the id of the last allocated address
+	 */
+	public ContractID idOfLastAllocatedAddress() {
+		return lastAllocatedId;
 	}
 
 	public Map<Address, Address> getSponsorMap() {

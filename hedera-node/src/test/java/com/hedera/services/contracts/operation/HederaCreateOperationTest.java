@@ -23,15 +23,19 @@ package com.hedera.services.contracts.operation;
  */
 
 
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,7 +54,11 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
-
+	/* The superclass returns this response when the frame has insufficient stack items; which
+	* we will ensure is true to avoid extensive mocking of the superclass collaborators. */
+	private static final Operation.OperationResult underflowResult =
+			new Operation.OperationResult(
+					Optional.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 	@Mock
 	private MessageFrame evmMsgFrame;
 	@Mock
@@ -58,37 +67,34 @@ class HederaCreateOperationTest {
 	private Wei gasPrice;
 	@Mock
 	private Gas gas;
-
 	@Mock
 	private MessageFrame lastStackedMsgFrame;
-
 	@Mock
 	private GasCalculator gasCalculator;
-
-	@Mock
-	private HederaWorldState.WorldStateAccount hederaAccount;
-
 	@Mock
 	private HederaWorldUpdater hederaWorldUpdater;
-
 	@Mock
 	private Address recipientAddr;
-
 	@Mock
 	private Deque<MessageFrame> messageFrameStack;
-
 	@Mock
 	private Iterator<MessageFrame> iterator;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private EntityCreator creator;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator);
+		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
 	}
 
 	@Test
-	void cost() {
+	void computesExpectedCost() {
 		final var oneOffsetStackItem = Bytes.of(10);
 		final var twoOffsetStackItem = Bytes.of(20);
 		given(evmMsgFrame.getStackItem(1)).willReturn(oneOffsetStackItem);
@@ -111,15 +117,10 @@ class HederaCreateOperationTest {
 		var gas = subject.cost(evmMsgFrame);
 
 		assertEquals(0, gas.toLong());
-
-		subject.checkSuperCost = false;
-
-		gas = subject.cost(evmMsgFrame);
-		assertEquals(0, gas.toLong());
 	}
 
 	@Test
-	void targetContractAddress() {
+	void computesExpectedTargetAddress() {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
 		given(hederaWorldUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);

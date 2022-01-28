@@ -69,11 +69,11 @@ class HederaStackedWorldStateUpdaterTest {
 
 	@Test
 	void allocateNewContractAddress() {
+		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
 		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(
 				ContractID.newBuilder().setContractNum(1).build())));
 
-		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(
-				ContractID.newBuilder().setContractNum(2).build())));
+		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
 		final var allocated = subject.allocateNewContractAddress(sponsorAddr);
 		final var sponsorAid = EntityIdUtils.accountParsedFromSolidityAddress(sponsorAddr.toArrayUnsafe());
@@ -85,6 +85,7 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(1, subject.getSponsorMap().size());
 		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
 		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
+		assertEquals(sponsoredId, subject.idOfLastAllocatedAddress());
 	}
 
 	@Test

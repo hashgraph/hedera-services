@@ -33,7 +33,6 @@ import java.util.Map;
  * order to provide a layered view for read/writes of the state during EVM transaction execution
  */
 public interface HederaWorldUpdater extends WorldUpdater {
-
 	/**
 	 * Allocates new Contract address based on the realm and shard of the sponsor
 	 * IMPORTANT - The Id must be reclaimed if the MessageFrame reverts

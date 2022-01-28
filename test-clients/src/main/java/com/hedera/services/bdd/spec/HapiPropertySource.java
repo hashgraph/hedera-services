@@ -278,11 +278,15 @@ public interface HapiPropertySource {
 	}
 
 	static byte[] asSolidityAddress(final AccountID accountId) {
-		return asSolidityAddress((int) accountId.getAccountNum(), accountId.getRealmNum(), accountId.getAccountNum());
+		return asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+	}
+
+	static byte[] asSolidityAddress(final ContractID contractId) {
+		return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
 
 	static byte[] asSolidityAddress(final TokenID tokenId) {
-		return asSolidityAddress((int) tokenId.getTokenNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+		return asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
 	}
 
 	static byte[] asSolidityAddress(final int shard, final long realm, final long num) {

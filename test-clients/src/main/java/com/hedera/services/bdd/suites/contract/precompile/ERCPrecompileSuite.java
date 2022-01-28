@@ -96,8 +96,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721OwnerOf(),
 				getErc721BalanceOf(),
 				getErc721TotalSupply(),
-				getErc721TokenByIndex(),
-				getErc721TokenOfOwnerByIndex(),
+				getErc721TokenByIndexReturnsFailure(),
+				getErc721TokenOfOwnerByIndexReturnsFailure(),
 				getErc721SafeTransferFrom(),
 				getErc721SafeTransferFromWithZeroAddresses(),
 				getErc721SafeTransferFromWithData(),
@@ -409,6 +409,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
 								.gas(300_000),
+						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(20, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
 				).when(withOpContext(
 								(spec, opLog) ->
@@ -629,8 +630,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_TOKEN_URI_CALL,
-														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 1)
 														.payingWith(ACCOUNT)
 														.via(tokenURITxn)
 														.hasKnownStatus(SUCCESS)
@@ -679,7 +679,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	}
 
 	//TODO - define index
-	private HapiApiSpec getErc721TokenByIndex() {
+	private HapiApiSpec getErc721TokenByIndexReturnsFailure() {
 		final var tokenByIndexTxn = "tokenByIndexTxn";
 
 		return defaultHapiSpec("ERC_721_TOKEN_BY_INDEX")
@@ -708,7 +708,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))
 														.payingWith(ACCOUNT)
 														.via(tokenByIndexTxn)
-														.hasKnownStatus(SUCCESS)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
 				).then(
@@ -717,7 +717,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	}
 
 	//TODO - define index
-	private HapiApiSpec getErc721TokenOfOwnerByIndex() {
+	private HapiApiSpec getErc721TokenOfOwnerByIndexReturnsFailure() {
 		final var tokenOfOwnerByIndexTxn = "tokenOfOwnerByIndexTxn";
 
 		return defaultHapiSpec("ERC_721_TOKEN_OF_OWNER_BY_INDEX")
@@ -747,7 +747,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getAccountID(OWNER)))
 														.payingWith(OWNER)
 														.via(tokenOfOwnerByIndexTxn)
-														.hasKnownStatus(SUCCESS)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
 						)
 				).then(
@@ -819,8 +819,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												spec,
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_OWNER_OF_CALL,
-														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 1)
 														.payingWith(OWNER)
 														.via(ownerOfTxn)
 														.hasKnownStatus(SUCCESS)
@@ -863,8 +862,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(OWNER)
 														.via(ownerNotAssignedToTokenTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -938,8 +936,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(AccountID.newBuilder().build()),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(AccountID.newBuilder().build()), 1)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithZeroAddressesTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -947,8 +944,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithZeroSenderTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -956,8 +952,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(AccountID.newBuilder().build()),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(AccountID.newBuilder().build()), 1)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithZeroRecipientTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1003,9 +998,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1, data)
 														.payingWith(OWNER)
 														.via(ownerNotAssignedToTokenTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1014,9 +1007,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1, data)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithDataToAccountTxn)
 														.hasKnownStatus(SUCCESS),
@@ -1024,9 +1015,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asSolidityAddress(spec.registry().getContractId(ERC_721_CONTRACT_NAME)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asSolidityAddress(spec.registry().getContractId(ERC_721_CONTRACT_NAME)), 1, data)
 														.payingWith(OWNER)
 														.via(contractNotAssignedToTokenTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1035,9 +1024,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asSolidityAddress(spec.registry().getContractId(ERC_721_CONTRACT_NAME)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asSolidityAddress(spec.registry().getContractId(ERC_721_CONTRACT_NAME)), 1, data)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithDataToContractTxn)
 														.hasKnownStatus(SUCCESS)
@@ -1083,9 +1070,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(AccountID.newBuilder().build()),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asAddress(AccountID.newBuilder().build()), 1, data)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithDataWithZeroAddressesTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1093,9 +1078,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1, data)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithDataWithZeroSenderTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1103,9 +1086,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(AccountID.newBuilder().build()),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN),
-														data)
+														asAddress(AccountID.newBuilder().build()), 1, data)
 														.payingWith(OWNER)
 														.via(safeTransferFromWithDataWithZeroRecipientTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1150,8 +1131,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(OWNER)
 														.via(ownerNotAssignedToTokenTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1160,8 +1140,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(OWNER)
 														.via(transferFromToAccountTxn)
 														.hasKnownStatus(SUCCESS),
@@ -1169,8 +1148,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(notOwner)
 														.via(ownerNotAssignedToTokenTxn)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -1178,8 +1156,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)),
-														spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(notOwner).sigControl(
 																forKey(notOwner, notOwnerKeyShape))
 														.via(ownerNotAssignedToTokenTxn)
