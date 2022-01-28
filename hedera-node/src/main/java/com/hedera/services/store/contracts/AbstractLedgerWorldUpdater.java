@@ -99,6 +99,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		this.trackingLedgers = trackingLedgers;
 	}
 
+	/**
+	 * Given an address, returns an account that can be mutated <b>with the assurance</b> that these
+	 * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and either
+	 * committed or reverted atomically with all other mutations in the change-set.
+	 *
+	 * @param address the address of interest
+	 * @return a tracked mutable account for the given address
+	 */
 	protected abstract A getForMutation(Address address);
 
 	@Override

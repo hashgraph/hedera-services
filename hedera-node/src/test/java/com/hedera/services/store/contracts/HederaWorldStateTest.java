@@ -24,15 +24,21 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -46,6 +52,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -78,6 +87,8 @@ class HederaWorldStateTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -90,7 +101,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
 	}
 
 	@Test
@@ -100,7 +111,10 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void customizeSponsoredAccounts() {
+		final var specialMemo = "memo";
+
 		givenNonNullWorldLedgers();
 
 		/* happy path with 0 existing accounts */
@@ -109,7 +123,9 @@ class HederaWorldStateTest {
 		verify(entityAccess, never()).customize(any(), any()); // will do 0 iterations
 
 		/* happy path with 1 existing account */
-		given(entityAccess.getMemo(any())).willReturn("memo");
+		final var matcherCaptor = ArgumentCaptor.forClass(Predicate.class);
+		final var customizerCaptor = ArgumentCaptor.forClass(Consumer.class);
+		given(entityAccess.getMemo(any())).willReturn(specialMemo);
 		given(entityAccess.getProxy(any())).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(entityAccess.getAutoRenew(any())).willReturn(100L);
 		var updater = subject.updater();
@@ -117,12 +133,48 @@ class HederaWorldStateTest {
 		updater.commit();
 		subject.customizeSponsoredAccounts();
 		verify(entityAccess).customize(any(), any());
+		verify(recordsHistorian).customizeSuccessor(
+				(Predicate<InProgressChildRecord>) matcherCaptor.capture(),
+				(Consumer<InProgressChildRecord>) customizerCaptor.capture());
+		assertCapturedWorkAsExpected(
+				(Predicate<InProgressChildRecord>) matcherCaptor.getValue(),
+				(Consumer<InProgressChildRecord>) customizerCaptor.getValue(),
+				EntityIdUtils.contractIdFromEvmAddress(Address.RIPEMD160),
+				specialMemo);
 
 		/* sad path with existing but not accessible account */
 		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
 		updater.commit();
 		given(entityAccess.isExtant(any())).willReturn(false);
 		assertFailsWith(() -> subject.customizeSponsoredAccounts(), ResponseCodeEnum.FAIL_INVALID);
+	}
+
+	private void assertCapturedWorkAsExpected(
+			final Predicate<InProgressChildRecord> matcher,
+			final Consumer<InProgressChildRecord> customizer,
+			final ContractID idToMatch,
+			final String memoToCustomize
+	) {
+		final var targetRecord = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(TxnReceipt.newBuilder()
+						.setStatus(TxnReceipt.SUCCESS_LITERAL)
+						.setContractId(EntityId.fromGrpcContractId(idToMatch)));
+		final var matchingBody = TransactionBody.newBuilder()
+				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder());
+		final var inProgress = new InProgressChildRecord(1, matchingBody, targetRecord);
+
+		assertTrue(matcher.test(inProgress));
+		customizer.accept(inProgress);
+		assertEquals(memoToCustomize, matchingBody.getContractCreateInstance().getMemo());
+
+		targetRecord.getReceiptBuilder().setContractId(null);
+		assertFalse(matcher.test(inProgress));
+
+		targetRecord.getReceiptBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL);
+		assertFalse(matcher.test(inProgress));
+
+		targetRecord.setReceiptBuilder(null);
+		assertFalse(matcher.test(inProgress));
 	}
 
 	@Test

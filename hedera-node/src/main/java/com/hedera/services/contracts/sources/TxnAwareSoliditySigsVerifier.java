@@ -41,7 +41,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -131,7 +130,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address contract,
 			final Address activeContract
 	) {
-		final var activeContractId = contractParsedFromSolidityAddress(activeContract);
+		final var activeContractId = EntityIdUtils.contractIdFromEvmAddress(activeContract);
 		final var isDelegateCall = !contract.equals(recipient);
 
 		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
