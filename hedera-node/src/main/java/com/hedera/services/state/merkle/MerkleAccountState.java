@@ -25,8 +25,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -35,6 +35,7 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -67,7 +68,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public static final String DEFAULT_MEMO = "";
 	private static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
 	private static final Map<EntityNum, Long> DEFAULT_CRYPTO_ALLOWANCES = new HashMap<>();
-	private static final Map<FcAllowanceId, FcAllowance> DEFAULT_TOKEN_ALLOWANCES = new HashMap<>();
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> DEFAULT_TOKEN_ALLOWANCES = new HashMap<>();
 
 	private JKey key;
 	private long expiry;
@@ -84,7 +85,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
 	private Map<EntityNum, Long> cryptoAllowances = DEFAULT_CRYPTO_ALLOWANCES;
-	private Map<FcAllowanceId, FcAllowance> tokenAllowances = DEFAULT_TOKEN_ALLOWANCES;
+	private Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances = DEFAULT_TOKEN_ALLOWANCES;
 
 	public MerkleAccountState() {
 		/* RuntimeConstructable */
@@ -105,7 +106,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final ByteString alias,
 			final int numContractKvPairs,
 			final Map<EntityNum, Long> cryptoAllowances,
-			final Map<FcAllowanceId, FcAllowance> tokenAllowances
+			final Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -424,11 +425,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
-	public Map<FcAllowanceId, FcAllowance> getTokenAllowances() {
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getTokenAllowances() {
 		return tokenAllowances;
 	}
 
-	public void setTokenAllowances(final Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+	public void setTokenAllowances(final Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances) {
 		assertMutable("tokenAllowances");
 		this.tokenAllowances = tokenAllowances;
 	}
@@ -446,7 +447,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			out.writeLong(entry.getValue());
 		}
 		out.writeInt(tokenAllowances.size());
-		for (Map.Entry<FcAllowanceId, FcAllowance> entry : tokenAllowances.entrySet()) {
+		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : tokenAllowances.entrySet()) {
 			out.writeSerializable(entry.getKey(), true);
 			out.writeSerializable(entry.getValue(), true);
 		}
@@ -462,8 +463,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 		var numTokenAllowances = in.readInt();
 		while (numTokenAllowances-- > 0) {
-			final FcAllowanceId key = in.readSerializable();
-			final FcAllowance value = in.readSerializable();
+			final FcTokenAllowanceId key = in.readSerializable();
+			final FcTokenAllowance value = in.readSerializable();
 			tokenAllowances.put(key, value);
 		}
 	}
@@ -477,9 +478,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final EntityNum tokenNum,
 			final EntityNum spenderNum,
 			final Long allowance,
-			final boolean approvedForAll) {
-		final var key = FcAllowanceId.from(tokenNum, spenderNum);
-		final var value = FcAllowance.from(allowance, approvedForAll);
+			final boolean approvedForAll,
+			final List<Long> serialNumbers) {
+		final var key = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		final var value = FcTokenAllowance.from(allowance, approvedForAll, serialNumbers);
 		tokenAllowances.put(key, value);
 	}
 
@@ -488,6 +490,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void removeTokenAllowance(final EntityNum tokenNum, final EntityNum spenderNum) {
-		tokenAllowances.remove(FcAllowanceId.from(tokenNum, spenderNum));
+		tokenAllowances.remove(FcTokenAllowanceId.from(tokenNum, spenderNum));
 	}
 }

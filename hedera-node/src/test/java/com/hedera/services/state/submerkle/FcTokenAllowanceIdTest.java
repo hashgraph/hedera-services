@@ -36,22 +36,22 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class FcAllowanceIdTest {
+public class FcTokenAllowanceIdTest {
 	private EntityNum tokenNum = EntityNum.fromLong(1L);
 	private EntityNum spenderNum = EntityNum.fromLong(2L);
 
-	private FcAllowanceId subject;
+	private FcTokenAllowanceId subject;
 
 	@BeforeEach
 	void setup() {
-		subject = FcAllowanceId.from(tokenNum, spenderNum);
+		subject = FcTokenAllowanceId.from(tokenNum, spenderNum);
 	}
 
 	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = FcAllowanceId.from(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
-		final var three = FcAllowanceId.from(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
+		final var two = FcTokenAllowanceId.from(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
+		final var three = FcTokenAllowanceId.from(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -65,7 +65,7 @@ public class FcAllowanceIdTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"FcAllowanceId{tokenNum=" + tokenNum.longValue() + ", spenderNum=" + spenderNum.longValue() + "}",
+				"FcTokenAllowanceId{tokenNum=" + tokenNum.longValue() + ", spenderNum=" + spenderNum.longValue() + "}",
 				subject.toString());
 	}
 
@@ -78,12 +78,12 @@ public class FcAllowanceIdTest {
 	@Test
 	void deserializeWorks() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		final var newSubject = new FcAllowanceId();
+		final var newSubject = new FcTokenAllowanceId();
 		given(in.readLong())
 				.willReturn(tokenNum.longValue())
 				.willReturn(spenderNum.longValue());
 
-		newSubject.deserialize(in, FcAllowanceId.CURRENT_VERSION);
+		newSubject.deserialize(in, FcTokenAllowanceId.CURRENT_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -101,7 +101,7 @@ public class FcAllowanceIdTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(FcAllowanceId.RELEASE_023X_VERSION, subject.getVersion());
-		assertEquals(FcAllowanceId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(FcTokenAllowanceId.RELEASE_023X_VERSION, subject.getVersion());
+		assertEquals(FcTokenAllowanceId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

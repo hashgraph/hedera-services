@@ -27,8 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
@@ -89,7 +89,7 @@ class MerkleAccountTest {
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
 	private Map<EntityNum, Long> cryptoAllowances;
-	private Map<FcAllowanceId, FcAllowance> tokenAllowances;
+	private Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances;
 
 	private MerkleAccountState delegate;
 

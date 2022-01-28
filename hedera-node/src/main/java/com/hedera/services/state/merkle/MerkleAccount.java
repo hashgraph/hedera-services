@@ -27,8 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -319,11 +319,11 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setCryptoAllowances(cryptoAllowances);
 	}
 
-	public Map<FcAllowanceId, FcAllowance> getTokenAllowances() {
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getTokenAllowances() {
 		return state().getTokenAllowances();
 	}
 
-	public void setTokenAllowances(Map<FcAllowanceId, FcAllowance> tokenAllowances) {
+	public void setTokenAllowances(Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances) {
 		throwIfImmutable("Cannot change this account's token allowances if it's immutable.");
 		state().setTokenAllowances(tokenAllowances);
 	}

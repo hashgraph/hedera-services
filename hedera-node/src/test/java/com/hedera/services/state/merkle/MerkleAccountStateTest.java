@@ -28,8 +28,8 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAllowance;
-import com.hedera.services.state.submerkle.FcAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,7 +41,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
@@ -101,14 +103,16 @@ class MerkleAccountStateTest {
 	private static final Long cryptoAllowance = 10L;
 	private static final boolean approvedForAll = false;
 	private static final Long tokenAllowanceVal = 1L;
+	private static final List<Long> serialNumbers = List.of(1L, 2L);
 
-	private static final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
-	private static final FcAllowance tokenAllowanceValue = FcAllowance.from(tokenAllowanceVal, approvedForAll);
+	private static final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
+	private static final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(tokenAllowanceVal,
+			approvedForAll, serialNumbers);
 
 	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private Map<FcAllowanceId, FcAllowance> tokenAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> tokenAllowances = new HashMap<>();
 	Map<EntityNum, Long> otherCryptoAllowances = new HashMap<>();
-	Map<FcAllowanceId, FcAllowance> otherTokenAllowances = new HashMap<>();
+	Map<FcTokenAllowanceId, FcTokenAllowance> otherTokenAllowances = new HashMap<>();
 
 	private DomainSerdes serdes;
 
@@ -418,6 +422,8 @@ class MerkleAccountStateTest {
 		given(in.readSerializable())
 				.willReturn(tokenAllowanceKey)
 				.willReturn(tokenAllowanceValue);
+		given(in.readLongList(Integer.MAX_VALUE))
+				.willReturn(serialNumbers);
 
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_0230_VERSION);
 
@@ -690,9 +696,11 @@ class MerkleAccountStateTest {
 		final Long cryptoAllowance = 100L;
 		final boolean approvedForAll = true;
 		final Long tokenAllowanceVal = 1L;
+		final List<Long> serialNumbers = new ArrayList<>();
 
-		final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
-		final FcAllowance tokenAllowanceValue = FcAllowance.from(tokenAllowanceVal, approvedForAll);
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
+		final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(tokenAllowanceVal, approvedForAll,
+				serialNumbers);
 
 		otherCryptoAllowances.put(spenderNum, cryptoAllowance);
 		otherTokenAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
@@ -783,10 +791,11 @@ class MerkleAccountStateTest {
 		final Long cryptoAllowance = 100L;
 		final boolean approvedForAll = false;
 		final Long tokenAllowanceVal = 10L;
-		final FcAllowanceId tokenAllowanceKey = FcAllowanceId.from(tokenForAllowance, spenderNum);
+		final List<Long> serialNumbers = List.of(3L, 4L);
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
 
 		subject.addCryptoAllowance(spenderNum, cryptoAllowance);
-		subject.addTokenAllowance(tokenForAllowance, spenderNum, tokenAllowanceVal, approvedForAll);
+		subject.addTokenAllowance(tokenForAllowance, spenderNum, tokenAllowanceVal, approvedForAll, serialNumbers);
 
 		assertTrue(subject.getCryptoAllowances().containsKey(spenderNum));
 		assertTrue(subject.getTokenAllowances().containsKey(tokenAllowanceKey));
