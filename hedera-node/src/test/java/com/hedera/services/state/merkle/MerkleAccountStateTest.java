@@ -409,8 +409,7 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired)
-				.willReturn(approvedForAll)
-				.willReturn(serialNumbers != null);
+				.willReturn(approvedForAll);
 		given(in.readInt())
 				.willReturn(autoAssociationMetadata)
 				.willReturn(number)
