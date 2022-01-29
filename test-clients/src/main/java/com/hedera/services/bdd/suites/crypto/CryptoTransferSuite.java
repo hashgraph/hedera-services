@@ -95,22 +95,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
 						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList()
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList()
 				}
 		);
 	}
@@ -941,7 +941,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasExpectedLedgerId("0x03")
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
-						getAccountInfo("payeeNoSigReq").has(accountWith().balance(initialBalance + 2_000L))
+						getAccountInfo("payeeNoSigReq").has(
+								accountWith().balance(initialBalance + 2_000L).noAllowances())
 				);
 	}
 
