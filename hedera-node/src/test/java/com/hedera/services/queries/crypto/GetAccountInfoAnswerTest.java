@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
@@ -31,6 +32,8 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -41,13 +44,16 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
@@ -59,6 +65,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -147,6 +154,13 @@ class GetAccountInfoAnswerTest {
 
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
+
+		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
+		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
+		var cryptoAllowances = Map.of(EntityNum.fromLong(1L), 10L);
+		var fungibleTokenAllowances = Map.of(tokenAllowanceKey, 20L);
+		var nftAllowances = Map.of(tokenAllowanceKey, tokenAllowanceValue);
+
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.memo(memo)
@@ -157,6 +171,9 @@ class GetAccountInfoAnswerTest {
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
 				.expirationTime(9_999_999L)
+				.cryptoAllowances(cryptoAllowances)
+				.fungibleTokenAllowances(fungibleTokenAllowances)
+				.nftAllowances(nftAllowances)
 				.get();
 		payerAccount.setTokens(tokens);
 
@@ -269,6 +286,28 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
+		assertEquals(1, info.getCryptoAllowancesCount());
+		assertEquals(1, info.getTokenAllowancesCount());
+		assertEquals(1, info.getNftAllowancesCount());
+		assertEquals(CryptoAllowance.newBuilder()
+						.setAmount(10L)
+						.setSpender(EntityNum.fromLong(1L).toGrpcAccountId())
+						.build(),
+				info.getCryptoAllowances(0));
+		assertEquals(TokenAllowance.newBuilder()
+						.setAmount(20L)
+						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
+						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
+						.build(),
+				info.getTokenAllowances(0));
+		assertEquals(NftAllowance.newBuilder()
+						.setApprovedForAll(BoolValue.of(false))
+						.addAllSerialNumbers(List.of(1L, 2L))
+						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
+						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
+						.build(),
+				info.getNftAllowances(0));
+
 		// and:
 		assertEquals(
 				List.of(
@@ -296,7 +335,8 @@ class GetAccountInfoAnswerTest {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(ACCOUNT_DELETED);
+		given(optionValidator.queryableAccountStatus(EntityNum.fromAccountId(payerId), accounts)).willReturn(
+				ACCOUNT_DELETED);
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -309,7 +349,7 @@ class GetAccountInfoAnswerTest {
 	void usesValidatorOnAccountWithAlias() throws Throwable {
 		EntityNum entityNum = EntityNum.fromAccountId(payerId);
 		Query query = validQueryWithAlias(COST_ANSWER, fee, "aaaa");
-		
+
 		given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
 		given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
