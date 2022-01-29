@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -38,14 +40,16 @@ import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrappin
 
 public class WorldLedgers {
 	public static final WorldLedgers NULL_WORLD_LEDGERS =
-			new WorldLedgers(null, null, null, null);
+			new WorldLedgers(null, null, null, null, null);
 
-	final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
-	final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-	final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final ContractAliases aliases;
+	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 
 	public WorldLedgers(
+			final ContractAliases aliases,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
@@ -53,8 +57,9 @@ public class WorldLedgers {
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.accountsLedger = accountsLedger;
-		this.nftsLedger = nftsLedger;
 		this.tokensLedger = tokensLedger;
+		this.nftsLedger = nftsLedger;
+		this.aliases = aliases;
 	}
 
 	public void commit() {
@@ -93,10 +98,15 @@ public class WorldLedgers {
 		}
 
 		return new WorldLedgers(
+				StackedContractAliases.wrapping(aliases),
 				activeLedgerWrapping(tokenRelsLedger),
 				activeLedgerWrapping(accountsLedger),
 				activeLedgerWrapping(nftsLedger),
 				activeLedgerWrapping(tokensLedger));
+	}
+
+	public ContractAliases aliases() {
+		return aliases;
 	}
 
 	public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels() {

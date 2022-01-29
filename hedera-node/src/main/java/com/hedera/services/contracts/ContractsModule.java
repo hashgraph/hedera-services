@@ -37,6 +37,7 @@ import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -105,14 +106,15 @@ public interface ContractsModule {
 
 	@Provides
 	@Singleton
-	public static EntityAccess provideMutableEntityAccess(
+	static EntityAccess provideMutableEntityAccess(
+			final AliasManager aliasManager,
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
-		return new MutableEntityAccess(ledger, txnCtx, storage, tokensLedger, bytecode);
+		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
 	}
 
 	@Provides

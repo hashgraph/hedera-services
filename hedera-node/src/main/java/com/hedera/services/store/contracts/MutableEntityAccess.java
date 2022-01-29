@@ -25,6 +25,7 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -64,6 +65,7 @@ public class MutableEntityAccess implements EntityAccess {
 	@Inject
 	public MutableEntityAccess(
 			final HederaLedger ledger,
+			final AliasManager aliasManager,
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
@@ -76,6 +78,7 @@ public class MutableEntityAccess implements EntityAccess {
 		this.sizeLimitedStorage = sizeLimitedStorage;
 
 		this.worldLedgers = new WorldLedgers(
+				aliasManager,
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),

@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -153,7 +154,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getAndGetAccountReturnNullForDeleted() {
-		final var trackingAccounts = ledgers.accountsLedger;
+		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 
@@ -165,7 +166,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getReusesMutableIfPresent() {
-		final var trackingAccounts = ledgers.accountsLedger;
+		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 
@@ -193,7 +194,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void commitsToWrappedTrackingAccountsRejectChangesToDeletedAccountBalances() {
-		final var trackingAccounts = ledgers.accountsLedger;
+		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 
 		/* Make some pending changes to one of the well-known accounts */
@@ -232,8 +233,8 @@ class AbstractLedgerWorldUpdaterTest {
 		wrappedLedgers.commit();
 
 		/* And they should be present in the underlying ledgers */
-		assertEquals(aHbarBalance + 2, ledgers.accountsLedger.get(aAccount, BALANCE));
-		assertEquals(bHbarBalance - 2, ledgers.accountsLedger.get(bAccount, BALANCE));
+		assertEquals(aHbarBalance + 2, ledgers.accounts().get(aAccount, BALANCE));
+		assertEquals(bHbarBalance - 2, ledgers.accounts().get(bAccount, BALANCE));
 		/* And consistently in the updatedAccounts map */
 		assertTrue(subject.updatedAccounts.containsKey(aAddress));
 		assertEquals(aHbarBalance + 2, subject.updatedAccounts.get(aAddress).getBalance().toLong());
@@ -258,8 +259,8 @@ class AbstractLedgerWorldUpdaterTest {
 		wrappedLedgers.commit();
 
 		/* And they should be present in the underlying ledgers */
-		assertFalse(ledgers.nftsLedger.contains(aNft));
-		assertEquals(aEntityId, ledgers.nftsLedger.get(bNft, OWNER));
+		assertFalse(ledgers.nfts().contains(aNft));
+		assertEquals(aEntityId, ledgers.nfts().get(bNft, OWNER));
 	}
 
 	@Test
@@ -280,10 +281,10 @@ class AbstractLedgerWorldUpdaterTest {
 		wrappedLedgers.commit();
 
 		/* And they should be present in the underlying ledgers */
-		assertEquals(aaBalance + 1, ledgers.tokenRelsLedger.get(aaRel, TOKEN_BALANCE));
-		assertFalse(ledgers.tokenRelsLedger.contains(abRel));
-		assertTrue(ledgers.tokenRelsLedger.contains(bbRel));
-		assertEquals(bbBalance, ledgers.tokenRelsLedger.get(bbRel, TOKEN_BALANCE));
+		assertEquals(aaBalance + 1, ledgers.tokenRels().get(aaRel, TOKEN_BALANCE));
+		assertFalse(ledgers.tokenRels().contains(abRel));
+		assertTrue(ledgers.tokenRels().contains(bbRel));
+		assertEquals(bbBalance, ledgers.tokenRels().get(bbRel, TOKEN_BALANCE));
 	}
 
 	@Test
@@ -339,17 +340,18 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
+		final var aliases = new AliasManager();
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
 		nftsLedger.begin();
 		tokensLedger.begin();
 
-		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private void setupWellKnownAccounts() {
-		final var trackingAccounts = ledgers.accountsLedger;
+		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 		trackingAccounts.create(bAccount);
@@ -362,7 +364,7 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	private void setupWellKnownNfts() {
-		final var trackingNfts = ledgers.nftsLedger;
+		final var trackingNfts = ledgers.nfts();
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);
@@ -372,7 +374,7 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	private void setupWellKnownTokenRels() {
-		final var trackingRels = ledgers.tokenRelsLedger;
+		final var trackingRels = ledgers.tokenRels();
 		trackingRels.create(aaRel);
 		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
 		trackingRels.create(abRel);

@@ -41,6 +41,10 @@ public class StackedContractAliases extends AbstractContractAliases {
 		this.wrappedAliases = wrappedAliases;
 	}
 
+	public static StackedContractAliases wrapping(final ContractAliases aliases) {
+		return new StackedContractAliases(aliases);
+	}
+
 	@Override
 	public void commit(final @Nullable SigImpactHistorian observer) {
 		if (removedLinks != null) {
@@ -120,6 +124,11 @@ public class StackedContractAliases extends AbstractContractAliases {
 
 	private boolean isRemoved(final Address alias) {
 		return removedLinks != null && removedLinks.contains(alias);
+	}
+
+	@VisibleForTesting
+	public ContractAliases wrappedAliases() {
+		return wrappedAliases;
 	}
 
 	@VisibleForTesting

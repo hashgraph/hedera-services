@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -38,33 +40,43 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+
+@ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
+	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	@Mock
+	private AliasManager aliasManager;
+
+	private WorldLedgers subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new WorldLedgers(aliasManager, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void commitsAsExpected() {
-		tokenRelsLedger = mock(TransactionalLedger.class);
-		accountsLedger = mock(TransactionalLedger.class);
-		nftsLedger = mock(TransactionalLedger.class);
-		tokensLedger = mock(TransactionalLedger.class);
-
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-
-		source.commit();
+		subject.commit();
 
 		verify(tokenRelsLedger).commit();
 		verify(accountsLedger).commit();
@@ -73,16 +85,8 @@ class WorldLedgersTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void revertsAsExpected() {
-		tokenRelsLedger = mock(TransactionalLedger.class);
-		accountsLedger = mock(TransactionalLedger.class);
-		nftsLedger = mock(TransactionalLedger.class);
-		tokensLedger = mock(TransactionalLedger.class);
-
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-
-		source.revert();
+		subject.revert();
 
 		verify(tokenRelsLedger).rollback();
 		verify(accountsLedger).rollback();
@@ -97,36 +101,39 @@ class WorldLedgersTest {
 
 	@Test
 	void wrapsAsExpected() {
-		tokenRelsLedger = new TransactionalLedger<>(
+		final var liveTokenRels = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
-		accountsLedger = new TransactionalLedger<>(
+		final var liveAccounts = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		nftsLedger = new TransactionalLedger<>(
+		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
-		tokensLedger = new TransactionalLedger<>(
+		final var liveTokens = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
+		final var liveAliases = new AliasManager();
 
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areUsable());
 
 		final var wrappedSource = source.wrapped();
 
-		assertSame(tokenRelsLedger, wrappedSource.tokenRels().getEntitiesLedger());
-		assertSame(accountsLedger, wrappedSource.accounts().getEntitiesLedger());
-		assertSame(nftsLedger, wrappedSource.nfts().getEntitiesLedger());
-		assertSame(tokensLedger, wrappedSource.tokens().getEntitiesLedger());
+		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
+		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
+		assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
+		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
+		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
+		assertSame(liveAliases, stackedAliases.wrappedAliases());
 	}
 
 	@Test
