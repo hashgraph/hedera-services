@@ -32,11 +32,11 @@ public abstract class AbstractContractAliases implements ContractAliases {
 	 * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
 	private static byte[] mirrorPrefix = null;
 
-	protected boolean isMirror(final Address address) {
+	public boolean isMirror(final Address address) {
 		return isMirror(address.toArrayUnsafe());
 	}
 
-	protected boolean isMirror(final byte[] address) {
+	public boolean isMirror(final byte[] address) {
 		if (mirrorPrefix == null) {
 			mirrorPrefix = new byte[12];
 			System.arraycopy(Longs.toByteArray(STATIC_PROPERTIES.getShard()), 4, mirrorPrefix, 0, 4);

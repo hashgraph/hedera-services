@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -65,6 +66,8 @@ class WorldLedgersTest {
 	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
 	private AliasManager aliasManager;
 
 	private WorldLedgers subject;
@@ -75,13 +78,25 @@ class WorldLedgersTest {
 	}
 
 	@Test
-	void commitsAsExpected() {
+	void commitsAsExpectedNoHistorian() {
 		subject.commit();
 
 		verify(tokenRelsLedger).commit();
 		verify(accountsLedger).commit();
 		verify(nftsLedger).commit();
 		verify(tokensLedger).commit();
+		verify(aliasManager).commit(null);
+	}
+
+	@Test
+	void commitsAsExpectedWithHistorian() {
+		subject.commit(sigImpactHistorian);
+
+		verify(tokenRelsLedger).commit();
+		verify(accountsLedger).commit();
+		verify(nftsLedger).commit();
+		verify(tokensLedger).commit();
+		verify(aliasManager).commit(sigImpactHistorian);
 	}
 
 	@Test
@@ -92,6 +107,7 @@ class WorldLedgersTest {
 		verify(accountsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(tokensLedger).rollback();
+		verify(aliasManager).revert();
 
 		verify(tokenRelsLedger).begin();
 		verify(accountsLedger).begin();
@@ -140,7 +156,8 @@ class WorldLedgersTest {
 	void nullLedgersWorkAsExpected() {
 		assertSame(NULL_WORLD_LEDGERS, NULL_WORLD_LEDGERS.wrapped());
 		assertFalse(NULL_WORLD_LEDGERS.areUsable());
-		assertDoesNotThrow(NULL_WORLD_LEDGERS::commit);
+		assertDoesNotThrow(() -> NULL_WORLD_LEDGERS.commit());
+		assertDoesNotThrow(() -> NULL_WORLD_LEDGERS.commit(null));
 		assertDoesNotThrow(NULL_WORLD_LEDGERS::revert);
 	}
 }

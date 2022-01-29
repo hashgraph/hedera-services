@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -64,11 +65,23 @@ public class WorldLedgers {
 
 	public void commit() {
 		if (areUsable()) {
-			tokenRelsLedger.commit();
-			accountsLedger.commit();
-			nftsLedger.commit();
-			tokensLedger.commit();
+			aliases.commit(null);
+			commitLedgers();
 		}
+	}
+
+	public void commit(final SigImpactHistorian sigImpactHistorian) {
+		if (areUsable()) {
+			aliases.commit(sigImpactHistorian);
+			commitLedgers();
+		}
+	}
+
+	private void commitLedgers() {
+		tokenRelsLedger.commit();
+		accountsLedger.commit();
+		nftsLedger.commit();
+		tokensLedger.commit();
 	}
 
 	public void revert() {
@@ -77,6 +90,7 @@ public class WorldLedgers {
 			accountsLedger.rollback();
 			nftsLedger.rollback();
 			tokensLedger.rollback();
+			aliases.revert();
 
 			/* Since AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput() will make a
 			 * second token call to commit() after the initial revert(), we want to keep these ledgers

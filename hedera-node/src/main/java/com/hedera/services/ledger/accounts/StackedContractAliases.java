@@ -46,6 +46,12 @@ public class StackedContractAliases extends AbstractContractAliases {
 	}
 
 	@Override
+	public void revert() {
+		removedLinks = null;
+		changedLinks = null;
+	}
+
+	@Override
 	public void commit(final @Nullable SigImpactHistorian observer) {
 		if (removedLinks != null) {
 			removedLinks.forEach(alias -> {

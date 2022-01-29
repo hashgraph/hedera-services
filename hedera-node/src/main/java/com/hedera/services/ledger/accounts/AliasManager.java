@@ -54,6 +54,11 @@ public class AliasManager implements ContractAliases {
 	}
 
 	@Override
+	public void revert() {
+		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+	}
+
+	@Override
 	public void commit(final @Nullable SigImpactHistorian observer) {
 		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
 	}

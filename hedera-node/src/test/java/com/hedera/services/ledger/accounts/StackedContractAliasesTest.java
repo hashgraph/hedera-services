@@ -161,6 +161,22 @@ class StackedContractAliasesTest {
 	}
 
 	@Test
+	void revertingDoesNothingWithNoChanges() {
+		assertDoesNotThrow(subject::revert);
+	}
+
+	@Test
+	void revertingNullsOutChanges() {
+		subject.changedLinks().put(nonMirrorAddress, mirrorAddress);
+		subject.removedLinks().add(otherNonMirrorAddress);
+
+		subject.revert();
+
+		assertTrue(subject.changedLinks().isEmpty());
+		assertTrue(subject.removedLinks().isEmpty());
+	}
+
+	@Test
 	void removesUnlinkedAndLinksChanged() {
 		subject.changedLinks().put(nonMirrorAddress, mirrorAddress);
 		subject.removedLinks().add(otherNonMirrorAddress);

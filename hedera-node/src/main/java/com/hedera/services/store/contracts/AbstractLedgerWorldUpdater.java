@@ -220,7 +220,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			if (updatedAccount == null) {
 				final var origin = getForMutation(address);
 				/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
-				 * non-existent, and none the 0.21 HTS precompiles should be creating accounts */
+				 * non-existent, and none of the HTS precompiles should be creating accounts */
 				if (origin == null) {
 					throw new IllegalArgumentException(
 							"A wrapped tracking ledger tried to create/change the " +

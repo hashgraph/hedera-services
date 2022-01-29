@@ -60,8 +60,9 @@ class AliasManagerTest {
 	}
 
 	@Test
-	void doesntSupportCommitting() {
+	void doesntSupportTransactionalSemantics() {
 		assertThrows(UnsupportedOperationException.class, () -> subject.commit(null));
+		assertThrows(UnsupportedOperationException.class, subject::revert);
 	}
 
 	@Test

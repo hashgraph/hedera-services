@@ -26,6 +26,8 @@ import org.hyperledger.besu.datatypes.Address;
 import javax.annotation.Nullable;
 
 public interface ContractAliases {
+	void revert();
+
 	void commit(@Nullable SigImpactHistorian observer);
 
 	void unlink(Address alias);
