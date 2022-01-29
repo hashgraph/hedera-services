@@ -82,8 +82,8 @@ public class ContractResources {
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("HTSCalls");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
-	public static final String HBAR_FEE_TRANSFER = bytecodePath("HBARFeeTransfer");
-	public static final String TRANSFERER = bytecodePath("Transferer");
+	public static final String HBAR_FEE_COLLECTOR = bytecodePath("HBARFeeCollector");
+	public static final String NESTED_HTS_TRANSFERER = bytecodePath("NestedHTSTransferer");
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
@@ -753,11 +753,11 @@ public class ContractResources {
 			"\"inputs\": [{\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
 			"\"payable\": false,\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 
-	public static final String HBAR_FEE_TRANSFER_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\"," +
-			"\"name\": " +
-			"\"transfererContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String HBAR_FEE_COLLECTOR_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\", " +
+			"\"name\": \"transfererContractAddress\",\"type\": \"address\"}],\"stateMutability\": \"nonpayable\"," +
+			"\"type\": \"constructor\"}";
 
-	public static final String HBAR_FEE_TRANSFER_DISTRIBUTE = "{\"inputs\":[{\"internalType\":\"address\"," +
+	public static final String HBAR_FEE_COLLECTOR_DISTRIBUTE = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\"," +
 			"\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}," +
 			"{\"internalType\":\"int64\",\"name\":\"amount\",\"type\":\"int64\"},{\"internalType\":\"addresspayable\"" +
