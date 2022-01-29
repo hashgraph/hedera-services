@@ -95,22 +95,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						transferWithMissingAccountGetsInvalidAccountId(),
+						transferWithMissingAccountGetsInvalidAccountId(),
 						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-//						baseCryptoTransferFeeChargedAsExpected(),
-//						autoAssociationRequiresOpenSlots(),
-//						royaltyCollectorsCanUseAutoAssociation(),
-//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						checksExpectedDecimalsForFungibleTokenTransferList()
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected(),
+						autoAssociationRequiresOpenSlots(),
+						royaltyCollectorsCanUseAutoAssociation(),
+						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+						checksExpectedDecimalsForFungibleTokenTransferList()
 				}
 		);
 	}
