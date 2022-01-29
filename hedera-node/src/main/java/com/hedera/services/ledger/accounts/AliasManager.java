@@ -59,12 +59,12 @@ public class AliasManager implements ContractAliases {
 	}
 
 	@Override
-	public void linkIfUnused(final Address alias, final Address address) {
+	public void link(final Address alias, final Address address) {
 		link(ByteString.copyFrom(alias.toArrayUnsafe()), EntityNum.fromEvmAddress(address));
 	}
 
 	@Override
-	public void unlinkIfUsed(final Address alias) {
+	public void unlink(final Address alias) {
 		unlink(ByteString.copyFrom(alias.toArrayUnsafe()));
 	}
 
@@ -73,6 +73,11 @@ public class AliasManager implements ContractAliases {
 		final var aliasKey = ByteString.copyFrom(alias.toArrayUnsafe());
 		final var contractNum = aliases.get(aliasKey);
 		return (contractNum == null) ? null : contractNum.toEvmAddress();
+	}
+
+	@Override
+	public boolean isAlias(final Address address) {
+		throw new AssertionError("Not implemented");
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {

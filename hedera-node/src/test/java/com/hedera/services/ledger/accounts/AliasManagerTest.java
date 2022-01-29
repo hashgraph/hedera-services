@@ -66,10 +66,10 @@ class AliasManagerTest {
 
 	@Test
 	void canLinkAndUnlinkAddresses() {
-		subject.linkIfUnused(nonMirrorAddress, mirrorAddress);
+		subject.link(nonMirrorAddress, mirrorAddress);
 		assertEquals(Map.of(ByteString.copyFrom(nonMirrorAddress.toArrayUnsafe()), num), subject.getAliases());
 
-		subject.unlinkIfUsed(nonMirrorAddress);
+		subject.unlink(nonMirrorAddress);
 		assertEquals(Collections.emptyMap(), subject.getAliases());
 	}
 
