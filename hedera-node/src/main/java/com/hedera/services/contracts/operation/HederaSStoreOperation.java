@@ -78,7 +78,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			HederaWorldState.WorldStateAccount hederaAccount =
 					((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getRecipientAddress());
 			long durationInSeconds = Math.max(0,
-					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.computeExpiryForNewContract(frame))
+					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.newContractExpiryIn(frame))
 							- frame.getBlockValues().getTimestamp());
 			long sbh = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
 

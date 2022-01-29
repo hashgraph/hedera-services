@@ -1,39 +1,18 @@
 package com.hedera.services.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
-
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.Create2Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +29,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class HederaCreateOperationTest {
+class HederaCreate2OperationTest {
+	private static final Bytes salt = Bytes.fromHexString("0x2a");
+	private static final Bytes oneOffsetStackItem = Bytes.of(10);
+	private static final Bytes twoOffsetStackItem = Bytes.of(20);
+	private static final MutableBytes initcode = MutableBytes.of((byte) 0xaa);
+
 	@Mock
 	private MessageFrame evmMsgFrame;
 	@Mock
@@ -64,7 +48,7 @@ class HederaCreateOperationTest {
 	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
-	private HederaWorldUpdater hederaWorldUpdater;
+	private HederaStackedWorldStateUpdater stackedUpdater;
 	@Mock
 	private Address recipientAddr;
 	@Mock
@@ -78,19 +62,16 @@ class HederaCreateOperationTest {
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 
-	private HederaCreateOperation subject;
+	private HederaCreate2Operation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
+		subject = new HederaCreate2Operation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
 	}
 
 	@Test
 	void computesExpectedCost() {
-		final var oneOffsetStackItem = Bytes.of(10);
-		final var twoOffsetStackItem = Bytes.of(20);
-		given(evmMsgFrame.getStackItem(1)).willReturn(oneOffsetStackItem);
-		given(evmMsgFrame.getStackItem(2)).willReturn(twoOffsetStackItem);
+		givenMemoryStackItems();
 		given(evmMsgFrame.getMessageFrameStack()).willReturn(messageFrameStack);
 		given(evmMsgFrame.getBlockValues()).willReturn(initialFrameBlockValues);
 		given(evmMsgFrame.getGasPrice()).willReturn(gasPrice);
@@ -101,7 +82,7 @@ class HederaCreateOperationTest {
 		given(messageFrameStack.iterator()).willReturn(iterator);
 		given(iterator.hasNext()).willReturn(false);
 
-		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
+		given(gasCalculator.create2OperationGasCost(any())).willReturn(gas);
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);
 		given(gas.plus(any())).willReturn(gas);
 
@@ -112,10 +93,24 @@ class HederaCreateOperationTest {
 
 	@Test
 	void computesExpectedTargetAddress() {
-		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		final var besuOp = new Create2Operation(gasCalculator);
+
+		givenMemoryStackItems();
+		given(evmMsgFrame.getStackItem(3)).willReturn(salt);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
-		given(hederaWorldUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);
-		var targetAddr = subject.targetContractAddress(evmMsgFrame);
-		assertEquals(Address.ZERO, targetAddr);
+		given(evmMsgFrame.readMutableMemory(oneOffsetStackItem.toLong(), twoOffsetStackItem.toLong()))
+				.willReturn(initcode);
+		final var expectedAddr = besuOp.targetContractAddress(evmMsgFrame);
+
+		final var actualAddr = subject.targetContractAddress(evmMsgFrame);
+		assertEquals(expectedAddr, actualAddr);
+//		given(evmMsgFrame.getWorldUpdater()).willReturn(stackedUpdater);
+//		given(stackedUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);
+//		assertEquals(Address.ZERO, targetAddr);
+	}
+
+	private void givenMemoryStackItems() {
+		given(evmMsgFrame.getStackItem(1)).willReturn(oneOffsetStackItem);
+		given(evmMsgFrame.getStackItem(2)).willReturn(twoOffsetStackItem);
 	}
 }

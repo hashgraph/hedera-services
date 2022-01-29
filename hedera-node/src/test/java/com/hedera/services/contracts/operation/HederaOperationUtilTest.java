@@ -104,7 +104,7 @@ class HederaOperationUtilTest {
 		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
 		given(messageFrame.getContextVariable("expiry")).willReturn(OptionalLong.of(expectedExpiry));
 
-		var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
+		var actualExpiry = HederaOperationUtil.newContractExpiryIn(messageFrame);
 
 		assertEquals(expectedExpiry, actualExpiry);
 		verify(messageFrame).getMessageFrameStack();
@@ -127,7 +127,7 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.getHederaAccount(customAddress)).willReturn(worldStateAccount);
 		given(worldStateAccount.getExpiry()).willReturn(expectedExpiry);
 
-		var actualExpiry = HederaOperationUtil.computeExpiryForNewContract(messageFrame);
+		var actualExpiry = HederaOperationUtil.newContractExpiryIn(messageFrame);
 
 		assertEquals(expectedExpiry, actualExpiry);
 		verify(messageFrame).getMessageFrameStack();

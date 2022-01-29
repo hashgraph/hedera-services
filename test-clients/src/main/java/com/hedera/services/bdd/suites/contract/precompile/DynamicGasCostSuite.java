@@ -187,7 +187,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCall(
 								create2Factory,
 								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
-						).via(creation2))
+						)
+								.gas(4_000_000L)
+								.via(creation2))
 //						contractCall(create2Factory, PROPAGATE_NESTED_CREATIONS_ABI)
 //								.gas(4_000_000L)
 //								.via(call)
