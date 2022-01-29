@@ -7,23 +7,32 @@ import "./hip-206/HederaResponseCodes.sol";
 
 contract HbarFeeCollector is HederaTokenService {
 
-    NestedHTSTransferer nestedHTSTransferer;
+    NestedHTSTransferrer nestedHTSTransferrer;
 
-    constructor(address transfererContractAddress) public {
-        nestedHTSTransferer = NestedHTSTransferer(transfererContractAddress);
+    constructor(address transferrerContractAddress) {
+        nestedHTSTransferrer = NestedHTSTransferrer(transferrerContractAddress);
     }
 
-    function feeDistributionAfterTransfer(address tokenAddress, address sender, address tokenReceiver, int64 amount,
-        address payable hbarReceiver) external {
-        nestedHTSTransferer.transfer(tokenAddress, sender, tokenReceiver, amount);
-        hbarReceiver.transfer(100);
+    function feeDistributionAfterTransfer(
+        address _tokenAddress,
+        address _sender,
+        address _tokenReceiver,
+        address payable _hbarReceiver,
+        int64 _tokenAmount,
+        uint256 _hbarAmount) external {
+        nestedHTSTransferrer.transfer(_tokenAddress, _sender, _tokenReceiver, _tokenAmount);
+        _hbarReceiver.transfer(_hbarAmount);
     }
 }
 
-contract NestedHTSTransferer is HederaTokenService {
+contract NestedHTSTransferrer is HederaTokenService {
 
-    function transfer(address tokenAddress, address sender, address receiver, int64 amount) external {
-        int response = HederaTokenService.transferToken(tokenAddress, sender, receiver, amount);
+    function transfer(
+        address _tokenAddress,
+        address _sender,
+        address _receiver,
+        int64 _amount) external {
+        int response = HederaTokenService.transferToken(_tokenAddress, _sender, _receiver, _amount);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Transfer of tokens failed");
         }

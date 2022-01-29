@@ -123,8 +123,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
+			positiveSpecs(),
+			negativeSpecs()
 		);
 	}
 
@@ -678,7 +678,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 										fileCreate("nestedBytecode")
 												.payingWith(ACCOUNT),
 										updateLargeFile(ACCOUNT, "nestedBytecode",
-												extractByteCode(ContractResources.NESTED_HTS_TRANSFERER)),
+												extractByteCode(ContractResources.NESTED_HTS_TRANSFERRER)),
 										contractCreate(NESTED)
 												.payingWith(ACCOUNT)
 												.bytecode("nestedBytecode")
@@ -705,9 +705,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 											asAddress(tokenID.get()),
 											asAddress(senderAccountID.get()),
 											asAddress(tokenReceiverAccountID.get()),
+											asAddress(hbarReceiverAccountID.get()),
 											AMOUNT_TO_SEND,
-											asAddress(hbarReceiverAccountID.get())
-									)
+											CUSTOM_HBAR_FEE_AMOUNT)
 											.payingWith(ACCOUNT)
 											.gas(GAS_TO_OFFER)
 											.via("distributeTx"));
