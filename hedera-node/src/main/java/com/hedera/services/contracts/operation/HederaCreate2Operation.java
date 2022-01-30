@@ -2,6 +2,7 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -57,10 +58,13 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 		final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));
 		final var initCode = frame.readMutableMemory(offset, length);
 		final var hash = keccak256(Bytes.concatenate(PREFIX, sender, salt, keccak256(initCode)));
+		final var alias = Address.wrap(hash.slice(12, 20));
 
-		final var address = Address.wrap(hash.slice(12, 20));
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		final Address address = updater.newAliasedContractAddress(frame.getRecipientAddress(), alias);
 		frame.warmUpAddress(address);
-		return address;
+		frame.warmUpAddress(alias);
+		return alias;
 	}
 
 	private static Bytes32 keccak256(final Bytes input) {

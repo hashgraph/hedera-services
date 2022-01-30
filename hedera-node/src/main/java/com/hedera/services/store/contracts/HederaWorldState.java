@@ -30,7 +30,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,6 +44,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
@@ -60,6 +60,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -117,8 +118,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public void customizeSponsoredAccounts() {
 		Objects.requireNonNull(recordsHistorian, "A static call cannot generated sponsored accounts");
 		sponsorMap.forEach((contract, sponsorAddress) -> {
-			final var createdId = EntityIdUtils.accountIdFromEvmAddress(contract);
-			final var sponsorId = EntityIdUtils.accountIdFromEvmAddress(sponsorAddress);
+			final var createdId = accountIdFromEvmAddress(contract);
+			final var sponsorId = accountIdFromEvmAddress(sponsorAddress);
 			validateTrue(entityAccess.isExtant(createdId), FAIL_INVALID);
 			validateTrue(entityAccess.isExtant(sponsorId), FAIL_INVALID);
 
@@ -144,7 +145,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Address newContractAddress(Address sponsor) {
-		final var newContractId = ids.newContractId(EntityIdUtils.accountIdFromEvmAddress(sponsor));
+		final var newContractId = ids.newContractId(accountIdFromEvmAddress(sponsor));
 		return asTypedEvmAddress(newContractId);
 	}
 
@@ -174,17 +175,19 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	@Override
-	public WorldStateAccount get(Address address) {
-		final var accountID = EntityIdUtils.accountIdFromEvmAddress(address);
-		if (!isGettable(accountID)) {
+	public WorldStateAccount get(final @Nullable Address address) {
+		if (address == null) {
+			return null;
+		}
+		final var accountId = accountIdFromEvmAddress(address);
+		if (!isGettable(accountId)) {
 			return null;
 		}
 
-		final long expiry = entityAccess.getExpiry(accountID);
-		final long balance = entityAccess.getBalance(accountID);
-		final long autoRenewPeriod = entityAccess.getAutoRenew(accountID);
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
-				entityAccess.getProxy(accountID));
+		final long expiry = entityAccess.getExpiry(accountId);
+		final long balance = entityAccess.getBalance(accountId);
+		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod, entityAccess.getProxy(accountId));
 	}
 
 	private boolean isGettable(final AccountID id) {
@@ -214,7 +217,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.balance = balance;
 			this.autoRenew = autoRenew;
 			this.proxyAccount = proxyAccount;
-			this.account = EntityIdUtils.accountIdFromEvmAddress(address);
+			this.account = accountIdFromEvmAddress(address);
 		}
 
 		@Override
@@ -357,7 +360,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
-		public Address allocateNewContractAddress(final Address sponsor) {
+		public Address newContractAddress(final Address sponsor) {
 			return wrappedWorldView().newContractAddress(sponsor);
 		}
 
@@ -397,7 +400,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
-				final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+				final var accountId = accountIdFromEvmAddress(address);
 				validateTrue(impactHistorian != null, FAIL_INVALID);
 				impactHistorian.markEntityChanged(accountId.getAccountNum());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
@@ -405,7 +408,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
-				final var accountId = EntityIdUtils.accountIdFromEvmAddress(updatedAccount.getAddress());
+				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
 
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
@@ -420,7 +423,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
 			this commit() persists all of that information without any additional use of the deletedAccounts
 			or updatedAccounts collections. */
-			trackingLedgers().commit();
+			trackingLedgers().commit(impactHistorian);
 
 			wrapped.sponsorMap.putAll(sponsorMap);
 		}
@@ -438,7 +441,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
 			for (final var updatedAccount : getUpdatedAccounts()) {
-				final var accountId = EntityIdUtils.accountIdFromEvmAddress(updatedAccount.getAddress());
+				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
 				/* Note that we don't have the equivalent of an account-scoped storage trie, so we can't
 				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
 				 * this in our global state expiration implementation.) */

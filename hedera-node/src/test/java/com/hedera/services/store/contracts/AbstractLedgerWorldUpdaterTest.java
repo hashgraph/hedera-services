@@ -21,7 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -94,6 +95,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private HederaWorldState worldState;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private ContractAliases aliases;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -138,6 +141,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var wrappedAccount =
 				worldState.new WorldStateAccount(
 						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
@@ -157,15 +161,33 @@ class AbstractLedgerWorldUpdaterTest {
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		final var trackingAliases = ledgers.aliases();
+		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
+		given(trackingAliases.isActiveAlias(aAddress)).willReturn(true);
 
 		subject.deleteAccount(aAddress);
 
 		assertNull(subject.get(aAddress));
 		assertNull(subject.getAccount(aAddress));
+		verify(trackingAliases).unlink(aAddress);
+	}
+
+	@Test
+	void doesntUnlinkDeletedMirrorAddress() {
+		final var trackingAccounts = ledgers.accounts();
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		final var trackingAliases = ledgers.aliases();
+		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		subject.deleteAccount(aAddress);
+
+		verify(trackingAliases, never()).unlink(aAddress);
 	}
 
 	@Test
 	void getReusesMutableIfPresent() {
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
@@ -196,6 +218,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingAccountsRejectChangesToDeletedAccountBalances() {
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.deleteAccount(aAddress);
@@ -216,6 +239,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingAccountsAreRespectedAndSyncedWithUpdatedAccounts() {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
@@ -289,6 +313,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void updatesTrackingLedgerAccountOnCreateIfUsable() {
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var newAccount = subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
 		assertInstanceOf(WrappedEvmAccount.class, newAccount);
 		final var newWrappedAccount = (WrappedEvmAccount) newAccount;
@@ -302,6 +327,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void updatesTrackingLedgerAccountOnDeleteIfUsable() {
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
 
 		subject.deleteAccount(aAddress);
@@ -314,7 +340,9 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
-		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.NULL_WORLD_LEDGERS);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.unusableLedgersWith(aliases));
 
 		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}
@@ -340,7 +368,6 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
-		final var aliases = new AliasManager();
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();

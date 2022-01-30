@@ -43,7 +43,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AliasManager implements ContractAliases {
+public class AliasManager extends AbstractContractAliases implements ContractAliases {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private Map<ByteString, EntityNum> aliases;
@@ -74,15 +74,18 @@ public class AliasManager implements ContractAliases {
 	}
 
 	@Override
-	public Address resolveForEvm(final Address alias) {
-		final var aliasKey = ByteString.copyFrom(alias.toArrayUnsafe());
+	public Address resolveForEvm(final Address addressOrAlias) {
+		if (isMirror(addressOrAlias)) {
+			return addressOrAlias;
+		}
+		final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
 		final var contractNum = aliases.get(aliasKey);
 		return (contractNum == null) ? null : contractNum.toEvmAddress();
 	}
 
 	@Override
-	public boolean isAlias(final Address address) {
-		throw new AssertionError("Not implemented");
+	public boolean isActiveAlias(final Address address) {
+		return aliases.containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {

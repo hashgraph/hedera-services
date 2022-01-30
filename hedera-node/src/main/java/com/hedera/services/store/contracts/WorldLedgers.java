@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,6 +48,10 @@ public class WorldLedgers {
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+
+	public static WorldLedgers unusableLedgersWith(final ContractAliases aliases) {
+		return new WorldLedgers(aliases, null, null, null, null);
+	}
 
 	public WorldLedgers(
 			final ContractAliases aliases,
@@ -103,12 +107,15 @@ public class WorldLedgers {
 	}
 
 	public boolean areUsable() {
-		return this != NULL_WORLD_LEDGERS;
+		return nftsLedger != null &&
+				tokensLedger != null &&
+				accountsLedger != null &&
+				tokenRelsLedger != null;
 	}
 
 	public WorldLedgers wrapped() {
-		if (this == NULL_WORLD_LEDGERS) {
-			return NULL_WORLD_LEDGERS;
+		if (!areUsable()) {
+			return unusableLedgersWith(StackedContractAliases.wrapping(aliases));
 		}
 
 		return new WorldLedgers(

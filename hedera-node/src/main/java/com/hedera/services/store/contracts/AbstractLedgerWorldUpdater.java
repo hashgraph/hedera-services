@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -109,9 +110,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	protected abstract A getForMutation(Address address);
 
 	@Override
-	public EvmAccount createAccount(final Address address, final long nonce, final Wei balance) {
+	public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
+		final var curAliases = aliases();
+		final var address = curAliases.resolveForEvm(addressOrAlias);
+
 		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
 		if (trackingLedgers.areUsable()) {
+			/* TODO - set the pending account's alias */
 			trackingLedgers.accounts().create(newMutable.getAccountId());
 		}
 
@@ -122,7 +127,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public Account get(final Address address) {
+	public Account get(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
@@ -132,7 +139,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public EvmAccount getAccount(final Address address) {
+	public EvmAccount getAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		final var extantMutable = updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return new WrappedEvmAccount(extantMutable);
@@ -149,12 +158,19 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public void deleteAccount(final Address address) {
+	public void deleteAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
 		if (trackingLedgers.areUsable()) {
 			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
+			final var curAliases = aliases();
+			if (curAliases.isActiveAlias(addressOrAlias)) {
+				curAliases.unlink(addressOrAlias);
+				/* TODO - remove the deleted account's alias */
+			}
 		}
 	}
 
@@ -260,5 +276,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
+	}
+
+	protected ContractAliases aliases() {
+		return trackingLedgers.aliases();
 	}
 }

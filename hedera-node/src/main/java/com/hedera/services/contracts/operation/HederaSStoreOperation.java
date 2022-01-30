@@ -75,8 +75,8 @@ public class HederaSStoreOperation extends AbstractOperation {
 		boolean checkCalculator = checkSuperCost;
 		Gas gasCost = Gas.ZERO;
 		if (currentZero && !newZero) {
-			HederaWorldState.WorldStateAccount hederaAccount =
-					((HederaWorldUpdater) frame.getWorldUpdater()).getHederaAccount(frame.getRecipientAddress());
+			final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
+			HederaWorldState.WorldStateAccount hederaAccount = updater.getHederaAccount(frame.getRecipientAddress());
 			long durationInSeconds = Math.max(0,
 					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.newContractExpiryIn(frame))
 							- frame.getBlockValues().getTimestamp());

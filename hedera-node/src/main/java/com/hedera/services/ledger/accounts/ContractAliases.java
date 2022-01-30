@@ -34,7 +34,9 @@ public interface ContractAliases {
 
 	void link(Address alias, Address address);
 
-	boolean isAlias(Address address);
+	boolean isMirror(Address address);
+
+	boolean isActiveAlias(Address address);
 
 	Address resolveForEvm(Address addressOrAlias);
 }

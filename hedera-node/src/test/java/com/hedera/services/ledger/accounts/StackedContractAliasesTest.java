@@ -64,25 +64,25 @@ class StackedContractAliasesTest {
 
 	@Test
 	void mirrorAddressesAreNotAliases() {
-		assertFalse(subject.isAlias(mirrorAddress));
+		assertFalse(subject.isActiveAlias(mirrorAddress));
 	}
 
 	@Test
 	void updatedAliasesAreNecessarilyAliases() {
 		subject.changedLinks().put(nonMirrorAddress, mirrorAddress);
-		assertTrue(subject.isAlias(nonMirrorAddress));
+		assertTrue(subject.isActiveAlias(nonMirrorAddress));
 	}
 
 	@Test
 	void resolvableAliasesAreAliases() {
-		given(wrappedAliases.isAlias(nonMirrorAddress)).willReturn(true);
-		assertTrue(subject.isAlias(nonMirrorAddress));
+		given(wrappedAliases.isActiveAlias(nonMirrorAddress)).willReturn(true);
+		assertTrue(subject.isActiveAlias(nonMirrorAddress));
 	}
 
 	@Test
 	void unlinkedAliasesAreNotAliases() {
 		subject.removedLinks().add(nonMirrorAddress);
-		assertFalse(subject.isAlias(nonMirrorAddress));
+		assertFalse(subject.isActiveAlias(nonMirrorAddress));
 	}
 
 	@Test

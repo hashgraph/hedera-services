@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -57,6 +58,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
 
 	private final AccountStore accountStore;
+	private final AliasManager aliasManager;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
@@ -72,10 +74,12 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			final AccountStore accountStore,
 			final CallLocalEvmTxProcessor evmTxProcessor,
 			final EntityIdSource ids,
-			final OptionValidator validator
+			final OptionValidator validator,
+			final AliasManager aliasManager
 	) {
 		this.accountStore = accountStore;
 		this.evmTxProcessor = evmTxProcessor;
+		this.aliasManager = aliasManager;
 		this.ids = ids;
 		this.validator = validator;
 		this.properties = properties;
@@ -106,7 +110,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			if (null == queryCtx) {
 				response = dummyResponse(op.getContractID());
 			} else {
-				final var entityAccess = new StaticEntityAccess(view, validator, properties);
+				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, properties);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				evmTxProcessor.setWorldState(worldState);

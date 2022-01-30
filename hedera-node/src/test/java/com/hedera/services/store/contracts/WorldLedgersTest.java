@@ -47,8 +47,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -141,6 +139,18 @@ class WorldLedgersTest {
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areUsable());
+		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
+		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
+		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
+		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
+		assertFalse(nullTokenRels.areUsable());
+		assertFalse(nullAccounts.areUsable());
+		assertFalse(nullNfts.areUsable());
+		assertFalse(nullTokens.areUsable());
+
+		final var wrappedUnusable = nullAccounts.wrapped();
+		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
+		assertFalse(wrappedUnusable.areUsable());
 
 		final var wrappedSource = source.wrapped();
 
@@ -150,14 +160,5 @@ class WorldLedgersTest {
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
-	}
-
-	@Test
-	void nullLedgersWorkAsExpected() {
-		assertSame(NULL_WORLD_LEDGERS, NULL_WORLD_LEDGERS.wrapped());
-		assertFalse(NULL_WORLD_LEDGERS.areUsable());
-		assertDoesNotThrow(() -> NULL_WORLD_LEDGERS.commit());
-		assertDoesNotThrow(() -> NULL_WORLD_LEDGERS.commit(null));
-		assertDoesNotThrow(NULL_WORLD_LEDGERS::revert);
 	}
 }

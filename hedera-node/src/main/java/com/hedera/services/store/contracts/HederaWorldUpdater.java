@@ -41,7 +41,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * 		sponsor of the new contract
 	 * @return newly generated contract {@link Address}
 	 */
-	Address allocateNewContractAddress(Address sponsor);
+	Address newContractAddress(Address sponsor);
 
 	/**
 	 * Tracks who initiated the creation of a new account/contract/token. The caller becomes the "sponsor" and when

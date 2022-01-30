@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -56,8 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
@@ -67,6 +66,8 @@ class StaticEntityAccessTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView stateView;
+	@Mock
+	private ContractAliases aliases;
 	@Mock
 	private HederaAccountCustomizer customizer;
 	@Mock
@@ -116,7 +117,17 @@ class StaticEntityAccessTest {
 		given(stateView.storage()).willReturn(blobs);
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
-		subject = new StaticEntityAccess(stateView, validator, dynamicProperties);
+		subject = new StaticEntityAccess(stateView, aliases, validator, dynamicProperties);
+	}
+
+	@Test
+	void worldLedgersJustIncludeAliases() {
+		final var ledgers = subject.worldLedgers();
+		assertSame(aliases, ledgers.aliases());
+		assertNull(ledgers.accounts());
+		assertNull(ledgers.tokenRels());
+		assertNull(ledgers.tokens());
+		assertNull(ledgers.nfts());
 	}
 
 	@Test
@@ -217,14 +228,5 @@ class StaticEntityAccessTest {
 	@Test
 	void fetchWithoutValueReturnsNull() {
 		assertNull(subject.fetchCodeIfPresent(id));
-	}
-
-	@Test
-	void defaultLedgersAreNull() {
-		final var mockSubject = mock(EntityAccess.class);
-
-		willCallRealMethod().given(mockSubject).worldLedgers();
-
-		assertSame(WorldLedgers.NULL_WORLD_LEDGERS, mockSubject.worldLedgers());
 	}
 }

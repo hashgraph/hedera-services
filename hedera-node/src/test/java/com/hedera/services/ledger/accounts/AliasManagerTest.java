@@ -36,6 +36,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,6 +58,11 @@ class AliasManagerTest {
 	@Test
 	void resolvesUnlinkedNonMirrorAsExpected() {
 		assertNull(subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void resolvesMirrorAsExpected() {
+		assertSame(mirrorAddress, subject.resolveForEvm(mirrorAddress));
 	}
 
 	@Test
@@ -88,6 +94,13 @@ class AliasManagerTest {
 		subject.unlink(alias);
 
 		assertFalse(subject.getAliases().containsKey(alias));
+	}
+
+	@Test
+	void isAliasChecksForMapMembershipOnly() {
+		assertFalse(subject.isActiveAlias(nonMirrorAddress));
+		subject.link(nonMirrorAddress, mirrorAddress);
+		assertTrue(subject.isActiveAlias(nonMirrorAddress));
 	}
 
 	@Test

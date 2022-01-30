@@ -76,8 +76,8 @@ public final class HederaOperationUtil {
 				}
 			}
 			/* check if this messageFrame's sender account can be retrieved from state */
-			hederaAccount = ((HederaWorldUpdater) messageFrame.getWorldUpdater()).getHederaAccount(
-					frame.getSenderAddress());
+			final var updater = (HederaWorldUpdater) messageFrame.getWorldUpdater();
+			hederaAccount = updater.getHederaAccount(frame.getSenderAddress());
 			if (hederaAccount != null) {
 				expiry = hederaAccount.getExpiry();
 				break;

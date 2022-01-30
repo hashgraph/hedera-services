@@ -51,8 +51,14 @@ public class HederaStackedWorldStateUpdater
 		this.worldState = worldState;
 	}
 
+	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {
+		final var mirrorAddress = newContractAddress(sponsor);
+		aliases().link(alias, mirrorAddress);
+		return mirrorAddress;
+	}
+
 	@Override
-	public Address allocateNewContractAddress(final Address sponsor) {
+	public Address newContractAddress(final Address sponsor) {
 		final var newAddress = worldState.newContractAddress(sponsor);
 		sponsorMap.put(newAddress, sponsor);
 		lastAllocatedId = contractIdFromEvmAddress(newAddress);
@@ -64,7 +70,7 @@ public class HederaStackedWorldStateUpdater
 	 *
 	 * @return the id of the last allocated address
 	 */
-	public ContractID idOfLastAllocatedAddress() {
+	public ContractID idOfLastNewAddress() {
 		return lastAllocatedId;
 	}
 
@@ -101,7 +107,8 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address address) {
+	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
 		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
 	}
 

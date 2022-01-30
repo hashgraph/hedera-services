@@ -114,7 +114,7 @@ class HederaCreateOperationTest {
 	void computesExpectedTargetAddress() {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
-		given(hederaWorldUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);
+		given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
 		var targetAddr = subject.targetContractAddress(evmMsgFrame);
 		assertEquals(Address.ZERO, targetAddr);
 	}

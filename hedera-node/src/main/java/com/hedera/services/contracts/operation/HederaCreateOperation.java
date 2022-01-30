@@ -39,7 +39,7 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
  *
- * Addresses are allocated through {@link HederaWorldUpdater#allocateNewContractAddress(Address)}
+ * Addresses are allocated through {@link HederaWorldUpdater#newContractAddress(Address)}
  *
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
@@ -89,7 +89,7 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 	@Override
 	protected Address targetContractAddress(final MessageFrame frame) {
 		final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
-		final Address address = updater.allocateNewContractAddress(frame.getRecipientAddress());
+		final Address address = updater.newContractAddress(frame.getRecipientAddress());
 		frame.warmUpAddress(address);
 		return address;
 	}

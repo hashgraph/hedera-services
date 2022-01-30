@@ -23,6 +23,8 @@ package com.hedera.services.ledger.accounts;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +34,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class StackedContractAliases extends AbstractContractAliases {
+	private static final Logger log = LogManager.getLogger(StackedContractAliases.class);
+
 	private final ContractAliases wrappedAliases;
 
 	private Set<Address> removedLinks = null;
@@ -59,11 +63,13 @@ public class StackedContractAliases extends AbstractContractAliases {
 				if (observer != null) {
 					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
 				}
+				log.info("Committing deletion of CREATE2 address {}", alias);
 			});
 		}
 		if (changedLinks != null) {
 			changedLinks.forEach((alias, address) -> {
 				wrappedAliases.link(alias, address);
+				log.info("Committing (re-)creation of CREATE2 address {} @ {}", alias, address);
 				if (observer != null) {
 					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
 				}
@@ -111,7 +117,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 	}
 
 	@Override
-	public boolean isAlias(final Address address) {
+	public boolean isActiveAlias(final Address address) {
 		if (isMirror(address)) {
 			return false;
 		}
@@ -120,7 +126,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 		} else if (isRemoved(address)) {
 			return false;
 		} else {
-			return wrappedAliases.isAlias(address);
+			return wrappedAliases.isActiveAlias(address);
 		}
 	}
 

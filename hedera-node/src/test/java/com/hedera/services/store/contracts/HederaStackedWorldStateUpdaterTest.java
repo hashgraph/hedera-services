@@ -23,13 +23,13 @@ package com.hedera.services.store.contracts;
  */
 
 
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,12 +38,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
+	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address sponsor = Address.fromHexString("0xcba");
+	private static final Address address = Address.fromHexString("0xabc");
+	private static final ContractID addressId = EntityIdUtils.contractIdFromEvmAddress(address);
+
+	@Mock
+	private ContractAliases aliases;
 	@Mock
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
@@ -53,18 +61,24 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
 
-	private Address address;
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
-		address = Address.fromHexString("0xabc");
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
 	}
 
-	@AfterEach
-	void tearDown() {
-		subject.getSponsorMap().clear();
+	@Test
+	void linksAliasWhenReservingNewContractId() {
+		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var created = subject.newAliasedContractAddress(sponsor, alias);
+
+		assertSame(created, address);
+		assertEquals(sponsor, subject.getSponsorMap().get(address));
+		assertEquals(addressId, subject.idOfLastNewAddress());
+		verify(aliases).link(alias, address);
 	}
 
 	@Test
@@ -75,7 +89,7 @@ class HederaStackedWorldStateUpdaterTest {
 
 		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
-		final var allocated = subject.allocateNewContractAddress(sponsorAddr);
+		final var allocated = subject.newContractAddress(sponsorAddr);
 		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
 		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
@@ -85,7 +99,7 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(1, subject.getSponsorMap().size());
 		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
 		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
-		assertEquals(sponsoredId, subject.idOfLastAllocatedAddress());
+		assertEquals(sponsoredId, subject.idOfLastNewAddress());
 	}
 
 	@Test
@@ -106,7 +120,9 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void getHederaAccountReturnsNull() {
+	void getHederaAccountReturnsNullIfNotPresentInParent() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(address)).willReturn(address);
 		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(null);
 
 		final var result = subject.getHederaAccount(address);
@@ -118,7 +134,9 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void getHederaAccountReturnsValue() {
+	void getHederaAccountReturnsValueIfPresentInParent() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(address)).willReturn(address);
 		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(account);
 
 		final var result = subject.getHederaAccount(address);
