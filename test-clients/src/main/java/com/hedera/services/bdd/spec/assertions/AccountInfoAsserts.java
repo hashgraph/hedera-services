@@ -181,6 +181,15 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts noAllowances() {
+		registerProvider((spec, o) -> {
+			assertEquals(((AccountInfo) o).getCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
+			assertEquals(((AccountInfo) o).getTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
+			assertEquals(((AccountInfo) o).getNftAllowancesCount(), 0, "Bad NftAllowances count!");
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts balanceLessThan(long amount) {
 		registerProvider((spec, o) -> {
 			long actual = ((AccountInfo) o).getBalance();

@@ -9,9 +9,9 @@ package com.hedera.test.factories.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,15 +25,20 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,18 +58,26 @@ public class MerkleAccountFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
-	private Optional<Integer>  alreadyUsedAutoAssociations = Optional.empty();
-	private Optional<Integer>  maxAutoAssociations = Optional.empty();
-	private Optional<ByteString>  alias = Optional.empty();
+	private Optional<Integer> alreadyUsedAutoAssociations = Optional.empty();
+	private Optional<Integer> maxAutoAssociations = Optional.empty();
+	private Optional<ByteString> alias = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private Set<Id> assocTokens = new HashSet<>();
+	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
 		memo.ifPresent(value::setMemo);
 		alias.ifPresent(value::setAlias);
 		proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
-		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
+		balance.ifPresent(b -> {
+			try {
+				value.setBalance(b);
+			} catch (Exception ignore) {
+			}
+		});
 		deleted.ifPresent(value::setDeleted);
 		accountKeys.ifPresent(value::setAccountKey);
 		expirationTime.ifPresent(value::setExpiry);
@@ -81,13 +94,19 @@ public class MerkleAccountFactory {
 		}
 		value.setTokens(tokens);
 		value.setNumContractKvPairs(numKvPairs);
+		value.setCryptoAllowances(cryptoAllowances);
+		value.setFungibleTokenAllowances(fungibleTokenAllowances);
+		value.setNftAllowances(nftAllowances);
 		return value;
 	}
 
-	private MerkleAccountFactory() {}
+	private MerkleAccountFactory() {
+	}
+
 	public static MerkleAccountFactory newAccount() {
 		return new MerkleAccountFactory();
 	}
+
 	public static MerkleAccountFactory newContract() {
 		return new MerkleAccountFactory().isSmartContract(true);
 	}
@@ -97,84 +116,112 @@ public class MerkleAccountFactory {
 		return this;
 	}
 
-	public MerkleAccountFactory proxy(AccountID id) {
+	public MerkleAccountFactory proxy(final AccountID id) {
 		proxy = Optional.of(id);
 		return this;
 	}
 
-	public MerkleAccountFactory balance(long amount) {
+	public MerkleAccountFactory balance(final long amount) {
 		balance = Optional.of(amount);
 		return this;
 	}
 
-	public MerkleAccountFactory alias(ByteString bytes) {
+	public MerkleAccountFactory alias(final ByteString bytes) {
 		alias = Optional.of(bytes);
 		return this;
 	}
 
-	public MerkleAccountFactory assocTokens(Id... tokens) {
+	public MerkleAccountFactory assocTokens(final Id... tokens) {
 		useNewStyleTokenIds = true;
 		assocTokens.addAll(List.of(tokens));
 		return this;
 	}
 
-	public MerkleAccountFactory tokens(TokenID... tokens) {
+	public MerkleAccountFactory tokens(final TokenID... tokens) {
 		associatedTokens.addAll(List.of(tokens));
 		return this;
 	}
 
-	public MerkleAccountFactory receiverThreshold(long v) {
+	public MerkleAccountFactory receiverThreshold(final long v) {
 		receiverThreshold = Optional.of(v);
 		return this;
 	}
-	public MerkleAccountFactory senderThreshold(long v) {
+
+	public MerkleAccountFactory senderThreshold(final long v) {
 		senderThreshold = Optional.of(v);
 		return this;
 	}
-	public MerkleAccountFactory receiverSigRequired(boolean b) {
+
+	public MerkleAccountFactory receiverSigRequired(final boolean b) {
 		receiverSigRequired = Optional.of(b);
 		return this;
 	}
-	public MerkleAccountFactory keyFactory(KeyFactory keyFactory) {
+
+	public MerkleAccountFactory keyFactory(final KeyFactory keyFactory) {
 		this.keyFactory = keyFactory;
 		return this;
 	}
-	public MerkleAccountFactory accountKeys(KeyTree kt) throws Exception {
+
+	public MerkleAccountFactory accountKeys(final KeyTree kt) throws Exception {
 		return accountKeys(kt.asKey(keyFactory));
 	}
-	public MerkleAccountFactory accountKeys(Key k) throws Exception {
+
+	public MerkleAccountFactory accountKeys(final Key k) throws Exception {
 		return accountKeys(JKey.mapKey(k));
 	}
-	public MerkleAccountFactory accountKeys(JKey k) {
+
+	public MerkleAccountFactory accountKeys(final JKey k) {
 		accountKeys = Optional.of(k);
 		return this;
 	}
-	public MerkleAccountFactory autoRenewPeriod(long p) {
+
+	public MerkleAccountFactory autoRenewPeriod(final long p) {
 		autoRenewPeriod = Optional.of(p);
 		return this;
 	}
-	public MerkleAccountFactory deleted(boolean b) {
+
+	public MerkleAccountFactory deleted(final boolean b) {
 		deleted = Optional.of(b);
 		return this;
 	}
-	public MerkleAccountFactory expirationTime(long l) {
+
+	public MerkleAccountFactory expirationTime(final long l) {
 		expirationTime = Optional.of(l);
 		return this;
 	}
-	public MerkleAccountFactory memo(String s) {
+
+	public MerkleAccountFactory memo(final String s) {
 		memo = Optional.of(s);
 		return this;
 	}
-	public MerkleAccountFactory isSmartContract(boolean b) {
+
+	public MerkleAccountFactory isSmartContract(final boolean b) {
 		isSmartContract = Optional.of(b);
 		return this;
 	}
-	public MerkleAccountFactory maxAutomaticAssociations(int max) {
+
+	public MerkleAccountFactory maxAutomaticAssociations(final int max) {
 		maxAutoAssociations = Optional.of(max);
 		return this;
 	}
-	public MerkleAccountFactory alreadyUsedAutomaticAssociations(int count) {
+
+	public MerkleAccountFactory alreadyUsedAutomaticAssociations(final int count) {
 		alreadyUsedAutoAssociations = Optional.of(count);
+		return this;
+	}
+
+	public MerkleAccountFactory cryptoAllowances(final Map<EntityNum, Long> allowances) {
+		cryptoAllowances = allowances;
+		return this;
+	}
+
+	public MerkleAccountFactory fungibleTokenAllowances(final Map<FcTokenAllowanceId, Long> allowances) {
+		fungibleTokenAllowances = allowances;
+		return this;
+	}
+
+	public MerkleAccountFactory nftAllowances(final Map<FcTokenAllowanceId, FcTokenAllowance> allowances) {
+		nftAllowances = allowances;
 		return this;
 	}
 }
