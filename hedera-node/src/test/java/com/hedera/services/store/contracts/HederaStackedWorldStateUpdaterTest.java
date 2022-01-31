@@ -22,10 +22,14 @@ package com.hedera.services.store.contracts;
  *
  */
 
-
+import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -61,6 +65,8 @@ class HederaStackedWorldStateUpdaterTest {
 	private HederaMutableWorldState worldState;
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private HederaStackedWorldStateUpdater subject;
 
@@ -81,6 +87,34 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(sponsor, subject.getSponsorMap().get(address));
 		assertEquals(addressId, subject.idOfLastNewAddress());
 		verify(aliases).link(alias, address);
+	}
+
+	@Test
+	void aliasIsCanonicalCreate2SourceAddress() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.isInUse(sponsor)).willReturn(true);
+
+		assertSame(sponsor, subject.canonicalCreate2Address(sponsor));
+	}
+
+	@Test
+	void mirrorNoAliasIsCanonicalSource() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
+
+		assertSame(sponsor, subject.canonicalCreate2Address(sponsor));
+	}
+
+	@Test
+	void mirrorWithAliasUsesAliasAsCanonicalSource() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
+
+		assertEquals(alias, subject.canonicalCreate2Address(sponsor));
 	}
 
 	@Test

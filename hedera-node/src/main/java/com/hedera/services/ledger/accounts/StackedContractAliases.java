@@ -63,13 +63,13 @@ public class StackedContractAliases extends AbstractContractAliases {
 				if (observer != null) {
 					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
 				}
-				log.info("Committing deletion of CREATE2 address {}", alias);
+				log.debug("Committing deletion of CREATE2 address {}", alias);
 			});
 		}
 		if (changedLinks != null) {
 			changedLinks.forEach((alias, address) -> {
 				wrappedAliases.link(alias, address);
-				log.info("Committing (re-)creation of CREATE2 address {} @ {}", alias, address);
+				log.debug("Committing (re-)creation of CREATE2 address {} @ {}", alias, address);
 				if (observer != null) {
 					observer.markAliasChanged(ByteString.copyFrom(alias.toArrayUnsafe()));
 				}

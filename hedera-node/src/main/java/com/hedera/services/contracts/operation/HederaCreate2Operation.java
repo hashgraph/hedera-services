@@ -51,17 +51,19 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 
 	@Override
 	protected Address targetContractAddress(final MessageFrame frame) {
-		final var sender = frame.getRecipientAddress();
+		final var sourceAddressOrAlias = frame.getRecipientAddress();
 		final var offset = clampedToLong(frame.getStackItem(1));
 		final var length = clampedToLong(frame.getStackItem(2));
 
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		final var source = updater.canonicalCreate2Address(sourceAddressOrAlias);
+
 		final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));
 		final var initCode = frame.readMutableMemory(offset, length);
-		final var hash = keccak256(Bytes.concatenate(PREFIX, sender, salt, keccak256(initCode)));
+		final var hash = keccak256(Bytes.concatenate(PREFIX, source, salt, keccak256(initCode)));
 		final var alias = Address.wrap(hash.slice(12, 20));
 
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		final Address address = updater.newAliasedContractAddress(frame.getRecipientAddress(), alias);
+		final Address address = updater.newAliasedContractAddress(sourceAddressOrAlias, alias);
 		frame.warmUpAddress(address);
 		frame.warmUpAddress(alias);
 		return alias;

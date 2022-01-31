@@ -139,7 +139,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
+						create2FactoryWorksAsExpected(),
 						create2InputAddressIsStableWhetherMirrorOrAliasIsUsed(),
 				}
 		);
@@ -319,10 +319,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 							assertNotEquals(
 									tcMirrorAddr1.get(), tcMirrorAddr2.get(),
 									"Mirror addresses must be different");
-//							assertEquals(
-//									tcAliasAddr1.get(), tcAliasAddr2.get(),
-//									"Alias addresses must be stable");
-						})
+							assertEquals(
+									tcAliasAddr1.get(), tcAliasAddr2.get(),
+									"Alias addresses must be stable");
+						}),
+						overriding("contracts.throttle.throttleByGas", "true")
 				);
 	}
 

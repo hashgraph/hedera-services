@@ -94,19 +94,23 @@ class HederaCreate2OperationTest {
 	@Test
 	void computesExpectedTargetAddress() {
 		final var expectedAddress = Address.BLS12_G1ADD;
+		final var canonicalSource = Address.BLS12_G1MULTIEXP;
 		final var besuOp = new Create2Operation(gasCalculator);
 
 		givenMemoryStackItems();
 		given(evmMsgFrame.getStackItem(3)).willReturn(salt);
-		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(canonicalSource);
 		given(evmMsgFrame.readMutableMemory(oneOffsetStackItem.toLong(), twoOffsetStackItem.toLong()))
 				.willReturn(initcode);
-		given(evmMsgFrame.getWorldUpdater()).willReturn(stackedUpdater);
 		final var expectedAlias = besuOp.targetContractAddress(evmMsgFrame);
+
+		given(evmMsgFrame.getWorldUpdater()).willReturn(stackedUpdater);
+		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
+		given(stackedUpdater.canonicalCreate2Address(recipientAddr)).willReturn(canonicalSource);
 		given(stackedUpdater.newAliasedContractAddress(recipientAddr, expectedAlias)).willReturn(expectedAddress);
 
-		final var actualAddr = subject.targetContractAddress(evmMsgFrame);
-		assertEquals(expectedAlias, actualAddr);
+		final var actualAlias = subject.targetContractAddress(evmMsgFrame);
+		assertEquals(expectedAlias, actualAlias);
 	}
 
 	private void givenMemoryStackItems() {
