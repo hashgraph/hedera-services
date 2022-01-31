@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.CommonUtils;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.util.ByteUtil;
 
@@ -59,6 +61,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static org.ethereum.crypto.HashUtil.sha3;
 
 public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
+	public static final int HEXED_EVM_ADDRESS_LEN = 40;
 	private static final String FALLBACK_ABI = "<empty>";
 	private static final String ADDRESS_ABI_TYPE = "address";
 	private static final String ADDRESS_ENCODE_TYPE = "bytes32";
@@ -76,7 +79,6 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 
-	private String resultAbi = null;
 	private Consumer<Object[]> resultObserver = null;
 
 	@Override
@@ -164,31 +166,34 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 		byte[] callData;
 		final var paramsList = Arrays.asList(params);
-		final var tupleExist =
-				paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-		if(tupleExist) {
+		final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
+		if (tupleExist) {
 			callData = encodeParametersWithTuple(params);
 		} else {
-			callData = (abi != FALLBACK_ABI)
-					? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[]{};
+			callData = (!abi.equals(FALLBACK_ABI))
+					? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 		}
 
-		final var id = TxnUtils.asContractId(contract, spec);
 		ContractCallTransactionBody opBody = spec
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
 						ContractCallTransactionBody.class, builder -> {
-							builder.setContractID(id);
+							if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+								builder.setContractID(ContractID.newBuilder()
+										.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+							} else {
+								builder.setContractID(TxnUtils.asContractId(contract, spec));
+							}
 							builder.setFunctionParameters(ByteString.copyFrom(callData));
-							sentTinyHbars.ifPresent(a -> builder.setAmount(a));
-							gas.ifPresent(a -> builder.setGas(a));
+							sentTinyHbars.ifPresent(builder::setAmount);
+							gas.ifPresent(builder::setGas);
 						}
 				);
 		return b -> b.setContractCall(opBody);
 	}
 
 	private byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
-		byte[] callData = new byte[]{};
+		byte[] callData = new byte[] { };
 		var abiFunction = DEFAULT_MAPPER.readValue(abi, AbiFunction.class);
 		final var signatureParameters = getParametersForSignature(abi);
 		final var signature = abiFunction.getName() + signatureParameters;
@@ -218,7 +223,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 	private String getArgumentTypesForInput(final InputOutput input) {
 		final var argumentTypeBuilder = new StringBuilder();
-		if(input.getComponents()!=null) {
+		if (input.getComponents() != null) {
 			argumentTypeBuilder.append(getOpenCharacterForInput(input));
 			argumentTypeBuilder.append(getArgumentTypesForComponents(input.getComponents()));
 			argumentTypeBuilder.append(getClosingCharacterForInput(input));
@@ -230,7 +235,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	}
 
 	private String getOpenCharacterForInput(final InputOutput input) {
-		switch(input.getType()) {
+		switch (input.getType()) {
 			case "tuple[]":
 			case "tuple":
 				return "(";
@@ -240,7 +245,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	}
 
 	private String getClosingCharacterForInput(final InputOutput input) {
-		switch(input.getType()) {
+		switch (input.getType()) {
 			case "tuple[]":
 				return ")[],";
 			case "tuple":
@@ -277,7 +282,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 	private static byte[] getTupleAsBytes(final Tuple argumentValues, final String argumentTypes) {
 		final TupleType tupleType = TupleType.parse(argumentTypes);
-		return tupleType.encode((Tuple)argumentValues.get(0)).array();
+		return tupleType.encode((Tuple) argumentValues.get(0)).array();
 	}
 
 	@Override

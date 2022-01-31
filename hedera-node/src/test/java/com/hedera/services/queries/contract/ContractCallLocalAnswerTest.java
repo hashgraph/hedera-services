@@ -125,7 +125,8 @@ class ContractCallLocalAnswerTest {
 		given(dynamicProperties.maxGas()).willReturn(gas);
 
 		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
+				.willReturn(CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.checkValidity(query, view));

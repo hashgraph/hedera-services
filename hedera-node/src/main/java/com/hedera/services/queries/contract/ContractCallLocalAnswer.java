@@ -45,6 +45,7 @@ import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -87,7 +88,8 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					} else if (op.getGas() > dynamicProperties.maxGas()) {
 						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
-						return validator.queryableContractStatus(op.getContractID(), view.contracts());
+						final var target = unaliased(op.getContractID(), aliasManager);
+						return validator.queryableContractStatus(target, view.contracts());
 					}
 				});
 
@@ -167,8 +169,9 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
-				final var callLocalResponse = CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op);
-				response.mergeFrom(withCid(callLocalResponse, op.getContractID()));
+				final var opResponse =
+						CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op, aliasManager);
+				response.mergeFrom(withCid(opResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
 			}

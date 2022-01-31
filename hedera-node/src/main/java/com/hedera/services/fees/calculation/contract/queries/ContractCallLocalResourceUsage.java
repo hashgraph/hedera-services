@@ -102,8 +102,12 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		return usageFor(query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
 	}
 
-	private FeeData usageFor(final Query query, final ResponseType type, final StateView view,
-			@Nullable final Map<String, Object> queryCtx) {
+	private FeeData usageFor(
+			final Query query,
+			final ResponseType type,
+			final StateView view,
+			@Nullable final Map<String, Object> queryCtx
+	) {
 		try {
 			final var op = query.getContractCallLocal();
 			ContractCallLocalResponse response;
@@ -115,7 +119,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				evmTxProcessor.setWorldState(worldState);
 
-				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op);
+				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager);
 				queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
 			}
 			final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(

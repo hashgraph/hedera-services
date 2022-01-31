@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -45,6 +46,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
@@ -54,11 +56,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -161,6 +166,7 @@ class AbstractLedgerWorldUpdaterTest {
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		trackingAccounts.set(aAccount, ALIAS, ByteString.copyFromUtf8("TBD"));
 		final var trackingAliases = ledgers.aliases();
 		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		given(trackingAliases.isInUse(aAddress)).willReturn(true);
@@ -170,6 +176,7 @@ class AbstractLedgerWorldUpdaterTest {
 		assertNull(subject.get(aAddress));
 		assertNull(subject.getAccount(aAddress));
 		verify(trackingAliases).unlink(aAddress);
+		assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
 	}
 
 	@Test
@@ -183,6 +190,38 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.deleteAccount(aAddress);
 
 		verify(trackingAliases, never()).unlink(aAddress);
+	}
+
+	@Test
+	void unlinksDeletedMirrorAddressWithAlias() {
+		final byte[] alias = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var aliasAddress = Address.wrap(Bytes.wrap(alias));
+		final var trackingAccounts = ledgers.accounts();
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		trackingAccounts.set(aAccount, ALIAS, ByteString.copyFrom(alias));
+		final var trackingAliases = ledgers.aliases();
+		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
+		given(trackingAliases.isInUse(aAddress)).willReturn(false);
+		given(trackingAliases.isInUse(aliasAddress)).willReturn(true);
+
+		subject.deleteAccount(aAddress);
+
+		verify(trackingAliases).unlink(aliasAddress);
+		assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
+	}
+
+	@Test
+	void doesntUnlinksDeletedMirrorAddressWithNoAlias() {
+		final var trackingAccounts = ledgers.accounts();
+		trackingAccounts.create(aAccount);
+		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
+		final var trackingAliases = ledgers.aliases();
+		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		subject.deleteAccount(aAddress);
+
+		verify(trackingAliases, never()).unlink(any());
 	}
 
 	@Test
@@ -323,6 +362,18 @@ class AbstractLedgerWorldUpdaterTest {
 		final var trackingAccounts = subject.trackingLedgers().accounts();
 		assertTrue(trackingAccounts.contains(aAccount));
 		assertEquals(aHbarBalance, trackingAccounts.get(aAccount, AccountProperty.BALANCE));
+	}
+
+	@Test
+	void updatesTrackingLedgerAliasesOnCreateIfUsableAndNotMirror() {
+		given(aliases.resolveForEvm(aAddress)).willReturn(bAddress);
+		given(aliases.isInUse(aAddress)).willReturn(true);
+
+		subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
+
+		final var trackingAccounts = subject.trackingLedgers().accounts();
+		assertTrue(trackingAccounts.contains(bAccount));
+		assertEquals(ByteString.copyFrom(aAddress.toArrayUnsafe()), trackingAccounts.get(bAccount, ALIAS));
 	}
 
 	@Test

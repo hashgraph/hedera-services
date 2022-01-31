@@ -83,6 +83,10 @@ public interface OptionValidator {
 		return PureValidation.queryableContractStatus(cid, contracts);
 	}
 
+	default ResponseCodeEnum queryableContractStatus(EntityNum cid, MerkleMap<EntityNum, MerkleAccount> contracts) {
+		return PureValidation.queryableContractStatus(cid, contracts);
+	}
+
 	default ResponseCodeEnum queryableFileStatus(FileID fid, StateView view) {
 		return PureValidation.queryableFileStatus(fid, view);
 	}

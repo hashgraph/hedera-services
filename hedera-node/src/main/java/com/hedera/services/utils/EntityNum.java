@@ -128,6 +128,10 @@ public class EntityNum {
 		return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
 	}
 
+	public Id toId() {
+		return STATIC_PROPERTIES.scopedIdWith(numFromCode(value));
+	}
+
 	public ContractID toGrpcContractID() {
 		return STATIC_PROPERTIES.scopedContractIdWith(numFromCode(value));
 	}

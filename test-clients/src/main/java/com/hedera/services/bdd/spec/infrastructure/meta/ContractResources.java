@@ -108,6 +108,7 @@ public class ContractResources {
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
 	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
+	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
 
 	public static final String CREATE2_FACTORY_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
 			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\",\"type\":" +
@@ -120,6 +121,21 @@ public class ContractResources {
 			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
 			"\"type\":\"uint256\"}],\"name\":\"getAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\"," +
 			"\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String TEST_CONTRACT_VACATE_ADDRESS_ABI = "{\"inputs\":[],\"name\":\"vacateAddress\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TEST_CONTRACT_GET_BALANCE_ABI = "{\"inputs\":[],\"name\":\"getBalance\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_FACTORY_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildCreator\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_CREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"n    " +
+			"ame\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createSaltedTestContract\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_CALL_CREATOR_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"creator_address\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"callCreator\",\"outputs\":[],\"stat    eMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
 
 	public static final String PROPAGATE_NESTED_CREATIONS_ABI = "{\"inputs\":[],\"name\":\"propagate\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

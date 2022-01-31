@@ -73,10 +73,11 @@ class HederaStackedWorldStateUpdaterTest {
 	void linksAliasWhenReservingNewContractId() {
 		given(worldState.newContractAddress(sponsor)).willReturn(address);
 		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
 
 		final var created = subject.newAliasedContractAddress(sponsor, alias);
 
-		assertSame(created, address);
+		assertSame(address, created);
 		assertEquals(sponsor, subject.getSponsorMap().get(address));
 		assertEquals(addressId, subject.idOfLastNewAddress());
 		verify(aliases).link(alias, address);
@@ -87,6 +88,7 @@ class HederaStackedWorldStateUpdaterTest {
 		given(worldState.newContractAddress(sponsor)).willReturn(address);
 		given(trackingLedgers.aliases()).willReturn(aliases);
 		given(aliases.isInUse(alias)).willReturn(true);
+		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
 
 		final var created = subject.newAliasedContractAddress(sponsor, alias);
 
@@ -97,14 +99,40 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void allocateNewContractAddress() {
+	void allocatesNewContractAddress() {
 		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
 		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
 				ContractID.newBuilder().setContractNum(1).build())));
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
 
 		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
 		final var allocated = subject.newContractAddress(sponsorAddr);
+		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
+
+		assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
+		assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
+		assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
+		assertEquals(1, subject.getSponsorMap().size());
+		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
+		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
+		assertEquals(sponsoredId, subject.idOfLastNewAddress());
+	}
+
+	@Test
+	void canSponsorWithAlias() {
+		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
+				ContractID.newBuilder().setContractNum(1).build())));
+		given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
+		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+
+		final var allocated = subject.newContractAddress(alias);
 		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
 		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 

@@ -40,6 +40,7 @@ import java.util.Optional;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -87,7 +88,8 @@ public class GetContractInfoAnswer implements AnswerService {
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
 		final var id = unaliased(query.getContractGetInfo().getContractID(), aliasManager);
 
-		return validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
+		final var validity = validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
+		return (validity == CONTRACT_DELETED) ? OK : validity;
 	}
 
 	@Override

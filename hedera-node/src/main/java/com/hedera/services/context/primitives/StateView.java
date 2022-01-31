@@ -98,6 +98,7 @@ import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
@@ -450,7 +451,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(accountID))
+				.setContractAccountID(asHexedEvmAddress(accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
@@ -502,7 +503,7 @@ public class StateView {
 			return Optional.empty();
 		}
 
-		var mirrorId = asAccount(id);
+		final var mirrorId = contractId.toGrpcAccountId();
 		final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
 		final var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
@@ -517,7 +518,7 @@ public class StateView {
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
-			info.setContractAccountID(EntityIdUtils.asHexedEvmAddress(mirrorId));
+			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
 		final var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {

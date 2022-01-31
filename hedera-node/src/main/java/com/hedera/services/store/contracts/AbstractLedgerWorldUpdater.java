@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -29,6 +30,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -45,6 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -114,10 +117,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		final var curAliases = aliases();
 		final var address = curAliases.resolveForEvm(addressOrAlias);
 
-		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
+		final var curAccounts = trackingAccounts();
+		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, curAccounts);
 		if (trackingLedgers.areUsable()) {
-			/* TODO - set the pending account's alias */
-			trackingLedgers.accounts().create(newMutable.getAccountId());
+			final var newAccountId = newMutable.getAccountId();
+			curAccounts.create(newAccountId);
+			if (curAliases.isInUse(addressOrAlias)) {
+				curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
+			}
 		}
 
 		newMutable.setNonce(nonce);
@@ -160,16 +167,17 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	@Override
 	public void deleteAccount(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
-
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
 		if (trackingLedgers.areUsable()) {
 			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
-			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
-			final var curAliases = aliases();
-			if (curAliases.isInUse(addressOrAlias)) {
-				curAliases.unlink(addressOrAlias);
-				/* TODO - remove the deleted account's alias */
+			final var curAccounts = trackingLedgers.accounts();
+			curAccounts.set(accountId, IS_DELETED, true);
+			if (!revoke(addressOrAlias, accountId)) {
+				final var alias = (ByteString) curAccounts.get(accountId, ALIAS);
+				if (!alias.isEmpty()) {
+					revoke(Address.wrap(Bytes.wrap(alias.toByteArray())), accountId);
+				}
 			}
 		}
 	}
@@ -280,5 +288,17 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected ContractAliases aliases() {
 		return trackingLedgers.aliases();
+	}
+
+	/* --- Internal helpers --- */
+	private boolean revoke(final Address address, final AccountID accountId) {
+		final var curAliases = aliases();
+		if (curAliases.isInUse(address)) {
+			curAliases.unlink(address);
+			trackingAccounts().set(accountId, ALIAS, ByteString.EMPTY);
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

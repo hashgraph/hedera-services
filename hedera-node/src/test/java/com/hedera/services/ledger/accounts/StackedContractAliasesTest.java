@@ -96,11 +96,6 @@ class StackedContractAliasesTest {
 	}
 
 	@Test
-	void linksUnusedAsExpected() {
-		subject.link(nonMirrorAddress, mirrorAddress);
-	}
-
-	@Test
 	void resolvesMirrorIdToSelf() {
 		assertSame(mirrorAddress, subject.resolveForEvm(mirrorAddress));
 	}

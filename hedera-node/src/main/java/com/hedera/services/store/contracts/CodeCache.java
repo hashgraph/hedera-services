@@ -24,7 +24,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.BytesKey;
-import com.hedera.services.utils.EntityIdUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
@@ -32,6 +31,8 @@ import org.hyperledger.besu.evm.Code;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.concurrent.TimeUnit;
+
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 /**
  * Weak reference cache with expiration TTL for EVM bytecode. This cache is primarily used
@@ -66,7 +67,7 @@ public class CodeCache {
 
         var code = cache.getIfPresent(cacheKey);
         if (code == null) {
-            final var bytecode = entityAccess.fetchCodeIfPresent(EntityIdUtils.accountIdFromEvmAddress(address));
+            final var bytecode = entityAccess.fetchCodeIfPresent(accountIdFromEvmAddress(address));
             if (bytecode != null) {
                 code = new Code(bytecode, Hash.hash(bytecode));
                 cache.put(cacheKey, code);

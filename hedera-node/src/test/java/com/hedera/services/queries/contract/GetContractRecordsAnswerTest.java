@@ -24,8 +24,8 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.Query;
@@ -50,10 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class GetContractRecordsAnswerTest {
 	long fee = 1_234L;
@@ -154,8 +152,6 @@ class GetContractRecordsAnswerTest {
 
 		// then:
 		assertEquals(CONTRACT_DELETED, validity);
-		// and:
-		verify(optionValidator).queryableContractStatus(any(), any());
 	}
 
 	@Test

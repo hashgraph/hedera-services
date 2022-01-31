@@ -246,7 +246,6 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 				builder.setContractID(asContractId(contract, spec));
 			}
 			contractGetInfo = builder.build();
-			System.out.println(contractGetInfo);
 		}
 		return Query.newBuilder().setContractGetInfo(contractGetInfo).build();
 	}

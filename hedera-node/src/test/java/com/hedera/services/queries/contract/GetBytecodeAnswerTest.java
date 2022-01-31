@@ -22,8 +22,8 @@ package com.hedera.services.queries.contract;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,10 +51,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 
 class GetBytecodeAnswerTest {
 	private Transaction paymentTxn;
@@ -187,8 +185,6 @@ class GetBytecodeAnswerTest {
 
 		// then:
 		assertEquals(CONTRACT_DELETED, validity);
-		// and:
-		verify(optionValidator).queryableContractStatus(any(), any());
 	}
 
 	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {

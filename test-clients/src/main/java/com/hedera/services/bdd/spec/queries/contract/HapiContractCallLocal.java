@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -48,6 +49,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 
 public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private static final Logger log = LogManager.getLogger(HapiContractCallLocal.class);
@@ -175,15 +177,18 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		byte[] callData = (abi != FALLBACK_ABI)
 				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 
-		var target = TxnUtils.asContractId(contract, spec);
-		ContractCallLocalQuery query = ContractCallLocalQuery.newBuilder()
+		final var opBuilder = ContractCallLocalQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-				.setContractID(target)
 				.setFunctionParameters(ByteString.copyFrom(callData))
 				.setGas(gas.orElse(spec.setup().defaultCallGas()))
-				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()))
-				.build();
-		return Query.newBuilder().setContractCallLocal(query).build();
+				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
+		if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+			opBuilder.setContractID(ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+		} else {
+			opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
+		}
+		return Query.newBuilder().setContractCallLocal(opBuilder).build();
 	}
 
 	@Override

@@ -74,4 +74,8 @@ contract TestContract {
     function getBalance() public view returns (uint) {
         return address(this).balance;
     }
+
+    function vacateAddress() public {
+        selfdestruct(payable(owner));
+    }
 }

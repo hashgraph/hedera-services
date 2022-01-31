@@ -26,13 +26,16 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -50,12 +53,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,19 +90,20 @@ class ContractCallTransitionLogicTest {
 	private CodeCache codeCache;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private AliasManager aliasManager;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
-	private final byte[] bytecode = "not-a-real-bytecode".getBytes();
 	ContractCallTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
-				txnCtx, accountStore, worldState,
-				recordService, evmTxProcessor, properties, codeCache, sigImpactHistorian);
+				txnCtx, accountStore, worldState, recordService,
+				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
 	}
 
 	@Test
@@ -173,36 +177,37 @@ class ContractCallTransitionLogicTest {
 	}
 
 	@Test
-	void successfulPreFetch() throws ExecutionException {
-		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
-		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
+	void successfulPreFetch() {
+		final var targetAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+		final var target = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(targetAlias))
+				.build();
+		final var targetNum = EntityNum.fromLong(1234);
+		final var txnBody = Mockito.mock(TransactionBody.class);
+		final var ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
 
 		given(accessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getContractCall()).willReturn(ccTxnBody);
-		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+		given(ccTxnBody.getContractID()).willReturn(target);
+		given(aliasManager.lookupIdBy(target.getEvmAddress())).willReturn(targetNum);
 
-		// when:
 		subject.preFetch(accessor);
 
-		// expect:
-		verify(codeCache).getIfPresent(any(Address.class));
+		verify(codeCache).getIfPresent(targetNum.toEvmAddress());
 	}
 
 	@Test
-	void codeCacheThrowsExceptionDuringGet() throws ExecutionException {
+	void codeCacheThrowingExceptionDuringGetDoesntPropagate() {
 		TransactionBody txnBody = Mockito.mock(TransactionBody.class);
 		ContractCallTransactionBody ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
 
 		given(accessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getContractCall()).willReturn(ccTxnBody);
-		given(ccTxnBody.getContractID()).willReturn(ContractID.getDefaultInstance());
+		given(ccTxnBody.getContractID()).willReturn(IdUtils.asContract("0.0.1324"));
 		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
 
 		// when:
-		subject.preFetch(accessor);
-
-		// expect:
-		verify(codeCache).getIfPresent(any(Address.class));
+		assertDoesNotThrow(() -> subject.preFetch(accessor));
 	}
 
 	@Test

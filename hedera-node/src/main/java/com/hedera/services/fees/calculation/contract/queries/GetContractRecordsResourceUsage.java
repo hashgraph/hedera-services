@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.queries.contract.GetContractRecordsAnswer;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -31,6 +30,8 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
+
+import static com.hedera.services.queries.contract.GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS;
 
 @Singleton
 public final class GetContractRecordsResourceUsage implements QueryResourceUsageEstimator {
@@ -53,7 +54,6 @@ public final class GetContractRecordsResourceUsage implements QueryResourceUsage
 
 	@Override
 	public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
-		return usageEstimator.getContractRecordsQueryFeeMatrices(GetContractRecordsAnswer.GUARANTEED_EMPTY_PAYER_RECORDS,
-				type);
+		return usageEstimator.getContractRecordsQueryFeeMatrices(GUARANTEED_EMPTY_PAYER_RECORDS, type);
 	}
 }

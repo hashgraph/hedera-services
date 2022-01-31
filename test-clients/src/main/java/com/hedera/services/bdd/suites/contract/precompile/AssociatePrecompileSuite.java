@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -246,7 +246,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, NON_SUPPORTED_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
@@ -290,7 +291,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), invalidAbiArgument)
@@ -307,7 +309,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)),
+						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_TOKEN_ID)),
 						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
@@ -382,7 +385,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
 								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
 								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
-								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(
+										KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
@@ -411,19 +415,20 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				)
 				.when(withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT),
-												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(ACCOUNT)
-														.via("nestedAssociateTxn")
-														.gas(GAS_TO_OFFER)
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-										)
+						(spec, opLog) ->
+								allRunFor(
+										spec,
+										contractCreate(OUTER_CONTRACT,
+												ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+												getNestedContractAddress(INNER_CONTRACT, spec))
+												.bytecode(OUTER_CONTRACT),
+										contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
+												asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+												.payingWith(ACCOUNT)
+												.via("nestedAssociateTxn")
+												.gas(GAS_TO_OFFER)
+												.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+								)
 						)
 				).then(
 						childRecordsCheck("nestedAssociateTxn", SUCCESS,
@@ -461,7 +466,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												spec,
 												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
@@ -470,7 +476,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(secondVanillaTokenID.get()))
+														asAddress(accountID.get()),
+														asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
 														.gas(GAS_TO_OFFER)

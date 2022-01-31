@@ -22,17 +22,7 @@ package com.hedera.services.utils;
 
 import java.util.Arrays;
 
-public class BytesKey {
-	private final byte[] array;
-
-	public BytesKey(byte[] array) {
-		this.array = array;
-	}
-
-	public byte[] getArray() {
-		return array;
-	}
-
+public record BytesKey(byte[] array) {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)

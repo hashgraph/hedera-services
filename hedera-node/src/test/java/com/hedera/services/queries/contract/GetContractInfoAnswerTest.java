@@ -239,21 +239,32 @@ class GetContractInfoAnswerTest {
 	}
 
 	@Test
-	void usesValidator() throws Throwable {
+	void returnsInvalidContractIdFromValidator() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		given(optionValidator.queryableContractStatus(asContract(target), contracts))
-				.willReturn(CONTRACT_DELETED);
+				.willReturn(INVALID_CONTRACT_ID);
 		given(view.contracts()).willReturn(contracts);
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
 
 		// then:
-		assertEquals(CONTRACT_DELETED, validity);
-		// and:
-		verify(optionValidator).queryableContractStatus(any(), any());
+		assertEquals(INVALID_CONTRACT_ID, validity);
+	}
+
+	@Test
+	void allowsQueryingDeletedContracts() throws Throwable {
+		Query query = validQuery(COST_ANSWER, fee, target);
+
+		given(optionValidator.queryableContractStatus(asContract(target), contracts))
+				.willReturn(CONTRACT_DELETED);
+		given(view.contracts()).willReturn(contracts);
+
+		ResponseCodeEnum validity = subject.checkValidity(query, view);
+
+		assertEquals(OK, validity);
 	}
 
 	@Test

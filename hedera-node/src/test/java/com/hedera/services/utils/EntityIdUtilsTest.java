@@ -93,7 +93,6 @@ class EntityIdUtilsTest {
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
 		assertEquals(extantNum, unaliased(input, aliasManager));
-		System.out.println(ByteString.copyFrom(CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25")));
 	}
 
 	@Test
