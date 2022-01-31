@@ -51,8 +51,10 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -139,6 +141,10 @@ public class AllowanceChecks {
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
 
+			if (!token.isFungibleCommon()) {
+				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+			}
+
 			if (amount < 0) {
 				return NEGATIVE_ALLOWANCE_AMOUNT;
 			}
@@ -185,6 +191,10 @@ public class AllowanceChecks {
 			if (approvedForAll.getValue() & token.isFungibleCommon()) {
 				return CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
 			}
+
+			if (token.isFungibleCommon()) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
 		}
 		return OK;
 	}
@@ -214,9 +224,7 @@ public class AllowanceChecks {
 				((boolean) tokenRelsLedger.get(spenderRelation, IS_FROZEN));
 	}
 
-	ResponseCodeEnum validateSerials(final List<Long> serialNums,
-			final Account ownerAccount,
-			final Token token) {
+	ResponseCodeEnum validateSerials(final List<Long> serialNums, final Account ownerAccount, final Token token) {
 		for (var serial : serialNums) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
 			if (serial <= 0 || nftsLedger.exists(nftId)) {
@@ -224,7 +232,7 @@ public class AllowanceChecks {
 			}
 
 			final var owner = (EntityId) nftsLedger.get(nftId, OWNER);
-			if (!ownerAccount.getId().equals(owner)) {
+			if (!ownerAccount.getId().asEntityId().equals(owner)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 
