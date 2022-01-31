@@ -21,28 +21,19 @@ package com.hedera.services.utils;
  */
 
 import com.swirlds.common.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.*;
 
-public record BytesKey(byte[] array) {
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
+class BytesKeyTest {
+	@Test
+	void toStringIncorporatesArrayContents() {
+		final var literal = Hex.decode("abcdef");
+		final var desired = "BytesKey[array=" + CommonUtils.hex(literal) + "]";
 
-		BytesKey bytesKey = (BytesKey) o;
-		return Arrays.equals(array, bytesKey.array);
-	}
+		final var subject = new BytesKey(literal);
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(array);
-	}
-
-	@Override
-	public String toString() {
-		return "BytesKey[array=" + CommonUtils.hex(array) + "]";
+		assertEquals(desired, subject.toString());
 	}
 }

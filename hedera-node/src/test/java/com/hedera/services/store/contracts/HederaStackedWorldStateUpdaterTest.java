@@ -126,7 +126,7 @@ class HederaStackedWorldStateUpdaterTest {
 
 		final var created = subject.newAliasedContractAddress(sponsor, alias);
 
-		assertSame(created, address);
+		assertSame(address, created);
 		assertEquals(sponsor, subject.getSponsorMap().get(address));
 		assertEquals(addressId, subject.idOfLastNewAddress());
 		verify(aliases, never()).link(alias, address);
