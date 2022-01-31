@@ -163,7 +163,7 @@ class AbstractLedgerWorldUpdaterTest {
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 		final var trackingAliases = ledgers.aliases();
 		given(trackingAliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		given(trackingAliases.isActiveAlias(aAddress)).willReturn(true);
+		given(trackingAliases.isInUse(aAddress)).willReturn(true);
 
 		subject.deleteAccount(aAddress);
 

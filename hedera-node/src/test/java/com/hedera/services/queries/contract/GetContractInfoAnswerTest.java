@@ -22,10 +22,11 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -39,6 +40,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,21 +64,26 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
+@ExtendWith(MockitoExtension.class)
 class GetContractInfoAnswerTest {
 	private Transaction paymentTxn;
-	private String node = "0.0.3";
-	private String payer = "0.0.12345";
-	private String target = "0.0.123";
-	private long fee = 1_234L;
+	private final String node = "0.0.3";
+	private final String payer = "0.0.12345";
+	private final String target = "0.0.123";
+	private final long fee = 1_234L;
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
-	OptionValidator optionValidator;
-	StateView view;
-	MerkleMap<EntityNum, MerkleAccount> contracts;
+	@Mock
+	private OptionValidator optionValidator;
+	@Mock
+	private AliasManager aliasManager;
+	@Mock
+	private StateView view;
+	@Mock
+	private MerkleMap<EntityNum, MerkleAccount> contracts;
 
 	ContractGetInfoResponse.ContractInfo info;
 
@@ -90,13 +99,7 @@ class GetContractInfoAnswerTest {
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.build();
 
-		contracts = mock(MerkleMap.class);
-
-		view = mock(StateView.class);
-		given(view.contracts()).willReturn(contracts);
-		optionValidator = mock(OptionValidator.class);
-
-		subject = new GetContractInfoAnswer(optionValidator);
+		subject = new GetContractInfoAnswer(aliasManager, optionValidator);
 	}
 
 	@Test
@@ -104,7 +107,7 @@ class GetContractInfoAnswerTest {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.infoForContract(asContract(target))).willReturn(Optional.of(info));
+		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.of(info));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -138,7 +141,7 @@ class GetContractInfoAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertSame(info, opResponse.getContractInfo());
 		// and:
-		verify(view, never()).infoForContract(any());
+		verify(view, never()).infoForContract(any(), any());
 	}
 
 	@Test
@@ -146,7 +149,7 @@ class GetContractInfoAnswerTest {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		given(view.infoForContract(asContract(target))).willReturn(Optional.empty());
+		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -169,7 +172,7 @@ class GetContractInfoAnswerTest {
 		ContractGetInfoResponse opResponse = response.getContractGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(view, never()).infoForContract(any());
+		verify(view, never()).infoForContract(any(), any());
 	}
 
 	@Test
@@ -242,6 +245,7 @@ class GetContractInfoAnswerTest {
 
 		given(optionValidator.queryableContractStatus(asContract(target), contracts))
 				.willReturn(CONTRACT_DELETED);
+		given(view.contracts()).willReturn(contracts);
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);

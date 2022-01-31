@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -299,5 +300,23 @@ public final class EntityIdUtils {
 
 	public static boolean isAlias(final AccountID idOrAlias) {
 		return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+	}
+
+	public static boolean isAlias(final ContractID idOrAlias) {
+		return idOrAlias.getContractNum() == 0 && !idOrAlias.getEvmAddress().isEmpty();
+	}
+
+	public static EntityNum unaliased(final ContractID idOrAlias, final AliasManager aliasManager) {
+		if (isAlias(idOrAlias)) {
+			final var alias = idOrAlias.getEvmAddress();
+			final var evmAddress = alias.toByteArray();
+			if (aliasManager.isMirror(evmAddress)) {
+				final var contractNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
+				return EntityNum.fromLong(contractNum);
+			}
+			return aliasManager.lookupIdBy(alias);
+		} else {
+			return EntityNum.fromContractId(idOrAlias);
+		}
 	}
 }

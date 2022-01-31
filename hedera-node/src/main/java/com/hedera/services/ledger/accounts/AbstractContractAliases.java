@@ -28,6 +28,8 @@ import java.util.Arrays;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 public abstract class AbstractContractAliases implements ContractAliases {
+	private static final int EVM_ADDRESS_LEN = 20;
+
 	/* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
 	 * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
 	private static byte[] mirrorPrefix = null;
@@ -37,6 +39,9 @@ public abstract class AbstractContractAliases implements ContractAliases {
 	}
 
 	public boolean isMirror(final byte[] address) {
+		if (address.length != EVM_ADDRESS_LEN) {
+			return false;
+		}
 		if (mirrorPrefix == null) {
 			mirrorPrefix = new byte[12];
 			System.arraycopy(Longs.toByteArray(STATIC_PROPERTIES.getShard()), 4, mirrorPrefix, 0, 4);

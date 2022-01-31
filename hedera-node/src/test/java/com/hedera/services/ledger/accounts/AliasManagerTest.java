@@ -23,7 +23,6 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -33,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AliasManagerTest {
 	private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
 	private static final EntityNum num = EntityNum.fromLong(1234L);
-	private static final byte[] rawNonMirrorAddress = CommonUtils.unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final Address mirrorAddress = num.toEvmAddress();
 
@@ -53,6 +53,12 @@ class AliasManagerTest {
 	void resolvesLinkedNonMirrorAsExpected() {
 		subject.link(ByteString.copyFrom(rawNonMirrorAddress), num);
 		assertEquals(num.toEvmAddress(), subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void non20ByteStringCannotBeMirror() {
+		assertFalse(subject.isMirror(new byte[] { (byte) 0xab, (byte) 0xcd }));
+		assertFalse(subject.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
 	}
 
 	@Test
@@ -98,9 +104,9 @@ class AliasManagerTest {
 
 	@Test
 	void isAliasChecksForMapMembershipOnly() {
-		assertFalse(subject.isActiveAlias(nonMirrorAddress));
+		assertFalse(subject.isInUse(nonMirrorAddress));
 		subject.link(nonMirrorAddress, mirrorAddress);
-		assertTrue(subject.isActiveAlias(nonMirrorAddress));
+		assertTrue(subject.isInUse(nonMirrorAddress));
 	}
 
 	@Test

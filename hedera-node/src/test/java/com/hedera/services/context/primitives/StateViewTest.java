@@ -77,6 +77,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -123,6 +124,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.PauseNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -156,13 +158,12 @@ class StateViewTest {
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
-	private final byte[] cidAddress = asEvmAddress((int) cid.getShardNum(), cid.getRealmNum(),
-			cid.getContractNum());
+	private final byte[] cidAddress = asEvmAddress(0, 0, cid.getContractNum());
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
 	private final long autoRenewPeriod = 1_234_567;
 	private final String fileMemo = "Originally she thought";
-	private final String scheduleMemo = "For what but eye and ear";
+	private final ByteString create2Address = ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 
 	private FileGetInfoResponse.FileInfo expected;
@@ -205,6 +206,7 @@ class StateViewTest {
 	private StateView subject;
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	private void setup() throws Throwable {
 		metadata = new HFileMeta(
 				false,
@@ -236,6 +238,7 @@ class StateViewTest {
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
 		contract = MerkleAccountFactory.newAccount()
+				.alias(create2Address)
 				.memo("Stay cold...")
 				.numKvPairs(wellKnownNumKvPairs)
 				.isSmartContract(true)
@@ -281,6 +284,7 @@ class StateViewTest {
 		token.setFeeScheduleFrom(grpcCustomFees);
 
 		scheduleStore = mock(ScheduleStore.class);
+		final var scheduleMemo = "For what but eye and ear";
 		parentScheduleCreate =
 				scheduleCreateTxnWith(
 						SCHEDULE_ADMIN_KT.asKey(),
@@ -561,7 +565,40 @@ class StateViewTest {
 						.build());
 		given(mockTokenRelsFn.apply(subject, target)).willReturn(rels);
 
-		final var info = subject.infoForContract(cid).get();
+		final var info = subject.infoForContract(cid, aliasManager).get();
+
+		assertEquals(cid, info.getContractID());
+		assertEquals(asAccount(cid), info.getAccountID());
+		assertEquals(JKey.mapJKey(contract.getAccountKey()), info.getAdminKey());
+		assertEquals(contract.getMemo(), info.getMemo());
+		assertEquals(contract.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
+		assertEquals(contract.getBalance(), info.getBalance());
+		assertEquals(CommonUtils.hex(create2Address.toByteArray()), info.getContractAccountID());
+		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(rels, info.getTokenRelationshipsList());
+		assertEquals(ledgerId, info.getLedgerId());
+		assertTrue(info.getDeleted());
+		assertEquals(expectedTotalStorage, info.getStorage());
+	}
+
+	@Test
+	void getsContractInfoWithoutCreate2Address() throws Exception {
+		final var target = EntityNum.fromContractId(cid);
+		given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
+		contract.setAlias(ByteString.EMPTY);
+		final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		List<TokenRelationship> rels = List.of(
+				TokenRelationship.newBuilder()
+						.setTokenId(TokenID.newBuilder().setTokenNum(123L))
+						.setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+						.setKycStatus(TokenKycStatus.KycNotApplicable)
+						.setBalance(321L)
+						.build());
+		given(mockTokenRelsFn.apply(subject, target)).willReturn(rels);
+
+		final var info = subject.infoForContract(cid, aliasManager).get();
 
 		assertEquals(cid, info.getContractID());
 		assertEquals(asAccount(cid), info.getAccountID());
@@ -753,7 +790,7 @@ class StateViewTest {
 	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
-		assertTrue(subject.infoForContract(cid).isEmpty());
+		assertTrue(subject.infoForContract(cid, aliasManager).isEmpty());
 	}
 
 	@Test
@@ -763,7 +800,7 @@ class StateViewTest {
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 		contract.setAccountKey(null);
 
-		final var info = subject.infoForContract(cid).get();
+		final var info = subject.infoForContract(cid, aliasManager).get();
 
 		assertFalse(info.hasAdminKey());
 	}
@@ -988,7 +1025,7 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_FCM, subject.topics());
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
-		assertTrue(subject.infoForContract(cid).isEmpty());
+		assertTrue(subject.infoForContract(cid, aliasManager).isEmpty());
 		assertTrue(subject.infoForAccount(tokenAccountId, aliasManager).isEmpty());
 		assertTrue(subject.infoForAccountNfts(nftOwnerId, 0, Long.MAX_VALUE).isEmpty());
 		assertTrue(subject.infosForTokenNfts(nftTokenId, 0, Long.MAX_VALUE).isEmpty());

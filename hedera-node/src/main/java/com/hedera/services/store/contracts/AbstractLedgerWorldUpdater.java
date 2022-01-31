@@ -167,7 +167,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
 			final var curAliases = aliases();
-			if (curAliases.isActiveAlias(addressOrAlias)) {
+			if (curAliases.isInUse(addressOrAlias)) {
 				curAliases.unlink(addressOrAlias);
 				/* TODO - remove the deleted account's alias */
 			}

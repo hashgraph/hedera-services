@@ -84,7 +84,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	}
 
 	@Override
-	public boolean isActiveAlias(final Address address) {
+	public boolean isInUse(final Address address) {
 		return aliases.containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
 	}
 

@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKENS_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKEN_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -65,6 +66,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -74,6 +76,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABL
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -144,6 +147,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var creation2 = "create2Txn";
 		final var initcode = "initcode";
 		final var create2Factory = "create2Factory";
+		final var civilian = "payer";
 
 		final int salt = 42;
 		final var adminKey = "adminKey";
@@ -158,8 +162,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
 						newKeyNamed(adminKey),
+						overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode).path(CREATE2_FACTORY_PATH),
 						contractCreate(create2Factory)
+								.payingWith(GENESIS)
 								.proxy("0.0.3")
 								.bytecode(initcode)
 								.adminKey(adminKey)
@@ -171,29 +177,43 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(
 								create2Factory,
 								CREATE2_FACTORY_GET_BYTECODE_ABI, factoryEvmAddress.get(), salt
-						).exposingTypedResultsTo(results -> {
-							final var tcInitcode = (byte[]) results[0];
-							testContractInitcode.set(tcInitcode);
-							log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
-						})),
+						)
+								.exposingTypedResultsTo(results -> {
+									final var tcInitcode = (byte[]) results[0];
+									testContractInitcode.set(tcInitcode);
+									log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
+								})
+								.payingWith(GENESIS)
+								.nodePayment(ONE_HBAR)),
 						sourcing(() -> contractCallLocal(
 								create2Factory,
 								CREATE2_FACTORY_GET_ADDRESS_ABI, testContractInitcode.get(), salt
-						).exposingTypedResultsTo(results -> {
-							log.info("Contract reported address results {}", results);
-							final var expectedAddrBytes = (byte[]) results[0];
-							log.info("  --> Expected CREATE2 address is {}", hex(expectedAddrBytes));
-						})),
+						)
+								.exposingTypedResultsTo(results -> {
+									log.info("Contract reported address results {}", results);
+									final var expectedAddrBytes = (byte[]) results[0];
+									final var hexedAddress = hex(expectedAddrBytes);
+									log.info("  --> Expected CREATE2 address is {}", hexedAddress);
+									expectedCreate2Address.set(hexedAddress);
+								})
+								.payingWith(GENESIS)),
 						sourcing(() -> contractCall(
 								create2Factory,
 								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
 						)
+								.payingWith(GENESIS)
 								.gas(4_000_000L)
 								.via(creation2))
-//						contractCall(create2Factory, PROPAGATE_NESTED_CREATIONS_ABI)
-//								.gas(4_000_000L)
-//								.via(call)
 				).then(
+						sourcing(() -> contractCall(
+								create2Factory,
+								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								/* Cannot repeat CREATE2 with same args without destroying the existing contract */
+								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+						sourcing(() -> getContractInfo(expectedCreate2Address.get()).logged())
 //						withOpContext((spec, opLog) -> {
 //							final var parentNum = spec.registry().getContractId(create2Factory);
 //							final var firstId = ContractID.newBuilder()

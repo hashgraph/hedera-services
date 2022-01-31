@@ -36,7 +36,7 @@ public interface ContractAliases {
 
 	boolean isMirror(Address address);
 
-	boolean isActiveAlias(Address address);
+	boolean isInUse(Address address);
 
 	Address resolveForEvm(Address addressOrAlias);
 }

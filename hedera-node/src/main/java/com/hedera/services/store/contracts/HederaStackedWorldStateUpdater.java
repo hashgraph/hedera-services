@@ -53,7 +53,12 @@ public class HederaStackedWorldStateUpdater
 
 	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {
 		final var mirrorAddress = newContractAddress(sponsor);
-		aliases().link(alias, mirrorAddress);
+		final var curAliases = aliases();
+		/* Only link the alias if it's not already in use (a CREATE2 that tries to
+		 * re-use an existing address is going to fail in short order). */
+		if (!curAliases.isInUse(alias)) {
+			aliases().link(alias, mirrorAddress);
+		}
 		return mirrorAddress;
 	}
 

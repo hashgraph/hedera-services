@@ -30,13 +30,13 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
@@ -236,11 +237,16 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 				return null;
 			}
 		} else {
-			var target = TxnUtils.asContractId(contract, spec);
-			contractGetInfo = ContractGetInfoQuery.newBuilder()
-					.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-					.setContractID(target)
-					.build();
+			final var builder = ContractGetInfoQuery.newBuilder()
+					.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
+			if (contract.length() == 40) {
+				builder.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+			} else {
+				builder.setContractID(asContractId(contract, spec));
+			}
+			contractGetInfo = builder.build();
+			System.out.println(contractGetInfo);
 		}
 		return Query.newBuilder().setContractGetInfo(contractGetInfo).build();
 	}

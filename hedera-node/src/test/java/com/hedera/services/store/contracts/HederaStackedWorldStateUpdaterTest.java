@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,6 +80,20 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(sponsor, subject.getSponsorMap().get(address));
 		assertEquals(addressId, subject.idOfLastNewAddress());
 		verify(aliases).link(alias, address);
+	}
+
+	@Test
+	void doesntRelinkAliasIfActive() {
+		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.isInUse(alias)).willReturn(true);
+
+		final var created = subject.newAliasedContractAddress(sponsor, alias);
+
+		assertSame(created, address);
+		assertEquals(sponsor, subject.getSponsorMap().get(address));
+		assertEquals(addressId, subject.idOfLastNewAddress());
+		verify(aliases, never()).link(alias, address);
 	}
 
 	@Test

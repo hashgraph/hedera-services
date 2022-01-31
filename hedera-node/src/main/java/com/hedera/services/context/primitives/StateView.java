@@ -99,9 +99,10 @@ import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.swirlds.common.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
@@ -491,8 +492,11 @@ public class StateView {
 		return Optional.of(infoWithLedgerId);
 	}
 
-	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(final ContractID id) {
-		final var contractId = fromContractId(id);
+	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
+			final ContractID id,
+			final AliasManager aliasManager
+	) {
+		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
 		if (contract == null) {
 			return Optional.empty();
@@ -504,13 +508,17 @@ public class StateView {
 				.setLedgerId(networkInfo.ledgerId())
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
-				.setContractID(id)
+				.setContractID(contractId.toGrpcContractID())
 				.setMemo(contract.getMemo())
 				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setContractAccountID(EntityIdUtils.asHexedEvmAddress(mirrorId));
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()));
+		if (contract.hasAlias()) {
+			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
+		} else {
+			info.setContractAccountID(EntityIdUtils.asHexedEvmAddress(mirrorId));
+		}
 		final var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);

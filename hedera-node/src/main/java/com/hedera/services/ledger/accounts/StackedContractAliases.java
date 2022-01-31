@@ -117,7 +117,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 	}
 
 	@Override
-	public boolean isActiveAlias(final Address address) {
+	public boolean isInUse(final Address address) {
 		if (isMirror(address)) {
 			return false;
 		}
@@ -126,7 +126,7 @@ public class StackedContractAliases extends AbstractContractAliases {
 		} else if (isRemoved(address)) {
 			return false;
 		} else {
-			return wrappedAliases.isActiveAlias(address);
+			return wrappedAliases.isInUse(address);
 		}
 	}
 
