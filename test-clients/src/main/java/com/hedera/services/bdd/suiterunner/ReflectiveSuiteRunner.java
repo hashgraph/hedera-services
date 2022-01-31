@@ -46,15 +46,15 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.getReportFor;
-import static com.hedera.services.bdd.suiterunner.SuiteRunnerService.getPackages;
-import static com.hedera.services.bdd.suiterunner.SuiteRunnerService.getSuites;
+import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.getPackages;
+import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.getSuites;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
 import static java.util.stream.Collectors.toList;
 
 // TODO: Handle invalid flags like -y instead of -a or -sfp instead of -spt
 // TODO: Handle console output for running freeze suites
-public class TypedSuiteRunner {
+public class ReflectiveSuiteRunner {
 	public static final String LOG_PATH = "output/log-buffer.log";
 	private static final String SEPARATOR = "====================================";
 	private static final Logger log = redirectLogger();
@@ -174,7 +174,7 @@ public class TypedSuiteRunner {
 
 		Configurator.initialize(builder.build());
 
-		return LogManager.getLogger(TypedSuiteRunner.class);
+		return LogManager.getLogger(ReflectiveSuiteRunner.class);
 	}
 
 	private static void clearLog() {

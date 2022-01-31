@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
 
 
-class TypedSuiteRunnerLauncher {
+class ReflectiveSuiteRunnerLauncher {
 //	private final PackageStore packageStore = new PackageStore();
 //	private final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = packageStore.initialize(effectiveArguments);
 
@@ -34,7 +34,7 @@ class TypedSuiteRunnerLauncher {
 	//       as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		final String[] withSplit = {"-s contract, crypto, freeze"};
+		final String[] withSplit = {"-s contract, freeze, file.positive"};
 //		final String[] withSplit = {"-s Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees"};
 //		final String[] withSplit = {"-s freeze, contract, fees, spec"};
 		final String[] withWrongArguments = {"-s Autorew, autorenew, MustaFffAAAAAA, Compose, Consensus, Contract, opcodes, records, Cryto, Fees"};
@@ -48,6 +48,6 @@ class TypedSuiteRunnerLauncher {
 		final String[] withInvalidCharacter = {"-s Autorenew suites; compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
 		final String[] isolated = {"-s Crypto suites, LimeChain suites,  Hedera suites"};
 
-		TypedSuiteRunner.main(allWithSplit);
+		ReflectiveSuiteRunner.main(allWithSplit);
 	}
 }

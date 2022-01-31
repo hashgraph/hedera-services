@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.consensus;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.suiterunner.annotations.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-@AutomatedSuite
 public class TopicUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicUpdateSuite.class);
 

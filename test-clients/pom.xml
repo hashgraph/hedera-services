@@ -354,7 +354,7 @@
                   <goal>java</goal>
                 </goals>
                 <configuration>
-                  <mainClass>com.hedera.services.bdd.suiterunner.TypedSuiteRunner</mainClass>
+                  <mainClass>com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunner</mainClass>
                   <arguments>
                     <!--suppress UnresolvedMavenProperty -->
                     <argument>${args}</argument>

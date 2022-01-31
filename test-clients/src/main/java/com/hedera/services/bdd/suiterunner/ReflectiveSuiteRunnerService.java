@@ -29,26 +29,23 @@ import org.reflections.Reflections;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-public class SuiteRunnerService {
-	private static final Logger log = LogManager.getLogger(SuiteRunnerService.class);
+public class ReflectiveSuiteRunnerService {
+	private static final Logger log = LogManager.getLogger(ReflectiveSuiteRunnerService.class);
 	private static final String SEPARATOR = "====================================";
-	public static Set<String> suitesPaths;
-	public static Map<String, List<HapiApiSuite>> instantiatedSuites = new HashMap<>();
-	public static boolean runAllSuites;
+	private static Set<String> suitesPaths;
+	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
 
 	public static Set<String> getPackages(String[] args) {
-		collectSuitePaths();
+		collectSuitesPaths();
 
 		if (runAllTests(args)) {
-			runAllSuites = true;
 			log.warn(String.format("%1$s Running all tests without performance tests %1$s", SEPARATOR));
 			return suitesPaths
 					.stream()
@@ -60,7 +57,9 @@ public class SuiteRunnerService {
 
 		final var wrongArguments = arguments
 				.stream()
-				.filter(argument -> suitesPaths.stream().noneMatch(path -> path.contains(argument.toLowerCase())))
+				.filter(argument -> suitesPaths
+						.stream()
+						.noneMatch(path -> path.contains(argument.toLowerCase())))
 				.toList();
 
 		if (!wrongArguments.isEmpty()) {
@@ -75,25 +74,18 @@ public class SuiteRunnerService {
 		return suitesPaths
 				.stream()
 				.filter(path -> !path.contains("perf"))
-				.filter(path -> arguments.stream().anyMatch(argument -> path.contains(argument.toLowerCase())))
+				.filter(path -> arguments
+						.stream()
+						.anyMatch(argument -> path.contains(argument.toLowerCase())))
 				.collect(toSet());
 	}
 
-	/**
-	 *  The method .filter(suite -> suite.getPackageName().equals(path)) is necessary due to the fact, that the operation
-	 *  of collecting the target objects depends on the syb-types (new Reflections(path).getSubTypesOf(HapiApiSuite.class).
-	 *  The Reflections' library will include tests, which are not part of the particular path, because will follow the chain
-	 *  of inheritance.
-	 *  for example: if we intend to include only CryptoTransferThenFreezeTest - without the filter we will inherently include
-	 *  CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest)  and LoadTest (extended by CryptoTransferLoadTest).
-	 * @param paths the paths of the target packages
-	 */
-	public static Map<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
+	public static TreeMap<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
 		for (String path : paths) {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
 			final var instances = suites
 					.stream()
-					.filter(suite -> suite.getPackageName().equals(path))
+					.filter(suite -> isInDesiredScope(path, suite))
 					.map(suite -> {
 						HapiApiSuite instance = null;
 						try {
@@ -114,7 +106,7 @@ public class SuiteRunnerService {
 	}
 
 	/* --- Helpers --- */
-	private static void collectSuitePaths() {
+	private static void collectSuitesPaths() {
 		suitesPaths = new Reflections("com.hedera.services.bdd.suites")
 				.getSubTypesOf(HapiApiSuite.class)
 				.stream()
@@ -134,5 +126,17 @@ public class SuiteRunnerService {
 				.stream(args)
 				.distinct()
 				.collect(Collectors.toCollection(ArrayList::new));
+	}
+
+	/**
+	 *  This method guarantees, that the algorithm will instantiate only suites withing the query scope.
+	 *  We collect objects by syb-type and the Reflections' library will include tests, which are not part of the
+	 *  particular path, because the library traces the chain of inheritance.
+	 *  For example: if we intend to run only CryptoTransferThenFreezeTest - without this check we will undesirably and
+	 *  implicitly include CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest) and LoadTest (extended by CryptoTransferLoadTest).
+	 * @param suite the evaluated suite
+	 */
+	private static boolean isInDesiredScope(String path, Class<? extends HapiApiSuite> suite) {
+		return suite.getPackageName().equals(path);
 	}
 }

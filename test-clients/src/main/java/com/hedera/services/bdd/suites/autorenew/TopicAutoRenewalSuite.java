@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.autorenew;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suiterunner.annotations.AutomatedSuite;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +29,6 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 
-@AutomatedSuite
 public class TopicAutoRenewalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TopicAutoRenewalSuite.class);
 
