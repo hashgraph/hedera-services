@@ -24,8 +24,10 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -36,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -61,30 +65,32 @@ import static org.mockito.BDDMockito.given;
 public class AllowanceChecksTest {
 	@Mock
 	private TransactionalLedger tokenRelsLedger;
+	@Mock
+	private TransactionalLedger nftsLedger;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private Account owner;
 
 	AllowanceChecks subject;
 
 	private final AccountID spender1 = asAccount("0.0.123");
-	private final AccountID spender2 = asAccount("0.0.1234");
 	private final TokenID token1 = asToken("0.0.100");
 	private final TokenID token2 = asToken("0.0.200");
 	private final AccountID ownerId = asAccount("0.0.5000");
-	private final Account owner = new Account(Id.fromGrpcAccount(ownerId));
+
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 
 	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
 			10L).build();
-	private final CryptoAllowance cryptoAllowance2 = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
-			20L).build();
 	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
 			10L).setTokenId(token1).build();
-	private final TokenAllowance tokenAllowance2 = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
-			20L).setTokenId(token2).build();
 	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
-			.setTokenId(token1).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L)).build();
-	private final NftAllowance nftAllowance2 = NftAllowance.newBuilder().setSpender(spender2)
-			.setTokenId(token2).setApprovedForAll(BoolValue.of(true)).addAllSerialNumbers(List.of(1L)).build();
+			.setTokenId(token1).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+
+	private final Pair<AccountID, TokenID> ownerReln1 = asTokenRel(ownerId, token1);
+	private final Pair<AccountID, TokenID> spenderReln1 = asTokenRel(spender1, token1);
 
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
@@ -94,14 +100,29 @@ public class AllowanceChecksTest {
 
 	@BeforeEach
 	void setUp() {
-		cryptoAllowances.add(cryptoAllowance1);
-		cryptoAllowances.add(cryptoAllowance2);
-		tokenAllowances.add(tokenAllowance1);
-		tokenAllowances.add(tokenAllowance2);
-		nftAllowances.add(nftAllowance1);
-		nftAllowances.add(nftAllowance2);
+		setUpForTest();
+		subject = new AllowanceChecks(tokenRelsLedger, nftsLedger, tokenStore);
+	}
 
-		subject = new AllowanceChecks(tokenRelsLedger);
+	private void setUpForTest() {
+		cryptoAllowances.add(cryptoAllowance1);
+		tokenAllowances.add(tokenAllowance1);
+		nftAllowances.add(nftAllowance1);
+
+		token1Model.setMaxSupply(5000L);
+		token2Model.setMaxSupply(5000L);
+		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(nftsLedger.get(NftId.withDefaultShardRealm(token1Model.getId().num(), 1L), OWNER))
+				.willReturn(owner.getId());
+		given(nftsLedger.get(NftId.withDefaultShardRealm(token1Model.getId().num(), 10L), OWNER))
+				.willReturn(owner.getId());
+
+		given(tokenRelsLedger.get(asTokenRel(ownerId, token1), IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(false);
 	}
 
 	@Test
@@ -112,7 +133,7 @@ public class AllowanceChecksTest {
 
 		cryptoAllowances.add(cryptoAllowance1);
 		tokenAllowances.add(tokenAllowance1);
-		nftAllowances.add(nftAllowance2);
+		nftAllowances.add(nftAllowance1);
 
 		assertTrue(subject.hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(subject.hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
@@ -125,7 +146,7 @@ public class AllowanceChecksTest {
 		given(tokenRelsLedger.get(asTokenRel(owner.getId().asGrpcAccount(), token1), IS_FROZEN))
 				.willReturn(true);
 
-		assertTrue(subject.frozenAccounts(owner, spender1, token1));
+		assertTrue(subject.frozenAccounts(ownerId, spender1, token1));
 	}
 
 	@Test
@@ -135,7 +156,7 @@ public class AllowanceChecksTest {
 				.willReturn(false);
 		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(true);
 
-		assertTrue(subject.frozenAccounts(owner, spender1, token1));
+		assertTrue(subject.frozenAccounts(ownerId, spender1, token1));
 	}
 
 	@Test
@@ -164,8 +185,6 @@ public class AllowanceChecksTest {
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
 				.setTokenId(token1).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L)).build();
 
-		token1Model.setMaxSupply(5000L);
-		token2Model.setMaxSupply(5000L);
 		cryptoAllowances.add(badCryptoAllowance);
 		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateCryptoAllowances(cryptoAllowances, owner));
 

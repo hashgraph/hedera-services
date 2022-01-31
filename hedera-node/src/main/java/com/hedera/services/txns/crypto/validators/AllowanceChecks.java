@@ -23,11 +23,16 @@
 package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -41,12 +46,16 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -54,13 +63,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 public class AllowanceChecks {
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private final TypedTokenStore tokenStore;
+	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	@Inject
 	public AllowanceChecks(
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TypedTokenStore tokenStore) {
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.tokenStore = tokenStore;
+		this.nftsLedger = nftsLedger;
 	}
 
 	public ResponseCodeEnum allowancesValidation(final TransactionBody allowanceTxn, final Account ownerAccount) {
@@ -126,6 +138,7 @@ public class AllowanceChecks {
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+
 			if (amount < 0) {
 				return NEGATIVE_ALLOWANCE_AMOUNT;
 			}
@@ -156,21 +169,27 @@ public class AllowanceChecks {
 			final var spenderAccountId = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var tokenId = allowance.getTokenId();
+			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+
+			var validity = validateBasicTokenAllowances(ownerAccount, spenderAccountId, tokenId);
+			if (validity != OK) {
+				return validity;
+			}
+
+			validity = validateSerials(serialNums, ownerAccount, token);
+			if (validity != OK) {
+				return validity;
+			}
 
 			if (approvedForAll.getValue() & token.isFungibleCommon()) {
 				return CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
-			}
-
-			final var validity = validateBasicTokenAllowances(ownerAccount, spenderAccountId, tokenId);
-			if (validity != OK) {
-				return validity;
 			}
 		}
 		return OK;
 	}
 
-	private ResponseCodeEnum validateBasicTokenAllowances(
+	ResponseCodeEnum validateBasicTokenAllowances(
 			final Account ownerAccount,
 			final AccountID spenderAccountId,
 			final TokenID tokenId) {
@@ -181,19 +200,39 @@ public class AllowanceChecks {
 		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
-		if (frozenAccounts(ownerAccount, spenderAccountId, tokenId)) {
+		if (frozenAccounts(ownerAccount.getId().asGrpcAccount(), spenderAccountId, tokenId)) {
 			return ACCOUNT_FROZEN_FOR_TOKEN;
 		}
 		return OK;
 	}
 
-	boolean frozenAccounts(final Account ownerAccount, final AccountID spender,
-			final TokenID tokenId) {
-		final var ownerRelation = asTokenRel(ownerAccount.getId().asGrpcAccount(),
-				tokenId);
+	boolean frozenAccounts(final AccountID ownerAccountId, final AccountID spender, final TokenID tokenId) {
+		final var ownerRelation = asTokenRel(ownerAccountId, tokenId);
 		final var spenderRelation = asTokenRel(spender, tokenId);
+
 		return ((boolean) tokenRelsLedger.get(ownerRelation, IS_FROZEN)) ||
 				((boolean) tokenRelsLedger.get(spenderRelation, IS_FROZEN));
+	}
+
+	ResponseCodeEnum validateSerials(final List<Long> serialNums,
+			final Account ownerAccount,
+			final Token token) {
+		for (var serial : serialNums) {
+			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
+			if (serial <= 0 || nftsLedger.exists(nftId)) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+
+			final var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+			if (!ownerAccount.getId().equals(owner)) {
+				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+			}
+
+			if (hasRepeatedSerials(serialNums)) {
+				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+			}
+		}
+		return OK;
 	}
 
 	boolean hasRepeatedSpender(List<AccountID> spenders) {
@@ -210,4 +249,20 @@ public class AllowanceChecks {
 		}
 		return false;
 	}
+
+	boolean hasRepeatedSerials(List<Long> serials) {
+		final int n = serials.size();
+		if (n < 2) {
+			return false;
+		}
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
+				if (serials.get(i).equals(serials.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 }
