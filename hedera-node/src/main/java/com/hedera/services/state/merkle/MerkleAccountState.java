@@ -67,9 +67,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public static final String DEFAULT_MEMO = "";
 	private static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
-	private static final Map<EntityNum, Long> EMPTY_CRYPTO_ALLOWANCES = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, Long> EMPTY_FUNGIBLE_TOKEN_ALLOWANCES = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> EMPTY_NFT_ALLOWANCES = new HashMap<>();
+	public static final Map<EntityNum, Long> EMPTY_CRYPTO_ALLOWANCES = new HashMap<>();
+	public static final Map<FcTokenAllowanceId, Long> EMPTY_FUNGIBLE_TOKEN_ALLOWANCES = new HashMap<>();
+	public static final Map<FcTokenAllowanceId, FcTokenAllowance> EMPTY_NFT_ALLOWANCES = new HashMap<>();
 
 	private JKey key;
 	private long expiry;
