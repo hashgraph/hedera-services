@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.autorenew;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.suiterunner.annotations.ExcludeFromRSR;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -66,7 +67,7 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-//@AutomatedSuite
+@ExcludeFromRSR
 public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MacroFeesChargedSanityCheckSuite.class);
 
