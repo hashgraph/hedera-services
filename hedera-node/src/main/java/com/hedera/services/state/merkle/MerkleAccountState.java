@@ -485,16 +485,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 		var numFungibleTokenAllowances = in.readInt();
 		while (numFungibleTokenAllowances-- > 0) {
-			final FcTokenAllowanceId key = in.readSerializable();
+			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
 			final Long value = in.readLong();
-			fungibleTokenAllowances.put(key, value);
+			fungibleTokenAllowances.put(fungibleAllowanceId, value);
 		}
 
 		var numNftAllowances = in.readInt();
 		while (numNftAllowances-- > 0) {
-			final FcTokenAllowanceId key = in.readSerializable();
+			final FcTokenAllowanceId nftAllowanceId = in.readSerializable();
 			final FcTokenAllowance value = in.readSerializable();
-			nftAllowances.put(key, value);
+			nftAllowances.put(nftAllowanceId, value);
 		}
 	}
 

@@ -36,7 +36,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class FcTokenAllowanceIdTest {
+class FcTokenAllowanceIdTest {
 	private EntityNum tokenNum = EntityNum.fromLong(1L);
 	private EntityNum spenderNum = EntityNum.fromLong(2L);
 

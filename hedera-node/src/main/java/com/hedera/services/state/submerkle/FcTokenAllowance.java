@@ -30,6 +30,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,8 +48,10 @@ public class FcTokenAllowance implements SelfSerializable {
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa533950f139L;
 
+	static final List<Long> DEFAULT_SERIAL_NUMS = new ArrayList<>();
+
 	private boolean approvedForAll;
-	private List<Long> serialNumbers;
+	private List<Long> serialNumbers = DEFAULT_SERIAL_NUMS;
 
 	public FcTokenAllowance() {
 		/* RuntimeConstructable */
@@ -72,19 +75,13 @@ public class FcTokenAllowance implements SelfSerializable {
 	@Override
 	public void deserialize(final SerializableDataInputStream din, final int i) throws IOException {
 		approvedForAll = din.readBoolean();
-		final var isForSpecificNfts = din.readBoolean();
-		if (isForSpecificNfts) {
-			serialNumbers = din.readLongList(Integer.MAX_VALUE);
-		}
+		serialNumbers = din.readLongList(Integer.MAX_VALUE);
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream dos) throws IOException {
 		dos.writeBoolean(approvedForAll);
-		dos.writeBoolean(serialNumbers != null);
-		if (serialNumbers != null) {
-			dos.writeLongList(serialNumbers);
-		}
+		dos.writeLongList(serialNumbers);
 	}
 
 	@Override

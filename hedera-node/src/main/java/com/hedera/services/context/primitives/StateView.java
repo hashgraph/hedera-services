@@ -20,6 +20,7 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.StateChildren;
@@ -54,16 +55,19 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -429,10 +433,11 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id, final AliasManager aliasManager) {
-		final var accountEntityNum = id.getAlias().isEmpty() 
-                      ? fromAccountId(id) 
-                      : aliasManager.lookupIdBy(id.getAlias());
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
+			final AliasManager aliasManager) {
+		final var accountEntityNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
 		final var account = accounts().get(accountEntityNum);
 		if (account == null) {
 			return Optional.empty();
@@ -460,7 +465,60 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		setAllowancesIfAny(info, account);
 		return Optional.of(info.build());
+	}
+
+	private void setAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		setCryptoAllowancesIfAny(info, account);
+		setFungibleTokenAllowancesIfAny(info, account);
+		setNftAllowancesIfAny(info, account);
+	}
+
+	private void setNftAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		if (!account.state().getNftAllowances().isEmpty()) {
+			List<NftAllowance> nftAllowances = new ArrayList<>();
+			final var nftAllowance = NftAllowance.newBuilder();
+			for (var a : account.state().getNftAllowances().entrySet()) {
+				nftAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				nftAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				nftAllowance.setApprovedForAll(BoolValue.of(a.getValue().isApprovedForAll()));
+				nftAllowance.addAllSerialNumbers(a.getValue().getSerialNumbers());
+				nftAllowances.add(nftAllowance.build());
+			}
+			info.addAllNftAllowances(nftAllowances);
+		}
+	}
+
+	private void setFungibleTokenAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		if (!account.state().getFungibleTokenAllowances().isEmpty()) {
+			List<TokenAllowance> tokenAllowances = new ArrayList<>();
+			final var tokenAllowance = TokenAllowance.newBuilder();
+			for (var a : account.state().getFungibleTokenAllowances().entrySet()) {
+				tokenAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				tokenAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				tokenAllowance.setAmount(a.getValue());
+				tokenAllowances.add(tokenAllowance.build());
+			}
+			info.addAllTokenAllowances(tokenAllowances);
+		}
+	}
+
+	private void setCryptoAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		if (!account.state().getCryptoAllowances().isEmpty()) {
+			List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+			final var cryptoAllowance = CryptoAllowance.newBuilder();
+			for (var a : account.state().getCryptoAllowances().entrySet()) {
+				cryptoAllowance.setSpender(a.getKey().toGrpcAccountId());
+				cryptoAllowance.setAmount(a.getValue());
+				cryptoAllowances.add(cryptoAllowance.build());
+			}
+			info.addAllCryptoAllowances(cryptoAllowances);
+		}
 	}
 
 	public long numNftsOwnedBy(AccountID target) {
