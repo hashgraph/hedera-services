@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.assertions;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -97,6 +98,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					gasUsed, result.getGasUsed(),
 					"Wrong amount of Gas was used!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts stateChanges(StateChange ...stateChanges) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					UtilStateChange.stateChangesToGrpc(List.of(stateChanges), spec), result.getStateChangesList(),
+					"Wrong state changes!");
 		});
 		return this;
 	}

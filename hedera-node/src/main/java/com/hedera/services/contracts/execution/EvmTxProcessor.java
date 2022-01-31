@@ -27,13 +27,11 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.BytesComparator;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,16 +54,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
-import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -268,9 +260,13 @@ abstract class EvmTxProcessor {
 //			}
 			stateChanges = updater.getStorageChanges();
 
+			final var touchedAccounts =
+					updater.getTouchedAccounts();
+
 			// record storage read/write access
-			for (UpdateTrackingAccount<? extends Account> uta :
-					(Collection<UpdateTrackingAccount<? extends Account>>) updater.getTouchedAccounts()) {
+			for (org.hyperledger.besu.evm.account.Account touchedAccount : touchedAccounts) {
+				UpdateTrackingLedgerAccount<? extends Account> uta =
+						(UpdateTrackingLedgerAccount<? extends Account>) touchedAccount;
 				Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
 				stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
 				for (Map.Entry<UInt256, UInt256> entry : uta.getUpdatedStorage().entrySet()) {
