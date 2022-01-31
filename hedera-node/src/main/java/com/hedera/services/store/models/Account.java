@@ -334,4 +334,7 @@ public class Account {
 		this.nftAllowances = nftAllowances;
 	}
 
+	public int getTotalAllowances() {
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + nftAllowances.size();
+	}
 }
