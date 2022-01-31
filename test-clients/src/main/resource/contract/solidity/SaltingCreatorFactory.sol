@@ -33,14 +33,16 @@ contract SaltingCreator {
     }
 
     function createSaltedTestContract(bytes32 salt) public {
-        new TestContract{salt: salt}(primal_foo);
+        new TestContract{salt: salt}(address(this), primal_foo);
     }
 }
 
 contract TestContract {
+    address public owner;
     uint public foo;
 
-    constructor(uint _foo) payable {
+    constructor(address _owner, uint _foo) payable {
+        owner = _owner;
         foo = _foo;
     }
 
@@ -49,6 +51,6 @@ contract TestContract {
     }
 
     function vacateAddress() public {
-        selfdestruct(payable(msg.sender));
+        selfdestruct(payable(owner));
     }
 }
