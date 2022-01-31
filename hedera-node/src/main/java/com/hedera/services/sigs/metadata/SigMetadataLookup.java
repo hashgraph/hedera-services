@@ -57,7 +57,5 @@ public interface SigMetadataLookup {
 	SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
 			AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
 
-	boolean resolveAllowanceGrantFor(AccountID payerID, AccountID ownerID, @Nullable TokenID tokenID);
-
 	Instant sourceSignedAt();
 }

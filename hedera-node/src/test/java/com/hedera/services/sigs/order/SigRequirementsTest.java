@@ -50,13 +50,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -329,12 +327,6 @@ class SigRequirementsTest {
 				@Override
 				public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
 					return fn.apply(idOrAlias);
-				}
-
-				@Override
-				public boolean allowanceGrantLookupFor(final AccountID payerID,
-						final AccountID ownerID, final @Nullable TokenID tokenID) {
-					return false;
 				}
 			};
 		}

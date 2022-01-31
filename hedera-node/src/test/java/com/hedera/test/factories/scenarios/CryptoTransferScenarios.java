@@ -28,6 +28,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.approvedTinyBarsFromTo;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -325,7 +326,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
 							.nonPayerKts(DEFAULT_PAYER_KT)
-							.transfers(tinyBarsFromTo(OWNER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
+							.transfers(approvedTinyBarsFromTo(OWNER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
 							.get()
 			));
 		}
@@ -335,7 +336,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
-							.adjusting(OWNER_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.approvedAdjusting(OWNER_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
 							.get()
 			));
@@ -346,7 +347,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
-							.changingOwner(KNOWN_TOKEN_NFT, OWNER_ACCOUNT, TOKEN_RECEIVER)
+							.approvedChangingOwner(KNOWN_TOKEN_NFT, OWNER_ACCOUNT, TOKEN_RECEIVER)
 							.get()
 			));
 		}

@@ -581,26 +581,26 @@ public class SigRequirements {
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs, xfers.getToken())) != NONE) {
+				if ((failure = includeIfNecessary(payer, adjust, required, false, linkedRefs)) != NONE) {
 					return accountFailure(failure, factory);
 				}
 			}
 			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				final var sender = adjust.getSenderAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, sender, null, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, sender, null, adjust.getIsApproval(), required, token, op, linkedRefs))
 						!= NONE) {
 					return accountFailure(failure, factory);
 				}
 				final var receiver = adjust.getReceiverAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, false, required, token, op, linkedRefs))
 						!= NONE) {
 					return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
 				}
 			}
 		}
 		for (AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-			if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, null)) != NONE) {
+			if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs)) != NONE) {
 				return accountFailure(failure, factory);
 			}
 		}
@@ -1107,17 +1107,15 @@ public class SigRequirements {
 			final AccountAmount adjust,
 			final List<JKey> required,
 			final boolean autoCreationAllowed,
-			final @Nullable LinkedRefs linkedRefs,
-			final @Nullable TokenID tokenID
+			final @Nullable LinkedRefs linkedRefs
 	) {
 		var account = adjust.getAccountID();
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
 				final var meta = result.metadata();
-				final var canSkipAddingKey = sigMetaLookup.resolveAllowanceGrantFor(payer, account, tokenID);
 
-				if ((adjust.getAmount() < 0 || meta.receiverSigRequired()) && !canSkipAddingKey) {
+				if (((adjust.getAmount() < 0  && !adjust.getIsApproval()) || meta.receiverSigRequired())) {
 					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
 					required.add(meta.key());
 				}
@@ -1140,6 +1138,7 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID party,
 			final AccountID counterparty,
+			final boolean isApproval,
 			final List<JKey> required,
 			final TokenID token,
 			final CryptoTransferTransactionBody op,
@@ -1151,9 +1150,8 @@ public class SigRequirements {
 				return result.failureIfAny();
 			}
 			final var meta = result.metadata();
-			final var canSkipAddingKey = sigMetaLookup.resolveAllowanceGrantFor(payer, party, token);
 			final var isSender = counterparty == null;
-			if ((isSender || meta.receiverSigRequired()) && !canSkipAddingKey) {
+			if (((isSender && !isApproval) || meta.receiverSigRequired())) {
 				required.add(meta.key());
 			} else {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);

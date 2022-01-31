@@ -24,13 +24,10 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
-import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
@@ -66,22 +63,6 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 					: lookupByNumber(explicitId);
 		} else {
 			return lookupByNumber(fromAccountId(idOrAlias));
-		}
-	}
-
-	@Override
-	public boolean allowanceGrantLookupFor(final AccountID payerID, final AccountID ownerID, final @Nullable TokenID tokenID) {
-		final var payerNum = isAlias(payerID) ? aliasManager.lookupIdBy(payerID.getAlias()) : fromAccountId(payerID);
-		final var ownerNum = isAlias(ownerID) ? aliasManager.lookupIdBy(ownerID.getAlias()) : fromAccountId(ownerID);
-
-		if (tokenID != null) {
-			final var allowanceId = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenID), payerNum);
-			final var fungibleTokenAllowances = accounts.get().get(ownerNum).getFungibleTokenAllowances();
-			final var nftTokenAllowances = accounts.get().get(ownerNum).getNftAllowances();
-			return fungibleTokenAllowances.containsKey(allowanceId) || nftTokenAllowances.containsKey(allowanceId);
-		} else {
-			final var hbarAllowanceMap = accounts.get().get(ownerNum).getCryptoAllowances();
-			return hbarAllowanceMap.containsKey(payerNum);
 		}
 	}
 

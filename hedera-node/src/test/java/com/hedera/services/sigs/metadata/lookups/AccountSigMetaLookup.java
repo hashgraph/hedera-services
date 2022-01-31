@@ -23,9 +23,6 @@ package com.hedera.services.sigs.metadata.lookups;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-
-import javax.annotation.Nullable;
 
 /**
  * Defines a simple type that is able to recover metadata about signing activity
@@ -34,5 +31,4 @@ import javax.annotation.Nullable;
 public interface AccountSigMetaLookup {
 	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
 	SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
-	boolean allowanceGrantLookupFor(AccountID payerID, AccountID ownerID, @Nullable TokenID tokenID);
 }

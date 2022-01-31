@@ -30,7 +30,6 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -160,23 +159,6 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 					: lookupByNumber(explicitId, linkedRefs);
 		} else {
 			return lookupByNumber(fromAccountId(idOrAlias), linkedRefs);
-		}
-	}
-
-	@Override
-	public boolean resolveAllowanceGrantFor(final AccountID payerID,
-			final AccountID ownerID, final @Nullable TokenID tokenID) {
-		final var payerNum = isAlias(payerID) ? aliasManager.lookupIdBy(payerID.getAlias()) : fromAccountId(payerID);
-		final var ownerNum = isAlias(ownerID) ? aliasManager.lookupIdBy(ownerID.getAlias()) : fromAccountId(ownerID);
-
-		if (tokenID != null) {
-			final var allowanceId = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenID), payerNum);
-			final var fungibleTokenAllowances = stateChildren.accounts().get(ownerNum).getFungibleTokenAllowances();
-			final var nftTokenAllowances = stateChildren.accounts().get(ownerNum).getNftAllowances();
-			return fungibleTokenAllowances.containsKey(allowanceId) || nftTokenAllowances.containsKey(allowanceId);
-		} else {
-			final var hbarAllowanceMap = stateChildren.accounts().get(ownerNum).getCryptoAllowances();
-			return hbarAllowanceMap.containsKey(payerNum);
 		}
 	}
 
