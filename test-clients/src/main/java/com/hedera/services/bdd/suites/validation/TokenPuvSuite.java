@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.persistence.Token;
+import com.hedera.services.bdd.suiterunner.annotations.ExcludeFromRSR;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureDissociated;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.serializeEntity;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.yaml;
 
+@ExcludeFromRSR
 public class TokenPuvSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
 

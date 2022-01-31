@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suiterunner;
  * ‍
  */
 
+import com.hedera.services.bdd.suiterunner.annotations.ExcludeFromRSR;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +39,6 @@ import static java.util.stream.Collectors.toSet;
 
 public class ReflectiveSuiteRunnerService {
 	private static final Logger log = LogManager.getLogger(ReflectiveSuiteRunnerService.class);
-	private static final String SEPARATOR = "====================================";
 	private static Set<String> suitesPaths;
 	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
 
@@ -46,7 +46,7 @@ public class ReflectiveSuiteRunnerService {
 		collectSuitesPaths();
 
 		if (runAllTests(args)) {
-			log.warn(String.format("%1$s Running all tests without performance tests %1$s", SEPARATOR));
+			log.warn("Running all tests without performance tests");
 			return suitesPaths
 					.stream()
 					.filter(path -> !path.contains("perf"))
@@ -69,7 +69,7 @@ public class ReflectiveSuiteRunnerService {
 			arguments.removeAll(wrongArguments);
 		}
 
-		log.warn(String.format("%1$s Running tests for %2$s suites %1$s", SEPARATOR, String.join(", ", arguments)));
+		log.warn("Running tests for {} suites", String.join(", ", arguments));
 
 		return suitesPaths
 				.stream()
@@ -80,20 +80,23 @@ public class ReflectiveSuiteRunnerService {
 				.collect(toSet());
 	}
 
+// TODO: Document and explain the ternary operator with suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
 	public static TreeMap<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
 		for (String path : paths) {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
 			final var instances = suites
 					.stream()
-					.filter(suite -> isInDesiredScope(path, suite))
+					.filter(suite -> !suite.isAnnotationPresent(ExcludeFromRSR.class))
+					.filter(suite -> isInRequestedScope(path, suite))
 					.map(suite -> {
-						HapiApiSuite instance = null;
 						try {
-							instance = suite.getDeclaredConstructor().newInstance();
+							return suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
+									? suite.getDeclaredConstructor(String.class, String.class).newInstance("localhost", "3")
+									: suite.getDeclaredConstructor().newInstance();
 						} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 							e.printStackTrace();
+							return null;
 						}
-						return instance;
 					})
 					.toList();
 			instantiatedSuites.putIfAbsent(path, instances);
@@ -136,7 +139,7 @@ public class ReflectiveSuiteRunnerService {
 	 *  implicitly include CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest) and LoadTest (extended by CryptoTransferLoadTest).
 	 * @param suite the evaluated suite
 	 */
-	private static boolean isInDesiredScope(String path, Class<? extends HapiApiSuite> suite) {
+	private static boolean isInRequestedScope(String path, Class<? extends HapiApiSuite> suite) {
 		return suite.getPackageName().equals(path);
 	}
 }
