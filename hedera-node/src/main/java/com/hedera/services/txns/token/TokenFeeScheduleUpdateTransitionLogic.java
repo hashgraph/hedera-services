@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -51,6 +52,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private Function<CustomFee, FcCustomFee> grpcFeeConverter = FcCustomFee::fromGrpc;
@@ -60,12 +62,14 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 			final TypedTokenStore tokenStore,
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
+			final SigImpactHistorian sigImpactHistorian,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
+		this.sigImpactHistorian = sigImpactHistorian;
 	}
 
 	@Override
@@ -93,6 +97,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		token.setCustomFees(customFees);
 
 		/* --- Persist the updated models --- */
+		sigImpactHistorian.markEntityChanged(targetTokenId.num());
 		tokenStore.commitToken(token);
 	}
 
