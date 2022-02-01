@@ -94,7 +94,7 @@ public class WorldLedgers {
 		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
 		final ByteString alias;
 		if (accountsLedger != null) {
-			if (!accountsLedger.contains(sourceId)) {
+			if (!accountsLedger.exists(sourceId)) {
 				return addressOrAlias;
 			}
 			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
