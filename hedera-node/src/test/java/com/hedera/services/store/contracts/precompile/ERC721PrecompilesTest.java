@@ -167,6 +167,7 @@ public class ERC721PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0" + Integer.toHexString(ABI_ID_NAME)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -181,6 +182,7 @@ public class ERC721PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_SYMBOL)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -196,6 +198,7 @@ public class ERC721PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_TOTAL_SUPPLY_TOKEN)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -212,6 +215,7 @@ public class ERC721PrecompilesTest {
         given(decoder.decodeBalanceOf(pretendArguments)).willReturn(balanceOfOp);
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -228,6 +232,7 @@ public class ERC721PrecompilesTest {
         given(decoder.decodeOwnerOf(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -243,6 +248,7 @@ public class ERC721PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(TRANSFER_FROM);
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -259,6 +265,7 @@ public class ERC721PrecompilesTest {
         given(decoder.decodeTokenUriNFT(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 

@@ -205,6 +205,7 @@ class MintPrecompilesTest {
 		given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -235,6 +236,7 @@ class MintPrecompilesTest {
 		given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -276,6 +278,7 @@ class MintPrecompilesTest {
 		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -306,6 +309,7 @@ class MintPrecompilesTest {
 				.willReturn(1L);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -335,6 +339,7 @@ class MintPrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);

@@ -240,6 +240,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -294,6 +295,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -339,6 +341,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -392,6 +395,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -448,6 +452,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -505,6 +510,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -567,6 +573,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -632,6 +639,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -695,6 +703,7 @@ class TransferPrecompilesTest {
 				.doZeroSum(tokenTransferChanges);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);

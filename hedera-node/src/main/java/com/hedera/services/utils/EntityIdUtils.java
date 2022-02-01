@@ -194,7 +194,15 @@ public final class EntityIdUtils {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
+	public static byte[] asSolidityAddress(final TokenID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	}
+
 	public static Address asTypedSolidityAddress(final AccountID id) {
+		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	}
+
+	public static Address asTypedSolidityAddress(final TokenID id) {
 		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
 	}
 

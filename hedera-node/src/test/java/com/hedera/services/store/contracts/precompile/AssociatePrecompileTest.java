@@ -49,7 +49,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -92,7 +91,6 @@ import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -209,6 +207,7 @@ class AssociatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -258,6 +257,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -297,6 +297,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -341,6 +342,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -385,6 +387,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -429,6 +432,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);

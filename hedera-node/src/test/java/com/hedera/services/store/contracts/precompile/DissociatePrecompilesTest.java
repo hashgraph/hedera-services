@@ -49,8 +49,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -164,8 +162,6 @@ class DissociatePrecompilesTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
-	private TokenDissociateTransactionBody transactionBody;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private FeeObject mockFeeObject;
@@ -212,6 +208,7 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -252,6 +249,7 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -297,6 +295,7 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);

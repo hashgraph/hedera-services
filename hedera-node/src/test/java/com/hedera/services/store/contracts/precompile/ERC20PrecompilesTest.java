@@ -62,31 +62,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.state.expiry.ExpiringCreations.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
-//import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferChangesSenderOnly;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class ERC20PrecompilesTest {
@@ -182,6 +171,7 @@ public class ERC20PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0" + Integer.toHexString(ABI_ID_NAME)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -196,6 +186,7 @@ public class ERC20PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_SYMBOL)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -211,6 +202,7 @@ public class ERC20PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_DECIMALS)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -226,6 +218,7 @@ public class ERC20PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_TOTAL_SUPPLY_TOKEN)));
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 
@@ -242,6 +235,7 @@ public class ERC20PrecompilesTest {
         given(decoder.decodeBalanceOf(pretendArguments)).willReturn(balanceOfOp);
 
         // when:
+        subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments);
         final var result = subject.computeInternal(frame);
 

@@ -50,7 +50,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -207,6 +206,7 @@ class BurnPrecompilesTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -240,6 +240,7 @@ class BurnPrecompilesTest {
 		given(mockRecordBuilder.getReceiptBuilder()).willReturn(receiptBuilder);
 		given(encoder.encodeBurnSuccess(123L)).willReturn(successResult);
 
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -272,6 +273,7 @@ class BurnPrecompilesTest {
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.encodeBurnSuccess(49)).willReturn(burnSuccessResultWith49Supply);
 
+		subject.initializeLedgers(frame);
 		subject.prepareComputation(pretendArguments);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);

@@ -42,6 +42,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -68,7 +69,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -89,6 +89,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 
 import javax.inject.Inject;
@@ -106,6 +107,7 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
@@ -218,6 +220,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
 	private final PrecompilePricingUtils precompilePricingUtils;
+	private WorldLedgers ledgers;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -279,6 +282,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
+
+		initializeLedgers(messageFrame);
 		prepareComputation(input);
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
@@ -291,6 +296,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
 
 		return computeInternal(messageFrame);
+	}
+
+	void initializeLedgers(final MessageFrame messageFrame) {
+		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+		ledgers = updater.wrappedTrackingLedgers();
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -345,11 +355,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							case ABI_ID_DECIMALS -> nestedPrecompile = new DecimalsPrecompile(tokenID);
 							case ABI_ID_TOTAL_SUPPLY_TOKEN -> nestedPrecompile = new TotalSupplyPrecompile(tokenID);
 							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
-							case ABI_ID_TOKEN_TRANSFER -> nestedPrecompile = new ERC20TransferPrecompile(tokenID);
 							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID);
-							case ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
-									new TransferFromPrecompile(tokenID);
 							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
+							case ABI_ID_TOKEN_TRANSFER,
+									ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
+									new ERCTransferPrecompile(tokenID);
 							default -> nestedPrecompile = null;
 						}
 						yield nestedPrecompile;
@@ -385,8 +395,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	void decodeInput(Bytes input) {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
-			this.transactionBody = this.isRedirectProxy ? this.precompile.body(input.slice(24)) :
-					this.precompile.body(input);
+			this.transactionBody = this.precompile.body(input);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
@@ -401,7 +410,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			childRecord = precompile.run(frame, ledgers);
+			childRecord = precompile.run(frame);
 			result = precompile.getSuccessResultFor(childRecord);
 			addContractCallResultToRecord(childRecord, result, Optional.empty());
 
@@ -525,7 +534,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface Precompile {
 		TransactionBody.Builder body(Bytes input);
 
-		ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers);
+		ExpirableTxnRecord.Builder run(MessageFrame frame);
 
 		long getMinimumFeeInTinybars(Timestamp consensusTime);
 
@@ -547,8 +556,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			Objects.requireNonNull(associateOp);
 
@@ -597,8 +605,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			Objects.requireNonNull(dissociateOp);
 
@@ -652,8 +659,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			Objects.requireNonNull(mintOp);
 
@@ -706,8 +712,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		private ResponseCodeEnum impliedValidity;
 		private ImpliedTransfers impliedTransfers;
 		private List<BalanceChange> explicitChanges;
-		private List<TokenTransferWrapper> transferOp;
 		private TransactionBody.Builder syntheticTxn;
+		private SideEffectsTracker sideEffects;
+		protected List<TokenTransferWrapper> transferOp;
+		protected HederaTokenStore hederaTokenStore;
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
@@ -723,6 +731,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			};
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
+
+			this.sideEffects = sideEffectsFactory.get();
+			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 			return syntheticTxn;
 		}
 
@@ -735,8 +752,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
@@ -751,14 +767,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(assessmentStatus == OK, assessmentStatus);
 			var changes = impliedTransfers.getAllBalanceChanges();
 
-			final var sideEffects = sideEffectsFactory.get();
-			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-					ids,
-					validator,
-					sideEffects,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 			hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
 			final var transferLogic = transferLogicFactory.newLogic(
@@ -904,8 +912,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			Objects.requireNonNull(burnOp);
 
@@ -964,8 +971,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
 			Objects.requireNonNull(tokenID);
 
@@ -984,32 +990,39 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected abstract class ERCTransferAbstractPrecompile implements Precompile {
+	protected class ERCTransferPrecompile extends TransferPrecompile {
 		private TokenID tokenID;
+		private TransactionBody.Builder syntheticTxn;
 
-		public ERCTransferAbstractPrecompile(final TokenID tokenID) {
+		public ERCTransferPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			return TransactionBody.newBuilder();
+			boolean isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
+
+			super.transferOp = switch (functionId) {
+				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeTokenTransfer(input, tokenID);
+				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeTokenTransferFrom(input, tokenID, isFungible);
+				default -> throw new InvalidTransactionException(
+						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
+						FAIL_INVALID);
+			};
+			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			super.extrapolateDetailsFromSyntheticTxn();
+			return syntheticTxn;
 		}
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame,
-				final WorldLedgers ledgers
+				final MessageFrame frame
 		) {
-			Objects.requireNonNull(tokenID);
-
-			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-			final var sideEffects = sideEffectsFactory.get();
-
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			final var expirableTxnRecord = super.run(frame);
+			if(SUCCESS_LITERAL.equals(expirableTxnRecord.getReceiptBuilder().getStatus())) {
+				frame.addLog(new Log(EntityIdUtils.asTypedSolidityAddress(tokenID), Bytes.fromHexString(""), new ArrayList<>()));
+			}
+			return expirableTxnRecord;
 		}
 
 		@Override
@@ -1017,7 +1030,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return 0;
 		}
 	}
-
 
 	protected class NamePrecompile extends ERCReadOnlyAbstractPrecompile {
 
@@ -1086,27 +1098,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input) {
 			balance = decoder.decodeBalanceOf(input);
 			return TransactionBody.newBuilder();
-		}
-	}
-
-	protected class ERC20TransferPrecompile extends ERCTransferAbstractPrecompile {
-		private TransferWrapper transferWrapper;
-
-		public ERC20TransferPrecompile(final TokenID tokenID) {
-			super(tokenID);
-		}
-
-		@Override
-		public TransactionBody.Builder body(final Bytes input) {
-			transferWrapper = decoder.decodeTokenTransfer(input);
-			return TransactionBody.newBuilder();
-		}
-	}
-
-	protected class TransferFromPrecompile extends ERCTransferAbstractPrecompile {
-
-		public TransferFromPrecompile(final TokenID tokenID) {
-			super(tokenID);
 		}
 	}
 
