@@ -63,7 +63,7 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 
 	@Override
 	protected Address address(final MessageFrame frame) {
-		return resolveCanonical(super.address(frame), frame);
+		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
 	}
 
 	@Override

@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
@@ -143,10 +144,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
+//						create2FactoryWorksAsExpected(),
 						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 				}
 		);
 	}
@@ -336,6 +337,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	private HapiApiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
 		final var creation2 = "create2Txn";
 		final var initcode = "initcode";
+		final var placeholderCreation = "creation";
 		final var returnerFactory = "returnerFactory";
 
 		final AtomicReference<String> aliasAddr = new AtomicReference<>();
@@ -386,7 +388,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									staticCallAliasAns.get().toString(16),
 									aliasAddr.get(),
 									"Alias should get priority over mirror address");
-						})
+						}),
+						sourcing(() -> contractCall(
+								aliasAddr.get(), CREATE_PLACEHOLDER_ABI
+						)
+								.gas(4_000_000L)
+								.payingWith(GENESIS)
+								.via(placeholderCreation)),
+						getTxnRecord(placeholderCreation).andAllChildRecords().logged()
 				);
 	}
 

@@ -81,7 +81,7 @@ class HederaCallOperationTest {
 	}
 
 	@Test
-	void usesCanonicalAddressFromSuperNominal() {
+	void usesCanonicalAddressFromSuperNominalIfNotPrecompile() {
 		final var nominal = Address.ALTBN128_ADD;
 		final var canonical = Address.BLS12_G1MUL;
 		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
@@ -91,6 +91,17 @@ class HederaCallOperationTest {
 		final var actual = subject.address(evmMsgFrame);
 
 		assertEquals(actual, canonical);
+	}
+
+	@Test
+	void usesSuperNominalIfPrecompile() {
+		final var nominal = Address.ALTBN128_ADD;
+		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
+		given(precompiledContractMap.containsKey(nominal.toShortHexString())).willReturn(true);
+
+		final var actual = subject.address(evmMsgFrame);
+
+		assertEquals(actual, nominal);
 	}
 
 	@Test

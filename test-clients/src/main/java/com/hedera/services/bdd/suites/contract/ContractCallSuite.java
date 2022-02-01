@@ -129,7 +129,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -158,7 +158,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				imapUserExercise(),
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated()
-		);
+		});
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {
