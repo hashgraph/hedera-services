@@ -50,7 +50,6 @@ import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -188,13 +187,13 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			if (approvedForAll.getValue() & token.isFungibleCommon()) {
-				return CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
-			}
-
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
+
+//			if (approvedForAll.getValue() & token.isFungibleCommon()) {
+//				return CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
+//			} ---> No more needed
 		}
 		return OK;
 	}
