@@ -108,7 +108,7 @@ class HederaSLoadOperationTest {
 	void executeHaltsForInsufficientGas() {
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
 
-		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(20L)),
+		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(30L)),
 				Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
 		final var haltResult = subject.execute(messageFrame, evm);
