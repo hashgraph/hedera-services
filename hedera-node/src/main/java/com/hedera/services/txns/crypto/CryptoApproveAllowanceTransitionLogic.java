@@ -60,6 +60,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final AllowanceChecks allowanceChecks;
 
+	// Should these be dynamic properties?
 	public static final int ALLOWANCE_LIMIT_PER_TRANSACTION = 20;
 	public static final int TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT = 100;
 
@@ -140,17 +141,17 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			if (cryptoAllowancesMap.containsKey(spender.asEntityNum())) {
-				// No-Op need to submit adjustAllowance to adjust any allowances
-				return;
-			}
 			if (amount == 0) {
 				cryptoAllowancesMap.remove(spender.asEntityNum());
-				return;
+				continue;
+			}
+			if (cryptoAllowancesMap.containsKey(spender.asEntityNum())) {
+				// No-Op need to submit adjustAllowance to adjust any allowances
+				continue;
 			}
 			cryptoAllowancesMap.put(spender.asEntityNum(), amount);
-			ownerAccount.setCryptoAllowances(cryptoAllowancesMap);
 		}
+		ownerAccount.setCryptoAllowances(cryptoAllowancesMap);
 	}
 
 	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
@@ -170,12 +171,11 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var value = FcTokenAllowance.from(approvedForAll.getValue(), serialNums);
 			if (nftAllowancesMap.containsKey(key)) {
 				// No-Op need to submit adjustAllowance to adjust any allowances
-				return;
+				continue;
 			}
 			nftAllowancesMap.put(key, value);
-			ownerAccount.setNftAllowances(nftAllowancesMap);
 		}
-
+		ownerAccount.setNftAllowances(nftAllowancesMap);
 	}
 
 	private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, final Account ownerAccount) {
@@ -191,18 +191,17 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (tokenAllowancesMap.containsKey(key)) {
-				// No-Op need to submit adjustAllowance to adjust any allowances
-				return;
-			}
 			if (amount == 0) {
 				tokenAllowancesMap.remove(key);
-				return;
+				continue;
+			}
+			if (tokenAllowancesMap.containsKey(key)) {
+				// No-Op need to submit adjustAllowance to adjust any allowances
+				continue;
 			}
 			tokenAllowancesMap.put(key, amount);
-			ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
 		}
-
+		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
 	}
 
 	private boolean emptyAllowances(final CryptoApproveAllowanceTransactionBody op) {

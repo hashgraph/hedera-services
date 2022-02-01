@@ -55,9 +55,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -138,11 +136,6 @@ public class AllowanceChecksTest {
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
 		given(nftsLedger.get(token1Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(nftsLedger.get(tokenNft2, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
-
-		given(tokenRelsLedger.get(asTokenRel(ownerId, token1), IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(ownerId, token2), IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(spender1, token2), IS_FROZEN)).willReturn(false);
 	}
 
 	@Test
@@ -158,28 +151,6 @@ public class AllowanceChecksTest {
 		assertTrue(subject.hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(subject.hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(subject.hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
-	}
-
-	@Test
-	void failsWithFrozenOwnerAccounts() {
-		getValidTxnCtx();
-
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenRelsLedger.get(asTokenRel(owner.getId().asGrpcAccount(), token1), IS_FROZEN))
-				.willReturn(true);
-
-		assertTrue(subject.areAccountsFrozen(ownerId, spender1, token1));
-	}
-
-	@Test
-	void failsWithFrozenSpenderAccounts() {
-		getValidTxnCtx();
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenRelsLedger.get(asTokenRel(owner.getId().asGrpcAccount(), token1), IS_FROZEN))
-				.willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(true);
-
-		assertTrue(subject.areAccountsFrozen(ownerId, spender1, token1));
 	}
 
 	@Test
@@ -292,8 +263,6 @@ public class AllowanceChecksTest {
 		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
-		given(tokenRelsLedger.get(asTokenRel(ownerId, token2), IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(spender1, token2), IS_FROZEN)).willReturn(false);
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 
@@ -365,8 +334,5 @@ public class AllowanceChecksTest {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
-
-		given(tokenRelsLedger.get(asTokenRel(ownerId, token1), IS_FROZEN)).willReturn(false);
-		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(false);
 	}
 }

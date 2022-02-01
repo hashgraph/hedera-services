@@ -45,10 +45,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.inject.Inject;
 import java.util.List;
 
-import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -205,18 +202,7 @@ public class AllowanceChecks {
 		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
-		if (areAccountsFrozen(ownerAccount.getId().asGrpcAccount(), spenderAccountId, tokenId)) {
-			return ACCOUNT_FROZEN_FOR_TOKEN;
-		}
 		return OK;
-	}
-
-	boolean areAccountsFrozen(final AccountID ownerAccountId, final AccountID spender, final TokenID tokenId) {
-		final var ownerRelation = asTokenRel(ownerAccountId, tokenId);
-		final var spenderRelation = asTokenRel(spender, tokenId);
-
-		return ((boolean) tokenRelsLedger.get(ownerRelation, IS_FROZEN)) ||
-				((boolean) tokenRelsLedger.get(spenderRelation, IS_FROZEN));
 	}
 
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount, final Token token) {
