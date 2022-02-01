@@ -77,6 +77,8 @@ import static com.hedera.services.grpc.controllers.ContractController.GET_SOLIDI
 import static com.hedera.services.grpc.controllers.ContractController.LOCALCALL_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.UPDATE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.ADD_LIVE_HASH_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_ADJUST_ALLOWANCE;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_APPROVE_ALLOWANCES;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_CREATE_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_DELETE_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_TRANSFER_METRIC;
@@ -118,6 +120,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
@@ -293,6 +297,8 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(CryptoDelete, CRYPTO_DELETE_METRIC);
 		BASE_STAT_NAMES.put(CryptoAddLiveHash, ADD_LIVE_HASH_METRIC);
 		BASE_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
+		BASE_STAT_NAMES.put(CryptoApproveAllowance, CRYPTO_APPROVE_ALLOWANCES);
+		BASE_STAT_NAMES.put(CryptoAdjustAllowance, CRYPTO_ADJUST_ALLOWANCE);
 		BASE_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
 		BASE_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
 		BASE_STAT_NAMES.put(FileDelete, DELETE_FILE_METRIC);
