@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -120,8 +121,10 @@ public class CryptoApproveTransitionLogicTest {
 
 	@Test
 	void checksIfAllowancesExceedLimit() {
-		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
-		addAllowances();
+		Account owner = mock(Account.class);
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(owner);
+		given(owner.getTotalAllowances()).willReturn(101);
+
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);

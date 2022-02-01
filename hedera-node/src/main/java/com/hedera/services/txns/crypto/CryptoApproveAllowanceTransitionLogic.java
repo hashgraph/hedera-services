@@ -86,14 +86,14 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-			if (exceedsLimit(op, ownerAccount)) {
-				txnCtx.setStatus(MAX_ALLOWANCES_EXCEEDED);
-				return;
-			}
-
 			applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);
 			applyFungibleTokenAllowances(op.getTokenAllowancesList(), ownerAccount);
 			applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
+
+			if (exceedsAccountLimit(ownerAccount)) {
+				txnCtx.setStatus(MAX_ALLOWANCES_EXCEEDED);
+				return;
+			}
 
 			accountStore.commitAccount(ownerAccount);
 			sigImpactHistorian.markEntityChanged(ownerId.num());
@@ -124,7 +124,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
 		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
-		if (exceedsLimitCount(op)) {
+		if (exceedsTxnLimit(op)) {
 			return MAX_ALLOWANCES_EXCEEDED;
 		}
 		if (emptyAllowances(op)) {
@@ -133,6 +133,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
+	/**
+	 * Applies all changes needed for Crypto allowances from the transaction
+	 *
+	 * @param cryptoAllowances
+	 * @param ownerAccount
+	 */
 	private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account ownerAccount) {
 		if (cryptoAllowances.isEmpty()) {
 			return;
@@ -154,6 +160,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		ownerAccount.setCryptoAllowances(cryptoAllowancesMap);
 	}
 
+	/**
+	 * Applies all changes needed for NFT allowances from the transaction
+	 *
+	 * @param nftAllowances
+	 * @param ownerAccount
+	 */
 	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
@@ -178,6 +190,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		ownerAccount.setNftAllowances(nftAllowancesMap);
 	}
 
+	/**
+	 * Applies all changes needed for fungible token allowances from the transaction
+	 *
+	 * @param tokenAllowances
+	 * @param ownerAccount
+	 */
 	private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, final Account ownerAccount) {
 		if (tokenAllowances.isEmpty()) {
 			return;
@@ -204,22 +222,38 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
 	}
 
+	/**
+	 * Checks if the allowance lists are empty in the transaction
+	 *
+	 * @param op
+	 * @return
+	 */
 	private boolean emptyAllowances(final CryptoApproveAllowanceTransactionBody op) {
 		final var totalAllowances =
 				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
 		return totalAllowances == 0;
 	}
 
-	private boolean exceedsLimitCount(final CryptoApproveAllowanceTransactionBody op) {
+	/**
+	 * Checks if the total allowances in the transaction exceeds the allowed limit
+	 *
+	 * @param op
+	 * @return
+	 */
+	private boolean exceedsTxnLimit(final CryptoApproveAllowanceTransactionBody op) {
 		final var totalAllowances =
 				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
 		return totalAllowances > ALLOWANCE_LIMIT_PER_TRANSACTION;
 	}
 
-	private boolean exceedsLimit(final CryptoApproveAllowanceTransactionBody op, final Account ownerAccount) {
-		return (ownerAccount.getTotalAllowances() +
-				op.getCryptoAllowancesList().size() +
-				op.getTokenAllowancesList().size() +
-				op.getNftAllowancesList().size()) > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
+	/**
+	 * Checks if the total allowances of an account will exceed the limit after applying this transaction
+	 *
+	 * @param ownerAccount
+	 * @return
+	 */
+	private boolean exceedsAccountLimit(final Account ownerAccount) {
+		return ownerAccount.getTotalAllowances() > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 	}
+
 }
