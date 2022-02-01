@@ -70,7 +70,7 @@ class RecordStreamFileParsingTest {
 
 	@Test
 	void parseSigFileV5() throws Exception {
-		final String streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2021-01-12T19_44_30.442332000Z.rcd";
+		final var streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2022-02-01T20_08_44.147325000Z.rcd";
 		final File streamFile = new File(streamFilePath);
 		final File sigFile = new File(streamFilePath + "_sig");
 		Hash expectedEntireHash = LinkedObjectStreamUtilities.computeEntireHash(streamFile);
