@@ -56,7 +56,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 		final String spender = "spender";
 		final String token = "token";
 		final String nft = "nft";
-		return defaultHapiSpec("MaxAutoAssociationSpec")
+		return defaultHapiSpec("happyPathWorks")
 				.given(
 						newKeyNamed("supplyKey"),
 						cryptoCreate(owner)
