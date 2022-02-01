@@ -35,6 +35,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -80,12 +82,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExpectedCustomThrottlesTest {
 	@Test
 	void releaseTwentyHasExpected() {
-		assertEquals(52, OPS_FOR_RELEASE_TWENTY.size());
+		assertEquals(54, OPS_FOR_RELEASE_TWENTY.size());
 
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoCreate), "Missing CryptoCreate!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoTransfer), "Missing CryptoTransfer!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoUpdate), "Missing CryptoUpdate!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoDelete), "Missing CryptoDelete!");
+		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoApproveAllowance), "Missing CryptoApproveAllowance!");
+		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(CryptoAdjustAllowance), "Missing CryptoAdjustAllowance!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(FileCreate), "Missing FileCreate!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(FileUpdate), "Missing FileUpdate!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY.contains(FileDelete), "Missing FileDelete!");

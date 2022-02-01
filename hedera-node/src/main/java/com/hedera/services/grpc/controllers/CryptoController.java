@@ -65,8 +65,8 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String CRYPTO_UPDATE_METRIC = "updateAccount";
 	public static final String ADD_LIVE_HASH_METRIC = "addLiveHash";
 	public static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
-	public static final String CRYPTO_APPROVE_ALLOWANCES = "cryptoApproveAllowances";
-	public static final String CRYPTO_ADJUST_ALLOWANCE = "cryptoAdjustAllowance";
+	public static final String CRYPTO_APPROVE_ALLOWANCES = "approveAllowances";
+	public static final String CRYPTO_ADJUST_ALLOWANCE = "adjustAllowance";
 
 	private final MetaAnswers metaAnswers;
 	private final CryptoAnswers cryptoAnswers;
