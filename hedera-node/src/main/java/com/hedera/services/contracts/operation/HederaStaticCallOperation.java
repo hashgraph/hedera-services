@@ -23,7 +23,6 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -34,6 +33,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.BiPredicate;
+
+import static com.hedera.services.contracts.operation.HederaCallOperation.resolveCanonical;
 
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
@@ -62,9 +63,7 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 
 	@Override
 	protected Address address(final MessageFrame frame) {
-		final var nominal = super.address(frame);
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		return updater.canonicalAddress(nominal);
+		return resolveCanonical(super.address(frame), frame);
 	}
 
 	@Override

@@ -67,9 +67,7 @@ public class HederaCallOperation extends CallOperation {
 
 	@Override
 	protected Address address(final MessageFrame frame) {
-		final var nominal = super.address(frame);
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		return updater.canonicalAddress(nominal);
+		return resolveCanonical(super.address(frame), frame);
 	}
 
 	@Override
@@ -82,5 +80,10 @@ public class HederaCallOperation extends CallOperation {
 				() -> super.execute(frame, evm),
 				addressValidator,
 				precompiledContractMap);
+	}
+
+	static Address resolveCanonical(final Address nominal, final MessageFrame frame) {
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		return updater.canonicalAddress(nominal);
 	}
 }
