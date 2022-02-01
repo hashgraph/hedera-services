@@ -61,9 +61,13 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -100,8 +104,8 @@ public class AllowanceChecksTest {
 			10L).setTokenId(token1).build();
 	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
-	final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
-	final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
+	final NftId token2Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
+	final NftId token2Nft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
 
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
@@ -111,14 +115,14 @@ public class AllowanceChecksTest {
 
 	@BeforeEach
 	void setUp() {
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
-		nftAllowances.add(nftAllowance1);
-
 		token1Model.setMaxSupply(5000L);
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
 		token2Model.setMaxSupply(5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		cryptoAllowances.add(cryptoAllowance1);
+		tokenAllowances.add(tokenAllowance1);
+		nftAllowances.add(nftAllowance1);
 
 		subject = new AllowanceChecks(tokenRelsLedger, nftsLedger, tokenStore);
 	}
@@ -159,12 +163,12 @@ public class AllowanceChecksTest {
 	@Test
 	void failsWithFrozenOwnerAccounts() {
 		getValidTxnCtx();
-		
+
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenRelsLedger.get(asTokenRel(owner.getId().asGrpcAccount(), token1), IS_FROZEN))
 				.willReturn(true);
 
-		assertTrue(subject.frozenAccounts(ownerId, spender1, token1));
+		assertTrue(subject.areAccountsFrozen(ownerId, spender1, token1));
 	}
 
 	@Test
@@ -175,7 +179,7 @@ public class AllowanceChecksTest {
 				.willReturn(false);
 		given(tokenRelsLedger.get(asTokenRel(spender1, token1), IS_FROZEN)).willReturn(true);
 
-		assertTrue(subject.frozenAccounts(ownerId, spender1, token1));
+		assertTrue(subject.areAccountsFrozen(ownerId, spender1, token1));
 	}
 
 	@Test
@@ -204,6 +208,8 @@ public class AllowanceChecksTest {
 				20L).setTokenId(token1).build();
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
 				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L)).build();
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 
 		cryptoAllowances.add(badCryptoAllowance);
 		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateCryptoAllowances(cryptoAllowances, owner));
@@ -271,6 +277,68 @@ public class AllowanceChecksTest {
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
 	}
 
+	@Test
+	void happyPath() {
+		setUpForTest();
+		getValidTxnCtx();
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.exists(token2Nft2)).willReturn(true);
+		assertEquals(OK, subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+	}
+
+	@Test
+	void fungibleInNFTAllowances() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenRelsLedger.get(asTokenRel(ownerId, token2), IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(asTokenRel(spender1, token2), IS_FROZEN)).willReturn(false);
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.exists(token2Nft2)).willReturn(true);
+
+		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
+		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
+		given(nftsLedger.get(token1Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(nftsLedger.get(tokenNft2, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
+
+		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setApprovedForAll(BoolValue.of(false)).build();
+
+		nftAllowances.add(badNftAllowance);
+		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, owner));
+	}
+
+	@Test
+	void validateSerialsExistence() {
+		final var serials = List.of(1L, 10L);
+		given(nftsLedger.exists(token2Nft1)).willReturn(false);
+
+		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
+	}
+
+	@Test
+	void validateSerialsOwner() {
+		final var serials = List.of(1L, 10L);
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(spender1));
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+
+		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
+	}
+
+	@Test
+	void validateRepeatedSerials() {
+		final var serials = List.of(1L, 10L, 1L);
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+
+		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
+	}
 
 	private void getValidTxnCtx() {
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()

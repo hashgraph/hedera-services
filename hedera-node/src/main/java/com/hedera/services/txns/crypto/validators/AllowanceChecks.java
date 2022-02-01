@@ -177,23 +177,19 @@ public class AllowanceChecks {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
 
+			if (token.isFungibleCommon()) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
+
 			var validity = validateBasicTokenAllowances(ownerAccount, spenderAccountId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
 
-			validity = validateSerials(serialNums, ownerAccount, token);
+			validity = validateSerialNums(serialNums, ownerAccount, token);
 			if (validity != OK) {
 				return validity;
 			}
-
-			if (token.isFungibleCommon()) {
-				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-			}
-
-//			if (approvedForAll.getValue() & token.isFungibleCommon()) {
-//				return CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
-//			} ---> No more needed
 		}
 		return OK;
 	}
@@ -209,13 +205,13 @@ public class AllowanceChecks {
 		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
-		if (frozenAccounts(ownerAccount.getId().asGrpcAccount(), spenderAccountId, tokenId)) {
+		if (areAccountsFrozen(ownerAccount.getId().asGrpcAccount(), spenderAccountId, tokenId)) {
 			return ACCOUNT_FROZEN_FOR_TOKEN;
 		}
 		return OK;
 	}
 
-	boolean frozenAccounts(final AccountID ownerAccountId, final AccountID spender, final TokenID tokenId) {
+	boolean areAccountsFrozen(final AccountID ownerAccountId, final AccountID spender, final TokenID tokenId) {
 		final var ownerRelation = asTokenRel(ownerAccountId, tokenId);
 		final var spenderRelation = asTokenRel(spender, tokenId);
 
@@ -223,10 +219,10 @@ public class AllowanceChecks {
 				((boolean) tokenRelsLedger.get(spenderRelation, IS_FROZEN));
 	}
 
-	ResponseCodeEnum validateSerials(final List<Long> serialNums, final Account ownerAccount, final Token token) {
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount, final Token token) {
 		for (var serial : serialNums) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
-			if (serial <= 0 || nftsLedger.exists(nftId)) {
+			if (serial <= 0 || !nftsLedger.exists(nftId)) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 

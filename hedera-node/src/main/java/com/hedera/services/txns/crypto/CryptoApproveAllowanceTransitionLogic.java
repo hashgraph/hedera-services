@@ -85,8 +85,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-
-			if (willExceedLimit(op, ownerAccount)) {
+			if (exceedsLimit(op, ownerAccount)) {
 				txnCtx.setStatus(MAX_ALLOWANCES_EXCEEDED);
 				return;
 			}
@@ -96,21 +95,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
 
 			accountStore.commitAccount(ownerAccount);
-
 			sigImpactHistorian.markEntityChanged(ownerId.num());
 
 			txnCtx.setStatus(SUCCESS);
 		} catch (InsufficientFundsException ife) {
 			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
 		}
-	}
-
-	private boolean willExceedLimit(final CryptoApproveAllowanceTransactionBody op,
-			final Account ownerAccount) {
-		return ownerAccount.getTotalAllowances() +
-				op.getCryptoAllowancesList().size() +
-				op.getTokenAllowancesList().size() +
-				op.getNftAllowancesList().size() > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 	}
 
 	@Override
@@ -127,8 +117,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		final var allowanceTxn = accessor.getTxn();
 		final AccountID owner = allowanceTxn.getTransactionID().getAccountID();
-		final Id ownerId = Id.fromGrpcAccount(owner);
-		final var ownerAccount = accountStore.loadAccount(ownerId);
+		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
 		return allowanceChecks.allowancesValidation(allowanceTxn, ownerAccount);
 	}
 
@@ -143,8 +132,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances,
-			final Account ownerAccount) {
+	private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account ownerAccount) {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
@@ -160,16 +148,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				cryptoAllowancesMap.remove(spender.asEntityNum());
 				return;
 			}
-			if (ownerAccount.getTotalAllowances() > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT) {
-				txnCtx.setStatus(MAX_ALLOWANCES_EXCEEDED);
-			}
 			cryptoAllowancesMap.put(spender.asEntityNum(), amount);
 			ownerAccount.setCryptoAllowances(cryptoAllowancesMap);
 		}
 	}
 
-	private void applyNftAllowances(final List<NftAllowance> nftAllowances,
-			final Account ownerAccount) {
+	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
@@ -194,9 +178,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	}
 
-	private void applyFungibleTokenAllowances(
-			final List<TokenAllowance> tokenAllowances,
-			final Account ownerAccount) {
+	private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, final Account ownerAccount) {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
@@ -209,7 +191,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (tokenAllowancesMap.containsKey(spender.asEntityNum())) {
+			if (tokenAllowancesMap.containsKey(key)) {
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				return;
 			}
@@ -233,5 +215,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		final var totalAllowances =
 				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
 		return totalAllowances > ALLOWANCE_LIMIT_PER_TRANSACTION;
+	}
+
+	private boolean exceedsLimit(final CryptoApproveAllowanceTransactionBody op, final Account ownerAccount) {
+		return (ownerAccount.getTotalAllowances() +
+				op.getCryptoAllowancesList().size() +
+				op.getTokenAllowancesList().size() +
+				op.getNftAllowancesList().size()) > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 	}
 }
