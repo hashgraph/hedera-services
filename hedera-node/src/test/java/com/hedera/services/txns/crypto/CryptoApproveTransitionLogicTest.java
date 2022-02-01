@@ -103,7 +103,7 @@ public class CryptoApproveTransitionLogicTest {
 	@Test
 	void happyPathAddsAllowances() {
 		givenValidTxnCtx();
-		var ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
+
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
@@ -120,13 +120,12 @@ public class CryptoApproveTransitionLogicTest {
 
 	@Test
 	void checksIfAllowancesExceedLimit() {
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		addAllowances();
 		givenValidTxnCtx();
 
-		var ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
 		subject.doStateTransition();
 
@@ -135,7 +134,7 @@ public class CryptoApproveTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
 
 		verify(accountStore, never()).commitAccount(ownerAcccount);
-		verify(txnCtx).setStatus(ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED);
+		verify(txnCtx).setStatus(MAX_ALLOWANCES_EXCEEDED);
 	}
 
 	@Test
@@ -168,9 +167,9 @@ public class CryptoApproveTransitionLogicTest {
 	@Test
 	void removesAllowancesWhenAmountIsZero() {
 		givenTxnCtxWithZeroAmount();
-		var ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
 		subject.doStateTransition();
@@ -261,6 +260,10 @@ public class CryptoApproveTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
+
+		ownerAcccount.setNftAllowances(new HashMap<>());
+		ownerAcccount.setCryptoAllowances(new HashMap<>());
+		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
 
 	private void givenValidTxnCtx() {
@@ -281,6 +284,10 @@ public class CryptoApproveTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
+
+		ownerAcccount.setNftAllowances(new HashMap<>());
+		ownerAcccount.setCryptoAllowances(new HashMap<>());
+		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
 
 	private TransactionID ourTxnId() {
@@ -307,4 +314,5 @@ public class CryptoApproveTransitionLogicTest {
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();
+	private final Account ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
 }
