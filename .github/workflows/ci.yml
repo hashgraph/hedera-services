@@ -107,11 +107,11 @@ jobs:
         with:
           name: build
 
-      - name: Run E2E Specs (Autorenew, Compose, Consensus, Contract, Contract op codes, Contract records, Crypto, Fees) # run selected e2e specs, after sleeping for 45s
+      - name: Run E2E Specs # run selected e2e specs, after sleeping for 45s
         run: |
           cd test-clients
           sleep 45s
-          mvn test -Dargs="-s -a" -DskipTests -Pe2e-tests
+          mvn test -Dargs="-s contract" -DskipTests -Pe2e-tests
 
 
 #  e2e-second-subset:

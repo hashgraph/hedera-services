@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suiterunner;
  */
 
 import com.hedera.services.bdd.suiterunner.annotations.ExcludeFromRSR;
+import com.hedera.services.bdd.suiterunner.annotations.StressTest;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -87,6 +88,7 @@ public class ReflectiveSuiteRunnerService {
 			final var instances = suites
 					.stream()
 					.filter(suite -> !suite.isAnnotationPresent(ExcludeFromRSR.class))
+					.filter(suite -> !suite.isAnnotationPresent(StressTest.class))
 					.filter(suite -> isInRequestedScope(path, suite))
 					.map(suite -> {
 						try {
