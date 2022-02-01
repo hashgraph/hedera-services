@@ -22,9 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -32,8 +30,6 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
@@ -55,18 +51,8 @@ public class HederaStackedWorldStateUpdater
 		this.worldState = worldState;
 	}
 
-	public Address canonicalCreate2Address(final Address addressOrAlias) {
-		final var curAliases = aliases();
-		if (curAliases.isInUse(addressOrAlias)) {
-			return addressOrAlias;
-		}
-		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
-		final var sourceAccountAlias = (ByteString) trackingAccounts().get(sourceId, ALIAS);
-		if (!sourceAccountAlias.isEmpty()) {
-			return Address.wrap(Bytes.wrap(sourceAccountAlias.toByteArray()));
-		} else {
-			return addressOrAlias;
-		}
+	public Address canonicalAddress(final Address addressOrAlias) {
+		return trackingLedgers().canonicalAddress(addressOrAlias);
 	}
 
 	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {

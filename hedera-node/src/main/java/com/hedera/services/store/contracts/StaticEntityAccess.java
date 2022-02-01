@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -137,8 +138,13 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public ByteString alias(final AccountID id) {
+		return accounts.get(fromAccountId(id)).getAlias();
+	}
+
+	@Override
 	public WorldLedgers worldLedgers() {
-		return WorldLedgers.unusableLedgersWith(aliases);
+		return WorldLedgers.staticLedgersWith(aliases, this);
 	}
 
 	@Override

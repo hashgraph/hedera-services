@@ -109,6 +109,7 @@ public class ContractResources {
 	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
 	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
+	public static final String ADDRESS_VAL_RETURNER_PATH = bytecodePath("AddressValueRet");
 
 	public static final String CREATE2_FACTORY_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
 			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\",\"type\":" +
@@ -136,6 +137,16 @@ public class ContractResources {
 			"\"name\":\"creator_address\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
 			"\"type\":\"bytes32\"}],\"name\":\"callCreator\",\"outputs\":[],\"stat    eMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+	public static final String ADDRESS_VAL_CREATE_RETURNER_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createReturner\",\"outputs\":[],\"stateMutabi" +
+			"lity\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String ADDRESS_VAL_CALL_RETURNER_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"returner_address\",\"type\":\"address\"}],\"name\":\"callReturner\"," +
+			"\"outputs\":[{\"internalType\":\"uint160\",\"name\":\"\",\"type\":\"uint160\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String RETURN_THIS_ABI = "{\"inputs\":[],\"name\":\"returnThis\"," +
+			"\"outputs\":[{\"internalType\":\"uint160\",\"name\":\"\",\"type\":\"uint160\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static final String PROPAGATE_NESTED_CREATIONS_ABI = "{\"inputs\":[],\"name\":\"propagate\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

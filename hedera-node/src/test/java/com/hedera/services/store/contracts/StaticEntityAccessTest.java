@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
@@ -50,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -89,6 +91,8 @@ class StaticEntityAccessTest {
 	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
 	private final ContractValue contractVal = new ContractValue(BigInteger.ONE);
 	private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
+	private static final ByteString pretendAlias =
+			ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 
 	private final long someExpiry = 1_234_567L;
 	private final MerkleAccount someNonContractAccount = new HederaAccountCustomizer()
@@ -103,6 +107,7 @@ class StaticEntityAccessTest {
 			.customizing(new MerkleAccount());
 	private final MerkleAccount someContractAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
+			.alias(pretendAlias)
 			.key(key)
 			.proxy(EntityId.MISSING_ENTITY_ID)
 			.isDeleted(false)
@@ -128,6 +133,12 @@ class StaticEntityAccessTest {
 		assertNull(ledgers.tokenRels());
 		assertNull(ledgers.tokens());
 		assertNull(ledgers.nfts());
+	}
+
+	@Test
+	void canGetAlias() {
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
+		assertEquals(pretendAlias, subject.alias(id));
 	}
 
 	@Test

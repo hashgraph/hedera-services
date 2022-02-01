@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -42,15 +43,17 @@ import java.util.function.BiPredicate;
  * the account does not exist or it is deleted.
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
-
 	private final SoliditySigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
-	public HederaStaticCallOperation(GasCalculator gasCalculator,
-									 SoliditySigsVerifier sigsVerifier,
-									 BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
+	public HederaStaticCallOperation(
+			final GasCalculator gasCalculator,
+			final SoliditySigsVerifier sigsVerifier,
+			final BiPredicate<Address, MessageFrame> addressValidator,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
@@ -58,7 +61,14 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 	}
 
 	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
+	protected Address address(final MessageFrame frame) {
+		final var nominal = super.address(frame);
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		return updater.canonicalAddress(nominal);
+	}
+
+	@Override
+	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
 				frame,

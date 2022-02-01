@@ -105,7 +105,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(
 				sender,
-				receiver.getId().asEvmAddress(),
+				receiver.canonicalAddress(),
 				op.getGas(),
 				op.getAmount(),
 				callData,

@@ -84,7 +84,7 @@ public class CallLocalExecutor {
 			/* --- Do the business logic --- */
 			final var result = evmTxProcessor.execute(
 					sender,
-					receiver.getId().asEvmAddress(),
+					receiver.canonicalAddress(),
 					op.getGas(),
 					0,
 					callData,

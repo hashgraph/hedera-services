@@ -90,11 +90,10 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void aliasIsCanonicalCreate2SourceAddress() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.isInUse(sponsor)).willReturn(true);
+	void usesCanonicalAddressFromTrackingLedgers() {
+		given(trackingLedgers.canonicalAddress(sponsor)).willReturn(alias);
 
-		assertSame(sponsor, subject.canonicalCreate2Address(sponsor));
+		assertSame(alias, subject.canonicalAddress(sponsor));
 	}
 
 	@Test
@@ -104,7 +103,7 @@ class HederaStackedWorldStateUpdaterTest {
 		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
 
-		assertSame(sponsor, subject.canonicalCreate2Address(sponsor));
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
 	}
 
 	@Test
@@ -114,7 +113,7 @@ class HederaStackedWorldStateUpdaterTest {
 		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
 
-		assertEquals(alias, subject.canonicalCreate2Address(sponsor));
+		assertEquals(alias, subject.canonicalAddress(sponsor));
 	}
 
 	@Test

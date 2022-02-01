@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -75,6 +76,8 @@ public interface EntityAccess {
 	boolean isDetached(AccountID id);
 
 	boolean isExtant(AccountID id);
+
+	ByteString alias(AccountID id);
 
 	/* --- Storage access --- */
 	void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);

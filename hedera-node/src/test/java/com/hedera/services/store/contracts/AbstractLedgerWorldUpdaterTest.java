@@ -393,7 +393,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
-		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.unusableLedgersWith(aliases));
+		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null));
 
 		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}

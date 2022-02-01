@@ -45,10 +45,14 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_RETURNER_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
@@ -140,7 +144,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
 						create2FactoryWorksAsExpected(),
-						create2InputAddressIsStableWhetherMirrorOrAliasIsUsed(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 				}
 		);
 	}
@@ -261,7 +267,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec create2InputAddressIsStableWhetherMirrorOrAliasIsUsed() {
+	private HapiApiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
 		final var creation2 = "create2Txn";
 		final var innerCreation2 = "innerCreate2Txn";
 		final var delegateCreation2 = "delegateCreate2Txn";
@@ -277,7 +283,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
 
-		return defaultHapiSpec("Create2FactoryWorksAsExpected")
+		return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
 				.given(
 						overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode),
@@ -327,37 +333,136 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiSpecOperation captureOneChildCreate2MetaFor(
-			final String desc,
-			final String creation2,
-			final AtomicReference<String> mirrorAddr,
-			final AtomicReference<String> create2Addr
-	) {
-		return withOpContext((spec, opLog) -> {
-			final var lookup = getTxnRecord(creation2).andAllChildRecords();
-			allRunFor(spec, lookup);
-			final var response = lookup.getResponse().getTransactionGetRecord();
-			assertEquals(1, response.getChildTransactionRecordsCount());
-			final var create2Record = response.getChildTransactionRecords(0);
-			final var create2Address =
-					create2Record.getContractCreateResult().getEvmAddress().getValue();
-			create2Addr.set(CommonUtils.hex(create2Address.toByteArray()));
-			final var createdId = create2Record.getReceipt().getContractID();
-			mirrorAddr.set(CommonUtils.hex(asSolidityAddress(createdId)));
-			opLog.info("{} is @ {} (mirror {})",
-					desc,
-					create2Addr.get(),
-					mirrorAddr.get());
-		});
+	private HapiApiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var returnerFactory = "returnerFactory";
+
+		final AtomicReference<String> aliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mirrorAddr = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("PriorityAddressIsCreate2ForStaticHapiCalls")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(ADDRESS_VAL_RETURNER_PATH)),
+						contractCreate(returnerFactory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(returnerFactory, ADDRESS_VAL_CREATE_RETURNER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Returner", creation2, mirrorAddr, aliasAddr)
+				).when(
+						sourcing(() -> contractCallLocal(
+								mirrorAddr.get(), RETURN_THIS_ABI
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with mirror address", results);
+									staticCallMirrorAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCallLocal(
+								aliasAddr.get(), RETURN_THIS_ABI
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with alias address", results);
+									staticCallAliasAns.set((BigInteger) results[0]);
+								}))
+				).then(
+						withOpContext((spec, opLog) -> {
+							assertEquals(
+									staticCallAliasAns.get(),
+									staticCallMirrorAns.get(),
+									"Static call with mirror address should be same as call with alias");
+							assertEquals(
+									staticCallAliasAns.get().toString(16),
+									aliasAddr.get(),
+									"Alias should get priority over mirror address");
+						})
+				);
 	}
 
-	private static TokenID asToken(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return TokenID.newBuilder()
-				.setShardNum(nativeParts[0])
-				.setRealmNum(nativeParts[1])
-				.setTokenNum(nativeParts[2])
-				.build();
+	private HapiApiSpec priorityAddressIsCreate2ForInternalMessages() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var returnerFactory = "returnerFactory";
+		final var aliasCall = "aliasCall";
+		final var mirrorCall = "mirrorCall";
+
+		final AtomicReference<String> aliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mirrorAddr = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("PriorityAddressIsCreate2ForInternalMessages")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(ADDRESS_VAL_RETURNER_PATH)),
+						contractCreate(returnerFactory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(returnerFactory, ADDRESS_VAL_CREATE_RETURNER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Returner", creation2, mirrorAddr, aliasAddr)
+				).when(
+						sourcing(() -> contractCallLocal(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, mirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with mirror address", results);
+									staticCallMirrorAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCallLocal(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, aliasAddr.get()
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with alias address", results);
+									staticCallAliasAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCall(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, aliasAddr.get()
+						)
+								.payingWith(GENESIS)
+								.via(aliasCall)),
+						sourcing(() -> contractCall(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, mirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.via(mirrorCall))
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var aliasLookup = getTxnRecord(aliasCall);
+							final var mirrorLookup = getTxnRecord(aliasCall);
+							allRunFor(spec, aliasLookup, mirrorLookup);
+							final var aliasResult =
+									aliasLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							final var mirrorResult =
+									mirrorLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							assertEquals(
+									aliasResult, mirrorResult,
+									"Call with mirror address should be same as call with alias");
+							assertEquals(
+									staticCallAliasAns.get(),
+									staticCallMirrorAns.get(),
+									"Static call with mirror address should be same as call with alias");
+						})
+				);
 	}
 
 	private HapiApiSpec mintDynamicGasCostPrecompile() {
@@ -1100,5 +1205,39 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
 				);
+	}
+
+	/* --- Internal helpers --- */
+	private HapiSpecOperation captureOneChildCreate2MetaFor(
+			final String desc,
+			final String creation2,
+			final AtomicReference<String> mirrorAddr,
+			final AtomicReference<String> create2Addr
+	) {
+		return withOpContext((spec, opLog) -> {
+			final var lookup = getTxnRecord(creation2).andAllChildRecords();
+			allRunFor(spec, lookup);
+			final var response = lookup.getResponse().getTransactionGetRecord();
+			assertEquals(1, response.getChildTransactionRecordsCount());
+			final var create2Record = response.getChildTransactionRecords(0);
+			final var create2Address =
+					create2Record.getContractCreateResult().getEvmAddress().getValue();
+			create2Addr.set(CommonUtils.hex(create2Address.toByteArray()));
+			final var createdId = create2Record.getReceipt().getContractID();
+			mirrorAddr.set(CommonUtils.hex(asSolidityAddress(createdId)));
+			opLog.info("{} is @ {} (mirror {})",
+					desc,
+					create2Addr.get(),
+					mirrorAddr.get());
+		});
+	}
+
+	private static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
 	}
 }

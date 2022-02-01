@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,11 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
@@ -38,23 +40,30 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
+	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address sponsor = Address.fromHexString("0xcba");
+
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
@@ -66,13 +75,15 @@ class WorldLedgersTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
-	private AliasManager aliasManager;
+	private ContractAliases aliases;
+	@Mock
+	private StaticEntityAccess staticEntityAccess;
 
 	private WorldLedgers subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new WorldLedgers(aliasManager, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	@Test
@@ -83,7 +94,38 @@ class WorldLedgersTest {
 		verify(accountsLedger).commit();
 		verify(nftsLedger).commit();
 		verify(tokensLedger).commit();
-		verify(aliasManager).commit(null);
+		verify(aliases).commit(null);
+	}
+
+	@Test
+	void aliasIsCanonicalCreate2SourceAddress() {
+		given(aliases.isInUse(alias)).willReturn(true);
+
+		assertSame(alias, subject.canonicalAddress(alias));
+	}
+
+	@Test
+	void mirrorNoAliasIsCanonicalSourceWithLedgers() {
+		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
+
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(staticEntityAccess.alias(id)).willReturn(ByteString.EMPTY);
+
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void mirrorWithAliasUsesAliasAsCanonicalSource() {
+		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
+		assertEquals(alias, subject.canonicalAddress(sponsor));
 	}
 
 	@Test
@@ -94,7 +136,7 @@ class WorldLedgersTest {
 		verify(accountsLedger).commit();
 		verify(nftsLedger).commit();
 		verify(tokensLedger).commit();
-		verify(aliasManager).commit(sigImpactHistorian);
+		verify(aliases).commit(sigImpactHistorian);
 	}
 
 	@Test
@@ -105,7 +147,7 @@ class WorldLedgersTest {
 		verify(accountsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(tokensLedger).rollback();
-		verify(aliasManager).revert();
+		verify(aliases).revert();
 
 		verify(tokenRelsLedger).begin();
 		verify(accountsLedger).begin();
@@ -138,19 +180,19 @@ class WorldLedgersTest {
 		final var liveAliases = new AliasManager();
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
-		assertTrue(source.areUsable());
+		assertTrue(source.areMutable());
 		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
 		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
 		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
 		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
-		assertFalse(nullTokenRels.areUsable());
-		assertFalse(nullAccounts.areUsable());
-		assertFalse(nullNfts.areUsable());
-		assertFalse(nullTokens.areUsable());
+		assertFalse(nullTokenRels.areMutable());
+		assertFalse(nullAccounts.areMutable());
+		assertFalse(nullNfts.areMutable());
+		assertFalse(nullTokens.areMutable());
 
 		final var wrappedUnusable = nullAccounts.wrapped();
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
-		assertFalse(wrappedUnusable.areUsable());
+		assertFalse(wrappedUnusable.areMutable());
 
 		final var wrappedSource = source.wrapped();
 

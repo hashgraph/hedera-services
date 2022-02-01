@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -36,21 +37,28 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+
+import java.util.Objects;
 
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 public class WorldLedgers {
-	public static final WorldLedgers NULL_WORLD_LEDGERS =
-			new WorldLedgers(null, null, null, null, null);
-
 	private final ContractAliases aliases;
+	private final StaticEntityAccess staticEntityAccess;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 
-	public static WorldLedgers unusableLedgersWith(final ContractAliases aliases) {
-		return new WorldLedgers(aliases, null, null, null, null);
+	public static WorldLedgers staticLedgersWith(
+			final ContractAliases aliases,
+			final StaticEntityAccess staticEntityAccess
+	) {
+		return new WorldLedgers(aliases, staticEntityAccess);
 	}
 
 	public WorldLedgers(
@@ -65,17 +73,48 @@ public class WorldLedgers {
 		this.tokensLedger = tokensLedger;
 		this.nftsLedger = nftsLedger;
 		this.aliases = aliases;
+
+		staticEntityAccess = null;
+	}
+
+	private WorldLedgers(final ContractAliases aliases, final StaticEntityAccess staticEntityAccess) {
+		tokenRelsLedger = null;
+		accountsLedger = null;
+		tokensLedger = null;
+		nftsLedger = null;
+
+		this.aliases = aliases;
+		this.staticEntityAccess = staticEntityAccess;
+	}
+
+	public Address canonicalAddress(final Address addressOrAlias) {
+		if (aliases.isInUse(addressOrAlias)) {
+			return addressOrAlias;
+		}
+		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
+		final ByteString alias;
+		if (accountsLedger != null) {
+			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
+		} else {
+			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
+			alias = staticEntityAccess.alias(sourceId);
+		}
+		if (!alias.isEmpty()) {
+			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+		} else {
+			return addressOrAlias;
+		}
 	}
 
 	public void commit() {
-		if (areUsable()) {
+		if (areMutable()) {
 			aliases.commit(null);
 			commitLedgers();
 		}
 	}
 
 	public void commit(final SigImpactHistorian sigImpactHistorian) {
-		if (areUsable()) {
+		if (areMutable()) {
 			aliases.commit(sigImpactHistorian);
 			commitLedgers();
 		}
@@ -89,7 +128,7 @@ public class WorldLedgers {
 	}
 
 	public void revert() {
-		if (areUsable()) {
+		if (areMutable()) {
 			tokenRelsLedger.rollback();
 			accountsLedger.rollback();
 			nftsLedger.rollback();
@@ -106,7 +145,7 @@ public class WorldLedgers {
 		}
 	}
 
-	public boolean areUsable() {
+	public boolean areMutable() {
 		return nftsLedger != null &&
 				tokensLedger != null &&
 				accountsLedger != null &&
@@ -114,8 +153,8 @@ public class WorldLedgers {
 	}
 
 	public WorldLedgers wrapped() {
-		if (!areUsable()) {
-			return unusableLedgersWith(StackedContractAliases.wrapping(aliases));
+		if (!areMutable()) {
+			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
 		}
 
 		return new WorldLedgers(

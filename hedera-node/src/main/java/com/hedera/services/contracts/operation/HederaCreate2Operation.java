@@ -76,7 +76,7 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 		final var length = clampedToLong(frame.getStackItem(2));
 
 		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		final var source = updater.canonicalCreate2Address(sourceAddressOrAlias);
+		final var source = updater.canonicalAddress(sourceAddressOrAlias);
 
 		final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));
 		final var initCode = frame.readMutableMemory(offset, length);

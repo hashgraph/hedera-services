@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -245,6 +246,13 @@ class MutableEntityAccessTest {
 		given(ledger.isDetached(id)).willReturn(true);
 
 		assertTrue(subject.isDetached(id));
+	}
+
+	@Test
+	void delegatesAlias() {
+		final var pretend = ByteString.copyFromUtf8("YAWN");
+		given(ledger.alias(id)).willReturn(pretend);
+		assertSame(pretend, subject.alias(id));
 	}
 
 	@Test

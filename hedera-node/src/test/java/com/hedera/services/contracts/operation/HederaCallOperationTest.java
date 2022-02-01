@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -32,7 +33,6 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +59,7 @@ class HederaCallOperationTest {
 	@Mock
 	private EVM evm;
 	@Mock
-	private WorldUpdater worldUpdater;
+	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
 	private Account acc;
 	@Mock
@@ -78,11 +78,24 @@ class HederaCallOperationTest {
 	@BeforeEach
 	void setup() {
 		subject = new HederaCallOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
-		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
+	}
+
+	@Test
+	void usesCanonicalAddressFromSuperNominal() {
+		final var nominal = Address.ALTBN128_ADD;
+		final var canonical = Address.BLS12_G1MUL;
+		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
+		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.canonicalAddress(nominal)).willReturn(canonical);
+
+		final var actual = subject.address(evmMsgFrame);
+
+		assertEquals(actual, canonical);
 	}
 
 	@Test
 	void haltWithInvalidAddr() {
+		commonSetup(evmMsgFrame, worldUpdater, acc);
 		given(worldUpdater.get(any())).willReturn(null);
 		given(calc.callOperationGasCost(
 				any(), any(), anyLong(),
@@ -106,6 +119,7 @@ class HederaCallOperationTest {
 
 	@Test
 	void executesAsExpected() {
+		commonSetup(evmMsgFrame, worldUpdater, acc);
 		given(calc.callOperationGasCost(
 				any(), any(), anyLong(),
 				anyLong(), anyLong(), anyLong(),

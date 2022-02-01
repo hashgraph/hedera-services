@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -182,6 +183,11 @@ public class MutableEntityAccess implements EntityAccess {
 	@Override
 	public boolean isExtant(final AccountID id) {
 		return ledger.exists(id);
+	}
+
+	@Override
+	public ByteString alias(AccountID id) {
+		return ledger.alias(id);
 	}
 
 	@Override

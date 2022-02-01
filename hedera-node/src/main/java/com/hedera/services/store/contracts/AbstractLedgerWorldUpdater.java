@@ -119,7 +119,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 		final var curAccounts = trackingAccounts();
 		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, curAccounts);
-		if (trackingLedgers.areUsable()) {
+		if (trackingLedgers.areMutable()) {
 			final var newAccountId = newMutable.getAccountId();
 			curAccounts.create(newAccountId);
 			if (curAliases.isInUse(addressOrAlias)) {
@@ -169,7 +169,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		final var address = aliases().resolveForEvm(addressOrAlias);
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
-		if (trackingLedgers.areUsable()) {
+		if (trackingLedgers.areMutable()) {
 			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 			final var curAccounts = trackingLedgers.accounts();
 			curAccounts.set(accountId, IS_DELETED, true);
