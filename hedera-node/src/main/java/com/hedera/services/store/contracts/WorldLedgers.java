@@ -94,9 +94,15 @@ public class WorldLedgers {
 		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
 		final ByteString alias;
 		if (accountsLedger != null) {
+			if (!accountsLedger.contains(sourceId)) {
+				return addressOrAlias;
+			}
 			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
 		} else {
 			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
+			if (!staticEntityAccess.isExtant(sourceId)) {
+				return addressOrAlias;
+			}
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {

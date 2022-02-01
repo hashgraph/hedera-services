@@ -113,6 +113,17 @@ class WorldLedgersTest {
 	}
 
 	@Test
+	void missingMirrorIsCanonicalSourceWithLedgers() {
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void missingMirrorIsCanonicalSourceWithStaticAccess() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
 	void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
 		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
