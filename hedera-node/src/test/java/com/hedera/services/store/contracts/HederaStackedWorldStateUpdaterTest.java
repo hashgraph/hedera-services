@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -94,26 +93,6 @@ class HederaStackedWorldStateUpdaterTest {
 		given(trackingLedgers.canonicalAddress(sponsor)).willReturn(alias);
 
 		assertSame(alias, subject.canonicalAddress(sponsor));
-	}
-
-	@Test
-	void mirrorNoAliasIsCanonicalSource() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(trackingLedgers.accounts()).willReturn(accountsLedger);
-		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
-
-		assertSame(sponsor, subject.canonicalAddress(sponsor));
-	}
-
-	@Test
-	void mirrorWithAliasUsesAliasAsCanonicalSource() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(trackingLedgers.accounts()).willReturn(accountsLedger);
-		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
-
-		assertEquals(alias, subject.canonicalAddress(sponsor));
 	}
 
 	@Test
