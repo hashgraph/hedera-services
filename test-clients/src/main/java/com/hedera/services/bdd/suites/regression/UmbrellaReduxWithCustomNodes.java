@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.suiterunner.annotations.ExcludeFromRSR;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +48,7 @@ import static com.hedera.services.bdd.suites.regression.RegressionProviderFactor
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+@ExcludeFromRSR
 public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 

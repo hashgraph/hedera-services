@@ -67,7 +67,7 @@ import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@ExcludeFromRSR
+@ExcludeFromRSR()
 public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MacroFeesChargedSanityCheckSuite.class);
 

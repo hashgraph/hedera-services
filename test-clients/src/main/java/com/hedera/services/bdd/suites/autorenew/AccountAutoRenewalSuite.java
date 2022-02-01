@@ -73,7 +73,14 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						autoDeleteAfterGracePeriod(),
 
 						accountAutoRenewalSuiteCleanup(),
-						freezeAtTheEnd()
+
+// 	TODO: Comment out after implementing a solution for running this suite with the commented spec in conjunction with
+// 	 	  other suites without PLATFORM_NOT_ACTIVE error
+
+                /*	Important: the bellow spec is being commented, because it triggers PLATFORM_NOT_ACTIVE error when
+					other tests are being executed after this suite.
+				*/
+//						freezeAtTheEnd()
 				}
 		);
 	}
