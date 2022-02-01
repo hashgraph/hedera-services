@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -76,12 +77,15 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private FcCustomFee firstMockFee;
 	@Mock
 	private FcCustomFee secondMockFee;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
 
 	private TokenFeeScheduleUpdateTransitionLogic subject;
 
 	@BeforeEach
 	public void setup() {
-		subject = new TokenFeeScheduleUpdateTransitionLogic(tokenStore, txnCtx, accountStore, dynamicProperties);
+		subject = new TokenFeeScheduleUpdateTransitionLogic(
+				tokenStore, txnCtx, accountStore, sigImpactHistorian, dynamicProperties);
 	}
 
 	@Test
@@ -118,6 +122,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		verify(secondMockFee).nullOutCollector();
 		verify(token).setCustomFees(List.of(firstMockFee, secondMockFee));
 		verify(tokenStore).commitToken(token);
+		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
 	}
 
 	@Test
