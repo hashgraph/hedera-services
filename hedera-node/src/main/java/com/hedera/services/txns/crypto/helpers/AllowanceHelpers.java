@@ -24,6 +24,7 @@ package com.hedera.services.txns.crypto.helpers;
 
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 
 import java.util.List;
@@ -68,5 +69,35 @@ public class AllowanceHelpers {
 			}
 		}
 		return nftAllowancesTotal;
+	}
+
+	public static boolean hasRepeatedSpender(List<AccountID> spenders) {
+		final int n = spenders.size();
+		if (n < 2) {
+			return false;
+		}
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
+				if (spenders.get(i).equals(spenders.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static boolean hasRepeatedSerials(List<Long> serials) {
+		final int n = serials.size();
+		if (n < 2) {
+			return false;
+		}
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
+				if (serials.get(i).equals(serials.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

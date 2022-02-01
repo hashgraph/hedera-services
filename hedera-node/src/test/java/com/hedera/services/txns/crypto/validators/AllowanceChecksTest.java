@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -140,17 +141,17 @@ public class AllowanceChecksTest {
 
 	@Test
 	void validatesDuplicateSpenders() {
-		assertFalse(subject.hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
-		assertFalse(subject.hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
-		assertFalse(subject.hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertFalse(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertFalse(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertFalse(hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
 
 		cryptoAllowances.add(cryptoAllowance1);
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		assertTrue(subject.hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
-		assertTrue(subject.hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
-		assertTrue(subject.hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertTrue(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertTrue(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
+		assertTrue(hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
 	}
 
 	@Test

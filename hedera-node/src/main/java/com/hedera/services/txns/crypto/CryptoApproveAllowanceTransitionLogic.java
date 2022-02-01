@@ -255,5 +255,4 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private boolean exceedsAccountLimit(final Account ownerAccount) {
 		return ownerAccount.getTotalAllowances() > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 	}
-
 }

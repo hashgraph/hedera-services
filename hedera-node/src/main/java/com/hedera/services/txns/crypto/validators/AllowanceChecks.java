@@ -46,6 +46,8 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -169,7 +171,6 @@ public class AllowanceChecks {
 
 		for (final var allowance : nftAllowancesList) {
 			final var spenderAccountId = allowance.getSpender();
-			final var approvedForAll = allowance.getApprovedForAll();
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
@@ -223,35 +224,4 @@ public class AllowanceChecks {
 		}
 		return OK;
 	}
-
-	boolean hasRepeatedSpender(List<AccountID> spenders) {
-		final int n = spenders.size();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (spenders.get(i).equals(spenders.get(j))) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	boolean hasRepeatedSerials(List<Long> serials) {
-		final int n = serials.size();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (serials.get(i).equals(serials.get(j))) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 }
