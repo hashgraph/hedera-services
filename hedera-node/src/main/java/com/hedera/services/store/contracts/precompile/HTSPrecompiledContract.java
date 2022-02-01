@@ -202,10 +202,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	//ownerOf(uint256 tokenId)
 	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
-	//safeTransferFrom(address from, address to, uint256 tokenId)
-	protected static final int ABI_ID_SAFE_TRANSFER_FROM_NFT = 0x42842e0e;
-	//safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
-	protected static final int ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT = 0xb88d4fde;
 	//tokenURI(uint256 tokenId)
 	private static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
@@ -348,9 +344,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID);
 							case ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
 									new TransferFromPrecompile(tokenID);
-							case ABI_ID_SAFE_TRANSFER_FROM_NFT,
-									ABI_ID_SAFE_TRANSFER_FROM_WITH_DATA_NFT -> nestedPrecompile =
-									new ERC721SafeTransferFromPrecompile(tokenID);
 							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
 							default -> nestedPrecompile = null;
 						}
@@ -1031,16 +1024,30 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
+		private OwnerOfAndTokenURIWrapper tokenUri;
 
 		public TokenURIPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			tokenUri = decoder.decodeTokenUriNFT(input);
+			return TransactionBody.newBuilder();
+		}
 	}
 
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
+		private OwnerOfAndTokenURIWrapper owner;
 
 		public OwnerOfPrecompile(final TokenID tokenID) {
 			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			owner = decoder.decodeOwnerOf(input);
+			return TransactionBody.newBuilder();
 		}
 	}
 
@@ -1059,22 +1066,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class ERC20TransferPrecompile extends ERCTransferAbstractPrecompile {
+		private TransferWrapper transferWrapper;
 
 		public ERC20TransferPrecompile(final TokenID tokenID) {
 			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input) {
+			transferWrapper = decoder.decodeTokenTransfer(input);
+			return TransactionBody.newBuilder();
 		}
 	}
 
 	protected class TransferFromPrecompile extends ERCTransferAbstractPrecompile {
 
 		public TransferFromPrecompile(final TokenID tokenID) {
-			super(tokenID);
-		}
-	}
-
-	protected class ERC721SafeTransferFromPrecompile extends ERCTransferAbstractPrecompile {
-
-		public ERC721SafeTransferFromPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 	}

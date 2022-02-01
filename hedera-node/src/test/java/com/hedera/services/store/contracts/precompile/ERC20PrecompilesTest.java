@@ -73,7 +73,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER;
+//import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;

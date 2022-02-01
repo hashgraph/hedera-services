@@ -68,12 +68,11 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.OWNER_OF;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.SAFE_TRANSFER_FROM;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.SAFE_TRANSFER_FROM_WITH_DATA;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_URI;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -226,36 +225,7 @@ public class ERC721PrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         given(pretendArguments.slice(24)).willReturn(OWNER_OF);
-
-        // when:
-        subject.prepareComputation(pretendArguments);
-        final var result = subject.computeInternal(frame);
-
-        // then:
-        assertEquals(successResult, result);
-
-    }
-
-    @Test
-    void safeTransferFromWithData() {
-        givenMinimalFrameContext();
-        givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(SAFE_TRANSFER_FROM_WITH_DATA);
-
-        // when:
-        subject.prepareComputation(pretendArguments);
-        final var result = subject.computeInternal(frame);
-
-        // then:
-        assertEquals(successResult, result);
-
-    }
-
-    @Test
-    void safeTransferFrom() {
-        givenMinimalFrameContext();
-        givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(SAFE_TRANSFER_FROM);
+        given(decoder.decodeOwnerOf(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
 
         // when:
         subject.prepareComputation(pretendArguments);
@@ -286,6 +256,7 @@ public class ERC721PrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         given(pretendArguments.slice(24)).willReturn(TOKEN_URI);
+        given(decoder.decodeTokenUriNFT(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
 
         // when:
         subject.prepareComputation(pretendArguments);
