@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -52,7 +53,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				happyPathWorks()
+				happyPathWorks(),
+
 		});
 	}
 
@@ -111,8 +113,15 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
-						getAccountInfo(owner).logged()
-				);
+						getAccountInfo(owner)
+								.has(accountWith()
+										.cryptoAllowancesCount(1)
+										.nftAllowancesCount(1)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+										.nftAllowancesContaining(nft, spender, false, List.of(1L))
+								));
 	}
 
 	@Override
