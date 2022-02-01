@@ -34,7 +34,7 @@ class ReflectiveSuiteRunnerLauncher {
 	//       as an wrong argument "-s Autorenew suites"
 	@Test
 	void properlyParses() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		final String[] withSplit = {"-s precompile"};
+		final String[] withSplit = {"-s compose"};
 //		final String[] withSplit = {"-s Autorenew, Compose, Consensus, Contract, Contract, Crypto, Fees"};
 //		final String[] withSplit = {"-s freeze, contract, fees, spec"};
 		final String[] withWrongArguments = {"-s Autorew, autorenew, MustaFffAAAAAA, Compose, Consensus, Contract, opcodes, records, Cryto, Fees"};

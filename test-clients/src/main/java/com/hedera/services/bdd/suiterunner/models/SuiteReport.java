@@ -28,7 +28,7 @@ import java.util.List;
 public class SuiteReport {
 	private final String name;
 	private final String status;
-	private List<SpecReport> failingSpecs;
+	private List<SpecReport> specReports;
 
 	public SuiteReport(final String name, final String status) {
 		this.name = name;
@@ -43,12 +43,12 @@ public class SuiteReport {
 		return name;
 	}
 
-	public List<SpecReport> getFailingSpecs() {
-		return failingSpecs;
+	public List<SpecReport> getFailedSpecs() {
+		return specReports;
 	}
 
-	public void setFailingSpecs(final List<SpecReport> failingSpecs) {
-		this.failingSpecs = failingSpecs;
+	public void setFailedSpecs(final List<SpecReport> specReports) {
+		this.specReports = specReports;
 	}
 
 	@Override

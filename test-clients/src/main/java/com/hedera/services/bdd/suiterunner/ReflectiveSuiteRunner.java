@@ -45,12 +45,12 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.getPackages;
-import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.getSuites;
-import static com.hedera.services.bdd.suiterunner.models.ReportFactory.getReportFor;
+import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.instantiateSuites;
+import static com.hedera.services.bdd.suiterunner.models.ReportFactory.generateFailedSuiteReport;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 
 public class ReflectiveSuiteRunner {
-	public static final String LOG_PATH = "output/log-buffer.log";
+	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log";
 	private static final String SEPARATOR = "====================";
 	private static final Logger log = redirectLogger();
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
@@ -58,29 +58,28 @@ public class ReflectiveSuiteRunner {
 
 	public static void main(String[] args) {
 		final var packages = getPackages(args);
-
 		if (packages.isEmpty()) return;
-		final var suites = getSuites(packages);
-		final var suitesByRunType = distributeByRunType(suites.values());
+		final var suites = instantiateSuites(packages);
+		final var suitesByRunType = distributeSuitesByRunType(suites.values());
 
 		clearLog();
 
-		executeInMode(suitesByRunType.get("RunsSync"), true);
-		executeInMode(suitesByRunType.get("RunsAsync"), false);
-		executeInMode(suitesByRunType.get("RunFreeze"), true);
+		executeSuites(true, suitesByRunType.get("Sync"));
+		executeSuites(false, suitesByRunType.get("Async"));
+		executeSuites(true, suitesByRunType.get("Freeze"));
 
-		failedSuites.forEach(failed -> suiteReports.add(getReportFor(failed)));
+		failedSuites.forEach(suite -> suiteReports.add(generateFailedSuiteReport(suite)));
 
 		clearLog();
 
 		generateFinalLog(suitesByRunType);
 	}
 
-	private static Map<String, List<HapiApiSuite>> distributeByRunType(final Collection<List<HapiApiSuite>> suites) {
+	private static Map<String, List<HapiApiSuite>> distributeSuitesByRunType(final Collection<List<HapiApiSuite>> suites) {
 		final Map<String, List<HapiApiSuite>> byRunType = Map.of(
-				"RunsSync", new ArrayList<>(),
-				"RunsAsync", new ArrayList<>(),
-				"RunFreeze", new ArrayList<>()
+				"Sync", new ArrayList<>(),
+				"Async", new ArrayList<>(),
+				"Freeze", new ArrayList<>()
 		);
 
 		/*	Important:
@@ -96,41 +95,59 @@ public class ReflectiveSuiteRunner {
 				})
 				.forEach(suite -> {
 					if (isFreeze(suite)) {
-						byRunType.get("RunFreeze").add(suite);
+						byRunType.get("Freeze").add(suite);
 					}
 					if (!suite.canRunAsync() && !isFreeze(suite)) {
-						byRunType.get("RunsSync").add(suite);
+						byRunType.get("Sync").add(suite);
 					} else if (suite.canRunAsync() && !isFreeze(suite)) {
-						byRunType.get("RunsAsync").add(suite);
+						byRunType.get("Async").add(suite);
 					}
 				});
 
 		return byRunType;
 	}
 
+	private static void executeSuites(final boolean synced, final List<HapiApiSuite> suites) {
+		suites.forEach(suite -> {
+			final var suiteName = suite.getClass().getSimpleName();
+			log.warn("Executing {}...", suiteName);
+			final var finalOutcome = synced
+					? suite.runSuiteSync()
+					: suite.runSuiteAsync();
+			log.warn("finished {} with status: {}", suiteName, finalOutcome.toString());
+			if (finalOutcome == SUITE_FAILED) {
+				failedSuites.add(suite);
+			}
+		});
+	}
+
 	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) {
-		final var builder = new StringBuilder();
+		final var summaryBuilder = new StringBuilder();
 		final var executedTotal = suitesByRunType
 				.values()
 				.stream()
 				.map(List::size)
 				.reduce(0, Integer::sum);
 
-		builder.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
-		builder.append(String.format("TOTAL: %d%n", executedTotal));
-		builder.append(String.format("PASSED: %d%n", executedTotal - failedSuites.size()));
-		builder.append(String.format("FAILED: %d%n", failedSuites.size()));
+		summaryBuilder.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
+		summaryBuilder.append(String.format("TOTAL: %d%n", executedTotal));
+		summaryBuilder.append(String.format("PASSED: %d%n", executedTotal - failedSuites.size()));
+		summaryBuilder.append(String.format("FAILED: %d%n", failedSuites.size()));
 
-		for (SuiteReport failedSuite : suiteReports) {
+		log.warn(summaryBuilder.toString());
+
+		final var builder = new StringBuilder();
+
+		for (SuiteReport suiteReport : suiteReports) {
 			builder.append(String.format("%1$s %2$d failing specs in %3$s %1$s%n",
-					SEPARATOR, failedSuite.getFailingSpecs().size(), failedSuite.getName()));
-			for (SpecReport failingSpec : failedSuite.getFailingSpecs()) {
+					SEPARATOR, suiteReport.getFailedSpecs().size(), suiteReport.getName()));
+			for (SpecReport failingSpec : suiteReport.getFailedSpecs()) {
 				builder.append(String.format("Spec name: %s%n", failingSpec.getName()));
 				builder.append(String.format("Status: %s%n", failingSpec.getStatus()));
 				builder.append(String.format("Cause: %s%n", failingSpec.getFailureReason()));
 				builder.append(System.lineSeparator());
 			}
-			builder.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, failedSuite.getName()));
+			builder.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, suiteReport.getName()));
 			builder.append(System.lineSeparator());
 			log.warn(builder.toString());
 		}
@@ -181,19 +198,4 @@ public class ReflectiveSuiteRunner {
 	private static boolean isFreeze(HapiApiSuite suite) {
 		return suite.getClass().getPackageName().contains("freeze");
 	}
-
-	private static void executeInMode(final List<HapiApiSuite> suites, final boolean runSync) {
-		suites.forEach(suite -> {
-			final var suiteName = suite.getClass().getSimpleName();
-			log.warn("Executing {}...", suiteName);
-			final var finalOutcome = runSync
-					? suite.runSuiteSync()
-					: suite.runSuiteAsync();
-			log.warn("finished {} with status: {}", suiteName, finalOutcome.toString());
-			if (finalOutcome == SUITE_FAILED) {
-				failedSuites.add(suite);
-			}
-		});
-	}
 }
-

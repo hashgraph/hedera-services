@@ -13,28 +13,28 @@ import static java.util.stream.Collectors.toList;
 public class ReportFactory {
 	private static final String LOG_PATTERN = "([\\d+-]+\\s[\\d+:]+.\\d+)\\s([\\w\\W]+)(%s)([\\w\\W]+)( failed )([\\w\\W]+)";
 
-	public static SuiteReport getReportFor(final HapiApiSuite failedSuite) {
+	public static SuiteReport generateFailedSuiteReport(final HapiApiSuite failedSuite) {
 		final var suiteReport = new SuiteReport(failedSuite.getClass().getSimpleName(), "Failed");
 
-		final var specReports = failedSuite.getFinalSpecs()
+		final var failedSpecs = failedSuite.getFinalSpecs()
 				.stream()
 				.filter(HapiApiSpec::NOT_OK)
-				.map(ReportFactory::getSpecReport)
+				.map(ReportFactory::generateFailedSpecReport)
 				.collect(toList());
 
-		suiteReport.setFailingSpecs(specReports);
+		suiteReport.setFailedSpecs(failedSpecs);
 
 		return suiteReport;
 	}
 
-	private static SpecReport getSpecReport(final HapiApiSpec failedSpec) {
+	private static SpecReport generateFailedSpecReport(final HapiApiSpec failedSpec) {
 		return new SpecReport(
 				failedSpec.getName(),
 				failedSpec.getStatus(),
-				getReason(failedSpec.getName()));
+				getFailReason(failedSpec.getName()));
 	}
 
-	private static String getReason(final String name) {
+	private static String getFailReason(final String name) {
 		String reason = "";
 		String pattern = String.format(LOG_PATTERN, name);
 
@@ -47,6 +47,4 @@ public class ReportFactory {
 		}
 		return reason;
 	}
-
-
 }

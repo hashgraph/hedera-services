@@ -46,7 +46,7 @@ public class ReflectiveSuiteRunnerService {
 		collectSuitesPaths();
 
 		if (runAllTests(args)) {
-			log.warn("Running all tests without performance tests");
+			log.warn("Preparing to execute all tests without performance tests...");
 			return suitesPaths
 					.stream()
 					.filter(path -> !path.contains("perf"))
@@ -64,12 +64,12 @@ public class ReflectiveSuiteRunnerService {
 
 		if (!wrongArguments.isEmpty()) {
 			log.warn(String.format(
-					"Input arguments are misspelled and/or test suites are missing. Skipping tests for: %s suites",
+					"Input arguments are misspelled and/or test suites are missing. %s arguments are ignored",
 					String.join(", ", wrongArguments)));
 			arguments.removeAll(wrongArguments);
 		}
 
-		log.warn("Running tests for {} suites", String.join(", ", arguments));
+		log.warn("Preparing to execute tests for {} suites...", String.join(", ", arguments));
 
 		return suitesPaths
 				.stream()
@@ -81,7 +81,7 @@ public class ReflectiveSuiteRunnerService {
 	}
 
 // TODO: Document and explain the ternary operator with suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
-	public static TreeMap<String, List<HapiApiSuite>> getSuites(final Set<String> paths) {
+	public static TreeMap<String, List<HapiApiSuite>> instantiateSuites(final Set<String> paths) {
 		for (String path : paths) {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
 			final var instances = suites
