@@ -107,10 +107,10 @@ public class TxnVerbs {
 		return new HapiCryptoUpdate(alias, ReferenceType.ALIAS_KEY_NAME);
 	}
 
-	public static HapiCryptoApproveAllowance cryptoApproveAllowance(String account) {
-		return new HapiCryptoApproveAllowance(account);
+	public static HapiCryptoApproveAllowance cryptoApproveAllowance() {
+		return new HapiCryptoApproveAllowance();
 	}
-	
+
 	/* CONSENSUS */
 	public static HapiTopicCreate createTopic(String topic) {
 		return new HapiTopicCreate(topic);

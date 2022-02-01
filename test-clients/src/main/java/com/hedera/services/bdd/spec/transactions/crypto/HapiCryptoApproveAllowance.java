@@ -53,8 +53,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 	private Map<AllowanceKey, AllowanceVal> nftAllowances = new HashMap<>();
 	private String account;
 
-	public HapiCryptoApproveAllowance(String account) {
-		this.account = account;
+	public HapiCryptoApproveAllowance() {
 	}
 
 	@Override

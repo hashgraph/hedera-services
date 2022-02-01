@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -33,7 +34,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -59,6 +64,12 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 		return defaultHapiSpec("happyPathWorks")
 				.given(
 						newKeyNamed("supplyKey"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("wipeKey"),
+						newKeyNamed("feeScheduleKey"),
+						newKeyNamed("pauseKey"),
 						cryptoCreate(owner)
 								.balance(ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
@@ -68,26 +79,39 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.maxAutomaticTokenAssociations(10),
 						tokenCreate(token)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
 								.supplyKey("supplyKey")
-								.initialSupply(0)
+								.maxSupply(1000L)
+								.initialSupply(10L)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(nft)
+								.maxSupply(10L)
 								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyType(TokenSupplyType.INFINITE)
 								.supplyKey("supplyKey")
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, token),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						mintToken(token, 500L).via("tokenMint"),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
 				)
 				.when(
-						cryptoApproveAllowance(owner)
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(spender, 100L)
 								.addTokenAllowance(token, spender, 100L)
 								.addNftAllowance(nft, spender, false, List.of(1L))
-								.fee(ONE_HBAR)
+								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
-						getAccountInfo(owner)
+						getAccountInfo(owner).logged()
 				);
 	}
 

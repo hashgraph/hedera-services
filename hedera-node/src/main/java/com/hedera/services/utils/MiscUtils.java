@@ -682,6 +682,12 @@ public final class MiscUtils {
 		if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		}
+		if (txn.hasCryptoApproveAllowance()) {
+			return CryptoApproveAllowance;
+		}
+		if (txn.hasCryptoAdjustAllowance()) {
+			return CryptoAdjustAllowance;
+		}
 		throw new UnknownHederaFunctionality();
 	}
 
