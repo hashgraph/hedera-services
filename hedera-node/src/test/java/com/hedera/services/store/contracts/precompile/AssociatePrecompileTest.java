@@ -48,8 +48,12 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -71,6 +75,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -81,10 +86,13 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parent
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -156,6 +164,8 @@ class AssociatePrecompileTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
+	private FeeObject mockFeeObject;
+	@Mock
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
@@ -186,10 +196,21 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress, senderAddress))
 				.willReturn(false);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -223,11 +244,22 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -256,11 +288,17 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
+		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee()).willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -289,11 +327,22 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -322,11 +371,22 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -355,11 +415,22 @@ class AssociatePrecompileTest {
 				.willReturn(tokenStore);
 		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
 				.willReturn(associateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:

@@ -48,9 +48,13 @@ import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -72,6 +76,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -82,10 +87,12 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -161,6 +168,8 @@ class DissociatePrecompilesTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
+	private FeeObject mockFeeObject;
+	@Mock
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
@@ -190,10 +199,21 @@ class DissociatePrecompilesTest {
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -216,6 +236,16 @@ class DissociatePrecompilesTest {
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
@@ -223,6 +253,7 @@ class DissociatePrecompilesTest {
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
@@ -252,11 +283,22 @@ class DissociatePrecompilesTest {
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
 				.willReturn(dissociateLogic);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
 
 		// when:
 		subject.prepareComputation(pretendArguments);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:

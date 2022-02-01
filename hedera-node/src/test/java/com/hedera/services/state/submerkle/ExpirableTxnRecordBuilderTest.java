@@ -41,6 +41,8 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -212,7 +214,7 @@ class ExpirableTxnRecordBuilderTest {
 		assertNull(subject.getScheduleRef());
 		assertNull(subject.getTransferList());
 		assertNull(subject.getTokenAdjustments());
-		assertNull(subject.getContractCallResult());
+		assertNotNull(subject.getContractCallResult());
 		assertNull(subject.getNftTokenAdjustments());
 		assertNull(subject.getContractCreateResult());
 		assertNull(subject.getAssessedCustomFees());
