@@ -9,8 +9,10 @@
                         "CryptoTransfer",
                         "CryptoTransfer",
                         "CryptoCreate",
-                        "CryptoCreate"
-                    ],
+                        "CryptoCreate",
+					  "CryptoApproveAllowance",
+					  "CryptoAdjustAllowance"
+					],
                     "milliOpsPerSec": 10000000
                 },
                 {

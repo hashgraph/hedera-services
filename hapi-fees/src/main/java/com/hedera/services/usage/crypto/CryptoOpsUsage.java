@@ -178,4 +178,12 @@ public class CryptoOpsUsage {
 		accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
 		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
+
+	public void cryptoApproveAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoApproveAllowanceMeta cryptoApproveMeta,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		// TODO - implement the logic
+	}
 }
