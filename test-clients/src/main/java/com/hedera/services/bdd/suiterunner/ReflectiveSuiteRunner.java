@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAI
 
 public class ReflectiveSuiteRunner {
 	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log";
-	private static final String SEPARATOR = "====================";
+	private static final String SEPARATOR = "----------";
 	private static final Logger log = redirectLogger();
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
 	private static final List<SuiteReport> suiteReports = new ArrayList<>();
@@ -122,34 +122,39 @@ public class ReflectiveSuiteRunner {
 	}
 
 	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) {
-		final var summaryBuilder = new StringBuilder();
+		final var summary = new StringBuilder();
 		final var executedTotal = suitesByRunType
 				.values()
 				.stream()
 				.map(List::size)
 				.reduce(0, Integer::sum);
 
-		summaryBuilder.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
-		summaryBuilder.append(String.format("TOTAL: %d%n", executedTotal));
-		summaryBuilder.append(String.format("PASSED: %d%n", executedTotal - failedSuites.size()));
-		summaryBuilder.append(String.format("FAILED: %d%n", failedSuites.size()));
+		summary.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
+		summary.append(String.format("TOTAL: %d%n", executedTotal));
+		summary.append(String.format("PASSED: %d%n", executedTotal - failedSuites.size()));
+		summary.append(String.format("FAILED: %d%n", failedSuites.size()));
 
-		log.warn(summaryBuilder.toString());
+		if (failedSuites.size() > 0) {
+			log.error(summary.toString());
+		} else {
+			log.warn(summary.toString());
+		}
 
-		final var builder = new StringBuilder();
+		final var report = new StringBuilder();
 
 		for (SuiteReport suiteReport : suiteReports) {
-			builder.append(String.format("%1$s %2$d failing specs in %3$s %1$s%n",
+			report.append(String.format("%1$s %2$d failing specs in %3$s %1$s%n",
 					SEPARATOR, suiteReport.getFailedSpecs().size(), suiteReport.getName()));
 			for (SpecReport failingSpec : suiteReport.getFailedSpecs()) {
-				builder.append(String.format("Spec name: %s%n", failingSpec.getName()));
-				builder.append(String.format("Status: %s%n", failingSpec.getStatus()));
-				builder.append(String.format("Cause: %s%n", failingSpec.getFailureReason()));
-				builder.append(System.lineSeparator());
+				report.append(String.format("Spec name: %s%n", failingSpec.getName()));
+				report.append(String.format("Status: %s%n", failingSpec.getStatus()));
+				report.append(String.format("Cause: %s%n", failingSpec.getFailureReason()));
+				report.append(System.lineSeparator());
 			}
-			builder.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, suiteReport.getName()));
-			builder.append(System.lineSeparator());
-			log.warn(builder.toString());
+			report.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, suiteReport.getName()));
+			report.append(System.lineSeparator());
+			log.warn(report.toString());
+			report.setLength(0);
 		}
 	}
 
