@@ -40,14 +40,24 @@ public final class RecordStreamType implements StreamType {
 	 */
 	public static final String RECORD_SIG_EXTENSION = "rcd_sig";
 	/**
-	 * Header which is written in the beginning of a stream file, before writing the Object Stream Version.
-	 * the ints in fileHeader denote: version 5, hapiProtoVersion: 0.11.0
+	 * The {@link com.swirlds.common.stream.TimestampStreamFileWriter} writes this header at the beginning of a
+	 * stream file (*.rcd), immediately before its internal stream version.
+	 *
+	 * The four ints in ths header denote, in order:
+	 * <ol>
+	 *     <li>The Services record stream version {@literal X}</li>
+	 *     <li>The HAPI protobuf major version</li>
+	 *     <li>The HAPI protobuf minor version</li>
+	 *     <li>The HAPI protobuf patch version</li>
+	 * </ol>
+	 * So the header below denotes a V5 record stream that uses semantic version 0.23.0 of the HAPI protobufs.
 	 */
-	private static final int[] RECORD_FILE_HEADER = new int[] { 5, 0, 11, 0 };
+	private static final int[] RECORD_FILE_HEADER = new int[] { 5, 0, 23, 0 };
 	/**
-	 * Header which is written in the beginning of a stream signature file, before writing the Object Stream Signature
-	 * Version.
-	 * the byte in sigFileHeader denotes version 5
+	 * The {@link com.swirlds.common.stream.TimestampStreamFileWriter} writes this header at the beginning of a
+	 * stream signature file (*.rcd_sig), immediately before its internal stream signature version.
+	 *
+	 * The byte in this header denotes the version of the Services signature stream file.
 	 */
 	private static final byte[] RECORD_SIG_FILE_HEADER = new byte[] { 5 };
 
