@@ -1,4 +1,23 @@
 package com.hedera.services.store.contracts.precompile;
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -53,6 +72,8 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
+//import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -217,7 +238,7 @@ public class ERC20PrecompilesTest {
     void balanceOf() {
         givenMinimalFrameContext();
         givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0x70a0823100000000000000000000000000000000000000000000000000000000000003ee"));
+        given(pretendArguments.slice(24)).willReturn(BALANCE_OF);
         given(decoder.decodeBalanceOf(pretendArguments)).willReturn(balanceOfOp);
 
         // when:
@@ -234,7 +255,7 @@ public class ERC20PrecompilesTest {
 //        subject.setTransferLogicFactory(transferLogicFactory);
 //        givenMinimalFrameContext();
 //        givenLedgers();
-//        //given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(""));
+//        given(pretendArguments.slice(24)).willReturn(TOKEN_TRANSFER);
 //
 //
 //        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);

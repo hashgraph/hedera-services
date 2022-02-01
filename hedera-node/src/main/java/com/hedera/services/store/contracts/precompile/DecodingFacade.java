@@ -111,40 +111,20 @@ public class DecodingFacade {
 //	private static final Bytes TRANSFER_FROM_NFT_SELECTOR = Bytes.wrap(TRANSFER_FROM_NFT_FUNCTION.selector());
 //	private static final ABIType<Tuple> TRANSFER_FROM_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 //
-//	private static final Function SAFE_TRANSFER_FROM_NFT_FUNCTION =
-//			new Function("safeTransferFrom(address, address, uint256)");
-//	private static final Bytes SAFE_TRANSFER_FROM_NFT_SELECTOR = Bytes.wrap(SAFE_TRANSFER_FROM_NFT_FUNCTION.selector());
-//	private static final ABIType<Tuple> SAFE_TRANSFER_FROM_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
-//
-// 	private static final Function SAFE_TRANSFER_FROM_WITH_DATA_NFT_FUNCTION =
-//			new Function("safeTransferFrom(address, address, uint256, bytes)");
-//	private static final Bytes SAFE_TRANSFER_FROM_WITH_DATA_NFT_SELECTOR = Bytes.wrap(SAFE_TRANSFER_FROM_WITH_DATA_NFT_FUNCTION.selector());
-//	private static final ABIType<Tuple> SAFE_TRANSFER_FROM_WITH_DATA_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,uint256,bytes)");
-
 	private static final Function TOKEN_URI_NFT_FUNCTION =
 			new Function("tokenURI(uint256)", STRING_OUTPUT);
 	private static final Bytes TOKEN_URI_NFT_SELECTOR = Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
 	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create("(uint256)");
-
-	private static final Function NFT_BY_INDEX_FUNCTION =
-			new Function("tokenByIndex(uint256)", INT_OUTPUT);
-	private static final Bytes NFT_BY_INDEX_SELECTOR = Bytes.wrap(NFT_BY_INDEX_FUNCTION.selector());
-	private static final ABIType<Tuple> NFT_BY_INDEX_DECODER = TypeFactory.create("(uint256)");
-
-	private static final Function NFT_OF_OWNER_BY_INDEX_FUNCTION =
-			new Function("tokenOfOwnerByIndex(address,uint256)", INT_OUTPUT);
-	private static final Bytes NFT_OF_OWNER_BY_INDEX_SELECTOR = Bytes.wrap(NFT_OF_OWNER_BY_INDEX_FUNCTION.selector());
-	private static final ABIType<Tuple> NFT_OF_OWNER_BY_INDEX_DECODER = TypeFactory.create("(bytes32,uint256)");
 
 	private static final Function OWNER_OF_NFT_FUNCTION =
 			new Function("ownerOf(uint256)", INT_OUTPUT);
 	private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
 	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create("(uint256)");
 
-//	private static final Function TOKEN_TRANSFER_FUNCTION =
-//			new Function("transfer(address,uint256)", BOOL_OUTPUT);
-//	private static final Bytes TOKEN_TRANSFER_SELECTOR = Bytes.wrap(TOKEN_TRANSFER_FUNCTION.selector());
-//	private static final ABIType<Tuple> TOKEN_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
+	private static final Function TOKEN_TRANSFER_FUNCTION =
+			new Function("transfer(address,uint256)", BOOL_OUTPUT);
+	private static final Bytes TOKEN_TRANSFER_SELECTOR = Bytes.wrap(TOKEN_TRANSFER_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
 
 	private static final Function BALANCE_OF_TOKEN_FUNCTION =
 			new Function("balanceOf(address)", INT_OUTPUT);
@@ -207,46 +187,30 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-//	public ERC20 decodeTokenTransfer(final Bytes input) {
-//		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_SELECTOR, TOKEN_TRANSFER_DECODER);
-//
-//		final var recipient = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-//		final var amount = (long) decodedArguments.get(1);
-//
-//		return new ERC20(null, recipient, amount);
-//	}
+	public TransferWrapper decodeTokenTransfer(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_SELECTOR, TOKEN_TRANSFER_DECODER);
 
-	public ERC721 decodeOwnerOf(final Bytes input) {
+		final var to = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var amount = (long) decodedArguments.get(1);
+
+		return new TransferWrapper(null, to, amount, -1L, null);
+	}
+
+
+	public OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
 
 		final var tokenId = (long) decodedArguments.get(0);
 
-		return new ERC721(tokenId, null, null, null, 0L);
+		return new OwnerOfAndTokenURIWrapper(tokenId);
 	}
 
-	public ERC721 decodeNFTOfOwnerByIndex(final Bytes input) {
-		final Tuple decodedArguments = decodeFunctionCall(input, NFT_OF_OWNER_BY_INDEX_SELECTOR, NFT_OF_OWNER_BY_INDEX_DECODER);
-
-		final var owner = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var index = (long) decodedArguments.get(1);
-
-		return new ERC721(0L, owner, null, null, index);
-	}
-
-	public ERC721 decodeNFTByIndex(final Bytes input) {
-		final Tuple decodedArguments = decodeFunctionCall(input, NFT_BY_INDEX_SELECTOR, NFT_BY_INDEX_DECODER);
-
-		final var index = (long) decodedArguments.get(0);
-
-		return new ERC721(0L, null, null, null, index);
-	}
-
-	public ERC721 decodeTokenUriNFT(final Bytes input) {
+	public OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 
 		final var tokenId = (long) decodedArguments.get(0);
 
-		return new ERC721(tokenId, null, null, null, 0L);
+		return new OwnerOfAndTokenURIWrapper(tokenId);
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {
