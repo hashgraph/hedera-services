@@ -107,6 +107,25 @@ public final class CryptoFeeBuilder extends FeeBuilder {
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
 	}
 
+	public FeeData getCryptoApproveAllowanceFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
+			throws InvalidTxBodyException {
+		if (txBody == null || !txBody.hasCryptoApproveAllowance()) {
+			throw new InvalidTxBodyException("CryptoApproveAllowance Tx Body not available for Fee Calculation");
+		}
+
+		final long bpr = INT_SIZE;
+		final var txBodySize = getCommonTransactionBodyBytes(txBody);
+		final var bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
+		final long vpt = sigValObj.getTotalSigCount();
+
+		final var rbs = calculateRBS(txBody);
+		final var rbsNetwork = getDefaultRBHNetworkSize();
+		final var feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
+				.setSbh(0L).setGas(0L).setTv(0L).setBpr(bpr).setSbpr(0L).build();
+
+		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
+	}
+
 	/**
 	 * This method calculates total RAM Bytes (product of total bytes that will be stored in memory
 	 * and time till account expires)

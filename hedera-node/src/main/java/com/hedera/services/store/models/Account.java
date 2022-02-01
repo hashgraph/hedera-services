@@ -24,22 +24,30 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_CRYPTO_ALLOWANCES;
+import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_NFT_ALLOWANCES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -71,6 +79,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
+	private Map<EntityNum, Long> cryptoAllowances = EMPTY_CRYPTO_ALLOWANCES;
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = EMPTY_FUNGIBLE_TOKEN_ALLOWANCES;
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = EMPTY_NFT_ALLOWANCES;
 
 	public Account(Id id) {
 		this.id = id;
@@ -220,6 +231,9 @@ public class Account {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", getAlias().toStringUtf8())
+				.add("cryptoAllowances", cryptoAllowances)
+				.add("fungibleTokenAllowances", fungibleTokenAllowances)
+				.add("nftAllowances", nftAllowances)
 				.toString();
 	}
 
@@ -295,4 +309,33 @@ public class Account {
 		this.alias = alias;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowances(
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowances(
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		this.nftAllowances = nftAllowances;
+	}
+
+	public int getTotalAllowances() {
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
+	}
 }
