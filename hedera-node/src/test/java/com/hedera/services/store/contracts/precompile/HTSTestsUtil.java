@@ -44,6 +44,7 @@ public class HTSTestsUtil {
 	public static final long AMOUNT = 1_234_567L;
 	public static final long DEFAULT_GAS_PRICE = 10_000L;
 	public static final TokenID token = IdUtils.asToken("0.0.1");
+	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
 	public static final AccountID receiver = IdUtils.asAccount("0.0.3");
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
@@ -165,34 +166,40 @@ public class HTSTestsUtil {
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build(),
+					payer
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(AMOUNT).build(),
+					payer
 			)
 	);
 	public static final List<BalanceChange> tokensTransferChanges = List.of(
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build(),
+					payer
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build(),
+					payer
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(-AMOUNT).build(),
+					payer
 			),
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(+AMOUNT).build(),
+					payer
 			)
 	);
 
@@ -200,7 +207,8 @@ public class HTSTestsUtil {
 			BalanceChange.changingFtUnits(
 					Id.fromGrpcToken(token),
 					token,
-					AccountAmount.newBuilder().setAccountID(sender).setAmount(AMOUNT).build()
+					AccountAmount.newBuilder().setAccountID(sender).setAmount(AMOUNT).build(),
+					payer
 			)
 	);
 
@@ -210,13 +218,14 @@ public class HTSTestsUtil {
 					token,
 					NftTransfer.newBuilder()
 							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
-							.build()
+							.build(),
+					payer
 			),
 			/* Simulate an assessed fallback fee */
 			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(receiver).setAmount(-AMOUNT).build()),
+					AccountAmount.newBuilder().setAccountID(receiver).setAmount(-AMOUNT).build(), payer),
 			BalanceChange.changingHbar(
-					AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(+AMOUNT).build())
+					AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(+AMOUNT).build(), payer)
 	);
 
 	public static final List<BalanceChange> nftsTransferChanges = List.of(
@@ -225,14 +234,16 @@ public class HTSTestsUtil {
 					token,
 					NftTransfer.newBuilder()
 							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(1L)
-							.build()
+							.build(),
+					payer
 			),
 			BalanceChange.changingNftOwnership(
 					Id.fromGrpcToken(token),
 					token,
 					NftTransfer.newBuilder()
 							.setSenderAccountID(sender).setReceiverAccountID(receiver).setSerialNumber(2L)
-							.build()
+							.build(),
+					payer
 			)
 	);
 }

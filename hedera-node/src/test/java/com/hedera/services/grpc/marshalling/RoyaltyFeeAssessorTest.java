@@ -236,16 +236,16 @@ class RoyaltyFeeAssessorTest {
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(originalUnits)
 			.build();
-	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
+	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit, payer.asGrpcAccount());
 	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(
-			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit);
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit, payer.asGrpcAccount());
 	private final NftTransfer ownershipChange = NftTransfer.newBuilder()
 			.setSenderAccountID(payer.asGrpcAccount())
 			.setReceiverAccountID(funding.asGrpcAccount())
 			.build();
 	private final Id nonFungibleTokenId = new Id(7, 4, 7);
 	private final BalanceChange trigger = BalanceChange.changingNftOwnership(
-			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), ownershipChange);
+			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), ownershipChange, payer.asGrpcAccount());
 	private final long[] effPayerNum = new long[] { payer.num() };
 	private final FcAssessedCustomFee hbarAssessed =
 			new FcAssessedCustomFee(

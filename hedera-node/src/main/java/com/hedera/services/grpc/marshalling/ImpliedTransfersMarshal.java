@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
@@ -83,7 +84,7 @@ public class ImpliedTransfersMarshal {
 		this.schedulesManagerFactory = schedulesManagerFactory;
 	}
 
-	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
+	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op, AccountID payerID) {
 		final var props = currentProps();
 
 		var numAutoCreations = 0;
@@ -111,7 +112,7 @@ public class ImpliedTransfersMarshal {
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
-			changes.add(changingHbar(aa));
+			changes.add(changingHbar(aa, payerID));
 		}
 		if (!hasTokenChanges(op)) {
 			return ImpliedTransfers.valid(
@@ -120,7 +121,7 @@ public class ImpliedTransfersMarshal {
 
 		/* Add in the HTS balance changes from the transaction */
 		final var hbarOnly = changes.size();
-		appendToken(op, changes);
+		appendToken(op, changes, payerID);
 
 		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
 	}
@@ -157,7 +158,7 @@ public class ImpliedTransfersMarshal {
 				props, changes, schedulesManager.metaUsed(), fees, resolvedAliases, numAutoCreations);
 	}
 
-	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {
+	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes, AccountID payerID) {
 		/* First add all fungible changes, then NFT ownership changes. This ensures
 		fractional fees are applied to the fungible value exchanges before royalty
 		fees are assessed. */
@@ -168,7 +169,7 @@ public class ImpliedTransfersMarshal {
 
 			boolean decimalsSet = false;
 			for (var aa : xfers.getTransfersList()) {
-				var change = changingFtUnits(tokenId, grpcTokenId, aa);
+				var change = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
 				// set only for the first balance change of the token with expectedDecimals
 				if (xfers.hasExpectedDecimals() && !decimalsSet) {
 					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
@@ -181,7 +182,7 @@ public class ImpliedTransfersMarshal {
 				if (ownershipChanges == null) {
 					ownershipChanges = new ArrayList<>();
 				}
-				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc));
+				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc, payerID));
 			}
 		}
 		if (ownershipChanges != null) {

@@ -200,9 +200,20 @@ public class PureTransferSemanticChecks {
 		if (n < 2) {
 			return false;
 		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (adjusts.get(i).getAccountID().equals(adjusts.get(j).getAccountID())) {
+		Set<Long> allowanceAAs = new HashSet<>();
+		Set<Long> normalAAs = new HashSet<>();
+		for (var i = 0; i < n; i++) {
+			final var adjust = adjusts.get(i);
+			if (adjust.getIsApproval()) {
+				if (!allowanceAAs.contains(adjust.getAccountID().getAccountNum())) {
+					allowanceAAs.add(adjust.getAccountID().getAccountNum());
+				} else {
+					return true;
+				}
+			} else {
+				if (!normalAAs.contains(adjust.getAccountID().getAccountNum())) {
+					normalAAs.add(adjust.getAccountID().getAccountNum());
+				} else {
 					return true;
 				}
 			}

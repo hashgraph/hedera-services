@@ -149,7 +149,7 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.cryptoAllowances(cryptoAllowances)
 								.fungibleTokenAllowances(fungibleTokenAllowances)
-								.nftTokenAllowances(nftTokenAllowances)
+								.nftAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
