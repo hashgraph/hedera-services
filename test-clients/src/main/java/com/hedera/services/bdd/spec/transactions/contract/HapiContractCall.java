@@ -69,6 +69,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
 
+	private boolean tryAsHexedAddressIfLenMatches = true;
 	private Object[] params;
 	private String abi;
 	private String contract;
@@ -104,6 +105,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		this.abi = FALLBACK_ABI;
 		this.params = new Object[0];
 		this.contract = contract;
+	}
+
+	public HapiContractCall notTryingAsHexedliteral() {
+		tryAsHexedAddressIfLenMatches = false;
+		return this;
 	}
 
 	public HapiContractCall(String abi, String contract, Object... params) {
@@ -178,7 +184,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
 						ContractCallTransactionBody.class, builder -> {
-							if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+							if (tryAsHexedAddressIfLenMatches && contract.length() == HEXED_EVM_ADDRESS_LEN) {
 								builder.setContractID(ContractID.newBuilder()
 										.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
 							} else {

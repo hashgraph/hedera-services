@@ -122,13 +122,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
-				nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-				invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-				functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-				invalidSingleAbiCallConsumesAllProvidedGas()
+		return List.of(new HapiApiSpec[] {
+						nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
+						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
+						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+						functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+						invalidSingleAbiCallConsumesAllProvidedGas(),
+				}
 		);
 	}
 
@@ -142,7 +143,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
-		return defaultHapiSpec("Function call with less than four bytes fails within single contract call")
+		return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -159,7 +160,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI,
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(TokenID.newBuilder().build()))
+														asAddress(TokenID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("Function call with less than 4 bytes txn")
 														.gas(100_000)
 										)
@@ -171,7 +174,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
-		return defaultHapiSpec("Invalid Abi Call Gracefully Fails Within Single Contract Call")
+		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -190,7 +193,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(AccountID.newBuilder().build()),
 														List.of(
 																asAddress(TokenID.newBuilder().build()),
-																asAddress(TokenID.newBuilder().build())))
+																asAddress(TokenID.newBuilder().build()))
+												)
+														.notTryingAsHexedliteral()
 														.via("Invalid Abi Function call txn")
 										)
 						)
@@ -217,7 +222,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM_NON_EXISTING_FUNCTION_CALL_ABI,
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(TokenID.newBuilder().build()))
+														asAddress(TokenID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("nonExistingFunctionCallTxn")))
 				).then(
 						childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS)
@@ -496,7 +503,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
-		return defaultHapiSpec("Invalid Single Abi Call Consumes All Provided Gas")
+		return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -511,7 +518,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												contractCall(
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI,
-														asAddress(AccountID.newBuilder().build()))
+														asAddress(AccountID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("Invalid Single Abi Call txn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("Invalid Single Abi Call txn").saveTxnRecordToRegistry(
