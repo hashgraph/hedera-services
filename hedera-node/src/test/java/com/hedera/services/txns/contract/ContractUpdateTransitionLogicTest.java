@@ -24,6 +24,7 @@ import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
@@ -72,6 +73,7 @@ class ContractUpdateTransitionLogicTest {
 
 	private Instant consensusTime;
 	private HederaLedger ledger;
+	private AliasManager aliasManager;
 	private MerkleAccount contract = new MerkleAccount();
 	private OptionValidator validator;
 	private SigImpactHistorian sigImpactHistorian;
@@ -96,9 +98,10 @@ class ContractUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		aliasManager = mock(AliasManager.class);
 
 		subject = new ContractUpdateTransitionLogic(
-				ledger, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
+				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
 	}
 
 	@Test

@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
@@ -50,6 +51,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractUpdateTransitionLogic.class);
 
 	private final HederaLedger ledger;
+	private final AliasManager aliasManager;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
@@ -58,6 +60,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	public ContractUpdateTransitionLogic(
 			final HederaLedger ledger,
+			final AliasManager aliasManager,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
@@ -66,6 +69,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
+		this.aliasManager = aliasManager;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
 		this.sigImpactHistorian = sigImpactHistorian;

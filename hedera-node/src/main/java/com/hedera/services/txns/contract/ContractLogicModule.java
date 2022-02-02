@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.StoresModule;
@@ -88,13 +89,14 @@ public final class ContractLogicModule {
 	@FunctionKey(ContractUpdate)
 	public static List<TransitionLogic> provideContractUpdateLogic(
 			final HederaLedger ledger,
+			final AliasManager aliasManager,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		final var contractUpdateTransitionLogic = new ContractUpdateTransitionLogic(
-				ledger, validator, sigImpactHistorian, txnCtx, new UpdateCustomizerFactory(), accounts);
+				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, new UpdateCustomizerFactory(), accounts);
 		return List.of(contractUpdateTransitionLogic);
 	}
 
