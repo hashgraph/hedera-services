@@ -58,6 +58,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -260,23 +261,21 @@ abstract class EvmTxProcessor {
 //			}
 			stateChanges = updater.getStorageChanges();
 
-			final var touchedAccounts =
-					updater.getTouchedAccounts();
-
 			// record storage read/write access
-			for (org.hyperledger.besu.evm.account.Account touchedAccount : touchedAccounts) {
-				UpdateTrackingLedgerAccount<? extends Account> uta =
-						(UpdateTrackingLedgerAccount<? extends Account>) touchedAccount;
-				Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-				stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
-				for (Map.Entry<UInt256, UInt256> entry : uta.getUpdatedStorage().entrySet()) {
-					UInt256 key = entry.getKey();
-					UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
-					UInt256 updatedStorageValue = uta.getStorageValue(key);
-					accountChanges.put(key,
-							new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+			for (UpdateTrackingLedgerAccount<? extends Account> uta :
+					(Collection<UpdateTrackingLedgerAccount<? extends Account>>) updater.getTouchedAccounts()) {
+				final var storageUpdates = uta.getUpdatedStorage().entrySet();
+				if (!storageUpdates.isEmpty()) {
+					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
+						UInt256 key = entry.getKey();
+						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
+						UInt256 updatedStorageValue = uta.getStorageValue(key);
+						accountChanges.put(key,
+								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+					}
 				}
-
 			}
 
 			/* Commit top level Updater */
