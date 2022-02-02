@@ -125,10 +125,9 @@ public class TransferLogic {
 				} else if (change.isForNft()) {
 					validity = accountsLedger.validateNftAllowance(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
-				if (validity != OK) {
-					break;
+				if (validity == OK) {
+					validity = tokenStore.tryTokenChange(change);
 				}
-				validity = tokenStore.tryTokenChange(change);
 			}
 			if (validity != OK) {
 				break;
@@ -177,33 +176,29 @@ public class TransferLogic {
 						hbarAllowances.remove(payerNum);
 					}
 				}
-			} else if (change.isForFungibleToken()) {
-				if (change.isApprovedAllowance() && change.units() < 0) {
-					final var allowanceId = FcTokenAllowanceId.from(
-							change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-					final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES);
-					final var currentAllowance = fungibleAllowances.get(allowanceId);
-					final var newAllowance = currentAllowance + change.units();
-					if (newAllowance == 0) {
-						fungibleAllowances.remove(allowanceId);
-					} else {
-						fungibleAllowances.put(allowanceId, newAllowance);
-					}
+			} else if (change.isForFungibleToken() && change.isApprovedAllowance() && change.units() < 0) {
+				final var allowanceId = FcTokenAllowanceId.from(
+						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
+				final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES);
+				final var currentAllowance = fungibleAllowances.get(allowanceId);
+				final var newAllowance = currentAllowance + change.units();
+				if (newAllowance == 0) {
+					fungibleAllowances.remove(allowanceId);
+				} else {
+					fungibleAllowances.put(allowanceId, newAllowance);
 				}
-			} else if (change.isForNft()) {
-				if (change.isApprovedAllowance()) {
-					final var allowanceId = FcTokenAllowanceId.from(
-							change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-					final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES);
-					final var currentAllowance = nftAllowances.get(allowanceId);
-					if (!currentAllowance.isApprovedForAll()) {
-						var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
-						mutableAllowanceList.remove(change.serialNo());
-						if (mutableAllowanceList.isEmpty()) {
-							nftAllowances.remove(allowanceId);
-						} else {
-							nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
-						}
+			} else if (change.isForNft() && change.isApprovedAllowance()) {
+				final var allowanceId = FcTokenAllowanceId.from(
+						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
+				final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES);
+				final var currentAllowance = nftAllowances.get(allowanceId);
+				if (!currentAllowance.isApprovedForAll()) {
+					var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
+					mutableAllowanceList.remove(change.serialNo());
+					if (mutableAllowanceList.isEmpty()) {
+						nftAllowances.remove(allowanceId);
+					} else {
+						nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
 					}
 				}
 			}

@@ -1153,7 +1153,7 @@ public class SigRequirements {
 			final var isSender = counterparty == null;
 			if (((isSender && !isApproval) || meta.receiverSigRequired())) {
 				required.add(meta.key());
-			} else {
+			} else if (!isSender) {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);
 				if (!tokenResult.succeeded()) {
 					return tokenResult.failureIfAny();
