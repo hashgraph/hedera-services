@@ -33,25 +33,19 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
-	static final Logger log = LogManager.getLogger(HapiCryptoApproveAllowance.class);
-	private Map<String, Long> cryptoAllowances = new HashMap<>();
-	private Map<AllowanceKey, Long> tokenAllowances = new HashMap<>();
-	private Map<AllowanceKey, AllowanceVal> nftAllowances = new HashMap<>();
-	private String account;
+	private List<CryptoAllowances> cryptoAllowances = new ArrayList<>();
+	private List<TokenAllowances> tokenAllowances = new ArrayList<>();
+	private List<NftAllowances> nftAllowances = new ArrayList<>();
 
 	public HapiCryptoApproveAllowance() {
 	}
@@ -67,18 +61,18 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 	}
 
 	public HapiCryptoApproveAllowance addCryptoAllowance(String spender, long allowance) {
-		cryptoAllowances.put(spender, allowance);
+		cryptoAllowances.add(CryptoAllowances.from(spender, allowance));
 		return this;
 	}
 
 	public HapiCryptoApproveAllowance addTokenAllowance(String token, String spender, long allowance) {
-		tokenAllowances.put(AllowanceKey.from(token, spender), allowance);
+		tokenAllowances.add(TokenAllowances.from(token, spender, allowance));
 		return this;
 	}
 
 	public HapiCryptoApproveAllowance addNftAllowance(String token, String spender, boolean approvedForAll,
 			List<Long> serials) {
-		nftAllowances.put(AllowanceKey.from(token, spender), AllowanceVal.from(approvedForAll, serials));
+		nftAllowances.add(NftAllowances.from(token, spender, approvedForAll, serials));
 		return this;
 	}
 
@@ -109,32 +103,28 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 			final List<CryptoAllowance> callowances,
 			final List<TokenAllowance> tallowances,
 			final List<NftAllowance> nftallowances) {
-		for (Map.Entry entry : cryptoAllowances.entrySet()) {
+		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
-					.setSpender(spec.registry().getAccountID(entry.getKey().toString()))
-					.setAmount((Long) entry.getValue())
+					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setAmount(entry.amount())
 					.build();
 			callowances.add(builder);
 		}
 
-		for (Map.Entry entry : tokenAllowances.entrySet()) {
-			final AllowanceKey key = (AllowanceKey) entry.getKey();
-			final Long value = (Long) entry.getValue();
+		for (var entry : tokenAllowances) {
 			final var builder = TokenAllowance.newBuilder()
-					.setTokenId(spec.registry().getTokenID(key.token()))
-					.setSpender(spec.registry().getAccountID(key.spender()))
-					.setAmount(value)
+					.setTokenId(spec.registry().getTokenID(entry.token()))
+					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setAmount(entry.amount())
 					.build();
 			tallowances.add(builder);
 		}
-		for (Map.Entry entry : nftAllowances.entrySet()) {
-			final AllowanceKey key = (AllowanceKey) entry.getKey();
-			final AllowanceVal value = (AllowanceVal) entry.getValue();
+		for (var entry : nftAllowances) {
 			final var builder = NftAllowance.newBuilder()
-					.setTokenId(spec.registry().getTokenID(key.token()))
-					.setSpender(spec.registry().getAccountID(key.spender()))
-					.setApprovedForAll(BoolValue.of(value.approvedForAll()))
-					.addAllSerialNumbers(value.serials())
+					.setTokenId(spec.registry().getTokenID(entry.token()))
+					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
+					.addAllSerialNumbers(entry.serials())
 					.build();
 			nftallowances.add(builder);
 		}
@@ -167,15 +157,21 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		return helper;
 	}
 
-	private record AllowanceKey(String token, String spender) {
-		static AllowanceKey from(String token, String spender) {
-			return new AllowanceKey(token, spender);
+	private record CryptoAllowances(String spender, Long amount) {
+		static CryptoAllowances from(String spender, Long amount) {
+			return new CryptoAllowances(spender, amount);
 		}
 	}
 
-	private record AllowanceVal(boolean approvedForAll, List<Long> serials) {
-		static AllowanceVal from(boolean approvedForAll, List<Long> serials) {
-			return new AllowanceVal(approvedForAll, serials);
+	private record TokenAllowances(String token, String spender, long amount) {
+		static TokenAllowances from(String token, String spender, long amount) {
+			return new TokenAllowances(token, spender, amount);
+		}
+	}
+
+	private record NftAllowances(String token, String spender, boolean approvedForAll, List<Long> serials) {
+		static NftAllowances from(String token, String spender, boolean approvedForAll, List<Long> serials) {
+			return new NftAllowances(token, spender, approvedForAll, serials);
 		}
 	}
 }

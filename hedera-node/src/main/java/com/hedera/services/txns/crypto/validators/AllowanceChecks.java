@@ -28,11 +28,13 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -48,6 +50,7 @@ import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.ALLOWANCE_LIMIT_PER_TRANSACTION;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -148,7 +151,9 @@ public class AllowanceChecks {
 			return OK;
 		}
 
-		if (hasRepeatedSpender(tokenAllowancesList.stream().map(a -> a.getSpender()).toList())) {
+		if (hasRepeatedId(
+				tokenAllowancesList.stream().map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
+						EntityNum.fromAccountId(a.getSpender()))).toList())) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
@@ -183,8 +188,10 @@ public class AllowanceChecks {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}
-
-		if (hasRepeatedSpender(nftAllowancesList.stream().map(a -> a.getSpender()).toList())) {
+		
+		if (hasRepeatedId(
+				nftAllowancesList.stream().map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
+						EntityNum.fromAccountId(a.getSpender()))).toList())) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 

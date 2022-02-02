@@ -100,4 +100,19 @@ public class AllowanceHelpers {
 		}
 		return false;
 	}
+
+	public static boolean hasRepeatedId(List<FcTokenAllowanceId> serials) {
+		final int n = serials.size();
+		if (n < 2) {
+			return false;
+		}
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
+				if (serials.get(i).equals(serials.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }
