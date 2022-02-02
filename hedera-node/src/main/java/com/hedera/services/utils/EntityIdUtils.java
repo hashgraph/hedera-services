@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
@@ -38,7 +39,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -307,12 +310,23 @@ public final class EntityIdUtils {
 	}
 
 	public static EntityNum unaliased(final ContractID idOrAlias, final AliasManager aliasManager) {
+		return unaliased(idOrAlias, aliasManager, null);
+	}
+
+	public static EntityNum unaliased(
+			final ContractID idOrAlias,
+			final AliasManager aliasManager,
+			@Nullable final Consumer<ByteString> aliasObs
+	) {
 		if (isAlias(idOrAlias)) {
 			final var alias = idOrAlias.getEvmAddress();
 			final var evmAddress = alias.toByteArray();
 			if (aliasManager.isMirror(evmAddress)) {
 				final var contractNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
 				return EntityNum.fromLong(contractNum);
+			}
+			if (aliasObs != null) {
+				aliasObs.accept(alias);
 			}
 			return aliasManager.lookupIdBy(alias);
 		} else {

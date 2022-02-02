@@ -30,6 +30,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -55,7 +56,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 
@@ -140,7 +140,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 			final AccountID id,
 			final @Nullable LinkedRefs linkedRefs
 	) {
-		return lookupByNumber(fromAccountId(id), linkedRefs);
+		return lookupAccountByNumber(fromAccountId(id), linkedRefs);
 	}
 
 	@Override
@@ -156,9 +156,9 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 			final var explicitId = aliasManager.lookupIdBy(alias);
 			return (explicitId == MISSING_NUM)
 					? SafeLookupResult.failure(MISSING_ACCOUNT)
-					: lookupByNumber(explicitId, linkedRefs);
+					: lookupAccountByNumber(explicitId, linkedRefs);
 		} else {
-			return lookupByNumber(fromAccountId(idOrAlias), linkedRefs);
+			return lookupAccountByNumber(fromAccountId(idOrAlias), linkedRefs);
 		}
 	}
 
@@ -183,14 +183,26 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(
-			final ContractID id,
+	public SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
+			final ContractID idOrAlias,
+			final @Nullable LinkedRefs linkedRefs
+	) {
+		final var id = (linkedRefs == null)
+				? EntityIdUtils.unaliased(idOrAlias, aliasManager)
+				: EntityIdUtils.unaliased(idOrAlias, aliasManager, linkedRefs::link);
+		return (id == MISSING_NUM)
+					? SafeLookupResult.failure(INVALID_CONTRACT)
+					: lookupContractByNumber(id, linkedRefs);
+	}
+
+	private SafeLookupResult<ContractSigningMetadata> lookupContractByNumber(
+			final EntityNum id,
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		if (linkedRefs != null) {
-			linkedRefs.link(id.getContractNum());
+			linkedRefs.link(id.longValue());
 		}
-		final var contract = stateChildren.accounts().get(fromContractId(id));
+		final var contract = stateChildren.accounts().get(id);
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
@@ -203,7 +215,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		}
 	}
 
-	private SafeLookupResult<AccountSigningMetadata> lookupByNumber(
+	private SafeLookupResult<AccountSigningMetadata> lookupAccountByNumber(
 			final EntityNum id,
 			final @Nullable LinkedRefs linkedRefs
 	) {
