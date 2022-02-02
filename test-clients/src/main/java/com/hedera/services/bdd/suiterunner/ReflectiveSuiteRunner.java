@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suiterunner;
 
 
 import com.hedera.services.bdd.suiterunner.exceptions.FailedSuiteException;
+import com.hedera.services.bdd.suiterunner.logs.Banner;
 import com.hedera.services.bdd.suiterunner.models.SpecReport;
 import com.hedera.services.bdd.suiterunner.models.SuiteReport;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -53,6 +54,7 @@ public class ReflectiveSuiteRunner {
 	private static final StringBuilder logMessageBuilder = new StringBuilder();
 
 	public static void main(String[] args) throws FailedSuiteException {
+		log.warn(Banner.getBanner());
 		final var packages = getPackages(args);
 		if (packages.isEmpty()) return;
 		final var suites = instantiateSuites(packages);
