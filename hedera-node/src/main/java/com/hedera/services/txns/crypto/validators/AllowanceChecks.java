@@ -35,6 +35,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
@@ -46,11 +47,14 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.ALLOWANCE_LIMIT_PER_TRANSACTION;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -81,7 +85,12 @@ public class AllowanceChecks {
 		final var tokenAllowances = allowances.getTokenAllowancesList();
 		final var nftAllowances = allowances.getNftAllowancesList();
 
-		var validity = validateCryptoAllowances(cryptoAllowances, ownerAccount);
+		var validity = commonChecks(allowances);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validateCryptoAllowances(cryptoAllowances, ownerAccount);
 		if (validity != OK) {
 			return validity;
 		}
@@ -96,6 +105,16 @@ public class AllowanceChecks {
 			return validity;
 		}
 
+		return OK;
+	}
+
+	ResponseCodeEnum commonChecks(final CryptoApproveAllowanceTransactionBody op) {
+		if (exceedsTxnLimit(op)) {
+			return MAX_ALLOWANCES_EXCEEDED;
+		}
+		if (emptyAllowances(op)) {
+			return EMPTY_ALLOWANCES;
+		}
 		return OK;
 	}
 
@@ -223,5 +242,29 @@ public class AllowanceChecks {
 			}
 		}
 		return OK;
+	}
+
+	/**
+	 * Checks if the total allowances in the transaction exceeds the allowed limit
+	 *
+	 * @param op
+	 * @return
+	 */
+	private boolean exceedsTxnLimit(final CryptoApproveAllowanceTransactionBody op) {
+		final var totalAllowances =
+				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
+		return totalAllowances > ALLOWANCE_LIMIT_PER_TRANSACTION;
+	}
+
+	/**
+	 * Checks if the allowance lists are empty in the transaction
+	 *
+	 * @param op
+	 * @return
+	 */
+	private boolean emptyAllowances(final CryptoApproveAllowanceTransactionBody op) {
+		final var totalAllowances =
+				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
+		return totalAllowances == 0;
 	}
 }

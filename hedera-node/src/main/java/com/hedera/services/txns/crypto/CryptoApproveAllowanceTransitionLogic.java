@@ -23,7 +23,6 @@
 package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -33,25 +32,22 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.AllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
@@ -78,30 +74,28 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		try {
-			final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
-			final AccountID owner = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
-			final Id ownerId = Id.fromGrpcAccount(owner);
-			final var ownerAccount = accountStore.loadAccount(ownerId);
+		/* --- Extract gRPC --- */
+		final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
+		final AccountID owner = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
+		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-			final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+		/* --- Use models --- */
+		final Id ownerId = Id.fromGrpcAccount(owner);
+		final var ownerAccount = accountStore.loadAccount(ownerId);
 
-			applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);
-			applyFungibleTokenAllowances(op.getTokenAllowancesList(), ownerAccount);
-			applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
+		/* --- Do the business logic --- */
+		applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);
+		applyFungibleTokenAllowances(op.getTokenAllowancesList(), ownerAccount);
+		applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
 
-			if (exceedsAccountLimit(ownerAccount)) {
-				txnCtx.setStatus(MAX_ALLOWANCES_EXCEEDED);
-				return;
-			}
+		/* --- validate --- */
+		validateFalse(exceedsAccountLimit(ownerAccount), MAX_ALLOWANCES_EXCEEDED);
 
-			accountStore.commitAccount(ownerAccount);
-			sigImpactHistorian.markEntityChanged(ownerId.num());
+		/* --- Persist the owner account --- */
+		accountStore.commitAccount(ownerAccount);
+		sigImpactHistorian.markEntityChanged(ownerId.num());
 
-			txnCtx.setStatus(SUCCESS);
-		} catch (InsufficientFundsException ife) {
-			txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
-		}
+		txnCtx.setStatus(SUCCESS);
 	}
 
 	@Override
@@ -114,23 +108,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		return this::validate;
 	}
 
-	@Override
-	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var allowanceTxn = accessor.getTxn();
-		final AccountID owner = allowanceTxn.getTransactionID().getAccountID();
-		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
-		return allowanceChecks.allowancesValidation(allowanceTxn, ownerAccount);
-	}
-
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
-		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
-		if (exceedsTxnLimit(op)) {
-			return MAX_ALLOWANCES_EXCEEDED;
-		}
-		if (emptyAllowances(op)) {
-			return EMPTY_ALLOWANCES;
-		}
-		return OK;
+		final AccountID owner = cryptoAllowanceTxn.getTransactionID().getAccountID();
+		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
+		return allowanceChecks.allowancesValidation(cryptoAllowanceTxn, ownerAccount);
 	}
 
 	/**
@@ -143,7 +124,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoAllowancesMap = ownerAccount.getCryptoAllowances();
+		Map<EntityNum, Long> cryptoAllowancesMap = ownerAccount.getCryptoAllowances() == null ? new HashMap<>() :
+				ownerAccount.getCryptoAllowances();
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
@@ -170,7 +152,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = ownerAccount.getNftAllowances();
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = ownerAccount.getNftAllowances() == null ?
+				new HashMap<>() :
+				ownerAccount.getNftAllowances();
+		;
 		for (var allowance : nftAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -200,7 +185,9 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = ownerAccount.getFungibleTokenAllowances();
+		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = ownerAccount.getFungibleTokenAllowances() == null ?
+				new HashMap<>() :
+				ownerAccount.getFungibleTokenAllowances();
 		for (var allowance : tokenAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var spender = Id.fromGrpcAccount(spenderAccount);
@@ -220,30 +207,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			tokenAllowancesMap.put(key, amount);
 		}
 		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
-	}
-
-	/**
-	 * Checks if the allowance lists are empty in the transaction
-	 *
-	 * @param op
-	 * @return
-	 */
-	private boolean emptyAllowances(final CryptoApproveAllowanceTransactionBody op) {
-		final var totalAllowances =
-				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
-		return totalAllowances == 0;
-	}
-
-	/**
-	 * Checks if the total allowances in the transaction exceeds the allowed limit
-	 *
-	 * @param op
-	 * @return
-	 */
-	private boolean exceedsTxnLimit(final CryptoApproveAllowanceTransactionBody op) {
-		final var totalAllowances =
-				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
-		return totalAllowances > ALLOWANCE_LIMIT_PER_TRANSACTION;
 	}
 
 	/**

@@ -56,12 +56,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -309,6 +312,35 @@ public class AllowanceChecksTest {
 		var validity = subject.validateSerialNums(serials, owner, token2Model);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
+
+	@Test
+	void semanticCheckForEmptyAllowancesInOp() {
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+				).build();
+
+
+		assertEquals(EMPTY_ALLOWANCES, subject.commonChecks(cryptoApproveAllowanceTxn.getCryptoApproveAllowance()));
+	}
+
+	@Test
+	void semanticCheckForExceededLimitOfAllowancesInOp() {
+		addAllowances();
+		getValidTxnCtx();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+	}
+
+	private void addAllowances() {
+		for (int i = 0; i < TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT; i++) {
+			cryptoAllowances.add(cryptoAllowance1);
+			tokenAllowances.add(tokenAllowance1);
+			nftAllowances.add(nftAllowance1);
+		}
+	}
+
 
 	private void getValidTxnCtx() {
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()

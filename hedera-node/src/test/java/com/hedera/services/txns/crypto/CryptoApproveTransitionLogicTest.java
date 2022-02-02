@@ -24,6 +24,7 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -57,14 +58,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -130,40 +130,19 @@ public class CryptoApproveTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 
-		subject.doStateTransition();
-
+		var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
-
 		verify(accountStore, never()).commitAccount(ownerAcccount);
-		verify(txnCtx).setStatus(MAX_ALLOWANCES_EXCEEDED);
 	}
 
 	@Test
-	void semanticCheckForExceededLimitOfAllowancesInOp() {
-		addAllowances();
+	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
-
-		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
-	}
-
-	@Test
-	void semanticCheckForEmptyAllowancesInOp() {
-		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoApproveAllowance(
-						CryptoApproveAllowanceTransactionBody.newBuilder()
-				).build();
-
-
-		assertEquals(EMPTY_ALLOWANCES, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
-	}
-
-	@Test
-	void semanticCheckWorks() {
-		givenValidTxnCtx();
-
+		given(allowanceChecks.allowancesValidation(cryptoApproveAllowanceTxn, ownerAcccount)).willReturn(OK);
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
 	}
 
@@ -225,14 +204,6 @@ public class CryptoApproveTransitionLogicTest {
 		ownerAcccount.setCryptoAllowances(cryptoAllowances);
 		ownerAcccount.setFungibleTokenAllowances(tokenAllowances);
 		ownerAcccount.setNftAllowances(nftAllowances);
-	}
-
-	private void addAllowances() {
-		for (int i = 0; i < TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT; i++) {
-			cryptoAllowances.add(cryptoAllowance1);
-			tokenAllowances.add(tokenAllowance1);
-			nftAllowances.add(nftAllowance1);
-		}
 	}
 
 	private void givenTxnCtxWithZeroAmount() {
