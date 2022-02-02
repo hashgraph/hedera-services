@@ -85,9 +85,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
-	private Map<EntityNum, Long> cryptoAllowances = EMPTY_CRYPTO_ALLOWANCES;
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = EMPTY_FUNGIBLE_TOKEN_ALLOWANCES;
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = EMPTY_NFT_ALLOWANCES;
+	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
 
 	public MerkleAccountState() {
 		/* RuntimeConstructable */

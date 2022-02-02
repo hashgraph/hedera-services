@@ -32,6 +32,7 @@ import com.hedera.services.utils.EntityNum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +41,6 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_CRYPTO_ALLOWANCES;
-import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.state.merkle.MerkleAccountState.EMPTY_NFT_ALLOWANCES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
@@ -79,9 +77,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
-	private Map<EntityNum, Long> cryptoAllowances = EMPTY_CRYPTO_ALLOWANCES;
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = EMPTY_FUNGIBLE_TOKEN_ALLOWANCES;
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = EMPTY_NFT_ALLOWANCES;
+	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
 
 	public Account(Id id) {
 		this.id = id;
