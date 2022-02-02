@@ -111,7 +111,7 @@ jobs:
         run: |
           cd test-clients
           sleep 45s
-          mvn test -Dargs="-s contract.openzeppelin" -DskipTests -Pe2e-tests
+          mvn test -Dargs="-s contract" -DskipTests -Pe2e-tests
 
       - name: Upload logfile as artifact
         uses: actions/upload-artifact@v2
