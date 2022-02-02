@@ -112,9 +112,9 @@ jobs:
           cd test-clients
           sleep 45s
           mvn test -Dargs="-s contract" -DskipTests -Pe2e-tests
-        continue-on-error: true
 
       - name: Download Reflective Suites Runner logfile
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
           name: ReflectiveSuiteRunnerReport
