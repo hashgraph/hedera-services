@@ -96,27 +96,27 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_20() {
 		return List.of(
-				getErc20TokenName(),
-				getErc20TokenSymbol(),
-				getErc20TokenDecimals(),
-				getErc20TotalSupply(),
-				getErc20BalanceOfAccount(),
-				transferErc20Token(),
-				transferErc20TokenFrom(),
-				erc20AllowanceReturnsFailure(),
-				erc20ApproveReturnsFailure()
+//				getErc20TokenName(),
+//				getErc20TokenSymbol(),
+//				getErc20TokenDecimals(),
+//				getErc20TotalSupply(),
+//				getErc20BalanceOfAccount(),
+				transferErc20Token()
+//				transferErc20TokenFrom(),
+//				erc20AllowanceReturnsFailure(),
+//				erc20ApproveReturnsFailure()
 		);
 	}
 
 	List<HapiApiSpec> ERC_721() {
 		return List.of(
-				getErc721TokenName(),
-				getErc721Symbol(),
-				getErc721TokenURI(),
-				getErc721OwnerOf(),
-				getErc721BalanceOf(),
-				getErc721TotalSupply(),
-				getErc721TransferFrom()
+//				getErc721TokenName(),
+//				getErc721Symbol(),
+//				getErc721TokenURI(),
+//				getErc721OwnerOf(),
+//				getErc721BalanceOf(),
+//				getErc721TotalSupply(),
+//				getErc721TransferFrom()
 		);
 	}
 

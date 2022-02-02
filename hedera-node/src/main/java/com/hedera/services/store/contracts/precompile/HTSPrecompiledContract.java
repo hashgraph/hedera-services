@@ -130,6 +130,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
+	private static final Bytes FAILURE_RESULT = resultFrom(FAIL_INVALID);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
@@ -992,7 +993,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class ERCTransferPrecompile extends TransferPrecompile {
 		private TokenID tokenID;
-		private TransactionBody.Builder syntheticTxn;
+		private boolean isFungible;
 
 		public ERCTransferPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
@@ -1000,7 +1001,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			boolean isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
+			isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
 
 			super.transferOp = switch (functionId) {
 				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeTokenTransfer(input, tokenID);
@@ -1009,25 +1010,62 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
 						FAIL_INVALID);
 			};
-			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
+			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			super.extrapolateDetailsFromSyntheticTxn();
-			return syntheticTxn;
+			return super.syntheticTxn;
 		}
 
 		@Override
 		public ExpirableTxnRecord.Builder run(
 				final MessageFrame frame
 		) {
-			final var expirableTxnRecord = super.run(frame);
-			if(SUCCESS_LITERAL.equals(expirableTxnRecord.getReceiptBuilder().getStatus())) {
-				frame.addLog(new Log(EntityIdUtils.asTypedSolidityAddress(tokenID), Bytes.fromHexString(""), new ArrayList<>()));
+			final var childRecord = super.run(frame);
+			if(SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
+				final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
+
+				if(isFungible) {
+					frame.addLog(getLogForFungibleTransfer(precompileAddress));
+				} else {
+					frame.addLog(getLogForNftExchange(precompileAddress));
+				}
 			}
-			return expirableTxnRecord;
+			return childRecord;
+		}
+
+		private Log getLogForFungibleTransfer(final Address logger) {
+			final var fungibleTransfers = super.transferOp.get(0).fungibleTransfers();
+			final var fungibleTransfer = fungibleTransfers.get(0);
+			final var sender = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.sender);
+			final var receiver = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.receiver);
+
+			return EncodingFacade.generateLog(logger, sender,
+					receiver, fungibleTransfer.amount);
+		}
+
+		private Log getLogForNftExchange(final Address logger) {
+			final var nftExchanges = super.transferOp.get(0).nftExchanges();
+			final var nftExchange = nftExchanges.get(0).asGrpc();
+			final var sender = EntityIdUtils.asTypedSolidityAddress(nftExchange.getSenderAccountID());
+			final var receiver = EntityIdUtils.asTypedSolidityAddress(nftExchange.getReceiverAccountID());
+
+			return EncodingFacade.generateLog(logger, sender,
+					receiver, nftExchange.getSerialNumber());
 		}
 
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			return 0;
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			if(isFungible && SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
+				return SUCCESS_RESULT;
+			} else if(isFungible) {
+				return FAILURE_RESULT;
+			} else {
+				return Bytes.EMPTY;
+			}
 		}
 	}
 

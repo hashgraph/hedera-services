@@ -20,16 +20,22 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Event;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -37,10 +43,9 @@ public class EncodingFacade {
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-	private static final TupleType totalSupplyOfType = TupleType.parse("(uint256)");
+	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
-	private static final TupleType transferType = TupleType.parse("(int32)");
 	private static final TupleType ownerOfType = TupleType.parse("(bytes32)");
 	private static final TupleType nameType = TupleType.parse("(string)");
 	private static final TupleType symbolType = TupleType.parse("(string)");
@@ -76,13 +81,6 @@ public class EncodingFacade {
 		return functionResultBuilder()
 				.forFunction(FunctionType.OWNER)
 				.withOwner(address)
-				.build();
-	}
-
-	public Bytes encodeTransfer() {
-		return functionResultBuilder()
-				.forFunction(FunctionType.TRANSFER)
-				.withStatus(SUCCESS.getNumber())
 				.build();
 	}
 
@@ -142,7 +140,7 @@ public class EncodingFacade {
 	}
 
 	private enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, TRANSFER, OWNER, TOKEN_URI, NAME, SYMBOL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -168,13 +166,11 @@ public class EncodingFacade {
 			} else if (functionType == FunctionType.BURN) {
 				tupleType = burnReturnType;
 			} else if (functionType == FunctionType.TOTAL_SUPPLY) {
-				tupleType = totalSupplyOfType;
+				tupleType = totalSupplyType;
 			} else if (functionType == FunctionType.DECIMALS) {
 				tupleType = decimalsType;
 			} else if (functionType == FunctionType.BALANCE) {
 				tupleType = balanceOfType;
-			} else if (functionType == FunctionType.TRANSFER) {
-				tupleType = transferType;
 			} else if (functionType == FunctionType.OWNER) {
 				tupleType = ownerOfType;
 			} else if (functionType == FunctionType.NAME) {
@@ -244,8 +240,6 @@ public class EncodingFacade {
 				result = Tuple.of(decimals);
 			} else if (functionType == FunctionType.BALANCE) {
 				result = Tuple.of(BigInteger.valueOf(balance));
-			} else if (functionType == FunctionType.TRANSFER) {
-				result = Tuple.of(BigInteger.valueOf(status));
 			} else if (functionType == FunctionType.OWNER) {
 				result = Tuple.of(owner);
 			} else if (functionType == FunctionType.NAME) {
@@ -259,5 +253,45 @@ public class EncodingFacade {
 			}
 			return Bytes.wrap(tupleType.encode(result).array());
 		}
+	}
+
+	public static Log generateLog(final Address logger, final Object... params) {
+		final var tuple = Tuple.of(params);
+		final var tupleType = generateTupleType(params);
+		return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), generateLogTopics(params));
+	}
+
+	private static TupleType generateTupleType(final Object... params) {
+		final StringBuilder tupleTypes = new StringBuilder("(");
+		for (final var param : params) {
+			if (param instanceof Address) {
+				tupleTypes.append("bytes32,");
+			} else if (param instanceof Long) {
+				tupleTypes.append("uint256,");
+			} else if (param instanceof Boolean) {
+				tupleTypes.append("boolean,");
+			}
+		}
+		//Delete last comma
+		tupleTypes.deleteCharAt(tupleTypes.length()-1);
+		tupleTypes.append(")");
+
+		return TupleType.parse(tupleTypes.toString());
+	}
+
+	private static List<LogTopic> generateLogTopics(final Object... params) {
+		final List<LogTopic> logTopics = new ArrayList<>();
+		for (final var param : params) {
+			if (param instanceof Address) {
+				logTopics.add(LogTopic.fromHexString(((Address) param).toHexString()));
+			} else if (param instanceof Long) {
+				logTopics.add(LogTopic.fromHexString(Long.toHexString((Long)param)));
+			} else if (param instanceof Boolean) {
+				boolean value = (Boolean) param;
+				byte [] valueBytes = new byte[]{(byte) (value?1:0)};
+				logTopics.add(LogTopic.wrap(Bytes.wrap(valueBytes)));
+			}
+		}
+		return logTopics;
 	}
 }
