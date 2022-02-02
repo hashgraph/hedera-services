@@ -42,7 +42,7 @@ public class ReflectiveSuiteRunnerService {
 	private static final Logger log = LogManager.getLogger(ReflectiveSuiteRunnerService.class);
 	private static Set<String> suitesPaths;
 	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
-	private static final StringBuilder messageBuilder = new StringBuilder();
+	private static final StringBuilder logMessageBuilder = new StringBuilder();
 
 	public static Set<String> getPackages(final String[] args) {
 		collectSuitesPaths();
@@ -109,7 +109,6 @@ public class ReflectiveSuiteRunnerService {
 		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
 	}
 
-	/* --- Helpers --- */
 	private static void collectSuitesPaths() {
 		suitesPaths = new Reflections("com.hedera.services.bdd.suites")
 				.getSubTypesOf(HapiApiSuite.class)
@@ -128,14 +127,14 @@ public class ReflectiveSuiteRunnerService {
 	}
 
 	private static void logEvent(final String message, final List<String> source) {
-		messageBuilder
+		logMessageBuilder
 				.append(System.lineSeparator())
 				.append(String.format(message, source.size()))
 				.append(System.lineSeparator())
 				.append(String.join(System.lineSeparator(), source))
 				.append(System.lineSeparator());
-		log.warn(messageBuilder.toString());
-		messageBuilder.setLength(0);
+		log.warn(logMessageBuilder.toString());
+		logMessageBuilder.setLength(0);
 	}
 
 	@NotNull

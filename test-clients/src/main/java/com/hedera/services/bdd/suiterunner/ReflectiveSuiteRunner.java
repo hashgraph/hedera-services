@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suiterunner;
  */
 
 
-import com.hedera.services.bdd.suiterunner.exceptions.FailedSuitesException;
+import com.hedera.services.bdd.suiterunner.exceptions.FailedSuiteException;
 import com.hedera.services.bdd.suiterunner.models.SpecReport;
 import com.hedera.services.bdd.suiterunner.models.SuiteReport;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -50,8 +50,9 @@ public class ReflectiveSuiteRunner {
 	private static final Logger log = redirectLogger();
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
 	private static final List<SuiteReport> suiteReports = new ArrayList<>();
+	private static final StringBuilder logMessageBuilder = new StringBuilder();
 
-	public static void main(String[] args) throws FailedSuitesException {
+	public static void main(String[] args) throws FailedSuiteException {
 		final var packages = getPackages(args);
 		if (packages.isEmpty()) return;
 		final var suites = instantiateSuites(packages);
@@ -116,8 +117,7 @@ public class ReflectiveSuiteRunner {
 		});
 	}
 
-	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuitesException {
-		final var summary = new StringBuilder();
+	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuiteException {
 		final var executedTotal = suitesByRunType
 				.values()
 				.stream()
@@ -125,40 +125,44 @@ public class ReflectiveSuiteRunner {
 				.reduce(0, Integer::sum);
 		final var failedTotal = failedSuites.size();
 
-		summary.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
-		summary.append(String.format("TOTAL: %d%n", executedTotal));
-		summary.append(String.format("PASSED: %d%n", executedTotal - failedTotal));
-		summary.append(String.format("FAILED: %d%n", failedTotal));
+		logMessageBuilder
+				.append(System.lineSeparator())
+				.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR))
+				.append(String.format("TOTAL: %d%n", executedTotal))
+				.append(String.format("PASSED: %d%n", executedTotal - failedTotal))
+				.append(String.format("FAILED: %d%n", failedTotal));
 
-		if (failedSuites.size() > 0) {
-			log.error(summary.toString());
-		} else {
-			log.warn(summary.toString());
-		}
+		log.warn(logMessageBuilder.toString());
 
-		final var report = new StringBuilder();
+		logMessageBuilder.setLength(0);
 
 		for (SuiteReport suiteReport : suiteReports) {
-			report.append(String.format("%1$s %2$d failing specs in %3$s %1$s%n",
+			logMessageBuilder
+					.append(System.lineSeparator())
+					.append(String.format("%1$s %2$d failing spec(s) in %3$s %1$s%n",
 					SEPARATOR, suiteReport.getFailedSpecs().size(), suiteReport.getName()));
 			for (SpecReport failingSpec : suiteReport.getFailedSpecs()) {
-				report.append(String.format("Spec name: %s%n", failingSpec.getName()));
-				report.append(String.format("Status: %s%n", failingSpec.getStatus()));
-				report.append(String.format("Cause: %s%n", failingSpec.getFailureReason()));
-				report.append(System.lineSeparator());
+				logMessageBuilder
+						.append(String.format("Spec name: %s%n", failingSpec.getName()))
+						.append(String.format("Status: %s%n", failingSpec.getStatus()))
+						.append(String.format("Cause: %s%n", failingSpec.getFailureReason()))
+						.append(System.lineSeparator());
 			}
-			report.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, suiteReport.getName()));
-			report.append(System.lineSeparator());
-			log.warn(report.toString());
-			report.setLength(0);
+			logMessageBuilder
+					.append(String.format("%1$s End of report for %2$s %1$s%n", SEPARATOR, suiteReport.getName()))
+					.append(System.lineSeparator());
+			log.warn(logMessageBuilder.toString());
+			logMessageBuilder.setLength(0);
 		}
+
+		logMessageBuilder.setLength(0);
 
 		if (failedSuites.size() > 0) {
 			final var suiteNames = failedSuites
 					.stream()
 					.map(suite -> suite.getClass().getSimpleName())
 					.toList();
-			throw new FailedSuitesException("Suite are failing: ", suiteNames);
+			throw new FailedSuiteException("Suite(s) are failing: ", suiteNames);
 		}
 	}
 
@@ -170,12 +174,13 @@ public class ReflectiveSuiteRunner {
 		file.addAttribute("fileName", LOG_PATH);
 
 		final var pattern = builder.newLayout("PatternLayout");
-		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5pat line %-1L in class %c{1} - %m%n");
 
+		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p at line %-1L in class %c{1} - %m%n");
 		console.add(pattern);
 		file.add(pattern);
 
 		final var rootLogger = builder.newRootLogger(Level.WARN);
+
 		rootLogger.add(builder.newAppenderRef("log"));
 		rootLogger.add(builder.newAppenderRef("stdout"));
 
@@ -199,7 +204,6 @@ public class ReflectiveSuiteRunner {
 		}
 	}
 
-	/* --- Helpers --- */
 	private static boolean isFreeze(final HapiApiSuite suite) {
 		return suite.getClass().getPackageName().contains("freeze");
 	}
