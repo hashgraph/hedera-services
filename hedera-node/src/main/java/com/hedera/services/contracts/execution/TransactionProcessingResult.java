@@ -222,11 +222,11 @@ public class TransactionProcessingResult {
 					EntityIdUtils.contractParsedFromSolidityAddress(address.toArray()));
 			states.forEach((slot, changePair) -> {
 				StorageChange.Builder stateChange = StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(changePair.getLeft().toArrayUnsafe()));
+						.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
 				Bytes changePairRight = changePair.getRight();
 				if (changePairRight != null) {
-					stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.toArrayUnsafe())).build());
+					stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
 				}
 				contractChanges.addStorageChanges(stateChange.build());
 			});

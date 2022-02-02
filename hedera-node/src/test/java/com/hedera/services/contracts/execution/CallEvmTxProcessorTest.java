@@ -200,11 +200,11 @@ class CallEvmTxProcessorTest {
 		final var contractStateChange = result.toGrpc().getStateChanges(0);
 		assertEquals(EntityIdUtils.contractParsedFromSolidityAddress(Address.fromHexString(contractAddress)),
 				contractStateChange.getContractID());
-		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(slot)).toArrayUnsafe()),
+		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(slot)).trimLeadingZeros().toArrayUnsafe()),
 				contractStateChange.getStorageChanges(0).getSlot());
-		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(oldSlotValue)).toArrayUnsafe()),
+		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(oldSlotValue)).trimLeadingZeros().toArrayUnsafe()),
 				contractStateChange.getStorageChanges(0).getValueRead());
-		assertEquals(BytesValue.of(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(newSlotValue)).toArrayUnsafe())),
+		assertEquals(BytesValue.of(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(newSlotValue)).trimLeadingZeros().toArrayUnsafe())),
 				contractStateChange.getStorageChanges(0).getValueWritten());
 	}
 
