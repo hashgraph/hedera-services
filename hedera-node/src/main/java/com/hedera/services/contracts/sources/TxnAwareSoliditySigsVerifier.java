@@ -22,6 +22,7 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -73,14 +74,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address accountAddress,
 			final Address recipient,
 			final Address contract,
-			final Address activeContract
+			final Address activeContract,
+			final ContractAliases aliases
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
 		final var simpleId = Id.fromGrpcAccount(accountId);
 		final var entityNum = simpleId.asEntityNum();
 		final var account = accounts.get().get(entityNum);
 		validateTrue(account != null, INVALID_ACCOUNT_ID);
-		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract);
+		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract, aliases);
 	}
 
 	@Override
@@ -88,7 +90,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address tokenAddress,
 			final Address recipient,
 			final Address contract,
-			final Address activeContract
+			final Address activeContract,
+			final ContractAliases aliases
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
 		final var simpleId = Id.fromGrpcToken(tokenId);
@@ -96,7 +99,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		final var token = tokens.get().get(entityNum);
 		validateTrue(token != null, INVALID_TOKEN_ID);
 		validateTrue(token.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(token.getSupplyKey(), recipient, contract, activeContract);
+		return isActiveInFrame(token.getSupplyKey(), recipient, contract, activeContract, aliases);
 	}
 
 	@Override
@@ -104,32 +107,38 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address target,
 			final Address recipient,
 			final Address contract,
-			final Address activeContract
+			final Address activeContract,
+			final ContractAliases aliases
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}
 		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
-		return requiredKey.map(key -> isActiveInFrame(key, recipient, contract, activeContract)).orElse(true);
+		return requiredKey.map(key ->
+				isActiveInFrame(key, recipient, contract, activeContract, aliases)).orElse(true);
 	}
 
 	private boolean isActiveInFrame(
 			final JKey key,
 			final Address recipient,
 			final Address contract,
-			final Address activeContract
+			final Address activeContract,
+			final ContractAliases aliases
 	) {
 		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
-		return activationTest.test(key, pkToCryptoSigsFn, validityTestFor(recipient, contract, activeContract));
+		return activationTest.test(
+				key,
+				pkToCryptoSigsFn,
+				validityTestFor(recipient, contract, activeContract, aliases));
 	}
 
 	BiPredicate<JKey, TransactionSignature> validityTestFor(
 			final Address recipient,
 			final Address contract,
-			final Address activeContract
+			final Address activeContract,
+			final ContractAliases aliases
 	) {
-		final var activeContractId = EntityIdUtils.contractIdFromEvmAddress(activeContract);
 		final var isDelegateCall = !contract.equals(recipient);
 
 		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
@@ -137,11 +146,12 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		 * that key's verified cryptographic signature (if any was available in the sigMap). */
 		return (key, sig) -> {
 			if (key.hasDelegatableContractId()) {
-				final var controllingId = key.getDelegatableContractIdKey().getContractID();
-				return controllingId.equals(activeContractId);
+				final var controllingContract =
+						aliases.currentAddress(key.getDelegatableContractIdKey().getContractID());
+				return controllingContract.equals(activeContract);
 			} else if (key.hasContractID()) {
-				final var controllingId = key.getContractIDKey().getContractID();
-				return !isDelegateCall && controllingId.equals(activeContractId);
+				final var controllingContract = aliases.currentAddress(key.getContractIDKey().getContractID());
+				return !isDelegateCall && controllingContract.equals(activeContract);
 			} else {
 				/* Otherwise apply the standard cryptographic validity test */
 				return cryptoValidity.test(key, sig);

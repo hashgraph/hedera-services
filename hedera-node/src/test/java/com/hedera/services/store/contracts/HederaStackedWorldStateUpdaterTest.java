@@ -22,13 +22,9 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -64,14 +61,21 @@ class HederaStackedWorldStateUpdaterTest {
 	private HederaMutableWorldState worldState;
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
-	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
+	}
+
+	@Test
+	void usesAliasesForDecodingHelp() {
+		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var resolved = subject.unaliased(alias.toArrayUnsafe());
+		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
 	}
 
 	@Test
@@ -92,7 +96,7 @@ class HederaStackedWorldStateUpdaterTest {
 	void usesCanonicalAddressFromTrackingLedgers() {
 		given(trackingLedgers.canonicalAddress(sponsor)).willReturn(alias);
 
-		assertSame(alias, subject.canonicalAddress(sponsor));
+		assertSame(alias, subject.priorityAddress(sponsor));
 	}
 
 	@Test

@@ -28,6 +28,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -42,7 +43,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.BurnLogic;
@@ -63,8 +64,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -110,12 +109,6 @@ class BurnPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private MessageFrame parentFrame;
-	@Mock
-	private Deque<MessageFrame> frameDeque;
-	@Mock
-	private Iterator<MessageFrame> dequeIterator;
-	@Mock
 	private TxnAwareSoliditySigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
@@ -140,7 +133,7 @@ class BurnPrecompilesTest {
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
-	private AbstractLedgerWorldUpdater worldUpdater;
+	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
 	private WorldLedgers wrappedLedgers;
 	@Mock
@@ -163,6 +156,8 @@ class BurnPrecompilesTest {
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
+	@Mock
+	private ContractAliases aliases;
 
 	private HTSPrecompiledContract subject;
 
@@ -183,12 +178,14 @@ class BurnPrecompilesTest {
 	void nftBurnFailurePathWorks() {
 		givenNonfungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr))
+		given(sigsVerifier.hasActiveSupplyKey(
+				nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases)
+		)
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(invalidSigResult, result);
@@ -200,7 +197,8 @@ class BurnPrecompilesTest {
 		givenNonfungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -215,7 +213,7 @@ class BurnPrecompilesTest {
 		given(mockRecordBuilder.getReceiptBuilder()).willReturn(receiptBuilder);
 		given(encoder.encodeBurnSuccess(123L)).willReturn(successResult);
 
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(successResult, result);
@@ -229,7 +227,8 @@ class BurnPrecompilesTest {
 		givenFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -241,7 +240,7 @@ class BurnPrecompilesTest {
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.encodeBurnSuccess(49)).willReturn(burnSuccessResultWith49Supply);
 
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(burnSuccessResultWith49Supply, result);
@@ -263,6 +262,7 @@ class BurnPrecompilesTest {
 	}
 
 	private void givenFrameContext() {
+		given(worldUpdater.aliases()).willReturn(aliases);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);

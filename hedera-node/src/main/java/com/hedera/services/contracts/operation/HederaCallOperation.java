@@ -91,6 +91,6 @@ public class HederaCallOperation extends CallOperation {
 			return nominal;
 		}
 		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		return updater.canonicalAddress(nominal);
+		return updater.priorityAddress(nominal);
 	}
 }

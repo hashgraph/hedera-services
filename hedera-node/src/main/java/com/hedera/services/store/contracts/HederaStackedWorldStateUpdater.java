@@ -23,6 +23,8 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.swirlds.common.CommonUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -51,7 +53,20 @@ public class HederaStackedWorldStateUpdater
 		this.worldState = worldState;
 	}
 
-	public Address canonicalAddress(final Address addressOrAlias) {
+	public byte[] unaliased(final byte[] evmAddress) {
+		final var ans = aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+		System.out.println("Unaliased " + CommonUtils.hex(evmAddress) + " to " + CommonUtils.hex(ans));
+		return ans;
+	}
+
+	/**
+	 * Given an address in mirror or alias form, returns its alias form (if it has one). We use this to make
+	 * the ADDRESS opcode prioritize CREATE2 addresses over mirror addresses.
+	 *
+	 * @param addressOrAlias a mirror or alias address
+	 * @return the alias form of the address, if it exists
+	 */
+	public Address priorityAddress(final Address addressOrAlias) {
 		return trackingLedgers().canonicalAddress(addressOrAlias);
 	}
 

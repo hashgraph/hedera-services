@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -29,7 +30,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,6 +55,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
@@ -101,6 +104,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
@@ -152,11 +156,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						canUseAliasesInPrecompiles(),
 				}
 		);
 	}
@@ -292,6 +297,69 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.payingWith(GENESIS)),
 						sourcing(() -> getContractInfo(expectedCreate2Address.get())
 								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID))
+				);
+	}
+
+	private HapiApiSpec canUseAliasesInPrecompiles() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var pc2User = "pc2User";
+		final var ft = "fungibleToken";
+		final var nft = "nonFungibleToken";
+		final var multiKey = "swiss";
+		final var ftAssoc = "ftAssoc";
+
+		final AtomicReference<String> userAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> userMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> userLiteralId = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("CanUseAliasesInPrecompiles")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(PRECOMPILE_CREATE2_USER_PATH)),
+						contractCreate(pc2User)
+								.omitAdminKey()
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(pc2User, PC2_CREATE_USER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Precompile user", creation2, userMirrorAddr, userAliasAddr),
+						withOpContext((spec, opLog) ->
+								userLiteralId.set(
+										asContractString(
+												contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
+						tokenCreate(ft)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(1_000),
+						tokenCreate(nft)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.supplyKey(multiKey),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("PRICELESS")
+						))
+				).when(
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final var ftType = registry.getTokenID(ft);
+
+							final var op = contractCall(
+									pc2User, PC2_ASSOCIATE_BOTH_ABI, hex(asSolidityAddress(ftType))
+							)
+									.via(ftAssoc)
+									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+									.gas(4_000_000L);
+							allRunFor(spec, op);
+						})
+				).then(
+						getTxnRecord(ftAssoc).andAllChildRecords().logged()
 				);
 	}
 
@@ -1318,9 +1386,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 			final var create2Record = response.getChildTransactionRecords(0);
 			final var create2Address =
 					create2Record.getContractCreateResult().getEvmAddress().getValue();
-			create2Addr.set(CommonUtils.hex(create2Address.toByteArray()));
+			create2Addr.set(hex(create2Address.toByteArray()));
 			final var createdId = create2Record.getReceipt().getContractID();
-			mirrorAddr.set(CommonUtils.hex(asSolidityAddress(createdId)));
+			mirrorAddr.set(hex(asSolidityAddress(createdId)));
 			opLog.info("{} is @ {} (mirror {})",
 					desc,
 					create2Addr.get(),

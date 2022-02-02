@@ -23,6 +23,7 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +34,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +53,10 @@ class StackedContractAliasesTest {
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
 	private static final Address mirrorAddress = num.toEvmAddress();
+	private static final ContractID normalId = num.toGrpcContractID();
+	private static final ContractID aliasedId = ContractID.newBuilder()
+			.setEvmAddress(ByteString.copyFrom(rawNonMirrorAddress))
+			.build();
 
 	@Mock
 	private ContractAliases wrappedAliases;
@@ -56,6 +64,27 @@ class StackedContractAliasesTest {
 	private SigImpactHistorian observer;
 
 	private StackedContractAliases subject;
+
+	@Test
+	void getsCurrentAddressForAliased() {
+		final var mockSubject = mock(ContractAliases.class);
+
+		given(mockSubject.resolveForEvm(nonMirrorAddress)).willReturn(mirrorAddress);
+		doCallRealMethod().when(mockSubject).currentAddress(aliasedId);
+
+		final var actual = mockSubject.currentAddress(aliasedId);
+		assertEquals(mirrorAddress, actual);
+	}
+
+	@Test
+	void getsCurrentAddressForNonAliased() {
+		final var mockSubject = mock(ContractAliases.class);
+
+		doCallRealMethod().when(mockSubject).currentAddress(normalId);
+
+		final var actual = mockSubject.currentAddress(normalId);
+		assertEquals(num.toEvmAddress(), actual);
+	}
 
 	@BeforeEach
 	void setUp() {

@@ -87,7 +87,7 @@ class HederaStaticCallOperationTest {
 		final var canonical = Address.BLS12_G1MUL;
 		given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.wrap(nominal.toArrayUnsafe()));
 		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.canonicalAddress(nominal)).willReturn(canonical);
+		given(worldUpdater.priorityAddress(nominal)).willReturn(canonical);
 
 		final var actual = subject.address(evmMsgFrame);
 
@@ -135,7 +135,7 @@ class HederaStaticCallOperationTest {
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true);
 		given(acc.getAddress()).willReturn(accountAddr);
 		given(addressValidator.test(any(), any())).willReturn(true);
 

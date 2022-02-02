@@ -110,7 +110,25 @@ public class ContractResources {
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
 	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
 	public static final String ADDRESS_VAL_RETURNER_PATH = bytecodePath("AddressValueRet");
+	public static final String PRECOMPILE_CREATE2_USER_PATH = bytecodePath("Create2PrecompileUser");
 
+	public static final String PC2_CREATE_USER_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createUser\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_ASSOCIATE_BOTH_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"}],\"name\":\"associateBothTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_DISSOCIATE_BOTH_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"}],\"name\":\"dissociateBothFrom\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_FT_SEND_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"ft_type\"," +
+			"\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"amount\",\"type\":\"int64\"}]," +
+			"\"name\":\"sendFtToUser\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\"," +
+			"\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_NFT_SEND_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"nft_type\"," +
+			"\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"sn\",\"type\":\"int64\"}]," +
+			"\"name\":\"sendNftToUser\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String CREATE2_FACTORY_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
 			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\",\"type\":" +
 			"\"uint256\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";

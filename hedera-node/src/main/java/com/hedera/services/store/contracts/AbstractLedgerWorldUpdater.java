@@ -286,7 +286,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		return trackingLedgers.accounts();
 	}
 
-	protected ContractAliases aliases() {
+	public ContractAliases aliases() {
 		return trackingLedgers.aliases();
 	}
 

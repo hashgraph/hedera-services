@@ -126,7 +126,7 @@ class HederaCreate2OperationTest {
 
 		given(evmMsgFrame.getWorldUpdater()).willReturn(stackedUpdater);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
-		given(stackedUpdater.canonicalAddress(recipientAddr)).willReturn(canonicalSource);
+		given(stackedUpdater.priorityAddress(recipientAddr)).willReturn(canonicalSource);
 		given(stackedUpdater.newAliasedContractAddress(recipientAddr, expectedAlias)).willReturn(expectedAddress);
 
 		final var actualAlias = subject.targetContractAddress(evmMsgFrame);
