@@ -105,7 +105,7 @@ public class GetContractInfoAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
 		var paymentTxn = query.getContractGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(uncheckedFrom(paymentTxn));
+		return Optional.of(uncheckedFrom(paymentTxn));
 	}
 
 	private Response responseFor(

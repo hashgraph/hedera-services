@@ -71,6 +71,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -102,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.CommonUtils.hex;
 import static com.swirlds.common.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -144,8 +146,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
+						create2FactoryWorksAsExpected(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
 //						priorityAddressIsCreate2ForInternalMessages(),
 //						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 				}
@@ -181,6 +183,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
 		final AtomicReference<String> expectedMirrorAddress = new AtomicReference<>();
 		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+		final AtomicReference<byte[]> bytecodeFromMirror = new AtomicReference<>();
+		final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
+		final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
 		return defaultHapiSpec("Create2FactoryWorksAsExpected")
 				.given(
@@ -238,8 +243,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 							final var childId = ContractID.newBuilder()
 									.setContractNum(parentId.getContractNum() + 1L)
 									.build();
+							mirrorLiteralId.set("0.0." + childId.getContractNum());
 							expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
-						})
+						}),
+						sourcing(() -> getContractBytecode(mirrorLiteralId.get())
+								.exposingBytecodeTo(bytecodeFromMirror::set)),
+						sourcing(() -> getContractBytecode(expectedCreate2Address.get())
+								.exposingBytecodeTo(bytecodeFromAlias::set)),
+						withOpContext((spec, opLog) -> assertArrayEquals(
+								bytecodeFromAlias.get(), bytecodeFromMirror.get(),
+								"Bytecode should be gett-able using alias"))
 				).then(
 						sourcing(() -> contractCall(
 								create2Factory,

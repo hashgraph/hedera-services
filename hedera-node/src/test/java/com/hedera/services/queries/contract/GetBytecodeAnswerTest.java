@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -65,6 +66,7 @@ class GetBytecodeAnswerTest {
 	OptionValidator optionValidator;
 	StateView view;
 	MerkleMap<EntityNum, MerkleAccount> contracts;
+	private AliasManager aliasManager;
 
 	GetBytecodeAnswer subject;
 
@@ -75,8 +77,9 @@ class GetBytecodeAnswerTest {
 		view = mock(StateView.class);
 		given(view.contracts()).willReturn(contracts);
 		optionValidator = mock(OptionValidator.class);
+		aliasManager = mock(AliasManager.class);
 
-		subject = new GetBytecodeAnswer(optionValidator);
+		subject = new GetBytecodeAnswer(aliasManager, optionValidator);
 	}
 
 	@Test
@@ -124,7 +127,7 @@ class GetBytecodeAnswerTest {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.bytecodeOf(asContract(target))).willReturn(Optional.of(bytecode));
+		given(view.bytecodeOf(EntityNum.fromLong(123))).willReturn(Optional.of(bytecode));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -177,7 +180,7 @@ class GetBytecodeAnswerTest {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableContractStatus(asContract(target), contracts))
+		given(optionValidator.queryableContractStatus(EntityNum.fromLong(123), contracts))
 				.willReturn(CONTRACT_DELETED);
 
 		// when:

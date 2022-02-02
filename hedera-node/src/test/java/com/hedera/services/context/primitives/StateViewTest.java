@@ -818,7 +818,7 @@ class StateViewTest {
 	void getsBytecode() {
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 
-		final var actual = subject.bytecodeOf(cid);
+		final var actual = subject.bytecodeOf(EntityNum.fromContractId(cid));
 
 		assertArrayEquals(expectedBytecode, actual.get());
 	}

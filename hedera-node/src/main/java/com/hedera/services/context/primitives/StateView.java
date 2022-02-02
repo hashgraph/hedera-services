@@ -47,7 +47,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqTokenView;
 import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -180,8 +179,8 @@ public class StateView {
 		}
 	}
 
-	public Optional<byte[]> bytecodeOf(final ContractID id) {
-		return Optional.ofNullable(contractBytecode.get(EntityIdUtils.asEvmAddress(id)));
+	public Optional<byte[]> bytecodeOf(final EntityNum contractId) {
+		return Optional.ofNullable(contractBytecode.get(contractId.toRawEvmAddress()));
 	}
 
 	public Optional<MerkleToken> tokenWith(final TokenID id) {

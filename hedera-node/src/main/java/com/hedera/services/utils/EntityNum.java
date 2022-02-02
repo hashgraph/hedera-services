@@ -149,10 +149,14 @@ public class EntityNum {
 	}
 
 	public Address toEvmAddress() {
-		return Address.wrap(Bytes.wrap(asEvmAddress(
+		return Address.wrap(Bytes.wrap(toRawEvmAddress()));
+	}
+
+	public byte[] toRawEvmAddress() {
+		return asEvmAddress(
 				(int) STATIC_PROPERTIES.getShard(),
 				STATIC_PROPERTIES.getRealm(),
-				numFromCode(value))));
+				numFromCode(value));
 	}
 
 	@Override
