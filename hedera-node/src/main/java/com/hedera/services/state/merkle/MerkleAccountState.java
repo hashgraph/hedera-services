@@ -25,14 +25,21 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -53,7 +60,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0180_VERSION = 7;
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
-	private static final int CURRENT_VERSION = RELEASE_0220_VERSION;
+	static final int RELEASE_0230_VERSION = 10;
+	private static final int CURRENT_VERSION = RELEASE_0230_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -76,6 +84,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
 
+	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
+	// be modified to use MapValueLinkedList in the future
+	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
+
 	public MerkleAccountState() {
 		/* RuntimeConstructable */
 	}
@@ -93,7 +107,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int number,
 			final int autoAssociationMetadata,
 			final ByteString alias,
-			final int numContractKvPairs
+			final int numContractKvPairs,
+			final Map<EntityNum, Long> cryptoAllowances,
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -108,6 +125,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoAssociationMetadata = autoAssociationMetadata;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
+		this.cryptoAllowances = cryptoAllowances;
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+		this.nftAllowances = nftAllowances;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -148,6 +168,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0220_VERSION) {
 			numContractKvPairs = in.readInt();
 		}
+		if (version >= RELEASE_0230_VERSION) {
+			deserializeAllowances(in);
+		}
 	}
 
 	@Override
@@ -166,6 +189,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
+		serializeAllowances(out);
 	}
 
 	/* --- Copyable --- */
@@ -184,7 +208,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				number,
 				autoAssociationMetadata,
 				alias,
-				numContractKvPairs);
+				numContractKvPairs,
+				cryptoAllowances,
+				fungibleTokenAllowances,
+				nftAllowances);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -213,7 +240,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numContractKvPairs == that.numContractKvPairs &&
 				this.autoAssociationMetadata == that.autoAssociationMetadata &&
 				equalUpToDecodability(this.key, that.key) &&
-				Objects.equals(this.alias, that.alias);
+				Objects.equals(this.alias, that.alias) &&
+				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
+				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
+				Objects.equals(this.nftAllowances, that.nftAllowances);
 	}
 
 	@Override
@@ -231,7 +261,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				nftsOwned,
 				number,
 				autoAssociationMetadata,
-				alias);
+				alias,
+				cryptoAllowances,
+				fungibleTokenAllowances,
+				nftAllowances);
 	}
 
 	/* --- Bean --- */
@@ -253,6 +286,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", alias.toStringUtf8())
+				.add("cryptoAllowances", cryptoAllowances)
+				.add("fungibleTokenAllowances", fungibleTokenAllowances)
+				.add("nftAllowances", nftAllowances)
 				.toString();
 	}
 
@@ -389,9 +425,121 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return Collections.unmodifiableMap(cryptoAllowances);
+	}
+
+	public void setCryptoAllowances(final TreeMap<EntityNum, Long> cryptoAllowances) {
+		assertMutable("cryptoAllowances");
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return Collections.unmodifiableMap(nftAllowances);
+	}
+
+	public void setNftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		assertMutable("nftAllowances");
+		this.nftAllowances = nftAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return Collections.unmodifiableMap(fungibleTokenAllowances);
+	}
+
+	public void setFungibleTokenAllowances(final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		assertMutable("fungibleTokenAllowances");
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
 		}
+	}
+
+	private void serializeAllowances(final SerializableDataOutputStream out) throws IOException {
+		out.writeInt(cryptoAllowances.size());
+		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
+			out.writeLong(entry.getKey().longValue());
+			out.writeLong(entry.getValue());
+		}
+		out.writeInt(fungibleTokenAllowances.size());
+		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
+			out.writeSerializable(entry.getKey(), true);
+			out.writeLong(entry.getValue());
+		}
+		out.writeInt(nftAllowances.size());
+		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : nftAllowances.entrySet()) {
+			out.writeSerializable(entry.getKey(), true);
+			out.writeSerializable(entry.getValue(), true);
+		}
+	}
+
+	private void deserializeAllowances(final SerializableDataInputStream in) throws IOException {
+		var numCryptoAllowances = in.readInt();
+		if(numCryptoAllowances > 0){
+			cryptoAllowances = new TreeMap<>();
+		}
+		while (numCryptoAllowances-- > 0) {
+			final var entityNum = EntityNum.fromLong(in.readLong());
+			final var allowance = in.readLong();
+			cryptoAllowances.put(entityNum, allowance);
+		}
+
+		var numFungibleTokenAllowances = in.readInt();
+		if(numFungibleTokenAllowances > 0){
+			fungibleTokenAllowances = new TreeMap<>();
+		}
+		while (numFungibleTokenAllowances-- > 0) {
+			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
+			final Long value = in.readLong();
+			fungibleTokenAllowances.put(fungibleAllowanceId, value);
+		}
+
+		var numNftAllowances = in.readInt();
+		if(numNftAllowances > 0){
+			nftAllowances = new TreeMap<>();
+		}
+		while (numNftAllowances-- > 0) {
+			final FcTokenAllowanceId nftAllowanceId = in.readSerializable();
+			final FcTokenAllowance value = in.readSerializable();
+			nftAllowances.put(nftAllowanceId, value);
+		}
+	}
+
+	/* --- Helper Functions ---*/
+	public void addCryptoAllowance(final EntityNum spender, final Long allowance) {
+		cryptoAllowances.put(spender, allowance);
+	}
+
+	public void addNftAllowance(
+			final EntityNum tokenNum,
+			final EntityNum spenderNum,
+			final boolean approvedForAll,
+			final List<Long> serialNumbers) {
+		final var key = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		final var value = FcTokenAllowance.from(approvedForAll, serialNumbers);
+		nftAllowances.put(key, value);
+	}
+
+	public void addFungibleTokenAllowance(
+			final EntityNum tokenNum,
+			final EntityNum spenderNum,
+			final Long allowance) {
+		final var key = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		fungibleTokenAllowances.put(key, allowance);
+	}
+
+	public void removeCryptoAllowance(final EntityNum spender) {
+		cryptoAllowances.remove(spender);
+	}
+
+	public void removeNftAllowance(final EntityNum tokenNum, final EntityNum spenderNum) {
+		nftAllowances.remove(FcTokenAllowanceId.from(tokenNum, spenderNum));
+	}
+
+	public void removeFungibleTokenAllowance(final EntityNum tokenNum, final EntityNum spenderNum) {
+		fungibleTokenAllowances.remove(FcTokenAllowanceId.from(tokenNum, spenderNum));
 	}
 }
