@@ -27,8 +27,10 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -40,7 +42,7 @@ import java.io.IOException;
  * Having allowance on a token will grant the spender to transfer fungible or non-fungible token units from the owner's
  * account.
  */
-public class FcTokenAllowanceId implements SelfSerializable {
+public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenAllowanceId> {
 	static final int RELEASE_023X_VERSION = 1;
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf55baa544950f139L;
@@ -122,5 +124,13 @@ public class FcTokenAllowanceId implements SelfSerializable {
 
 	public static FcTokenAllowanceId from(final EntityNum tokenNum, final EntityNum spenderNum) {
 		return new FcTokenAllowanceId(tokenNum, spenderNum);
+	}
+
+	@Override
+	public int compareTo(@NotNull final FcTokenAllowanceId that) {
+		return new CompareToBuilder()
+				.append(tokenNum, that.tokenNum)
+				.append(spenderNum, that.spenderNum)
+				.toComparison();
 	}
 }

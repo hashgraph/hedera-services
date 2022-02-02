@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -82,9 +83,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
-	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
+	private Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 
 	public MerkleAccountState() {
 		/* RuntimeConstructable */
