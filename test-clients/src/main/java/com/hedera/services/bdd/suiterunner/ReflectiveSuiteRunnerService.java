@@ -69,7 +69,7 @@ public class ReflectiveSuiteRunnerService {
 			arguments.removeAll(wrongArguments);
 		}
 
-		logEvent("Preparing to execute tests for %d suites:", arguments);
+		logEvent("Preparing to execute tests for %d suite(s):", arguments);
 
 		return suitesPaths
 				.stream()

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suiterunner;
  */
 
 
+import com.hedera.services.bdd.suiterunner.exceptions.FailedSuitesException;
 import com.hedera.services.bdd.suiterunner.models.SpecReport;
 import com.hedera.services.bdd.suiterunner.models.SuiteReport;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -31,7 +32,6 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
@@ -49,14 +49,14 @@ import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.i
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.generateFailedSuiteReport;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 
-public class ReflectiveSuiteRunner {
+public class ReflectiveSuiteRunner  {
 	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log";
 	private static final String SEPARATOR = "----------";
 	private static final Logger log = redirectLogger();
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
 	private static final List<SuiteReport> suiteReports = new ArrayList<>();
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws FailedSuitesException {
 		final var packages = getPackages(args);
 		if (packages.isEmpty()) return;
 		final var suites = instantiateSuites(packages);
@@ -121,7 +121,7 @@ public class ReflectiveSuiteRunner {
 		});
 	}
 
-	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) {
+	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuitesException {
 		final var summary = new StringBuilder();
 		final var executedTotal = suitesByRunType
 				.values()
@@ -157,9 +157,15 @@ public class ReflectiveSuiteRunner {
 			log.warn(report.toString());
 			report.setLength(0);
 		}
+
+		if (failedSuites.size() > 0) {
+			final var suiteNames = failedSuites
+					.stream()
+					.map(suite -> suite.getClass().getSimpleName())
+					.toList();
+			throw new FailedSuitesException("Suite are failing: ", suiteNames);
+		}
 	}
-
-
 
 	private static Logger redirectLogger() {
 		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -171,12 +177,12 @@ public class ReflectiveSuiteRunner {
 				= builder.newAppender("log", "File");
 		file.addAttribute("fileName", LOG_PATH);
 
-		LayoutComponentBuilder pattern
-				= builder.newLayout("PatternLayout");
-		pattern.addAttribute("pattern", "%-5p%d{yyyy-MM-dd HH:mm:ss.SSS} at line %-1L in class %c{1} - %m%n");
+//		LayoutComponentBuilder pattern
+//				= builder.newLayout("PatternLayout");
+//		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p at line %-1L in class %c{1} - %m%n");
 
-		console.add(pattern);
-		file.add(pattern);
+//		console.add(pattern);
+//		file.add(pattern);
 
 		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.WARN);
 		rootLogger.add(builder.newAppenderRef("log"));
