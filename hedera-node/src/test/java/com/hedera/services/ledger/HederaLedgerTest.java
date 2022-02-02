@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -238,6 +239,13 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.alias(genesis);
 
 		verify(accountsLedger).get(genesis, ALIAS);
+	}
+
+	@Test
+	void delegatesToClearAliasProperly() {
+		subject.clearAlias(genesis);
+
+		verify(accountsLedger).set(genesis, ALIAS, ByteString.EMPTY);
 	}
 
 	@Test

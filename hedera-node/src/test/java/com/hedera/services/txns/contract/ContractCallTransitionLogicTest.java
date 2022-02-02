@@ -138,6 +138,7 @@ class ContractCallTransitionLogicTest {
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(worldState).persistProvisionalContractCreations();
+		verify(txnCtx).setTargetedContract(target);
 	}
 
 	@Test

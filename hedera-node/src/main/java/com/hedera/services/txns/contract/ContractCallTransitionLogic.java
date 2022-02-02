@@ -93,8 +93,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
+		final var target = targetOf(op);
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-		final var contractId = targetOf(op).toId();
+		final var contractId = target.toId();
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
@@ -117,6 +118,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */
+		txnCtx.setTargetedContract(target.toGrpcContractID());
 		for (final var createdContract : createdContracts) {
 			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}

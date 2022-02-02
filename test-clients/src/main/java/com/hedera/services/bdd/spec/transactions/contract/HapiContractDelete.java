@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -87,9 +88,9 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 				.txns()
 				.<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
 						ContractDeleteTransactionBody.class, builder -> {
-							builder.setContractID(spec.registry().getContractId(contract));
+							builder.setContractID(TxnUtils.asContractId(contract, spec));
 							transferContract.ifPresent(c ->
-									builder.setTransferContractID(spec.registry().getContractId(c)));
+									builder.setTransferContractID(TxnUtils.asContractId(c, spec)));
 							transferAccount.ifPresent(a ->
 									builder.setTransferAccountID(spec.registry().getAccountID(a)));
 						}

@@ -470,6 +470,10 @@ public class HederaLedger {
 		return (ByteString) accountsLedger.get(id, ALIAS);
 	}
 
+	public void clearAlias(final AccountID id) {
+		accountsLedger.set(id, ALIAS, ByteString.EMPTY);
+	}
+
 	public boolean isPendingCreation(AccountID id) {
 		return accountsLedger.existsPending(id);
 	}
