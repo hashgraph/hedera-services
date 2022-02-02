@@ -95,9 +95,9 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
           cache: maven
-
-      - name: Build docker images # build the image for hedera-node
-        run: bash compose-build.sh
+#
+#      - name: Build docker images # build the image for hedera-node
+#        run: bash compose-build.sh
 
       - name: Start network # start 3 node network
         run: docker-compose -f docker-compose-ci.yml up -d
