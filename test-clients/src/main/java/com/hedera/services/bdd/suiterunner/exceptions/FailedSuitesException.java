@@ -23,13 +23,8 @@ package com.hedera.services.bdd.suiterunner.exceptions;
 import java.util.List;
 
 public class FailedSuitesException extends RuntimeException {
-	public FailedSuitesException(final String errorMessage) {
-		super(errorMessage);
-	}
-
 	public FailedSuitesException(final String errorMessage, final List<String> failedSuites) {
-		super(errorMessage + String.join(",", failedSuites));
+		super(errorMessage + String.join(", ", failedSuites));
 	}
-
-
 }
+

@@ -44,7 +44,7 @@ public class ReflectiveSuiteRunnerService {
 	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
 	private static final StringBuilder messageBuilder = new StringBuilder();
 
-	public static Set<String> getPackages(String[] args) {
+	public static Set<String> getPackages(final String[] args) {
 		collectSuitesPaths();
 
 		if (runAllTests(args)) {
@@ -105,7 +105,7 @@ public class ReflectiveSuiteRunnerService {
 		return instantiatedSuites;
 	}
 
-	public static boolean runAllTests(String[] arguments) {
+	public static boolean runAllTests(final String[] arguments) {
 		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
 	}
 
@@ -124,7 +124,7 @@ public class ReflectiveSuiteRunnerService {
 				.sorted()
 				.toList();
 
-		logEvent("% d packages collected. Available packages are:", packages);
+		logEvent("%d packages collected. Available packages are:", packages);
 	}
 
 	private static void logEvent(final String message, final List<String> source) {
@@ -139,7 +139,7 @@ public class ReflectiveSuiteRunnerService {
 	}
 
 	@NotNull
-	private static ArrayList<String> parse(String[] args) {
+	private static ArrayList<String> parse(final String[] args) {
 		return args[0].contains("-s")
 				? Arrays
 				.stream(args[0].replaceAll("-s ", "").trim().split(",\\s+|,"))
@@ -159,7 +159,7 @@ public class ReflectiveSuiteRunnerService {
 	 *  implicitly include CryptoTransferLoadTest(extended by CryptoTransferThenFreezeTest) and LoadTest (extended by CryptoTransferLoadTest).
 	 * @param suite the evaluated suite
 	 */
-	private static boolean isInRequestedScope(String path, Class<? extends HapiApiSuite> suite) {
+	private static boolean isInRequestedScope(final String path, Class<? extends HapiApiSuite> suite) {
 		return suite.getPackageName().equals(path);
 	}
 }

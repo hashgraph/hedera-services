@@ -35,8 +35,8 @@ public class ReportFactory {
 	}
 
 	private static String getFailReason(final String name) {
-		String reason = "";
-		String pattern = String.format(LOG_PATTERN, name);
+		final var pattern = String.format(LOG_PATTERN, name);
+		var reason = "";
 
 		try {
 			final var stream = Files.lines(Paths.get(LOG_PATH)).filter(line -> line.matches(pattern));

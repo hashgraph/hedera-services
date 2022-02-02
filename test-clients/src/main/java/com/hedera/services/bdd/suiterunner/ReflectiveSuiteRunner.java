@@ -29,13 +29,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -49,7 +44,7 @@ import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.i
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.generateFailedSuiteReport;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 
-public class ReflectiveSuiteRunner  {
+public class ReflectiveSuiteRunner {
 	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log";
 	private static final String SEPARATOR = "----------";
 	private static final Logger log = redirectLogger();
@@ -168,23 +163,19 @@ public class ReflectiveSuiteRunner  {
 	}
 
 	private static Logger redirectLogger() {
-		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+		final var builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+		final var console = builder.newAppender("stdout", "Console");
+		final var file = builder.newAppender("log", "File");
 
-		AppenderComponentBuilder console
-				= builder.newAppender("stdout", "Console");
-
-		AppenderComponentBuilder file
-				= builder.newAppender("log", "File");
 		file.addAttribute("fileName", LOG_PATH);
 
-//		LayoutComponentBuilder pattern
-//				= builder.newLayout("PatternLayout");
-//		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p at line %-1L in class %c{1} - %m%n");
+		final var pattern = builder.newLayout("PatternLayout");
+		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5pat line %-1L in class %c{1} - %m%n");
 
-//		console.add(pattern);
-//		file.add(pattern);
+		console.add(pattern);
+		file.add(pattern);
 
-		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.WARN);
+		final var rootLogger = builder.newRootLogger(Level.WARN);
 		rootLogger.add(builder.newAppenderRef("log"));
 		rootLogger.add(builder.newAppenderRef("stdout"));
 
@@ -199,7 +190,7 @@ public class ReflectiveSuiteRunner  {
 
 	private static void clearLog() {
 		try {
-			BufferedWriter bufferedWriter = Files.newBufferedWriter(Paths.get(LOG_PATH));
+			final var bufferedWriter = Files.newBufferedWriter(Paths.get(LOG_PATH));
 			bufferedWriter.write("");
 			bufferedWriter.flush();
 			bufferedWriter.close();
@@ -209,7 +200,7 @@ public class ReflectiveSuiteRunner  {
 	}
 
 	/* --- Helpers --- */
-	private static boolean isFreeze(HapiApiSuite suite) {
+	private static boolean isFreeze(final HapiApiSuite suite) {
 		return suite.getClass().getPackageName().contains("freeze");
 	}
 }
