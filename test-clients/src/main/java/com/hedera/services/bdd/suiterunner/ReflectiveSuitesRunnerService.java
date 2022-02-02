@@ -69,7 +69,7 @@ public class ReflectiveSuitesRunnerService {
 			arguments.removeAll(wrongArguments);
 		}
 
-		logEvent("Preparing to execute tests for %d suite(s):", arguments);
+		logEvent("Preparing to execute tests in %d package(s):", arguments);
 
 		return suitesPaths
 				.stream()
@@ -123,7 +123,7 @@ public class ReflectiveSuitesRunnerService {
 				.sorted()
 				.toList();
 
-		logEvent("%d packages collected. Available packages are:", packages);
+		logEvent("%d packages collected:", packages);
 	}
 
 	private static void logEvent(final String message, final List<String> source) {

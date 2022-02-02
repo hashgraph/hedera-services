@@ -119,7 +119,7 @@ jobs:
         with:
           name: ReflectiveSuiteRunnerReport
           path: |
-            test-clients/src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log
+            test-clients/src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuitesRunner.log
           
           
 
