@@ -38,13 +38,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.getPackages;
-import static com.hedera.services.bdd.suiterunner.ReflectiveSuiteRunnerService.instantiateSuites;
+import static com.hedera.services.bdd.suiterunner.ReflectiveSuitesRunnerService.getPackages;
+import static com.hedera.services.bdd.suiterunner.ReflectiveSuitesRunnerService.instantiateSuites;
 import static com.hedera.services.bdd.suiterunner.models.ReportFactory.generateFailedSuiteReport;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 
-public class ReflectiveSuiteRunner {
-	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuiteRunner.log";
+public class ReflectiveSuitesRunner {
+	public static final String LOG_PATH = "src/main/java/com/hedera/services/bdd/suiterunner/logs/ReflectiveSuitesRunner.log";
 	private static final String SEPARATOR = "----------";
 	private static final Logger log = redirectLogger();
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
@@ -118,6 +118,7 @@ public class ReflectiveSuiteRunner {
 	}
 
 	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuiteException {
+		log.warn(Banner.getBanner());
 		final var executedTotal = suitesByRunType
 				.values()
 				.stream()
@@ -190,7 +191,7 @@ public class ReflectiveSuiteRunner {
 
 		Configurator.initialize(builder.build());
 
-		return LogManager.getLogger(ReflectiveSuiteRunner.class);
+		return LogManager.getLogger(ReflectiveSuitesRunner.class);
 	}
 
 	private static void clearLog() {

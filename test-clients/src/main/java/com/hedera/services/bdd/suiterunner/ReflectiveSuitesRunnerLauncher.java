@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
 
 
-class ReflectiveSuiteRunnerLauncher {
+class ReflectiveSuitesRunnerLauncher {
 //	private final PackageStore packageStore = new PackageStore();
 //	private final Map<SuitePackage, Supplier<List<HapiApiSuite>>> suites = packageStore.initialize(effectiveArguments);
 
@@ -48,6 +48,6 @@ class ReflectiveSuiteRunnerLauncher {
 		final String[] withInvalidCharacter = {"-s Autorenew suites; compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
 		final String[] isolated = {"-s Crypto suites, LimeChain suites,  Hedera suites"};
 
-		ReflectiveSuiteRunner.main(withWrongArguments);
+		ReflectiveSuitesRunner.main(withWrongArguments);
 	}
 }

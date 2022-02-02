@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-public class ReflectiveSuiteRunnerService {
-	private static final Logger log = LogManager.getLogger(ReflectiveSuiteRunnerService.class);
+public class ReflectiveSuitesRunnerService {
+	private static final Logger log = LogManager.getLogger(ReflectiveSuitesRunnerService.class);
 	private static Set<String> suitesPaths;
 	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
 	private static final StringBuilder logMessageBuilder = new StringBuilder();
