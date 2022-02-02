@@ -40,7 +40,7 @@ class ReflectiveSuiteRunnerLauncher {
 		final String[] withWrongArguments = {"-s Autorew, autorenew, MustaFffAAAAAA, Compose, Consensus, Contract, opcodes, records, Cryto, Fees"};
 		final String[] onlyWrongArguments = {"-s dfd, dfdw, dfd"};
 		final String[] withoutSplit = {"Autorenew suites", "Compose suites", "Consensus suites", "LimeChain suites", "meta suites", "Hedera suites"};
-//		final String[] allWithSplit = {"-s -a"};
+		final String[] allWithSplit = {"-s -a"};
 		final String[] allWithoutSplit = {"-a"};
 		final String[] noArguments = {};
 		final String[] withSplitNoPerfSuites = {"-s -a -spt"};
@@ -48,6 +48,6 @@ class ReflectiveSuiteRunnerLauncher {
 		final String[] withInvalidCharacter = {"-s Autorenew suites; compose suites, Consensus suites, LimeChain suites, meta suites, Hedera suites"};
 		final String[] isolated = {"-s Crypto suites, LimeChain suites,  Hedera suites"};
 
-		ReflectiveSuiteRunner.main(withSplit);
+		ReflectiveSuiteRunner.main(withWrongArguments);
 	}
 }

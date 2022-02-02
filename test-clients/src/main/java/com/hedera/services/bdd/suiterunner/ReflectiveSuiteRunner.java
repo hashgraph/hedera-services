@@ -128,11 +128,12 @@ public class ReflectiveSuiteRunner {
 				.stream()
 				.map(List::size)
 				.reduce(0, Integer::sum);
+		final var failedTotal = failedSuites.size();
 
 		summary.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR));
 		summary.append(String.format("TOTAL: %d%n", executedTotal));
-		summary.append(String.format("PASSED: %d%n", executedTotal - failedSuites.size()));
-		summary.append(String.format("FAILED: %d%n", failedSuites.size()));
+		summary.append(String.format("PASSED: %d%n", executedTotal - failedTotal));
+		summary.append(String.format("FAILED: %d%n", failedTotal));
 
 		if (failedSuites.size() > 0) {
 			log.error(summary.toString());
@@ -158,6 +159,8 @@ public class ReflectiveSuiteRunner {
 		}
 	}
 
+
+
 	private static Logger redirectLogger() {
 		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
 
@@ -170,7 +173,7 @@ public class ReflectiveSuiteRunner {
 
 		LayoutComponentBuilder pattern
 				= builder.newLayout("PatternLayout");
-		pattern.addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p at line %-1L in class %c{1} - %m%n");
+		pattern.addAttribute("pattern", "%-5p%d{yyyy-MM-dd HH:mm:ss.SSS} at line %-1L in class %c{1} - %m%n");
 
 		console.add(pattern);
 		file.add(pattern);

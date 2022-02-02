@@ -42,6 +42,7 @@ public class ReflectiveSuiteRunnerService {
 	private static final Logger log = LogManager.getLogger(ReflectiveSuiteRunnerService.class);
 	private static Set<String> suitesPaths;
 	private static final TreeMap<String, List<HapiApiSuite>> instantiatedSuites = new TreeMap<>();
+	private static final StringBuilder messageBuilder = new StringBuilder();
 
 	public static Set<String> getPackages(String[] args) {
 		collectSuitesPaths();
@@ -64,13 +65,11 @@ public class ReflectiveSuiteRunnerService {
 				.toList();
 
 		if (!wrongArguments.isEmpty()) {
-			log.warn(String.format(
-					"Input arguments are misspelled and/or test suites are missing. %s arguments are ignored",
-					String.join(", ", wrongArguments)));
+			logEvent("%d arguments are misspelled and/or test suites are missing. Wrong arguments:", wrongArguments);
 			arguments.removeAll(wrongArguments);
 		}
 
-		log.warn("Preparing to execute tests for {} suites...", String.join(", ", arguments));
+		logEvent("Preparing to execute tests for %d suites:", arguments);
 
 		return suitesPaths
 				.stream()
@@ -81,7 +80,7 @@ public class ReflectiveSuiteRunnerService {
 				.collect(toSet());
 	}
 
-// TODO: Document and explain the ternary operator with suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
+	// TODO: Document and explain the ternary operator with suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
 	public static TreeMap<String, List<HapiApiSuite>> instantiateSuites(final Set<String> paths) {
 		for (String path : paths) {
 			final var suites = new Reflections(path).getSubTypesOf(HapiApiSuite.class);
@@ -117,7 +116,26 @@ public class ReflectiveSuiteRunnerService {
 				.stream()
 				.map(Class::getPackageName)
 				.filter(path -> path.contains("suites"))
-				.collect(toSet());
+				.collect(Collectors.toSet());
+
+		final var packages = suitesPaths
+				.stream()
+				.map(path -> path.replaceAll("com.hedera.services.bdd.suites.", ""))
+				.sorted()
+				.toList();
+
+		logEvent("% d packages collected. Available packages are:", packages);
+	}
+
+	private static void logEvent(final String message, final List<String> source) {
+		messageBuilder
+				.append(System.lineSeparator())
+				.append(String.format(message, source.size()))
+				.append(System.lineSeparator())
+				.append(String.join(System.lineSeparator(), source))
+				.append(System.lineSeparator());
+		log.warn(messageBuilder.toString());
+		messageBuilder.setLength(0);
 	}
 
 	@NotNull
