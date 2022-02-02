@@ -78,7 +78,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
@@ -211,6 +210,18 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		} else {
 			return tokenAwareVariableDefaultSigners();
 		}
+	}
+
+	public static Function<HapiApiSpec, TransferList> allowanceTinyBarsFromTo(String from, String to, long amount) {
+		return spec -> {
+			AccountID toAccount = asId(to, spec);
+			AccountID fromAccount = asId(from, spec);
+			return TransferList.newBuilder()
+					.addAllAccountAmounts(Arrays.asList(
+							AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
+							AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(
+									-1L * amount).setIsApproval(true).build())).build();
+		};
 	}
 
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(String from, String to, long amount) {
