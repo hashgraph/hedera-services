@@ -42,9 +42,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -108,13 +108,13 @@ class MerkleAccountStateTest {
 	private static final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
 	private static final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(approvedForAll, serialNumbers);
 
-	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
+	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 
-	Map<EntityNum, Long> otherCryptoAllowances = new HashMap<>();
-	Map<FcTokenAllowanceId, Long> otherFungibleTokenAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> otherNftAllowances = new HashMap<>();
+	TreeMap<EntityNum, Long> otherCryptoAllowances = new TreeMap<>();
+	TreeMap<FcTokenAllowanceId, Long> otherFungibleTokenAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> otherNftAllowances = new TreeMap<>();
 
 	private DomainSerdes serdes;
 
@@ -833,9 +833,25 @@ class MerkleAccountStateTest {
 	}
 
 	private void setEmptyAllowances() {
-		subject.setCryptoAllowances(new HashMap<>());
-		subject.setFungibleTokenAllowances(new HashMap<>());
-		subject.setNftAllowances(new HashMap<>());
+		subject.setCryptoAllowances(new TreeMap<>());
+		subject.setFungibleTokenAllowances(new TreeMap<>());
+		subject.setNftAllowances(new TreeMap<>());
+	}
+
+	@Test
+	void gettersForAllowancesWork(){
+		var subject = new MerkleAccountState();
+		assertTrue(subject.getCryptoAllowances().equals(Collections.emptyMap()));
+		assertTrue(subject.getFungibleTokenAllowances().equals(Collections.emptyMap()));
+		assertTrue(subject.getNftAllowances().equals(Collections.emptyMap()));
+	}
+
+	@Test
+	void settersForAllowancesWork(){
+		var subject = new MerkleAccountState();
+		subject.setCryptoAllowances(cryptoAllowances);
+		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
+		subject.setNftAllowances(nftAllowances);
 	}
 
 }
