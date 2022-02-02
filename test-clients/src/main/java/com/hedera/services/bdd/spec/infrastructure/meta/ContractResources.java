@@ -78,12 +78,11 @@ public class ContractResources {
 	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
 	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+	public static final String TRACEABILITY_RECURSIVE_CALLS = bytecodePath("Traceability");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
 	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("HTSCalls");
 	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
-	public static final String HBAR_FEE_TRANSFER = bytecodePath("HBARFeeTransfer");
-	public static final String TRANSFERER = bytecodePath("Transferer");
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
@@ -244,6 +243,10 @@ public class ContractResources {
 			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}," +
 			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
 			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[],\"name\":\"eetScenatio1\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_SET_SIBLING = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sibling\",\"type\":\"address\"}],\"name\":\"setSibling\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +

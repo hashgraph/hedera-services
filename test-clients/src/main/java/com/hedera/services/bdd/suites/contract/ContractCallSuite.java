@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -131,6 +132,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+				nestedStateChangeCalls_1(),
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -160,6 +162,56 @@ public class ContractCallSuite extends HapiApiSuite {
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated()
 		);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_1() {
+		final var adminKey = "admin";
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_1")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate("bytecode").path(ContractResources.TRACEABILITY_RECURSIVE_CALLS),
+
+						contractCreate(contractA)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000),
+						contractCreate(contractB)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000),
+						contractCreate(contractC)
+								.bytecode("bytecode")
+								.adminKey(adminKey)
+								.gas(300_000),
+
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+									allRunFor(
+											spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_SET_SIBLING,
+													"0x" + contractBAddress).via("set1"),
+											contractCall(contractB, ContractResources.TRACEABILITY_SET_SIBLING,
+													"0x" + contractCAddress).via("set2"),
+
+											getTxnRecord("set2").logged()
+									);
+								}
+						)
+				).when(
+						contractCall(contractA, ContractResources.TRACEABILITY_EET_1)
+								.gas(1000000)
+								.via("nestedthenesttxn")
+				).then(
+						getTxnRecord("nestedthenesttxn").logged()
+				);
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {

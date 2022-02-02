@@ -160,30 +160,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).hasPriority(recordWith().contractCallResult(resultWith()
 								.stateChanges(
-										stateChangeFor("CONTRACT-A")
+										stateChangeFor(hwMint)
 												.withStorageChanges(
 														onlyRead(ByteString.copyFromUtf8("Slot"),
 																ByteString.copyFromUtf8("ReadValue")),
 														readAndWritten(ByteString.copyFromUtf8("Slot"),
 																ByteString.copyFromUtf8("ReadValue"),
 																ByteString.copyFromUtf8("WrittenValue"))
-												),
-										stateChangeFor("CONTRACT-B")
-												.withStorageChanges(
-														onlyRead(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue")),
-														readAndWritten(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue"),
-																ByteString.copyFromUtf8("WrittenValue")
-												)),
-										stateChangeFor("CONTRACT-C")
-												.withStorageChanges(
-														onlyRead(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue")),
-														readAndWritten(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue"),
-																ByteString.copyFromUtf8("WrittenValue")
-														))
+												)
 								)
 						)).andAllChildRecords().logged(),
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
@@ -529,7 +513,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+	public static String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
 		return CommonUtils.calculateSolidityAddress(
 				(int) spec.registry().getContractId(contract).getShardNum(),
 				spec.registry().getContractId(contract).getRealmNum(),
