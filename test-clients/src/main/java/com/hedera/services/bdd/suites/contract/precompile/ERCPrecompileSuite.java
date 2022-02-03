@@ -151,6 +151,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
 														.payingWith(ACCOUNT)
 														.via(nameTxn)
+														.gas(4_000_000)
 														.hasKnownStatus(SUCCESS)
 										)
 						)

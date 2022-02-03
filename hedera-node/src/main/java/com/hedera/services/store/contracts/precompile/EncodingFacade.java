@@ -93,7 +93,7 @@ public class EncodingFacade {
 				.build();
 	}
 
-	public Bytes encodeDecimals(final short decimals) {
+	public Bytes encodeDecimals(final int decimals) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.DECIMALS)
 				.withDecimals(decimals)
@@ -156,7 +156,7 @@ public class EncodingFacade {
 		private long totalSupply;
 		private long balance;
 		private long[] serialNumbers;
-		private short decimals;
+		private int decimals;
 		private Address owner;
 		private String name;
 		private String symbol;
@@ -204,7 +204,7 @@ public class EncodingFacade {
 			return this;
 		}
 
-		private FunctionResultBuilder withDecimals(final short decimals) {
+		private FunctionResultBuilder withDecimals(final int decimals) {
 			this.decimals = decimals;
 			return this;
 		}
