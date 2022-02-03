@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -50,6 +51,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class SyntheticTxnFactory {
 	@Inject
 	public SyntheticTxnFactory() {
+	}
+
+	public TransactionBody.Builder createContractSkeleton() {
+		final var builder = ContractCreateTransactionBody.newBuilder();
+		return TransactionBody.newBuilder().setContractCreateInstance(builder);
 	}
 
 	public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {

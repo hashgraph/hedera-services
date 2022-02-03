@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -105,6 +106,22 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
 			try {
 				Assertions.assertEquals(expected, receipt.getNewTotalSupply(), "Wrong new total supply");
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
+	public TransactionRecordAsserts targetedContractId(final String id) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				final var expected = TxnUtils.asContractId(id, spec);
+				Assertions.assertEquals(
+						expected,
+						receipt.getContractID(),
+						"Bad targeted contract");
 			} catch (Throwable t) {
 				return List.of(t);
 			}

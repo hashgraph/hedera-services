@@ -21,6 +21,8 @@ package com.hedera.services.fees.calculation.contract.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -47,16 +49,18 @@ class GetBytecodeResourceUsageTest {
 	private static final ContractID target = asContract("0.0.123");
 
 	private StateView view;
+	private AliasManager aliasManager;
 	private SmartContractFeeBuilder usageEstimator;
 
 	private GetBytecodeResourceUsage subject;
 
 	@BeforeEach
 	private void setup() {
+		aliasManager = mock(AliasManager.class);
 		usageEstimator = mock(SmartContractFeeBuilder.class);
 		view = mock(StateView.class);
 
-		subject = new GetBytecodeResourceUsage(usageEstimator);
+		subject = new GetBytecodeResourceUsage(aliasManager, usageEstimator);
 	}
 
 	@Test
@@ -75,7 +79,7 @@ class GetBytecodeResourceUsageTest {
 		final var size = bytecode.length;
 		final var answerOnlyQuery = bytecodeQuery(target, ANSWER_ONLY);
 		final var costAnswerQuery = bytecodeQuery(target, COST_ANSWER);
-		given(view.bytecodeOf(target)).willReturn(Optional.of(bytecode));
+		given(view.bytecodeOf(EntityNum.fromContractId(target))).willReturn(Optional.of(bytecode));
 		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, COST_ANSWER))
 				.willReturn(costAnswerUsage);
 		given(usageEstimator.getContractByteCodeQueryFeeMatrices(size, ANSWER_ONLY))

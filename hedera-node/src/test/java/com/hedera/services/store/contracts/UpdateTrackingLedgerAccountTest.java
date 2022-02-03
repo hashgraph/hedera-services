@@ -56,7 +56,7 @@ class UpdateTrackingLedgerAccountTest {
 	private static final long initialBalance = 100_000L;
 	private static final EntityId proxyId = new EntityId(0, 0, 54321);
 	private static final AccountID targetId = IdUtils.asAccount("0.0.12345");
-	private static final Address targetAddress = EntityIdUtils.asTypedSolidityAddress(targetId);
+	private static final Address targetAddress = EntityIdUtils.asTypedEvmAddress(targetId);
 
 	@Mock
 	private EntityIdSource ids;

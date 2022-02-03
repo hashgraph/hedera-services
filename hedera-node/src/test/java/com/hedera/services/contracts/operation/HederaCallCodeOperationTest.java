@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -32,7 +33,6 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ class HederaCallCodeOperationTest {
 	@Mock
 	private EVM evm;
 	@Mock
-	private WorldUpdater worldUpdater;
+	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
 	private Account acc;
 	@Mock
@@ -79,7 +79,7 @@ class HederaCallCodeOperationTest {
 	@BeforeEach
 	void setup() {
 		subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
-		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
+		commonSetup(evmMsgFrame, worldUpdater, acc);
 	}
 
 	@Test
@@ -130,7 +130,7 @@ class HederaCallCodeOperationTest {
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
@@ -161,7 +161,7 @@ class HederaCallCodeOperationTest {
 		// and:
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any())).willReturn(false);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(false);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);

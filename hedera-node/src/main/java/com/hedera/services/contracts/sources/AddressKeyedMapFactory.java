@@ -21,14 +21,14 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.files.store.BytesStoreAdapter;
+import com.hedera.services.utils.EntityIdUtils;
 
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static java.lang.Long.parseLong;
 
 public final class AddressKeyedMapFactory {
@@ -71,7 +71,7 @@ public final class AddressKeyedMapFactory {
 
 	static Function<byte[], String> toKeyMapping(final String legacyPathTemplate) {
 		return address -> {
-			final var id = accountParsedFromSolidityAddress(address);
+			final var id = EntityIdUtils.accountIdFromEvmAddress(address);
 			return String.format(legacyPathTemplate, id.getRealmNum(), id.getAccountNum());
 		};
 	}
@@ -81,7 +81,7 @@ public final class AddressKeyedMapFactory {
 			final var matcher = legacyPathPattern.matcher(key);
 			assert matcher.matches();
 
-			return asSolidityAddress(0, parseLong(matcher.group(1)), parseLong(matcher.group(2)));
+			return asEvmAddress(0, parseLong(matcher.group(1)), parseLong(matcher.group(2)));
 		};
 	}
 }

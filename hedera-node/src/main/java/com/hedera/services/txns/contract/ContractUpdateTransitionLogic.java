@@ -21,8 +21,9 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
@@ -38,8 +39,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -50,6 +50,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractUpdateTransitionLogic.class);
 
 	private final HederaLedger ledger;
+	private final AliasManager aliasManager;
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
@@ -58,6 +59,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 
 	public ContractUpdateTransitionLogic(
 			final HederaLedger ledger,
+			final AliasManager aliasManager,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
@@ -66,6 +68,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
+		this.aliasManager = aliasManager;
 		this.txnCtx = txnCtx;
 		this.contracts = contracts;
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -75,17 +78,21 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var contractUpdateTxn = txnCtx.accessor().getTxn();
-			var op = contractUpdateTxn.getContractUpdateInstance();
-			var id = op.getContractID();
-			var target = contracts.get().get(fromContractId(id));
+			final var contractUpdateTxn = txnCtx.accessor().getTxn();
+			final var op = contractUpdateTxn.getContractUpdateInstance();
+			final var id = unaliased(op.getContractID(), aliasManager);
+			final var target = contracts.get().get(id);
 
 			var result = customizerFactory.customizerFor(target, validator, op);
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
-				ledger.customize(asAccount(id), customizer.get());
-				sigImpactHistorian.markEntityChanged(id.getContractNum());
+				ledger.customize(id.toGrpcAccountId(), customizer.get());
+				sigImpactHistorian.markEntityChanged(id.longValue());
+				if (target.hasAlias()) {
+					sigImpactHistorian.markAliasChanged(target.getAlias());
+				}
 				txnCtx.setStatus(SUCCESS);
+				txnCtx.setTargetedContract(id.toGrpcContractID());
 			} else {
 				txnCtx.setStatus(result.getRight());
 			}
@@ -106,9 +113,10 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractUpdateTxn) {
-		var op = contractUpdateTxn.getContractUpdateInstance();
+		final var op = contractUpdateTxn.getContractUpdateInstance();
 
-		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
+		final var id = unaliased(op.getContractID(), aliasManager);
+		var status = validator.queryableContractStatus(id, contracts.get());
 		if (status != OK) {
 			return status;
 		}
@@ -122,7 +130,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		var newMemoIfAny = op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
+		final var newMemoIfAny = op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
 		if ((status = validator.memoCheck(newMemoIfAny)) != OK) {
 			return status;
 		}

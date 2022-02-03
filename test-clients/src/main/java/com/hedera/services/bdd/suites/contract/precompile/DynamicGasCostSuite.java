@@ -20,24 +20,56 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
-
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_RETURNER_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_DEPLOY_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_FT_SEND_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_NFT_SEND_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_HELPER_MINT_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_MINT_NFT_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
@@ -48,19 +80,37 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFT_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKENS_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKEN_TRANSFER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CALL_CREATOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CREATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_BUILD_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -68,14 +118,28 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
-
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
+
 	private static final String THE_CONTRACT = "Safe Operations Contract";
 	private static final String ACCOUNT = "anybody";
 	private static final String SECOND_ACCOUNT = "anybody2";
@@ -105,20 +169,20 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				List.of(noOpSpec())
 //				positiveSpecs(),
-//				negativeSpecs()
+				create2Specs()
 		);
 	}
 
-	// Added to make the JRS hapiClient validator to pass
-	private HapiApiSpec noOpSpec() {
-		return defaultHapiSpec("noOpSpec").given().when().then(noOp());
-	}
-
-	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
-
+	List<HapiApiSpec> create2Specs() {
+		return List.of(new HapiApiSpec[] {
+						create2FactoryWorksAsExpected(),
+						canDeleteViaAlias(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						canUseAliasesInPrecompilesAndContractKeys(),
+				}
 		);
 	}
 
@@ -137,13 +201,584 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		);
 	}
 
-	private static TokenID asToken(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return TokenID.newBuilder()
-				.setShardNum(nativeParts[0])
-				.setRealmNum(nativeParts[1])
-				.setTokenNum(nativeParts[2])
+	private HapiApiSpec create2FactoryWorksAsExpected() {
+		final var tcValue = 1_234L;
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var create2Factory = "create2Factory";
+
+		final int salt = 42;
+		final var adminKey = "adminKey";
+		final var replAdminKey = "replAdminKey";
+		final var entityMemo = "JUST DO IT";
+		final var customAutoRenew = 7776001L;
+		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+		final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+		final AtomicReference<String> expectedMirrorAddress = new AtomicReference<>();
+		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+		final AtomicReference<byte[]> bytecodeFromMirror = new AtomicReference<>();
+		final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
+		final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
+
+		return defaultHapiSpec("Create2FactoryWorksAsExpected")
+				.given(
+						newKeyNamed(adminKey),
+						newKeyNamed(replAdminKey),
+						overriding("contracts.throttle.throttleByGas", "false"),
+						fileCreate(initcode).path(CREATE2_FACTORY_PATH),
+						contractCreate(create2Factory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode)
+								.adminKey(adminKey)
+								.entityMemo(entityMemo)
+								.autoRenewSecs(customAutoRenew)
+								.via(creation2)
+								.exposingNumTo(num -> factoryEvmAddress.set(calculateSolidityAddress(0, 0, num)))
+				).when(
+						sourcing(() -> contractCallLocal(
+								create2Factory,
+								CREATE2_FACTORY_GET_BYTECODE_ABI, factoryEvmAddress.get(), salt
+						)
+								.exposingTypedResultsTo(results -> {
+									final var tcInitcode = (byte[]) results[0];
+									testContractInitcode.set(tcInitcode);
+									log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
+								})
+								.payingWith(GENESIS)
+								.nodePayment(ONE_HBAR)),
+						sourcing(() -> contractCallLocal(
+								create2Factory,
+								CREATE2_FACTORY_GET_ADDRESS_ABI, testContractInitcode.get(), salt
+						)
+								.exposingTypedResultsTo(results -> {
+									log.info("Contract reported address results {}", results);
+									final var expectedAddrBytes = (byte[]) results[0];
+									final var hexedAddress = hex(expectedAddrBytes);
+									log.info("  --> Expected CREATE2 address is {}", hexedAddress);
+									expectedCreate2Address.set(hexedAddress);
+								})
+								.payingWith(GENESIS)),
+						sourcing(() -> contractCall(
+								create2Factory,
+								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.sending(tcValue)
+								.via(creation2)),
+						sourcing(() -> childRecordsCheck(creation2, SUCCESS,
+								recordWith()
+										.contractCreateResult(resultWith()
+												.hexedEvmAddress(expectedCreate2Address.get()))
+										.status(SUCCESS))),
+						withOpContext((spec, opLog) -> {
+							final var parentId = spec.registry().getContractId(create2Factory);
+							final var childId = ContractID.newBuilder()
+									.setContractNum(parentId.getContractNum() + 1L)
+									.build();
+							mirrorLiteralId.set("0.0." + childId.getContractNum());
+							expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
+						}),
+						sourcing(() -> getContractBytecode(mirrorLiteralId.get())
+								.exposingBytecodeTo(bytecodeFromMirror::set)),
+						sourcing(() -> getContractBytecode(expectedCreate2Address.get())
+								.exposingBytecodeTo(bytecodeFromAlias::set)),
+						withOpContext((spec, opLog) -> assertArrayEquals(
+								bytecodeFromAlias.get(), bytecodeFromMirror.get(),
+								"Bytecode should be get-able using alias")),
+						sourcing(() -> contractUpdate(expectedCreate2Address.get())
+								.signedBy(DEFAULT_PAYER, adminKey, replAdminKey)
+								.newKey(replAdminKey))
+				).then(
+						sourcing(() -> contractCall(
+								create2Factory,
+								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								/* Cannot repeat CREATE2 with same args without destroying the existing contract */
+								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+						sourcing(() -> getContractInfo(expectedCreate2Address.get())
+								.has(contractWith().addressOrAlias(expectedCreate2Address.get()))),
+						sourcing(() -> contractCallLocal(
+								expectedCreate2Address.get(),
+								TEST_CONTRACT_GET_BALANCE_ABI
+						)
+								.payingWith(GENESIS)
+								.has(resultWith().resultThruAbi(
+										TEST_CONTRACT_GET_BALANCE_ABI,
+										isLiteralResult(new Object[] { BigInteger.valueOf(tcValue) })))),
+						sourcing(() -> getContractInfo(expectedMirrorAddress.get())
+								.has(contractWith()
+										.adminKey(replAdminKey)
+										.addressOrAlias(expectedCreate2Address.get()))),
+						sourcing(() -> contractCall(expectedCreate2Address.get(), TEST_CONTRACT_VACATE_ADDRESS_ABI)
+								.payingWith(GENESIS)),
+						sourcing(() -> getContractInfo(expectedCreate2Address.get())
+								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID))
+				);
+	}
+
+	private HapiApiSpec canUseAliasesInPrecompilesAndContractKeys() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var pc2User = "pc2User";
+		final var ft = "fungibleToken";
+		final var nft = "nonFungibleToken";
+		final var multiKey = "swiss";
+		final var ftFail = "ofInterest";
+		final var nftFail = "alsoOfInterest";
+		final var helperMintFail = "alsoOfExtremeInterest";
+		final var helperMintSuccess = "quotidian";
+
+		final AtomicReference<String> userAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> userMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> userLiteralId = new AtomicReference<>();
+		final AtomicReference<String> hexedNftType = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("CanUseAliasesInPrecompiles")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(PRECOMPILE_CREATE2_USER_PATH)),
+						contractCreate(pc2User)
+								.omitAdminKey()
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(pc2User, PC2_CREATE_USER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Precompile user", creation2, userMirrorAddr, userAliasAddr),
+						withOpContext((spec, opLog) ->
+								userLiteralId.set(
+										asContractString(
+												contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
+						tokenCreate(ft)
+								.tokenType(FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(1_000),
+						tokenCreate(nft)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.initialSupply(0L)
+								.supplyKey(multiKey),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("PRICELESS")
+						)),
+						tokenUpdate(nft).supplyKey(() -> aliasContractIdKey(userAliasAddr.get()))
+				).when(
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							final var ftType = registry.getTokenID(ft);
+							final var nftType = registry.getTokenID(nft);
+
+							final var ftAssoc = contractCall(
+									pc2User, PC2_ASSOCIATE_BOTH_ABI, hex(asSolidityAddress(ftType))
+							)
+									.gas(4_000_000L);
+							final var nftAssoc = contractCall(
+									pc2User, PC2_ASSOCIATE_BOTH_ABI, hex(asSolidityAddress(nftType))
+							)
+									.gas(4_000_000L);
+
+							final var fundingXfer = cryptoTransfer(
+									moving(100, ft).between(TOKEN_TREASURY, pc2User),
+									movingUnique(nft, 1L).between(TOKEN_TREASURY, pc2User)
+							);
+
+							final var sendFt = contractCall(
+									pc2User, PC2_FT_SEND_ABI, hex(asSolidityAddress(ftType)), 100
+							)
+									.gas(4_000_000L);
+							final var sendNft = contractCall(
+									pc2User, PC2_NFT_SEND_ABI, hex(asSolidityAddress(nftType)), 1
+							)
+									.via(ftFail)
+									.gas(4_000_000L);
+							final var failFtDissoc = contractCall(
+									pc2User, PC2_DISSOCIATE_BOTH_ABI, hex(asSolidityAddress(ftType))
+							)
+									.via(ftFail)
+									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+									.gas(4_000_000L);
+							final var failNftDissoc = contractCall(
+									pc2User, PC2_DISSOCIATE_BOTH_ABI, hex(asSolidityAddress(nftType))
+							)
+									.via(nftFail)
+									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+									.gas(4_000_000L);
+							final var mint = contractCall(
+									userAliasAddr.get(),
+									PC2_USER_MINT_NFT_ABI,
+									hex(asSolidityAddress(nftType)),
+									List.of("WoRtHlEsS")
+							)
+									.gas(4_000_000L);
+							/* Can't succeed yet because supply key isn't delegatable */
+							hexedNftType.set(hex(asSolidityAddress(nftType)));
+							final var helperMint = contractCall(
+									userAliasAddr.get(),
+									PC2_USER_HELPER_MINT_ABI,
+									hexedNftType.get(),
+									List.of("WoRtHlEsS")
+							)
+									.via(helperMintFail)
+									.gas(4_000_000L);
+
+							allRunFor(spec,
+									ftAssoc, nftAssoc,
+									fundingXfer, sendFt, sendNft, failFtDissoc, failNftDissoc,
+									mint, helperMint);
+						})
+				).then(
+						childRecordsCheck(helperMintFail, SUCCESS,
+								/* First record is of helper creation */
+								recordWith().status(SUCCESS),
+								recordWith().status(INVALID_SIGNATURE)),
+						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(REVERTED_SUCCESS),
+								recordWith().status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
+						childRecordsCheck(nftFail, CONTRACT_REVERT_EXECUTED,
+								recordWith().status(REVERTED_SUCCESS),
+								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
+						tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
+						sourcing(() -> contractCall(
+								userAliasAddr.get(),
+								PC2_USER_HELPER_MINT_ABI,
+								hexedNftType.get(),
+								List.of("WoRtHlEsS...NOT")
+						)
+								.via(helperMintSuccess)
+								.gas(4_000_000L)),
+						getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2),
+						cryptoTransfer((spec, b) -> {
+							final var registry = spec.registry();
+							final var tt = registry.getAccountID(TOKEN_TREASURY);
+							final var ftId = registry.getTokenID(ft);
+							final var nftId = registry.getTokenID(nft);
+							b.setTransfers(TransferList.newBuilder()
+									.addAccountAmounts(aaWith(tt, -666))
+									.addAccountAmounts(aaWith(userMirrorAddr.get(), +666)));
+							b.addTokenTransfers(TokenTransferList.newBuilder()
+									.setToken(ftId)
+									.addTransfers(aaWith(tt, -6))
+									.addTransfers(aaWith(userMirrorAddr.get(), +6)))
+								.addTokenTransfers(TokenTransferList.newBuilder()
+										.setToken(nftId)
+										.addNftTransfers(NftTransfer.newBuilder()
+												.setSerialNumber(2L)
+												.setSenderAccountID(tt)
+												.setReceiverAccountID(aa(userMirrorAddr.get()))));
+						}).signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+						sourcing(() -> getContractInfo(userLiteralId.get()).logged())
+				);
+	}
+
+	private AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
 				.build();
+	}
+
+	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(aa(hexedEvmAddress))
+				.setAmount(amount)
+				.build();
+	}
+
+	private AccountID aa(final String hexedEvmAddress) {
+		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
+	}
+
+	private Key aliasContractIdKey(final String hexedEvmAddress) {
+		return Key.newBuilder()
+				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
+				).build();
+
+	}
+
+	private Key aliasDelegateContractKey(final String hexedEvmAddress) {
+		return Key.newBuilder()
+				.setDelegatableContractId(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
+				).build();
+
+	}
+
+	private HapiApiSpec canDeleteViaAlias() {
+		final var adminKey = "adminKey";
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var deletion = "deletion";
+		final var saltingCreatorFactory = "saltingCreatorFactory";
+
+		final AtomicReference<String> saltingCreatorAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> saltingCreatorMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> saltingCreatorLiteralId = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("CanDeleteViaAlias")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(SALTING_CREATOR_FACTORY_PATH)),
+						contractCreate(saltingCreatorFactory)
+								.adminKey(adminKey)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(saltingCreatorFactory, SALTING_CREATOR_FACTORY_BUILD_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr),
+						withOpContext((spec, opLog) ->
+								saltingCreatorLiteralId.set(
+										asContractString(
+												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get()))))
+				).when(
+						sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+								.signedBy(DEFAULT_PAYER, adminKey)
+								.transferContract(saltingCreatorMirrorAddr.get())
+								.hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+						sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+								.signedBy(DEFAULT_PAYER, adminKey)
+								.transferContract(saltingCreatorAliasAddr.get())
+								.hasKnownStatus(OBTAINER_SAME_CONTRACT_ID))
+				).then(
+						sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+								.has(contractWith().addressOrAlias(saltingCreatorAliasAddr.get()))),
+						sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+								.signedBy(DEFAULT_PAYER, adminKey)
+								.transferAccount(FUNDING)
+								.via(deletion)),
+						sourcing(() -> getTxnRecord(deletion)
+								.hasPriority(recordWith().targetedContractId(saltingCreatorLiteralId.get()))),
+						sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+								.signedBy(DEFAULT_PAYER, adminKey)
+								.transferAccount(FUNDING)
+								.hasPrecheck(CONTRACT_DELETED)),
+						sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+								.has(contractWith().addressOrAlias(saltingCreatorMirrorAddr.get())))
+				);
+	}
+
+	private HapiApiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
+		final var creation2 = "create2Txn";
+		final var innerCreation2 = "innerCreate2Txn";
+		final var delegateCreation2 = "delegateCreate2Txn";
+		final var initcode = "initcode";
+		final var saltingCreatorFactory = "saltingCreatorFactory";
+
+		final AtomicReference<String> saltingCreatorAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> saltingCreatorMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> tcAliasAddr1 = new AtomicReference<>();
+		final AtomicReference<String> tcMirrorAddr1 = new AtomicReference<>();
+		final AtomicReference<String> tcAliasAddr2 = new AtomicReference<>();
+		final AtomicReference<String> tcMirrorAddr2 = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(SALTING_CREATOR_FACTORY_PATH)),
+						contractCreate(saltingCreatorFactory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(saltingCreatorFactory, SALTING_CREATOR_FACTORY_BUILD_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr)
+				).when(
+						sourcing(() -> contractCall(saltingCreatorAliasAddr.get(), SALTING_CREATOR_CREATE_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(innerCreation2)),
+						captureOneChildCreate2MetaFor(
+								"Test contract create2'd via mirror address",
+								innerCreation2, tcMirrorAddr1, tcAliasAddr1),
+						sourcing(() -> contractCall(tcAliasAddr1.get(), TEST_CONTRACT_VACATE_ADDRESS_ABI)
+								.payingWith(GENESIS)),
+						sourcing(() -> getContractInfo(tcMirrorAddr1.get())
+								.has(contractWith().isDeleted()))
+				).then(
+						sourcing(() -> contractCall(
+								saltingCreatorFactory,
+								SALTING_CREATOR_CALL_CREATOR_ABI, saltingCreatorAliasAddr.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(delegateCreation2)),
+						captureOneChildCreate2MetaFor(
+								"Test contract create2'd via alias address",
+								delegateCreation2, tcMirrorAddr2, tcAliasAddr2),
+						withOpContext((spec, opLog) -> {
+							assertNotEquals(
+									tcMirrorAddr1.get(), tcMirrorAddr2.get(),
+									"Mirror addresses must be different");
+							assertEquals(
+									tcAliasAddr1.get(), tcAliasAddr2.get(),
+									"Alias addresses must be stable");
+						})
+				);
+	}
+
+	private HapiApiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var placeholderCreation = "creation";
+		final var returnerFactory = "returnerFactory";
+
+		final AtomicReference<String> aliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mirrorAddr = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("PriorityAddressIsCreate2ForStaticHapiCalls")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(ADDRESS_VAL_RETURNER_PATH)),
+						contractCreate(returnerFactory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(returnerFactory, ADDRESS_VAL_CREATE_RETURNER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Returner", creation2, mirrorAddr, aliasAddr)
+				).when(
+						sourcing(() -> contractCallLocal(
+								mirrorAddr.get(), RETURN_THIS_ABI
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with mirror address", results);
+									staticCallMirrorAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCallLocal(
+								aliasAddr.get(), RETURN_THIS_ABI
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with alias address", results);
+									staticCallAliasAns.set((BigInteger) results[0]);
+								}))
+				).then(
+						withOpContext((spec, opLog) -> {
+							assertEquals(
+									staticCallAliasAns.get(),
+									staticCallMirrorAns.get(),
+									"Static call with mirror address should be same as call with alias");
+							assertEquals(
+									staticCallAliasAns.get().toString(16),
+									aliasAddr.get(),
+									"Alias should get priority over mirror address");
+						}),
+						sourcing(() -> contractCall(
+								aliasAddr.get(), CREATE_PLACEHOLDER_ABI
+						)
+								.gas(4_000_000L)
+								.payingWith(GENESIS)
+								.via(placeholderCreation))
+				);
+	}
+
+	private HapiApiSpec priorityAddressIsCreate2ForInternalMessages() {
+		final var creation2 = "create2Txn";
+		final var initcode = "initcode";
+		final var returnerFactory = "returnerFactory";
+		final var aliasCall = "aliasCall";
+		final var mirrorCall = "mirrorCall";
+
+		final AtomicReference<String> aliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mirrorAddr = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallAliasAns = new AtomicReference<>();
+		final AtomicReference<BigInteger> staticCallMirrorAns = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+
+		return defaultHapiSpec("PriorityAddressIsCreate2ForInternalMessages")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(ADDRESS_VAL_RETURNER_PATH)),
+						contractCreate(returnerFactory)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(returnerFactory, ADDRESS_VAL_CREATE_RETURNER_ABI, salt)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"Returner", creation2, mirrorAddr, aliasAddr)
+				).when(
+						sourcing(() -> contractCallLocal(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, mirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with mirror address", results);
+									staticCallMirrorAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCallLocal(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, aliasAddr.get()
+						)
+								.payingWith(GENESIS)
+								.exposingTypedResultsTo(results -> {
+									log.info("Returner reported {} when called with alias address", results);
+									staticCallAliasAns.set((BigInteger) results[0]);
+								})),
+						sourcing(() -> contractCall(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, aliasAddr.get()
+						)
+								.payingWith(GENESIS)
+								.via(aliasCall)),
+						sourcing(() -> contractCall(
+								returnerFactory, ADDRESS_VAL_CALL_RETURNER_ABI, mirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.via(mirrorCall))
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var aliasLookup = getTxnRecord(aliasCall);
+							final var mirrorLookup = getTxnRecord(aliasCall);
+							allRunFor(spec, aliasLookup, mirrorLookup);
+							final var aliasResult =
+									aliasLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							final var mirrorResult =
+									mirrorLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							assertEquals(
+									aliasResult, mirrorResult,
+									"Call with mirror address should be same as call with alias");
+							assertEquals(
+									staticCallAliasAns.get(),
+									staticCallMirrorAns.get(),
+									"Static call with mirror address should be same as call with alias");
+						})
+				);
 	}
 
 	private HapiApiSpec mintDynamicGasCostPrecompile() {
@@ -156,7 +791,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -174,14 +810,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
 												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
-														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
+														asAddress(vanillaTokenID.get()), amount,
+														Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("mintDynamicGasZeroCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.hasKnownStatus(SUCCESS),
 												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												contractCall(THE_CONTRACT, SAFE_MINT_ABI,
-														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
+														asAddress(vanillaTokenID.get()), amount,
+														Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("mintDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -192,14 +830,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("mintDynamicGasZeroCostTxn").saveTxnRecordToRegistry("mintZeroCostTxnRec");
+									getTxnRecord("mintDynamicGasZeroCostTxn").saveTxnRecordToRegistry(
+											"mintZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("mintDynamicGasDefaultCostTxn").saveTxnRecordToRegistry("mintDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("mintDynamicGasDefaultCostTxn").saveTxnRecordToRegistry(
+											"mintDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
 							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("mintZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("mintDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"mintDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -216,7 +857,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -235,7 +877,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, ZERO_GAS_COST),
 												UtilVerbs.overriding(MAX_REFUND_PERCENT_OF_GAS_LIMIT, FULL_GAS_REFUND),
 												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
-														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
+														asAddress(vanillaTokenID.get()), amount,
+														Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("burnDynamicGasZeroCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -243,7 +886,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												UtilVerbs.overriding(HTS_DEFAULT_GAS_COST, DEFAULT_GAS_COST),
 												mintToken(VANILLA_TOKEN, amount),
 												contractCall(THE_CONTRACT, SAFE_BURN_ABI,
-														asAddress(vanillaTokenID.get()), amount, Collections.emptyList())
+														asAddress(vanillaTokenID.get()), amount,
+														Collections.emptyList())
 														.payingWith(ACCOUNT)
 														.via("burnDynamicGasDefaultCostTxn")
 														.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -254,14 +898,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("burnDynamicGasZeroCostTxn").saveTxnRecordToRegistry("burnZeroCostTxnRec");
+									getTxnRecord("burnDynamicGasZeroCostTxn").saveTxnRecordToRegistry(
+											"burnZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("burnDynamicGasDefaultCostTxn").saveTxnRecordToRegistry("burnDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("burnDynamicGasDefaultCostTxn").saveTxnRecordToRegistry(
+											"burnDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
 							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("burnZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("burnDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"burnDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -276,7 +923,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -308,14 +956,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("associateDynamicGasZeroCostTxn").saveTxnRecordToRegistry("associateZeroCostTxnRec");
+									getTxnRecord("associateDynamicGasZeroCostTxn").saveTxnRecordToRegistry(
+											"associateZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("associateDynamicGasDefaultCostTxn").saveTxnRecordToRegistry("associateDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("associateDynamicGasDefaultCostTxn").saveTxnRecordToRegistry(
+											"associateDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("associateZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"associateZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("associateDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"associateDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -331,7 +983,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -365,14 +1018,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("dissociateZeroCostTxn").saveTxnRecordToRegistry("dissociateZeroCostTxnRec");
+									getTxnRecord("dissociateZeroCostTxn").saveTxnRecordToRegistry(
+											"dissociateZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("dissociateDefaultCostTxn").saveTxnRecordToRegistry("dissociateDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("dissociateDefaultCostTxn").saveTxnRecordToRegistry(
+											"dissociateDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("dissociateZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"dissociateZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("dissociateDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"dissociateDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -391,7 +1048,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -435,14 +1093,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("multipleAssociateZeroCostTxn").saveTxnRecordToRegistry("multipleAssociateZeroCostTxnRec");
+									getTxnRecord("multipleAssociateZeroCostTxn").saveTxnRecordToRegistry(
+											"multipleAssociateZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("multipleAssociateDefaultCostTxn").saveTxnRecordToRegistry("multipleAssociateDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("multipleAssociateDefaultCostTxn").saveTxnRecordToRegistry(
+											"multipleAssociateDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("multipleAssociateZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"multipleAssociateZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("multipleAssociateDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"multipleAssociateDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(20_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -461,7 +1123,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -507,14 +1170,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("multipleDissociateZeroCostTxn").saveTxnRecordToRegistry("multipleDissociateZeroCostTxnRec");
+									getTxnRecord("multipleDissociateZeroCostTxn").saveTxnRecordToRegistry(
+											"multipleDissociateZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("multipleDissociateDefaultCostTxn").saveTxnRecordToRegistry("multipleDissociateDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("multipleDissociateDefaultCostTxn").saveTxnRecordToRegistry(
+											"multipleDissociateDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("multipleDissociateZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"multipleDissociateZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("multipleDissociateDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"multipleDissociateDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(20_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -533,7 +1200,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -581,14 +1249,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("nftTransferZeroCostTxn").saveTxnRecordToRegistry("nftTransferZeroCostTxnRec");
+									getTxnRecord("nftTransferZeroCostTxn").saveTxnRecordToRegistry(
+											"nftTransferZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("nftTransferDefaultCostTxn").saveTxnRecordToRegistry("nftTransferDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("nftTransferDefaultCostTxn").saveTxnRecordToRegistry(
+											"nftTransferDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("nftTransferZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"nftTransferZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("nftTransferDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"nftTransferDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -607,7 +1279,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -655,14 +1328,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("tokenTransferZeroCostTxn").saveTxnRecordToRegistry("tokenTransferZeroCostTxnRec");
+									getTxnRecord("tokenTransferZeroCostTxn").saveTxnRecordToRegistry(
+											"tokenTransferZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("tokenTransferDefaultCostTxn").saveTxnRecordToRegistry("tokenTransferDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("tokenTransferDefaultCostTxn").saveTxnRecordToRegistry(
+											"tokenTransferDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("tokenTransferZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"tokenTransferZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("tokenTransferDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"tokenTransferDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -684,7 +1361,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoCreate(SECOND_ACCOUNT)
 								.exposingCreatedIdTo(secondAccountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -738,14 +1416,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("tokensTransferZeroCostTxn").saveTxnRecordToRegistry("tokensTransferZeroCostTxnRec");
+									getTxnRecord("tokensTransferZeroCostTxn").saveTxnRecordToRegistry(
+											"tokensTransferZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("tokensTransferDefaultCostTxn").saveTxnRecordToRegistry("tokensTransferDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("tokensTransferDefaultCostTxn").saveTxnRecordToRegistry(
+											"tokensTransferDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("tokensTransferZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"tokensTransferZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("tokensTransferDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"tokensTransferDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
@@ -767,7 +1449,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoCreate(SECOND_ACCOUNT)
 								.exposingCreatedIdTo(secondAccountID::set),
 						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT, extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
+						updateLargeFile(ACCOUNT, THE_CONTRACT,
+								extractByteCode(ContractResources.SAFE_OPERATIONS_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -798,7 +1481,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get())),
-														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
+														List.of(asAddress(accountID.get()),
+																asAddress(secondAccountID.get())),
 														List.of(1L, 2L))
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -808,7 +1492,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 												contractCall(THE_CONTRACT, SAFE_NFTS_TRANSFER_ABI,
 														asAddress(vanillaTokenID.get()),
 														List.of(asAddress(treasuryID.get())),
-														List.of(asAddress(accountID.get()), asAddress(secondAccountID.get())),
+														List.of(asAddress(accountID.get()),
+																asAddress(secondAccountID.get())),
 														List.of(3L, 4L))
 														.payingWith(ACCOUNT)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
@@ -820,17 +1505,55 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var zeroCostTxnRecord =
-									getTxnRecord("nftsTransferZeroCostTxn").saveTxnRecordToRegistry("nftsTransferZeroCostTxnRec");
+									getTxnRecord("nftsTransferZeroCostTxn").saveTxnRecordToRegistry(
+											"nftsTransferZeroCostTxnRec");
 							final var defaultCostTxnRecord =
-									getTxnRecord("nftsTransferDefaultCostTxn").saveTxnRecordToRegistry("nftsTransferDefaultCostTxnRec");
-							CustomSpecAssert.allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
+									getTxnRecord("nftsTransferDefaultCostTxn").saveTxnRecordToRegistry(
+											"nftsTransferDefaultCostTxnRec");
+							allRunFor(spec, zeroCostTxnRecord, defaultCostTxnRecord);
 
-							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord("nftsTransferZeroCostTxnRec")
+							final var gasUsedForZeroCostTxn = spec.registry().getTransactionRecord(
+									"nftsTransferZeroCostTxnRec")
 									.getContractCallResult().getGasUsed();
-							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord("nftsTransferDefaultCostTxnRec")
+							final var gasUsedForDefaultCostTxn = spec.registry().getTransactionRecord(
+									"nftsTransferDefaultCostTxnRec")
 									.getContractCallResult().getGasUsed();
 							assertEquals(10_000L, gasUsedForDefaultCostTxn - gasUsedForZeroCostTxn);
 						})
 				);
+	}
+
+	/* --- Internal helpers --- */
+	private HapiSpecOperation captureOneChildCreate2MetaFor(
+			final String desc,
+			final String creation2,
+			final AtomicReference<String> mirrorAddr,
+			final AtomicReference<String> create2Addr
+	) {
+		return withOpContext((spec, opLog) -> {
+			final var lookup = getTxnRecord(creation2).andAllChildRecords();
+			allRunFor(spec, lookup);
+			final var response = lookup.getResponse().getTransactionGetRecord();
+			assertEquals(1, response.getChildTransactionRecordsCount());
+			final var create2Record = response.getChildTransactionRecords(0);
+			final var create2Address =
+					create2Record.getContractCreateResult().getEvmAddress().getValue();
+			create2Addr.set(hex(create2Address.toByteArray()));
+			final var createdId = create2Record.getReceipt().getContractID();
+			mirrorAddr.set(hex(asSolidityAddress(createdId)));
+			opLog.info("{} is @ {} (mirror {})",
+					desc,
+					create2Addr.get(),
+					mirrorAddr.get());
+		});
+	}
+
+	private static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
 	}
 }

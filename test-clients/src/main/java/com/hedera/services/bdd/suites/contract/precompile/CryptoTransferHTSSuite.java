@@ -98,13 +98,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						nonNestedCryptoTransferForFungibleToken(),
-						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-						nonNestedCryptoTransferForNonFungibleToken(),
+//						nonNestedCryptoTransferForFungibleToken(),
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+//						nonNestedCryptoTransferForNonFungibleToken(),
 						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-						repeatedTokenIdsAreAutomaticallyConsolidated()
+//						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+//						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+//						repeatedTokenIdsAreAutomaticallyConsolidated()
 				}
 		);
 	}
