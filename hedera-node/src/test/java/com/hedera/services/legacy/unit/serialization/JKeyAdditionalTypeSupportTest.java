@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.serialization;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JContractAliasKey;
+import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.test.utils.TxnUtils;
@@ -61,6 +62,19 @@ class JKeyAdditionalTypeSupportTest {
 
 		final var asGrpc = JKey.mapJKey(subject);
 		assertEquals(input, asGrpc.getContractID());
+
+		final var reconstructed = JKey.mapKey(asGrpc);
+		assertTrue(JKey.equalUpToDecodability(subject, reconstructed));
+	}
+
+	@Test
+	void canMapAndUnmapContractDelegateAliasKeys() throws DecoderException {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		final var subject = new JDelegatableContractAliasKey(input);
+
+		final var asGrpc = JKey.mapJKey(subject);
+		assertEquals(input, asGrpc.getDelegatableContractId());
 
 		final var reconstructed = JKey.mapKey(asGrpc);
 		assertTrue(JKey.equalUpToDecodability(subject, reconstructed));

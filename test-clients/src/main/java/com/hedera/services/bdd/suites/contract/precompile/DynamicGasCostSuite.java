@@ -119,6 +119,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -171,11 +172,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
-//						canDeleteViaAlias(),
-//						priorityAddressIsCreate2ForStaticHapiCalls(),
-//						priorityAddressIsCreate2ForInternalMessages(),
-//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						create2FactoryWorksAsExpected(),
+						canDeleteViaAlias(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
 				}
 		);
@@ -324,11 +325,13 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var multiKey = "swiss";
 		final var ftFail = "ofInterest";
 		final var nftFail = "alsoOfInterest";
-		final var nftMint = "alsoOfExtremeInterest";
+		final var helperMintFail = "alsoOfExtremeInterest";
+		final var helperMintSuccess = "quotidian";
 
 		final AtomicReference<String> userAliasAddr = new AtomicReference<>();
 		final AtomicReference<String> userMirrorAddr = new AtomicReference<>();
 		final AtomicReference<String> userLiteralId = new AtomicReference<>();
+		final AtomicReference<String> hexedNftType = new AtomicReference<>();
 
 		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
 
@@ -415,13 +418,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									List.of("WoRtHlEsS")
 							)
 									.gas(4_000_000L);
+							/* Can't succeed yet because supply key isn't delegatable */
+							hexedNftType.set(hex(asSolidityAddress(nftType)));
 							final var helperMint = contractCall(
 									userAliasAddr.get(),
 									PC2_USER_HELPER_MINT_ABI,
-									hex(asSolidityAddress(nftType)),
+									hexedNftType.get(),
 									List.of("WoRtHlEsS")
 							)
-									.via(nftMint)
+									.via(helperMintFail)
 									.gas(4_000_000L);
 
 							allRunFor(spec,
@@ -430,6 +435,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									mint, helperMint);
 						})
 				).then(
+						childRecordsCheck(helperMintFail, SUCCESS,
+								/* First record is of helper creation */
+								recordWith().status(SUCCESS),
+								recordWith().status(INVALID_SIGNATURE)),
 						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
 								recordWith().status(REVERTED_SUCCESS),
 								recordWith().status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)),
@@ -437,13 +446,31 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								recordWith().status(REVERTED_SUCCESS),
 								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
-						getTxnRecord(nftMint).andAllChildRecords().logged()
+						tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
+						sourcing(() -> contractCall(
+								userAliasAddr.get(),
+								PC2_USER_HELPER_MINT_ABI,
+								hexedNftType.get(),
+								List.of("WoRtHlEsS...NOT")
+						)
+								.via(helperMintSuccess)
+								.gas(4_000_000L)),
+						getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2)
 				);
 	}
 
 	private Key aliasContractIdKey(final String hexedEvmAddress) {
 		return Key.newBuilder()
 				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
+				).build();
+
+	}
+
+	private Key aliasDelegateContractKey(final String hexedEvmAddress) {
+		return Key.newBuilder()
+				.setDelegatableContractId(ContractID.newBuilder()
 						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
 				).build();
 

@@ -27,6 +27,7 @@ import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.legacy.core.jproto.JContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -270,6 +271,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
 		final var otherControlledKey = new JContractAliasKey(0, 0, Address.BLS12_G1ADD.toArrayUnsafe());
 		final var otherControlledId = otherControlledKey.getContractID();
+		final var otherControlDelegateKey = new JDelegatableContractAliasKey(0, 0, Address.BLS12_G1ADD.toArrayUnsafe());
 
 		given(aliases.currentAddress(controlledId)).willReturn(PRETEND_SENDER_ADDR);
 		given(aliases.currentAddress(uncontrolledId)).willReturn(PRETEND_TOKEN_ADDR);
@@ -287,6 +289,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		assertFalse(validityTestForNormalCall.test(uncontrolledKey, INVALID_MISSING_SIG));
 		assertFalse(validityTestForDelegateCall.test(uncontrolledKey, INVALID_MISSING_SIG));
 		assertTrue(validityTestForNormalCall.test(otherControlledKey, INVALID_MISSING_SIG));
+		assertFalse(validityTestForDelegateCall.test(otherControlledKey, INVALID_MISSING_SIG));
+		assertTrue(validityTestForDelegateCall.test(otherControlDelegateKey, INVALID_MISSING_SIG));
 	}
 
 	@Test

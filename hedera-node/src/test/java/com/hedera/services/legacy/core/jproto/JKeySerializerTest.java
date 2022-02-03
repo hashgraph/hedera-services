@@ -130,6 +130,20 @@ class JKeySerializerTest {
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
+	@Test
+	void canSerializeAndDeserializeJDelegatableContractAliasKey() throws IOException {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		final var subject = new JDelegatableContractAliasKey(input);
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JDelegatableContractAliasKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertEquals(subject.getContractID(), result.getContractID());
+	}
+
 	private JKey getSpecificJKeysMade(final String action, final int numKeys, final int depth) {
 		final List<JKey> keyList = new ArrayList<>();
 		final List<PrivateKey> privKeyList = new ArrayList<>();
