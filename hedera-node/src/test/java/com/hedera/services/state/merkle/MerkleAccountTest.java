@@ -36,10 +36,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -86,9 +85,9 @@ class MerkleAccountTest {
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
-	private Map<EntityNum, Long> cryptoAllowances;
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+	private TreeMap<EntityNum, Long> cryptoAllowances;
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 
 	private MerkleAccountState delegate;
 
@@ -105,9 +104,9 @@ class MerkleAccountTest {
 		tokens = mock(MerkleAccountTokens.class);
 		given(tokens.copy()).willReturn(tokens);
 
-		cryptoAllowances = mock(HashMap.class);
-		nftAllowances = mock(HashMap.class);
-		fungibleTokenAllowances = mock(HashMap.class);
+		cryptoAllowances = mock(TreeMap.class);
+		nftAllowances = mock(TreeMap.class);
+		fungibleTokenAllowances = mock(TreeMap.class);
 
 		delegate = mock(MerkleAccountState.class);
 
@@ -205,9 +204,9 @@ class MerkleAccountTest {
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
-		assertEquals(state.getCryptoAllowances(), subject.getCryptoAllowances());
-		assertEquals(state.getFungibleTokenAllowances(), subject.getFungibleTokenAllowances());
-		assertEquals(state.getNftAllowances(), subject.getNftAllowances());
+		assertTrue(state.getCryptoAllowances().entrySet().equals(subject.getCryptoAllowances().entrySet()));
+		assertTrue(state.getFungibleTokenAllowances().entrySet().equals(subject.getFungibleTokenAllowances().entrySet()));
+		assertTrue(state.getNftAllowances().entrySet().equals(subject.getNftAllowances().entrySet()));
 	}
 
 	@Test

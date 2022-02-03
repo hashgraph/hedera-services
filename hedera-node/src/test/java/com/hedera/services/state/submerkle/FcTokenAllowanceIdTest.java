@@ -36,7 +36,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class FcTokenAllowanceIdTest {
+class FcTokenAllowanceIdTest {
 	private EntityNum tokenNum = EntityNum.fromLong(1L);
 	private EntityNum spenderNum = EntityNum.fromLong(2L);
 
@@ -103,5 +103,18 @@ public class FcTokenAllowanceIdTest {
 	void serializableDetWorks() {
 		assertEquals(FcTokenAllowanceId.RELEASE_023X_VERSION, subject.getVersion());
 		assertEquals(FcTokenAllowanceId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void orderingPrioritizesTokenNumThenSpender() {
+		final var base = new FcTokenAllowanceId(tokenNum, spenderNum);
+		final var sameButDiff = base;
+		assertEquals(0, base.compareTo(sameButDiff));
+		final var largerNum = new FcTokenAllowanceId(EntityNum.fromInt(tokenNum.intValue() + 1),
+				EntityNum.fromInt(spenderNum.intValue() - 1));
+		assertEquals(-1, base.compareTo(largerNum));
+		final var smallerKey = new FcTokenAllowanceId(EntityNum.fromInt(tokenNum.intValue() - 1),
+				EntityNum.fromInt(spenderNum.intValue() - 1));
+		assertEquals(+1, base.compareTo(smallerKey));
 	}
 }

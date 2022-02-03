@@ -39,7 +39,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
-public class FcTokenAllowanceTest {
+class FcTokenAllowanceTest {
 	private boolean approvedForAll = true;
 	private List<Long> serialNums = List.of(1L, 2L);
 	private FcTokenAllowance subject;
