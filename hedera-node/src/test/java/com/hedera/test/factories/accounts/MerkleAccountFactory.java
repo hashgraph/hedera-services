@@ -35,12 +35,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class MerkleAccountFactory {
 	private boolean useNewStyleTokenIds = false;
@@ -63,9 +62,9 @@ public class MerkleAccountFactory {
 	private Optional<ByteString> alias = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private Set<Id> assocTokens = new HashSet<>();
-	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
+	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -210,17 +209,17 @@ public class MerkleAccountFactory {
 		return this;
 	}
 
-	public MerkleAccountFactory cryptoAllowances(final Map<EntityNum, Long> allowances) {
+	public MerkleAccountFactory cryptoAllowances(final TreeMap<EntityNum, Long> allowances) {
 		cryptoAllowances = allowances;
 		return this;
 	}
 
-	public MerkleAccountFactory fungibleTokenAllowances(final Map<FcTokenAllowanceId, Long> allowances) {
+	public MerkleAccountFactory fungibleTokenAllowances(final TreeMap<FcTokenAllowanceId, Long> allowances) {
 		fungibleTokenAllowances = allowances;
 		return this;
 	}
 
-	public MerkleAccountFactory nftAllowances(final Map<FcTokenAllowanceId, FcTokenAllowance> allowances) {
+	public MerkleAccountFactory nftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> allowances) {
 		nftAllowances = allowances;
 		return this;
 	}

@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.services.txns.crypto.helpers.AllowanceHelpers;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -40,6 +41,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -172,6 +174,35 @@ class OpUsageCtxHelperTest {
 		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
 		assertEquals(now, ctx.currentExpiry());
 
+	}
+
+	@Test
+	void returnsExpectedCtxForCryptoApproveAccount() {
+		var mockInfo = mock(AccountInfo.class);
+		var mockTimeStamp = mock(Timestamp.class);
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
+		given(mockInfo.getKey()).willReturn(key);
+		given(mockInfo.getMemo()).willReturn(memo);
+		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
+		given(mockTimeStamp.getSeconds()).willReturn(now);
+		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
+		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
+		given(mockInfo.hasProxyAccountID()).willReturn(true);
+		given(mockInfo.getTokenAllowancesCount()).willReturn(1);
+		given(mockInfo.getNftAllowancesCount()).willReturn(2);
+		given(mockInfo.getCryptoAllowancesCount()).willReturn(3);
+		given(mockInfo.getNftAllowancesList()).willReturn(List.of(NftAllowance.newBuilder()
+				.setTokenId(IdUtils.asToken("0.0.1000"))
+				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
+
+		final var ctx = subject.ctxForCryptoApprove(TransactionBody.getDefaultInstance());
+
+		assertEquals(memo, ctx.currentMemo());
+		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
+		assertEquals(3, ctx.currentCryptoAllowanceCount());
+		assertEquals(1, ctx.currentTokenAllowancesCount());
+		assertEquals(2, ctx.currentNftAllowancesCount());
+		assertEquals(AllowanceHelpers.countSerials(mockInfo.getNftAllowancesList()), ctx.currentSerialNumsInNfts());
 	}
 
 	@Test

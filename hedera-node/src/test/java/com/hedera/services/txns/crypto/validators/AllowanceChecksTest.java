@@ -56,15 +56,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -76,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class AllowanceChecksTest {
+class AllowanceChecksTest {
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
@@ -98,10 +102,10 @@ public class AllowanceChecksTest {
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 
 	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).build();
+			10L).setOwner(ownerId).build();
 	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).setTokenId(token1).build();
-	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
+			10L).setTokenId(token1).setOwner(ownerId).build();
+	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1).setOwner(ownerId)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
 	final NftId token2Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 	final NftId token2Nft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
@@ -123,7 +127,7 @@ public class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new AllowanceChecks(tokenRelsLedger, nftsLedger, tokenStore);
+		subject = new AllowanceChecks(nftsLedger, tokenStore);
 	}
 
 	private void setUpForTest() {
@@ -174,12 +178,13 @@ public class AllowanceChecksTest {
 	@Test
 	void failsIfOwnerSameAsSpender() {
 		setUpForTest();
-		final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(ownerId).setAmount(
-				10L).build();
-		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(ownerId).setAmount(
-				20L).setTokenId(token1).build();
+		final var badCryptoAllowance = CryptoAllowance.newBuilder().
+				setSpender(ownerId).setOwner(ownerId).setAmount(10L).build();
+		final var badTokenAllowance = TokenAllowance.newBuilder().
+				setSpender(ownerId).setOwner(ownerId).setAmount(20L).setTokenId(token1).build();
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
-				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L)).build();
+				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(ownerId).
+				addAllSerialNumbers(List.of(1L)).build();
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 
@@ -194,13 +199,37 @@ public class AllowanceChecksTest {
 	}
 
 	@Test
+	void failsIfOwnerNotPayer() {
+		setUpForTest();
+		final var badCryptoAllowance = CryptoAllowance.newBuilder().
+				setSpender(ownerId).setOwner(spender1).setAmount(10L).build();
+		final var badTokenAllowance = TokenAllowance.newBuilder().
+				setSpender(ownerId).setOwner(spender1).setAmount(20L).setTokenId(token1).build();
+		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
+				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(spender1).
+				addAllSerialNumbers(List.of(1L)).build();
+		given(nftsLedger.exists(token2Nft1)).willReturn(true);
+		given(nftsLedger.exists(token2Nft2)).willReturn(true);
+
+		cryptoAllowances.add(badCryptoAllowance);
+		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateCryptoAllowances(cryptoAllowances, owner));
+
+		tokenAllowances.add(badTokenAllowance);
+		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
+
+		nftAllowances.add(badNftAllowance);
+		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateNftAllowances(nftAllowances, owner));
+
+	}
+
+	@Test
 	void validateNegativeAmounts() {
 		givenNecessaryStubs();
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
-				-10L).build();
+				-10L).setOwner(ownerId).build();
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
-				-20L).setTokenId(token1).build();
+				-20L).setTokenId(token1).setOwner(ownerId).build();
 
 		cryptoAllowances.add(badCryptoAllowance);
 		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateCryptoAllowances(cryptoAllowances, owner));
@@ -224,7 +253,7 @@ public class AllowanceChecksTest {
 	void failsWhenExceedsMaxTokenSupply() {
 		givenNecessaryStubs();
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
-				100000L).setTokenId(token1).build();
+				100000L).setTokenId(token1).setOwner(ownerId).build();
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
@@ -235,7 +264,7 @@ public class AllowanceChecksTest {
 		givenNecessaryStubs();
 		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
-				100000L).setTokenId(token2).build();
+				100000L).setTokenId(token2).setOwner(ownerId).build();
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
@@ -273,7 +302,8 @@ public class AllowanceChecksTest {
 		given(nftsLedger.get(tokenNft2, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
 
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
-				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setApprovedForAll(BoolValue.of(false)).build();
+				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setOwner(ownerId).setApprovedForAll(
+						BoolValue.of(false)).build();
 
 		nftAllowances.add(badNftAllowance);
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, owner));
@@ -309,6 +339,35 @@ public class AllowanceChecksTest {
 		var validity = subject.validateSerialNums(serials, owner, token2Model);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
+
+	@Test
+	void semanticCheckForEmptyAllowancesInOp() {
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+				).build();
+
+
+		assertEquals(EMPTY_ALLOWANCES, subject.commonChecks(cryptoApproveAllowanceTxn.getCryptoApproveAllowance()));
+	}
+
+	@Test
+	void semanticCheckForExceededLimitOfAllowancesInOp() {
+		addAllowances();
+		getValidTxnCtx();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+	}
+
+	private void addAllowances() {
+		for (int i = 0; i < TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT; i++) {
+			cryptoAllowances.add(cryptoAllowance1);
+			tokenAllowances.add(tokenAllowance1);
+			nftAllowances.add(nftAllowance1);
+		}
+	}
+
 
 	private void getValidTxnCtx() {
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()

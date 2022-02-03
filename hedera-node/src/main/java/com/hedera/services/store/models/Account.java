@@ -32,12 +32,12 @@ import com.hedera.services.utils.EntityNum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -77,9 +77,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
-	private Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
+	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 
 	public Account(Id id) {
 		this.id = id;
@@ -307,30 +307,30 @@ public class Account {
 		this.alias = alias;
 	}
 
-	public Map<EntityNum, Long> getCryptoAllowances() {
+	public TreeMap<EntityNum, Long> getCryptoAllowances() {
 		return cryptoAllowances;
 	}
 
 	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
-		this.cryptoAllowances = cryptoAllowances;
+		this.cryptoAllowances = new TreeMap<>(cryptoAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+	public TreeMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
 		return fungibleTokenAllowances;
 	}
 
 	public void setFungibleTokenAllowances(
 			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-		this.fungibleTokenAllowances = fungibleTokenAllowances;
+		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+	public TreeMap<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return nftAllowances;
 	}
 
 	public void setNftAllowances(
 			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		this.nftAllowances = nftAllowances;
+		this.nftAllowances = new TreeMap<>(nftAllowances);
 	}
 
 	public int getTotalAllowances() {

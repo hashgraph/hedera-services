@@ -44,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.TreeMap;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -115,11 +115,13 @@ class ToStringAccountsExporterTest {
 	@Test
 	void producesExpectedText() throws Exception {
 		// setup:
+		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
+		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		account1.setBalance(1L);
 		account1.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 1L, 2L, 3L, 3L, 2L, 1L })));
 		account1.setMaxAutomaticAssociations(10);
 		account1.setAlreadyUsedAutomaticAssociations(7);
-		account1.setCryptoAllowances(Map.of(EntityNum.fromLong(1L), 10L));
+		account1.setCryptoAllowances(cryptoAllowances);
 		account2.setBalance(2L);
 		account2.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 0L, 0L, 1234L })));
 		// and:

@@ -65,9 +65,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -157,9 +157,13 @@ class GetAccountInfoAnswerTest {
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
-		var cryptoAllowances = Map.of(EntityNum.fromLong(1L), 10L);
-		var fungibleTokenAllowances = Map.of(tokenAllowanceKey, 20L);
-		var nftAllowances = Map.of(tokenAllowanceKey, tokenAllowanceValue);
+		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
+		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
+		TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap();
+
+		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
+		fungibleTokenAllowances.put(tokenAllowanceKey, 20L);
+		nftAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
 
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)

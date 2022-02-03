@@ -241,12 +241,26 @@ class BaseOperationUsage {
 	}
 
 	UsageAccumulator cryptoApproveAllowance() {
-		final var cryptoApproveTxnBody = CryptoApproveAllowanceTransactionBody.newBuilder()
+		final var now = Instant.now().getEpochSecond();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()).build();
+		final var ctx = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(now)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowanceCount(0)
+				.setCurrentTokenAllowanceCount(0)
+				.setCurrentNftAllowanceCount(0)
+				.setCurrentNftSerialsCount(0)
 				.build();
-		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(cryptoApproveTxnBody);
+
+		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoApproveAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoApproveMeta,
-				into);
+				ctx, into);
 		return into;
 	}
 
@@ -266,6 +280,10 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowanceCount(0)
+				.setCurrentTokenAllowanceCount(0)
+				.setCurrentNftAllowanceCount(0)
+				.setCurrentNftSerialsCount(0)
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

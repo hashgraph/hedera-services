@@ -31,6 +31,10 @@ import java.util.List;
 import java.util.Map;
 
 public class AllowanceHelpers {
+	private AllowanceHelpers() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	/**
 	 * Since each serial number in an NFTAllowance is considered as an allowance, to get total allowance
 	 * from an NFTAllowance the size of serial numbers should be added.
@@ -99,5 +103,28 @@ public class AllowanceHelpers {
 			}
 		}
 		return false;
+	}
+
+	public static boolean hasRepeatedId(List<FcTokenAllowanceId> serials) {
+		final int n = serials.size();
+		if (n < 2) {
+			return false;
+		}
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
+				if (serials.get(i).equals(serials.get(j))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
+		int totalSerials = 0;
+		for (var allowance : nftAllowancesList) {
+			totalSerials += allowance.getSerialNumbersCount();
+		}
+		return totalSerials;
 	}
 }
