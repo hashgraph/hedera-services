@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -379,7 +378,7 @@ class CryptoOpsUsageTest {
 		assertEquals(expected, actual);
 	}
 
-	@Disabled
+	@Test
 	void estimatesApprovalAsExpected() {
 		givenApprovalOp();
 		var expected = new UsageAccumulator();
@@ -413,10 +412,11 @@ class CryptoOpsUsageTest {
 		expected.addBpt(msgBytesUsed);
 
 		long newVariableBytes = countSerials(txn.getCryptoApproveAllowance().getNftAllowancesList()) * LONG_SIZE;
+		expected.addRbs(newVariableBytes);
 
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
 		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ ctx.currentNonBaseRb()

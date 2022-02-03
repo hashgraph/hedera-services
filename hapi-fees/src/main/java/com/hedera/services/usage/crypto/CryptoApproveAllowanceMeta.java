@@ -39,7 +39,6 @@ public class CryptoApproveAllowanceMeta {
 	private int aggregatedNftAllowancesWithSerials;
 	private final long effectiveNow;
 	private final long msgBytesUsed;
-//	private final long expiry;
 
 	public CryptoApproveAllowanceMeta(Builder builder) {
 		numOfCryptoAllowances = builder.numOfCryptoAllowances;
@@ -97,7 +96,6 @@ public class CryptoApproveAllowanceMeta {
 		private int aggregatedNftAllowancesWithSerials;
 		private long effectiveNow;
 		private long msgBytesUsed;
-		private long expiry;
 
 		public CryptoApproveAllowanceMeta.Builder numOfCryptoAllowances(int numOfCryptoAllowances) {
 			this.numOfCryptoAllowances = numOfCryptoAllowances;
@@ -127,11 +125,6 @@ public class CryptoApproveAllowanceMeta {
 
 		public CryptoApproveAllowanceMeta.Builder msgBytesUsed(long msgBytesUsed) {
 			this.msgBytesUsed = msgBytesUsed;
-			return this;
-		}
-
-		public CryptoApproveAllowanceMeta.Builder expiry(long expiry) {
-			this.expiry = expiry;
 			return this;
 		}
 
