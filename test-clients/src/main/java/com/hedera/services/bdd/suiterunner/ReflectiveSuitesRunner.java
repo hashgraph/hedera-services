@@ -118,7 +118,6 @@ public class ReflectiveSuitesRunner {
 	}
 
 	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuiteException {
-		log.warn(Banner.getBanner());
 		final var executedTotal = suitesByRunType
 				.values()
 				.stream()
@@ -129,9 +128,9 @@ public class ReflectiveSuitesRunner {
 		logMessageBuilder
 				.append(System.lineSeparator())
 				.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR))
-				.append(String.format("TOTAL: %d%n", executedTotal))
-				.append(String.format("PASSED: %d%n", executedTotal - failedTotal))
-				.append(String.format("FAILED: %d%n", failedTotal));
+				.append(String.format("SUITES EXECUTED: %d%n", executedTotal))
+				.append(String.format("SUITES PASSED: %d%n", executedTotal - failedTotal))
+				.append(String.format("SUITES FAILED: %d%n", failedTotal));
 
 		log.warn(logMessageBuilder.toString());
 

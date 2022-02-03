@@ -80,6 +80,23 @@ public class ReflectiveSuitesRunnerService {
 				.collect(toSet());
 	}
 
+	private static void collectSuitesPaths() {
+		suitesPaths = new Reflections("com.hedera.services.bdd.suites")
+				.getSubTypesOf(HapiApiSuite.class)
+				.stream()
+				.map(Class::getPackageName)
+				.filter(path -> path.contains("suites"))
+				.collect(Collectors.toSet());
+
+		final var packages = suitesPaths
+				.stream()
+				.map(path -> path.replaceAll("com.hedera.services.bdd.suites.", ""))
+				.sorted()
+				.toList();
+
+		logEvent("%d packages collected:", packages);
+	}
+
 	// TODO: Document and explain the ternary operator with suite.getSimpleName().equals("CryptoCreateForSuiteRunner")
 	public static TreeMap<String, List<HapiApiSuite>> instantiateSuites(final Set<String> paths) {
 		for (String path : paths) {
@@ -105,38 +122,6 @@ public class ReflectiveSuitesRunnerService {
 		return instantiatedSuites;
 	}
 
-	public static boolean runAllTests(final String[] arguments) {
-		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
-	}
-
-	private static void collectSuitesPaths() {
-		suitesPaths = new Reflections("com.hedera.services.bdd.suites")
-				.getSubTypesOf(HapiApiSuite.class)
-				.stream()
-				.map(Class::getPackageName)
-				.filter(path -> path.contains("suites"))
-				.collect(Collectors.toSet());
-
-		final var packages = suitesPaths
-				.stream()
-				.map(path -> path.replaceAll("com.hedera.services.bdd.suites.", ""))
-				.sorted()
-				.toList();
-
-		logEvent("%d packages collected:", packages);
-	}
-
-	private static void logEvent(final String message, final List<String> source) {
-		logMessageBuilder
-				.append(System.lineSeparator())
-				.append(String.format(message, source.size()))
-				.append(System.lineSeparator())
-				.append(String.join(System.lineSeparator(), source))
-				.append(System.lineSeparator());
-		log.warn(logMessageBuilder.toString());
-		logMessageBuilder.setLength(0);
-	}
-
 	@NotNull
 	private static ArrayList<String> parse(final String[] args) {
 		return args[0].contains("-s")
@@ -150,6 +135,10 @@ public class ReflectiveSuitesRunnerService {
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
+	public static boolean runAllTests(final String[] arguments) {
+		return arguments.length == 0 || (arguments.length == 1 && arguments[0].toLowerCase().contains("-a".toLowerCase()));
+	}
+
 	/**
 	 *  This method guarantees, that the algorithm will instantiate only suites withing the query scope.
 	 *  We collect objects by syb-type and the Reflections' library will include tests, which are not part of the
@@ -160,5 +149,16 @@ public class ReflectiveSuitesRunnerService {
 	 */
 	private static boolean isInRequestedScope(final String path, Class<? extends HapiApiSuite> suite) {
 		return suite.getPackageName().equals(path);
+	}
+
+	private static void logEvent(final String message, final List<String> source) {
+		logMessageBuilder
+				.append(System.lineSeparator())
+				.append(String.format(message, source.size()))
+				.append(System.lineSeparator())
+				.append(String.join(System.lineSeparator(), source))
+				.append(System.lineSeparator());
+		log.warn(logMessageBuilder.toString());
+		logMessageBuilder.setLength(0);
 	}
 }
