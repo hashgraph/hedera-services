@@ -23,9 +23,18 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -39,9 +48,13 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta.countSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
@@ -50,6 +63,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 	private List<CryptoAllowances> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowances> tokenAllowances = new ArrayList<>();
 	private List<NftAllowances> nftAllowances = new ArrayList<>();
+	private String account;
 
 	public HapiCryptoApproveAllowance() {
 	}
@@ -83,8 +97,45 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoApproveAllowance,
-				cryptoFees::getCryptoApproveAllowanceFeeMatrices, txn, numPayerKeys);
+		try {
+			final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec, effectivePayer(spec));
+			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+				var ctx = ExtantCryptoContext.newBuilder()
+						.setCurrentNumTokenRels(info.getTokenRelationshipsCount())
+						.setCurrentExpiry(info.getExpirationTime().getSeconds())
+						.setCurrentMemo(info.getMemo())
+						.setCurrentKey(info.getKey())
+						.setCurrentlyHasProxy(info.hasProxyAccountID())
+						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
+						.setCurrentCryptoAllowanceCount(info.getCryptoAllowancesCount())
+						.setCurrentTokenAllowanceCount(info.getTokenAllowancesCount())
+						.setCurrentNftAllowanceCount(info.getNftAllowancesCount())
+						.setCurrentNftSerialsCount(countSerials(info.getNftAllowancesList()))
+						.build();
+				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
+				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),
+						_txn.getTransactionID().getTransactionValidStart().getSeconds());
+				var accumulator = new UsageAccumulator();
+				cryptoOpsUsage.cryptoApproveAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+				return AdapterUtils.feeDataFrom(accumulator);
+			};
+			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoApproveAllowance, metricsCalc, txn,
+					numPayerKeys);
+		} catch (Throwable ignore) {
+			return HapiApiSuite.ONE_HBAR;
+		}
+	}
+
+	private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec, String payer) throws Throwable {
+		HapiGetAccountInfo subOp = getAccountInfo(payer).noLogging();
+		Optional<Throwable> error = subOp.execFor(spec);
+		if (error.isPresent()) {
+			if (!loggingOff) {
+				log.warn("Unable to look up current account info!", error.get());
+			}
+			throw error.get();
+		}
+		return subOp.getResponse().getCryptoGetInfo().getAccountInfo();
 	}
 
 	@Override

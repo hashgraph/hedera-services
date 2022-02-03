@@ -164,8 +164,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				continue;
 			}
 
-			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue())
-					: FcTokenAllowance.from(serialNums);
+			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
