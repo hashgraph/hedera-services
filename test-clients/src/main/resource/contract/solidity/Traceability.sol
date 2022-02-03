@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.6.0 <0.9.0;
 
+
 contract Traceability {
     uint256 slot0 = 0;
     uint256 slot1 = 0;
@@ -28,9 +29,9 @@ contract Traceability {
         this.callSiblingGetSlot2();
         this.callSiblingSetSlot2(143);
         sibling.call(abi.encodeWithSignature("callSiblingGetSlot0()"));
-        sibling.call(abi.encodeWithSignature("callSiblingSetSlot0(0)"));
+        sibling.call(abi.encodeWithSignature("callSiblingSetSlot0(uint256)", 0));
         sibling.call(abi.encodeWithSignature("callSiblingGetSlot1()"));
-        sibling.call(abi.encodeWithSignature("callSiblingSetSlot1(0)"));
+        sibling.call(abi.encodeWithSignature("callSiblingSetSlot1(uint256)", 0));
     }
 
     function setSibling(address _sibling) external {
