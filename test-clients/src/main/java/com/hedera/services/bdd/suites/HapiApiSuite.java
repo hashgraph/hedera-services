@@ -35,7 +35,6 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -162,15 +161,16 @@ public abstract class HapiApiSuite {
 						: ((op instanceof List) ? ((List) op).toArray(
 						new HapiSpecOperation[0]) : (HapiSpecOperation[]) op))
 				.flatMap(Stream::of)
-				.toArray(n -> new HapiSpecOperation[n]);
+				.toArray(HapiSpecOperation[]::new);
 	}
 
-	protected List<HapiApiSpec> allOf(List<HapiApiSpec>... specLists) {
-		return Arrays.stream(specLists).flatMap(List::stream).collect(Collectors.toList());
+	@SafeVarargs
+	protected final List<HapiApiSpec> allOf(final List<HapiApiSpec>... specLists) {
+		return Arrays.stream(specLists).flatMap(List::stream).toList();
 	}
 
 	protected HapiSpecOperation[] asOpArray(int N, Function<Integer, HapiSpecOperation> factory) {
-		return IntStream.range(0, N).mapToObj(i -> factory.apply(i)).toArray(n -> new HapiSpecOperation[n]);
+		return IntStream.range(0, N).mapToObj(factory::apply).toArray(HapiSpecOperation[]::new);
 	}
 
 	private void summarizeResults(Logger log) {

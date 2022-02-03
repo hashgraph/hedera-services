@@ -114,7 +114,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
@@ -488,8 +487,6 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.newKey("contractSecondKey"),
 							getContractInfo("contractTbd")
-									.payingWith(SCENARIO_PAYER_NAME),
-							getContractRecords("contractTbd")
 									.payingWith(SCENARIO_PAYER_NAME),
 							getContractBytecode("contractTbd")
 									.payingWith(SCENARIO_PAYER_NAME),

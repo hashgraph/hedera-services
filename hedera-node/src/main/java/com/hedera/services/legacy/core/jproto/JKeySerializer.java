@@ -59,6 +59,10 @@ public class JKeySerializer {
 				objectType = JObjectType.FC_DELEGATE_CONTRACT_ID_KEY;
 			} else if (rootObject instanceof JContractIDKey) {
 				objectType = JObjectType.FC_CONTRACT_ID_KEY;
+			} else if (rootObject instanceof JDelegatableContractAliasKey) {
+				objectType = JObjectType.FC_DELEGATE_CONTRACT_ALIAS_KEY;
+			} else if (rootObject instanceof JContractAliasKey) {
+				objectType = JObjectType.FC_CONTRACT_ALIAS_KEY;
 			}
 
 			final JObjectType finalObjectType = objectType;
@@ -133,6 +137,16 @@ public class JKeySerializer {
 			stream.writeLong(key.getShardNum());
 			stream.writeLong(key.getRealmNum());
 			stream.writeLong(key.getContractNum());
+		} else if (JObjectType.FC_CONTRACT_ALIAS_KEY.equals(type)) {
+			JContractAliasKey key = (JContractAliasKey) object;
+			stream.writeLong(key.getShardNum());
+			stream.writeLong(key.getRealmNum());
+			stream.write(key.getEvmAddress());
+		} else if (JObjectType.FC_DELEGATE_CONTRACT_ALIAS_KEY.equals(type)) {
+			JDelegatableContractAliasKey key = (JDelegatableContractAliasKey) object;
+			stream.writeLong(key.getShardNum());
+			stream.writeLong(key.getRealmNum());
+			stream.write(key.getEvmAddress());
 		} else {
 			throw new IllegalStateException(
 					"Unknown type was encountered while writing to the output stream");
@@ -180,6 +194,18 @@ public class JKeySerializer {
 			long realm = stream.readLong();
 			long contract = stream.readLong();
 			return (T) new JDelegatableContractIDKey(shard, realm, contract);
+		} else if (JObjectType.FC_CONTRACT_ALIAS_KEY.equals(type)) {
+			long shard = stream.readLong();
+			long realm = stream.readLong();
+			byte[] evmAddress = new byte[20];
+			stream.readFully(evmAddress);
+			return (T) new JContractAliasKey(shard, realm, evmAddress);
+		} else if (JObjectType.FC_DELEGATE_CONTRACT_ALIAS_KEY.equals(type)) {
+			long shard = stream.readLong();
+			long realm = stream.readLong();
+			byte[] evmAddress = new byte[20];
+			stream.readFully(evmAddress);
+			return (T) new JDelegatableContractAliasKey(shard, realm, evmAddress);
 		} else {
 			throw new IllegalStateException(
 					"Unknown type was encountered while reading from the input stream");

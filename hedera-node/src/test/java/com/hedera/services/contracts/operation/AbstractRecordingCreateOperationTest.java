@@ -194,7 +194,7 @@ class AbstractRecordingCreateOperationTest {
 		givenBuilderPrereqs();
 		given(syntheticTxnFactory.createContractSkeleton()).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-		given(updater.idOfLastAllocatedAddress()).willReturn(lastAllocated);
+		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 

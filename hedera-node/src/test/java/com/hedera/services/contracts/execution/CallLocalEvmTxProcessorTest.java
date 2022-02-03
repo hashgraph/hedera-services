@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -84,7 +85,9 @@ class CallLocalEvmTxProcessorTest {
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
-	Map<String, PrecompiledContract> precompiledContractMap;
+	private Map<String, PrecompiledContract> precompiledContractMap;
+	@Mock
+	private AliasManager aliasManager;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -98,7 +101,8 @@ class CallLocalEvmTxProcessorTest {
 		CommonProcessorSetup.setup(gasCalculator);
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
-				codeCache, livePricesSource, globalDynamicProperties, gasCalculator, operations, precompiledContractMap);
+				codeCache, livePricesSource, globalDynamicProperties,
+				gasCalculator, operations, precompiledContractMap, aliasManager);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -116,19 +116,20 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
+//				positiveSpecs(),
 				negativeSpecs()
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(
-				nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-				invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-				nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-				invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-				functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-				invalidSingleAbiCallConsumesAllProvidedGas()
+		return List.of(new HapiApiSpec[] {
+						nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
+						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
+						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+						functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+						invalidSingleAbiCallConsumesAllProvidedGas(),
+				}
 		);
 	}
 
@@ -142,7 +143,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
-		return defaultHapiSpec("Function call with less than four bytes fails within single contract call")
+		return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -159,7 +160,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM__FUNCTION_CALL_WITH_LESS_THAN_FOUR_BYTES_ABI,
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(TokenID.newBuilder().build()))
+														asAddress(TokenID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("Function call with less than 4 bytes txn")
 														.gas(100_000)
 										)
@@ -171,7 +174,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
-		return defaultHapiSpec("Invalid Abi Call Gracefully Fails Within Single Contract Call")
+		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -190,7 +193,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														asAddress(AccountID.newBuilder().build()),
 														List.of(
 																asAddress(TokenID.newBuilder().build()),
-																asAddress(TokenID.newBuilder().build())))
+																asAddress(TokenID.newBuilder().build()))
+												)
+														.notTryingAsHexedliteral()
 														.via("Invalid Abi Function call txn")
 										)
 						)
@@ -217,7 +222,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM_NON_EXISTING_FUNCTION_CALL_ABI,
 														asAddress(AccountID.newBuilder().build()),
-														asAddress(TokenID.newBuilder().build()))
+														asAddress(TokenID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("nonExistingFunctionCallTxn")))
 				).then(
 						childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS)
@@ -246,7 +253,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, NON_SUPPORTED_ABI,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
@@ -290,7 +298,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), invalidAbiArgument)
@@ -307,7 +316,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)),
+						childRecordsCheck("functionCallWithInvalidArgumentTxn", CONTRACT_REVERT_EXECUTED,
+								recordWith().status(INVALID_TOKEN_ID)),
 						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
 						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN))
 				);
@@ -382,7 +392,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
 								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
 								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
-								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(KycNotApplicable).freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(
+										KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
@@ -411,19 +422,20 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				)
 				.when(withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT),
-												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(ACCOUNT)
-														.via("nestedAssociateTxn")
-														.gas(GAS_TO_OFFER)
-														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-										)
+						(spec, opLog) ->
+								allRunFor(
+										spec,
+										contractCreate(OUTER_CONTRACT,
+												ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+												getNestedContractAddress(INNER_CONTRACT, spec))
+												.bytecode(OUTER_CONTRACT),
+										contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
+												asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+												.payingWith(ACCOUNT)
+												.via("nestedAssociateTxn")
+												.gas(GAS_TO_OFFER)
+												.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+								)
 						)
 				).then(
 						childRecordsCheck("nestedAssociateTxn", SUCCESS,
@@ -461,7 +473,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												spec,
 												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
 												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
@@ -470,7 +483,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(secondVanillaTokenID.get()))
+														asAddress(accountID.get()),
+														asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
 														.gas(GAS_TO_OFFER)
@@ -489,7 +503,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
-		return defaultHapiSpec("Invalid Single Abi Call Consumes All Provided Gas")
+		return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
 				.given(
 						fileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
 						updateLargeFile(GENESIS, THE_GRACEFULLY_FAILING_CONTRACT,
@@ -504,7 +518,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												contractCall(
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														PERFORM_INVALIDLY_FORMATTED_SINGLE_FUNCTION_CALL_ABI,
-														asAddress(AccountID.newBuilder().build()))
+														asAddress(AccountID.newBuilder().build())
+												)
+														.notTryingAsHexedliteral()
 														.via("Invalid Single Abi Call txn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord("Invalid Single Abi Call txn").saveTxnRecordToRegistry(

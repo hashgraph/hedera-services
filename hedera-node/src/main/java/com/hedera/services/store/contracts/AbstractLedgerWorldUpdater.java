@@ -20,7 +20,9 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -28,6 +30,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -44,9 +47,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 /**
@@ -110,10 +113,18 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	protected abstract A getForMutation(Address address);
 
 	@Override
-	public EvmAccount createAccount(final Address address, final long nonce, final Wei balance) {
-		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
-		if (trackingLedgers.areUsable()) {
-			trackingLedgers.accounts().create(newMutable.getAccountId());
+	public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
+		final var curAliases = aliases();
+		final var address = curAliases.resolveForEvm(addressOrAlias);
+
+		final var curAccounts = trackingAccounts();
+		final var newMutable = new UpdateTrackingLedgerAccount<A>(address, curAccounts);
+		if (trackingLedgers.areMutable()) {
+			final var newAccountId = newMutable.getAccountId();
+			curAccounts.create(newAccountId);
+			if (curAliases.isInUse(addressOrAlias)) {
+				curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
+			}
 		}
 
 		newMutable.setNonce(nonce);
@@ -123,7 +134,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public Account get(final Address address) {
+	public Account get(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
@@ -133,7 +146,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public EvmAccount getAccount(final Address address) {
+	public EvmAccount getAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+
 		final var extantMutable = updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return new WrappedEvmAccount(extantMutable);
@@ -150,12 +165,20 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public void deleteAccount(final Address address) {
+	public void deleteAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
 		deletedAccounts.add(address);
 		updatedAccounts.remove(address);
-		if (trackingLedgers.areUsable()) {
-			final var accountId = accountParsedFromSolidityAddress(address);
-			trackingLedgers.accounts().set(accountId, IS_DELETED, true);
+		if (trackingLedgers.areMutable()) {
+			final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+			final var curAccounts = trackingLedgers.accounts();
+			curAccounts.set(accountId, IS_DELETED, true);
+			if (!revoke(addressOrAlias, accountId)) {
+				final var alias = (ByteString) curAccounts.get(accountId, ALIAS);
+				if (!alias.isEmpty()) {
+					revoke(Address.wrap(Bytes.wrap(alias.toByteArray())), accountId);
+				}
+			}
 		}
 	}
 
@@ -210,7 +233,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
 		/* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
 		if (property == BALANCE) {
-			final var address = EntityIdUtils.asTypedSolidityAddress(id);
+			final var address = EntityIdUtils.asTypedEvmAddress(id);
 			/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
 			if (deletedAccounts.contains(address)) {
 				throw new IllegalArgumentException(
@@ -221,7 +244,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			if (updatedAccount == null) {
 				final var origin = getForMutation(address);
 				/* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
-				 * non-existent, and none the 0.21 HTS precompiles should be creating accounts */
+				 * non-existent, and none of the HTS precompiles should be creating accounts */
 				if (origin == null) {
 					throw new IllegalArgumentException(
 							"A wrapped tracking ledger tried to create/change the " +
@@ -261,5 +284,21 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
+	}
+
+	public ContractAliases aliases() {
+		return trackingLedgers.aliases();
+	}
+
+	/* --- Internal helpers --- */
+	private boolean revoke(final Address address, final AccountID accountId) {
+		final var curAliases = aliases();
+		if (curAliases.isInUse(address)) {
+			curAliases.unlink(address);
+			trackingAccounts().set(accountId, ALIAS, ByteString.EMPTY);
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

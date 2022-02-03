@@ -151,11 +151,11 @@ public interface TransactionContext {
 	void setCreated(AccountID id);
 
 	/**
-	 * Record that the current transaction created a smart contract.
+	 * Record that the current transaction targeted a smart contract.
 	 *
-	 * @param id the created contract.
+	 * @param id the targeted contract.
 	 */
-	void setCreated(ContractID id);
+	void setTargetedContract(ContractID id);
 
 	/**
 	 * Record that the current transaction created a consensus topic.

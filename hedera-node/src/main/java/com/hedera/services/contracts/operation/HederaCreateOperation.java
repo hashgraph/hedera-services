@@ -33,12 +33,13 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
 
+import static com.hedera.services.contracts.operation.HederaOperationUtil.newContractExpiryIn;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
  *
- * Addresses are allocated through {@link HederaWorldUpdater#allocateNewContractAddress(Address)}
+ * Addresses are allocated through {@link HederaWorldUpdater#newContractAddress(Address)}
  *
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
@@ -64,27 +65,31 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 
 	@Override
 	public Gas cost(final MessageFrame frame) {
-		final long initCodeOffset = clampedToLong(frame.getStackItem(1));
-		final long initCodeLength = clampedToLong(frame.getStackItem(2));
+		final var effGasCalculator = gasCalculator();
 
-		final Gas memoryGasCost = gasCalculator().memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
+		return effGasCalculator
+				.createOperationGasCost(frame)
+				.plus(storageAndMemoryGasForCreation(frame, effGasCalculator));
+	}
 
-		long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
-		long durationInSeconds = Math.max(0,
-				HederaOperationUtil.computeExpiryForNewContract(frame) - frame.getBlockValues().getTimestamp());
-		long gasPrice = frame.getGasPrice().toLong();
+	public static Gas storageAndMemoryGasForCreation(final MessageFrame frame, final GasCalculator gasCalculator) {
+		final var initCodeOffset = clampedToLong(frame.getStackItem(1));
+		final var initCodeLength = clampedToLong(frame.getStackItem(2));
+		final var memoryGasCost = gasCalculator.memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
 
-		long storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;
-		long storageCost = Math.round((double) storageCostTinyBars / (double) gasPrice);
+		final long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
+		final var durationInSeconds = Math.max(0, newContractExpiryIn(frame) - frame.getBlockValues().getTimestamp());
+		final var gasPrice = frame.getGasPrice().toLong();
 
-		Gas gasCost = gasCalculator().createOperationGasCost(frame).plus(Gas.of(storageCost).plus(memoryGasCost));
-		return gasCost.max(this.gasCalculator().createOperationGasCost(frame));
+		final var storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;
+		final var storageCost = storageCostTinyBars / gasPrice;
+		return Gas.of(storageCost).plus(memoryGasCost);
 	}
 
 	@Override
 	protected Address targetContractAddress(final MessageFrame frame) {
-		final Address address = ((HederaWorldUpdater) frame.getWorldUpdater()).allocateNewContractAddress(
-				frame.getRecipientAddress());
+		final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
+		final Address address = updater.newContractAddress(frame.getRecipientAddress());
 		frame.warmUpAddress(address);
 		return address;
 	}

@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -51,8 +52,35 @@ public class HederaStackedWorldStateUpdater
 		this.worldState = worldState;
 	}
 
+	public byte[] unaliased(final byte[] evmAddress) {
+		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+	}
+
+	/**
+	 * Given an address in mirror or alias form, returns its alias form (if it has one). We use this to make
+	 * the ADDRESS opcode prioritize CREATE2 addresses over mirror addresses.
+	 *
+	 * @param addressOrAlias a mirror or alias address
+	 * @return the alias form of the address, if it exists
+	 */
+	public Address priorityAddress(final Address addressOrAlias) {
+		return trackingLedgers().canonicalAddress(addressOrAlias);
+	}
+
+	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {
+		final var mirrorAddress = newContractAddress(sponsor);
+		final var curAliases = aliases();
+		/* Only link the alias if it's not already in use (a CREATE2 that tries to
+		 * re-use an existing alias address is going to fail in short order). */
+		if (!curAliases.isInUse(alias)) {
+			curAliases.link(alias, mirrorAddress);
+		}
+		return mirrorAddress;
+	}
+
 	@Override
-	public Address allocateNewContractAddress(final Address sponsor) {
+	public Address newContractAddress(final Address sponsorAddressOrAlias) {
+		final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
 		final var newAddress = worldState.newContractAddress(sponsor);
 		sponsorMap.put(newAddress, sponsor);
 		lastAllocatedId = contractIdFromEvmAddress(newAddress);
@@ -64,7 +92,7 @@ public class HederaStackedWorldStateUpdater
 	 *
 	 * @return the id of the last allocated address
 	 */
-	public ContractID idOfLastAllocatedAddress() {
+	public ContractID idOfLastNewAddress() {
 		return lastAllocatedId;
 	}
 
@@ -101,7 +129,8 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address address) {
+	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
 		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
 	}
 

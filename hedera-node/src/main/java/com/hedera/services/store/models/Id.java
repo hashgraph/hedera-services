@@ -111,6 +111,6 @@ public record Id(long shard, long realm, long num) {
 	 * @return {@link Address} evm representation
 	 */
 	public Address asEvmAddress() {
-		return Address.fromHexString(EntityIdUtils.asSolidityAddressHex(this));
+		return Address.fromHexString(EntityIdUtils.asHexedEvmAddress(this));
 	}
 }

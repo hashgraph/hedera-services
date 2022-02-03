@@ -88,7 +88,7 @@ class TransactionProcessingResultTest {
 				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
 
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
 		var result = TransactionProcessingResult.successful(
@@ -135,7 +135,7 @@ class TransactionProcessingResultTest {
 				.setGasUsed(GAS_USAGE)
 				.setBloom(ByteString.copyFrom(new byte[256]));
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
 		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));
