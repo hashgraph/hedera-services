@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -378,7 +379,7 @@ class CryptoOpsUsageTest {
 		assertEquals(expected, actual);
 	}
 
-	@Test
+	@Disabled
 	void estimatesApprovalAsExpected() {
 		givenApprovalOp();
 		var expected = new UsageAccumulator();

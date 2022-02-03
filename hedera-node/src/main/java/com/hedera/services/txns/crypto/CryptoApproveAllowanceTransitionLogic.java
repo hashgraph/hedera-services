@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -124,8 +123,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoAllowancesMap = ownerAccount.getCryptoAllowances() == null ? new HashMap<>() :
-				ownerAccount.getCryptoAllowances();
+		Map<EntityNum, Long> cryptoAllowancesMap = ownerAccount.getCryptoAllowances();
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
@@ -152,10 +150,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = ownerAccount.getNftAllowances() == null ?
-				new HashMap<>() :
-				ownerAccount.getNftAllowances();
-		;
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = ownerAccount.getNftAllowances();
 		for (var allowance : nftAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -165,11 +160,13 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			final var value = FcTokenAllowance.from(approvedForAll.getValue(), serialNums);
 			if (nftAllowancesMap.containsKey(key)) {
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
+
+			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue())
+					: FcTokenAllowance.from(serialNums);
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
@@ -185,9 +182,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = ownerAccount.getFungibleTokenAllowances() == null ?
-				new HashMap<>() :
-				ownerAccount.getFungibleTokenAllowances();
+		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = ownerAccount.getFungibleTokenAllowances();
 		for (var allowance : tokenAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var spender = Id.fromGrpcAccount(spenderAccount);

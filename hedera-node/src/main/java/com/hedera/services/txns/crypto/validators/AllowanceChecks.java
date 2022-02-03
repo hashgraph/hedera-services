@@ -61,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -133,10 +134,15 @@ public class AllowanceChecks {
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var allowanceOwner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 
-			if (amount < 0) {
-				return NEGATIVE_ALLOWANCE_AMOUNT;
+			final var validity = validateAmount(amount, null);
+			if (validity != OK) {
+				return validity;
+			}
+			if (!ownerAccount.getId().equals(allowanceOwner)) {
+				return PAYER_AND_OWNER_NOT_EQUAL;
 			}
 			if (ownerAccount.getId().equals(spender)) {
 				return SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -159,23 +165,22 @@ public class AllowanceChecks {
 
 		for (final var allowance : tokenAllowancesList) {
 			final var spenderAccountId = allowance.getSpender();
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 
 			if (!token.isFungibleCommon()) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
 
-			if (amount < 0) {
-				return NEGATIVE_ALLOWANCE_AMOUNT;
+			var validity = validateAmount(amount, token);
+			if (validity != OK) {
+				return validity;
 			}
 
-			if (amount > token.getMaxSupply()) {
-				return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
-			}
-
-			final var validity = validateBasicTokenAllowances(ownerAccount, spenderAccountId, tokenId);
+			validity = validateTokenBasics(ownerAccount, spenderId, tokenId, owner);
 			if (validity != OK) {
 				return validity;
 			}
@@ -188,7 +193,7 @@ public class AllowanceChecks {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}
-		
+
 		if (hasRepeatedId(
 				nftAllowancesList.stream().map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
 						EntityNum.fromAccountId(a.getSpender()))).toList())) {
@@ -197,15 +202,17 @@ public class AllowanceChecks {
 
 		for (final var allowance : nftAllowancesList) {
 			final var spenderAccountId = allowance.getSpender();
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateBasicTokenAllowances(ownerAccount, spenderAccountId, tokenId);
+			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId, owner);
 			if (validity != OK) {
 				return validity;
 			}
@@ -218,11 +225,15 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateBasicTokenAllowances(
+	ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
-			final AccountID spenderAccountId,
-			final TokenID tokenId) {
-		final var spenderId = Id.fromGrpcAccount(spenderAccountId);
+			final Id spenderId,
+			final TokenID tokenId,
+			final Id owner) {
+		if (!ownerAccount.getId().equals(owner)) {
+			return PAYER_AND_OWNER_NOT_EQUAL;
+		}
+
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
@@ -247,6 +258,17 @@ public class AllowanceChecks {
 			if (hasRepeatedSerials(serialNums)) {
 				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateAmount(final long amount, Token fungibleToken) {
+		if (amount < 0) {
+			return NEGATIVE_ALLOWANCE_AMOUNT;
+		}
+
+		if (fungibleToken != null && amount > fungibleToken.getMaxSupply()) {
+			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;
 	}

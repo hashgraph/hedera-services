@@ -64,19 +64,20 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addCryptoAllowance(String spender, long allowance) {
-		cryptoAllowances.add(CryptoAllowances.from(spender, allowance));
+	public HapiCryptoApproveAllowance addCryptoAllowance(String owner, String spender, long allowance) {
+		cryptoAllowances.add(CryptoAllowances.from(owner, spender, allowance));
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addTokenAllowance(String token, String spender, long allowance) {
-		tokenAllowances.add(TokenAllowances.from(token, spender, allowance));
+	public HapiCryptoApproveAllowance addTokenAllowance(String owner, String token, String spender, long allowance) {
+		tokenAllowances.add(TokenAllowances.from(owner, token, spender, allowance));
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addNftAllowance(String token, String spender, boolean approvedForAll,
+	public HapiCryptoApproveAllowance addNftAllowance(String owner, String token, String spender,
+			boolean approvedForAll,
 			List<Long> serials) {
-		nftAllowances.add(NftAllowances.from(token, spender, approvedForAll, serials));
+		nftAllowances.add(NftAllowances.from(owner, token, spender, approvedForAll, serials));
 		return this;
 	}
 
@@ -110,6 +111,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
 					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setOwner(spec.registry().getAccountID(entry.owner()))
 					.setAmount(entry.amount())
 					.build();
 			callowances.add(builder);
@@ -119,6 +121,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 			final var builder = TokenAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setOwner(spec.registry().getAccountID(entry.owner()))
 					.setAmount(entry.amount())
 					.build();
 			tallowances.add(builder);
@@ -128,6 +131,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
+					.setOwner(spec.registry().getAccountID(entry.owner()))
 					.addAllSerialNumbers(entry.serials())
 					.build();
 			nftallowances.add(builder);
@@ -161,21 +165,23 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		return helper;
 	}
 
-	private record CryptoAllowances(String spender, Long amount) {
-		static CryptoAllowances from(String spender, Long amount) {
-			return new CryptoAllowances(spender, amount);
+	private record CryptoAllowances(String owner, String spender, Long amount) {
+		static CryptoAllowances from(String owner, String spender, Long amount) {
+			return new CryptoAllowances(owner, spender, amount);
 		}
 	}
 
-	private record TokenAllowances(String token, String spender, long amount) {
-		static TokenAllowances from(String token, String spender, long amount) {
-			return new TokenAllowances(token, spender, amount);
+	private record TokenAllowances(String owner, String token, String spender, long amount) {
+		static TokenAllowances from(String owner, String token, String spender, long amount) {
+			return new TokenAllowances(owner, token, spender, amount);
 		}
 	}
 
-	private record NftAllowances(String token, String spender, boolean approvedForAll, List<Long> serials) {
-		static NftAllowances from(String token, String spender, boolean approvedForAll, List<Long> serials) {
-			return new NftAllowances(token, spender, approvedForAll, serials);
+	private record NftAllowances(String owner, String token, String spender, boolean approvedForAll,
+								 List<Long> serials) {
+		static NftAllowances from(String owner, String token, String spender, boolean approvedForAll,
+				List<Long> serials) {
+			return new NftAllowances(owner, token, spender, approvedForAll, serials);
 		}
 	}
 }
