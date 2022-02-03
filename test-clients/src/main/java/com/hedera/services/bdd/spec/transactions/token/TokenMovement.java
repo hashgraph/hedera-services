@@ -346,4 +346,8 @@ public class TokenMovement {
 	public static Builder movingHbar(long amount) {
 		return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL);
 	}
+
+	public static Builder movingHbarWithAllowance(long amount) {
+		return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL, true);
+	}
 }

@@ -77,6 +77,8 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbarWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
@@ -105,8 +107,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
 	private final String owner = "owner";
+	private final String otherOwner = "otherOwner";
 	private final String spender = "spender";
 	private final String receiver = "receiver";
+	private final String otherReceiver = "otherReceiver";
+	private final String anotherReceiver = "anotherReceiver";
 	private final String fungibleToken = "fungible";
 	private final String nonFungibleToken = "nonFungible";
 	private final String adminKey = "adminKey";
@@ -157,16 +162,19 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						newKeyNamed(freezeKey),
 						newKeyNamed(kycKey),
 						newKeyNamed(supplyKey),
-						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate(owner).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(otherOwner).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(receiver),
+						cryptoCreate(receiver).balance(0L),
+						cryptoCreate(otherReceiver).balance(ONE_HBAR),
+						cryptoCreate(anotherReceiver).balance(0L),
+						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(fungibleToken)
 								.supplyType(TokenSupplyType.FINITE)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.maxSupply(12345)
-								.initialSupply(1234)
+								.maxSupply(10000)
+								.initialSupply(5000)
 								.adminKey(adminKey)
 								.kycKey(kycKey),
 						tokenCreate(nonFungibleToken)
@@ -178,35 +186,89 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.adminKey(adminKey)
 								.kycKey(kycKey)
 								.initialSupply(0L),
-						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("a"),
+						mintToken(nonFungibleToken, List.of(
+								ByteString.copyFromUtf8("a"),
 								ByteString.copyFromUtf8("b"),
-								ByteString.copyFromUtf8("c")))
+								ByteString.copyFromUtf8("c"),
+								ByteString.copyFromUtf8("d"),
+								ByteString.copyFromUtf8("e")))
 				)
 				.when(
 						tokenAssociate(owner, fungibleToken, nonFungibleToken),
+						tokenAssociate(otherOwner, fungibleToken, nonFungibleToken),
 						tokenAssociate(receiver, fungibleToken, nonFungibleToken),
+						tokenAssociate(spender, fungibleToken),
+						tokenAssociate(anotherReceiver, fungibleToken),
 						grantTokenKyc(fungibleToken, owner),
+						grantTokenKyc(fungibleToken, otherOwner),
 						grantTokenKyc(fungibleToken, receiver),
+						grantTokenKyc(fungibleToken, anotherReceiver),
+						grantTokenKyc(fungibleToken, spender),
 						grantTokenKyc(nonFungibleToken, owner),
+						grantTokenKyc(nonFungibleToken, otherOwner),
 						grantTokenKyc(nonFungibleToken, receiver),
-						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
-						cryptoTransfer(movingUnique(nonFungibleToken, 1,2).between(TOKEN_TREASURY, owner)),
+						cryptoTransfer(
+								moving(100, fungibleToken).between(TOKEN_TREASURY, spender),
+								moving(1000, fungibleToken).between(TOKEN_TREASURY, owner),
+								movingUnique(nonFungibleToken, 1,2).between(TOKEN_TREASURY, owner),
+								moving(1000, fungibleToken).between(TOKEN_TREASURY, otherOwner),
+								movingUnique(nonFungibleToken, 3,4).between(TOKEN_TREASURY, otherOwner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(spender, 10 * ONE_HBAR)
-								.addTokenAllowance(fungibleToken, spender, 100)
+								.addTokenAllowance(fungibleToken, spender, 500)
 								.addNftAllowance(nonFungibleToken, spender, false, List.of(1L, 2L))
+								.fee(ONE_HUNDRED_HBARS),
+						cryptoApproveAllowance()
+								.payingWith(otherOwner)
+								.addCryptoAllowance(spender, 5 * ONE_HBAR)
+								.addTokenAllowance(fungibleToken, spender, 100)
+								.addNftAllowance(nonFungibleToken, spender, false, List.of(3L, 4L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
 						cryptoTransfer(
+								movingHbar(ONE_HBAR).between(spender, receiver),
+								movingHbar(ONE_HBAR).between(otherReceiver, anotherReceiver),
+								movingHbar(ONE_HBAR).between(owner, receiver),
+								movingHbar(ONE_HBAR).between(otherOwner, receiver),
+								movingHbarWithAllowance(ONE_HBAR).between(owner, receiver),
+								movingHbarWithAllowance(ONE_HBAR).between(otherOwner, receiver),
+								moving(50, fungibleToken).between(receiver, anotherReceiver),
+								moving(50, fungibleToken).between(spender, receiver),
 								moving(50, fungibleToken).between(owner, receiver),
-								movingWithAllowance(30, fungibleToken).between(owner, receiver))
+								moving(15, fungibleToken).between(otherOwner, receiver),
+								movingWithAllowance(30, fungibleToken).between(owner, receiver),
+								movingWithAllowance(10, fungibleToken).between(otherOwner, receiver),
+								movingUnique(nonFungibleToken, 1L).between(owner, receiver),
+								movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver),
+								movingUniqueWithAllowance(nonFungibleToken, 3L).between(otherOwner, receiver)
+						)
 								.payingWith(spender)
-								.signedBy(spender, owner),
+								.signedBy(spender, owner, otherReceiver, otherOwner),
 						getAccountInfo(owner)
 								.hasToken(relationshipWith(fungibleToken).balance(920))
-								.has(accountWith().tokenAllowancesContaining(fungibleToken, spender, 70))
+								.hasToken(relationshipWith(nonFungibleToken).balance(0))
+								.has(accountWith()
+										.balanceLessThan(98 * ONE_HBAR)
+										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
+										.tokenAllowancesContaining(fungibleToken, spender, 470)
+										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(1L))),
+						getAccountInfo(otherOwner)
+								.hasToken(relationshipWith(fungibleToken).balance(975))
+								.hasToken(relationshipWith(nonFungibleToken).balance(1))
+								.has(accountWith()
+										.balanceLessThan(98 * ONE_HBAR)
+										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
+										.tokenAllowancesContaining(fungibleToken, spender, 90)
+										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(4L))),
+						getAccountInfo(receiver)
+								.hasToken(relationshipWith(fungibleToken).balance(105))
+								.hasToken(relationshipWith(nonFungibleToken).balance(3))
+								.has(accountWith().balance(5 * ONE_HBAR)),
+						getAccountInfo(anotherReceiver)
+								.hasToken(relationshipWith(fungibleToken).balance(50))
+								.has(accountWith().balance(ONE_HBAR))
 				);
 	}
 
