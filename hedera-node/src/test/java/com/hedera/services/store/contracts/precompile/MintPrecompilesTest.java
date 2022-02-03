@@ -189,6 +189,7 @@ class MintPrecompilesTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -207,6 +208,8 @@ class MintPrecompilesTest {
 		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any(), any()))
 				.willThrow(new IllegalArgumentException("random error"));
 		given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -237,6 +240,7 @@ class MintPrecompilesTest {
 		given(encoder.encodeMintSuccess(0L, mints)).willReturn(successResult);
 		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -257,6 +261,7 @@ class MintPrecompilesTest {
 		givenFungibleCollaborators();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -276,6 +281,8 @@ class MintPrecompilesTest {
 		givenFungibleCollaborators();
 		given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
 		given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		subject.prepareComputation(pretendArguments, a -> a);
 		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);

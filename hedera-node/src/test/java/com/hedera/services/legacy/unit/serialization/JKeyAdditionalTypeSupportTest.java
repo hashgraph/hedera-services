@@ -20,18 +20,23 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JKeyAdditionalTypeSupportTest {
 	@Test
@@ -46,6 +51,19 @@ class JKeyAdditionalTypeSupportTest {
 		final var keyBytes = TxnUtils.randomUtf8ByteString(3072 / 8);
 		final var key = Key.newBuilder().setRSA3072(keyBytes).build();
 		commonAssertions(key);
+	}
+
+	@Test
+	void canMapAndUnmapContractAliasKeys() throws DecoderException {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		final var subject = new JContractAliasKey(input);
+
+		final var asGrpc = JKey.mapJKey(subject);
+		assertEquals(input, asGrpc.getContractID());
+
+		final var reconstructed = JKey.mapKey(asGrpc);
+		assertTrue(JKey.equalUpToDecodability(subject, reconstructed));
 	}
 
 	private void commonAssertions(final Key key) throws Exception {

@@ -149,8 +149,11 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 				final var controllingContract =
 						aliases.currentAddress(key.getDelegatableContractIdKey().getContractID());
 				return controllingContract.equals(activeContract);
-			} else if (key.hasContractID()) {
-				final var controllingContract = aliases.currentAddress(key.getContractIDKey().getContractID());
+			} else if (key.hasContractID() || key.hasContractAlias()) {
+				final var controllingId = key.hasContractID()
+						? key.getContractIDKey().getContractID()
+						: key.getContractAliasKey().getContractID();
+				final var controllingContract = aliases.currentAddress(controllingId);
 				return !isDelegateCall && controllingContract.equals(activeContract);
 			} else {
 				/* Otherwise apply the standard cryptographic validity test */

@@ -25,6 +25,7 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.legacy.core.jproto.JContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -244,7 +245,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
-		
+
 		given(aliases.currentAddress(controlledId)).willReturn(PRETEND_SENDER_ADDR);
 		given(aliases.currentAddress(uncontrolledId)).willReturn(PRETEND_TOKEN_ADDR);
 
@@ -262,11 +263,17 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
-	void createsValidityTestThatAcceptsDelegateContractIdKeyWithJustRecipientActive() {
+	void createsValidityTestThatAcceptsContractKeysWithJustRecipientActive() {
 		final var uncontrolledId = EntityIdUtils.contractIdFromEvmAddress(Address.BLS12_G1ADD);
 		final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_SENDER_ADDR);
 		final var controlledKey = new JDelegatableContractIDKey(controlledId);
 		final var uncontrolledKey = new JContractIDKey(uncontrolledId);
+		final var otherControlledKey = new JContractAliasKey(0, 0, Address.BLS12_G1ADD.toArrayUnsafe());
+		final var otherControlledId = otherControlledKey.getContractID();
+
+		given(aliases.currentAddress(controlledId)).willReturn(PRETEND_SENDER_ADDR);
+		given(aliases.currentAddress(uncontrolledId)).willReturn(PRETEND_TOKEN_ADDR);
+		given(aliases.currentAddress(otherControlledId)).willReturn(PRETEND_SENDER_ADDR);
 
 		final var validityTestForNormalCall =
 				subject.validityTestFor(
@@ -279,6 +286,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		assertTrue(validityTestForDelegateCall.test(controlledKey, INVALID_MISSING_SIG));
 		assertFalse(validityTestForNormalCall.test(uncontrolledKey, INVALID_MISSING_SIG));
 		assertFalse(validityTestForDelegateCall.test(uncontrolledKey, INVALID_MISSING_SIG));
+		assertTrue(validityTestForNormalCall.test(otherControlledKey, INVALID_MISSING_SIG));
 	}
 
 	@Test

@@ -116,7 +116,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
+//				positiveSpecs(),
 				negativeSpecs()
 		);
 	}

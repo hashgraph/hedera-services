@@ -126,6 +126,8 @@ public abstract class JKey {
 			rv = new JECDSASecp256k1Key(pubKeyBytes);
 		} else if (key.getDelegatableContractId().getContractNum() != 0) {
 			rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
+		} else if (!key.getContractID().getEvmAddress().isEmpty()) {
+			rv = new JContractAliasKey(key.getContractID());
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + key);
 		}
@@ -156,6 +158,8 @@ public abstract class JKey {
 			rv = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key())).build();
 		} else if (jkey.hasDelegatableContractId()) {
 			rv = Key.newBuilder().setDelegatableContractId(jkey.getDelegatableContractIdKey().getContractID()).build();
+		} else if (jkey.hasContractAlias()) {
+			rv = Key.newBuilder().setContractID(jkey.getContractAliasKey().getContractID()).build();
 		} else {
 			throw new DecoderException("Key type not implemented: key=" + jkey);
 		}
@@ -282,11 +286,19 @@ public abstract class JKey {
 		return false;
 	}
 
+	public boolean hasContractAlias() {
+		return false;
+	}
+
 	public boolean hasDelegatableContractId() {
 		return false;
 	}
 
 	public JContractIDKey getContractIDKey() {
+		return null;
+	}
+
+	public JContractAliasKey getContractAliasKey() {
 		return null;
 	}
 

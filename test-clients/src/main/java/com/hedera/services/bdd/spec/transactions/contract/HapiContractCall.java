@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.CommonUtils;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.util.ByteUtil;
 
@@ -184,9 +182,8 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 				.txns()
 				.<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
 						ContractCallTransactionBody.class, builder -> {
-							if (tryAsHexedAddressIfLenMatches && contract.length() == HEXED_EVM_ADDRESS_LEN) {
-								builder.setContractID(ContractID.newBuilder()
-										.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+							if (!tryAsHexedAddressIfLenMatches) {
+								builder.setContractID(spec.registry().getContractId(contract));
 							} else {
 								builder.setContractID(TxnUtils.asContractId(contract, spec));
 							}

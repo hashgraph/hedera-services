@@ -267,6 +267,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -342,6 +344,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -389,6 +393,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -437,6 +443,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -490,6 +498,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -548,6 +558,8 @@ class TransferPrecompilesTest {
 		given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
 		given(impliedTransfersMeta.code()).willReturn(OK);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);
@@ -599,6 +611,8 @@ class TransferPrecompilesTest {
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID))
 				.when(transferLogic)
 				.doZeroSum(tokenTransferChanges);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
 		subject.prepareComputation(pretendArguments, a -> a);

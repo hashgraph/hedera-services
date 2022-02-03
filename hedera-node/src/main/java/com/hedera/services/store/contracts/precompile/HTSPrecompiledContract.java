@@ -347,6 +347,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
@@ -887,10 +888,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     part of a non-delegate call.</li>
 	 * </ol>
 	 *
+	 * Note that because the {@link DecodingFacade} converts every address to its "mirror" address form
+	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
+	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
+	 *
 	 * @param frame
 	 * 		current frame
 	 * @param target
-	 * 		the element to test for key activation
+	 * 		the element to test for key activation, in standard form
 	 * @param activationTest
 	 * 		the function which should be invoked for key validation
 	 * @return whether the implied key is active
@@ -901,21 +906,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ContractActivationTest activationTest
 	) {
 		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-		final var curAliases = updater.aliases();
+		final var aliases = updater.aliases();
 
-		final var recipient = frame.getRecipientAddress();
-		final var contract = frame.getContractAddress();
-		final var sender = frame.getSenderAddress();
+		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
+		final var contract = aliases.resolveForEvm(frame.getContractAddress());
+		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame)) {
-			return activationTest.apply(target, recipient, contract, recipient, curAliases);
+			return activationTest.apply(target, recipient, contract, recipient, aliases);
 		} else {
 			final var parentFrame = getParentFrame(frame);
 			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
 				final var parentRecipient = parentFrame.get().getRecipientAddress();
-				return activationTest.apply(target, parentRecipient, contract, sender, curAliases);
+				return activationTest.apply(target, parentRecipient, contract, sender, aliases);
 			} else {
-				return activationTest.apply(target, recipient, contract, sender, curAliases);
+				return activationTest.apply(target, recipient, contract, sender, aliases);
 			}
 		}
 	}

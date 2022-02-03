@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
@@ -120,10 +119,6 @@ class HTSPrecompiledContractTest {
 
 	private static final long EXPECTED_GAS_PRICE =
 			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
-
-	private static Object answer(InvocationOnMock invocationOnMock) {
-		return (byte[]) invocationOnMock.getArgument(0);
-	}
 
 	@BeforeEach
 	void setUp() {
