@@ -191,13 +191,13 @@ public class CryptoOpsUsage {
 		newVariableSerialBytes += cryptoApproveMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
 		accumulator.addRbs(newVariableSerialBytes);
 
-		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+		final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
 				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry()); // should this be different ?
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
+		final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
 				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry());
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+		final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				cryptoAutoRenewRb(ctx),
 				oldLifetime,
 				sharedFixedBytes + newVariableSerialBytes,

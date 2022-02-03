@@ -84,23 +84,19 @@ public class ExtantCryptoContext {
 		return currentMaxAutomaticAssociations;
 	}
 
-	public int getCurrentMaxAutomaticAssociations() {
-		return currentMaxAutomaticAssociations;
-	}
-
-	public int getCurrentCryptoAllowanceCount() {
+	public int currentCryptoAllowanceCount() {
 		return currentCryptoAllowanceCount;
 	}
 
-	public int getCurrentTokenAllowancesCount() {
+	public int currentTokenAllowancesCount() {
 		return currentTokenAllowancesCount;
 	}
 
-	public int getCurrentNftAllowancesCount() {
+	public int currentNftAllowancesCount() {
 		return currentNftAllowancesCount;
 	}
 
-	public int getCurrentSerialNumsInNfts() {
+	public int currentSerialNumsInNfts() {
 		return currentSerialNumsInNfts;
 	}
 

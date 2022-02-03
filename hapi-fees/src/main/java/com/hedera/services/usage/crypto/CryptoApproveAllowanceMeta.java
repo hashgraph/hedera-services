@@ -65,6 +65,10 @@ public class CryptoApproveAllowanceMeta {
 				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE;
 	}
 
+	public static Builder newBuilder() {
+		return new CryptoApproveAllowanceMeta.Builder();
+	}
+
 	public int getNumOfCryptoAllowances() {
 		return numOfCryptoAllowances;
 	}
