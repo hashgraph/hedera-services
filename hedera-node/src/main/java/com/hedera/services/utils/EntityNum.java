@@ -88,6 +88,10 @@ public class EntityNum {
 		return fromLong(numFromEvmAddress(bytes));
 	}
 
+	public static EntityNum fromMirror(final byte[] evmAddress) {
+		return EntityNum.fromLong(numFromEvmAddress(evmAddress));
+	}
+
 	public static EntityNum fromTokenId(TokenID grpc) {
 		if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
 			return MISSING_NUM;

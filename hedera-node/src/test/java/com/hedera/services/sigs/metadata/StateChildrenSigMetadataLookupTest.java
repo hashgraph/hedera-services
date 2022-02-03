@@ -285,6 +285,25 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	@Test
+	void recognizesMirrorAddressFromAccount() {
+		final var knownNum = EntityNum.fromAccountId(knownAccount);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.isMirror(knownMirrorAddress.toByteArray())).willReturn(true);
+		given(accounts.get(knownNum)).willReturn(account);
+		given(account.getAccountKey()).willReturn(simple);
+		given(account.isReceiverSigRequired()).willReturn(true);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableAccountSigningMetaFor(mirrorAccount, linkedRefs);
+
+		assertTrue(result.succeeded());
+		assertTrue(linkedRefs.linkedAliases().isEmpty());
+		assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertTrue(result.metadata().receiverSigRequired());
+		assertSame(simple, result.metadata().key());
+	}
+
+	@Test
 	void recognizesExtantContractMirrorAlias() {
 		final var knownNum = EntityNum.fromContractId(knownContract);
 		given(stateChildren.accounts()).willReturn(accounts);
@@ -481,7 +500,12 @@ class StateChildrenSigMetadataLookupTest {
 	private static final AccountID alias = AccountID.newBuilder()
 			.setAlias(asKeyUnchecked(simple).toByteString())
 			.build();
+	private static final EntityNum knownId = EntityNum.fromLong(1234);
+	private static final ByteString knownMirrorAddress = ByteString.copyFrom(knownId.toRawEvmAddress());
 	private static final AccountID knownAccount = IdUtils.asAccount("0.0.1234");
+	private static final AccountID mirrorAccount = AccountID.newBuilder()
+			.setAlias(knownMirrorAddress)
+			.build();
 	private static final AccountID unknownAccount = IdUtils.asAccount("0.0.4321");
 	private static final ContractID knownContract = IdUtils.asContract("0.0.1234");
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");

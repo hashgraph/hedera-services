@@ -53,8 +53,7 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	public byte[] unaliased(final byte[] evmAddress) {
-		final var ans = aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
-		return ans;
+		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
 
 	/**

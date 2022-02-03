@@ -26,11 +26,15 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -456,8 +460,46 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(helperMintSuccess)
 								.gas(4_000_000L)),
 						getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2),
+						cryptoTransfer((spec, b) -> {
+							final var registry = spec.registry();
+							final var tt = registry.getAccountID(TOKEN_TREASURY);
+							final var ftId = registry.getTokenID(ft);
+							final var nftId = registry.getTokenID(nft);
+							b.setTransfers(TransferList.newBuilder()
+									.addAccountAmounts(aaWith(tt, -666))
+									.addAccountAmounts(aaWith(userMirrorAddr.get(), +666)));
+							b.addTokenTransfers(TokenTransferList.newBuilder()
+									.setToken(ftId)
+									.addTransfers(aaWith(tt, -6))
+									.addTransfers(aaWith(userMirrorAddr.get(), +6)))
+								.addTokenTransfers(TokenTransferList.newBuilder()
+										.setToken(nftId)
+										.addNftTransfers(NftTransfer.newBuilder()
+												.setSerialNumber(2L)
+												.setSenderAccountID(tt)
+												.setReceiverAccountID(aa(userMirrorAddr.get()))));
+						}).signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+						sourcing(() -> getContractInfo(userLiteralId.get()).logged())
 				);
+	}
+
+	private AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.build();
+	}
+
+	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(aa(hexedEvmAddress))
+				.setAmount(amount)
+				.build();
+	}
+
+	private AccountID aa(final String hexedEvmAddress) {
+		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
 	}
 
 	private Key aliasContractIdKey(final String hexedEvmAddress) {
@@ -554,7 +596,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
 				.given(
-						overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode),
 						updateLargeFile(GENESIS, initcode, extractByteCode(SALTING_CREATOR_FACTORY_PATH)),
 						contractCreate(saltingCreatorFactory)
@@ -597,8 +638,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 							assertEquals(
 									tcAliasAddr1.get(), tcAliasAddr2.get(),
 									"Alias addresses must be stable");
-						}),
-						overriding("contracts.throttle.throttleByGas", "true")
+						})
 				);
 	}
 

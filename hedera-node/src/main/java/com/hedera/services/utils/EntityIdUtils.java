@@ -51,6 +51,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLo
 import static java.lang.System.arraycopy;
 
 public final class EntityIdUtils {
+	public static final int EVM_ADDRESS_SIZE = 20;
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 	private static final Pattern ENTITY_NUM_RANGE_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
@@ -229,7 +230,9 @@ public final class EntityIdUtils {
 	}
 
 	public static long numFromEvmAddress(final byte[] bytes) {
-		return Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
+		return Longs.fromBytes(
+				bytes[12], bytes[13], bytes[14], bytes[15],
+				bytes[16], bytes[17], bytes[18], bytes[19]);
 	}
 
 	public static AccountID accountIdFromEvmAddress(final Address address) {

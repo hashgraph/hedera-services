@@ -53,6 +53,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
@@ -150,6 +151,12 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 	) {
 		if (isAlias(idOrAlias)) {
 			final var alias = idOrAlias.getAlias();
+			if (alias.size() == EVM_ADDRESS_SIZE) {
+				final var evmAddress = alias.toByteArray();
+				if (aliasManager.isMirror(evmAddress)) {
+					return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);
+				}
+			}
 			if (linkedRefs != null) {
 				linkedRefs.link(alias);
 			}
