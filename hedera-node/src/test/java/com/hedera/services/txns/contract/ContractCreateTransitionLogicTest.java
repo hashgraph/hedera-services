@@ -400,7 +400,7 @@ class ContractCreateTransitionLogicTest {
 		// then:
 		verify(worldState).reclaimContractId();
 		verify(worldState).persistProvisionalContractCreations();
-		verify(txnCtx, never()).setCreated(contractAccount.getId().asGrpcContract());
+		verify(txnCtx, never()).setTargetedContract(contractAccount.getId().asGrpcContract());
 		verify(recordServices).externalizeUnsuccessfulEvmCreate(result);
 	}
 
@@ -449,7 +449,7 @@ class ContractCreateTransitionLogicTest {
 		verify(worldState).persistProvisionalContractCreations();
 		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
-		verify(txnCtx).setCreated(contractAccount.getId().asGrpcContract());
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
 
 	@Test

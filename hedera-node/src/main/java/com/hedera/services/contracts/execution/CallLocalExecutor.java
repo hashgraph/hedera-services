@@ -22,13 +22,14 @@ package com.hedera.services.contracts.execution;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -40,7 +41,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 /**
- * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer} and
+ * Utility class for executing static EVM calls for {@link com.hedera.services.queries.contract.ContractCallLocalAnswer}
+ * and
  * {@link com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
  */
 @Singleton
@@ -53,18 +55,25 @@ public class CallLocalExecutor {
 	 * Executes the specified {@link ContractCallLocalQuery} through a static call. Parses the result from the
 	 * {@link CallLocalEvmTxProcessor} and sets the appropriate {@link com.hederahashgraph.api.proto.java.ResponseCode}
 	 *
-	 * @param accountStore   the account store
-	 * @param evmTxProcessor the {@link CallLocalEvmTxProcessor} processor
-	 * @param op             the query to answer
+	 * @param accountStore
+	 * 		the account store
+	 * @param evmTxProcessor
+	 * 		the {@link CallLocalEvmTxProcessor} processor
+	 * @param op
+	 * 		the query to answer
 	 * @return {@link ContractCallLocalResponse} result of the execution
 	 */
-	public static ContractCallLocalResponse execute(AccountStore accountStore, CallLocalEvmTxProcessor evmTxProcessor, ContractCallLocalQuery op) {
-
+	public static ContractCallLocalResponse execute(
+			final AccountStore accountStore,
+			final CallLocalEvmTxProcessor evmTxProcessor,
+			final ContractCallLocalQuery op,
+			final AliasManager aliasManager
+	) {
 		try {
-			TransactionBody body =
-					SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-			final var senderId = Id.fromGrpcAccount(body.getTransactionID().getAccountID());
-			final var contractId = Id.fromGrpcContract(op.getContractID());
+			final var paymentTxn = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
+			final var senderId = Id.fromGrpcAccount(paymentTxn.getTransactionID().getAccountID());
+			final var idOrAlias = op.getContractID();
+			final var contractId = EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
 
 			/* --- Load the model objects --- */
 			final var sender = accountStore.loadAccount(senderId);
@@ -75,7 +84,7 @@ public class CallLocalExecutor {
 			/* --- Do the business logic --- */
 			final var result = evmTxProcessor.execute(
 					sender,
-					receiver.getId().asEvmAddress(),
+					receiver.canonicalAddress(),
 					op.getGas(),
 					0,
 					callData,

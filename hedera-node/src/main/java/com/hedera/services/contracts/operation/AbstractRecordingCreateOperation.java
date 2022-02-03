@@ -192,7 +192,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			* created contract in the record stream with both its 0.0.X id and its EVM address. */
 			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var sideEffects = new SideEffectsTracker();
-			sideEffects.trackNewContract(updater.idOfLastAllocatedAddress(), childFrame.getContractAddress());
+			sideEffects.trackNewContract(updater.idOfLastNewAddress(), childFrame.getContractAddress());
 			final var childRecord = creator.createSuccessfulSyntheticRecord(
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();

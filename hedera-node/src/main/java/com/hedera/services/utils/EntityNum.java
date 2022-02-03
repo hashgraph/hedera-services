@@ -26,11 +26,17 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.realmFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces
@@ -70,6 +76,20 @@ public class EntityNum {
 			return MISSING_NUM;
 		}
 		return fromLong(grpc.getAccountNum());
+	}
+
+	public static EntityNum fromEvmAddress(final Address address) {
+		final var bytes = address.toArrayUnsafe();
+		final var shard = shardFromEvmAddress(bytes);
+		final var realm = realmFromEvmAddress(bytes);
+		if (!areValidNums(shard, realm)) {
+			return MISSING_NUM;
+		}
+		return fromLong(numFromEvmAddress(bytes));
+	}
+
+	public static EntityNum fromMirror(final byte[] evmAddress) {
+		return EntityNum.fromLong(numFromEvmAddress(evmAddress));
 	}
 
 	public static EntityNum fromTokenId(TokenID grpc) {
@@ -112,6 +132,14 @@ public class EntityNum {
 		return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
 	}
 
+	public Id toId() {
+		return STATIC_PROPERTIES.scopedIdWith(numFromCode(value));
+	}
+
+	public ContractID toGrpcContractID() {
+		return STATIC_PROPERTIES.scopedContractIdWith(numFromCode(value));
+	}
+
 	public TokenID toGrpcTokenId() {
 		return STATIC_PROPERTIES.scopedTokenWith(numFromCode(value));
 	}
@@ -122,6 +150,17 @@ public class EntityNum {
 
 	public String toIdString() {
 		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
+	}
+
+	public Address toEvmAddress() {
+		return Address.wrap(Bytes.wrap(toRawEvmAddress()));
+	}
+
+	public byte[] toRawEvmAddress() {
+		return asEvmAddress(
+				(int) STATIC_PROPERTIES.getShard(),
+				STATIC_PROPERTIES.getRealm(),
+				numFromCode(value));
 	}
 
 	@Override

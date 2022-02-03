@@ -22,28 +22,37 @@ package com.hedera.services.store.contracts;
  *
  */
 
-
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
+	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address sponsor = Address.fromHexString("0xcba");
+	private static final Address address = Address.fromHexString("0xabc");
+	private static final ContractID addressId = EntityIdUtils.contractIdFromEvmAddress(address);
+
+	@Mock
+	private ContractAliases aliases;
 	@Mock
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
@@ -53,31 +62,71 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
 
-	private Address address;
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
-		address = Address.fromHexString("0xabc");
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
 	}
 
-	@AfterEach
-	void tearDown() {
-		subject.getSponsorMap().clear();
+	@Test
+	void usesAliasesForDecodingHelp() {
+		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var resolved = subject.unaliased(alias.toArrayUnsafe());
+		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
 	}
 
 	@Test
-	void allocateNewContractAddress() {
-		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
-		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(
-				ContractID.newBuilder().setContractNum(1).build())));
+	void linksAliasWhenReservingNewContractId() {
+		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
 
-		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asSolidityAddress(sponsoredId)));
+		final var created = subject.newAliasedContractAddress(sponsor, alias);
+
+		assertSame(address, created);
+		assertEquals(sponsor, subject.getSponsorMap().get(address));
+		assertEquals(addressId, subject.idOfLastNewAddress());
+		verify(aliases).link(alias, address);
+	}
+
+	@Test
+	void usesCanonicalAddressFromTrackingLedgers() {
+		given(trackingLedgers.canonicalAddress(sponsor)).willReturn(alias);
+
+		assertSame(alias, subject.priorityAddress(sponsor));
+	}
+
+	@Test
+	void doesntRelinkAliasIfActive() {
+		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.isInUse(alias)).willReturn(true);
+		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+
+		final var created = subject.newAliasedContractAddress(sponsor, alias);
+
+		assertSame(address, created);
+		assertEquals(sponsor, subject.getSponsorMap().get(address));
+		assertEquals(addressId, subject.idOfLastNewAddress());
+		verify(aliases, never()).link(alias, address);
+	}
+
+	@Test
+	void allocatesNewContractAddress() {
+		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
+				ContractID.newBuilder().setContractNum(1).build())));
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
+
+		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
-		final var allocated = subject.allocateNewContractAddress(sponsorAddr);
-		final var sponsorAid = EntityIdUtils.accountParsedFromSolidityAddress(sponsorAddr.toArrayUnsafe());
-		final var allocatedAid = EntityIdUtils.accountParsedFromSolidityAddress(allocated.toArrayUnsafe());
+		final var allocated = subject.newContractAddress(sponsorAddr);
+		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
 		assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
 		assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
@@ -85,7 +134,31 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(1, subject.getSponsorMap().size());
 		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
 		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
-		assertEquals(sponsoredId, subject.idOfLastAllocatedAddress());
+		assertEquals(sponsoredId, subject.idOfLastNewAddress());
+	}
+
+	@Test
+	void canSponsorWithAlias() {
+		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
+				ContractID.newBuilder().setContractNum(1).build())));
+		given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
+		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+
+		final var allocated = subject.newContractAddress(alias);
+		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
+
+		assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
+		assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
+		assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
+		assertEquals(1, subject.getSponsorMap().size());
+		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
+		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
+		assertEquals(sponsoredId, subject.idOfLastNewAddress());
 	}
 
 	@Test
@@ -106,7 +179,9 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void getHederaAccountReturnsNull() {
+	void getHederaAccountReturnsNullIfNotPresentInParent() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(address)).willReturn(address);
 		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(null);
 
 		final var result = subject.getHederaAccount(address);
@@ -118,7 +193,9 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void getHederaAccountReturnsValue() {
+	void getHederaAccountReturnsValueIfPresentInParent() {
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(address)).willReturn(address);
 		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(account);
 
 		final var result = subject.getHederaAccount(address);
