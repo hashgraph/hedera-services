@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -128,23 +129,23 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList(),
-						allowanceTransfersWorkAsExpected(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList(),
+//						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork()
 				}
 		);
@@ -223,7 +224,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(otherOwner)
 								.addCryptoAllowance(otherOwner, spender, 5 * ONE_HBAR)
 								.addTokenAllowance(otherOwner, fungibleToken, spender, 100)
-								.addNftAllowance(otherOwner, nonFungibleToken, spender, false, List.of(3L, 4L))
+								.addNftAllowance(otherOwner, nonFungibleToken, spender, true, List.of(3L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
@@ -242,7 +243,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								movingWithAllowance(10, fungibleToken).between(otherOwner, receiver),
 								movingUnique(nonFungibleToken, 1L).between(owner, receiver),
 								movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver),
-								movingUniqueWithAllowance(nonFungibleToken, 3L).between(otherOwner, receiver)
+								movingUniqueWithAllowance(nonFungibleToken, 4L).between(otherOwner, receiver)
 						)
 								.payingWith(spender)
 								.signedBy(spender, owner, otherReceiver, otherOwner),
@@ -261,7 +262,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 90)
-										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(4L))),
+										.nftAllowancesContaining(nonFungibleToken, spender, true, Collections.EMPTY_LIST)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(3))
