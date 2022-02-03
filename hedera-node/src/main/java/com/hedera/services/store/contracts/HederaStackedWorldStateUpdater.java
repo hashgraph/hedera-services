@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -55,7 +54,6 @@ public class HederaStackedWorldStateUpdater
 
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var ans = aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
-		System.out.println("Unaliased " + CommonUtils.hex(evmAddress) + " to " + CommonUtils.hex(ans));
 		return ans;
 	}
 
