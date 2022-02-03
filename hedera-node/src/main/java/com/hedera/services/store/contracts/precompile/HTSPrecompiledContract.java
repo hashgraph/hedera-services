@@ -57,6 +57,7 @@ import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -976,7 +977,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
-		private TokenID tokenID;
+		protected TokenID tokenID;
+		private TransactionBody.Builder syntheticTxn;
+		private SideEffectsTracker sideEffects;
+		protected HederaTokenStore hederaTokenStore;
 
 		public ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
@@ -984,7 +988,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			return TransactionBody.newBuilder();
+			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input.slice(24));
+
+			this.sideEffects = sideEffectsFactory.get();
+			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			return syntheticTxn;
 		}
 
 		@Override
@@ -993,10 +1007,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		) {
 			Objects.requireNonNull(tokenID);
 
-			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 			final var sideEffects = sideEffectsFactory.get();
 
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
@@ -1102,12 +1112,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public NamePrecompile(TokenID tokenID) {
 			super(tokenID);
 		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			final var name = hederaTokenStore.get(tokenID).name();
+			return encoder.encodeName(name);
+		}
 	}
 
 	protected class SymbolPrecompile extends ERCReadOnlyAbstractPrecompile {
 
 		public SymbolPrecompile(final TokenID tokenID) {
 			super(tokenID);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			final var symbol = hederaTokenStore.get(tokenID).symbol();
+			return encoder.encodeSymbol(symbol);
 		}
 	}
 
@@ -1116,12 +1138,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public DecimalsPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			final var decimals = hederaTokenStore.get(tokenID).decimals();
+			return encoder.encodeDecimals(decimals);
+		}
 	}
 
 	protected class TotalSupplyPrecompile extends ERCReadOnlyAbstractPrecompile {
 
 		public TotalSupplyPrecompile(final TokenID tokenID) {
 			super(tokenID);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			final var totalSupply = hederaTokenStore.get(tokenID).totalSupply();
+			return encoder.encodeTotalSupply(totalSupply);
 		}
 	}
 
