@@ -32,8 +32,11 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -110,10 +113,18 @@ public class ImpliedTransfersMarshal {
 			return ImpliedTransfers.invalid(props, validity);
 		}
 
-		final List<BalanceChange> changes = new ArrayList<>();
+		Map<AccountID, BalanceChange> aggregatedHbarChanges = new LinkedHashMap<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
-			changes.add(changingHbar(aa, payerID));
+			var currChange = changingHbar(aa, payerID);
+			if (!aggregatedHbarChanges.containsKey(currChange.accountId())) {
+				aggregatedHbarChanges.put(currChange.accountId(), currChange);
+			} else {
+				var existingChange = aggregatedHbarChanges.get(currChange.accountId());
+				existingChange.aggregateUnits(currChange.getAggregatedUnits());
+				existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
+			}
 		}
+		final List<BalanceChange> changes = new ArrayList<>(aggregatedHbarChanges.values());
 		if (!hasTokenChanges(op)) {
 			return ImpliedTransfers.valid(
 					props, changes, NO_CUSTOM_FEE_META, NO_CUSTOM_FEES, resolvedAliases, numAutoCreations);
@@ -168,15 +179,30 @@ public class ImpliedTransfersMarshal {
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
 
 			boolean decimalsSet = false;
+			Map<TokenAndAccountID, BalanceChange> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
 			for (var aa : xfers.getTransfersList()) {
-				var change = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
+				var currChange = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
 				// set only for the first balance change of the token with expectedDecimals
 				if (xfers.hasExpectedDecimals() && !decimalsSet) {
-					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
+					currChange.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
 					decimalsSet = true;
 				}
-				changes.add(change);
+
+				var tokenAndAccountId = new TokenAndAccountID(EntityNum.fromLong(tokenId.num()), currChange.accountId());
+
+				if(!aggregatedFungibleTokenChanges.containsKey(tokenAndAccountId)) {
+					aggregatedFungibleTokenChanges.put(tokenAndAccountId, currChange);
+				} else {
+					var existingChange = aggregatedFungibleTokenChanges.get(tokenAndAccountId);
+					existingChange.aggregateUnits(currChange.getAggregatedUnits());
+					existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
+
+					if (!existingChange.hasExpectedDecimals() && currChange.hasExpectedDecimals()) {
+						existingChange.setExpectedDecimals(currChange.getExpectedDecimals());
+					}
+				}
 			}
+			changes.addAll(aggregatedFungibleTokenChanges.values());
 
 			for (var oc : xfers.getNftTransfersList()) {
 				if (ownershipChanges == null) {
@@ -208,5 +234,39 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.maxXferBalanceChanges(),
 				dynamicProperties.areNftsEnabled(),
 				dynamicProperties.isAutoCreationEnabled());
+	}
+
+	class TokenAndAccountID {
+		EntityNum tokenNum;
+		AccountID accountID;
+
+		TokenAndAccountID(EntityNum tokenNum, AccountID accountID) {
+			this.tokenNum = tokenNum;
+			this.accountID = accountID;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null || !obj.getClass().equals(TokenAndAccountID.class)) {
+				return false;
+			}
+
+			final var that = (TokenAndAccountID) obj;
+			return new EqualsBuilder()
+					.append(tokenNum, that.tokenNum)
+					.append(accountID, that.accountID)
+					.isEquals();
+		}
+
+		@Override
+		public int hashCode() {
+			return new HashCodeBuilder()
+					.append(tokenNum)
+					.append(accountID)
+					.toHashCode();
+		}
 	}
 }

@@ -119,7 +119,7 @@ class MerkleAccountScopedCheckTest {
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 
 		when(account.getBalance()).thenReturn(5L);
-		when(balanceChange.units()).thenReturn(-6L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-6L);
 		when(balanceChange.codeForInsufficientBalance()).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
 		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, subject.checkUsing(account, changeSet));
@@ -130,7 +130,7 @@ class MerkleAccountScopedCheckTest {
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(10L);
-		when(balanceChange.units()).thenReturn(-5L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
@@ -144,7 +144,8 @@ class MerkleAccountScopedCheckTest {
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(110L);
-		when(balanceChange.units()).thenReturn(-105L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
+		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
@@ -155,7 +156,7 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnFungible() {
-		when(balanceChange.units()).thenReturn(-5L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
@@ -167,7 +168,8 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenSpenderIsHasInsufficientAllowanceOnFungible() {
-		when(balanceChange.units()).thenReturn(-105L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
+		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
@@ -179,7 +181,7 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnFungible() {
-		when(balanceChange.units()).thenReturn(-15L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-15L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
@@ -240,7 +242,7 @@ class MerkleAccountScopedCheckTest {
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(0L);
-		when(balanceChange.units()).thenReturn(5L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(5L);
 
 		assertEquals(OK, subject.checkUsing(account, changeSet));
 	}

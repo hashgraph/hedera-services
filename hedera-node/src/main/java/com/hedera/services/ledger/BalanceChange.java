@@ -53,9 +53,10 @@ public class BalanceChange {
 	private Id token;
 
 	private Id account;
-	private long units;
 	private long originalUnits;
 	private long newBalance;
+	private long aggregatedUnits;
+	private long allowanceUnits;
 	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
@@ -108,11 +109,14 @@ public class BalanceChange {
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
 		this.alias = accountId.getAlias();
-		this.units = amount;
 		this.originalUnits = amount;
 		this.isApprovedAllowance = isApprovedAllowance;
 		this.payerID = payerID;
 		this.codeForInsufficientBalance = code;
+		this.aggregatedUnits = amount;
+		if (isApprovedAllowance) {
+			this.allowanceUnits = amount;
+		}
 	}
 
 	/* HTS constructor */
@@ -121,11 +125,14 @@ public class BalanceChange {
 		this.accountId = aa.getAccountID();
 		this.alias = accountId.getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
-		this.units = aa.getAmount();
 		this.isApprovedAllowance = aa.getIsApproval();
-		this.originalUnits = units;
+		this.originalUnits = aa.getAmount();
 		this.codeForInsufficientBalance = code;
 		this.payerID = payerID;
+		this.aggregatedUnits = aa.getAmount();
+		if (isApprovedAllowance) {
+			this.allowanceUnits = aa.getAmount();
+		}
 	}
 
 	/* NFT constructor */
@@ -136,18 +143,14 @@ public class BalanceChange {
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
 		this.alias = accountId.getAlias();
-		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
+		this.aggregatedUnits = serialNo;
 	}
 
 	public void replaceAliasWith(final AccountID createdId) {
 		accountId = createdId;
 		account = Id.fromGrpcAccount(createdId);
 		alias = ByteString.EMPTY;
-	}
-
-	public void adjustUnits(long units) {
-		this.units += units;
 	}
 
 	public boolean isForHbar() {
@@ -166,16 +169,12 @@ public class BalanceChange {
 		return nftId;
 	}
 
-	public long units() {
-		return units;
-	}
-
 	public long originalUnits() {
 		return originalUnits;
 	}
 
 	public long serialNo() {
-		return units;
+		return aggregatedUnits;
 	}
 
 	public long getNewBalance() {
@@ -227,7 +226,7 @@ public class BalanceChange {
 	}
 
 	public boolean isApprovedAllowance() {
-		return isApprovedAllowance;
+		return this.allowanceUnits == 0 ? isApprovedAllowance : this.allowanceUnits < 0;
 	}
 
 	public void setIsApprovedAllowance(boolean isApprovedAllowance) {
@@ -240,6 +239,22 @@ public class BalanceChange {
 
 	public void setPayerID(AccountID payerID) {
 		this.payerID = payerID;
+	}
+
+	public void aggregateUnits(long amount) {
+		this.aggregatedUnits += amount;
+	}
+
+	public long getAggregatedUnits() {
+		return this.aggregatedUnits;
+	}
+
+	public void addAllowanceUnits(long amount) {
+		this.allowanceUnits += amount;
+	}
+
+	public long getAllowanceUnits() {
+		return this.allowanceUnits;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -263,13 +278,13 @@ public class BalanceChange {
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
 					.add("alias", alias.toStringUtf8())
-					.add("units", units)
+					.add("units", aggregatedUnits)
 					.add("expectedDecimals", expectedDecimals)
 					.toString();
 		} else {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("nft", token)
-					.add("serialNo", units)
+					.add("serialNo", aggregatedUnits)
 					.add("from", account)
 					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
 					.toString();

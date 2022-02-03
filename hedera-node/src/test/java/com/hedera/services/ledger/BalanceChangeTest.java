@@ -70,7 +70,7 @@ class BalanceChangeTest {
 		assertEquals(nftRepr, nftChange.toString());
 		// and:
 		assertSame(a, hbarChange.accountId());
-		assertEquals(delta, hbarChange.units());
+		assertEquals(delta, hbarChange.getAggregatedUnits());
 		assertEquals(t.asGrpcToken(), tokenChange.tokenId());
 	}
 
@@ -98,10 +98,10 @@ class BalanceChangeTest {
 		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
 		assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
 		assertTrue(hbarAdjust.isForHbar());
-		assertEquals(10, hbarAdjust.units());
+		assertEquals(10, hbarAdjust.getAggregatedUnits());
 		assertEquals(10, hbarAdjust.originalUnits());
-		hbarAdjust.adjustUnits(10);
-		assertEquals(20, hbarAdjust.units());
+		hbarAdjust.aggregateUnits(10);
+		assertEquals(20, hbarAdjust.getAggregatedUnits());
 		assertEquals(10, hbarAdjust.originalUnits());
 	}
 
@@ -120,7 +120,7 @@ class BalanceChangeTest {
 				IdUtils.asModelId("1.2.3"),
 				IdUtils.asModelId("3.2.1"),
 				10, null, false);
-		assertEquals(10, tokenAdjust.units());
+		assertEquals(10, tokenAdjust.getAggregatedUnits());
 		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
 		assertEquals(new Id(3, 2, 1), tokenAdjust.getToken());
 	}

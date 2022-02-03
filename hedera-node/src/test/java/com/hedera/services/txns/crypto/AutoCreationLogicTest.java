@@ -106,7 +106,7 @@ class AutoCreationLogicTest {
 		final var result = subject.create(input, accountsLedger);
 		subject.submitRecordsTo(recordsHistorian);
 
-		assertEquals(initialTransfer - totalFee, input.units());
+		assertEquals(initialTransfer - totalFee, input.getAggregatedUnits());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
 		verify(aliasManager).link(alias, createdNum);
 		verify(sigImpactHistorian).markAliasChanged(alias);

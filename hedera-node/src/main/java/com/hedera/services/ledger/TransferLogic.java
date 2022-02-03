@@ -163,31 +163,31 @@ public class TransferLogic {
 			if (change.isForHbar()) {
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
+				sideEffectsTracker.trackHbarChange(accountId, change.getAggregatedUnits());
 
-				if (change.isApprovedAllowance() && change.units() < 0) {
+				if (change.isApprovedAllowance() && change.getAggregatedUnits() < 0) {
 					final var payerNum = EntityNum.fromAccountId(change.getPayerID());
 					final var hbarAllowances = (Map<EntityNum, Long>) accountsLedger.get(accountId, CRYPTO_ALLOWANCES);
 					final var currentAllowance = hbarAllowances.get(payerNum);
-					final var newAllowance = currentAllowance + change.units();
+					final var newAllowance = currentAllowance + change.getAllowanceUnits();
 					if (newAllowance != 0) {
 						hbarAllowances.put(payerNum, newAllowance);
 					} else {
 						hbarAllowances.remove(payerNum);
 					}
 				}
-			} else if (change.isForFungibleToken() && change.isApprovedAllowance() && change.units() < 0) {
+			} else if (change.isApprovedAllowance() && change.isForFungibleToken() && change.getAggregatedUnits() < 0) {
 				final var allowanceId = FcTokenAllowanceId.from(
 						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
 				final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES);
 				final var currentAllowance = fungibleAllowances.get(allowanceId);
-				final var newAllowance = currentAllowance + change.units();
+				final var newAllowance = currentAllowance + change.getAllowanceUnits();
 				if (newAllowance == 0) {
 					fungibleAllowances.remove(allowanceId);
 				} else {
 					fungibleAllowances.put(allowanceId, newAllowance);
 				}
-			} else if (change.isForNft() && change.isApprovedAllowance()) {
+			} else if (change.isApprovedAllowance() && change.isForNft()) {
 				final var allowanceId = FcTokenAllowanceId.from(
 						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
 				final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES);

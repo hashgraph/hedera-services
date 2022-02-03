@@ -96,7 +96,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			return validity;
 		}
 
-		final var newBalance = balance + balanceChange.units();
+		final var newBalance = balance + balanceChange.getAggregatedUnits();
 		if (newBalance < 0L) {
 			return balanceChange.codeForInsufficientBalance();
 		}
@@ -141,7 +141,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
-		if (balanceChange.isApprovedAllowance() && balanceChange.isForHbar() && balanceChange.units() < 0) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForHbar() && balanceChange.getAggregatedUnits() < 0) {
 			final var cryptoAllowances = (Map<EntityNum, Long>) getEffective(
 					CRYPTO_ALLOWANCES, account, extantProps, changeSet);
 			final var allowance = cryptoAllowances.getOrDefault(
@@ -149,7 +149,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			if (allowance == 0L) {
 				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 			}
-			final var newAllowance = allowance + balanceChange.units();
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
 			if (newAllowance < 0L) {
 				return AMOUNT_EXCEEDS_ALLOWANCE;
 			}
@@ -162,7 +162,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
-		if (balanceChange.isApprovedAllowance() && balanceChange.isForFungibleToken() && balanceChange.units() < 0) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForFungibleToken() && balanceChange.getAggregatedUnits() < 0) {
 			final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) getEffective(
 					FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
 			final var allowance = fungibleAllowances.getOrDefault(
@@ -172,7 +172,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			if (allowance == 0L) {
 				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 			}
-			final var newAllowance = allowance + balanceChange.units();
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
 			if (newAllowance < 0L) {
 				return AMOUNT_EXCEEDS_ALLOWANCE;
 			}

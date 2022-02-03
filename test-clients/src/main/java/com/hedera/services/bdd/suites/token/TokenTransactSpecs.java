@@ -933,7 +933,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
 								moving(100, B_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
-						).fullyAggregateTokenTransfers()
+						)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)

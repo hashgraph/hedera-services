@@ -699,7 +699,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			for (int i = 0, n = changes.size(); i < n; i++) {
 				final var change = changes.get(i);
-				final var units = change.units();
+				final var units = change.getAggregatedUnits();
 				if (change.isForNft() || units < 0) {
 					final var hasSenderSig = validateKey(frame, change.getAccount().asEvmAddress(),
 							sigsVerifier::hasActiveKey);

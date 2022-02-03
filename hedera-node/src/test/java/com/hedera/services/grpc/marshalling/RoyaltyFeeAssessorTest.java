@@ -160,8 +160,8 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		assertEquals(originalUnits / 2, reclaimable.get(0).units());
-		assertEquals(originalUnits / 2, reclaimable.get(1).units());
+		assertEquals(originalUnits / 2, reclaimable.get(0).getAggregatedUnits());
+		assertEquals(originalUnits / 2, reclaimable.get(1).getAggregatedUnits());
 		// and:
 		verifyNoInteractions(fungibleAdjuster);
 		assertTrue(accumulator.isEmpty());
@@ -185,8 +185,8 @@ class RoyaltyFeeAssessorTest {
 		// then:
 		assertEquals(OK, result);
 		// and:
-		assertEquals(0, reclaimable.get(0).units());
-		assertEquals(0, reclaimable.get(1).units());
+		assertEquals(0, reclaimable.get(0).getAggregatedUnits());
+		assertEquals(0, reclaimable.get(1).getAggregatedUnits());
 		// and:
 		verify(fungibleAdjuster).adjustedChange(
 				targetCollector.asId(), MISSING_ID, MISSING_ID, originalUnits / 2, changeManager);
@@ -221,8 +221,8 @@ class RoyaltyFeeAssessorTest {
 	}
 
 	private List<BalanceChange> changesNoLongerWithOriginalUnits() {
-		hbarPayerPlusChange.adjustUnits(-originalUnits / 2);
-		htsPayerPlusChange.adjustUnits(-originalUnits / 2);
+		hbarPayerPlusChange.aggregateUnits(-originalUnits / 2);
+		htsPayerPlusChange.aggregateUnits(-originalUnits / 2);
 		return List.of(hbarPayerPlusChange, htsPayerPlusChange);
 	}
 

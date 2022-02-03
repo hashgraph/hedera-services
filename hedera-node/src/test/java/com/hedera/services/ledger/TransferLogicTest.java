@@ -177,16 +177,16 @@ class TransferLogicTest {
 			accountsLedger.create(firstNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(firstNewAccount);
-			change.adjustUnits(-autoFee);
-			change.setNewBalance(change.units());
+			change.aggregateUnits(-autoFee);
+			change.setNewBalance(change.getAggregatedUnits());
 			return Pair.of(OK, autoFee);
 		});
 		given(autoCreationLogic.create(secondTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(secondNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(secondNewAccount);
-			change.adjustUnits(-autoFee);
-			change.setNewBalance(change.units());
+			change.aggregateUnits(-autoFee);
+			change.setNewBalance(change.getAggregatedUnits());
 			return Pair.of(OK, autoFee);
 		});
 		final var changes = List.of(firstTrigger, secondTrigger);

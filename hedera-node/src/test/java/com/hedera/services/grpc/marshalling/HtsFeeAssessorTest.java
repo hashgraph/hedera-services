@@ -63,7 +63,7 @@ class HtsFeeAssessorTest {
 		subject.assess(payer, nonSelfDenominatedChargingToken, htsFee, balanceChangeManager, accumulator);
 
 		// then:
-		verify(collectorChange).adjustUnits(+amountOfHtsFee);
+		verify(collectorChange).aggregateUnits(+amountOfHtsFee);
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
 		// and:
 		assertEquals(1, accumulator.size());
