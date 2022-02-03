@@ -892,8 +892,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
-								moving(1, A_TOKEN).from("firstTreasury")
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+								moving(1, A_TOKEN).from("firstTreasury"))
+								.dontFullyAggregateTokenTransfers()
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
 				);
 	}
 

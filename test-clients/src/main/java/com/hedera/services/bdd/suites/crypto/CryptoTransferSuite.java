@@ -471,6 +471,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						cryptoTransfer(moving(1, fungibleType).between(owningParty, owningParty))
 								.signedBy(DEFAULT_PAYER, owningParty)
+								.dontFullyAggregateTokenTransfers()
 								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						/* And bypassing precheck */
 						usableTxnIdNamed(uncheckedHbarTxn).payerId(DEFAULT_PAYER),
@@ -483,6 +484,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						uncheckedSubmit(
 								cryptoTransfer(moving(1, fungibleType).between(owningParty, owningParty))
 										.signedBy(DEFAULT_PAYER, owningParty)
+										.dontFullyAggregateTokenTransfers()
 										.txnId(uncheckedFtTxn)
 						).payingWith(GENESIS)
 				).then(
