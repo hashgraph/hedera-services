@@ -48,6 +48,7 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -167,7 +168,8 @@ public class TransferLogic {
 
 				if (change.isApprovedAllowance() && change.getAggregatedUnits() < 0) {
 					final var payerNum = EntityNum.fromAccountId(change.getPayerID());
-					final var hbarAllowances = (Map<EntityNum, Long>) accountsLedger.get(accountId, CRYPTO_ALLOWANCES);
+					final var hbarAllowances =  new TreeMap<>(
+							(Map<EntityNum, Long>) accountsLedger.get(accountId, CRYPTO_ALLOWANCES));
 					final var currentAllowance = hbarAllowances.get(payerNum);
 					final var newAllowance = currentAllowance + change.getAllowanceUnits();
 					if (newAllowance != 0) {
@@ -175,11 +177,13 @@ public class TransferLogic {
 					} else {
 						hbarAllowances.remove(payerNum);
 					}
+					accountsLedger.set(accountId, CRYPTO_ALLOWANCES, hbarAllowances);
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken() && change.getAggregatedUnits() < 0) {
 				final var allowanceId = FcTokenAllowanceId.from(
 						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-				final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES);
+				final var fungibleAllowances =  new TreeMap<>(
+						(Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES));
 				final var currentAllowance = fungibleAllowances.get(allowanceId);
 				final var newAllowance = currentAllowance + change.getAllowanceUnits();
 				if (newAllowance == 0) {
@@ -187,10 +191,12 @@ public class TransferLogic {
 				} else {
 					fungibleAllowances.put(allowanceId, newAllowance);
 				}
+				accountsLedger.set(accountId, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
 			} else if (change.isApprovedAllowance() && change.isForNft()) {
 				final var allowanceId = FcTokenAllowanceId.from(
 						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-				final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES);
+				final var nftAllowances = new TreeMap<>(
+						(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES));
 				final var currentAllowance = nftAllowances.get(allowanceId);
 				if (!currentAllowance.isApprovedForAll()) {
 					var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
@@ -200,6 +206,7 @@ public class TransferLogic {
 					} else {
 						nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
 					}
+					accountsLedger.set(accountId, NFT_ALLOWANCES, nftAllowances);
 				}
 			}
 		}

@@ -128,22 +128,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList(),
 						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork()
 				}
@@ -215,15 +215,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								movingUnique(nonFungibleToken, 3,4).between(TOKEN_TREASURY, otherOwner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(spender, 10 * ONE_HBAR)
-								.addTokenAllowance(fungibleToken, spender, 500)
-								.addNftAllowance(nonFungibleToken, spender, false, List.of(1L, 2L))
+								.addCryptoAllowance(owner,spender, 10 * ONE_HBAR)
+								.addTokenAllowance(owner, fungibleToken, spender, 500)
+								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L))
 								.fee(ONE_HUNDRED_HBARS),
 						cryptoApproveAllowance()
 								.payingWith(otherOwner)
-								.addCryptoAllowance(spender, 5 * ONE_HBAR)
-								.addTokenAllowance(fungibleToken, spender, 100)
-								.addNftAllowance(nonFungibleToken, spender, false, List.of(3L, 4L))
+								.addCryptoAllowance(otherOwner, spender, 5 * ONE_HBAR)
+								.addTokenAllowance(otherOwner, fungibleToken, spender, 100)
+								.addNftAllowance(otherOwner, nonFungibleToken, spender, false, List.of(3L, 4L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
@@ -322,9 +322,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUnique(nonFungibleToken, 1,2).between(TOKEN_TREASURY, owner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(spender, 10 * ONE_HBAR)
-								.addTokenAllowance(fungibleToken, spender, 100)
-								.addNftAllowance(nonFungibleToken, spender, false, List.of(1L, 2L))
+								.addCryptoAllowance(owner, spender, 10 * ONE_HBAR)
+								.addTokenAllowance(owner, fungibleToken, spender, 100)
+								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
@@ -403,7 +403,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner).logged()
+						getAccountInfo(owner)
+								.has(accountWith().noAllowances())
 				);
 	}
 

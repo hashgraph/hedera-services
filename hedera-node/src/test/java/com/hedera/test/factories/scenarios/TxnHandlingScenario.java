@@ -57,9 +57,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
@@ -560,16 +559,16 @@ public interface TxnHandlingScenario {
 
 	KeyTree SCHEDULE_ADMIN_KT = withRoot(ed25519());
 
-	Map<EntityNum, Long> cryptoAllowances = new HashMap<>() {{
+	TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(DEFAULT_PAYER), 500L);
 	}};
 
-	Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>() {{
+	TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>() {{
 		put(FcTokenAllowanceId.from(
 				EntityNum.fromTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS), EntityNum.fromAccountId(DEFAULT_PAYER)), 10_000L);
 	}};
 
-	Map<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new HashMap<>() {{
+	TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new TreeMap<>() {{
 		put(FcTokenAllowanceId.from(
 						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
 				FcTokenAllowance.from(true));

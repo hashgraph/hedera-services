@@ -45,9 +45,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
@@ -165,13 +164,13 @@ class MerkleAccountPropertyTest {
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
 		final FcTokenAllowanceId nftAllowanceId =
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
-		final Map<EntityNum, Long> cryptoAllowances = new HashMap<>() {{
+		final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
 			put(payerNum, initialAllowance);
 		}};
-		final Map<FcTokenAllowanceId, Long> fungibleAllowances = new HashMap<>() {{
+		final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}};
-		final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>() {{
+		final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
 			put(fungibleAllowanceId, FcTokenAllowance.from(true));
 			put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
 		}};

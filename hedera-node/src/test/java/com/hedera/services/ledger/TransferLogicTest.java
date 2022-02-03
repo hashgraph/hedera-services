@@ -53,9 +53,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -88,13 +88,13 @@ class TransferLogicTest {
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
 	private final FcTokenAllowanceId nftAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
-	private final Map<EntityNum, Long> cryptoAllowances = new HashMap<>() {{
+	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
 		put(payerNum, initialAllowance);
 	}};
-	private final Map<FcTokenAllowanceId, Long> fungibleAllowances = new HashMap<>() {{
+	private TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 		put(fungibleAllowanceId, initialAllowance);
 	}};
-	private final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>() {{
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
 		put(fungibleAllowanceId, FcTokenAllowance.from(true));
 		put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
 	}};
@@ -230,6 +230,7 @@ class TransferLogicTest {
 		accountsLedger.begin();
 		subject.doZeroSum(List.of(change));
 
+		updateAllowanceMaps();
 		assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
 		assertEquals(initialAllowance - 50L, cryptoAllowances.get(payerNum));
 	}
@@ -264,6 +265,8 @@ class TransferLogicTest {
 
 		accountsLedger.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change)));
+
+		updateAllowanceMaps();
 		assertEquals(initialAllowance - 50L, fungibleAllowances.get(fungibleAllowanceId));
 	}
 
@@ -300,6 +303,8 @@ class TransferLogicTest {
 
 		accountsLedger.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
+
+		updateAllowanceMaps();
 		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
 		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
 	}
@@ -312,10 +317,14 @@ class TransferLogicTest {
 		accountsLedger.begin();
 		subject.doZeroSum(List.of(change1));
 
+		updateAllowanceMaps();
+
 		assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
 		assertEquals(initialAllowance - 50L, cryptoAllowances.get(payerNum));
 
 		subject.doZeroSum(List.of(change1));
+
+		updateAllowanceMaps();
 
 		assertEquals(initialBalance - 100L, accountsLedger.get(owner, AccountProperty.BALANCE));
 		assertFalse(cryptoAllowances.containsKey(payerNum));
@@ -335,10 +344,12 @@ class TransferLogicTest {
 		accountsLedger.begin();
 		subject.doZeroSum(List.of(change1));
 
+		updateAllowanceMaps();
 		assertEquals(initialAllowance - 50L, fungibleAllowances.get(fungibleAllowanceId));
 
 		subject.doZeroSum(List.of(change1));
 
+		updateAllowanceMaps();
 		assertFalse(fungibleAllowances.containsKey(fungibleAllowanceId));
 
 		final var change2 = BalanceChange.changingFtUnits(
@@ -357,6 +368,8 @@ class TransferLogicTest {
 		accountsLedger.begin();
 		subject.doZeroSum(List.of(change1));
 
+		updateAllowanceMaps();
+
 		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
 		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
 
@@ -366,8 +379,8 @@ class TransferLogicTest {
 
 		subject.doZeroSum(List.of(change2));
 
+		updateAllowanceMaps();
 		assertFalse(nftAllowances.containsKey(nftAllowanceId));
-
 		assertFailsWith(() -> subject.doZeroSum(List.of(change1)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 	}
 
@@ -403,5 +416,14 @@ class TransferLogicTest {
 		accountsLedger.set(owner, AccountProperty.NFT_ALLOWANCES, nftAllowances);
 		accountsLedger.set(owner, AccountProperty.BALANCE, initialBalance);
 		accountsLedger.commit();
+	}
+
+	private void updateAllowanceMaps() {
+		cryptoAllowances = new TreeMap<>(
+				(Map<EntityNum, Long>) accountsLedger.get(owner, AccountProperty.CRYPTO_ALLOWANCES));
+		fungibleAllowances = new TreeMap<>(
+				(Map<FcTokenAllowanceId, Long>) accountsLedger.get(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
+		nftAllowances = new TreeMap<>(
+				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.NFT_ALLOWANCES));
 	}
 }
