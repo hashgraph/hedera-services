@@ -2,21 +2,47 @@
 pragma solidity >=0.6.0 <0.9.0;
 
 contract Traceability {
+    uint256 slot0 = 0;
     uint256 slot1 = 0;
     uint256 slot2 = 0;
-    uint256 slot3 = 0;
 
     address public sibling = address(0);
 
+    constructor(uint256 _slot0, uint256 _slot1, uint256 _slot2) {
+        slot0 = _slot0;
+        slot1 = _slot1;
+        slot2 = _slot2;
+    }
+
+    // POW case
+    function eetScenatio0() external {
+        this.getSlot0();
+        this.setSlot1(1);
+        this.callSiblingGetSlot2();
+        sibling.call(abi.encodeWithSignature("callSiblingGetSlot0()"));
+    }
+
     function eetScenatio1() external {
-        this.getSlot1();
-        this.setSlot2(1);
-        this.callSiblingGetSlot3();
+        this.getSlot0();
+        this.setSlot1(55);
+        this.callSiblingGetSlot2();
+        this.callSiblingSetSlot2(143);
+        sibling.call(abi.encodeWithSignature("callSiblingGetSlot0()"));
+        sibling.call(abi.encodeWithSignature("callSiblingSetSlot0(0)"));
         sibling.call(abi.encodeWithSignature("callSiblingGetSlot1()"));
+        sibling.call(abi.encodeWithSignature("callSiblingSetSlot1(0)"));
     }
 
     function setSibling(address _sibling) external {
         sibling = _sibling;
+    }
+
+    function getSlot0() external returns(uint256) {
+        return slot0;
+    }
+
+    function setSlot0(uint256 _slot0) external {
+        slot0 = _slot0;
     }
 
     function getSlot1() external returns(uint256) {
@@ -35,12 +61,12 @@ contract Traceability {
         slot2 = _slot2;
     }
 
-    function getSlot3() external returns(uint256) {
-        return slot3;
+    function callSiblingSetSlot0(uint256 slot) external {
+        sibling.call(abi.encodeWithSignature("setSlot0(uint256)", slot));
     }
 
-    function setSlot3(uint256 _slot3) external {
-        slot3 = _slot3;
+    function callSiblingGetSlot0() external {
+        sibling.call(abi.encodeWithSignature("getSlot0()"));
     }
 
     function callSiblingSetSlot1(uint256 slot) external {
@@ -59,12 +85,12 @@ contract Traceability {
         sibling.call(abi.encodeWithSignature("getSlot2()"));
     }
 
-    function callSiblingSetSlot3(uint256 slot) external {
-        sibling.call(abi.encodeWithSignature("setSlot3(uint256)", slot));
+    function delegateCallSiblingSetSlot0(uint256 slot) external {
+        sibling.delegatecall(abi.encodeWithSignature("setSlot0(uint256)", slot));
     }
 
-    function callSiblingGetSlot3() external {
-        sibling.call(abi.encodeWithSignature("getSlot3()"));
+    function delegateCallSiblingGetSlot0() external {
+        sibling.delegatecall(abi.encodeWithSignature("getSlot0()"));
     }
 
     function delegateCallSiblingSetSlot1(uint256 slot) external {
@@ -81,13 +107,5 @@ contract Traceability {
 
     function delegateCallSiblingGetSlot2() external {
         sibling.delegatecall(abi.encodeWithSignature("getSlot2()"));
-    }
-
-    function delegateCallSiblingSetSlot3(uint256 slot) external {
-        sibling.delegatecall(abi.encodeWithSignature("setSlot3(uint256)", slot));
-    }
-
-    function delegateCallSiblingGetSlot3() external {
-        sibling.delegatecall(abi.encodeWithSignature("getSlot3()"));
     }
 }

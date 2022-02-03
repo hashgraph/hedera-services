@@ -248,7 +248,8 @@ public class ContractResources {
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_SET_SIBLING = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sibling\",\"type\":\"address\"}],\"name\":\"setSibling\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_GET_SLOT2 = "{\"inputs\":[],\"name\":\"getSlot2\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
+	public static final String TRACEABILITY_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"uint256\"," +
+			"\"name\":\"_slot0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot2\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
