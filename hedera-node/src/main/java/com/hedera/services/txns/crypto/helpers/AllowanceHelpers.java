@@ -115,4 +115,12 @@ public class AllowanceHelpers {
 		}
 		return false;
 	}
+
+	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
+		int totalSerials = 0;
+		for (var allowance : nftAllowancesList) {
+			totalSerials += allowance.getSerialNumbersCount();
+		}
+		return totalSerials;
+	}
 }

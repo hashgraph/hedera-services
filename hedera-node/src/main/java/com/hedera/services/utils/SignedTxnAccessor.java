@@ -461,7 +461,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setCryptoApproveUsageMeta() {
-		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(txn.getCryptoApproveAllowance());
+		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(txn.getCryptoApproveAllowance(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoApproveMeta(this, cryptoApproveMeta);
 	}
 

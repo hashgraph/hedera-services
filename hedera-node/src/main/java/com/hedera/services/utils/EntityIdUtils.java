@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -37,7 +38,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -184,6 +188,17 @@ public final class EntityIdUtils {
 
 	public static String asSolidityAddressHex(final AccountID id) {
 		return CommonUtils.hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+	}
+
+	public static List<CryptoAllowance> asCryptoAllowances(Map<EntityNum, Long> allowances) {
+		List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+		for (Map.Entry a : allowances.entrySet()) {
+			cryptoAllowances.add(CryptoAllowance.newBuilder()
+					.setSpender(((EntityNum) a.getKey()).toGrpcAccountId())
+					.setAmount((Long) a.getValue())
+					.build());
+		}
+		return cryptoAllowances;
 	}
 
 	public static byte[] asSolidityAddress(final ContractID id) {

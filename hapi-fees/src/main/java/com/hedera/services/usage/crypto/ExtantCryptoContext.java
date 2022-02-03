@@ -35,6 +35,10 @@ public class ExtantCryptoContext {
 	private final String currentMemo;
 	private final boolean currentlyHasProxy;
 	private final int currentMaxAutomaticAssociations;
+	private final int currentCryptoAllowanceCount;
+	private final int currentTokenAllowancesCount;
+	private final int currentNftAllowancesCount;
+	private final int currentSerialNumsInNfts;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -43,6 +47,10 @@ public class ExtantCryptoContext {
 		currentKey = builder.currentKey;
 		currentlyHasProxy = builder.currentlyHasProxy;
 		currentMaxAutomaticAssociations = builder.currentMaxAutomaticAssociations;
+		this.currentCryptoAllowanceCount = builder.currentCryptoAllowanceCount;
+		this.currentTokenAllowancesCount = builder.currentTokenAllowancesCount;
+		this.currentNftAllowancesCount = builder.currentNftAllowancesCount;
+		this.currentSerialNumsInNfts = builder.currentSerialNumsInNfts;
 	}
 
 	public long currentNonBaseRb() {
@@ -76,6 +84,26 @@ public class ExtantCryptoContext {
 		return currentMaxAutomaticAssociations;
 	}
 
+	public int getCurrentMaxAutomaticAssociations() {
+		return currentMaxAutomaticAssociations;
+	}
+
+	public int getCurrentCryptoAllowanceCount() {
+		return currentCryptoAllowanceCount;
+	}
+
+	public int getCurrentTokenAllowancesCount() {
+		return currentTokenAllowancesCount;
+	}
+
+	public int getCurrentNftAllowancesCount() {
+		return currentNftAllowancesCount;
+	}
+
+	public int getCurrentSerialNumsInNfts() {
+		return currentSerialNumsInNfts;
+	}
+
 	public static ExtantCryptoContext.Builder newBuilder() {
 		return new ExtantCryptoContext.Builder();
 	}
@@ -87,9 +115,14 @@ public class ExtantCryptoContext {
 		private static final int KEY_MASK = 1 << 3;
 		private static final int TOKEN_RELS_MASK = 1 << 4;
 		private static final int MAX_AUTO_ASSOCIATIONS_MASK = 1 << 5;
+		private static final int CRYPTO_ALLOWANCES_MASK = 1 << 6;
+		private static final int TOKEN_ALLOWANCES_MASK = 1 << 7;
+		private static final int NFT_ALLOWANCES_MASK = 1 << 8;
+		private static final int NFT_SERIALS_MASK = 1 << 9;
 
 		private static final int ALL_FIELDS_MASK =
-				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK;
+				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK
+						| CRYPTO_ALLOWANCES_MASK | TOKEN_ALLOWANCES_MASK | NFT_ALLOWANCES_MASK | NFT_SERIALS_MASK;
 
 		private int mask = 0;
 
@@ -99,6 +132,10 @@ public class ExtantCryptoContext {
 		private boolean currentlyHasProxy;
 		private long currentExpiry;
 		private int currentMaxAutomaticAssociations;
+		private int currentCryptoAllowanceCount;
+		private int currentTokenAllowancesCount;
+		private int currentNftAllowancesCount;
+		private int currentSerialNumsInNfts;
 
 		private Builder() {
 		}
@@ -143,6 +180,30 @@ public class ExtantCryptoContext {
 		public ExtantCryptoContext.Builder setCurrentMaxAutomaticAssociations(int currentMaxAutomaticAssociations) {
 			this.currentMaxAutomaticAssociations = currentMaxAutomaticAssociations;
 			mask |= MAX_AUTO_ASSOCIATIONS_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentCryptoAllowanceCount(int currentCryptoAllowanceCount) {
+			this.currentCryptoAllowanceCount = currentCryptoAllowanceCount;
+			mask |= CRYPTO_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentTokenAllowanceCount(int currentTokenAllowancesCount) {
+			this.currentTokenAllowancesCount = currentTokenAllowancesCount;
+			mask |= TOKEN_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentNftAllowanceCount(int currentNftAllowancesCount) {
+			this.currentNftAllowancesCount = currentNftAllowancesCount;
+			mask |= NFT_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public ExtantCryptoContext.Builder setCurrentNftSerialsCount(int currentSerialNumsInNfts) {
+			this.currentSerialNumsInNfts = currentSerialNumsInNfts;
+			mask |= NFT_SERIALS_MASK;
 			return this;
 		}
 	}

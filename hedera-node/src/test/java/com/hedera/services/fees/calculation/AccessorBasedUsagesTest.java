@@ -364,6 +364,10 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowanceCount(0)
+				.setCurrentTokenAllowanceCount(0)
+				.setCurrentNftAllowanceCount(0)
+				.setCurrentNftSerialsCount(0)
 				.build();
 		final var accumulator = new UsageAccumulator();
 

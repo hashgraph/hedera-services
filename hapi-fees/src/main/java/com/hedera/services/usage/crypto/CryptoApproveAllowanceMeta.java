@@ -21,77 +21,122 @@ package com.hedera.services.usage.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.List;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 
 public class CryptoApproveAllowanceMeta {
-	private final List<CryptoAllowance> cryptoAllowances;
-	private final List<TokenAllowance> tokenAllowances;
-	private final List<NftAllowance> nftAllowances;
+	private int numOfCryptoAllowances;
+	private int numOfTokenAllowances;
+	private int numOfNftAllowances;
+	private int aggregatedNftAllowancesWithSerials;
+	private final long effectiveNow;
+	private final long msgBytesUsed;
+//	private final long expiry;
 
 	public CryptoApproveAllowanceMeta(Builder builder) {
-		cryptoAllowances = builder.getCryptoAllowances();
-		tokenAllowances = builder.getTokenAllowances();
-		nftAllowances = builder.getNftAllowances();
+		numOfCryptoAllowances = builder.numOfCryptoAllowances;
+		numOfTokenAllowances = builder.numOfTokenAllowances;
+		numOfNftAllowances = builder.numOfNftAllowances;
+		aggregatedNftAllowancesWithSerials = builder.aggregatedNftAllowancesWithSerials;
+		effectiveNow = builder.effectiveNow;
+		msgBytesUsed = builder.msgBytesUsed;
 	}
 
-	public CryptoApproveAllowanceMeta(CryptoApproveAllowanceTransactionBody cryptoApproveTxnBody) {
-		cryptoAllowances = cryptoApproveTxnBody.getCryptoAllowancesList();
-		tokenAllowances = cryptoApproveTxnBody.getTokenAllowancesList();
-		nftAllowances = cryptoApproveTxnBody.getNftAllowancesList();
+	public CryptoApproveAllowanceMeta(CryptoApproveAllowanceTransactionBody cryptoApproveTxnBody,
+			long transactionValidStartSecs) {
+		numOfCryptoAllowances = cryptoApproveTxnBody.getCryptoAllowancesCount();
+		numOfTokenAllowances = cryptoApproveTxnBody.getTokenAllowancesCount();
+		numOfNftAllowances = cryptoApproveTxnBody.getNftAllowancesCount();
+		aggregatedNftAllowancesWithSerials = countSerials(cryptoApproveTxnBody.getNftAllowancesList());
+		effectiveNow = transactionValidStartSecs;
+		msgBytesUsed = bytesUsedInTxn(cryptoApproveTxnBody);
 	}
 
-	private int bytesUsedInTxn(CryptoUpdateTransactionBody op) {
-		return BASIC_ENTITY_ID_SIZE
-				+ op.getMemo().getValueBytes().size()
-				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
-				+ (op.hasAutoRenewPeriod() ? LONG_SIZE : 0)
-				+ (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0)
-				+ (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0);
+	private int bytesUsedInTxn(CryptoApproveAllowanceTransactionBody op) {
+		return op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE
+				+ op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE
+				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE;
+	}
+
+	public int getNumOfCryptoAllowances() {
+		return numOfCryptoAllowances;
+	}
+
+	public int getNumOfTokenAllowances() {
+		return numOfTokenAllowances;
+	}
+
+	public int getNumOfNftAllowances() {
+		return numOfNftAllowances;
+	}
+
+	public int getAggregatedNftAllowancesWithSerials() {
+		return aggregatedNftAllowancesWithSerials;
+	}
+
+	public long getEffectiveNow() {
+		return effectiveNow;
+	}
+
+	public long getMsgBytesUsed() {
+		return msgBytesUsed;
 	}
 
 	public static class Builder {
-		private List<CryptoAllowance> cryptoAllowances;
-		private List<TokenAllowance> tokenAllowances;
-		private List<NftAllowance> nftAllowances;
+		private int numOfCryptoAllowances;
+		private int numOfTokenAllowances;
+		private int numOfNftAllowances;
+		private int aggregatedNftAllowancesWithSerials;
+		private long effectiveNow;
+		private long msgBytesUsed;
+		private long expiry;
+
+		public CryptoApproveAllowanceMeta.Builder numOfCryptoAllowances(int numOfCryptoAllowances) {
+			this.numOfCryptoAllowances = numOfCryptoAllowances;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder numOfTokenAllowances(int numOfTokenAllowances) {
+			this.numOfTokenAllowances = numOfTokenAllowances;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder numOfNftAllowances(int numOfNftAllowances) {
+			this.numOfNftAllowances = numOfNftAllowances;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder aggregatedNftAllowancesWithSerials(
+				int aggregatedNftAllowancesWithSerials) {
+			this.aggregatedNftAllowancesWithSerials = aggregatedNftAllowancesWithSerials;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder effectiveNow(long now) {
+			this.effectiveNow = now;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder msgBytesUsed(long msgBytesUsed) {
+			this.msgBytesUsed = msgBytesUsed;
+			return this;
+		}
+
+		public CryptoApproveAllowanceMeta.Builder expiry(long expiry) {
+			this.expiry = expiry;
+			return this;
+		}
 
 		public Builder() {
 			// empty here on purpose.
-		}
-
-		public List<CryptoAllowance> getCryptoAllowances() {
-			return cryptoAllowances;
-		}
-
-		public void setCryptoAllowances(final List<CryptoAllowance> cryptoAllowances) {
-			this.cryptoAllowances = cryptoAllowances;
-		}
-
-		public List<TokenAllowance> getTokenAllowances() {
-			return tokenAllowances;
-		}
-
-		public void setTokenAllowances(final List<TokenAllowance> tokenAllowances) {
-			this.tokenAllowances = tokenAllowances;
-		}
-
-		public List<NftAllowance> getNftAllowances() {
-			return nftAllowances;
-		}
-
-		public void setNftAllowances(final List<NftAllowance> nftAllowances) {
-			this.nftAllowances = nftAllowances;
 		}
 
 		public CryptoApproveAllowanceMeta build() {
@@ -112,9 +157,20 @@ public class CryptoApproveAllowanceMeta {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("cryptoAllowances", cryptoAllowances)
-				.add("tokenAllowances", tokenAllowances)
-				.add("nftAllowances", nftAllowances)
+				.add("numOfCryptoAllowances", numOfCryptoAllowances)
+				.add("numOfTokenAllowances", numOfTokenAllowances)
+				.add("numOfNftAllowances", numOfNftAllowances)
+				.add("aggregatedNftAllowancesWithSerials", aggregatedNftAllowancesWithSerials)
+				.add("effectiveNow", effectiveNow)
+				.add("msgBytesUsed", msgBytesUsed)
 				.toString();
+	}
+
+	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
+		int totalSerials = 0;
+		for (var allowance : nftAllowancesList) {
+			totalSerials += allowance.getSerialNumbersCount();
+		}
+		return totalSerials;
 	}
 }

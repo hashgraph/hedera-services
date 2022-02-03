@@ -65,14 +65,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				happyPathWorks(),
-				emptyAllowancesRejected(),
-				spenderSameAsOwnerFails(),
-				spenderAccountRepeatedFails(),
-				negativeAmountFailsForFungible(),
-				tokenNotAssociatedToAccountFails(),
-				invalidTokenTypeFails(),
-				validatesSerialNums(),
-				tokenExceedsMaxSupplyFails()
+//				emptyAllowancesRejected(),
+//				spenderSameAsOwnerFails(),
+//				spenderAccountRepeatedFails(),
+//				negativeAmountFailsForFungible(),
+//				tokenNotAssociatedToAccountFails(),
+//				invalidTokenTypeFails(),
+//				validatesSerialNums(),
+//				tokenExceedsMaxSupplyFails()
 		});
 	}
 
@@ -532,7 +532,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(spender, 100L)
 								.addTokenAllowance(token, spender, 100L)
 								.addNftAllowance(nft, spender, false, List.of(1L))
-								.fee(ONE_HUNDRED_HBARS)
+								.fee(ONE_HBAR).logged()
 				)
 				.then(
 						getAccountInfo(owner).logged()

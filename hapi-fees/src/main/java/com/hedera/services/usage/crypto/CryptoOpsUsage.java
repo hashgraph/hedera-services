@@ -182,8 +182,28 @@ public class CryptoOpsUsage {
 	public void cryptoApproveAllowanceUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
 			final CryptoApproveAllowanceMeta cryptoApproveMeta,
+			final ExtantCryptoContext ctx,
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
-		// TODO - implement the logic
+		accumulator.addBpt(cryptoApproveMeta.getMsgBytesUsed());
+
+		var newVariableSerialBytes = 0;
+		newVariableSerialBytes += cryptoApproveMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
+		accumulator.addRbs(newVariableSerialBytes);
+
+		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry());
+		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry());
+		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				cryptoAutoRenewRb(ctx),
+				oldLifetime,
+				sharedFixedBytes + newVariableSerialBytes,
+				newLifetime);
+		if (rbsDelta > 0) {
+			accumulator.addRbs(rbsDelta);
+		}
 	}
 }

@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +45,8 @@ import java.util.function.Function;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
+	static final Logger log = LogManager.getLogger(HapiCryptoApproveAllowance.class);
+
 	private List<CryptoAllowances> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowances> tokenAllowances = new ArrayList<>();
 	private List<NftAllowances> nftAllowances = new ArrayList<>();
