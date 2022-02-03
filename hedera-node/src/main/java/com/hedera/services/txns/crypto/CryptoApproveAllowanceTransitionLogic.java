@@ -127,11 +127,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			if (amount == 0) {
-				cryptoAllowancesMap.remove(spender.asEntityNum());
-				continue;
-			}
 			if (cryptoAllowancesMap.containsKey(spender.asEntityNum())) {
+				if (amount == 0) {
+					cryptoAllowancesMap.remove(spender.asEntityNum());
+				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
@@ -191,11 +190,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (amount == 0) {
-				tokenAllowancesMap.remove(key);
-				continue;
-			}
 			if (tokenAllowancesMap.containsKey(key)) {
+				if (amount == 0) {
+					tokenAllowancesMap.remove(key);
+				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}

@@ -72,7 +72,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class CryptoApproveTransitionLogicTest {
+class CryptoApproveTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock

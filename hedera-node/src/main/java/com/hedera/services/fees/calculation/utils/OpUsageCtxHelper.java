@@ -144,7 +144,6 @@ public class OpUsageCtxHelper {
 	}
 
 	public ExtantCryptoContext ctxForCryptoApprove(TransactionBody txn) {
-		final var op = txn.getCryptoApproveAllowance();
 		ExtantCryptoContext cryptoContext;
 		var info = workingView.infoForAccount(
 				txn.getTransactionID().getAccountID(), aliasManager);

@@ -31,6 +31,10 @@ import java.util.List;
 import java.util.Map;
 
 public class AllowanceHelpers {
+	private AllowanceHelpers() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	/**
 	 * Since each serial number in an NFTAllowance is considered as an allowance, to get total allowance
 	 * from an NFTAllowance the size of serial numbers should be added.

@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class AllowanceChecksTest {
+class AllowanceChecksTest {
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
@@ -127,7 +127,7 @@ public class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new AllowanceChecks(tokenRelsLedger, nftsLedger, tokenStore);
+		subject = new AllowanceChecks(nftsLedger, tokenStore);
 	}
 
 	private void setUpForTest() {

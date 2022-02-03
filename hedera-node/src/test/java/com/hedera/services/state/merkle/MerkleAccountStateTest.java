@@ -839,19 +839,22 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void gettersForAllowancesWork(){
+	void gettersForAllowancesWork() {
 		var subject = new MerkleAccountState();
-		assertTrue(subject.getCryptoAllowances().equals(Collections.emptyMap()));
-		assertTrue(subject.getFungibleTokenAllowances().equals(Collections.emptyMap()));
-		assertTrue(subject.getNftAllowances().equals(Collections.emptyMap()));
+		assertEquals(Collections.emptyMap(), subject.getCryptoAllowances());
+		assertEquals(Collections.emptyMap(), subject.getFungibleTokenAllowances());
+		assertEquals(Collections.emptyMap(), subject.getNftAllowances());
 	}
 
 	@Test
-	void settersForAllowancesWork(){
+	void settersForAllowancesWork() {
 		var subject = new MerkleAccountState();
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
 		subject.setNftAllowances(nftAllowances);
+		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
+		assertEquals(fungibleTokenAllowances, subject.getFungibleTokenAllowances());
+		assertEquals(nftAllowances, subject.getNftAllowances());
 	}
 
 }
