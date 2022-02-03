@@ -266,7 +266,7 @@ public class SolidityFnResult implements SelfSerializable {
 								sc -> Pair.of(
 										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
 										!sc.hasValueWritten() ? null :
-												Bytes.wrap(sc.getValueWritten().toByteArray()).trimLeadingZeros()),
+												Bytes.wrap(sc.getValueWritten().getValue().toByteArray()).trimLeadingZeros()),
 								(l, r) -> l,
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
 						)),

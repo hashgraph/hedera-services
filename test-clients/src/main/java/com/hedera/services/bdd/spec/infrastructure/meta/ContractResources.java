@@ -247,6 +247,7 @@ public class ContractResources {
 	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[],\"name\":\"eetScenatio1\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_SET_SIBLING = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sibling\",\"type\":\"address\"}],\"name\":\"setSibling\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_GET_SLOT2 = "{\"inputs\":[],\"name\":\"getSlot2\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +

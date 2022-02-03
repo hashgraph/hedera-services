@@ -11,7 +11,6 @@ public class StorageChange {
 	private StorageChange(ByteString slot, ByteString value) {
 		this.slot = slot;
 		this.valueRead = value;
-		this.valueWritten = BytesValue.getDefaultInstance();
 	}
 
 	private StorageChange(ByteString slot, ByteString prevValue, BytesValue value) {

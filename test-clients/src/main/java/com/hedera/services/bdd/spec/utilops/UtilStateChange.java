@@ -18,11 +18,16 @@ public class UtilStateChange {
 					.setContractID(TxnUtils.asContractId(stateChange.getContractID(), spec));
 
 			for (StorageChange storageChange : stateChange.getStorageChanges()) {
-				addition.addStorageChanges(com.hederahashgraph.api.proto.java.StorageChange.newBuilder()
+				var newStorageChange = com.hederahashgraph.api.proto.java.StorageChange.newBuilder()
 						.setSlot(storageChange.getSlot())
-						.setValueRead(storageChange.getValueRead())
-						.setValueWritten(storageChange.getValueWritten())
-						.build());
+						.setValueRead(storageChange.getValueRead());
+
+
+				if (storageChange.getValueWritten() != null) {
+					newStorageChange.setValueWritten(storageChange.getValueWritten());
+				}
+
+				addition.addStorageChanges(newStorageChange.build());
 			}
 
 			additions.add(addition.build());
