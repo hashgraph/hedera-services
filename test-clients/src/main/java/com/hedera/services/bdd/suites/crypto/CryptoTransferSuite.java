@@ -294,7 +294,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						grantTokenKyc(fungibleToken, receiver),
-						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
+						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR),
+								tinyBarsFromTo(spender, receiver, ONE_HBAR))
 								.payingWith(spender)
 								.signedBy(spender),
 						cryptoTransfer(
