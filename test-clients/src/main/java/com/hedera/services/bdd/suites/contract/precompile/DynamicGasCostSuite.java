@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_FT_SEND_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_NFT_SEND_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_HELPER_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_MINT_NFT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
@@ -170,11 +171,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
 				}
 		);
@@ -413,11 +414,20 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									hex(asSolidityAddress(nftType)),
 									List.of("WoRtHlEsS")
 							)
+									.gas(4_000_000L);
+							final var helperMint = contractCall(
+									userAliasAddr.get(),
+									PC2_USER_HELPER_MINT_ABI,
+									hex(asSolidityAddress(nftType)),
+									List.of("WoRtHlEsS")
+							)
 									.via(nftMint)
 									.gas(4_000_000L);
 
 							allRunFor(spec,
-									ftAssoc, nftAssoc, fundingXfer, sendFt, sendNft, failFtDissoc, failNftDissoc, mint);
+									ftAssoc, nftAssoc,
+									fundingXfer, sendFt, sendNft, failFtDissoc, failNftDissoc,
+									mint, helperMint);
 						})
 				).then(
 						childRecordsCheck(ftFail, CONTRACT_REVERT_EXECUTED,
@@ -426,7 +436,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						childRecordsCheck(nftFail, CONTRACT_REVERT_EXECUTED,
 								recordWith().status(REVERTED_SUCCESS),
 								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
+						getTxnRecord(nftMint).andAllChildRecords().logged()
 				);
 	}
 
