@@ -140,7 +140,7 @@ public class ReflectiveSuitesRunner {
 			logMessageBuilder
 					.append(System.lineSeparator())
 					.append(String.format("%1$s %2$d failing spec(s) in %3$s %1$s%n",
-					SEPARATOR, suiteReport.getFailedSpecs().size(), suiteReport.getName()));
+							SEPARATOR, suiteReport.getFailedSpecs().size(), suiteReport.getName()));
 			for (SpecReport failingSpec : suiteReport.getFailedSpecs()) {
 				logMessageBuilder
 						.append(String.format("Spec name: %s%n", failingSpec.getName()))

@@ -41,13 +41,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
-// TODO: Return the test to its original state - runs async and changes default properties only for the first test
 public class LogsSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(LogsSuite.class);
 
 	public static void main(String... args) {
-		new LogsSuite().runSuiteSync();
+		new LogsSuite().runSuiteAsync();
 	}
 
 	@Override
