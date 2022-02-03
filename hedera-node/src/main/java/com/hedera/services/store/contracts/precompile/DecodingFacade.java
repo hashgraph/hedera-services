@@ -33,6 +33,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -186,14 +187,16 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeTokenTransfer(final Bytes input, final TokenID caller) {
+	public List<TokenTransferWrapper> decodeTokenTransfer(final Bytes input, final TokenID token,
+														  final AccountID caller) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_SELECTOR, TOKEN_TRANSFER_DECODER);
 
 		final var recipient = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var amount = (long) decodedArguments.get(1);
+		final var amount = (BigInteger) decodedArguments.get(1);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-		addAdjustmentAsTransfer(fungibleTransfers, caller, recipient, amount);
+		addAdjustmentAsTransfer(fungibleTransfers, token, recipient, amount.longValue());
+		addAdjustmentAsTransfer(fungibleTransfers, token, caller, -amount.longValue());
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 	}

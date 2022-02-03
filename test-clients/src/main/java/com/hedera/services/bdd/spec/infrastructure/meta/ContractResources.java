@@ -240,7 +240,9 @@ public class ContractResources {
 			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
 	public static final String NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\"," +
 			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\"," +
-			"\"name\": \"recipient\",\"type\": \"address\"}],\"name\": \"sendNFTAfterMint\"," +
+			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"},{\"internalType\": \"int64\"," +
+			"\"name\": \"serialNumber\",\"type\": \"int64\"}],\"name\": \"sendNFTAfterMint\"," +
 			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 	public static final String REVERT_MINT_AFTER_FAILED_ASSOCIATE = "{\"inputs\": [{\"internalType" +
 			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +

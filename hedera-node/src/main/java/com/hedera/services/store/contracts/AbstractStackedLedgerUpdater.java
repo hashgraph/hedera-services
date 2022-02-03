@@ -100,7 +100,9 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 				wrapped.updatedAccounts.put(mutable.getAddress(), mutable);
 			}
 			mutable.setNonce(updatedAccount.getNonce());
-			mutable.setBalance(updatedAccount.getBalance());
+			if(!updatedAccount.getIsToken()) {
+				mutable.setBalance(updatedAccount.getBalance());
+			}
 			if (updatedAccount.codeWasUpdated()) {
 				mutable.setCode(updatedAccount.getCode());
 			}

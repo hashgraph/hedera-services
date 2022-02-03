@@ -349,12 +349,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("ERC_20_TRANSFER")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
-						cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.INFINITE)
 								.initialSupply(5)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
@@ -362,21 +361,28 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						fileCreate(ERC_20_CONTRACT_NAME),
 						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
-								.bytecode(ERC_20_CONTRACT_NAME)
-								.gas(300_000)
+								.bytecode(ERC_20_CONTRACT_NAME),
+//								.gas(300_000),
+						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
 				).when(withOpContext(
-								(spec, opLog) ->
+								(spec, opLog) -> {
+									final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+									final var sender = spec.registry().getAccountID(ACCOUNT);
+									final var receiver = spec.registry().getAccountID(RECIPIENT);
 										allRunFor(
 												spec,
 												contractCall(ERC_20_CONTRACT_NAME,
 														ContractResources.ERC_20_TRANSFER_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
-														.payingWith(TOKEN_TREASURY)
-														.via(transferTxn)
+														.payingWith(ACCOUNT).alsoSigningWithFullPrefix(MULTI_KEY)
+														.via(transferTxn).gas(50_000_000L)
 														.hasKnownStatus(SUCCESS)
-										)
+										); }
 						)
+
 				).then(
 						getTxnRecord(transferTxn).andAllChildRecords().logged(),
 						childRecordsCheck(transferTxn, SUCCESS,

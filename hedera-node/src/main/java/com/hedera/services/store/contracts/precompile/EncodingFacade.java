@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.esaulpaugh.headlong.abi.Event;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,7 +34,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -256,7 +254,17 @@ public class EncodingFacade {
 	}
 
 	public static Log generateLog(final Address logger, final Object... params) {
-		final var tuple = Tuple.of(params);
+		final List<Object> paramsConverted = new ArrayList<>();
+		for (final var param : params) {
+			if (param instanceof Address) {
+				final com.esaulpaugh.headlong.abi.Address address =
+						com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(((Address) param).toBigInteger()));
+				paramsConverted.add(address);
+			} else {
+				paramsConverted.add(param);
+			}
+		}
+		final var tuple = Tuple.of(paramsConverted.toArray());
 		final var tupleType = generateTupleType(params);
 		return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), generateLogTopics(params));
 	}
@@ -265,8 +273,8 @@ public class EncodingFacade {
 		final StringBuilder tupleTypes = new StringBuilder("(");
 		for (final var param : params) {
 			if (param instanceof Address) {
-				tupleTypes.append("bytes32,");
-			} else if (param instanceof Long) {
+				tupleTypes.append("address,");
+			} else if (param instanceof BigInteger) {
 				tupleTypes.append("uint256,");
 			} else if (param instanceof Boolean) {
 				tupleTypes.append("boolean,");
@@ -283,9 +291,10 @@ public class EncodingFacade {
 		final List<LogTopic> logTopics = new ArrayList<>();
 		for (final var param : params) {
 			if (param instanceof Address) {
-				logTopics.add(LogTopic.fromHexString(((Address) param).toHexString()));
-			} else if (param instanceof Long) {
-				logTopics.add(LogTopic.fromHexString(Long.toHexString((Long)param)));
+//				logTopics.add(LogTopic.wrap(Bytes.wrap((byte[]) param)));
+				logTopics.add(LogTopic.wrap(Bytes.wrap(((Address) param).toArray())));
+			} else if (param instanceof BigInteger) {
+				logTopics.add(LogTopic.wrap(Bytes.wrap(((BigInteger)param).toByteArray())));
 			} else if (param instanceof Boolean) {
 				boolean value = (Boolean) param;
 				byte [] valueBytes = new byte[]{(byte) (value?1:0)};

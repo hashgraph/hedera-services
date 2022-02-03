@@ -95,6 +95,7 @@ import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -222,6 +223,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final StateView currentView;
 	private final PrecompilePricingUtils precompilePricingUtils;
 	private WorldLedgers ledgers;
+	private Address originator;
+	private AbstractLedgerWorldUpdater updater;
+
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -284,6 +288,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return null;
 		}
 
+		this.originator = messageFrame.getOriginatorAddress();
 		initializeLedgers(messageFrame);
 		prepareComputation(input);
 
@@ -300,7 +305,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void initializeLedgers(final MessageFrame messageFrame) {
-		final var updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+		updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
 		ledgers = updater.wrappedTrackingLedgers();
 	}
 
@@ -360,7 +365,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
 							case ABI_ID_TOKEN_TRANSFER,
 									ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
-									new ERCTransferPrecompile(tokenID);
+									new ERCTransferPrecompile(tokenID, this.originator);
 							default -> nestedPrecompile = null;
 						}
 						yield nestedPrecompile;
@@ -405,8 +410,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("rawtypes")
 	protected Bytes computeInternal(final MessageFrame frame) {
-		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
-		final var ledgers = updater.wrappedTrackingLedgers();
+//		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+//		final var ledgers = updater.wrappedTrackingLedgers();
 
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
@@ -718,6 +723,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected List<TokenTransferWrapper> transferOp;
 		protected HederaTokenStore hederaTokenStore;
 
+		protected void setUp() {
+			this.sideEffects = sideEffectsFactory.get();
+			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+					ids,
+					validator,
+					sideEffects,
+					NOOP_VIEWS_MANAGER,
+					dynamicProperties,
+					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+		}
+
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
 			transferOp = switch (functionId) {
@@ -733,14 +749,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
 
-			this.sideEffects = sideEffectsFactory.get();
-			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-					ids,
-					validator,
-					sideEffects,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			setUp();
+//			this.sideEffects = sideEffectsFactory.get();
+//			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
+//					ids,
+//					validator,
+//					sideEffects,
+//					NOOP_VIEWS_MANAGER,
+//					dynamicProperties,
+//					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 			return syntheticTxn;
 		}
 
@@ -993,21 +1010,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class ERCTransferPrecompile extends TransferPrecompile {
 		private TokenID tokenID;
+		private Address callerAccount;
 		private boolean isFungible;
 
-		public ERCTransferPrecompile(final TokenID tokenID) {
+		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount) {
+			this.callerAccount = callerAccount;
 			this.tokenID = tokenID;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input) {
-			isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
+			super.setUp();
 
-			super.transferOp = switch (functionId) {
-				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeTokenTransfer(input, tokenID);
-				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeTokenTransferFrom(input, tokenID, isFungible);
+			isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
+			final var nestedInput = input.slice(24);
+
+			super.transferOp = switch (nestedInput.getInt(0)) {
+				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeTokenTransfer(nestedInput, tokenID,
+						EntityIdUtils.accountParsedFromSolidityAddress(callerAccount));
+				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeTokenTransferFrom(nestedInput, tokenID,
+						isFungible);
 				default -> throw new InvalidTransactionException(
-						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
+						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
 						FAIL_INVALID);
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
@@ -1023,23 +1047,32 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if(SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
 				final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-				if(isFungible) {
-					frame.addLog(getLogForFungibleTransfer(precompileAddress));
-				} else {
-					frame.addLog(getLogForNftExchange(precompileAddress));
-				}
+//				if(isFungible) {
+//					frame.addLog(getLogForFungibleTransfer(precompileAddress));
+//				} else {
+//					frame.addLog(getLogForNftExchange(precompileAddress));
+//				}
 			}
 			return childRecord;
 		}
 
 		private Log getLogForFungibleTransfer(final Address logger) {
 			final var fungibleTransfers = super.transferOp.get(0).fungibleTransfers();
-			final var fungibleTransfer = fungibleTransfers.get(0);
-			final var sender = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.sender);
-			final var receiver = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.receiver);
+			Address sender = null;
+			Address receiver = null;
+			BigInteger amount = BigInteger.ZERO;
+			for(final var fungibleTransfer: fungibleTransfers) {
+				if(fungibleTransfer.sender!=null) {
+					sender = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.sender);
+				}
+				if(fungibleTransfer.receiver!=null) {
+					receiver = EntityIdUtils.asTypedSolidityAddress(fungibleTransfer.receiver);
+					amount = BigInteger.valueOf(fungibleTransfer.amount);
+				}
+			}
 
 			return EncodingFacade.generateLog(logger, sender,
-					receiver, fungibleTransfer.amount);
+					receiver, amount);
 		}
 
 		private Log getLogForNftExchange(final Address logger) {
@@ -1050,11 +1083,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			return EncodingFacade.generateLog(logger, sender,
 					receiver, nftExchange.getSerialNumber());
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
 		}
 
 		@Override
