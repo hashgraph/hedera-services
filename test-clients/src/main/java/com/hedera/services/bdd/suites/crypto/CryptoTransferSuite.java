@@ -310,7 +310,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.maxSupply(12L)
 								.supplyKey(supplyKey)
 								.adminKey(adminKey)
-								.kycKey(kycKey)
 								.freezeKey(freezeKey)
 								.wipeKey(wipeKey)
 								.pauseKey(pauseKey)
@@ -319,24 +318,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								ByteString.copyFromUtf8("b"),
 								ByteString.copyFromUtf8("c"),
 								ByteString.copyFromUtf8("d"),
-								ByteString.copyFromUtf8("e")))
+								ByteString.copyFromUtf8("e"),
+								ByteString.copyFromUtf8("f")))
 				)
 				.when(
 						tokenAssociate(owner, fungibleToken, nonFungibleToken),
 						tokenAssociate(receiver, fungibleToken, nonFungibleToken),
 						grantTokenKyc(fungibleToken, owner),
 						grantTokenKyc(fungibleToken, receiver),
-						grantTokenKyc(nonFungibleToken, owner),
-						grantTokenKyc(nonFungibleToken, receiver),
 						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
-						cryptoTransfer(movingUnique(nonFungibleToken, 1L, 2L, 3L, 4L, 5L).between(TOKEN_TREASURY, owner)),
+						cryptoTransfer(movingUnique(nonFungibleToken, 1L, 2L, 3L, 4L, 5L, 6L).between(TOKEN_TREASURY, owner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 10 * ONE_HBAR)
 								.addTokenAllowance(owner, fungibleToken, spender, 1500)
-								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L, 3L, 4L))
-								.fee(ONE_HUNDRED_HBARS),
-						cryptoTransfer(movingUnique(nonFungibleToken, 3).between(owner, otherReceiver))
+								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L, 3L, 4L, 6L))
+								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
 						cryptoTransfer(movingWithAllowance(100, fungibleToken).between(owner, owner))
@@ -344,14 +341,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.dontFullyAggregateTokenTransfers()
 								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 3).between(owner, otherReceiver))
+								.payingWith(spender)
+								.signedBy(spender),
 						cryptoTransfer(movingWithAllowance(100, fungibleToken).between(owner, otherReceiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
-						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 3).between(owner, otherReceiver))
-								.payingWith(spender)
-								.signedBy(spender)
-								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
 						cryptoUpdate(otherReceiver)
 								.receiverSigRequired(true)
 								.maxAutomaticAssociations(2),
@@ -362,7 +358,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 4).between(owner, otherReceiver))
 								.payingWith(spender)
 								.signedBy(spender, otherReceiver),
-						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 3).between(owner, receiver))
+						cryptoTransfer(movingUnique(nonFungibleToken, 6).between(owner, receiver)),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
@@ -447,7 +444,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(3L))
+										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(6L))
 										.tokenAllowancesContaining(fungibleToken, spender, 1400))
 				);
 	}

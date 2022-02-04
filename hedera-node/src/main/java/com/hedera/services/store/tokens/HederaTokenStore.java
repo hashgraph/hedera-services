@@ -255,6 +255,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 								token.hasFreezeKey() && token.accountsAreFrozenByDefault());
 						tokenRelsLedger.set(
 								relationship,
+								TokenRelProperty.IS_KYC_GRANTED,
+								!token.hasKycKey());
+						tokenRelsLedger.set(
+								relationship,
 								TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
 								automaticAssociation);
 
@@ -262,15 +266,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						if (automaticAssociation) {
 							accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
 									alreadyUsedAutomaticAssociations + 1);
-							tokenRelsLedger.set(
-									relationship,
-									TokenRelProperty.IS_KYC_GRANTED,
-									true);
-						} else {
-							tokenRelsLedger.set(
-									relationship,
-									TokenRelProperty.IS_KYC_GRANTED,
-									!token.hasKycKey());
 						}
 					}
 				}
