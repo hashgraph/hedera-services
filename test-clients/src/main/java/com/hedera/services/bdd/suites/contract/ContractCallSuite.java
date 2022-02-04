@@ -73,6 +73,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRACEABILITY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
@@ -124,6 +125,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final long depositAmount = 1000;
+	private static final long GAS_TO_OFFER = 4_000_000L;
 
 	public static void main(String... args) {
 		new ContractCallSuite().runSuiteSync();
@@ -137,58 +139,58 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				nestedStateChangeCalls_1(),
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				workingHoursDemo(),
-				deletedContractsCannotBeUpdated()
+				nestedStateChangeCalls_1()
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst(),
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				workingHoursDemo(),
+//				deletedContractsCannotBeUpdated()
 				}
 		);
 	}
 
 	private HapiApiSpec nestedStateChangeCalls_1() {
-		final var adminKey = "admin";
 		final var contractA = "contractA"; // e.g. 0.0.111
 		final var contractB = "contractB";
 		final var contractC = "contractC";
 
 		return defaultHapiSpec("NestedStateChangeCalls_1")
 				.given(
-						fileCreate("bytecode").path(ContractResources.TRACEABILITY_RECURSIVE_CALLS),
-
-						contractCreate(contractA)
+						fileCreate("bytecode").payingWith(GENESIS),
+						updateLargeFile(GENESIS, "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 1, 2, 3)
 								.bytecode("bytecode")
-								.gas(300_000),
-						contractCreate(contractB)
+								.gas(GAS_TO_OFFER),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 1, 2, 3)
 								.bytecode("bytecode")
-								.gas(300_000),
-						contractCreate(contractC)
+								.gas(GAS_TO_OFFER),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 1, 2, 3)
 								.bytecode("bytecode")
-								.gas(300_000),
+								.gas(GAS_TO_OFFER),
 
 						withOpContext(
 								(spec, opLog) -> {
@@ -199,9 +201,12 @@ public class ContractCallSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCall(contractA, ContractResources.TRACEABILITY_SET_SIBLING,
-													"0x" + contractBAddress).via("set1"),
+													"0x" + contractBAddress).via("set1")
+													.gas(GAS_TO_OFFER),
+
 											contractCall(contractB, ContractResources.TRACEABILITY_SET_SIBLING,
-													"0x" + contractCAddress).via("set2"),
+													"0x" + contractCAddress).via("set2")
+													.gas(GAS_TO_OFFER),
 
 											getTxnRecord("set2").logged()
 									);
@@ -209,7 +214,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						)
 				).when(
 						contractCall(contractA, ContractResources.TRACEABILITY_EET_1)
-								.gas(1000000)
+								.gas(GAS_TO_OFFER)
 								.via("nestedthenesttxn")
 				).then(
 						withOpContext(

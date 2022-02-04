@@ -247,18 +247,7 @@ abstract class EvmTxProcessor {
 
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
-
-//			stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
-//			// record storage read-only access first
-//			for (HederaWorldState.WorldStateAccount accessedAccount : ((HederaWorldState.Updater)updater).getAccessedAccounts().values()) {
-//				Map<Bytes, Pair<Bytes, Bytes>> accountChanges = new TreeMap<>(BytesComparator.INSTANCE);
-//				stateChanges.put(accessedAccount.getAddress(), accountChanges);
-//				for (Map.Entry<Bytes, Bytes> entry : accessedAccount.getReadCache().entrySet()) {
-//					Bytes key = entry.getKey();
-//					accountChanges.put(key,
-//							new ImmutablePair<>(entry.getValue(), null));
-//				}
-//			}
+			
 			stateChanges = updater.getStorageChanges();
 
 			// record storage read/write access
