@@ -119,7 +119,6 @@ public class ReflectiveSuitesRunner {
 		});
 	}
 
-	// TODO: Remove unused arg
 	private static void generateFinalLog() throws FailedSuiteException {
 		logMessageBuilder
 				.append(System.lineSeparator())
