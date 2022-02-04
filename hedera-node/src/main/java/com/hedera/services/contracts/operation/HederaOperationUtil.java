@@ -26,7 +26,11 @@ import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.utils.BytesComparator;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -40,6 +44,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
@@ -200,5 +205,27 @@ public final class HederaOperationUtil {
 		}
 
 		return supplierExecution.get();
+	}
+
+	// TODO: Add JavaDocs
+	public static void setOriginalReadValue(
+			final MessageFrame frame,
+			final Address address,
+			final Bytes32 key,
+			final UInt256 storageValue
+	) {
+		// Store the read if it is the first read for the slot/address
+		var updater = frame.getWorldUpdater();
+		while (updater != null && !(updater instanceof HederaWorldState.Updater)) {
+			updater = updater.parentUpdater().orElse(null);
+		}
+		if (updater != null) {
+			final var addressSlots =
+					((HederaWorldState.Updater) updater).getStorageChanges()
+							.computeIfAbsent(address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
+			if (!addressSlots.containsKey(key)) {
+				addressSlots.put(key, new MutablePair<>(storageValue, null));
+			}
+		}
 	}
 }

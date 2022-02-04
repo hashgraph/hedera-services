@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -48,7 +47,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
@@ -276,19 +275,19 @@ public class SolidityFnResult implements SelfSerializable {
 				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()),
 				that.getStateChangesList().stream().collect(Collectors.toMap(
-						csc -> Address.wrap(Bytes.wrap(asSolidityAddress(csc.getContractID()))),
+						csc -> Address.wrap(Bytes.wrap(asEvmAddress(csc.getContractID()))),
 						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
 								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
 								sc -> Pair.of(
 										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
-										sc.getWriteModeCase() == StorageChange.WriteModeCase.READONLY ? null :
-												Bytes.wrap(sc.getValueWritten().toByteArray()).trimLeadingZeros()),
+										!sc.hasValueWritten() ? null :
+												Bytes.wrap(sc.getValueWritten().getValue().toByteArray()).trimLeadingZeros()),
 								(l, r) -> l,
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
 						)),
 						(l, r) -> l,
 						() -> new TreeMap<>(BytesComparator.INSTANCE))),
-				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES);
+				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES
 		);
 	}
 
@@ -311,17 +310,15 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 		for (var stateChanges : stateChanges.entrySet()) {
 			var contractStateChange = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractParsedFromSolidityAddress(stateChanges.getKey().toArrayUnsafe()));
+					EntityIdUtils.contractIdFromEvmAddress(stateChanges.getKey().toArrayUnsafe()));
 			for (var slotChange : stateChanges.getValue().entrySet()) {
 				var storageChange = StorageChange.newBuilder();
 				storageChange.setSlot(ByteString.copyFrom(slotChange.getKey().toArrayUnsafe()));
 				Pair<Bytes, Bytes> value = slotChange.getValue();
 				storageChange.setValueRead(ByteString.copyFrom(value.getLeft().toArrayUnsafe()));
 				Bytes valueRight = value.getRight();
-				if (valueRight == null) {
-					storageChange.setReadOnly(true);
-				} else {
-					storageChange.setValueWritten(ByteString.copyFrom(valueRight.toArrayUnsafe()));
+				if (valueRight != null) {
+					storageChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(valueRight.toArrayUnsafe())).build());
 				}
 				contractStateChange.addStorageChanges(storageChange.build());
 			}

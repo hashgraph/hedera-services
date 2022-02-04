@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
@@ -238,7 +239,7 @@ class ContractCallLocalAnswerTest {
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.empty(), null /*//FIXME*/);
+				.failed(0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
 		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));

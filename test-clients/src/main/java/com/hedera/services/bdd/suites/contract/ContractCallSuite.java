@@ -23,6 +23,8 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.StateChange;
+import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -31,6 +33,7 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -44,7 +47,9 @@ import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.ethereum.core.CallTransaction;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
@@ -132,6 +137,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+				nestedStateChangeCalls_1(),
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -160,7 +166,105 @@ public class ContractCallSuite extends HapiApiSuite {
 				imapUserExercise(),
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated()
-		});
+				}
+		);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_1() {
+		final var adminKey = "admin";
+		final var contractA = "contractA"; // e.g. 0.0.111
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_1")
+				.given(
+						fileCreate("bytecode").path(ContractResources.TRACEABILITY_RECURSIVE_CALLS),
+
+						contractCreate(contractA)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC)
+								.bytecode("bytecode")
+								.gas(300_000),
+
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+									allRunFor(
+											spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_SET_SIBLING,
+													"0x" + contractBAddress).via("set1"),
+											contractCall(contractB, ContractResources.TRACEABILITY_SET_SIBLING,
+													"0x" + contractCAddress).via("set2"),
+
+											getTxnRecord("set2").logged()
+									);
+								}
+						)
+				).when(
+						contractCall(contractA, ContractResources.TRACEABILITY_EET_1)
+								.gas(1000000)
+								.via("nestedthenesttxn")
+				).then(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+									var contractBDec = Integer.parseInt(contractBAddress, 16);
+									var contractCDec = Integer.parseInt(contractCAddress, 16);
+
+
+									allRunFor(
+											spec,
+											getTxnRecord("nestedthenesttxn")
+													.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+															StateChange.stateChangeFor(contractA)
+																	.withStorageChanges(
+																			StorageChange.onlyRead(
+																					formattedAssertionValue(0),
+																					formattedAssertionValue(0)),
+																			StorageChange.readAndWritten(
+																					formattedAssertionValue(1),
+																					formattedAssertionValue(0),
+																					formattedAssertionValue(10)),
+																			StorageChange.onlyRead(
+																					formattedAssertionValue(3),
+																					formattedAssertionValue(contractBDec))
+																	),
+															StateChange.stateChangeFor(contractB)
+																	.withStorageChanges(
+																			StorageChange.onlyRead(
+																					formattedAssertionValue(2),
+																					formattedAssertionValue(0)),
+																			StorageChange.onlyRead(
+																					formattedAssertionValue(3),
+																					formattedAssertionValue(contractCDec))
+																	),
+															StateChange.stateChangeFor(contractC)
+																	.withStorageChanges(
+																			StorageChange.onlyRead(
+																					formattedAssertionValue(0),
+																					formattedAssertionValue(0))
+																	)
+													)))
+													.logged()
+									);
+								}
+						)
+				);
+	}
+
+	@NotNull
+	private ByteString formattedAssertionValue(long value) {
+		return ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {

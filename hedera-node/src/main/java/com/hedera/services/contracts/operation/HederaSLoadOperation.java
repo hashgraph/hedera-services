@@ -23,10 +23,6 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.utils.BytesComparator;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,9 +38,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}.
@@ -83,20 +77,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
 				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-
-				// Store the read if it is the first read for the slot/address
-				WorldUpdater updater = frame.getWorldUpdater();
-				while (updater != null && !(updater instanceof HederaWorldState.Updater)) {
-					updater = updater.parentUpdater().orElse(null);
-				}
-				if (updater != null) {
-					Map<Bytes, Pair<Bytes, Bytes>> addressSlots =
-							((HederaWorldState.Updater) updater).getStorageChanges()
-									.computeIfAbsent(address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
-					if (!addressSlots.containsKey(key)) {
-						addressSlots.put(key, new MutablePair<>(storageValue, null));
-					}
-				}
+				HederaOperationUtil.setOriginalReadValue(frame, address, key, storageValue);
 
 				frame.pushStackItem(storageValue);
 				return slotIsWarm ? warmSuccess : coldSuccess;

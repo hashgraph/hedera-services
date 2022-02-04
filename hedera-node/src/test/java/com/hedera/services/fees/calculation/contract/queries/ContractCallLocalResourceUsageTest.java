@@ -57,6 +57,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -130,7 +131,7 @@ class ContractCallLocalResourceUsageTest {
 	void setsResultInQueryCxtIfPresent() {
 		final var queryCtx = new HashMap<String, Object>();
 		final var transactionProcessingResult = TransactionProcessingResult.successful(
-				new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), null /*//FIXME*/);
+				new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), Collections.emptyMap());
 		final var response = okResponse(transactionProcessingResult);
 		final var estimateResponse = subject.dummyResponse(target);
 		final var expected = expectedUsage();
