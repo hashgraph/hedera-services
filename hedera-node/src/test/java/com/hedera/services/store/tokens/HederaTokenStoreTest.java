@@ -514,7 +514,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void associatingHappyPathWorks() {
+	void autoAssociatingHappyPathWorks() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
@@ -537,7 +537,7 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(sponsor, TOKENS, tokens);
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
-		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
+		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
 	}
 
