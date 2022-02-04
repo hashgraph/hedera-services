@@ -69,7 +69,7 @@ public class ReflectiveSuitesRunner {
 
 		clearLog();
 
-		generateFinalLog(suitesByRunType);
+		generateFinalLog();
 	}
 
 	private static Map<String, List<HapiApiSuite>> distributeSuitesByRunType(final Collection<List<HapiApiSuite>> suites) {
@@ -119,7 +119,8 @@ public class ReflectiveSuitesRunner {
 		});
 	}
 
-	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuiteException {
+	// TODO: Remove unused arg
+	private static void generateFinalLog() throws FailedSuiteException {
 		logMessageBuilder
 				.append(System.lineSeparator())
 				.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR))
