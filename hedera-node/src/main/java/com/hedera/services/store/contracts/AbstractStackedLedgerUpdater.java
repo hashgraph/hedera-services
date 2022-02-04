@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
@@ -100,7 +101,8 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 				wrapped.updatedAccounts.put(mutable.getAddress(), mutable);
 			}
 			mutable.setNonce(updatedAccount.getNonce());
-			if(!updatedAccount.getIsToken()) {
+
+			if(updatedAccount.getWrappedAccountNonce()>=0) {
 				mutable.setBalance(updatedAccount.getBalance());
 			}
 			if (updatedAccount.codeWasUpdated()) {

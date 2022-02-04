@@ -159,24 +159,16 @@ public class EncodingFacade {
 		private String metadata;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			if (functionType == FunctionType.MINT) {
-				tupleType = mintReturnType;
-			} else if (functionType == FunctionType.BURN) {
-				tupleType = burnReturnType;
-			} else if (functionType == FunctionType.TOTAL_SUPPLY) {
-				tupleType = totalSupplyType;
-			} else if (functionType == FunctionType.DECIMALS) {
-				tupleType = decimalsType;
-			} else if (functionType == FunctionType.BALANCE) {
-				tupleType = balanceOfType;
-			} else if (functionType == FunctionType.OWNER) {
-				tupleType = ownerOfType;
-			} else if (functionType == FunctionType.NAME) {
-				tupleType = nameType;
-			} else if (functionType == FunctionType.SYMBOL) {
-				tupleType = symbolType;
-			} else if (functionType == FunctionType.TOKEN_URI) {
-				tupleType = tokenUriType;
+			switch(functionType) {
+				case MINT -> tupleType = mintReturnType;
+				case BURN -> tupleType = burnReturnType;
+				case TOTAL_SUPPLY -> tupleType = totalSupplyType;
+				case DECIMALS -> tupleType = decimalsType;
+				case BALANCE -> tupleType = balanceOfType;
+				case OWNER -> tupleType = ownerOfType;
+				case NAME -> tupleType = nameType;
+				case SYMBOL -> tupleType = symbolType;
+				case TOKEN_URI -> tupleType = tokenUriType;
 			}
 
 			this.functionType = functionType;
@@ -230,30 +222,25 @@ public class EncodingFacade {
 
 		private Bytes build() {
 			Tuple result;
-			if (functionType == FunctionType.MINT) {
-				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
-			} else if (functionType == FunctionType.TOTAL_SUPPLY) {
-				result = Tuple.of(BigInteger.valueOf(totalSupply));
-			} else if (functionType == FunctionType.DECIMALS) {
-				result = Tuple.of(decimals);
-			} else if (functionType == FunctionType.BALANCE) {
-				result = Tuple.of(BigInteger.valueOf(balance));
-			} else if (functionType == FunctionType.OWNER) {
-				result = Tuple.of(owner);
-			} else if (functionType == FunctionType.NAME) {
-				result = Tuple.of(name);
-			} else if (functionType == FunctionType.SYMBOL) {
-				result = Tuple.of(symbol);
-			} else if (functionType == FunctionType.TOKEN_URI) {
-				result = Tuple.of(metadata);
-			} else {
-				result = Tuple.of(status, BigInteger.valueOf(totalSupply));
+
+			switch(functionType) {
+				case MINT -> result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
+				case BURN -> result = Tuple.of(status, BigInteger.valueOf(totalSupply));
+				case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
+				case DECIMALS -> result = Tuple.of(decimals);
+				case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
+				case OWNER -> result = Tuple.of(owner);
+				case NAME -> result = Tuple.of(name);
+				case SYMBOL -> result = Tuple.of(symbol);
+				case TOKEN_URI -> result = Tuple.of(metadata);
+				default -> result = Tuple.of(status);
 			}
+
 			return Bytes.wrap(tupleType.encode(result).array());
 		}
 	}
 
-	public static Log generateLog(final Address logger, final Object... params) {
+	public static Log generateLog(final Address logger,  boolean indexed, final Object... params) {
 		final List<Object> paramsConverted = new ArrayList<>();
 		for (final var param : params) {
 			if (param instanceof Address) {
@@ -266,7 +253,11 @@ public class EncodingFacade {
 		}
 		final var tuple = Tuple.of(paramsConverted.toArray());
 		final var tupleType = generateTupleType(params);
-		return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), generateLogTopics(params));
+		if(indexed) {
+			return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), generateLogTopics(params));
+		} else {
+			return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), new ArrayList<>());
+		}
 	}
 
 	private static TupleType generateTupleType(final Object... params) {

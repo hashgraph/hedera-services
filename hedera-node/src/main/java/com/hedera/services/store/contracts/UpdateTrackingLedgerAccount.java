@@ -50,7 +50,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	private final Address address;
 	private final AccountID accountId;
 	private final NavigableMap<UInt256, UInt256> updatedStorage;
-	private boolean isToken;
 
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
 
@@ -96,14 +95,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		this.balance = account.getBalance();
 		this.updatedStorage = new TreeMap<>();
 		this.trackingAccounts = trackingAccounts;
-	}
-
-	public void setIsToken(final boolean isToken) {
-		this.isToken = isToken;
-	}
-
-	public boolean getIsToken() {
-		return isToken;
 	}
 
 	/**
@@ -154,6 +145,10 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	@Override
 	public void setNonce(final long value) {
 		this.nonce = value;
+	}
+
+	public long getWrappedAccountNonce() {
+		return account!=null ? account.getNonce() : 0;
 	}
 
 	@Override

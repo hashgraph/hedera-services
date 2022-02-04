@@ -356,6 +356,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return Bytes.fromHexString(TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN,
 					getAddress().toUnprefixedHexString()));
 		}
+
+		@Override
+		public long getNonce() {
+			return -1;
+		}
 	}
 
 	public static class Updater

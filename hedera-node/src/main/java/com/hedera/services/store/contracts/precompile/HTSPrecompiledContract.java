@@ -411,9 +411,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@SuppressWarnings("rawtypes")
 	protected Bytes computeInternal(final MessageFrame frame) {
-//		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
-//		final var ledgers = updater.wrappedTrackingLedgers();
-
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
@@ -1057,11 +1054,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if(SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
 				final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-//				if(isFungible) {
-//					frame.addLog(getLogForFungibleTransfer(precompileAddress));
-//				} else {
-//					frame.addLog(getLogForNftExchange(precompileAddress));
-//				}
+				if(isFungible) {
+					frame.addLog(getLogForFungibleTransfer(precompileAddress));
+				} else {
+					frame.addLog(getLogForNftExchange(precompileAddress));
+				}
 			}
 			return childRecord;
 		}
@@ -1081,7 +1078,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 			}
 
-			return EncodingFacade.generateLog(logger, sender,
+			return EncodingFacade.generateLog(logger, true, sender,
 					receiver, amount);
 		}
 
@@ -1091,7 +1088,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var sender = EntityIdUtils.asTypedSolidityAddress(nftExchange.getSenderAccountID());
 			final var receiver = EntityIdUtils.asTypedSolidityAddress(nftExchange.getReceiverAccountID());
 
-			return EncodingFacade.generateLog(logger, sender,
+			return EncodingFacade.generateLog(logger, true, sender,
 					receiver, nftExchange.getSerialNumber());
 		}
 
