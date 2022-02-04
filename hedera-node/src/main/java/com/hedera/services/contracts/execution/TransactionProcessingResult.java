@@ -227,7 +227,7 @@ public class TransactionProcessingResult {
 		/* Populate stateChanges */
 		stateChanges.forEach((address, states) -> {
 			ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractParsedFromSolidityAddress(address.toArray()));
+					EntityIdUtils.contractIdFromEvmAddress(address.toArray()));
 			states.forEach((slot, changePair) -> {
 				StorageChange.Builder stateChange = StorageChange.newBuilder()
 						.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
@@ -241,7 +241,7 @@ public class TransactionProcessingResult {
 			contractResultBuilder.addStateChanges(contractChanges.build());
 		});
 
-		return contractResultBuilder.build();
+		return contractResultBuilder;
 	}
 
 	@NotNull

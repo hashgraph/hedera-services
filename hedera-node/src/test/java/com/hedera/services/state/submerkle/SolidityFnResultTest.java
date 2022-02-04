@@ -212,7 +212,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				specialStateChanges);
+				specialStateChanges,
+				evmAddress);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -328,7 +329,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				specialStateChanges
+				specialStateChanges,
+				evmAddress
 		);
 
 		final var in = mock(SerializableDataInputStream.class);
@@ -357,6 +359,7 @@ class SolidityFnResultTest {
 
 		readSubject.deserialize(in, RELEASE_022_VERSION);
 
+		subject.setEvmAddress(null);
 		assertEquals(subject, readSubject);
 	}
 

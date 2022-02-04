@@ -201,7 +201,7 @@ class CallEvmTxProcessorTest {
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 		assertEquals(1, result.toGrpc().getStateChangesCount());
 		final var contractStateChange = result.toGrpc().getStateChanges(0);
-		assertEquals(EntityIdUtils.contractParsedFromSolidityAddress(Address.fromHexString(contractAddress)),
+		assertEquals(EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(contractAddress)),
 				contractStateChange.getContractID());
 		assertEquals(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(slot)).trimLeadingZeros().toArrayUnsafe()),
 				contractStateChange.getStorageChanges(0).getSlot());

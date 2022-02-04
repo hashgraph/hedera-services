@@ -155,7 +155,7 @@ class TransactionProcessingResultTest {
 		assertEquals(listOfCreatedContracts, resultAsGrpc.getCreatedContractIDsList());
 
 		final var mockNewAddr = Address.BLAKE2B_F_COMPRESSION.toArrayUnsafe();
-		final var creationResult = result.toGrpc();
+		final var creationResult = result.toCreationGrpc(ByteString.copyFrom(mockNewAddr).toByteArray());
 		assertEquals(ByteString.copyFrom(mockNewAddr), creationResult.getEvmAddress().getValue());
 		assertEquals(expect.getStateChangesList(), result.toGrpc().getStateChangesList());
 	}
