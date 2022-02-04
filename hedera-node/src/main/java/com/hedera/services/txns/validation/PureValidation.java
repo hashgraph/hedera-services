@@ -79,7 +79,14 @@ public final class PureValidation {
 			final ContractID cid,
 			final MerkleMap<EntityNum, MerkleAccount> contracts
 	) {
-		final var contract = contracts.get(fromContractId(cid));
+		return queryableContractStatus(fromContractId(cid), contracts);
+	}
+
+	public static ResponseCodeEnum queryableContractStatus(
+			final EntityNum contractId,
+			final MerkleMap<EntityNum, MerkleAccount> contracts
+	) {
+		final var contract = contracts.get(contractId);
 
 		return Optional.ofNullable(contract)
 				.map(v -> {

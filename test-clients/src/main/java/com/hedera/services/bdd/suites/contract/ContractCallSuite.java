@@ -111,6 +111,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -130,7 +131,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -159,7 +160,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				imapUserExercise(),
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated()
-		);
+		});
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {
@@ -509,21 +510,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									"Dave's final balance should be 0");
 						})
 				).then(
-						assertionsHold((spec, ctxLog) -> {
-							var finalOp = getContractRecords("tokenContract")
-									.saveRecordNumToRegistry("tokenContractRecordNum")
-									.hasCostAnswerPrecheck(OK);
-
-							allRunFor(spec, finalOp);
-
-							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
-							ctxLog.info("Finished {}", totalRecordNum);
-
-							Assertions.assertEquals(
-									0,
-									totalRecordNum,
-									"Contracts should no longer receive records!");
-						})
+						getContractRecords("tokenContract").hasCostAnswerPrecheck(NOT_SUPPORTED),
+						getContractRecords("tokenContract").nodePayment(100L).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
 				);
 	}
 

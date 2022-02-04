@@ -21,14 +21,9 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -50,9 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSampleComplexKey;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.genSingleECDSASecp256k1Key;
-import static com.hedera.services.legacy.core.jproto.JKeyUtils.getSpecificJKeysMade;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -120,6 +113,34 @@ class JKeySerializerTest {
 
 		final var in = new ByteArrayInputStream(baos.toByteArray());
 		final JDelegatableContractIDKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertEquals(subject.getContractID(), result.getContractID());
+	}
+
+	@Test
+	void canSerializeAndDeserializeJContractAliasKey() throws IOException {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		final var subject = new JContractAliasKey(input);
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JContractAliasKey result = JKeySerializer.deserialize(new DataInputStream(in));
+		assertEquals(subject.getContractID(), result.getContractID());
+	}
+
+	@Test
+	void canSerializeAndDeserializeJDelegatableContractAliasKey() throws IOException {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		final var subject = new JDelegatableContractAliasKey(input);
+		final var baos = new ByteArrayOutputStream();
+		baos.write(JKeySerializer.serialize(subject));
+		baos.flush();
+
+		final var in = new ByteArrayInputStream(baos.toByteArray());
+		final JDelegatableContractAliasKey result = JKeySerializer.deserialize(new DataInputStream(in));
 		assertEquals(subject.getContractID(), result.getContractID());
 	}
 
