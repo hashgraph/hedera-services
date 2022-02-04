@@ -70,7 +70,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -376,7 +375,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 											   final Bytes result,
 											   final Optional<ResponseCodeEnum> errorStatus) {
 		final var contractCallResult = ContractFunctionResult.newBuilder()
-				.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(
+				.setContractID(EntityIdUtils.contractIdFromEvmAddress(
 						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
 				.setGasUsed(this.gasRequirement.toLong())
 				.setContractCallResult(ByteString.copyFrom(result.toArray()));
