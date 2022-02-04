@@ -200,6 +200,7 @@ public class AllowanceChecks {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
+			final var approvedForAll = allowance.getApprovedForAll();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -210,7 +211,7 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateSerialNums(serialNums, ownerAccount, token);
+			validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue());
 			if (validity != OK) {
 				return validity;
 			}
@@ -236,7 +237,16 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount, final Token token) {
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount,
+			final Token token, final boolean approvedForAll) {
+		if (hasRepeatedSerials(serialNums)) {
+			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+		}
+
+		if (!approvedForAll && serialNums.isEmpty()) {
+			return EMPTY_ALLOWANCES; // need  different response
+		}
+
 		for (var serial : serialNums) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
 			if (serial <= 0 || !nftsLedger.exists(nftId)) {
@@ -247,11 +257,8 @@ public class AllowanceChecks {
 			if (!ownerAccount.getId().asEntityId().equals(owner)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
-
-			if (hasRepeatedSerials(serialNums)) {
-				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-			}
 		}
+
 		return OK;
 	}
 
