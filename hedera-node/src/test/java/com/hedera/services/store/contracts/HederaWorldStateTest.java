@@ -21,18 +21,25 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -47,9 +54,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -79,6 +86,10 @@ class HederaWorldStateTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private ContractAliases aliases;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -91,7 +102,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
 	}
 
 	@Test
@@ -101,7 +112,10 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void customizeSponsoredAccounts() {
+		final var specialMemo = "memo";
+
 		givenNonNullWorldLedgers();
 
 		/* happy path with 0 existing accounts */
@@ -110,7 +124,9 @@ class HederaWorldStateTest {
 		verify(entityAccess, never()).customize(any(), any()); // will do 0 iterations
 
 		/* happy path with 1 existing account */
-		given(entityAccess.getMemo(any())).willReturn("memo");
+		final var matcherCaptor = ArgumentCaptor.forClass(Predicate.class);
+		final var customizerCaptor = ArgumentCaptor.forClass(Consumer.class);
+		given(entityAccess.getMemo(any())).willReturn(specialMemo);
 		given(entityAccess.getProxy(any())).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(entityAccess.getAutoRenew(any())).willReturn(100L);
 		var updater = subject.updater();
@@ -118,6 +134,15 @@ class HederaWorldStateTest {
 		updater.commit();
 		subject.customizeSponsoredAccounts();
 		verify(entityAccess).customize(any(), any());
+		verify(worldLedgers).commit(sigImpactHistorian);
+		verify(recordsHistorian).customizeSuccessor(
+				(Predicate<InProgressChildRecord>) matcherCaptor.capture(),
+				(Consumer<InProgressChildRecord>) customizerCaptor.capture());
+		assertCapturedWorkAsExpected(
+				(Predicate<InProgressChildRecord>) matcherCaptor.getValue(),
+				(Consumer<InProgressChildRecord>) customizerCaptor.getValue(),
+				EntityIdUtils.contractIdFromEvmAddress(Address.RIPEMD160),
+				specialMemo);
 
 		/* sad path with existing but not accessible account */
 		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
@@ -126,12 +151,40 @@ class HederaWorldStateTest {
 		assertFailsWith(() -> subject.customizeSponsoredAccounts(), ResponseCodeEnum.FAIL_INVALID);
 	}
 
+	private void assertCapturedWorkAsExpected(
+			final Predicate<InProgressChildRecord> matcher,
+			final Consumer<InProgressChildRecord> customizer,
+			final ContractID idToMatch,
+			final String memoToCustomize
+	) {
+		final var targetRecord = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(TxnReceipt.newBuilder()
+						.setStatus(TxnReceipt.SUCCESS_LITERAL)
+						.setContractId(EntityId.fromGrpcContractId(idToMatch)));
+		final var matchingBody = TransactionBody.newBuilder()
+				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder());
+		final var inProgress = new InProgressChildRecord(1, matchingBody, targetRecord);
+
+		assertTrue(matcher.test(inProgress));
+		customizer.accept(inProgress);
+		assertEquals(memoToCustomize, matchingBody.getContractCreateInstance().getMemo());
+
+		targetRecord.getReceiptBuilder().setContractId(null);
+		assertFalse(matcher.test(inProgress));
+
+		targetRecord.getReceiptBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL);
+		assertFalse(matcher.test(inProgress));
+
+		targetRecord.setReceiptBuilder(null);
+		assertFalse(matcher.test(inProgress));
+	}
+
 	@Test
 	void usesContractKeyWhenSponsorDid() {
 		final var sponsorId = AccountID.newBuilder().setAccountNum(123L).build();
 		final var sponsoredId = AccountID.newBuilder().setAccountNum(321L).build();
-		final var sponsorAddress = asSolidityAddress(sponsorId);
-		final var sponsoredAddress = asSolidityAddress(sponsoredId);
+		final var sponsorAddress = EntityIdUtils.asEvmAddress(sponsorId);
+		final var sponsoredAddress = EntityIdUtils.asEvmAddress(sponsoredId);
 
 		givenNonNullWorldLedgers();
 		given(entityAccess.isExtant(any())).willReturn(true);
@@ -165,7 +218,7 @@ class HederaWorldStateTest {
 		var addr = subject.newContractAddress(sponsor);
 		assertNotEquals(addr, sponsor);
 		assertEquals(1,
-				accountParsedFromSolidityAddress(addr.toArrayUnsafe()).getAccountNum());
+				EntityIdUtils.accountIdFromEvmAddress(addr.toArrayUnsafe()).getAccountNum());
 	}
 
 	@Test
@@ -202,13 +255,18 @@ class HederaWorldStateTest {
 		given(entityAccess.isDeleted(accountId)).willReturn(false);
 		given(entityAccess.isDetached(accountId)).willReturn(true);
 
-		assertNull(subject.get(asTypedSolidityAddress(accountId)));
+		assertNull(subject.get(EntityIdUtils.asTypedEvmAddress(accountId)));
+	}
+
+	@Test
+	void returnsNullForNull() {
+		assertNull(subject.get(null));
 	}
 
 	@Test
 	void returnsEmptyCodeIfNotPresent() {
 		final var address = Address.RIPEMD160;
-		final var ripeAccountId = accountParsedFromSolidityAddress(address.toArrayUnsafe());
+		final var ripeAccountId = EntityIdUtils.accountIdFromEvmAddress(address.toArrayUnsafe());
 		givenWellKnownAccountWithCode(ripeAccountId, null);
 
 		final var account = subject.get(address);
@@ -220,7 +278,7 @@ class HederaWorldStateTest {
 	@Test
 	void returnsExpectedCodeIfPresent() {
 		final var address = Address.RIPEMD160;
-		final var ripeAccountId = accountParsedFromSolidityAddress(address.toArrayUnsafe());
+		final var ripeAccountId = EntityIdUtils.accountIdFromEvmAddress(address.toArrayUnsafe());
 		givenWellKnownAccountWithCode(ripeAccountId, code);
 
 		final var account = subject.get(address);
@@ -231,7 +289,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void getsAsExpected() {
-		final var account = accountParsedFromSolidityAddress(Address.RIPEMD160.toArray());
+		final var account = EntityIdUtils.accountIdFromEvmAddress(Address.RIPEMD160.toArray());
 		givenWellKnownAccountWithCode(account, Bytes.EMPTY);
 		given(entityAccess.getStorage(any(), any())).willReturn(UInt256.ZERO);
 
@@ -309,8 +367,10 @@ class HederaWorldStateTest {
 	void failsFastIfDeletionsHappenOnStaticWorld() {
 		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
 		final var tbd = IdUtils.asAccount("0.0.321");
-		final var tbdAddress = EntityIdUtils.asTypedSolidityAddress(tbd);
+		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
 
 		var actualSubject = subject.updater();
 		var mockTbdAccount = mock(Address.class);
@@ -324,8 +384,9 @@ class HederaWorldStateTest {
 	void staticInnerUpdaterWorksAsExpected() {
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdBalance = 123L;
-		final var tbdAddress = EntityIdUtils.asTypedSolidityAddress(tbd);
+		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
 
 		/* Please note that the subject of this test is the actual inner updater class */
 		var actualSubject = subject.updater();
@@ -333,12 +394,13 @@ class HederaWorldStateTest {
 		assertEquals(0, actualSubject.getTouchedAccounts().size());
 
 		/* delete branch */
+		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
 		given(entityAccess.getBalance(tbd)).willReturn(tbdBalance).willReturn(0L);
 		var mockTbdAccount = mock(Address.class);
 		actualSubject.getSponsorMap().put(tbdAddress, mockTbdAccount);
 		actualSubject.deleteAccount(tbdAddress);
 		actualSubject.commit();
-		verify(worldLedgers).commit();
+		verify(worldLedgers).commit(sigImpactHistorian);
 		verify(entityAccess).adjustBalance(tbd, -tbdBalance);
 		verify(sigImpactHistorian).markEntityChanged(tbd.getAccountNum());
 
@@ -356,7 +418,7 @@ class HederaWorldStateTest {
 	void updaterGetsHederaAccount() {
 		givenNonNullWorldLedgers();
 
-		final var zeroAddress = accountParsedFromSolidityAddress(Address.ZERO.toArray());
+		final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
 		final var updater = subject.updater();
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
@@ -387,7 +449,7 @@ class HederaWorldStateTest {
 		given(ids.newContractId(sponsor.asGrpcAccount())).willReturn(contract.asGrpcContract());
 
 		// when:
-		final var result = subject.updater().allocateNewContractAddress(sponsor.asEvmAddress());
+		final var result = subject.updater().newContractAddress(sponsor.asEvmAddress());
 
 		// then:
 		assertEquals(contract.asEvmAddress(), result);
@@ -398,9 +460,12 @@ class HederaWorldStateTest {
 	@Test
 	void updaterCreatesDeletedAccountUponCommit() {
 		givenNonNullWorldLedgers();
+		final var tbdAddress = contract.asEvmAddress();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
 
 		final var updater = subject.updater();
-		updater.deleteAccount(contract.asEvmAddress());
+		updater.deleteAccount(tbdAddress);
 		// and:
 		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
 
@@ -409,7 +474,7 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(entityAccess).flushStorage();
-		verify(worldLedgers).commit();
+		verify(worldLedgers).commit(sigImpactHistorian);
 		verify(entityAccess).recordNewKvUsageTo(any());
 		verify(entityAccess).spawn(any(), anyLong(), any());
 	}
@@ -417,9 +482,12 @@ class HederaWorldStateTest {
 	@Test
 	void updaterCommitsSuccessfully() {
 		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		final var newAddress = contract.asEvmAddress();
+		given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
 
 		final var actualSubject = subject.updater();
-		final var evmAccount = actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
+		final var evmAccount = actualSubject.createAccount(newAddress, 0, Wei.of(balance));
 		final var storageKey = UInt256.ONE;
 		final var storageValue = UInt256.valueOf(9_876);
 		final var secondStorageKey = UInt256.valueOf(2);
@@ -428,7 +496,7 @@ class HederaWorldStateTest {
 		evmAccount.getMutable().setStorageValue(secondStorageKey, secondStorageValue);
 		evmAccount.getMutable().setCode(code);
 		// and:
-		final var accountID = accountParsedFromSolidityAddress(contract.asEvmAddress().toArray());
+		final var accountID = EntityIdUtils.accountIdFromEvmAddress(contract.asEvmAddress().toArray());
 		given(entityAccess.isExtant(accountID)).willReturn(true);
 
 		// when:
@@ -445,9 +513,12 @@ class HederaWorldStateTest {
 	@Test
 	void persistNewlyCreatedContracts() {
 		givenNonNullWorldLedgers();
+		final var newAddress = contract.asEvmAddress();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
 
 		final var actualSubject = subject.updater();
-		actualSubject.createAccount(contract.asEvmAddress(), 0, Wei.of(balance));
+		actualSubject.createAccount(newAddress, 0, Wei.of(balance));
 		// and:
 		given(entityAccess.isExtant(contract.asGrpcAccount())).willReturn(false);
 		// and:

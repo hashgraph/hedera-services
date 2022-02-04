@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -27,12 +28,12 @@ import com.hedera.services.bdd.spec.utilops.UtilStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -69,6 +70,20 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts contract(String contract) {
 		registerIdLookupAssert(contract, r -> r.getContractID(), ContractID.class, "Bad contract!");
+		return this;
+	}
+
+	public ContractFnResultAsserts hexedEvmAddress(String expected) {
+		return evmAddress(ByteString.copyFrom(CommonUtils.unhex(expected)));
+	}
+
+	public ContractFnResultAsserts evmAddress(ByteString expected) {
+		registerProvider((spec, o) -> {
+			final var result = (ContractFunctionResult)	o;
+			Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
+			final var actual = result.getEvmAddress().getValue();
+			Assertions.assertEquals(expected, actual, "Bad EVM address");
+		});
 		return this;
 	}
 
@@ -150,8 +165,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	private static Optional<Throwable> matchErrors(Object[] expecteds, Object[] actuals) {
 		try {
 			for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
-				System.out.println("Expected (#" + expecteds.length + "): " + Arrays.toString(expecteds));
-				System.out.println("Actual (#" + actuals.length + "): " + Arrays.toString(actuals));
 				try {
 					Object expected = expecteds[i];
 					Object actual = actuals[i];

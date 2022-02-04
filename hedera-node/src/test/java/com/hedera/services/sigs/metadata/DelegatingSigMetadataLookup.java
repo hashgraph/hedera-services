@@ -118,12 +118,6 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(final ContractID id,
-			LinkedRefs linkedRefs) {
-		return contractSigMetaLookup.safeLookup(id);
-	}
-
-	@Override
 	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
 			final FileID id,
 			final @Nullable LinkedRefs linkedRefs
@@ -163,6 +157,12 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(AccountID idOrAlias,
 			LinkedRefs linkedRefs) {
 		return accountSigMetaLookup.aliasableSafeLookup(idOrAlias);
+	}
+
+	@Override
+	public SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(ContractID idOrAlias,
+			@Nullable LinkedRefs linkedRefs) {
+		return contractSigMetaLookup.safeLookup(idOrAlias);
 	}
 
 	@Override

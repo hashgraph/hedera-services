@@ -31,9 +31,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 public interface EntityCreator {
+	String EMPTY_MEMO = "";
+	List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+
 	/**
 	 * Sets the ledger for the entity creator.
 	 *

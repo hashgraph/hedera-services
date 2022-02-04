@@ -38,6 +38,8 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -175,6 +177,19 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		nextSourceId = 1;
 	}
 
+	@Override
+	public void customizeSuccessor(
+			final Predicate<InProgressChildRecord> matcher,
+			final Consumer<InProgressChildRecord> customizer
+	) {
+		for (final var inProgress : followingChildRecords) {
+			if (matcher.test(inProgress)) {
+				customizer.accept(inProgress);
+				return;
+			}
+		}
+	}
+
 	private void revert(final int sourceId, final List<InProgressChildRecord> childRecords) {
 		for (final var inProgress : childRecords) {
 			if (inProgress.sourceId() == sourceId) {
@@ -199,6 +214,9 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		for (int i = 0, n = childRecords.size(); i < n; i++) {
 			final var inProgress = childRecords.get(i);
 			final var child = inProgress.recordBuilder();
+			if (child.shouldNotBeExternalized()) {
+				continue;
+			}
 			topLevel.excludeHbarChangesFrom(child);
 
 			child.setTxnId(parentId.withNonce(nextNonce++));

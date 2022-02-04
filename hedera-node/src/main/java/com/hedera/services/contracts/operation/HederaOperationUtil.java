@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.utils.BytesComparator;
@@ -65,7 +66,7 @@ public final class HederaOperationUtil {
 	 * 		Current message frame
 	 * @return Expiry to be used for new contracts
 	 */
-	public static long computeExpiryForNewContract(MessageFrame frame) {
+	public static long newContractExpiryIn(MessageFrame frame) {
 		long expiry = 0;
 		HederaWorldState.WorldStateAccount hederaAccount;
 		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();
@@ -81,8 +82,8 @@ public final class HederaOperationUtil {
 				}
 			}
 			/* check if this messageFrame's sender account can be retrieved from state */
-			hederaAccount = ((HederaWorldUpdater) messageFrame.getWorldUpdater()).getHederaAccount(
-					frame.getSenderAddress());
+			final var updater = (HederaWorldUpdater) messageFrame.getWorldUpdater();
+			hederaAccount = updater.getHederaAccount(frame.getSenderAddress());
 			if (hederaAccount != null) {
 				expiry = hederaAccount.getExpiry();
 				break;
@@ -171,7 +172,8 @@ public final class HederaOperationUtil {
 			return supplierExecution.get();
 		}
 
-		final var account = frame.getWorldUpdater().get(address);
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		final var account = updater.get(address);
 		if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 			return new Operation.OperationResult(
 					Optional.of(supplierHaltGasCost.get()),
@@ -182,11 +184,19 @@ public final class HederaOperationUtil {
 		// if this is a delegate call activeContract should be the recipient address
 		// otherwise it should be the contract address
 		if (isDelegateCall) {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(account.getAddress(),
-					frame.getRecipientAddress(), frame.getContractAddress(), frame.getRecipientAddress());
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+					account.getAddress(),
+					frame.getRecipientAddress(),
+					frame.getContractAddress(),
+					frame.getRecipientAddress(),
+					updater.aliases());
 		} else {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(account.getAddress(),
-					frame.getRecipientAddress(), frame.getContractAddress(), frame.getContractAddress());
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+					account.getAddress(),
+					frame.getRecipientAddress(),
+					frame.getContractAddress(),
+					frame.getContractAddress(),
+					updater.aliases());
 		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(

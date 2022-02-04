@@ -187,7 +187,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										.newTotalSupply(2469134L)
 										.tokenTransfers(
 												changingFungibleBalances()
-														.including(fungibleToken, GENESIS, amount)
+														.including(fungibleToken, DEFAULT_PAYER, amount)
 										)
 						)
 				);
@@ -256,7 +256,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("FungibleMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(10 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(mintContractByteCode).payingWith(theAccount),
 						updateLargeFile(theAccount, mintContractByteCode,
@@ -349,7 +349,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(theRecipient).maxAutomaticTokenAssociations(1),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(nonFungibleToken)
@@ -466,7 +466,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("RollbackOnFailedAssociateAfterNonFungibleMint")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(theAccount).balance(20 * ONE_MILLION_HBARS),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(theRecipient),
 						cryptoCreate(TOKEN_TREASURY),
 						fileCreate(innerContract),

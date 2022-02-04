@@ -400,8 +400,8 @@ class ContractCreateTransitionLogicTest {
 		// then:
 		verify(worldState).reclaimContractId();
 		verify(worldState).persistProvisionalContractCreations();
-		verify(txnCtx, never()).setCreated(contractAccount.getId().asGrpcContract());
-		verify(recordServices).externaliseEvmCreateTransaction(result);
+		verify(txnCtx, never()).setTargetedContract(contractAccount.getId().asGrpcContract());
+		verify(recordServices).externalizeUnsuccessfulEvmCreate(result);
 	}
 
 	@Test
@@ -427,8 +427,8 @@ class ContractCreateTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
-		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
-				.willReturn(contractAccount.getId().asEvmAddress());
+		final var newEvmAddress = contractAccount.getId().asEvmAddress();
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(newEvmAddress);
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -447,9 +447,9 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
 		verify(worldState).persistProvisionalContractCreations();
-		verify(recordServices).externaliseEvmCreateTransaction(result);
+		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
-		verify(txnCtx).setCreated(contractAccount.getId().asGrpcContract());
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
 
 	@Test

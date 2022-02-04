@@ -193,11 +193,19 @@ public class TransactionProcessingResult {
 	 * @return the {@link ContractFunctionResult} model to externalise
 	 */
 	public ContractFunctionResult toGrpc() {
+		return toBaseGrpc().build();
+	}
+
+	public ContractFunctionResult toCreationGrpc(final byte[] newEvmAddress) {
+		return toBaseGrpc().setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(newEvmAddress))).build();
+	}
+
+	private ContractFunctionResult.Builder toBaseGrpc() {
 		final var contractResultBuilder = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed);
 		contractResultBuilder.setContractCallResult(ByteString.copyFrom(output.toArray()));
 		recipient.ifPresent(address -> contractResultBuilder.setContractID(
-				EntityIdUtils.contractParsedFromSolidityAddress(address.toArray())));
+				EntityIdUtils.contractIdFromEvmAddress(address.toArray())));
 		// Set Revert reason as error message if present, otherwise set halt reason (if present)
 		if (revertReason.isPresent()) {
 			contractResultBuilder.setErrorMessage(revertReason.toString());
@@ -241,7 +249,7 @@ public class TransactionProcessingResult {
 		final var logInfo = new ArrayList<ContractLoginfo>();
 		logs.forEach(log -> {
 			var logBuilder = ContractLoginfo.newBuilder()
-					.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(log.getLogger().toArray()))
+					.setContractID(EntityIdUtils.contractIdFromEvmAddress(log.getLogger().toArray()))
 					.setData(ByteString.copyFrom(log.getData().toArray()))
 					.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLog(log).build().toArray()));
 			final var topics = new ArrayList<ByteString>();

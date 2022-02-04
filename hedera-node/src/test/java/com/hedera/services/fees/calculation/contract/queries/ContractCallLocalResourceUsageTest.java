@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.store.AccountStore;
@@ -101,6 +102,8 @@ class ContractCallLocalResourceUsageTest {
 	private OptionValidator validator;
 	@Mock
 	private NodeLocalProperties nodeLocalProperties;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -111,7 +114,8 @@ class ContractCallLocalResourceUsageTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalResourceUsage(
-				usageEstimator, properties, nodeLocalProperties, accountStore, evmTxProcessor, ids, validator);
+				usageEstimator, properties, nodeLocalProperties,
+				accountStore, evmTxProcessor, ids, validator, aliasManager);
 	}
 
 	@Test

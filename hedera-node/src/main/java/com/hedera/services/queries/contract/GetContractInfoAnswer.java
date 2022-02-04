@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -36,8 +37,10 @@ import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -46,10 +49,12 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 public class GetContractInfoAnswer implements AnswerService {
 	public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
 
+	private final AliasManager aliasManager;
 	private final OptionValidator validator;
 
 	@Inject
-	public GetContractInfoAnswer(OptionValidator validator) {
+	public GetContractInfoAnswer(final AliasManager aliasManager, final OptionValidator validator) {
+		this.aliasManager = aliasManager;
 		this.validator = validator;
 	}
 
@@ -80,10 +85,11 @@ public class GetContractInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var id = query.getContractGetInfo().getContractID();
+	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+		final var id = unaliased(query.getContractGetInfo().getContractID(), aliasManager);
 
-		return validator.queryableContractStatus(id, view.contracts());
+		final var validity = validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
+		return (validity == CONTRACT_DELETED) ? OK : validity;
 	}
 
 	@Override
@@ -99,7 +105,7 @@ public class GetContractInfoAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
 		var paymentTxn = query.getContractGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(uncheckedFrom(paymentTxn));
+		return Optional.of(uncheckedFrom(paymentTxn));
 	}
 
 	private Response responseFor(
@@ -142,10 +148,10 @@ public class GetContractInfoAnswer implements AnswerService {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setContractInfo((ContractGetInfoResponse.ContractInfo)ctx.get(CONTRACT_INFO_CTX_KEY));
+				response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
 			}
 		} else {
-			var info = view.infoForContract(op.getContractID());
+			var info = view.infoForContract(op.getContractID(), aliasManager);
 			if (info.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {

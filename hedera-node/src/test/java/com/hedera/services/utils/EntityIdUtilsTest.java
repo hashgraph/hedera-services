@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
@@ -35,26 +37,64 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import java.util.Arrays;
+
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
-import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.hedera.services.utils.EntityIdUtils.tokenParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.BDDMockito.given;
 
-class MerkleEntityIdUtilsTest {
+@ExtendWith(MockitoExtension.class)
+class EntityIdUtilsTest {
+	@Mock
+	private AliasManager aliasManager;
+
+	@Test
+	void echoesUnaliasedContractId() {
+		final var literalId = ContractID.newBuilder().setContractNum(1234).build();
+
+		assertEquals(EntityNum.fromLong(1234), unaliased(literalId, aliasManager));
+		assertEquals(EntityNum.MISSING_NUM, unaliased(ContractID.getDefaultInstance(), aliasManager));
+	}
+
+	@Test
+	void useEvmAddressDirectlyIfMirror() {
+		final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+		final var num = Longs.fromByteArray(Arrays.copyOfRange(mockAddr, 12, 20));
+		final var expectedId = EntityNum.fromLong(num);
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+
+		given(aliasManager.isMirror(mockAddr)).willReturn(true);
+		assertEquals(expectedId, unaliased(input, aliasManager));
+	}
+
+	@Test
+	void returnsResolvedContractIdIfNonMirro() {
+		final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+		final var extantNum = EntityNum.fromLong(1_234_567L);
+		final var input = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
+
+		assertEquals(extantNum, unaliased(input, aliasManager));
+	}
+
 	@Test
 	void correctLiteral() {
 		assertEquals("1.2.3", asLiteralString(asAccount("1.2.3")));
@@ -88,18 +128,18 @@ class MerkleEntityIdUtilsTest {
 		final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
 		final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
 
-		final var actual = asSolidityAddress(shard, realm, num);
-		final var typedActual = asTypedSolidityAddress(equivAccount);
-		final var anotherActual = asSolidityAddress(equivContract);
-		final var actualHex = asSolidityAddressHex(equivAccount);
+		final var actual = asEvmAddress(shard, realm, num);
+		final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
+		final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
+		final var actualHex = EntityIdUtils.asHexedEvmAddress(equivAccount);
 
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
 		assertArrayEquals(expected, typedActual.toArray());
 		assertEquals(CommonUtils.hex(expected), actualHex);
-		assertEquals(equivAccount, accountParsedFromSolidityAddress(actual));
-		assertEquals(equivContract, contractParsedFromSolidityAddress(actual));
-		assertEquals(equivToken, tokenParsedFromSolidityAddress(actual));
+		assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
+		assertEquals(equivContract, contractIdFromEvmAddress(actual));
+		assertEquals(equivToken, tokenIdFromEvmAddress(actual));
 	}
 
 	@ParameterizedTest
@@ -140,14 +180,14 @@ class MerkleEntityIdUtilsTest {
 	void asSolidityAddressHexWorksProperly() {
 		final var id = new Id(1, 2, 3);
 
-		assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asSolidityAddressHex(id));
+		assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asHexedEvmAddress(id));
 	}
 
 	@Test
 	void asSolidityAddressBytesWorksProperly() {
 		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
 
-		final var result = EntityIdUtils.asSolidityAddress(id);
+		final var result = EntityIdUtils.asEvmAddress(id);
 
 		final var expectedBytes = new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
 

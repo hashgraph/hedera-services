@@ -25,6 +25,7 @@ package com.hedera.services.contracts.execution;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
@@ -92,6 +93,8 @@ class CallEvmTxProcessorTest {
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
+	private AliasManager aliasManager;
+	@Mock
 	Map<String, PrecompiledContract> precompiledContractMap;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -111,7 +114,7 @@ class CallEvmTxProcessorTest {
 
 		callEvmTxProcessor = new CallEvmTxProcessor(
 				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, 
-                                operations, precompiledContractMap);
+                                operations, precompiledContractMap, aliasManager);
 	}
 
 	@Test
