@@ -24,6 +24,18 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
+/**
+ * Base implementation of a {@link org.hyperledger.besu.evm.worldstate.WorldUpdater} that buffers
+ * a set of EVM account mutations (updates and deletions) that are mirrored in the accounts ledger
+ * of a "parallel" {@link WorldLedgers} instance.
+ *
+ * We need both representations of the change-set because the Besu EVM is implemented in terms of
+ * the {@link Account} type hierarchy, while the logic for the native HTS pre-compiles is implemented
+ * in terms of {@link com.hedera.services.ledger.TransactionalLedger} instances.
+ *
+ * @param <W> the type of the wrapped world view
+ * @param <A> the account specialization used by the wrapped world view
+ */
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
 		extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
 
@@ -34,6 +46,9 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 		super(world, trackingLedgers);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected UpdateTrackingLedgerAccount<A> getForMutation(final Address address) {
 		final var wrapped = wrappedWorldView();
@@ -48,13 +63,17 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 		return account == null ? null : new UpdateTrackingLedgerAccount<>(account, trackingAccounts());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void commit() {
 		final var wrapped = wrappedWorldView();
 
-		/* NOTE - in a traditional Ethereum context, it is technically possible with use of CREATE2
-		 * for a stacked updater to re-create an account that was deleted by its parent updater. But
-		 * that is not possible in Hedera. */
+		/* NOTE: In a traditional Ethereum context, it is possible with use of CREATE2 for a stacked updater
+		 * to re-create the very same account that was deleted by its parent updater. But since every Hedera
+		 * account gets a unique 0.0.X id---and corresponding unique mirror 0x0...0X address---that is not
+		 * possible here. So we needn't remove our updated accounts from our parent's deleted accounts. */
 		getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
 		wrapped.deletedAccounts.addAll(getDeletedAccounts());
 

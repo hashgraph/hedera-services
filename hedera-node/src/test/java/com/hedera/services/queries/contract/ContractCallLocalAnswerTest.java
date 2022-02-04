@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
@@ -104,13 +105,15 @@ class ContractCallLocalAnswerTest {
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	@Mock
 	private NodeLocalProperties nodeLocalProperties;
-
+	@Mock
+	private AliasManager aliasManager;
 
 	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
-	private void setup() throws Throwable {
-		subject = new ContractCallLocalAnswer(ids, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
+	private void setup() {
+		subject = new ContractCallLocalAnswer(
+				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
 	}
 
 	@Test
@@ -122,7 +125,8 @@ class ContractCallLocalAnswerTest {
 		given(dynamicProperties.maxGas()).willReturn(gas);
 
 		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
+				.willReturn(CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.checkValidity(query, view));

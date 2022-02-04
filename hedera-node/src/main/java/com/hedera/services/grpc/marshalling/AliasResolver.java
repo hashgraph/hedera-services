@@ -20,8 +20,10 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
@@ -46,7 +49,7 @@ public class AliasResolver {
 	private Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
 	private enum Result {
-		KNOWN_ALIAS, UNKNOWN_ALIAS, REPEATED_UNKNOWN_ALIAS
+		KNOWN_ALIAS, UNKNOWN_ALIAS, REPEATED_UNKNOWN_ALIAS, UNKNOWN_EVM_ADDRESS
 	}
 
 	public CryptoTransferTransactionBody resolve(
@@ -154,6 +157,8 @@ public class AliasResolver {
 				}
 			} else if (result == Result.REPEATED_UNKNOWN_ALIAS) {
 				perceivedInvalidCreations++;
+			} else if (result == Result.UNKNOWN_EVM_ADDRESS) {
+				perceivedMissing++;
 			}
 		}
 		return resolvedAdjusts.build();
@@ -165,14 +170,24 @@ public class AliasResolver {
 			final Consumer<AccountID> resolvingAction
 	) {
 		AccountID resolvedId = idOrAlias;
+		var isEvmAddress = false;
 		var result = Result.KNOWN_ALIAS;
 		if (isAlias(idOrAlias)) {
 			final var alias = idOrAlias.getAlias();
+			if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+				final var evmAddress = alias.toByteArray();
+				if (aliasManager.isMirror(evmAddress)) {
+					offerMirrorId(evmAddress, resolvingAction);
+					return Result.KNOWN_ALIAS;
+				} else {
+					isEvmAddress = true;
+				}
+			}
 			final var resolution = aliasManager.lookupIdBy(alias);
 			if (resolution != MISSING_NUM) {
 				resolvedId = resolution.toGrpcAccountId();
 			} else {
-				result = resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+				result = netOf(isEvmAddress, alias);
 			}
 			resolutions.put(alias, resolution);
 		}
@@ -186,12 +201,22 @@ public class AliasResolver {
 			final Consumer<AccountAmount> resolvingAction
 	) {
 		AccountAmount resolvedAdjust = adjust;
+		var isEvmAddress = false;
 		var result = Result.KNOWN_ALIAS;
 		if (isAlias(adjust.getAccountID())) {
 			final var alias = adjust.getAccountID().getAlias();
+			if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+				final var evmAddress = alias.toByteArray();
+				if (aliasManager.isMirror(evmAddress)) {
+					offerMirrorId(evmAddress, id -> resolvingAction.accept(adjust.toBuilder().setAccountID(id).build()));
+					return Result.KNOWN_ALIAS;
+				} else {
+					isEvmAddress = true;
+				}
+			}
 			final var resolution = aliasManager.lookupIdBy(alias);
 			if (resolution == MISSING_NUM) {
-				result = resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+				result = netOf(isEvmAddress, alias);
 			} else {
 				resolvedAdjust = adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
 			}
@@ -199,5 +224,23 @@ public class AliasResolver {
 		}
 		resolvingAction.accept(resolvedAdjust);
 		return result;
+	}
+
+	private Result netOf(final boolean isEvmAddress, final ByteString alias) {
+		if (isEvmAddress) {
+			return Result.UNKNOWN_EVM_ADDRESS;
+		} else {
+			return resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
+		}
+	}
+
+	private void offerMirrorId(
+			final byte[] evmAddress,
+			final Consumer<AccountID> resolvingAction
+	) {
+		final var contractNum = Longs.fromBytes(
+				evmAddress[12], evmAddress[13], evmAddress[14], evmAddress[15],
+				evmAddress[16], evmAddress[17], evmAddress[18], evmAddress[19]);
+		resolvingAction.accept(STATIC_PROPERTIES.scopedAccountWith(contractNum));
 	}
 }

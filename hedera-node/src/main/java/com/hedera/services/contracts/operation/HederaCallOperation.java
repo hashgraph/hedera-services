@@ -24,6 +24,7 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -55,11 +56,18 @@ public class HederaCallOperation extends CallOperation {
 	public HederaCallOperation(
 			final SoliditySigsVerifier sigsVerifier,
 			final GasCalculator gasCalculator,
-			final BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
+			final BiPredicate<Address, MessageFrame> addressValidator,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
 		this.precompiledContractMap = precompiledContractMap;
+	}
+
+	@Override
+	protected Address address(final MessageFrame frame) {
+		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
 	}
 
 	@Override
@@ -72,5 +80,17 @@ public class HederaCallOperation extends CallOperation {
 				() -> super.execute(frame, evm),
 				addressValidator,
 				precompiledContractMap);
+	}
+
+	static Address resolveCanonical(
+			final Address nominal,
+			final MessageFrame frame,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		if (precompiledContractMap.containsKey(nominal.toShortHexString())) {
+			return nominal;
+		}
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		return updater.priorityAddress(nominal);
 	}
 }

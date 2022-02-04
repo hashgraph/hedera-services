@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
@@ -197,16 +198,17 @@ class AbstractStackedLedgerUpdaterTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
+		final var aliasManager = new AliasManager();
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
 		nftsLedger.begin();
 
-		ledgers = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		ledgers = new WorldLedgers(aliasManager, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final Address aAddress = EntityIdUtils.asTypedSolidityAddress(aAccount);
+	private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
 	private static final long aExpiry = 1_234_567L;

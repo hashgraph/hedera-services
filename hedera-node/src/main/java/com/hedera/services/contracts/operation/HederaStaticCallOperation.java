@@ -34,6 +34,8 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
+import static com.hedera.services.contracts.operation.HederaCallOperation.resolveCanonical;
+
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
  *
@@ -42,15 +44,17 @@ import java.util.function.BiPredicate;
  * the account does not exist or it is deleted.
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
-
 	private final SoliditySigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
-	public HederaStaticCallOperation(GasCalculator gasCalculator,
-									 SoliditySigsVerifier sigsVerifier,
-									 BiPredicate<Address, MessageFrame> addressValidator, Map<String, PrecompiledContract> precompiledContractMap) {
+	public HederaStaticCallOperation(
+			final GasCalculator gasCalculator,
+			final SoliditySigsVerifier sigsVerifier,
+			final BiPredicate<Address, MessageFrame> addressValidator,
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
 		super(gasCalculator);
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
@@ -58,7 +62,12 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 	}
 
 	@Override
-	public OperationResult execute(MessageFrame frame, EVM evm) {
+	protected Address address(final MessageFrame frame) {
+		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
+	}
+
+	@Override
+	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		return HederaOperationUtil.addressSignatureCheckExecution(
 				sigsVerifier,
 				frame,

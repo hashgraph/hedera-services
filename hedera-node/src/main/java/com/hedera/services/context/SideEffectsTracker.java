@@ -29,10 +29,12 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -67,7 +69,9 @@ public class SideEffectsTracker {
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
-	private ByteString newAccountAlias = ByteString.EMPTY;
+	private ContractID newContractId = null;
+	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
+	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 
 	@Inject
@@ -75,9 +79,14 @@ public class SideEffectsTracker {
 		/* For Dagger2 */
 	}
 
-	public void trackAutoCreation(final AccountID accountID, final ByteString alias){
+	public void trackNewContract(final ContractID contractId, final Address evmAddress) {
+		newContractId = contractId;
+		newEntityAlias = ByteString.copyFrom(evmAddress.toArrayUnsafe());
+	}
+
+	public void trackAutoCreation(final AccountID accountID, final ByteString alias) {
 		this.newAccountId = accountID;
-		this.newAccountAlias = alias;
+		this.newEntityAlias = alias;
 	}
 
 	/**
@@ -187,12 +196,20 @@ public class SideEffectsTracker {
 		return newAccountId != null;
 	}
 
-	public ByteString getNewAccountAlias() {
-		return newAccountAlias;
+	public ByteString getNewEntityAlias() {
+		return newEntityAlias;
 	}
 
 	public AccountID getTrackedAutoCreatedAccountId() {
 		return newAccountId;
+	}
+
+	public ContractID getTrackedNewContractId() {
+		return newContractId;
+	}
+
+	public boolean hasTrackedContractCreation() {
+		return newContractId != null;
 	}
 
 	/**
@@ -386,7 +403,8 @@ public class SideEffectsTracker {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 		newAccountId = null;
-		newAccountAlias = ByteString.EMPTY;
+		newContractId = null;
+		newEntityAlias = ByteString.EMPTY;
 	}
 
 	/**
