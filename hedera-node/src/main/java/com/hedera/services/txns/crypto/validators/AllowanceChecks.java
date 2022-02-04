@@ -44,7 +44,6 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.ALLOWANCE_LIMIT_PER_TRANSACTION;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
@@ -163,7 +162,7 @@ public class AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
-			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 
 			if (!token.isFungibleCommon()) {
@@ -200,7 +199,7 @@ public class AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll();
 

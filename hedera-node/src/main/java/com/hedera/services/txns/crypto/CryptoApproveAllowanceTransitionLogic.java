@@ -56,10 +56,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final AllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	// Should these be dynamic properties?
-	public static final int ALLOWANCE_LIMIT_PER_TRANSACTION = 20;
-	public static final int TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT = 100;
-
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
 			final TransactionContext txnCtx,

@@ -57,7 +57,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -368,7 +367,7 @@ class AllowanceChecksTest {
 	}
 
 	private void addAllowances() {
-		for (int i = 0; i < TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT; i++) {
+		for (int i = 0; i < dynamicProperties.maxAllowanceLimitPerAccount(); i++) {
 			cryptoAllowances.add(cryptoAllowance1);
 			tokenAllowances.add(tokenAllowance1);
 			nftAllowances.add(nftAllowance1);

@@ -39,13 +39,21 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
@@ -79,11 +87,124 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 //				tokenExceedsMaxSupplyFails(),
 //				OwnerNotPayerFails(),
 //				serialsWipedIfApprovedForAll(),
-				exceedsTransactionLimit(),
-				exceedsAccountLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked()
-
+//				exceedsTransactionLimit(),
+//				exceedsAccountLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked()
 		});
+	}
+
+	private HapiApiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String spender1 = "spender1";
+		final String spender2 = "spender2";
+		final String spender3 = "spender3";
+		final String token = "token";
+		final String nft = "nft";
+		return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"hedera.allowances.maxTransactionLimit", "20",
+										"hedera.allowances.maxAccountLimit", "100")
+								),
+
+						newKeyNamed("supplyKey"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("pauseKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender2)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender3)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+
+						tokenCreate(token)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey("supplyKey")
+								.maxSupply(1000L)
+								.initialSupply(10L)
+								.kycKey("kycKey")
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.pauseKey("pauseKey")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.kycKey("kycKey")
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.pauseKey("pauseKey")
+								.treasury(TOKEN_TREASURY),
+
+						tokenAssociate(owner, token),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						mintToken(token, 500L).via("tokenMint"),
+						grantTokenKyc(token, owner),
+						grantTokenKyc(nft, owner),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.fee(ONE_HBAR),
+						revokeTokenKyc(token, owner),
+						revokeTokenKyc(nft, owner),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addTokenAllowance(owner, token, spender1, 100L)
+								.addNftAllowance(owner, nft, spender1, false, List.of(1L))
+								.fee(ONE_HBAR)
+				)
+				.then(
+						tokenPause(token),
+						tokenPause(nft),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addTokenAllowance(owner, token, spender2, 100L)
+								.addNftAllowance(owner, nft, spender2, false, List.of(2L))
+								.fee(ONE_HBAR),
+
+						tokenUnpause(token),
+						tokenUnpause(nft),
+						tokenFreeze(token, owner),
+						tokenFreeze(nft, owner),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addTokenAllowance(owner, token, spender3, 100L)
+								.addNftAllowance(owner, nft, spender3, false, List.of(3L))
+								.fee(ONE_HBAR),
+
+						getAccountInfo(owner).logged()
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftAllowancesCount(4)
+										.tokenAllowancesCount(4)
+										));
 	}
 
 	private HapiApiSpec exceedsTransactionLimit() {
@@ -93,12 +214,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 		final String spender2 = "spender2";
 		final String token = "token";
 		final String nft = "nft";
-		return customHapiSpec("exceedsTransactionLimit")
-				.withProperties(Map.of(
-						"hedera.allowances.maxTransactionLimit", 4
-				))
+		return defaultHapiSpec("exceedsTransactionLimit")
 				.given(
 						newKeyNamed("supplyKey"),
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"hedera.allowances.maxTransactionLimit", "4",
+										"hedera.allowances.maxAccountLimit", "5")
+								),
 						cryptoCreate(owner)
 								.balance(ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
@@ -143,9 +268,19 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender2, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED)
 								.fee(ONE_HBAR)
 				)
-				.then();
+				.then(
+						// reset
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"hedera.allowances.maxTransactionLimit", "20",
+										"hedera.allowances.maxAccountLimit", "100")
+								)
+				);
 	}
 
 	private HapiApiSpec exceedsAccountLimit() {
@@ -155,11 +290,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 		final String spender2 = "spender2";
 		final String token = "token";
 		final String nft = "nft";
-		return customHapiSpec("exceedsTransactionLimit")
-				.withProperties(Map.of(
-						"hedera.allowances.maxAccountLimit", 4
-				))
+		return defaultHapiSpec("exceedsAccountLimit")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"hedera.allowances.maxAccountLimit", "4",
+										"hedera.allowances.maxTransactionLimit", "5")
+								),
+
 						newKeyNamed("supplyKey"),
 						cryptoCreate(owner)
 								.balance(ONE_HUNDRED_HBARS)
@@ -201,7 +341,6 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
-								.addCryptoAllowance(owner, spender1, 100L)
 								.addCryptoAllowance(owner, spender2, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
@@ -209,7 +348,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.logged()
 								.has(accountWith()
-										.cryptoAllowancesCount(3)
+										.cryptoAllowancesCount(2)
 										.tokenAllowancesCount(1)
 										.nftAllowancesCount(1)
 								)
@@ -219,9 +358,17 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 100L)
+								.addCryptoAllowance(owner, spender1, 100L)
 								.fee(ONE_HBAR)
-								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED)
+								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+						// reset
+						fileUpdate(APP_PROPERTIES)
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith(EXCHANGE_RATE_CONTROL)
+								.overridingProps(Map.of(
+										"hedera.allowances.maxTransactionLimit", "20",
+										"hedera.allowances.maxAccountLimit", "100")
+								)
 				);
 	}
 
