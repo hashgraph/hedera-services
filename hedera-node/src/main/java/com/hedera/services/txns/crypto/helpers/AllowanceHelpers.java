@@ -95,7 +95,7 @@ public class AllowanceHelpers {
 		}
 		for (var i = 0; i < n - 1; i++) {
 			for (var j = i + 1; j < n; j++) {
-				if (serials.get(i).equals(serials.get(j))) {
+				if (absolute(serials.get(i)).equals(absolute(serials.get(j)))) {
 					return true;
 				}
 			}
@@ -124,5 +124,9 @@ public class AllowanceHelpers {
 			totalSerials += allowance.getSerialNumbersCount();
 		}
 		return totalSerials;
+	}
+
+	private static Long absolute(Long val) {
+		return val < 0 ? val * -1 : val;
 	}
 }

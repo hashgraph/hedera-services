@@ -63,9 +63,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class AllowanceChecks {
-	private final TypedTokenStore tokenStore;
-	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
-	private final GlobalDynamicProperties dynamicProperties;
+	protected final TypedTokenStore tokenStore;
+	protected final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	protected final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public AllowanceChecks(
@@ -263,7 +263,7 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	private ResponseCodeEnum validateAmount(final long amount, Token fungibleToken) {
+	protected ResponseCodeEnum validateAmount(final long amount, Token fungibleToken) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
