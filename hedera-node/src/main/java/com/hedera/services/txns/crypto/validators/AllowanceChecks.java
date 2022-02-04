@@ -122,7 +122,7 @@ public class AllowanceChecks {
 			return OK;
 		}
 
-		if (hasRepeatedSpender(cryptoAllowancesList.stream().map(a -> a.getSpender()).toList())) {
+		if (hasRepeatedSpender(cryptoAllowancesList.stream().map(a -> a::getSpender).toList())) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 

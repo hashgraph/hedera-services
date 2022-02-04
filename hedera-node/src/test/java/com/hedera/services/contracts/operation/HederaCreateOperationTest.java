@@ -23,8 +23,10 @@ package com.hedera.services.contracts.operation;
  */
 
 
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -49,7 +51,6 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
-
 	@Mock
 	private MessageFrame evmMsgFrame;
 	@Mock
@@ -58,37 +59,34 @@ class HederaCreateOperationTest {
 	private Wei gasPrice;
 	@Mock
 	private Gas gas;
-
 	@Mock
 	private MessageFrame lastStackedMsgFrame;
-
 	@Mock
 	private GasCalculator gasCalculator;
-
-	@Mock
-	private HederaWorldState.WorldStateAccount hederaAccount;
-
 	@Mock
 	private HederaWorldUpdater hederaWorldUpdater;
-
 	@Mock
 	private Address recipientAddr;
-
 	@Mock
 	private Deque<MessageFrame> messageFrameStack;
-
 	@Mock
 	private Iterator<MessageFrame> iterator;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private EntityCreator creator;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator);
+		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
 	}
 
 	@Test
-	void cost() {
+	void computesExpectedCost() {
 		final var oneOffsetStackItem = Bytes.of(10);
 		final var twoOffsetStackItem = Bytes.of(20);
 		given(evmMsgFrame.getStackItem(1)).willReturn(oneOffsetStackItem);
@@ -106,23 +104,17 @@ class HederaCreateOperationTest {
 		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);
 		given(gas.plus(any())).willReturn(gas);
-		given(gas.max(any())).willReturn(gas);
 
 		var gas = subject.cost(evmMsgFrame);
 
 		assertEquals(0, gas.toLong());
-
-		subject.checkSuperCost = false;
-
-		gas = subject.cost(evmMsgFrame);
-		assertEquals(0, gas.toLong());
 	}
 
 	@Test
-	void targetContractAddress() {
+	void computesExpectedTargetAddress() {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
-		given(hederaWorldUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);
+		given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
 		var targetAddr = subject.targetContractAddress(evmMsgFrame);
 		assertEquals(Address.ZERO, targetAddr);
 	}

@@ -41,6 +41,12 @@ class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
 	@Test
+	void createsExpectedContractSkeleton() {
+		final var result = subject.createContractSkeleton();
+		assertTrue(result.hasContractCreateInstance());
+	}
+
+	@Test
 	void createsExpectedCryptoCreate() {
 		final var balance = 10L;
 		final var alias = KeyFactory.getDefaultInstance().newEd25519();

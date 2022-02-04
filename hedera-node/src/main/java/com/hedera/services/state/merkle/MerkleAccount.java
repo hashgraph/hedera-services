@@ -42,7 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
+import java.util.SortedMap;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -336,7 +336,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getCryptoAllowances();
 	}
 
-	public void setCryptoAllowances(final TreeMap<EntityNum, Long> cryptoAllowances) {
+	public void setCryptoAllowances(final SortedMap<EntityNum, Long> cryptoAllowances) {
 		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
 		state().setCryptoAllowances(cryptoAllowances);
 	}
@@ -345,7 +345,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getNftAllowances();
 	}
 
-	public void setNftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
 		throwIfImmutable("Cannot change this account's Nft allowances if it's immutable.");
 		state().setNftAllowances(nftAllowances);
 	}
@@ -354,7 +354,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getFungibleTokenAllowances();
 	}
 
-	public void setFungibleTokenAllowances(final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+	public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
 		state().setFungibleTokenAllowances(fungibleTokenAllowances);
 	}
@@ -365,5 +365,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public int numRecords() {
 		return records().size();
+	}
+
+	public boolean hasAlias() {
+		return !getAlias().isEmpty();
 	}
 }

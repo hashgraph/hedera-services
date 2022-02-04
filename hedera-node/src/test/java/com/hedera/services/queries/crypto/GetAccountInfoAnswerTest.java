@@ -71,7 +71,7 @@ import java.util.TreeMap;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
@@ -281,7 +281,7 @@ class GetAccountInfoAnswerTest {
 		// and:
 		CryptoGetInfoResponse.AccountInfo info = response.getCryptoGetInfo().getAccountInfo();
 		assertEquals(asAccount(payer), info.getAccountID());
-		String address = CommonUtils.hex(asSolidityAddress(0, 0L, 12_345L));
+		String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
 		assertEquals(address, info.getContractAccountID());
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());

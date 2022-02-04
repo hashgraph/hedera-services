@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
@@ -38,9 +39,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -99,6 +102,75 @@ class AliasResolverTest {
 	}
 
 	@Test
+	void resolvesMirrorAddressInHbarList() {
+		final var mirrorAdjust = aaAlias(mirrorAlias, +100);
+		final var op = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(mirrorAdjust)
+						.build())
+				.build();
+		assertTrue(AliasResolver.usesAliases(op));
+		given(aliasManager.isMirror(evmAddress)).willReturn(true);
+
+		final var resolvedOp = subject.resolve(op, aliasManager);
+		assertEquals(
+				mirrorNum.toGrpcAccountId(),
+				resolvedOp.getTransfers().getAccountAmounts(0).getAccountID());
+	}
+
+	@Test
+	void resolvesMirrorAddressInNftTransfer() {
+		final var op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(someToken)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(AccountID.newBuilder().setAlias(mirrorAlias))
+								.setReceiverAccountID(bNum.toGrpcAccountId())
+								.setSerialNumber(1L)))
+				.build();
+		assertTrue(AliasResolver.usesAliases(op));
+		given(aliasManager.isMirror(evmAddress)).willReturn(true);
+
+		final var resolvedOp = subject.resolve(op, aliasManager);
+		assertEquals(
+				mirrorNum.toGrpcAccountId(),
+				resolvedOp.getTokenTransfers(0).getNftTransfers(0).getSenderAccountID());
+	}
+
+	@Test
+	void resolvesAliasAddressInNftTransfer() {
+		final var op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(someToken)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(bNum.toGrpcAccountId())
+								.setReceiverAccountID(AccountID.newBuilder().setAlias(create2Alias))
+								.setSerialNumber(1L)))
+				.build();
+		assertTrue(AliasResolver.usesAliases(op));
+		given(aliasManager.lookupIdBy(create2Alias)).willReturn(aNum);
+
+		final var resolvedOp = subject.resolve(op, aliasManager);
+		assertEquals(
+				aNum.toGrpcAccountId(),
+				resolvedOp.getTokenTransfers(0).getNftTransfers(0).getReceiverAccountID());
+	}
+
+	@Test
+	void resolvesAliasAddressInHbarList() {
+		final var create2Adjust = aaAlias(create2Alias, +100);
+		final var op = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder()
+						.addAccountAmounts(create2Adjust)
+						.build())
+				.build();
+
+		given(aliasManager.lookupIdBy(create2Alias)).willReturn(MISSING_NUM);
+		subject.resolve(op, aliasManager);
+		assertEquals(1, subject.perceivedMissingAliases());
+	}
+
+	@Test
 	void transformsHbarAdjusts() {
 		final var creationAdjust = aaAlias(anAlias, theAmount);
 		final var badCreationAdjust = aaAlias(someAlias, theAmount);
@@ -151,11 +223,17 @@ class AliasResolverTest {
 	private static final long anAmount = 1234;
 	private static final long theAmount = 12345;
 	private static final long someAmount = -1234;
+	private static final byte[] evmAddress = unhex("0000000000000000000000000000000000defbbb");
+	private static final byte[] create2Address = unhex("0111111111111111111111111111111111defbbb");
 	private static final EntityNum aNum = EntityNum.fromLong(4321);
 	private static final EntityNum bNum = EntityNum.fromLong(5432);
+	private static final EntityNum mirrorNum = EntityNum.fromLong(
+			Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20)));
 	private static final ByteString anAlias = aPrimitiveKey.toByteString();
 	private static final ByteString theAlias = ByteString.copyFromUtf8("second");
 	private static final ByteString someAlias = ByteString.copyFromUtf8("third");
 	private static final ByteString otherAlias = ByteString.copyFromUtf8("fourth");
+	private static final ByteString mirrorAlias = ByteString.copyFrom(evmAddress);
+	private static final ByteString create2Alias = ByteString.copyFrom(create2Address);
 	private static final TokenID someToken = IdUtils.asToken("0.0.666");
 }

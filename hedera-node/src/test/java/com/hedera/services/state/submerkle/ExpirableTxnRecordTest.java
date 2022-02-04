@@ -538,19 +538,22 @@ class ExpirableTxnRecordTest {
 		final var desired = "ExpirableTxnRecord{numChildRecords=2, receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
-				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, consensusTimestamp=" +
-				"RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, memo=Alpha bravo " +
-				"charlie, " +
-				"contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, contractId=" +
-				"EntityId{shard=4, realm=3, num=2}, createdContractIds=[], logs=[" +
-				"SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, hbarAdjustments=" +
-				"CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, scheduleRef=" +
-				"EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07.000000890Z, " +
-				"tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
-				"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
-				"1.2.2(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=(FcAssessedCustomFee{token=" +
-				"EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, units=123, effective " +
-				"payer accounts=[234]}), newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
+				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
+				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
+				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
+				" " +
+				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}," +
+				" " +
+				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
+				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
+				".000000890Z, tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <-" +
+				" " +
+				"+1000]}), 1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2" +
+				"(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=" +
+				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
+				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
+				"(FcTokenAssociation{token=10, account=11})}";
 
 		assertEquals(desired, subject.toString());
 	}
@@ -566,7 +569,7 @@ class ExpirableTxnRecordTest {
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
 				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=1.2.3" +
 				"(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4" +
