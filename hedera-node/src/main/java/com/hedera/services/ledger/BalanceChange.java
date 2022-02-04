@@ -229,16 +229,8 @@ public class BalanceChange {
 		return this.allowanceUnits == 0 ? isApprovedAllowance : this.allowanceUnits < 0;
 	}
 
-	public void setIsApprovedAllowance(boolean isApprovedAllowance) {
-		this.isApprovedAllowance = isApprovedAllowance;
-	}
-
 	public AccountID getPayerID() {
 		return payerID;
-	}
-
-	public void setPayerID(AccountID payerID) {
-		this.payerID = payerID;
 	}
 
 	public void aggregateUnits(long amount) {

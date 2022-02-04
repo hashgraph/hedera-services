@@ -98,6 +98,7 @@ class BalanceChangeTest {
 		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
 		assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
 		assertTrue(hbarAdjust.isForHbar());
+		assertEquals(0, hbarAdjust.getAllowanceUnits());
 		assertEquals(10, hbarAdjust.getAggregatedUnits());
 		assertEquals(10, hbarAdjust.originalUnits());
 		hbarAdjust.aggregateUnits(10);
@@ -119,8 +120,9 @@ class BalanceChangeTest {
 		final var tokenAdjust = BalanceChange.tokenAdjust(
 				IdUtils.asModelId("1.2.3"),
 				IdUtils.asModelId("3.2.1"),
-				10, null, false);
+				10, null, true);
 		assertEquals(10, tokenAdjust.getAggregatedUnits());
+		assertEquals(10, tokenAdjust.getAllowanceUnits());
 		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
 		assertEquals(new Id(3, 2, 1), tokenAdjust.getToken());
 	}

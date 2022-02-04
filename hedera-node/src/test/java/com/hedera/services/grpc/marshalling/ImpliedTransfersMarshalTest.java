@@ -278,6 +278,7 @@ class ImpliedTransfersMarshalTest {
 				.addTokenTransfers(
 						TokenTransferList.newBuilder()
 								.setToken(token1)
+								.setExpectedDecimals(UInt32Value.of(1))
 								.addAllTransfers(List.of(aa1, aa2, aa3, aa4))
 								.build());
 		op = builder.build();
