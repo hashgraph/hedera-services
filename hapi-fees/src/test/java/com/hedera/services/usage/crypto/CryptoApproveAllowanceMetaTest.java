@@ -39,7 +39,7 @@ import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CryptoApproveAllowanceMetaTest {
+class CryptoApproveAllowanceMetaTest {
 	private final AccountID proxy = asAccount("0.0.1234");
 	private CryptoAllowance cryptoAllowances = CryptoAllowance.newBuilder().setSpender(proxy).setAmount(10L).build();
 	private TokenAllowance tokenAllowances = TokenAllowance.newBuilder()

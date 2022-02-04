@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -307,7 +308,7 @@ public class Account {
 		this.alias = alias;
 	}
 
-	public TreeMap<EntityNum, Long> getCryptoAllowances() {
+	public SortedMap<EntityNum, Long> getCryptoAllowances() {
 		return cryptoAllowances;
 	}
 
@@ -315,7 +316,7 @@ public class Account {
 		this.cryptoAllowances = new TreeMap<>(cryptoAllowances);
 	}
 
-	public TreeMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+	public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
 		return fungibleTokenAllowances;
 	}
 
@@ -324,7 +325,7 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public TreeMap<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+	public SortedMap<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return nftAllowances;
 	}
 

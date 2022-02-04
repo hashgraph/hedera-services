@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -429,7 +430,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return Collections.unmodifiableMap(cryptoAllowances);
 	}
 
-	public void setCryptoAllowances(final TreeMap<EntityNum, Long> cryptoAllowances) {
+	public void setCryptoAllowances(final SortedMap<EntityNum, Long> cryptoAllowances) {
 		assertMutable("cryptoAllowances");
 		this.cryptoAllowances = cryptoAllowances;
 	}
@@ -438,7 +439,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return Collections.unmodifiableMap(nftAllowances);
 	}
 
-	public void setNftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
 		assertMutable("nftAllowances");
 		this.nftAllowances = nftAllowances;
 	}
@@ -447,7 +448,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return Collections.unmodifiableMap(fungibleTokenAllowances);
 	}
 
-	public void setFungibleTokenAllowances(final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+	public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		assertMutable("fungibleTokenAllowances");
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
@@ -518,17 +519,17 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final EntityNum spenderNum,
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {
-		final var key = FcTokenAllowanceId.from(tokenNum, spenderNum);
-		final var value = FcTokenAllowance.from(approvedForAll, serialNumbers);
-		nftAllowances.put(key, value);
+		final var allowanceId = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		final var allowance = FcTokenAllowance.from(approvedForAll, serialNumbers);
+		nftAllowances.put(allowanceId, allowance);
 	}
 
 	public void addFungibleTokenAllowance(
 			final EntityNum tokenNum,
 			final EntityNum spenderNum,
 			final Long allowance) {
-		final var key = FcTokenAllowanceId.from(tokenNum, spenderNum);
-		fungibleTokenAllowances.put(key, allowance);
+		final var allowanceId = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		fungibleTokenAllowances.put(allowanceId, allowance);
 	}
 
 	public void removeCryptoAllowance(final EntityNum spender) {
