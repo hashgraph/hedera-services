@@ -50,12 +50,13 @@ class CryptoApproveAllowanceMetaTest {
 	void allGettersAndToStringWork() {
 		final var expected = "CryptoApproveAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
 				"numOfNftAllowances=3, aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567, " +
-				"msgBytesUsed=0}";
+				"msgBytesUsed=112}";
 		final var now = 1_234_567;
 		final var subject = CryptoApproveAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)
+				.msgBytesUsed(112)
 				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(now)
 				.build();
@@ -65,6 +66,7 @@ class CryptoApproveAllowanceMetaTest {
 		assertEquals(1, subject.getNumOfCryptoAllowances());
 		assertEquals(2, subject.getNumOfTokenAllowances());
 		assertEquals(3, subject.getNumOfNftAllowances());
+		assertEquals(112, subject.getMsgBytesUsed());
 		assertEquals(expected, subject.toString());
 	}
 

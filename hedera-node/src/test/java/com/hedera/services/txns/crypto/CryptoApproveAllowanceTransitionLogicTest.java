@@ -62,6 +62,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -123,6 +124,27 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	@Test
+	void wipesSerialsWhenApprovedForAll(){
+		givenValidTxnCtx();
+
+		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+
+		subject.doStateTransition();
+
+		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
+		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
+		assertEquals(1, ownerAcccount.getNftAllowances().size());
+		assertEquals(0, ownerAcccount.getNftAllowances()
+				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
+						EntityNum.fromAccountId(spender1))).getSerialNumbers().size());
+		verify(accountStore).commitAccount(ownerAcccount);
+		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
+	@Test
 	void checksIfAllowancesExceedLimit() {
 		Account owner = mock(Account.class);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(owner);
@@ -148,6 +170,29 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
 	}
+
+	@Test
+	void emptyAllowancesInStateTransitionWorks() {
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+				).build();
+
+		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+
+		subject.doStateTransition();
+		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
+		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
+		assertEquals(0, ownerAcccount.getNftAllowances().size());
+		verify(accountStore).commitAccount(ownerAcccount);
+		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
 
 	@Test
 	void removesAllowancesWhenAmountIsZero() {
@@ -288,8 +333,10 @@ class CryptoApproveAllowanceTransitionLogicTest {
 			10L).build();
 	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
 			10L).setTokenId(token1).build();
-	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
-			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+			.setSpender(spender1)
+			.setTokenId(token2).setApprovedForAll(BoolValue.of(true))
+			.addAllSerialNumbers(List.of(1L, 10L)).build();
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();
