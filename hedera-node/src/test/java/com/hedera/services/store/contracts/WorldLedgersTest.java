@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,12 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -35,59 +40,128 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+
+@ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
+	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address sponsor = Address.fromHexString("0xcba");
+
+	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	@Mock
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private ContractAliases aliases;
+	@Mock
+	private StaticEntityAccess staticEntityAccess;
+
+	private WorldLedgers subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	void commitsAsExpected() {
-		tokenRelsLedger = mock(TransactionalLedger.class);
-		accountsLedger = mock(TransactionalLedger.class);
-		nftsLedger = mock(TransactionalLedger.class);
-		tokensLedger = mock(TransactionalLedger.class);
-
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-
-		source.commit();
+	void commitsAsExpectedNoHistorian() {
+		subject.commit();
 
 		verify(tokenRelsLedger).commit();
 		verify(accountsLedger).commit();
 		verify(nftsLedger).commit();
 		verify(tokensLedger).commit();
+		verify(aliases).commit(null);
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
+	void aliasIsCanonicalCreate2SourceAddress() {
+		given(aliases.isInUse(alias)).willReturn(true);
+
+		assertSame(alias, subject.canonicalAddress(alias));
+	}
+
+	@Test
+	void mirrorNoAliasIsCanonicalSourceWithLedgers() {
+		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.exists(id)).willReturn(true);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
+
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void missingMirrorIsCanonicalSourceWithLedgers() {
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void missingMirrorIsCanonicalSourceWithStaticAccess() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(staticEntityAccess.isExtant(id)).willReturn(true);
+		given(staticEntityAccess.alias(id)).willReturn(ByteString.EMPTY);
+
+		assertSame(sponsor, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void mirrorWithAliasUsesAliasAsCanonicalSource() {
+		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		given(accountsLedger.exists(id)).willReturn(true);
+		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
+		assertEquals(alias, subject.canonicalAddress(sponsor));
+	}
+
+	@Test
+	void commitsAsExpectedWithHistorian() {
+		subject.commit(sigImpactHistorian);
+
+		verify(tokenRelsLedger).commit();
+		verify(accountsLedger).commit();
+		verify(nftsLedger).commit();
+		verify(tokensLedger).commit();
+		verify(aliases).commit(sigImpactHistorian);
+	}
+
+	@Test
 	void revertsAsExpected() {
-		tokenRelsLedger = mock(TransactionalLedger.class);
-		accountsLedger = mock(TransactionalLedger.class);
-		nftsLedger = mock(TransactionalLedger.class);
-		tokensLedger = mock(TransactionalLedger.class);
-
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-
-		source.revert();
+		subject.revert();
 
 		verify(tokenRelsLedger).rollback();
 		verify(accountsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(tokensLedger).rollback();
+		verify(aliases).revert();
 
 		verify(tokenRelsLedger).begin();
 		verify(accountsLedger).begin();
@@ -97,43 +171,50 @@ class WorldLedgersTest {
 
 	@Test
 	void wrapsAsExpected() {
-		tokenRelsLedger = new TransactionalLedger<>(
+		final var liveTokenRels = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
-		accountsLedger = new TransactionalLedger<>(
+		final var liveAccounts = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		nftsLedger = new TransactionalLedger<>(
+		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
-		tokensLedger = new TransactionalLedger<>(
+		final var liveTokens = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
+		final var liveAliases = new AliasManager();
 
-		final var source = new WorldLedgers(tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-		assertTrue(source.areUsable());
+		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
+		assertTrue(source.areMutable());
+		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
+		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
+		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
+		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
+		assertFalse(nullTokenRels.areMutable());
+		assertFalse(nullAccounts.areMutable());
+		assertFalse(nullNfts.areMutable());
+		assertFalse(nullTokens.areMutable());
+
+		final var wrappedUnusable = nullAccounts.wrapped();
+		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
+		assertFalse(wrappedUnusable.areMutable());
 
 		final var wrappedSource = source.wrapped();
 
-		assertSame(tokenRelsLedger, wrappedSource.tokenRels().getEntitiesLedger());
-		assertSame(accountsLedger, wrappedSource.accounts().getEntitiesLedger());
-		assertSame(nftsLedger, wrappedSource.nfts().getEntitiesLedger());
-		assertSame(tokensLedger, wrappedSource.tokens().getEntitiesLedger());
-	}
-
-	@Test
-	void nullLedgersWorkAsExpected() {
-		assertSame(NULL_WORLD_LEDGERS, NULL_WORLD_LEDGERS.wrapped());
-		assertFalse(NULL_WORLD_LEDGERS.areUsable());
-		assertDoesNotThrow(NULL_WORLD_LEDGERS::commit);
-		assertDoesNotThrow(NULL_WORLD_LEDGERS::revert);
+		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
+		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
+		assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
+		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
+		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
+		assertSame(liveAliases, stackedAliases.wrappedAliases());
 	}
 }

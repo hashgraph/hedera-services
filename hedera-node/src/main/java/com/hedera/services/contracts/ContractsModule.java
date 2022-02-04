@@ -27,6 +27,7 @@ import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;
+import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
 import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
@@ -37,6 +38,7 @@ import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -60,13 +62,11 @@ import dagger.multibindings.StringKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.InvalidOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -106,21 +106,15 @@ public interface ContractsModule {
 
 	@Provides
 	@Singleton
-	public static EntityAccess provideMutableEntityAccess(
+	static EntityAccess provideMutableEntityAccess(
+			final AliasManager aliasManager,
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage storage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
-		return new MutableEntityAccess(ledger, txnCtx, storage, tokensLedger, bytecode);
-	}
-
-	@Provides
-	@Singleton
-	@IntoSet
-	static Operation provideCreate2Operation(GasCalculator gasCalculator) {
-		return new InvalidOperation(0xF5, gasCalculator);
+		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
 	}
 
 	@Binds
@@ -146,6 +140,11 @@ public interface ContractsModule {
 	@Singleton
 	@IntoSet
 	Operation bindCreateOperation(HederaCreateOperation create);
+
+	@Binds
+	@Singleton
+	@IntoSet
+	Operation bindCreate2Operation(HederaCreate2Operation create2);
 
 	@Binds
 	@Singleton
@@ -192,11 +191,13 @@ public interface ContractsModule {
 
 	@Provides
 	@Singleton
-	public static BiPredicate<Address, MessageFrame> provideAddressValidator(
-			Map<String, PrecompiledContract> precompiledContractMap) {
-		Set<Address> precompiledAddresses =
-				precompiledContractMap.keySet().stream().map(Address::fromHexString).collect(Collectors.toSet());
-		return (address, frame) -> precompiledAddresses.contains(address) ||
-				frame.getWorldUpdater().get(address) != null;
+	static BiPredicate<Address, MessageFrame> provideAddressValidator(
+			final Map<String, PrecompiledContract> precompiledContractMap
+	) {
+		final var precompiles =
+				precompiledContractMap.keySet().stream()
+						.map(Address::fromHexString)
+						.collect(Collectors.toSet());
+		return (address, frame) -> precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
 	}
 }

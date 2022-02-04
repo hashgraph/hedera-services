@@ -32,10 +32,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,11 +51,6 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
-	/* The superclass returns this response when the frame has insufficient stack items; which
-	* we will ensure is true to avoid extensive mocking of the superclass collaborators. */
-	private static final Operation.OperationResult underflowResult =
-			new Operation.OperationResult(
-					Optional.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
 	@Mock
 	private MessageFrame evmMsgFrame;
 	@Mock
@@ -112,7 +104,6 @@ class HederaCreateOperationTest {
 		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
 		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);
 		given(gas.plus(any())).willReturn(gas);
-		given(gas.max(any())).willReturn(gas);
 
 		var gas = subject.cost(evmMsgFrame);
 
@@ -123,7 +114,7 @@ class HederaCreateOperationTest {
 	void computesExpectedTargetAddress() {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
 		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
-		given(hederaWorldUpdater.allocateNewContractAddress(recipientAddr)).willReturn(Address.ZERO);
+		given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
 		var targetAddr = subject.targetContractAddress(evmMsgFrame);
 		assertEquals(Address.ZERO, targetAddr);
 	}

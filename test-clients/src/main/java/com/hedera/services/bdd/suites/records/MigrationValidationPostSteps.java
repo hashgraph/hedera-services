@@ -146,20 +146,6 @@ public class MigrationValidationPostSteps extends HapiApiSuite {
         };
     }
 
-    private HapiSpecOperation[] verifyRecords() {
-        return new HapiSpecOperation[]{
-                QueryVerbs.getContractRecords(MIGRATION_SMART_CONTRACT)
-                        .checkingAgainst(smartContractRecords),
-                sleepFor(2_000L),
-                QueryVerbs.getContractInfo(MIGRATION_SMART_CONTRACT, true).checkingAgainst(smartContractInfo),
-                sleepFor(2_000L),
-                QueryVerbs.getAccountRecords(MIGRATION_ACCOUNT_A).checkingAgainst(cryptoRecordsA),
-                sleepFor(2_000L),
-                QueryVerbs.getAccountRecords(MIGRATION_ACCOUNT_B).checkingAgainst(cryptoRecordsB),
-                sleepFor(2_000L)
-        };
-    }
-
     public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(String from, String to, long amount) {
         return tinyBarsFromTo(from, to, ignore -> amount);
     }

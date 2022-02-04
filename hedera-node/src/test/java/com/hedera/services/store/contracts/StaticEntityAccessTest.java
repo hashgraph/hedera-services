@@ -20,9 +20,11 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -49,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -56,8 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
@@ -67,6 +68,8 @@ class StaticEntityAccessTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView stateView;
+	@Mock
+	private ContractAliases aliases;
 	@Mock
 	private HederaAccountCustomizer customizer;
 	@Mock
@@ -88,6 +91,8 @@ class StaticEntityAccessTest {
 	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
 	private final ContractValue contractVal = new ContractValue(BigInteger.ONE);
 	private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
+	private static final ByteString pretendAlias =
+			ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 
 	private final long someExpiry = 1_234_567L;
 	private final MerkleAccount someNonContractAccount = new HederaAccountCustomizer()
@@ -102,6 +107,7 @@ class StaticEntityAccessTest {
 			.customizing(new MerkleAccount());
 	private final MerkleAccount someContractAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
+			.alias(pretendAlias)
 			.key(key)
 			.proxy(EntityId.MISSING_ENTITY_ID)
 			.isDeleted(false)
@@ -116,7 +122,23 @@ class StaticEntityAccessTest {
 		given(stateView.storage()).willReturn(blobs);
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
-		subject = new StaticEntityAccess(stateView, validator, dynamicProperties);
+		subject = new StaticEntityAccess(stateView, aliases, validator, dynamicProperties);
+	}
+
+	@Test
+	void worldLedgersJustIncludeAliases() {
+		final var ledgers = subject.worldLedgers();
+		assertSame(aliases, ledgers.aliases());
+		assertNull(ledgers.accounts());
+		assertNull(ledgers.tokenRels());
+		assertNull(ledgers.tokens());
+		assertNull(ledgers.nfts());
+	}
+
+	@Test
+	void canGetAlias() {
+		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
+		assertEquals(pretendAlias, subject.alias(id));
 	}
 
 	@Test
@@ -217,14 +239,5 @@ class StaticEntityAccessTest {
 	@Test
 	void fetchWithoutValueReturnsNull() {
 		assertNull(subject.fetchCodeIfPresent(id));
-	}
-
-	@Test
-	void defaultLedgersAreNull() {
-		final var mockSubject = mock(EntityAccess.class);
-
-		willCallRealMethod().given(mockSubject).worldLedgers();
-
-		assertSame(WorldLedgers.NULL_WORLD_LEDGERS, mockSubject.worldLedgers());
 	}
 }

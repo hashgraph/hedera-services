@@ -28,6 +28,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -41,7 +42,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DissociateLogic;
@@ -93,6 +94,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -146,7 +148,7 @@ class DissociatePrecompilesTest {
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
-	private AbstractLedgerWorldUpdater worldUpdater;
+	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
 	private WorldLedgers wrappedLedgers;
 	@Mock
@@ -164,8 +166,6 @@ class DissociatePrecompilesTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
-	private TokenDissociateTransactionBody transactionBody;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private FeeObject mockFeeObject;
@@ -173,6 +173,8 @@ class DissociatePrecompilesTest {
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
+	@Mock
+	private ContractAliases aliases;
 
 	private HTSPrecompiledContract subject;
 
@@ -195,10 +197,10 @@ class DissociatePrecompilesTest {
 		givenFrameContext();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
-		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build()).
@@ -208,11 +210,10 @@ class DissociatePrecompilesTest {
 		given(feeCalculator.computeFee(any(), any(), any(), any()))
 				.willReturn(mockFeeObject);
 		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
+				.willReturn(1L);	given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -228,7 +229,7 @@ class DissociatePrecompilesTest {
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr)).willReturn(true);
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -248,11 +249,11 @@ class DissociatePrecompilesTest {
 				.willReturn(1L);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(mockRecordBuilder);
-		given(decoder.decodeDissociate(pretendArguments)).willReturn(dissociateToken);
+		given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -270,11 +271,11 @@ class DissociatePrecompilesTest {
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 
-		given(decoder.decodeMultipleDissociations(pretendArguments))
+		given(decoder.decodeMultipleDissociations(eq(pretendArguments), any()))
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr))
+		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -297,7 +298,7 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments);
+		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -322,6 +323,8 @@ class DissociatePrecompilesTest {
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	private void givenLedgers() {

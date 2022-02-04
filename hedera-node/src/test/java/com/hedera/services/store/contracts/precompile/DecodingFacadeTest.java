@@ -71,7 +71,7 @@ class DecodingFacadeTest {
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
-				subject.decodeCryptoTransfer(POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT);
+				subject.decodeCryptoTransfer(POSITIVE_FUNGIBLE_AMOUNT_AND_NFT_TRANSFER_CRYPTO_TRANSFER_INPUT, a -> a);
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 		final var nftExchanges = decodedInput.get(0).nftExchanges();
 
@@ -90,7 +90,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeCryptoTransferNegativeFungibleAmount() {
-		final var decodedInput = subject.decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT);
+		final var decodedInput = subject.decodeCryptoTransfer(NEGATIVE_FUNGIBLE_AMOUNT_CRYPTO_TRANSFER_INPUT, a -> a);
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertNotNull(fungibleTransfers);
@@ -141,7 +141,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferToken() {
-		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT);
+		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT, a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
 		assertTrue(fungibleTransfer.sender.getAccountNum() > 0);
@@ -152,7 +152,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferTokensPositiveAmounts() {
-		final var decodedInput = subject.decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT);
+		final var decodedInput = subject.decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, a -> a);
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
@@ -168,7 +168,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferTokensPositiveNegativeAmount() {
-		final var decodedInput = subject.decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT);
+		final var decodedInput = subject.decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT, a -> a);
 		final var fungibleTransfers = decodedInput.get(0).fungibleTransfers();
 
 		assertEquals(2, fungibleTransfers.size());
@@ -184,7 +184,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferNFT() {
-		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT);
+		final var decodedInput = subject.decodeTransferNFT(TRANSFER_NFT_INPUT, a -> a);
 		final var nonFungibleTransfer = decodedInput.get(0).nftExchanges().get(0);
 
 		assertTrue(nonFungibleTransfer.asGrpc().getSenderAccountID().getAccountNum() > 0);
@@ -195,7 +195,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeTransferNFTs() {
-		final var decodedInput = subject.decodeTransferNFTs(TRANSFER_NFTS_INPUT);
+		final var decodedInput = subject.decodeTransferNFTs(TRANSFER_NFTS_INPUT, a -> a);
 		final var nonFungibleTransfers = decodedInput.get(0).nftExchanges();
 
 		assertEquals(2, nonFungibleTransfers.size());
@@ -211,7 +211,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeAssociateToken() {
-		final var decodedInput = subject.decodeAssociation(ASSOCIATE_INPUT);
+		final var decodedInput = subject.decodeAssociation(ASSOCIATE_INPUT, a -> a);
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
@@ -219,7 +219,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeMultipleAssociateToken() {
-		final var decodedInput = subject.decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT);
+		final var decodedInput = subject.decodeMultipleAssociations(MULTIPLE_ASSOCIATE_INPUT, a -> a);
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.tokenIds().size());
@@ -229,7 +229,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeDissociateToken() {
-		final var decodedInput = subject.decodeDissociate(DISSOCIATE_INPUT);
+		final var decodedInput = subject.decodeDissociate(DISSOCIATE_INPUT, a -> a);
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertTrue(decodedInput.tokenIds().get(0).getTokenNum() > 0);
@@ -237,7 +237,7 @@ class DecodingFacadeTest {
 
 	@Test
 	void decodeMultipleDissociateToken() {
-		final var decodedInput = subject.decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT);
+		final var decodedInput = subject.decodeMultipleDissociations(MULTIPLE_DISSOCIATE_INPUT, a -> a);
 
 		assertTrue(decodedInput.accountId().getAccountNum() > 0);
 		assertEquals(2, decodedInput.tokenIds().size());
@@ -248,6 +248,6 @@ class DecodingFacadeTest {
 	@Test
 	void decodeMultipleDissociateTokenInvalidInput() {
 		assertThrows(IllegalArgumentException.class,
-				() -> subject.decodeMultipleDissociations(INVALID_INPUT));
+				() -> subject.decodeMultipleDissociations(INVALID_INPUT, a -> a));
 	}
 }

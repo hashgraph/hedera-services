@@ -53,5 +53,4 @@ class GetBySolidityIdAnswerTest {
 
 		assertEquals(ResponseCodeEnum.NOT_SUPPORTED, result.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
 	}
-
 }

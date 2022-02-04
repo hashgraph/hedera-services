@@ -28,6 +28,8 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.HashSet;
 import java.util.List;
@@ -102,6 +104,14 @@ public class Account {
 
 	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
 		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public Address canonicalAddress() {
+		if (alias.isEmpty()) {
+			return id.asEvmAddress();
+		} else {
+			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+		}
 	}
 
 	public int getAutoAssociationMetadata() {

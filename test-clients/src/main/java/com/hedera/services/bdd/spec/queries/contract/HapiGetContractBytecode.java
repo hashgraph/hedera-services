@@ -21,10 +21,12 @@ package com.hedera.services.bdd.spec.queries.contract;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -38,6 +40,8 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
+import static com.swirlds.common.CommonUtils.unhex;
 
 public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode> {
 	static final Logger log = LogManager.getLogger(HapiGetContractBytecode.class);
@@ -111,10 +115,17 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 	}
 
 	private Query getContractBytecodeQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
-		var target = TxnUtils.asContractId(contract, spec);
+		final ContractID resolvedTarget;
+		if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+			resolvedTarget = ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(unhex(contract)))
+					.build();
+		} else {
+			resolvedTarget = TxnUtils.asContractId(contract, spec);
+		}
 		ContractGetBytecodeQuery query = ContractGetBytecodeQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-				.setContractID(target)
+				.setContractID(resolvedTarget)
 				.build();
 		return Query.newBuilder().setContractGetBytecode(query).build();
 	}

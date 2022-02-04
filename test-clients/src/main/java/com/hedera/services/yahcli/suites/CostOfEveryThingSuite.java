@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -175,9 +174,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						getContractBytecode("testContract")
 								.payingWith("payer")
 								.via("canonicalGetContractByteCode"),
-						getContractRecords("testContract")
-								.logged()
-								.via("canonicalGetContractRecords"),
 						contractDelete("testContract")
 								.blankMemo()
 								.payingWith("payer")
@@ -191,7 +187,6 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
 						getTransactionFee("canonicalGetContractInfo", feeTableBuilder, "getContractInfo"),
 						getTransactionFee("canonicalContractCallLocal", feeTableBuilder, "contractCallLocal"),
 						getTransactionFee("canonicalGetContractByteCode", feeTableBuilder, "getContractByteCode"),
-						getTransactionFee("canonicalGetContractRecords", feeTableBuilder, "getContractRecords"),
 						getTransactionFee("canonicalContractDelete", feeTableBuilder, "contractDelete")
 				);
 	}
