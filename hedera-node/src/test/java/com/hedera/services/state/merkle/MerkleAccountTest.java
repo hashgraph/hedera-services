@@ -204,9 +204,9 @@ class MerkleAccountTest {
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
-		assertTrue(state.getCryptoAllowances().entrySet().equals(subject.getCryptoAllowances().entrySet()));
-		assertTrue(state.getFungibleTokenAllowances().entrySet().equals(subject.getFungibleTokenAllowances().entrySet()));
-		assertTrue(state.getNftAllowances().entrySet().equals(subject.getNftAllowances().entrySet()));
+		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
+		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
+		assertEquals(state.getNftAllowances().entrySet(), subject.getNftAllowances().entrySet());
 	}
 
 	@Test
