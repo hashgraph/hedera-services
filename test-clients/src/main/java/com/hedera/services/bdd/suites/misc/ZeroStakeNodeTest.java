@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -119,11 +118,6 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 								.nodePayment(0L)
 								.logged(),
 						getContractBytecode("multi")
-								.setNode("0.0.8")
-								.payingWith("sponsor")
-								.nodePayment(0L)
-								.logged(),
-						getContractRecords("multi")
 								.setNode("0.0.8")
 								.payingWith("sponsor")
 								.nodePayment(0L)

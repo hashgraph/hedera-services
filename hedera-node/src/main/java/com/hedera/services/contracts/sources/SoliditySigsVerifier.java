@@ -22,6 +22,7 @@ package com.hedera.services.contracts.sources;
  *
  */
 
+import com.hedera.services.ledger.accounts.ContractAliases;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface SoliditySigsVerifier {
@@ -36,13 +37,20 @@ public interface SoliditySigsVerifier {
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
 	 *
-	 * @param account the address of the account to test for key activation
-	 * @param recipient the address of the contract that received the message represented by the active frame
-	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param activeContract the address of the contract that is deemed active
+	 * @param account
+	 * 		the address of the account to test for key activation
+	 * @param recipient
+	 * 		the address of the contract that received the message represented by the active frame
+	 * @param contract
+	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param activeContract
+	 * 		the address of the contract that is deemed active
+	 * @param aliases
+	 * 		the current contract aliases
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveKey(Address account, Address recipient, Address contract, Address activeContract);
+	boolean hasActiveKey(
+			Address account, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
 
 	/**
 	 * Determines if the target account <b>either</b> has no receiver sig requirement; or an active key given
@@ -55,13 +63,20 @@ public interface SoliditySigsVerifier {
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
 	 *
-	 * @param target the account to test for receiver sig requirement and key activation
-	 * @param recipient the address of the contract that received the message represented by the active frame
-	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param activeContract the address of the contract that is deemed active
+	 * @param target
+	 * 		the account to test for receiver sig requirement and key activation
+	 * @param recipient
+	 * 		the address of the contract that received the message represented by the active frame
+	 * @param contract
+	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param activeContract
+	 * 		the address of the contract that is deemed active
+	 * @param aliases
+	 * 		the current contract aliases
 	 * @return false if the account requires a receiver sig but has no active key; true otherwise
 	 */
-	boolean hasActiveKeyOrNoReceiverSigReq(Address target, Address recipient, Address contract, Address activeContract);
+	boolean hasActiveKeyOrNoReceiverSigReq(
+			Address target, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
 
 	/**
 	 * Determines if the target token has an active supply key given the cryptographic signatures from the
@@ -74,11 +89,18 @@ public interface SoliditySigsVerifier {
 	 *
 	 * Does <b>not</b> perform any synchronous signature verification.
 	 *
-	 * @param token the address of the token to test for supply key activation
-	 * @param recipient the address of the contract that received the message represented by the active frame
-	 * @param contract the address of the contract whose code is being executed (possibly via {@code delegatecall})
-	 * @param activeContract the address of the contract that should be signed in the key
+	 * @param token
+	 * 		the address of the token to test for supply key activation
+	 * @param recipient
+	 * 		the address of the contract that received the message represented by the active frame
+	 * @param contract
+	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
+	 * @param activeContract
+	 * 		the address of the contract that should be signed in the key
+	 * @param aliases
+	 * 		the current contract aliases
 	 * @return whether the target account's key has an active signature
 	 */
-	boolean hasActiveSupplyKey(Address token, Address recipient, Address contract, Address activeContract);
+	boolean hasActiveSupplyKey(
+			Address token, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
 }

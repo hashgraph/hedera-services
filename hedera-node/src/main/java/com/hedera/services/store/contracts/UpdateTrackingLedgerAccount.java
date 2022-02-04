@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -43,7 +44,6 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
 	private final Hash addressHash;
@@ -69,7 +69,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	) {
 		Preconditions.checkNotNull(address);
 		this.address = address;
-		this.accountId = accountParsedFromSolidityAddress(address);
+		this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 		this.addressHash = Hash.hash(this.address);
 		this.account = null;
 		this.nonce = 0L;
@@ -86,7 +86,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 	) {
 		Preconditions.checkNotNull(account);
 		this.address = account.getAddress();
-		this.accountId = accountParsedFromSolidityAddress(address);
+		this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
 		this.addressHash = account instanceof UpdateTrackingLedgerAccount
 				? ((UpdateTrackingLedgerAccount<A>) account).addressHash
 				: Hash.hash(this.address);
