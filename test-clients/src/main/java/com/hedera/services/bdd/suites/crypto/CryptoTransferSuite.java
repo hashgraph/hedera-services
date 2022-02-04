@@ -96,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -119,6 +120,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	private final String anotherReceiver = "anotherReceiver";
 	private final String fungibleToken = "fungible";
 	private final String nonFungibleToken = "nonFungible";
+	private final String tokenWithCustomFee = "tokenWithCustomFee";
 	private final String adminKey = "adminKey";
 	private final String kycKey = "kycKey";
 	private final String freezeKey = "freezeKey";
@@ -314,6 +316,13 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.wipeKey(wipeKey)
 								.pauseKey(pauseKey)
 								.initialSupply(0L),
+						tokenCreate(tokenWithCustomFee)
+								.treasury(TOKEN_TREASURY)
+								.supplyType(TokenSupplyType.FINITE)
+								.initialSupply(1000)
+								.maxSupply(5000)
+								.adminKey(adminKey)
+								.withCustom(fixedHtsFee(10, "0.0.0", TOKEN_TREASURY)),
 						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("a"),
 								ByteString.copyFromUtf8("b"),
 								ByteString.copyFromUtf8("c"),
@@ -322,20 +331,28 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								ByteString.copyFromUtf8("f")))
 				)
 				.when(
-						tokenAssociate(owner, fungibleToken, nonFungibleToken),
-						tokenAssociate(receiver, fungibleToken, nonFungibleToken),
+						tokenAssociate(owner, fungibleToken, nonFungibleToken, tokenWithCustomFee),
+						tokenAssociate(receiver, fungibleToken, nonFungibleToken, tokenWithCustomFee),
 						grantTokenKyc(fungibleToken, owner),
 						grantTokenKyc(fungibleToken, receiver),
-						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
-						cryptoTransfer(movingUnique(nonFungibleToken, 1L, 2L, 3L, 4L, 5L, 6L).between(TOKEN_TREASURY, owner)),
+						cryptoTransfer(
+								moving(1000, fungibleToken).between(TOKEN_TREASURY, owner),
+								moving(15, tokenWithCustomFee).between(TOKEN_TREASURY, owner),
+								movingUnique(nonFungibleToken, 1L, 2L, 3L, 4L, 5L, 6L).between(TOKEN_TREASURY, owner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 10 * ONE_HBAR)
 								.addTokenAllowance(owner, fungibleToken, spender, 1500)
+								.addTokenAllowance(owner, tokenWithCustomFee, spender, 100)
 								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L, 3L, 4L, 6L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then(
+						cryptoTransfer(movingWithAllowance(10, tokenWithCustomFee).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
 						cryptoTransfer(movingWithAllowance(100, fungibleToken).between(owner, owner))
 								.payingWith(spender)
 								.signedBy(spender)
