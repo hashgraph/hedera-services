@@ -75,7 +75,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -154,9 +153,65 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.addAllTokenAllowances(tokenAllowances)
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+
+		subject.allowancesValidation(cryptoApproveAllowanceTxn, owner);
+
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
+	}
+
+	@Test
+	void returnsValidationOnceFailed(){
+		cryptoAllowances.add(cryptoAllowance1);
+		tokenAllowances.add(tokenAllowance1);
+		nftAllowances.add(nftAllowance1);
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllTokenAllowances(tokenAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
 	}
 
 	@Test

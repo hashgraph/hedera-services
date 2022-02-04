@@ -35,7 +35,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AllowanceHelpersTest {
+class AllowanceHelpersTest {
 
 	@Test
 	void aggregatedCorrectly(){
