@@ -32,6 +32,7 @@ import com.hedera.services.utils.EntityNum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,9 +78,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
-	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
 
 	public Account(Id id) {
 		this.id = id;
@@ -307,7 +308,7 @@ public class Account {
 		this.alias = alias;
 	}
 
-	public TreeMap<EntityNum, Long> getCryptoAllowances() {
+	public Map<EntityNum, Long> getCryptoAllowances() {
 		return cryptoAllowances;
 	}
 
@@ -315,7 +316,7 @@ public class Account {
 		this.cryptoAllowances = new TreeMap<>(cryptoAllowances);
 	}
 
-	public TreeMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
 		return fungibleTokenAllowances;
 	}
 
@@ -324,7 +325,7 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public TreeMap<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return nftAllowances;
 	}
 

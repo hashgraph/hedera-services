@@ -30,7 +30,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -46,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
@@ -65,18 +68,161 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				happyPathWorks(),
-				emptyAllowancesRejected(),
-				spenderSameAsOwnerFails(),
-				spenderAccountRepeatedFails(),
-				negativeAmountFailsForFungible(),
-				tokenNotAssociatedToAccountFails(),
-				invalidTokenTypeFails(),
-				validatesSerialNums(),
-				tokenExceedsMaxSupplyFails(),
-				OwnerNotPayerFails(),
-				serialsWipedIfApprovedForAll()
+//				happyPathWorks(),
+//				emptyAllowancesRejected(),
+//				spenderSameAsOwnerFails(),
+//				spenderAccountRepeatedFails(),
+//				negativeAmountFailsForFungible(),
+//				tokenNotAssociatedToAccountFails(),
+//				invalidTokenTypeFails(),
+//				validatesSerialNums(),
+//				tokenExceedsMaxSupplyFails(),
+//				OwnerNotPayerFails(),
+//				serialsWipedIfApprovedForAll(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
+//				succeedsWhenTokenPausedFrozenKycRevoked()
+
 		});
+	}
+
+	private HapiApiSpec exceedsTransactionLimit() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String spender1 = "spender1";
+		final String spender2 = "spender2";
+		final String token = "token";
+		final String nft = "nft";
+		return customHapiSpec("exceedsTransactionLimit")
+				.withProperties(Map.of(
+						"hedera.allowances.maxTransactionLimit", 4
+				))
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender2)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(token)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey("supplyKey")
+								.maxSupply(1000L)
+								.initialSupply(10L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, token),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						mintToken(token, 500L).via("tokenMint"),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, spender, 100L)
+								.addCryptoAllowance(owner, spender1, 100L)
+								.addCryptoAllowance(owner, spender2, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.fee(ONE_HBAR)
+				)
+				.then();
+	}
+
+	private HapiApiSpec exceedsAccountLimit() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String spender1 = "spender1";
+		final String spender2 = "spender2";
+		final String token = "token";
+		final String nft = "nft";
+		return customHapiSpec("exceedsTransactionLimit")
+				.withProperties(Map.of(
+						"hedera.allowances.maxAccountLimit", 4
+				))
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender2)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(token)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey("supplyKey")
+								.maxSupply(1000L)
+								.initialSupply(10L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, token),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						mintToken(token, 500L).via("tokenMint"),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, spender, 100L)
+								.addCryptoAllowance(owner, spender1, 100L)
+								.addCryptoAllowance(owner, spender2, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.fee(ONE_HBAR),
+						getAccountInfo(owner)
+								.logged()
+								.has(accountWith()
+										.cryptoAllowancesCount(3)
+										.tokenAllowancesCount(1)
+										.nftAllowancesCount(1)
+								)
+				)
+				.then(
+						cryptoCreate("spender3")
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, spender, 100L)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED)
+				);
 	}
 
 	private HapiApiSpec serialsWipedIfApprovedForAll() {

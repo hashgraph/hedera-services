@@ -415,15 +415,14 @@ class CryptoOpsUsageTest {
 		expected.addRbs(newVariableBytes);
 
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
-		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
+		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
 		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ ctx.currentNonBaseRb()
 						+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr(),
-				oldLifetime,
+				lifetime,
 				sharedFixedBytes + newVariableBytes,
-				newLifetime);
+				lifetime);
 		if (rbsDelta > 0) {
 			expected.addRbs(rbsDelta);
 		}

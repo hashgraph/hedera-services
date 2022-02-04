@@ -1,27 +1,26 @@
-/*
- * -
- *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
  */
 
 package com.hedera.services.txns.crypto.validators;
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -67,13 +66,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 public class AllowanceChecks {
 	private final TypedTokenStore tokenStore;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public AllowanceChecks(
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
-			final TypedTokenStore tokenStore) {
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.tokenStore = tokenStore;
 		this.nftsLedger = nftsLedger;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ResponseCodeEnum allowancesValidation(final TransactionBody allowanceTxn, final Account ownerAccount) {
@@ -200,6 +202,7 @@ public class AllowanceChecks {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
+			final var approvedForAll = allowance.getApprovedForAll();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -210,7 +213,7 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateSerialNums(serialNums, ownerAccount, token);
+			validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue());
 			if (validity != OK) {
 				return validity;
 			}
@@ -236,7 +239,16 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount, final Token token) {
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount,
+			final Token token, final boolean approvedForAll) {
+		if (hasRepeatedSerials(serialNums)) {
+			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+		}
+
+		if (!approvedForAll && serialNums.isEmpty()) {
+			return EMPTY_ALLOWANCES; // need  different response
+		}
+
 		for (var serial : serialNums) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
 			if (serial <= 0 || !nftsLedger.exists(nftId)) {
@@ -247,11 +259,8 @@ public class AllowanceChecks {
 			if (!ownerAccount.getId().asEntityId().equals(owner)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
-
-			if (hasRepeatedSerials(serialNums)) {
-				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-			}
 		}
+
 		return OK;
 	}
 
@@ -275,7 +284,7 @@ public class AllowanceChecks {
 	private boolean exceedsTxnLimit(final CryptoApproveAllowanceTransactionBody op) {
 		final var totalAllowances =
 				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
-		return totalAllowances > ALLOWANCE_LIMIT_PER_TRANSACTION;
+		return totalAllowances > dynamicProperties.maxAllowanceLimitPerTransaction();
 	}
 
 	/**

@@ -23,6 +23,7 @@
 package com.hedera.services.txns.crypto.validators;
 
 import com.google.protobuf.BoolValue;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -88,6 +89,8 @@ class AllowanceChecksTest {
 	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
 	private Account owner;
 
 	AllowanceChecks subject;
@@ -127,7 +130,7 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new AllowanceChecks(nftsLedger, tokenStore);
+		subject = new AllowanceChecks(nftsLedger, tokenStore, dynamicProperties);
 	}
 
 	private void setUpForTest() {
@@ -282,6 +285,7 @@ class AllowanceChecksTest {
 	void happyPath() {
 		setUpForTest();
 		getValidTxnCtx();
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
@@ -314,7 +318,7 @@ class AllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 		given(nftsLedger.exists(token2Nft1)).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -325,19 +329,22 @@ class AllowanceChecksTest {
 		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
 	@Test
 	void validateRepeatedSerials() {
 		final var serials = List.of(1L, 10L, 1L);
-		given(nftsLedger.exists(token2Nft1)).willReturn(true);
-		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
+	}
+
+	@Test
+	void validateIfSerialsEmptyWithoutApproval() {
+		final List<Long> serials = List.of();
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
+		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
 	@Test

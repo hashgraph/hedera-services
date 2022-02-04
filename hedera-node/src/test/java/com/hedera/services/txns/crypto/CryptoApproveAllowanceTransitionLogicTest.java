@@ -24,6 +24,7 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;
@@ -72,7 +73,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class CryptoApproveTransitionLogicTest {
+class CryptoApproveAllowanceTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -83,6 +84,8 @@ class CryptoApproveTransitionLogicTest {
 	private AllowanceChecks allowanceChecks;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 
@@ -90,7 +93,7 @@ class CryptoApproveTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks);
+		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks, dynamicProperties);
 	}
 
 	@Test
@@ -108,6 +111,7 @@ class CryptoApproveTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
 
@@ -151,6 +155,7 @@ class CryptoApproveTransitionLogicTest {
 		givenTxnCtxWithZeroAmount();
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
@@ -178,6 +183,7 @@ class CryptoApproveTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
 
