@@ -50,6 +50,7 @@ public class ReflectiveSuitesRunner {
 	private static final List<HapiApiSuite> failedSuites = new ArrayList<>();
 	private static final List<SuiteReport> suiteReports = new ArrayList<>();
 	private static final StringBuilder logMessageBuilder = new StringBuilder();
+	private static int executedSuites = 0;
 
 	public static void main(String[] args) throws FailedSuiteException {
 		log.warn(Banner.getBanner());
@@ -105,12 +106,13 @@ public class ReflectiveSuitesRunner {
 
 	private static void executeSuites(final boolean synced, final List<HapiApiSuite> suites) {
 		suites.forEach(suite -> {
-			final var suiteName = suite.getClass().getSimpleName();
-			log.warn("Executing {}...", suiteName);
+			final var name = suite.getClass().getSimpleName();
+			log.warn("Executing {}...", name);
 			final var finalOutcome = synced
 					? suite.runSuiteSync()
 					: suite.runSuiteAsync();
-			log.warn("finished {} with status: {}", suiteName, finalOutcome.toString());
+			executedSuites++;
+			log.warn("finished {} with status: {}", name, finalOutcome.toString());
 			if (finalOutcome == SUITE_FAILED) {
 				failedSuites.add(suite);
 			}
@@ -118,19 +120,12 @@ public class ReflectiveSuitesRunner {
 	}
 
 	private static void generateFinalLog(final Map<String, List<HapiApiSuite>> suitesByRunType) throws FailedSuiteException {
-		final var executedTotal = suitesByRunType
-				.values()
-				.stream()
-				.map(List::size)
-				.reduce(0, Integer::sum);
-		final var failedTotal = failedSuites.size();
-
 		logMessageBuilder
 				.append(System.lineSeparator())
 				.append(String.format("%1$s Execution summary %1$s%n", SEPARATOR))
-				.append(String.format("SUITES EXECUTED: %d%n", executedTotal))
-				.append(String.format("SUITES PASSED: %d%n", executedTotal - failedTotal))
-				.append(String.format("SUITES FAILED: %d%n", failedTotal));
+				.append(String.format("SUITES EXECUTED: %d%n", executedSuites))
+				.append(String.format("SUITES PASSED: %d%n", executedSuites - failedSuites.size()))
+				.append(String.format("SUITES FAILED: %d%n", failedSuites.size()));
 
 		log.warn(logMessageBuilder.toString());
 
@@ -154,8 +149,6 @@ public class ReflectiveSuitesRunner {
 			log.warn(logMessageBuilder.toString());
 			logMessageBuilder.setLength(0);
 		}
-
-		logMessageBuilder.setLength(0);
 
 		if (failedSuites.size() > 0) {
 			final var suiteNames = failedSuites
