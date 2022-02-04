@@ -38,9 +38,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.UnaryOperator;
+
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 @Singleton
 public class DecodingFacade {
+	private static final int WORD_LENGTH = 32;
 	private static final int ADDRESS_BYTES_LENGTH = 20;
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
@@ -136,7 +140,10 @@ public class DecodingFacade {
 	public DecodingFacade() {
 	}
 
-	public List<TokenTransferWrapper> decodeCryptoTransfer(final Bytes input) {
+	public List<TokenTransferWrapper> decodeCryptoTransfer(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 		final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
@@ -149,11 +156,11 @@ public class DecodingFacade {
 
 				final var abiAdjustments = (Tuple[]) tupleNested.get(1);
 				if (abiAdjustments.length > 0) {
-					fungibleTransfers = bindFungibleTransfersFrom(tokenType, abiAdjustments);
+					fungibleTransfers = bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
 				}
 				final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
 				if (abiNftExchanges.length > 0) {
-					nftExchanges = bindNftExchangesFrom(tokenType, abiNftExchanges);
+					nftExchanges = bindNftExchangesFrom(tokenType, abiNftExchanges, aliasResolver);
 				}
 
 				tokenTransferWrappers.add(new TokenTransferWrapper(nftExchanges, fungibleTransfers));
@@ -179,19 +186,19 @@ public class DecodingFacade {
 		}
 	}
 
-	public BalanceOfWrapper decodeBalanceOf(final Bytes input) {
+	public BalanceOfWrapper decodeBalanceOf(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
 
-		final var account = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var account = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 
 		return new BalanceOfWrapper(account);
 	}
 
 	public List<TokenTransferWrapper> decodeTokenTransfer(final Bytes input, final TokenID token,
-														  final AccountID caller) {
+														  final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_SELECTOR, TOKEN_TRANSFER_DECODER);
 
-		final var recipient = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var recipient = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var amount = (BigInteger) decodedArguments.get(1);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -202,11 +209,12 @@ public class DecodingFacade {
 	}
 
 	public List<TokenTransferWrapper> decodeTokenTransferFrom(final Bytes input,
-															  final TokenID caller, final boolean isFungible) {
+															  final TokenID caller, final boolean isFungible,
+															  final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_FROM_SELECTOR, TOKEN_TRANSFER_FROM_DECODER);
 
-		final var from = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
-		final var to = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
+		final var from = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
 		if(isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (long) decodedArguments.get(2);
@@ -252,23 +260,26 @@ public class DecodingFacade {
 		}
 	}
 
-	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input) {
+	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var sender = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
-		final var receiver = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
+		final var sender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+		final var receiver = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(2), aliasResolver);
 		final var amount = (long) decodedArguments.get(3);
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES,
 				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenID, sender, receiver))));
 	}
 
-	public List<TokenTransferWrapper> decodeTransferTokens(final Bytes input) {
+	public List<TokenTransferWrapper> decodeTransferTokens(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
 
 		final var tokenType = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var accountIDs = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
+		final var accountIDs = decodeAccountIds((byte[][]) decodedArguments.get(1), aliasResolver);
 		final var amounts = (long[]) decodedArguments.get(2);
 
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -282,12 +293,12 @@ public class DecodingFacade {
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 	}
 
-	public List<TokenTransferWrapper> decodeTransferNFT(final Bytes input) {
+	public List<TokenTransferWrapper> decodeTransferNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var sender = convertAddressBytesToAccountID((byte[]) decodedArguments.get(1));
-		final var receiver = convertAddressBytesToAccountID((byte[]) decodedArguments.get(2));
+		final var sender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+		final var receiver = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(2), aliasResolver);
 		final var serialNumber = (long) decodedArguments.get(3);
 
 		return Collections.singletonList(
@@ -296,12 +307,12 @@ public class DecodingFacade {
 						NO_FUNGIBLE_TRANSFERS));
 	}
 
-	public List<TokenTransferWrapper> decodeTransferNFTs(final Bytes input) {
+	public List<TokenTransferWrapper> decodeTransferNFTs(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var senders = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(1));
-		final var receivers = decodeAccountIDsFromBytesArray((byte[][]) decodedArguments.get(2));
+		final var senders = decodeAccountIds((byte[][]) decodedArguments.get(1), aliasResolver);
+		final var receivers = decodeAccountIds((byte[][]) decodedArguments.get(2), aliasResolver);
 		final var serialNumbers = ((long[]) decodedArguments.get(3));
 
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
@@ -314,38 +325,38 @@ public class DecodingFacade {
 		return Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
 	}
 
-	public Association decodeAssociation(final Bytes input) {
+	public Association decodeAssociation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
 
 		return Association.singleAssociation(
 				accountID, tokenID);
 	}
 
-	public Association decodeMultipleAssociations(final Bytes input) {
+	public Association decodeMultipleAssociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
 		return Association.multiAssociation(accountID, tokenIDs);
 	}
 
-	public Dissociation decodeDissociate(final Bytes input) {
+	public Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(1));
 
 		return Dissociation.singleDissociation(accountID, tokenID);
 	}
 
-	public Dissociation decodeMultipleDissociations(final Bytes input) {
+	public Dissociation decodeMultipleDissociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
-		final var accountID = convertAddressBytesToAccountID((byte[]) decodedArguments.get(0));
+		final var accountID = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
 		return Dissociation.multiDissociation(accountID, tokenIDs);
@@ -360,10 +371,13 @@ public class DecodingFacade {
 		return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
 	}
 
-	private static List<AccountID> decodeAccountIDsFromBytesArray(final byte[][] accountBytesArray) {
+	private static List<AccountID> decodeAccountIds(
+			final byte[][] accountBytesArray,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final List<AccountID> accountIDs = new ArrayList<>();
 		for (final var account : accountBytesArray) {
-			accountIDs.add(convertAddressBytesToAccountID(account));
+			accountIDs.add(convertLeftPaddedAddressToAccountId(account, aliasResolver));
 		}
 		return accountIDs;
 	}
@@ -376,26 +390,29 @@ public class DecodingFacade {
 		return accountIDs;
 	}
 
-	private static AccountID convertAddressBytesToAccountID(final byte[] addressBytes) {
-		final var address = Address.wrap(
-				Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		return EntityIdUtils.accountParsedFromSolidityAddress(address.toArray());
+	private static AccountID convertLeftPaddedAddressToAccountId(
+			final byte[] leftPaddedAddress,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
+		return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
 	}
 
 	private static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
 		final var address = Address.wrap(
 				Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
-		return EntityIdUtils.tokenParsedFromSolidityAddress(address.toArray());
+		return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
 	}
 
 	private List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
 			final TokenID tokenType,
-			final Tuple[] abiExchanges
+			final Tuple[] abiExchanges,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
 		for (final var exchange : abiExchanges) {
-			final var sender = convertAddressBytesToAccountID((byte[]) exchange.get(0));
-			final var receiver = convertAddressBytesToAccountID((byte[]) exchange.get(1));
+			final var sender = convertLeftPaddedAddressToAccountId((byte[]) exchange.get(0), aliasResolver);
+			final var receiver = convertLeftPaddedAddressToAccountId((byte[]) exchange.get(1), aliasResolver);
 			final var serialNo = (long) exchange.get(2);
 			nftExchanges.add(new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
 		}
@@ -404,11 +421,12 @@ public class DecodingFacade {
 
 	private List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
 			final TokenID tokenType,
-			final Tuple[] abiTransfers
+			final Tuple[] abiTransfers,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 		for (final var transfer : abiTransfers) {
-			final AccountID accountID = convertAddressBytesToAccountID((byte[]) transfer.get(0));
+			final AccountID accountID = convertLeftPaddedAddressToAccountId((byte[]) transfer.get(0), aliasResolver);
 			final long amount = (long) transfer.get(1);
 
 			addAdjustmentAsTransfer(fungibleTransfers, tokenType, accountID, amount);

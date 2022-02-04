@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -33,18 +34,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
-import static com.hedera.services.store.contracts.WorldLedgers.NULL_WORLD_LEDGERS;
-
 public interface EntityAccess {
 	/**
 	 * Provides a {@link WorldLedgers} whose {@link com.hedera.services.ledger.TransactionalLedger} instances commit
-	 * directly to the Hedera world state. Only makes sense for a mutable {@link EntityAccess} implementation.
+	 * directly to the Hedera world state. Only makes sense to return non-degenerate ledgers for a mutable
+	 * {@link EntityAccess} implementation (though both mutable and static entity access do require the alias "ledger").
 	 *
-	 * @return the world state ledgers if this implementation is mutable (null ledgers otherwise)
+	 * @return the world state ledgers if applicable
 	 */
-	default WorldLedgers worldLedgers() {
-		return NULL_WORLD_LEDGERS;
-	}
+	WorldLedgers worldLedgers();
 
 	/* --- Transactional semantics for mutable entity access --- */
 	void begin();
@@ -81,6 +79,8 @@ public interface EntityAccess {
 	boolean isExtant(AccountID id);
 
 	boolean isTokenAccount(Address address);
+
+	ByteString alias(AccountID id);
 
 	/* --- Storage access --- */
 	void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);

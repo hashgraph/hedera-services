@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
@@ -31,7 +32,10 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
@@ -58,6 +62,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final CallEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final CodeCache codeCache;
+	private final AliasManager aliasManager;
 	private final SigImpactHistorian sigImpactHistorian;
 
 	@Inject
@@ -69,9 +74,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			final CallEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
 			final CodeCache codeCache,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final AliasManager aliasManager
 	) {
 		this.txnCtx = txnCtx;
+		this.aliasManager = aliasManager;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
 		this.recordService = recordService;
@@ -86,8 +93,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
+		final var target = targetOf(op);
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-		final var contractId = Id.fromGrpcContract(op.getContractID());
+		final var contractId = target.toId();
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
@@ -98,7 +106,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(
 				sender,
-				receiver.getId().asEvmAddress(),
+				receiver.canonicalAddress(),
 				op.getGas(),
 				op.getAmount(),
 				callData,
@@ -110,6 +118,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */
+		txnCtx.setTargetedContract(target.toGrpcContractID());
 		for (final var createdContract : createdContracts) {
 			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}
@@ -142,16 +151,21 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public void preFetch(TxnAccessor accessor) {
-		var contractCallTxn = accessor.getTxn();
-		var op = contractCallTxn.getContractCall();
-		final var contractId = Id.fromGrpcContract(op.getContractID());
-		final var address = contractId.asEvmAddress();
+	public void preFetch(final TxnAccessor accessor) {
+		final var op = accessor.getTxn().getContractCall();
+		final var id = targetOf(op);
+		final var address = id.toEvmAddress();
 
 		try {
 			codeCache.getIfPresent(address);
-		} catch(RuntimeException e) {
-			log.warn("Exception while attempting to pre-fetch code for {}", address);
+		} catch (Exception e) {
+			log.warn("Exception while attempting to pre-fetch code for {}", address, e);
 		}
 	}
+
+	private EntityNum targetOf(final ContractCallTransactionBody op) {
+		final var idOrAlias = op.getContractID();
+		return EntityIdUtils.unaliased(idOrAlias, aliasManager);
+	}
 }
+

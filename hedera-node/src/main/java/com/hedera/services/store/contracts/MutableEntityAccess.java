@@ -22,9 +22,11 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -66,6 +68,7 @@ public class MutableEntityAccess implements EntityAccess {
 	@Inject
 	public MutableEntityAccess(
 			final HederaLedger ledger,
+			final AliasManager aliasManager,
 			final TransactionContext txnCtx,
 			final SizeLimitedStorage sizeLimitedStorage,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
@@ -78,6 +81,7 @@ public class MutableEntityAccess implements EntityAccess {
 		this.sizeLimitedStorage = sizeLimitedStorage;
 
 		this.worldLedgers = new WorldLedgers(
+				aliasManager,
 				ledger.getTokenRelsLedger(),
 				ledger.getAccountsLedger(),
 				ledger.getNftsLedger(),
@@ -185,7 +189,12 @@ public class MutableEntityAccess implements EntityAccess {
 
 	@Override
 	public boolean isTokenAccount(Address address) {
-		return tokensLedger.exists(EntityIdUtils.tokenParsedFromSolidityAddress(address));
+		return tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(address));
+	}
+
+	@Override
+	public ByteString alias(AccountID id) {
+		return ledger.alias(id);
 	}
 
 	@Override

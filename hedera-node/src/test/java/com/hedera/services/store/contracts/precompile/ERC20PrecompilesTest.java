@@ -172,7 +172,7 @@ public class ERC20PrecompilesTest {
 
         // when:
         subject.initializeLedgers(frame);
-        subject.prepareComputation(pretendArguments);
+        subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -187,7 +187,7 @@ public class ERC20PrecompilesTest {
 
         // when:
         subject.initializeLedgers(frame);
-        subject.prepareComputation(pretendArguments);
+        subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -203,7 +203,7 @@ public class ERC20PrecompilesTest {
 
         // when:
         subject.initializeLedgers(frame);
-        subject.prepareComputation(pretendArguments);
+        subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -219,7 +219,7 @@ public class ERC20PrecompilesTest {
 
         // when:
         subject.initializeLedgers(frame);
-        subject.prepareComputation(pretendArguments);
+        subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -232,11 +232,11 @@ public class ERC20PrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         given(pretendArguments.slice(24)).willReturn(BALANCE_OF);
-        given(decoder.decodeBalanceOf(pretendArguments)).willReturn(balanceOfOp);
+        given(decoder.decodeBalanceOf(pretendArguments, а -> а)).willReturn(balanceOfOp);
 
         // when:
         subject.initializeLedgers(frame);
-        subject.prepareComputation(pretendArguments);
+        subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.computeInternal(frame);
 
         // then:

@@ -62,11 +62,13 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -92,6 +94,10 @@ public class TxnVerbs {
 	@SafeVarargs
 	public static HapiCryptoTransfer cryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(providers);
+	}
+
+	public static HapiCryptoTransfer cryptoTransfer(BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+		return new HapiCryptoTransfer(def);
 	}
 
 	public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {

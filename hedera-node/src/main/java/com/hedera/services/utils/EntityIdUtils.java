@@ -22,7 +22,9 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,7 +39,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -47,6 +51,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLo
 import static java.lang.System.arraycopy;
 
 public final class EntityIdUtils {
+	public static final int EVM_ADDRESS_SIZE = 20;
 	private static final String ENTITY_ID_FORMAT = "%d.%d.%d";
 	private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 	private static final Pattern ENTITY_NUM_RANGE_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
@@ -182,81 +187,95 @@ public final class EntityIdUtils {
 				.build();
 	}
 
-	public static String asSolidityAddressHex(final AccountID id) {
-		return CommonUtils.hex(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+	public static String asHexedEvmAddress(final AccountID id) {
+		return CommonUtils.hex(asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
-	public static byte[] asSolidityAddress(final ContractID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+	public static byte[] asEvmAddress(final ContractID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
-	public static byte[] asSolidityAddress(final AccountID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	public static byte[] asEvmAddress(final AccountID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
-	public static byte[] asSolidityAddress(final TokenID id) {
-		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	public static byte[] asEvmAddress(final TokenID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
-	public static Address asTypedSolidityAddress(final AccountID id) {
-		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	public static Address asTypedEvmAddress(final AccountID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
-	public static Address asTypedSolidityAddress(final TokenID id) {
-		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	public static Address asTypedEvmAddress(final ContractID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
-	public static Address asTypedSolidityAddress(final ContractID id) {
-		return Address.wrap(Bytes.wrap(asSolidityAddress(id)));
+	public static Address asTypedEvmAddress(final TokenID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
-	public static String asSolidityAddressHex(Id id) {
-		return CommonUtils.hex(asSolidityAddress((int) id.shard(), id.realm(), id.num()));
+	public static String asHexedEvmAddress(Id id) {
+		return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
 	}
 
-	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
-		final byte[] solidityAddress = new byte[20];
+	public static byte[] asEvmAddress(final int shard, final long realm, final long num) {
+		final byte[] evmAddress = new byte[20];
 
-		arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
-		arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
-		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+		arraycopy(Ints.toByteArray(shard), 0, evmAddress, 0, 4);
+		arraycopy(Longs.toByteArray(realm), 0, evmAddress, 4, 8);
+		arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
 
-		return solidityAddress;
+		return evmAddress;
 	}
 
-	public static AccountID accountParsedFromSolidityAddress(final Address address) {
-		return accountParsedFromSolidityAddress(address.toArrayUnsafe());
+	public static long shardFromEvmAddress(final byte[] bytes) {
+		return Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
+	}
+
+	public static long realmFromEvmAddress(final byte[] bytes) {
+		return Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
+	}
+
+	public static long numFromEvmAddress(final byte[] bytes) {
+		return Longs.fromBytes(
+				bytes[12], bytes[13], bytes[14], bytes[15],
+				bytes[16], bytes[17], bytes[18], bytes[19]);
+	}
+
+	public static AccountID accountIdFromEvmAddress(final Address address) {
+		return accountIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
 	public static ContractID contractIdFromEvmAddress(final Address address) {
-		return contractParsedFromSolidityAddress(address.toArrayUnsafe());
+		return contractIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
-	public static TokenID tokenParsedFromSolidityAddress(final Address address) {
-		return tokenParsedFromSolidityAddress(address.toArrayUnsafe());
+	public static TokenID tokenIdFromEvmAddress(final Address address) {
+		return tokenIdFromEvmAddress(address.toArrayUnsafe());
 	}
 
-	public static AccountID accountParsedFromSolidityAddress(final byte[] solidityAddress) {
+	public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
 		return AccountID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setAccountNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(shardFromEvmAddress(bytes))
+				.setRealmNum(realmFromEvmAddress(bytes))
+				.setAccountNum(numFromEvmAddress(bytes))
 				.build();
 	}
 
-	public static ContractID contractParsedFromSolidityAddress(final byte[] solidityAddress) {
+	public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
 		return ContractID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+				.setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
 				.build();
 	}
 
-	public static TokenID tokenParsedFromSolidityAddress(byte[] solidityAddress) {
+	public static TokenID tokenIdFromEvmAddress(byte[] bytes) {
 		return TokenID.newBuilder()
-				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(solidityAddress, 0, 4)))
-				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 4, 12)))
-				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(solidityAddress, 12, 20)))
+				.setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+				.setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+				.setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
 				.build();
 	}
 
@@ -295,5 +314,34 @@ public final class EntityIdUtils {
 
 	public static boolean isAlias(final AccountID idOrAlias) {
 		return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
+	}
+
+	public static boolean isAlias(final ContractID idOrAlias) {
+		return idOrAlias.getContractNum() == 0 && !idOrAlias.getEvmAddress().isEmpty();
+	}
+
+	public static EntityNum unaliased(final ContractID idOrAlias, final AliasManager aliasManager) {
+		return unaliased(idOrAlias, aliasManager, null);
+	}
+
+	public static EntityNum unaliased(
+			final ContractID idOrAlias,
+			final AliasManager aliasManager,
+			@Nullable final Consumer<ByteString> aliasObs
+	) {
+		if (isAlias(idOrAlias)) {
+			final var alias = idOrAlias.getEvmAddress();
+			final var evmAddress = alias.toByteArray();
+			if (aliasManager.isMirror(evmAddress)) {
+				final var contractNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
+				return EntityNum.fromLong(contractNum);
+			}
+			if (aliasObs != null) {
+				aliasObs.accept(alias);
+			}
+			return aliasManager.lookupIdBy(alias);
+		} else {
+			return EntityNum.fromContractId(idOrAlias);
+		}
 	}
 }

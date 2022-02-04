@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -31,8 +30,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 public class CommonCallSetup {
-
-	static void commonSetup(MessageFrame evmMsgFrame, WorldUpdater worldUpdater, Account acc, Address accountAddr) {
+	static void commonSetup(
+			MessageFrame evmMsgFrame,
+			WorldUpdater worldUpdater,
+			Account acc
+	) {
 		given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.get(any())).willReturn(acc);
 	}

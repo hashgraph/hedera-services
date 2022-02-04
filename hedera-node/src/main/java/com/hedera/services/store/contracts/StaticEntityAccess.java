@@ -22,9 +22,11 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -51,6 +53,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNu
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 public class StaticEntityAccess implements EntityAccess {
+	private final ContractAliases aliases;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -60,12 +63,13 @@ public class StaticEntityAccess implements EntityAccess {
 
 	public StaticEntityAccess(
 			final StateView stateView,
+			final ContractAliases aliases,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties
 	) {
+		this.aliases = aliases;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
-
 		this.bytecode = stateView.storage();
 		this.storage = stateView.contractStorage();
 		this.accounts = stateView.accounts();
@@ -138,6 +142,16 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
+	public ByteString alias(final AccountID id) {
+		return accounts.get(fromAccountId(id)).getAlias();
+	}
+
+	@Override
+	public WorldLedgers worldLedgers() {
+		return WorldLedgers.staticLedgersWith(aliases, this);
+	}
+
+	@Override
 	public boolean isDetached(AccountID id) {
 		if (!dynamicProperties.autoRenewEnabled()) {
 			return false;
@@ -161,7 +175,7 @@ public class StaticEntityAccess implements EntityAccess {
 
 	@Override
 	public boolean isTokenAccount(Address address) {
-		return stateView.tokenExists(EntityIdUtils.tokenParsedFromSolidityAddress(address));
+		return stateView.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
 	}
 
 	@Override

@@ -71,9 +71,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 	public void commit() {
 		final var wrapped = wrappedWorldView();
 
-		/* NOTE - in a traditional Ethereum context, it is technically possible with use of CREATE2
-		 * for a stacked updater to re-create an account that was deleted by its parent updater. But
-		 * that is not possible in Hedera. */
+		/* NOTE: In a traditional Ethereum context, it is possible with use of CREATE2 for a stacked updater
+		 * to re-create the very same account that was deleted by its parent updater. But since every Hedera
+		 * account gets a unique 0.0.X id---and corresponding unique mirror 0x0...0X address---that is not
+		 * possible here. So we needn't remove our updated accounts from our parent's deleted accounts. */
 		getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
 		wrapped.deletedAccounts.addAll(getDeletedAccounts());
 

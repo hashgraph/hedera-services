@@ -68,7 +68,7 @@ public class SyntheticTxnFactory {
 	public TransactionBody.Builder createTransactionCall(long gas, Bytes functionParameters) {
 		final var builder = ContractCallTransactionBody.newBuilder();
 
-		builder.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(
+		builder.setContractID(EntityIdUtils.contractIdFromEvmAddress(
 				Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()));
 		builder.setGas(gas);
 		builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
