@@ -21,9 +21,12 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -47,7 +50,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
+import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -185,11 +191,26 @@ class AutoRenewCalcsTest {
 				.setCurrentCryptoAllowanceCount(expiredAccount.getCryptoAllowances().size())
 				.setCurrentTokenAllowanceCount(expiredAccount.getFungibleTokenAllowances().size())
 				.setCurrentNftAllowanceCount(expiredAccount.getNftAllowances().size())
-				.setCurrentNftSerialsCount(AutoRenewCalcs.countSerials(expiredAccount.getNftAllowances()))
+				.setCurrentNftSerialsCount(countSerials(expiredAccount.getNftAllowances()))
 				.build();
 
 		// expect:
 		assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
+	}
+
+	@Test
+	void countsSerialsCorrectly() {
+		final var spender1 = asAccount("0.0.1000");
+		final var token1 = asToken("0.0.1000");
+		final var token2 = asToken("0.0.1000");
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+		final var id = FcTokenAllowanceId.from(EntityNum.fromTokenId(token1),
+				EntityNum.fromAccountId(spender1));
+		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
+				EntityNum.fromAccountId(spender1));
+		final var val = FcTokenAllowance.from(false, List.of(1L, 100L));
+		nftAllowances.put(Nftid, val);
+		assertEquals(2, countSerials(nftAllowances));
 	}
 
 	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> frozenPricesFrom(
@@ -232,7 +253,7 @@ class AutoRenewCalcsTest {
 				.accountKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked())
 				.balance(balance)
 				.tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
-				.proxy(IdUtils.asAccount("0.0.12345"))
+				.proxy(asAccount("0.0.12345"))
 				.memo("SHOCKED, I tell you!")
 				.get();
 	}

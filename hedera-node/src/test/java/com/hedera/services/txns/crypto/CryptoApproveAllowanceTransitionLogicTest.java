@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -194,9 +195,9 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	private void setUpOwnerWithExistingKeys(final Account ownerAcccount) {
-		Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-		Map<FcTokenAllowanceId, Long> tokenAllowances = new HashMap<>();
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new HashMap<>();
+		Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
+		Map<FcTokenAllowanceId, Long> tokenAllowances = new TreeMap<>();
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 		final var id = FcTokenAllowanceId.from(EntityNum.fromTokenId(token1),
 				EntityNum.fromAccountId(spender1));
 		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
