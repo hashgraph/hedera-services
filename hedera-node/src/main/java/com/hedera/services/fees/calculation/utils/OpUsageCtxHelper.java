@@ -143,7 +143,7 @@ public class OpUsageCtxHelper {
 		return cryptoContext;
 	}
 
-	public ExtantCryptoContext ctxForCryptoApprove(TransactionBody txn) {
+	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
 		ExtantCryptoContext cryptoContext;
 		var info = workingView.infoForAccount(
 				txn.getTransactionID().getAccountID(), aliasManager);

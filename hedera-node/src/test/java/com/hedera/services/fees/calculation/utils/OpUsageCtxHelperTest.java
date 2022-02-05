@@ -195,7 +195,7 @@ class OpUsageCtxHelperTest {
 				.setTokenId(IdUtils.asToken("0.0.1000"))
 				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
 
-		final var ctx = subject.ctxForCryptoApprove(TransactionBody.getDefaultInstance());
+		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
 		assertEquals(memo, ctx.currentMemo());
 		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
@@ -219,7 +219,7 @@ class OpUsageCtxHelperTest {
 	void returnsMissingCtxWhenApproveAccountNotFound() {
 		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
 
-		final var ctx = subject.ctxForCryptoApprove(TransactionBody.getDefaultInstance());
+		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
 		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
 		assertEquals(0, ctx.currentNftAllowancesCount());

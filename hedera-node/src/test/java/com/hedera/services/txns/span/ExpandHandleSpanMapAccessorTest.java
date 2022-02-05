@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,7 +41,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanMapAccessorTest {
-	private Map<String, Object>	span = new HashMap<>();
+	private Map<String, Object> span = new HashMap<>();
 
 	@Mock
 	private TxnAccessor accessor;
@@ -81,7 +81,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
 
-		assertEquals(48,  subject.getTokenFreezeMeta(accessor).getBpt());
+		assertEquals(48, subject.getTokenFreezeMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
 
-		assertEquals(48,  subject.getTokenUnfreezeMeta(accessor).getBpt());
+		assertEquals(48, subject.getTokenUnfreezeMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -99,7 +99,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenPauseMeta(accessor, tokenPauseMeta);
 
-		assertEquals(24,  subject.getTokenPauseMeta(accessor).getBpt());
+		assertEquals(24, subject.getTokenPauseMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -108,7 +108,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenUnpauseMeta(accessor, tokenUnpauseMeta);
 
-		assertEquals(24,  subject.getTokenUnpauseMeta(accessor).getBpt());
+		assertEquals(24, subject.getTokenUnpauseMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -144,7 +144,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForCryptoApproveMetaAsExpected() {
-		final var opMeta  = CryptoApproveAllowanceMeta.newBuilder()
+		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)

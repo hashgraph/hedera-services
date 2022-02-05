@@ -204,4 +204,30 @@ public class CryptoOpsUsage {
 			accumulator.addRbs(rbsDelta);
 		}
 	}
+
+	public void cryptoAdjustAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoAdjustAllowanceMeta cryptoAdjustMeta,
+			final ExtantCryptoContext ctx,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoAdjustMeta.getMsgBytesUsed());
+
+		var newVariableSerialBytes = 0;
+		newVariableSerialBytes += cryptoAdjustMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
+		accumulator.addRbs(newVariableSerialBytes);
+
+		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+
+		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(
+				cryptoAdjustMeta.getEffectiveNow(), ctx.currentExpiry());
+		final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				cryptoAutoRenewRb(ctx),
+				lifeTime,
+				sharedFixedBytes + newVariableSerialBytes,
+				lifeTime);
+		if (rbsDelta > 0) {
+			accumulator.addRbs(rbsDelta);
+		}
+	}
 }
