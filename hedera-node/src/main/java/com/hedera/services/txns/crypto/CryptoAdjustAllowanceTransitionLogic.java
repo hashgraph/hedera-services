@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -139,9 +140,8 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					continue;
 				}
 				cryptoMap.put(spender.asEntityNum(), amount);
-				return;
+				continue;
 			}
-
 			final var existingAmount = cryptoMap.get(spender.asEntityNum());
 			final var aggregatedAmount = existingAmount + amount;
 			if (aggregatedAmount == 0) {
@@ -150,6 +150,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			}
 			cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
 		}
+
 		ownerAccount.setCryptoAllowances(cryptoMap);
 	}
 
@@ -178,26 +179,51 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				value = approvedForAll.getValue() ? FcTokenAllowance.from(
 						approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
 				nftAllowancesMap.put(key, value);
-				return;
+				continue;
 			}
 
 			final var oldValue = nftAllowancesMap.get(key);
 			if (approvedForAll.getValue()) {
 				value = FcTokenAllowance.from(approvedForAll.getValue());
 			} else {
-				List<Long> serials = oldValue.getSerialNumbers();
-				for (var serial : serialNums) {
-					if (serial < 0) {
-						serials.remove(serial);
-					} else {
-						serials.add(serial);
-					}
+				List<Long> newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums, key, nftAllowancesMap);
+				if (newSerials.isEmpty()) {
+					continue;
 				}
-				value = FcTokenAllowance.from(serials);
+				value = FcTokenAllowance.from(newSerials);
 			}
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
+	}
+
+	private List<Long> adjustSerials(final List<Long> oldSerials,
+			final List<Long> opSerials,
+			final FcTokenAllowanceId key,
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap) {
+		List<Long> newSerials = new ArrayList<>();
+		newSerials.addAll(oldSerials);
+
+		for (int i = 0; i < opSerials.size(); i++) {
+			final var serial = opSerials.get(i);
+			if (serial < 0) {
+				if (newSerials.contains(-1 * serial)) {
+					newSerials.remove(-1 * serial);
+				} else {
+					// throw error?
+				}
+			} else {
+				if (newSerials.contains(serial)) {
+					// throw error ?
+				} else {
+					newSerials.add(serial);
+				}
+			}
+		}
+		if (newSerials.isEmpty()) {
+			nftAllowancesMap.remove(key);
+		}
+		return newSerials;
 	}
 
 	/**
@@ -225,6 +251,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					continue;
 				}
 				tokenAllowancesMap.put(key, amount);
+				continue;
 			}
 			final var oldAmount = tokenAllowancesMap.get(key);
 			final var aggregatedAmount = oldAmount + amount;
