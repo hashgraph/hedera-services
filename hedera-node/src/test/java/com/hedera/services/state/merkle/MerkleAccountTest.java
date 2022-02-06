@@ -27,6 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -82,6 +85,9 @@ class MerkleAccountTest {
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
+	private TreeMap<EntityNum, Long> cryptoAllowances;
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 
 	private MerkleAccountState delegate;
 
@@ -98,6 +104,10 @@ class MerkleAccountTest {
 		tokens = mock(MerkleAccountTokens.class);
 		given(tokens.copy()).willReturn(tokens);
 
+		cryptoAllowances = mock(TreeMap.class);
+		nftAllowances = mock(TreeMap.class);
+		fungibleTokenAllowances = mock(TreeMap.class);
+
 		delegate = mock(MerkleAccountState.class);
 
 		state = new MerkleAccountState(
@@ -109,7 +119,10 @@ class MerkleAccountTest {
 				number,
 				autoAssociationMetadata,
 				alias,
-				kvPairs);
+				kvPairs,
+				cryptoAllowances,
+				fungibleTokenAllowances,
+				nftAllowances);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -191,6 +204,9 @@ class MerkleAccountTest {
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
+		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
+		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
+		assertEquals(state.getNftAllowances().entrySet(), subject.getNftAllowances().entrySet());
 	}
 
 	@Test
@@ -223,6 +239,9 @@ class MerkleAccountTest {
 		subject.setNftsOwned(2L);
 		subject.setAlias(alias);
 		subject.setNumContractKvPairs(kvPairs);
+		subject.setCryptoAllowances(cryptoAllowances);
+		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
+		subject.setNftAllowances(nftAllowances);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -239,6 +258,9 @@ class MerkleAccountTest {
 		verify(delegate).setNumContractKvPairs(kvPairs);
 		verify(delegate).setNftsOwned(2L);
 		verify(delegate).setAlias(alias);
+		verify(delegate).setCryptoAllowances(cryptoAllowances);
+		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
+		verify(delegate).setNftAllowances(nftAllowances);
 	}
 
 	@Test
@@ -283,7 +305,7 @@ class MerkleAccountTest {
 	void throwsOnInvalidAlreadyUsedAtoAssociations() {
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
 		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(
-				maxAutoAssociations +1));
+				maxAutoAssociations + 1));
 	}
 
 	@Test

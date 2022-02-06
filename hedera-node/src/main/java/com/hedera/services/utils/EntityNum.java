@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -43,7 +44,7 @@ import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
  * the risk of hash collisions in structured data using this type,
  * when compared to the {@code java.lang.Integer} boxed type.
  */
-public class EntityNum {
+public class EntityNum implements Comparable<EntityNum> {
 	public static final EntityNum MISSING_NUM = new EntityNum(0);
 
 	private final int value;
@@ -184,5 +185,17 @@ public class EntityNum {
 
 	static boolean areValidNums(long shard, long realm) {
 		return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
+	}
+
+	@Override
+	public String toString() {
+		return "EntityNum{" +
+				"value=" + value +
+				'}';
+	}
+
+	@Override
+	public int compareTo(@NotNull final EntityNum that) {
+		return Integer.compare(this.value, that.value);
 	}
 }
