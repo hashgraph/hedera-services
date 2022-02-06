@@ -62,29 +62,33 @@ public class EntityNum implements SelfSerializable, FastCopyable, Comparable<Ent
 		/* RuntimeConstructable */
 	}
 
-	public EntityNum(int value) {
+	public EntityNum(final int value) {
 		this.value = value;
+	}
+
+	public EntityNum(final EntityNum that) {
+		this.value = that.value;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public EntityNum copy() {
-		throw new AssertionError("Not implemented");
+		return new EntityNum(this);
 	}
 
 	@Override
 	public void release() {
-		throw new AssertionError("Not implemented");
+		/* No-op */
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream din, final int version) throws IOException {
-		throw new AssertionError("Not implemented");
+		value = din.readInt();
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream dout) throws IOException {
-		throw new AssertionError("Not implemented");
+		dout.writeInt(value);
 	}
 
 	@Override

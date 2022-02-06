@@ -22,22 +22,58 @@ package com.hedera.services.utils;
 
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class EntityNumTest {
 	@Test
-	void hasRuntimeConstructableMeta() {
+	void runtimeConstructableWorks() {
 		final var subject = new EntityNum();
-
 		assertEquals(0xb2283254aa1097adL, subject.getClassId());
 		assertEquals(1, subject.getVersion());
+	}
+
+	@Test
+	void serdeWorks() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		final var out = mock(SerializableDataOutputStream.class);
+
+		final var model = new EntityNum(123);
+
+		given(in.readInt()).willReturn(123);
+		final var mimic = new EntityNum();
+		mimic.deserialize(in, 1);
+
+		assertEquals(model, mimic);
+
+		model.serialize(out);
+		verify(out).writeInt(123);
+	}
+
+	@Test
+	void copyWorks() {
+		final var model = new EntityNum(123);
+		final var mimic = model.copy();
+		assertNotSame(mimic, model);
+
+		assertEquals(mimic, model);
+
+		assertDoesNotThrow(model::release);
 	}
 
 	@Test
@@ -134,18 +170,5 @@ class EntityNumTest {
 		final var subject = EntityNum.fromLong(realNum);
 
 		assertEquals(realNum, subject.longValue());
-	}
-
-	@Test
-	void orderingSortsByValue() {
-		int value = 100;
-
-		final var base = new EntityNum(value);
-		final var sameButDiff = EntityNum.fromInt(value);
-		assertEquals(0, base.compareTo(sameButDiff));
-		final var largerNum = new EntityNum(value + 1);
-		assertEquals(-1, base.compareTo(largerNum));
-		final var smallerNum = new EntityNum(value -1);
-		assertEquals(+1, base.compareTo(smallerNum));
 	}
 }
