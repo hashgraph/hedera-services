@@ -32,6 +32,7 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -49,7 +50,7 @@ import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
  * the risk of hash collisions in structured data using this type,
  * when compared to the {@code java.lang.Integer} boxed type.
  */
-public class EntityNum implements SelfSerializable, FastCopyable {
+public class EntityNum implements SelfSerializable, FastCopyable, Comparable<EntityNum> {
 	private static final int VERSION = 1;
 	private static final long CLASS_ID = 0xb2283254aa1097adL;
 
@@ -230,5 +231,17 @@ public class EntityNum implements SelfSerializable, FastCopyable {
 
 	static boolean areValidNums(long shard, long realm) {
 		return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
+	}
+
+	@Override
+	public String toString() {
+		return "EntityNum{" +
+				"value=" + value +
+				'}';
+	}
+
+	@Override
+	public int compareTo(@NotNull final EntityNum that) {
+		return Integer.compare(this.value, that.value);
 	}
 }

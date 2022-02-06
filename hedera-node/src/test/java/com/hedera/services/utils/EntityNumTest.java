@@ -135,4 +135,17 @@ class EntityNumTest {
 
 		assertEquals(realNum, subject.longValue());
 	}
+
+	@Test
+	void orderingSortsByValue() {
+		int value = 100;
+
+		final var base = new EntityNum(value);
+		final var sameButDiff = EntityNum.fromInt(value);
+		assertEquals(0, base.compareTo(sameButDiff));
+		final var largerNum = new EntityNum(value + 1);
+		assertEquals(-1, base.compareTo(largerNum));
+		final var smallerNum = new EntityNum(value -1);
+		assertEquals(+1, base.compareTo(smallerNum));
+	}
 }
