@@ -33,12 +33,10 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -77,13 +75,11 @@ public class AllowanceChecks {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public ResponseCodeEnum allowancesValidation(final TransactionBody allowanceTxn, final Account ownerAccount) {
-		final var allowances = allowanceTxn.getCryptoApproveAllowance();
-		final var cryptoAllowances = allowances.getCryptoAllowancesList();
-		final var tokenAllowances = allowances.getTokenAllowancesList();
-		final var nftAllowances = allowances.getNftAllowancesList();
-
-		var validity = commonChecks(allowances);
+	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances,
+			final Account ownerAccount) {
+		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances);
 		if (validity != OK) {
 			return validity;
 		}
@@ -106,11 +102,15 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum commonChecks(final CryptoApproveAllowanceTransactionBody op) {
-		if (exceedsTxnLimit(op)) {
+	ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances) {
+		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
+
+		if (exceedsTxnLimit(totalAllowances)) {
 			return MAX_ALLOWANCES_EXCEEDED;
 		}
-		if (emptyAllowances(op)) {
+		if (emptyAllowances(totalAllowances)) {
 			return EMPTY_ALLOWANCES;
 		}
 		return OK;
@@ -131,16 +131,25 @@ public class AllowanceChecks {
 			final var allowanceOwner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 
-			final var validity = validateAmount(amount, null);
+			var validity = validateAmount(amount, null);
 			if (validity != OK) {
 				return validity;
 			}
-			if (!ownerAccount.getId().equals(allowanceOwner)) {
-				return PAYER_AND_OWNER_NOT_EQUAL;
+			validity = validateCryptoAllowanceBasics(ownerAccount.getId(), allowanceOwner, spender);
+			if (validity != OK) {
+				return validity;
 			}
-			if (ownerAccount.getId().equals(spender)) {
-				return SPENDER_ACCOUNT_SAME_AS_OWNER;
-			}
+		}
+		return OK;
+	}
+
+	ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id allowanceOwner,
+			final Id spender) {
+		if (!ownerId.equals(allowanceOwner)) {
+			return PAYER_AND_OWNER_NOT_EQUAL;
+		}
+		if (ownerId.equals(spender)) {
+			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
 		return OK;
 	}
@@ -263,7 +272,7 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	protected ResponseCodeEnum validateAmount(final long amount, Token fungibleToken) {
+	private ResponseCodeEnum validateAmount(final long amount, Token fungibleToken) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
@@ -277,24 +286,20 @@ public class AllowanceChecks {
 	/**
 	 * Checks if the total allowances in the transaction exceeds the allowed limit
 	 *
-	 * @param op
+	 * @param totalAllowances
 	 * @return
 	 */
-	private boolean exceedsTxnLimit(final CryptoApproveAllowanceTransactionBody op) {
-		final var totalAllowances =
-				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
+	private boolean exceedsTxnLimit(final int totalAllowances) {
 		return totalAllowances > dynamicProperties.maxAllowanceLimitPerTransaction();
 	}
 
 	/**
 	 * Checks if the allowance lists are empty in the transaction
 	 *
-	 * @param op
+	 * @param totalAllowances
 	 * @return
 	 */
-	private boolean emptyAllowances(final CryptoApproveAllowanceTransactionBody op) {
-		final var totalAllowances =
-				op.getCryptoAllowancesCount() + op.getTokenAllowancesCount() + op.getNftAllowancesCount();
+	private boolean emptyAllowances(final int totalAllowances) {
 		return totalAllowances == 0;
 	}
 }

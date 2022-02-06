@@ -87,6 +87,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
+	private CryptoAdjustAllowanceTransactionBody op;
 
 	CryptoAdjustAllowanceTransitionLogic subject;
 
@@ -108,11 +109,8 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Test
 	void happyPathAdjustsAllowances() {
 		givenValidTxnCtx();
-		addExistingAllowances(); // spender1 -20 , spender 2 - 10 ---- sp1-tok1 - 10 , sp1-tok2 - false, 10l, 20L;
-		// spen1, tok1 - true
-
-		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn); //spen1-10; spen tok1 -10 ; sp1-tok2 - 1, 10,
-		// true
+		addExistingAllowances();
+		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
@@ -128,7 +126,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 		assertEquals(FcTokenAllowance.from(true), ownerAcccount.getNftAllowances()
 				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1))));
-		assertEquals(FcTokenAllowance.from(List.of(1L, 10L)), ownerAcccount.getNftAllowances()
+		assertEquals(FcTokenAllowance.from(List.of(1L, 20L)), ownerAcccount.getNftAllowances()
 				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 
 		verify(accountStore).commitAccount(ownerAcccount);
@@ -158,7 +156,33 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	}
 
 	@Test
+	void adjustsSerialsCorrectly() {
+		givenValidTxnCtx();
+		addExistingAllowances();
+
+		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+
+		subject.doStateTransition();
+		List<Long> expectedSerials = new ArrayList<>();
+		expectedSerials.add(1L);
+		expectedSerials.add(20L);
+
+		assertEquals(2, ownerAcccount.getCryptoAllowances().size());
+		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
+		assertEquals(2, ownerAcccount.getNftAllowances().size());
+		assertEquals(expectedSerials, ownerAcccount.getNftAllowances()
+				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1),
+						EntityNum.fromAccountId(spender1))).getSerialNumbers());
+		verify(accountStore).commitAccount(ownerAcccount);
+		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
+	@Test
 	void checksIfAllowancesExceedLimit() {
+		addExistingAllowances();
 		Account owner = mock(Account.class);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(owner);
 		given(owner.getTotalAllowances()).willReturn(101);
@@ -179,7 +203,8 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Test
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
-		given(adjustAllowanceChecks.allowancesValidation(cryptoAdjustAllowanceTxn, ownerAcccount)).willReturn(OK);
+		given(adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
+				op.getNftAllowancesList(), ownerAcccount)).willReturn(OK);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoAdjustAllowanceTxn));
 	}
@@ -328,6 +353,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
 		ownerAcccount.setNftAllowances(new HashMap<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
@@ -377,11 +403,11 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
 			.setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(true))
-			.addAllSerialNumbers(List.of(1L, 10L)).build();
+			.addAllSerialNumbers(List.of(-1L, 10L)).build();
 	private final NftAllowance nftAllowance2 = NftAllowance.newBuilder()
 			.setSpender(spender1)
 			.setTokenId(token1).setApprovedForAll(BoolValue.of(false))
-			.addAllSerialNumbers(List.of(1L, 10L)).build();
+			.addAllSerialNumbers(List.of(1L, -10L, 20L)).build();
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();

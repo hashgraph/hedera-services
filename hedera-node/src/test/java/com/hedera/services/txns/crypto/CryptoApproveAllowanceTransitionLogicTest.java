@@ -62,7 +62,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -88,12 +87,14 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
+	private CryptoApproveAllowanceTransactionBody op;
 
 	CryptoApproveAllowanceTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks, dynamicProperties);
+		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks,
+				dynamicProperties);
 	}
 
 	@Test
@@ -124,7 +125,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	@Test
-	void wipesSerialsWhenApprovedForAll(){
+	void wipesSerialsWhenApprovedForAll() {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
@@ -166,7 +167,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Test
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
-		given(allowanceChecks.allowancesValidation(cryptoApproveAllowanceTxn, ownerAcccount)).willReturn(OK);
+		given(allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
+				op.getNftAllowancesList(), ownerAcccount)).willReturn(OK);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
 	}
@@ -308,6 +310,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
+		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
 		ownerAcccount.setNftAllowances(new HashMap<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());

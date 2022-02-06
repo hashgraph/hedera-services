@@ -108,8 +108,11 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
 		final AccountID owner = cryptoAllowanceTxn.getTransactionID().getAccountID();
+		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
 		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
-		return allowanceChecks.allowancesValidation(cryptoAllowanceTxn, ownerAccount);
+
+		return allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount);
 	}
 
 	/**
