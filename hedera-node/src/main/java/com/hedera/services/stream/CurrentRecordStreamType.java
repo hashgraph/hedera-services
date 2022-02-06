@@ -36,7 +36,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 					protoSemVer.getMinor(),
 					protoSemVer.getPatch()
 			};
-			log.info("Record stream file header is {}", Arrays.toString(fileHeader));
+			log.info("Record stream file header is {}", () -> Arrays.toString(fileHeader));
 		}
 		return fileHeader;
 	}

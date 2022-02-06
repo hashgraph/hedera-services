@@ -33,7 +33,6 @@ public interface RecordStreamType extends StreamType {
 	String RECORD_DESCRIPTION = "records";
 	String RECORD_EXTENSION = "rcd";
 	String RECORD_SIG_EXTENSION = "rcd_sig";
-	byte[] RECORD_SIG_FILE_HEADER = new byte[] { (byte) RECORD_VERSION };
 
 	/**
 	 * {@inheritDoc}
@@ -64,6 +63,6 @@ public interface RecordStreamType extends StreamType {
 	 */
 	@Override
 	default byte[] getSigFileHeader() {
-		return RECORD_SIG_FILE_HEADER;
+		return new byte[] { (byte) RECORD_VERSION };
 	}
 }
