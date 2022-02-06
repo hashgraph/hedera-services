@@ -135,6 +135,9 @@ class GetAccountInfoResourceUsageTest {
 		assertEquals(3, ctx.currentSerialNumsInNfts());
 		assertEquals(1, ctx.currentNftAllowancesCount());
 		assertEquals(1, ctx.currentTokenAllowancesCount());
+		assertEquals(1, ctx.currentCryptoAllowanceCount());
+		assertEquals(1, ctx.currentTokenAllowancesCount());
+		assertEquals(1, ctx.currentNftAllowancesCount());
 		assertTrue(ctx.currentlyHasProxy());
 	}
 

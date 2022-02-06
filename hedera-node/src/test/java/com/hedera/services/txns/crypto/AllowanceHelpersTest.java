@@ -21,11 +21,14 @@ package com.hedera.services.txns.crypto;
  */
 
 
+import com.google.protobuf.BoolValue;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -45,5 +48,21 @@ class AllowanceHelpersTest {
 		final var val = FcTokenAllowance.from(false, List.of(1L, 100L));
 		map.put(Nftid, val);
 		assertEquals(2, aggregateNftAllowances(map));
+	}
+
+	@Test
+	void aggregatedListCorrectly(){
+		List<NftAllowance> list = new ArrayList<>();
+		final var Nftid = NftAllowance.newBuilder().setSpender(asAccount("0.0.1000"))
+				.addAllSerialNumbers(List.of(1L, 10L)).setTokenId(asToken("0.0.10001"))
+				.setOwner(asAccount("0.0.5000")).setApprovedForAll(
+						BoolValue.of(false)).build();
+		final var Nftid2 = NftAllowance.newBuilder().setSpender(asAccount("0.0.1000"))
+				.addAllSerialNumbers(List.of(1L, 100L)).setTokenId(asToken("0.0.10001"))
+				.setOwner(asAccount("0.0.5000")).setApprovedForAll(
+						BoolValue.of(false)).build();
+		list.add(Nftid);
+		list.add(Nftid2);
+		assertEquals(4, aggregateNftAllowances(list));
 	}
 }
