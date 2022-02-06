@@ -33,6 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityNumTest {
 	@Test
+	void hasRuntimeConstructableMeta() {
+		final var subject = new EntityNum();
+
+		assertEquals(0xb2283254aa1097adL, subject.getClassId());
+		assertEquals(1, subject.getVersion());
+	}
+
+	@Test
 	void overridesJavaLangImpl() {
 		final var v = 1_234_567;
 

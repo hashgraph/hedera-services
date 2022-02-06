@@ -26,8 +26,14 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.FastCopyable;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+
+import java.io.IOException;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -43,15 +49,54 @@ import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
  * the risk of hash collisions in structured data using this type,
  * when compared to the {@code java.lang.Integer} boxed type.
  */
-public class EntityNum {
+public class EntityNum implements SelfSerializable, FastCopyable {
+	private static final int VERSION = 1;
+	private static final long CLASS_ID = 0xb2283254aa1097adL;
+
 	public static final EntityNum MISSING_NUM = new EntityNum(0);
 
-	private final int value;
+	private int value;
+
+	public EntityNum() {
+		/* RuntimeConstructable */
+	}
 
 	public EntityNum(int value) {
 		this.value = value;
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public EntityNum copy() {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void release() {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void deserialize(final SerializableDataInputStream din, final int version) throws IOException {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public void serialize(final SerializableDataOutputStream dout) throws IOException {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public long getClassId() {
+		return CLASS_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return VERSION;
+	}
+
+	/* --- Static factories --- */
 	public static EntityNum fromInt(int i) {
 		return new EntityNum(i);
 	}
@@ -120,6 +165,7 @@ public class EntityNum {
 		return fromLong(grpc.getScheduleNum());
 	}
 
+	/* --- Views --- */
 	public int intValue() {
 		return value;
 	}
