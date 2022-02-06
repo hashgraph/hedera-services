@@ -66,8 +66,6 @@ class CurrentRecordStreamTypeTest {
 
 		subject.getFileHeader();
 
-		assertThat(
-				logCaptor.errorLogs(),
-				contains(Matchers.startsWith("Failed to load versions, record stream file header will be [5, 0, 0, 0]")));
+		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Failed to load")));
 	}
 }

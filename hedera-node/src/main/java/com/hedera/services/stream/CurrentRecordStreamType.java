@@ -28,9 +28,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 			final var deployed = semanticVersions.getDeployed();
 			final var protoSemVer = deployed.protoSemVer();
 			if (SemanticVersion.getDefaultInstance().equals(protoSemVer)) {
-				log.error(
-						"Failed to load versions, record stream file header will be [{}, 0, 0, 0]",
-						RECORD_VERSION);
+				log.error("Failed to load HAPI proto versions, record stream files may be unusable");
 			}
 			fileHeader = new int[] {
 					RECORD_VERSION,
