@@ -225,9 +225,13 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue());
-			if (validity != OK) {
-				return validity;
+			if (!approvedForAll.getValue()) {
+				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
+				// state
+				validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue());
+				if (validity != OK) {
+					return validity;
+				}
 			}
 		}
 		return OK;

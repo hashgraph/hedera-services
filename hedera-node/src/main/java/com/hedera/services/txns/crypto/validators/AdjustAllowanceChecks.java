@@ -36,9 +36,9 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
+import javafx.collections.transformation.SortedList;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
@@ -167,7 +167,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
 			final var existingSerials = existingAllowances.containsKey(key) ?
 					existingAllowances.get(key).getSerialNumbers()
-					: new ArrayList<Long>();
+					: new SortedList<Long>();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -178,9 +178,14 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue(), existingSerials);
-			if (validity != OK) {
-				return validity;
+			if (!approvedForAll.getValue()) {
+				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
+				// state
+				validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue(),
+						existingSerials);
+				if (validity != OK) {
+					return validity;
+				}
 			}
 		}
 		return OK;
