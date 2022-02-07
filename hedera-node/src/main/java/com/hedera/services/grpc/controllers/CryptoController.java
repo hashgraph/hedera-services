@@ -35,6 +35,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
@@ -63,6 +65,8 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String CRYPTO_UPDATE_METRIC = "updateAccount";
 	public static final String ADD_LIVE_HASH_METRIC = "addLiveHash";
 	public static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
+	public static final String CRYPTO_APPROVE_ALLOWANCES = "approveAllowances";
+	public static final String CRYPTO_ADJUST_ALLOWANCE = "adjustAllowance";
 
 	private final MetaAnswers metaAnswers;
 	private final CryptoAnswers cryptoAnswers;
@@ -140,6 +144,16 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	@Override
 	public void updateAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, CryptoUpdate);
+	}
+
+	@Override
+	public void approveAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, CryptoApproveAllowance);
+	}
+
+	@Override
+	public void adjustAllowance(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, CryptoAdjustAllowance);
 	}
 
 	@Override
