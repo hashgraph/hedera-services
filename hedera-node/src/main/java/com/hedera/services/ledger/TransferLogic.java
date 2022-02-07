@@ -178,6 +178,7 @@ public class TransferLogic {
 						hbarAllowances.remove(payerNum);
 					}
 					accountsLedger.set(accountId, CRYPTO_ALLOWANCES, hbarAllowances);
+					sideEffectsTracker.setCryptoAllowances(hbarAllowances);
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken() && change.getAggregatedUnits() < 0) {
 				final var allowanceId = FcTokenAllowanceId.from(
@@ -192,6 +193,7 @@ public class TransferLogic {
 					fungibleAllowances.put(allowanceId, newAllowance);
 				}
 				accountsLedger.set(accountId, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+				sideEffectsTracker.setFungibleTokenAllowances(fungibleAllowances);
 			} else if (change.isApprovedAllowance() && change.isForNft()) {
 				final var allowanceId = FcTokenAllowanceId.from(
 						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
@@ -207,6 +209,7 @@ public class TransferLogic {
 						nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
 					}
 					accountsLedger.set(accountId, NFT_ALLOWANCES, nftAllowances);
+					sideEffectsTracker.setNftAllowances(nftAllowances);
 				}
 			}
 		}

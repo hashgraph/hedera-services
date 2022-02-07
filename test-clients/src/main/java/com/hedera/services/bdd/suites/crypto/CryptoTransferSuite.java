@@ -135,23 +135,23 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList(),
-						allowanceTransfersWorkAsExpected(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList(),
+//						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork()
 				}
 		);
@@ -252,7 +252,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								movingUniqueWithAllowance(nonFungibleToken, 4L).between(otherOwner, receiver)
 						)
 								.payingWith(spender)
-								.signedBy(spender, owner, otherReceiver, otherOwner),
+								.signedBy(spender, owner, otherReceiver, otherOwner)
+								.via("complexAllowanceTransfer"),
+						getTxnRecord("complexAllowanceTransfer").logged(),
 						getAccountInfo(owner)
 								.hasToken(relationshipWith(fungibleToken).balance(920))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
