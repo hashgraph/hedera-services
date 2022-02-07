@@ -532,9 +532,12 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void serializeWorksWithBothChildAndParentMeta() throws IOException {
+	void serializeWorksWithBothChildAndParentMetaAndAllowanceMaps() throws IOException {
 		final var fout = mock(SerializableDataOutputStream.class);
 		final var inOrder = Mockito.inOrder(serdes, fout);
+		subject.setCryptoAllowances(cryptoAllowances);
+		subject.setFungibleTokenAllowances(fungibleAllowances);
+		subject.setNftAllowances(nftAllowances);
 
 		subject.serialize(fout);
 
@@ -562,6 +565,17 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(fout).writeBoolean(true);
 		inOrder.verify(fout).writeLong(packedParentConsTime);
 		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
+		inOrder.verify(fout).writeInt(cryptoAllowances.size());
+		inOrder.verify(fout).writeLong(spenderNum.longValue());
+		inOrder.verify(fout).writeLong(initialAllowance);
+		inOrder.verify(fout).writeInt(fungibleAllowances.size());
+		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
+		inOrder.verify(fout).writeLong(initialAllowance);
+		inOrder.verify(fout).writeInt(nftAllowances.size());
+		inOrder.verify(fout).writeSerializable(nftAllowanceId, true);
+		inOrder.verify(fout).writeSerializable(nftAllowance2, true);
+		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
+		inOrder.verify(fout).writeSerializable(nftAllowance1, true);
 	}
 
 	@Test
