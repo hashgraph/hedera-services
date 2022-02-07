@@ -46,7 +46,7 @@ public class EncodingFacade {
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
-	private static final TupleType ownerOfType = TupleType.parse("(bytes32)");
+	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse("(string)");
 	private static final TupleType symbolType = TupleType.parse("(string)");
 	private static final TupleType tokenUriType = TupleType.parse("(string)");
@@ -247,7 +247,7 @@ public class EncodingFacade {
 				case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
 				case DECIMALS -> result = Tuple.of(decimals);
 				case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
-				case OWNER -> result = Tuple.of(owner);
+				case OWNER -> result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
 				case NAME -> result = Tuple.of(name);
 				case SYMBOL -> result = Tuple.of(symbol);
 				case TOKEN_URI -> result = Tuple.of(metadata);

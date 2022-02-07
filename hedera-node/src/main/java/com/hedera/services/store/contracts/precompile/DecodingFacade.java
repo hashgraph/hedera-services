@@ -232,17 +232,17 @@ public class DecodingFacade {
 	public OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
 
-		final var tokenId = (long) decodedArguments.get(0);
+		final var tokenId = (BigInteger) decodedArguments.get(0);
 
-		return new OwnerOfAndTokenURIWrapper(tokenId);
+		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
 	}
 
 	public OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 
-		final var tokenId = (long) decodedArguments.get(0);
+		final var tokenId = (BigInteger) decodedArguments.get(0);
 
-		return new OwnerOfAndTokenURIWrapper(tokenId);
+		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {

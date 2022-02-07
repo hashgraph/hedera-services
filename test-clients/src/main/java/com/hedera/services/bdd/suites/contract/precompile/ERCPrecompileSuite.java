@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -123,8 +124,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		return List.of(
 //				getErc721TokenName(),
 //				getErc721Symbol(),
-//				getErc721TokenURI(),
-//				getErc721OwnerOf(),
+				getErc721TokenURI(),
+//				getErc721OwnerOf()
 //				getErc721BalanceOf(),
 //				getErc721TotalSupply(),
 				getErc721TransferFrom()
@@ -209,6 +210,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(symbolTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -254,6 +256,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(decimalsTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -278,7 +281,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.FINITE)
 								.initialSupply(totalSupply)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
@@ -298,6 +300,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(supplyTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -328,6 +331,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
+						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+						cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
 								.gas(300_000)
@@ -342,6 +347,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(balanceTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -668,6 +674,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(nameTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -707,6 +714,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(symbolTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -744,6 +752,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(tokenURITxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -781,6 +790,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(totalSupplyTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -808,7 +818,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						contractCreate(ERC_721_CONTRACT_NAME)
 								.bytecode(ERC_721_CONTRACT_NAME)
 								.gas(300_000),
-						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META))
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -820,6 +832,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(OWNER)
 														.via(balanceOfTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
@@ -846,7 +859,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						contractCreate(ERC_721_CONTRACT_NAME)
 								.bytecode(ERC_721_CONTRACT_NAME)
 								.gas(300_000),
-						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META))
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -857,6 +872,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(OWNER)
 														.via(ownerOfTxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(4000000)
 										)
 						)
 				).then(
