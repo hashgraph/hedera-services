@@ -75,6 +75,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -420,6 +421,40 @@ class AccessorBasedUsagesTest {
 		verify(cryptoOpsUsage).cryptoApproveAllowanceUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
 	}
 
+	@Test
+	void worksAsExpectedForCryptoAdjust() {
+		final var baseMeta = new BaseTransactionMeta(100, 0);
+		final var opMeta = CryptoAllowanceMeta.newBuilder()
+				.numOfCryptoAllowances(1)
+				.numOfTokenAllowances(2)
+				.numOfNftAllowances(3)
+				.aggregatedNftAllowancesWithSerials(10)
+				.effectiveNow(Instant.now().getEpochSecond())
+				.build();
+		final var cryptoContext = ExtantCryptoContext.newBuilder()
+				.setCurrentKey(Key.getDefaultInstance())
+				.setCurrentMemo(memo)
+				.setCurrentExpiry(now)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowanceCount(1)
+				.setCurrentTokenAllowanceCount(2)
+				.setCurrentNftAllowanceCount(3)
+				.setCurrentNftSerialsCount(10)
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(CryptoAdjustAllowance);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getCryptoAdjustMeta(any())).willReturn(opMeta);
+		given(opUsageCtxHelper.ctxForCryptoAllowance(any())).willReturn(cryptoContext);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(cryptoOpsUsage).cryptoAdjustAllowanceUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+	}
 
 	@Test
 	void supportsIfInSet() {

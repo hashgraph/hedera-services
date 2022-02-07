@@ -33,6 +33,9 @@ import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 
+/**
+ * Metadata for both CryptoApproveAllowance and CryptoAdjustAllowance
+ */
 public class CryptoAllowanceMeta {
 	private int numOfCryptoAllowances;
 	private int numOfTokenAllowances;
