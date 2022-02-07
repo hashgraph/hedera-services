@@ -20,13 +20,18 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -43,6 +48,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
@@ -73,18 +79,21 @@ class ExpirableTxnRecordTest {
 
 	private static final byte[] pretendHash = "not-really-a-hash".getBytes();
 
-	private static final TokenID nft = IdUtils.asToken("1.2.2");
-	private static final TokenID tokenA = IdUtils.asToken("1.2.3");
-	private static final TokenID tokenB = IdUtils.asToken("1.2.4");
-	private static final AccountID sponsor = IdUtils.asAccount("1.2.5");
-	private static final AccountID beneficiary = IdUtils.asAccount("1.2.6");
-	private static final AccountID magician = IdUtils.asAccount("1.2.7");
+	private static final TokenID nft = IdUtils.asToken("0.0.2");
+	private static final TokenID tokenA = IdUtils.asToken("0.0.3");
+	private static final TokenID tokenB = IdUtils.asToken("0.0.4");
+	private static final AccountID sponsor = IdUtils.asAccount("0.0.5");
+	private static final AccountID beneficiary = IdUtils.asAccount("0.0.6");
+	private static final AccountID magician = IdUtils.asAccount("0.0.7");
+	private static final AccountID spender = IdUtils.asAccount("0.0.8");
+	private static final EntityNum spenderNum = EntityNum.fromAccountId(spender);
 	private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(
 			10, 11).toGrpc());
 
 	private static final EntityId feeCollector = new EntityId(1, 2, 8);
 	private static final EntityId token = new EntityId(1, 2, 9);
 	private static final long units = 123L;
+	private static final long initialAllowance = 100L;
 
 	private static final TokenTransferList nftTokenTransfers = TokenTransferList.newBuilder()
 			.setToken(nft)
@@ -106,6 +115,46 @@ class ExpirableTxnRecordTest {
 	private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
 	private static final FcAssessedCustomFee balanceChange =
 			new FcAssessedCustomFee(feeCollector, token, units, new long[] { 234L });
+	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
+	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
+	private static final FcTokenAllowanceId fungibleAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenA), spenderNum);
+	private static final FcTokenAllowanceId nftAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(nft), spenderNum);
+	private static final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
+		put(spenderNum, initialAllowance);
+	}};
+	private static final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, initialAllowance);
+	}};
+	private static final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, nftAllowance1);
+		put(nftAllowanceId, nftAllowance2);
+	}};
+	private static final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setAmount(initialAllowance)
+			.setSpender(spender)
+			.build();
+	private static final TokenAllowance fungibleTokenAllowance = TokenAllowance.newBuilder()
+			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setAmount(initialAllowance)
+			.setSpender(spender)
+			.setTokenId(tokenA)
+			.build();
+	private static final NftAllowance nftAllowanceAll = NftAllowance.newBuilder()
+			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setApprovedForAll(BoolValue.of(true))
+			.setTokenId(tokenA)
+			.setSpender(spender)
+			.build();
+	private static final NftAllowance nftAllowanceSome = NftAllowance.newBuilder()
+			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setApprovedForAll(BoolValue.of(false))
+			.setTokenId(nft)
+			.addAllSerialNumbers(List.of(1L, 2L))
+			.setSpender(spender)
+			.build();
 
 	private DomainSerdes serdes;
 	private ExpirableTxnRecord subject;
@@ -417,6 +466,72 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
+	void v0230DeserializeWorksWithAllowanceMaps() throws IOException {
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
+		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
+		subject.setCryptoAllowances(cryptoAllowances);
+		subject.setFungibleTokenAllowances(fungibleAllowances);
+		subject.setNftAllowances(nftAllowances);
+		final var fin = mock(SerializableDataInputStream.class);
+		given(serdes.readNullableSerializable(fin))
+				.willReturn(subject.getReceipt())
+				.willReturn(subject.getTxnId())
+				.willReturn(subject.getHbarAdjustments())
+				.willReturn(subject.getContractCallResult())
+				.willReturn(subject.getContractCreateResult())
+				.willReturn(subject.getScheduleRef());
+		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
+				.willReturn(List.of(
+						subject.getTokens().get(0),
+						subject.getTokens().get(1),
+						subject.getTokens().get(2)))
+				.willReturn(List.of(
+						subject.getTokenAdjustments().get(0),
+						subject.getTokenAdjustments().get(1),
+						subject.getTokenAdjustments().get(2)))
+				.willReturn(List.of(
+						subject.getNftTokenAdjustments().get(0),
+						subject.getNftTokenAdjustments().get(1),
+						subject.getNftTokenAdjustments().get(2)
+				));
+		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
+				.willReturn(subject.getTxnHash());
+		given(serdes.readNullableInstant(fin))
+				.willReturn(subject.getConsensusTimestamp());
+		given(fin.readLong())
+				.willReturn(subject.getFee())
+				.willReturn(subject.getExpiry())
+				.willReturn(subject.getSubmittingMember())
+				.willReturn(spenderNum.longValue())
+				.willReturn(initialAllowance);
+		given(fin.readShort()).willReturn(subject.getNumChildRecords());
+		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+				.willReturn(subject.getMemo());
+		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
+				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
+		given(fin.readSerializableList(Integer.MAX_VALUE))
+				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
+		given(fin.readByteArray(Integer.MAX_VALUE))
+				.willReturn(subject.getAlias().toByteArray());
+		given(fin.readInt())
+				.willReturn(cryptoAllowances.size())
+				.willReturn(fungibleAllowances.size())
+				.willReturn(nftAllowances.size());
+		given(fin.readSerializable())
+				.willReturn(fungibleAllowanceId)
+				.willReturn(fungibleAllowanceId)
+				.willReturn(nftAllowance1)
+				.willReturn(nftAllowanceId)
+				.willReturn(nftAllowance2);
+		final var deserializedRecord = new ExpirableTxnRecord();
+
+		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0230_VERSION);
+
+		assertEquals(deserializedRecord, subject);
+	}
+
+	@Test
 	void serializeWorksWithBothChildAndParentMeta() throws IOException {
 		final var fout = mock(SerializableDataOutputStream.class);
 		final var inOrder = Mockito.inOrder(serdes, fout);
@@ -492,11 +607,17 @@ class ExpirableTxnRecordTest {
 		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+				.addCryptoAdjustments(cryptoAllowance)
+				.addAllNftAdjustments(List.of(nftAllowanceSome, nftAllowanceAll))
+				.addTokenAdjustments(fungibleTokenAllowance)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+		subject.setNftAllowances(nftAllowances);
+		subject.setFungibleTokenAllowances(fungibleAllowances);
+		subject.setCryptoAllowances(cryptoAllowances);
 
 		final var grpcSubject = subject.asGrpc();
 
@@ -547,10 +668,10 @@ class ExpirableTxnRecordTest {
 				" " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
-				".000000890Z, tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <-" +
+				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
 				" " +
-				"+1000]}), 1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2" +
-				"(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=" +
+				"+1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
 				"(FcTokenAssociation{token=10, account=11})}";
@@ -571,14 +692,50 @@ class ExpirableTxnRecordTest {
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
-				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=1.2.3" +
-				"(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4" +
-				"(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.2" +
-				"(NftAdjustments{readable=[1 1.2.5 1.2.6]}), assessedCustomFees=" +
+				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=0.0.3" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
+				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
 				"(FcTokenAssociation{token=10, account=11})}";
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void toStringWorksWithAllowanceMaps() {
+		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
+		subject.setCryptoAllowances(cryptoAllowances);
+		subject.setFungibleTokenAllowances(fungibleAllowances);
+		subject.setNftAllowances(nftAllowances);
+		final var expected = "ExpirableTxnRecord{numChildRecords=2, receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
+				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
+				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
+				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
+				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
+				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
+				" " +
+				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}," +
+				" " +
+				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
+				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
+				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
+				" " +
+				"+1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
+				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
+				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
+				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
+				"(FcTokenAssociation{token=10, account=11}), " +
+				"cryptoAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, spender : EntityNum{value=8}, allowance : 100}], " +
+				"fungibleTokenAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=3}, " +
+				"spender : EntityNum{value=8}, allowance : 100}], " +
+				"nftAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=2}, " +
+				"spender : EntityNum{value=8}, isApproveForAll : false, SerialNums : 1, 2}, " +
+				"{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=3}, spender : EntityNum{value=8}, " +
+				"isApproveForAll : true, SerialNums : }]}";
+
+		assertEquals(expected, subject.toString());
 	}
 
 	@AfterEach

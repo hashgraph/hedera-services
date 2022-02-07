@@ -205,36 +205,36 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (cryptoAllowances.size() != 0) {
-			final var readable = cryptoAllowances.entrySet().stream().map(
-					allowance -> String.format("owner : %s, spender : %s, allowance : %d",
+			final var readable = "[" + cryptoAllowances.entrySet().stream().map(
+					allowance -> String.format("{owner : %s, spender : %s, allowance : %d}",
 							txnId.getPayerAccount().toString(),
 							allowance.getKey().toString(),
 							allowance.getValue()))
-					.collect(joining(", "));
+					.collect(joining(", ")) + "]";
 			helper.add("cryptoAllowances", readable);
 		}
 
 		if (fungibleTokenAllowances.size() != 0) {
-			final var readable = fungibleTokenAllowances.entrySet().stream().map(
-					allowance -> String.format("owner : %s, token : %s, spender : %s, allowance : %d",
+			final var readable = "[" + fungibleTokenAllowances.entrySet().stream().map(
+					allowance -> String.format("{owner : %s, token : %s, spender : %s, allowance : %d}",
 							txnId.getPayerAccount().toString(),
 							allowance.getKey().getTokenNum().toString(),
 							allowance.getKey().getSpenderNum().toString(),
 							allowance.getValue()))
-					.collect(joining(", "));
+					.collect(joining(", ")) + "]";
 			helper.add("fungibleTokenAllowances", readable);
 		}
 
 		if (nftAllowances.size() != 0) {
-			final var readable = nftAllowances.entrySet().stream().map(
+			final var readable = "[" + nftAllowances.entrySet().stream().map(
 							allowance -> String.format(
-									"owner : %s, token : %s, spender : %s, isApproveForAll : %b, SerialNums : %s",
+									"{owner : %s, token : %s, spender : %s, isApproveForAll : %b, SerialNums : %s}",
 									txnId.getPayerAccount().toString(),
 									allowance.getKey().getTokenNum().toString(),
 									allowance.getKey().getSpenderNum().toString(),
 									allowance.getValue().isApprovedForAll(),
 									allowance.getValue().getSerialNumbers().stream().map(Object::toString).collect(joining(", "))))
-					.collect(joining(", "));
+					.collect(joining(", ")) + "]";
 			helper.add("nftAllowances", readable);
 		}
 
@@ -280,7 +280,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.nftAllowances, that.nftAllowances) &&
-				Objects.equals(this.fungibleTokenAllowances, this.fungibleTokenAllowances);
+				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances);
 	}
 
 	@Override
@@ -969,22 +969,24 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
 		}
-
-		public Map<EntityNum, Long> getCryptoAllowances() {
-			return cryptoAllowances;
-		}
-
-		public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
-			return fungibleTokenAllowances;
-		}
-
-		public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-			return nftAllowances;
-		}
 	}
 
 	/* --- Only used by unit tests --- */
 	void setNewTokenAssociations(final List<FcTokenAssociation> newTokenAssociations) {
 		this.newTokenAssociations = newTokenAssociations;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public void setFungibleTokenAllowances(
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public void setNftAllowances(
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		this.nftAllowances = nftAllowances;
 	}
 }

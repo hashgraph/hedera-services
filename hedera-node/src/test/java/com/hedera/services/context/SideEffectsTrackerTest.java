@@ -21,6 +21,8 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -29,6 +31,7 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -38,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -297,10 +301,22 @@ class SideEffectsTrackerTest {
 		assertEquals(cOnlyBalanceChange, cChange.getTransfers(0).getAmount());
 	}
 
+	@Test
+	void gettersAndSetterrsWork() {
+		subject.setNftAllowances(nftAllowances);
+		subject.setFungibleTokenAllowances(fungibleAllowances);
+		subject.setCryptoAllowances(cryptoAllowances);
+
+		assertEquals(nftAllowances, subject.getNftAllowances());
+		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
+		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;
 	private static final long cOnlyBalanceChange = 8_888L;
+	private static final long initialAllowance = 100L;
 	private static final TokenID aToken = IdUtils.asToken("0.0.666");
 	private static final TokenID bToken = IdUtils.asToken("0.0.777");
 	private static final TokenID cToken = IdUtils.asToken("0.0.888");
@@ -308,4 +324,20 @@ class SideEffectsTrackerTest {
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
+	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
+	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
+	private static final FcTokenAllowanceId fungibleAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(aToken), EntityNum.fromAccountId(aAccount));
+	private static final FcTokenAllowanceId nftAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(bToken), EntityNum.fromAccountId(aAccount));
+	private static final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
+		put(EntityNum.fromAccountId(aAccount), initialAllowance);
+	}};
+	private static final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, initialAllowance);
+	}};
+	private static final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, nftAllowance1);
+		put(nftAllowanceId, nftAllowance2);
+	}};
 }

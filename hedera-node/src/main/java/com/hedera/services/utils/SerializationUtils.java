@@ -10,7 +10,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
-final public class SerializationUtils {
+public final class SerializationUtils {
+	private SerializationUtils()  {
+		throw new UnsupportedOperationException("Utility Class");
+	}
+
 	public static void serializeAllowances(
 			SerializableDataOutputStream out,
 			final Map<EntityNum, Long> cryptoAllowances,
