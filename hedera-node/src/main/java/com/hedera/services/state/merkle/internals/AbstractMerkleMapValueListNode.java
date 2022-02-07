@@ -49,7 +49,7 @@ public abstract class AbstractMerkleMapValueListNode<
 
 	private K[] keys;
 
-	public AbstractMerkleMapValueListNode() {
+	protected AbstractMerkleMapValueListNode() {
 		keys = orderedKeys(null, null, null);
 	}
 
