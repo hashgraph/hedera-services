@@ -23,9 +23,11 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -62,6 +64,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.hex;
@@ -97,9 +100,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_20() {
 		return List.of(
-//				getErc20TokenName(),
-//				getErc20TokenSymbol(),
-//				getErc20TokenDecimals(),
+				getErc20TokenName()
+//				getErc20TokenSymbol()
+//				getErc20TokenDecimals()
 //				getErc20TotalSupply(),
 //				getErc20BalanceOfAccount(),
 //				transferErc20Token(),
@@ -111,9 +114,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_721() {
 		return List.of(
-//				getErc721TokenName(),
-//				getErc721Symbol(),
-				getErc721TokenURI()
+//				getErc721TokenName()
+//				getErc721Symbol()
+//				getErc721TokenURI()
 //				getErc721OwnerOf()
 //				getErc721BalanceOf(),
 //				getErc721TotalSupply(),
@@ -157,13 +160,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(nameTxn).andAllChildRecords().logged()
-//						childRecordsCheck(nameTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().utf8data(tokenName)))))
+						childRecordsCheck(nameTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																.withName(tokenName)
+														)
+										)
+						)
 				);
 	}
 
@@ -203,13 +210,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(symbolTxn).andAllChildRecords().logged()
-//						childRecordsCheck(symbolTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().utf8data(tokenSymbol)))))
+						childRecordsCheck(symbolTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																.withSymbol(tokenSymbol)
+														)
+										)
+						)
 				);
 	}
 
@@ -249,13 +260,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(decimalsTxn).andAllChildRecords().logged()
-//						childRecordsCheck(decimalsTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().longValue(decimals)))))
+						childRecordsCheck(decimalsTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
+																.withDecimals(decimals)
+														)
+										)
+						)
 				);
 	}
 
@@ -589,7 +604,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(nameTxn).andAllChildRecords().logged()
+						childRecordsCheck(nameTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																.withName(tokenName)
+														)
+										)
+						)
 				);
 	}
 
@@ -629,7 +654,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(symbolTxn).andAllChildRecords().logged()
+						childRecordsCheck(symbolTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																.withSymbol(tokenSymbol)
+														)
+										)
+						)
 				);
 	}
 
