@@ -27,8 +27,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -264,7 +263,7 @@ class BaseOperationUsage {
 				.setCurrentNftSerialsCount(0)
 				.build();
 
-		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
+		final var cryptoApproveMeta = new CryptoAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoApproveAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoApproveMeta,
 				ctx, into);
@@ -288,7 +287,7 @@ class BaseOperationUsage {
 				.setCurrentNftSerialsCount(0)
 				.build();
 
-		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
+		final var cryptoAdjustMeta = new CryptoAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoAdjustAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoAdjustMeta,
 				ctx, into);

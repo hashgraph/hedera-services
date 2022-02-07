@@ -62,7 +62,7 @@ import java.util.function.Function;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta.countSerials;
+import static com.hedera.services.usage.crypto.CryptoAllowanceMeta.countSerials;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
@@ -385,7 +385,7 @@ class CryptoOpsUsageTest {
 		givenApprovalOp();
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(0, 0);
-		var opMeta = new CryptoApproveAllowanceMeta(txn.getCryptoApproveAllowance(),
+		var opMeta = new CryptoAllowanceMeta(txn.getCryptoApproveAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SigUsage sigUsage = new SigUsage(1, sigSize, 1);
 		expected.resetForTransaction(baseMeta, sigUsage);
@@ -440,7 +440,7 @@ class CryptoOpsUsageTest {
 		givenAdjustOp();
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(0, 0);
-		var opMeta = new CryptoAdjustAllowanceMeta(txn.getCryptoAdjustAllowance(),
+		var opMeta = new CryptoAllowanceMeta(txn.getCryptoAdjustAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SigUsage sigUsage = new SigUsage(1, sigSize, 1);
 		expected.resetForTransaction(baseMeta, sigUsage);

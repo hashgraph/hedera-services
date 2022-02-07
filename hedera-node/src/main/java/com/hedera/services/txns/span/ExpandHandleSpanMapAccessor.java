@@ -21,8 +21,7 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
@@ -150,19 +149,19 @@ public class ExpandHandleSpanMapAccessor {
 		return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
 	}
 
-	public void setCryptoApproveMeta(TxnAccessor accessor, CryptoApproveAllowanceMeta cryptoApproveMeta) {
+	public void setCryptoApproveMeta(TxnAccessor accessor, CryptoAllowanceMeta cryptoApproveMeta) {
 		accessor.getSpanMap().put(CRYPTO_APPROVE_META_KEY, cryptoApproveMeta);
 	}
 
-	public CryptoApproveAllowanceMeta getCryptoApproveMeta(TxnAccessor accessor) {
-		return (CryptoApproveAllowanceMeta) accessor.getSpanMap().get(CRYPTO_APPROVE_META_KEY);
+	public CryptoAllowanceMeta getCryptoApproveMeta(TxnAccessor accessor) {
+		return (CryptoAllowanceMeta) accessor.getSpanMap().get(CRYPTO_APPROVE_META_KEY);
 	}
 
-	public void setCryptoAdjustMeta(TxnAccessor accessor, CryptoAdjustAllowanceMeta cryptoAdjustMeta) {
+	public void setCryptoAdjustMeta(TxnAccessor accessor, CryptoAllowanceMeta cryptoAdjustMeta) {
 		accessor.getSpanMap().put(CRYPTO_ADJUST_META_KEY, cryptoAdjustMeta);
 	}
 
-	public CryptoAdjustAllowanceMeta getCryptoAdjustMeta(TxnAccessor accessor) {
-		return (CryptoAdjustAllowanceMeta) accessor.getSpanMap().get(CRYPTO_ADJUST_META_KEY);
+	public CryptoAllowanceMeta getCryptoAdjustMeta(TxnAccessor accessor) {
+		return (CryptoAllowanceMeta) accessor.getSpanMap().get(CRYPTO_ADJUST_META_KEY);
 	}
 }

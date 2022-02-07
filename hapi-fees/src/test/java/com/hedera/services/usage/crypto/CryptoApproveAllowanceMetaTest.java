@@ -48,11 +48,11 @@ class CryptoApproveAllowanceMetaTest {
 
 	@Test
 	void allGettersAndToStringWork() {
-		final var expected = "CryptoApproveAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
+		final var expected = "CryptoAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
 				"numOfNftAllowances=3, aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567, " +
 				"msgBytesUsed=112}";
 		final var now = 1_234_567;
-		final var subject = CryptoApproveAllowanceMeta.newBuilder()
+		final var subject = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)
@@ -83,7 +83,7 @@ class CryptoApproveAllowanceMetaTest {
 						cryptoApproveTxnBody
 				).build();
 
-		var subject = new CryptoApproveAllowanceMeta(cryptoApproveTxnBody,
+		var subject = new CryptoAllowanceMeta(cryptoApproveTxnBody,
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
 		final var expectedMsgBytes = CRYPTO_ALLOWANCE_SIZE
@@ -100,7 +100,7 @@ class CryptoApproveAllowanceMetaTest {
 	@Test
 	void hashCodeAndEqualsWork() {
 		final var now = 1_234_567;
-		final var subject1 = CryptoApproveAllowanceMeta.newBuilder()
+		final var subject1 = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)
@@ -108,7 +108,7 @@ class CryptoApproveAllowanceMetaTest {
 				.effectiveNow(now)
 				.build();
 
-		final var subject2 = CryptoApproveAllowanceMeta.newBuilder()
+		final var subject2 = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)

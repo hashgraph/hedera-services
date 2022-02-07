@@ -30,7 +30,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -388,7 +388,7 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForCryptoApprove() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
-		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+		final var opMeta = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)

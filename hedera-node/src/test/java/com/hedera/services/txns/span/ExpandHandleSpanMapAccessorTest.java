@@ -20,8 +20,7 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -145,7 +144,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForCryptoApproveMetaAsExpected() {
-		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+		final var opMeta = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)
@@ -163,7 +162,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForCryptoAdjustMetaAsExpected() {
-		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
+		final var opMeta = CryptoAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)

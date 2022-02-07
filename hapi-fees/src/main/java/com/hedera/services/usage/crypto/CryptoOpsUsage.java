@@ -181,7 +181,7 @@ public class CryptoOpsUsage {
 
 	public void cryptoApproveAllowanceUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
-			final CryptoApproveAllowanceMeta cryptoApproveMeta,
+			final CryptoAllowanceMeta cryptoApproveMeta,
 			final ExtantCryptoContext ctx,
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
@@ -206,7 +206,7 @@ public class CryptoOpsUsage {
 
 	public void cryptoAdjustAllowanceUsage(final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
-			final CryptoAdjustAllowanceMeta cryptoAdjustMeta,
+			final CryptoAllowanceMeta cryptoAdjustMeta,
 			final ExtantCryptoContext ctx,
 			final UsageAccumulator accumulator) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
