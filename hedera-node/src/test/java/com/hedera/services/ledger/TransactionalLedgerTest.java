@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
@@ -79,6 +80,10 @@ class TransactionalLedgerTest {
 
 	@Mock
 	private BackingStore<Long, TestAccount> backingAccounts;
+	@Mock
+	private TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger;
+	@Mock
+	private Function<TestAccountProperty, Object> extantProps;
 	@Mock
 	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
 
@@ -591,7 +596,15 @@ class TransactionalLedgerTest {
 		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.validate(1L, scopedCheck));
 	}
 
+	@Test
+	void validationFailsWithMissingFungibleAllowanceUsingExtantProps() {
+		subject = new TransactionalLedger<>(
+				TestAccountProperty.class, TestAccount::new, ledger, changeManager);
+		given(ledger.contains(1L)).willReturn(true);
+		given(ledger.get(1L, FUNGIBLE_ALLOWANCES)).willReturn(MISSING);
 
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.validateFungibleAllowance(1L, scopedCheck));
+	}
 
 	@Test
 	void validationFailsWithMissingFungibleAllowance() {
@@ -625,7 +638,15 @@ class TransactionalLedgerTest {
 		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.validateFungibleAllowance(1L, scopedCheck));
 	}
 
+	@Test
+	void validationFailsWithMissingNFTAllowanceUsingExtantProps() {
+		subject = new TransactionalLedger<>(
+				TestAccountProperty.class, TestAccount::new, ledger, changeManager);
+		given(ledger.contains(1L)).willReturn(true);
+		given(ledger.get(1L, NFT_ALLOWANCES)).willReturn(MISSING);
 
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.validateNftAllowance(1L, scopedCheck));
+	}
 
 	@Test
 	void validationFailsWithMissingNFTAllowance() {
