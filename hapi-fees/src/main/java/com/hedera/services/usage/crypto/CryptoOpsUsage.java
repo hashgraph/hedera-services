@@ -189,7 +189,6 @@ public class CryptoOpsUsage {
 
 		var newVariableSerialBytes = 0;
 		newVariableSerialBytes += cryptoApproveMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
-		accumulator.addRbs(newVariableSerialBytes);
 
 		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 
@@ -215,7 +214,6 @@ public class CryptoOpsUsage {
 
 		var newVariableSerialBytes = 0;
 		newVariableSerialBytes += cryptoAdjustMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
-		accumulator.addRbs(newVariableSerialBytes);
 
 		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 

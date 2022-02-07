@@ -414,7 +414,6 @@ class CryptoOpsUsageTest {
 		expected.addBpt(msgBytesUsed);
 
 		long newVariableBytes = countSerials(txn.getCryptoApproveAllowance().getNftAllowancesList()) * LONG_SIZE;
-		expected.addRbs(newVariableBytes);
 
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
@@ -470,7 +469,6 @@ class CryptoOpsUsageTest {
 		expected.addBpt(msgBytesUsed);
 
 		long newVariableBytes = countSerials(txn.getCryptoAdjustAllowance().getNftAllowancesList()) * LONG_SIZE;
-		expected.addRbs(newVariableBytes);
 
 		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);

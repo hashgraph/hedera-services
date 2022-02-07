@@ -57,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			FileAppend,
-			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance,
+			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoAdjustAllowance,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
 			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause

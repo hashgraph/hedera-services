@@ -42,6 +42,7 @@ import javax.inject.Inject;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
@@ -105,7 +106,10 @@ public class AllowanceChecks {
 	ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances) {
-		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
+		// each serial number of an NFT is considered as an allowance.
+		// So for Nft allowances aggregated amount is considered for limit calculation.
+		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() + aggregateNftAllowances(
+				nftAllowances);
 
 		if (exceedsTxnLimit(totalAllowances)) {
 			return MAX_ALLOWANCES_EXCEEDED;

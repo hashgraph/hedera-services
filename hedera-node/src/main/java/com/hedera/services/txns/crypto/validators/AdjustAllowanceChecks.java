@@ -167,7 +167,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
 			final var existingSerials = existingAllowances.containsKey(key) ?
 					existingAllowances.get(key).getSerialNumbers()
-					: new ArrayList<Long>();
+					: new ArrayList();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
