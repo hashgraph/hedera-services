@@ -140,7 +140,7 @@ class AdjustAllowanceChecksTest {
 
 	private void addExistingAllowances() {
 		List<Long> serials = new ArrayList<>();
-		serials.add(10L);
+		serials.add(30L);
 		serials.add(12L);
 
 		existingCryptoAllowances.put(EntityNum.fromAccountId(spender1), 20L);

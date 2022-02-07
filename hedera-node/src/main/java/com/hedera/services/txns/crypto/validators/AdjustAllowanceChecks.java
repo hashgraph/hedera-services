@@ -167,7 +167,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
 			final var existingSerials = existingAllowances.containsKey(key) ?
 					existingAllowances.get(key).getSerialNumbers()
-					: new ArrayList();
+					: new ArrayList<Long>();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -203,9 +203,11 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			var absoluteSerial = absolute(serial);
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
 
-			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) ||
-					(serial > 0 && existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER; // SPENDER_DOES_NOT_OWN_SERIAL or use TreeSet to store serial nums ?
+			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+			if (serial > 0 && existingSerials.contains(absoluteSerial)) {
+				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 			}
 			if (!nftsLedger.exists(nftId)) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;

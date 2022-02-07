@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -118,14 +119,16 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	}
 
 	/**
-	 * Adjust allowances based on all changes needed for Crypto allowances from the transaction.
+	 * Adjust allowances based on all changes needed for CryptoAllowances from the transaction.
 	 * If the spender doesn't exist in the allowances map, the cryptoAdjustAllowance transaction
 	 * acts as approval for the allowance and inserts allowance to the map. If the aggregated allowance becomes zero
 	 * after adding the amount to the existing spender's allowance, the spender's entry will be removed from the Map.
 	 * reduced.
 	 *
 	 * @param cryptoAllowances
+	 * 		newly given crypto allowances in the operation
 	 * @param ownerAccount
+	 * 		owner account
 	 */
 	private void adjustCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account ownerAccount) {
 		if (cryptoAllowances.isEmpty()) {
@@ -142,25 +145,29 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					continue;
 				}
 				cryptoMap.put(spender.asEntityNum(), amount);
-				continue;
+			} else {
+				final var existingAmount = cryptoMap.get(spender.asEntityNum());
+				final var aggregatedAmount = existingAmount + amount;
+				if (aggregatedAmount == 0) {
+					cryptoMap.remove(spender.asEntityNum());
+				} else {
+					cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
+				}
 			}
-			final var existingAmount = cryptoMap.get(spender.asEntityNum());
-			final var aggregatedAmount = existingAmount + amount;
-			if (aggregatedAmount == 0) {
-				cryptoMap.remove(spender.asEntityNum());
-				continue;
-			}
-			cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
 		}
 
 		ownerAccount.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
-	 * Applies all changes needed for NFT allowances from the transaction
+	 * Adjusts all changes needed for NFT allowances from the transaction. If the key{tokenNum, spenderNum} doesn't
+	 * exist in the map the allowance will be inserted. If the key exists, existing allowance values will be adjusted
+	 * based on the new allowances given in operation
 	 *
 	 * @param nftAllowances
+	 * 		newly given list of nft allowances
 	 * @param ownerAccount
+	 * 		owner account
 	 */
 	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
 		if (nftAllowances.isEmpty()) {
@@ -180,51 +187,34 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			if (!nftAllowancesMap.containsKey(key)) {
 				value = approvedForAll.getValue() ? FcTokenAllowance.from(
 						approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
-				nftAllowancesMap.put(key, value);
-				continue;
-			}
-
-			final var oldValue = nftAllowancesMap.get(key);
-			if (approvedForAll.getValue()) {
-				value = FcTokenAllowance.from(approvedForAll.getValue());
 			} else {
-				List<Long> newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums, key, nftAllowancesMap);
-				if (newSerials.isEmpty()) {
-					continue;
+				final var oldValue = nftAllowancesMap.get(key);
+				if (approvedForAll.getValue()) {
+					value = FcTokenAllowance.from(approvedForAll.getValue());
+				} else {
+					List<Long> newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums, key,
+							nftAllowancesMap);
+					if (newSerials.isEmpty()) {
+						continue;
+					}
+					value = FcTokenAllowance.from(newSerials);
 				}
-				value = FcTokenAllowance.from(newSerials);
 			}
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
 	}
 
-	private List<Long> adjustSerials(final List<Long> oldSerials,
-			final List<Long> opSerials,
-			final FcTokenAllowanceId key,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap) {
-		List<Long> newSerials = new ArrayList<>();
-		newSerials.addAll(oldSerials);
-
-		for (int i = 0; i < opSerials.size(); i++) {
-			final var serial = opSerials.get(i);
-			if (serial < 0) {
-				newSerials.remove(-1 * serial);
-			} else {
-				newSerials.add(serial);
-			}
-		}
-		if (newSerials.isEmpty()) {
-			nftAllowancesMap.remove(key);
-		}
-		return newSerials;
-	}
-
 	/**
-	 * Applies all changes needed for fungible token allowances from the transaction
+	 * Adjusts all changes needed for fungible token allowances from the transaction. If the key{tokenNum, spenderNum}
+	 * doesn't exist in the map the allowance will be inserted. If the key exists, existing allowance will be adjusted
+	 * based
+	 * on the new allowances given in operation
 	 *
 	 * @param tokenAllowances
+	 * 		newly given list of token allowances
 	 * @param ownerAccount
+	 * 		owner account
 	 */
 	private void adjustFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances,
 			final Account ownerAccount) {
@@ -245,14 +235,14 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					continue;
 				}
 				tokenAllowancesMap.put(key, amount);
-				continue;
-			}
-			final var oldAmount = tokenAllowancesMap.get(key);
-			final var aggregatedAmount = oldAmount + amount;
-			if (aggregatedAmount == 0) {
-				tokenAllowancesMap.remove(key);
 			} else {
-				tokenAllowancesMap.put(key, aggregatedAmount);
+				final var oldAmount = tokenAllowancesMap.get(key);
+				final var aggregatedAmount = oldAmount + amount;
+				if (aggregatedAmount == 0) {
+					tokenAllowancesMap.remove(key);
+				} else {
+					tokenAllowancesMap.put(key, aggregatedAmount);
+				}
 			}
 		}
 		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
@@ -266,5 +256,39 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 */
 	private boolean exceedsAccountLimit(final Account ownerAccount) {
 		return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
+	}
+
+	/**
+	 * Adds positive serial numbers, and removes negative serial numbers if they exist in the list.
+	 *
+	 * @param oldSerials
+	 * 		existing allowance serial numbers for the account
+	 * @param opSerials
+	 * 		serial numbers given in CryptoAdjustAllowance operation
+	 * @param key
+	 * 		key for NftAllowance map
+	 * @param nftAllowancesMap
+	 * 		Nft allowance map of owner account
+	 * @return adjusted serial numbers to be set for the allowance
+	 */
+	private List<Long> adjustSerials(final List<Long> oldSerials,
+			final List<Long> opSerials,
+			final FcTokenAllowanceId key,
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap) {
+		List<Long> newSerials = new ArrayList<>();
+		newSerials.addAll(oldSerials);
+
+		for (int i = 0; i < opSerials.size(); i++) {
+			final var serial = opSerials.get(i);
+			if (serial < 0) {
+				newSerials.remove(absolute(serial));
+			} else {
+				newSerials.add(serial);
+			}
+		}
+		if (newSerials.isEmpty()) {
+			nftAllowancesMap.remove(key);
+		}
+		return newSerials;
 	}
 }
