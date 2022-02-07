@@ -69,6 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -126,6 +127,23 @@ class ImpliedTransfersMarshalTest {
 				aliasCheck,
 				changeManagerFactory,
 				customSchedulesFactory);
+	}
+
+	@Test
+	void equalsWorks() {
+		final var token1 = EntityNum.fromLong(1010L);
+		final var token2 = EntityNum.fromLong(1011L);
+		final var account1 = asAccount("0.0.1001");
+		final var account2 = asAccount("0.0.1002");
+		ImpliedTransfersMarshal.TokenAndAccountID one = new ImpliedTransfersMarshal.TokenAndAccountID(token1, account1);
+		ImpliedTransfersMarshal.TokenAndAccountID two = new ImpliedTransfersMarshal.TokenAndAccountID(token2, account1);
+		ImpliedTransfersMarshal.TokenAndAccountID three = new ImpliedTransfersMarshal.TokenAndAccountID(token1, account2);
+		assertEquals(one, one);
+		assertNotEquals(one, two);
+		assertNotEquals(two, three);
+		assertNotEquals(one.hashCode(), three.hashCode());
+		assertNotEquals(two.hashCode(), three.hashCode());
+		assertNotEquals(one, token1);
 	}
 
 	@Test

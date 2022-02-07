@@ -237,7 +237,7 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.isAutoCreationEnabled());
 	}
 
-	class TokenAndAccountID {
+	static class TokenAndAccountID {
 		EntityNum tokenNum;
 		AccountID accountID;
 
