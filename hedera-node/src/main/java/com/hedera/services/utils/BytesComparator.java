@@ -12,18 +12,29 @@ public class BytesComparator implements Comparator<Bytes> {
 	public static final BytesComparator INSTANCE = new BytesComparator();
 
 	private BytesComparator() {
-		// private to force singelton usage.
+		// private to force singleton usage.
 	}
 
 	@Override
 	public int compare(final Bytes b1, final Bytes b2) {
-		// null checks - null before everything else
+		final var result = nullCheck(b1, b2);
+		if (result == 2) {
+			return bytesCompare(b1, b2);
+		}
+		return result;
+	}
+
+	int nullCheck(Bytes b1, Bytes b2) {
+		// null checks
 		if (b1 == null) {
 			return b2 == null ? 0 : 1;
 		} else if (b2 == null) {
 			return -1;
 		}
+		return 2;
+	}
 
+	int bytesCompare(Bytes b1, Bytes b2) {
 		// size check - Longer is bigger
 		int index = b1.size();
 		int sizeCheck = Integer.compare(index, b2.size());

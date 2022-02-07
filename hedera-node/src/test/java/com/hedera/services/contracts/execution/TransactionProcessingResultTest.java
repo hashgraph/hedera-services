@@ -24,8 +24,10 @@ package com.hedera.services.contracts.execution;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.AddressComparator;
 import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -42,6 +44,8 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -51,6 +55,8 @@ import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessingResultTest {
@@ -76,6 +82,8 @@ class TransactionProcessingResultTest {
 
 	@Test
 	void assertCorrectDataOnSuccessfulTransaction() {
+		final var addressComparator = Mockito.mock(AddressComparator.class);
+		given(addressComparator.compare(any(), any())).willReturn(1);
 
 		var firstContract = new Account(new Id(0, 0, 1003));
 		var secondContract = new Account(new Id(0, 0, 1004));
@@ -100,7 +108,7 @@ class TransactionProcessingResultTest {
 		secondContractChanges.put(UInt256.valueOf(2L), new ImmutablePair<>(UInt256.valueOf(55L),
 				UInt256.valueOf(255L)));
 		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> contractStateChanges =
-				new TreeMap<>(BytesComparator.INSTANCE);
+				new TreeMap<>(addressComparator);
 		contractStateChanges.put(firstContract.getId().asEvmAddress(), firstContractChanges);
 		contractStateChanges.put(secondContract.getId().asEvmAddress(), secondContractChanges);
 
