@@ -209,17 +209,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		for (int i = 0; i < opSerials.size(); i++) {
 			final var serial = opSerials.get(i);
 			if (serial < 0) {
-				if (newSerials.contains(-1 * serial)) {
-					newSerials.remove(-1 * serial);
-				} else {
-					// throw error?
-				}
+				newSerials.remove(-1 * serial);
 			} else {
-				if (newSerials.contains(serial)) {
-					// throw error ?
-				} else {
-					newSerials.add(serial);
-				}
+				newSerials.add(serial);
 			}
 		}
 		if (newSerials.isEmpty()) {

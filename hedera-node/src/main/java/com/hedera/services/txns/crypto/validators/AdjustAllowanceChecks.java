@@ -203,8 +203,9 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			var absoluteSerial = absolute(serial);
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
 
-			if (serial < 0 && !existingSerials.contains(absoluteSerial)) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER; // SPENDER_DOES_NOT_OWN_SERIAL;
+			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) ||
+					(serial > 0 && existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER; // SPENDER_DOES_NOT_OWN_SERIAL or use TreeSet to store serial nums ?
 			}
 			if (!nftsLedger.exists(nftId)) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
