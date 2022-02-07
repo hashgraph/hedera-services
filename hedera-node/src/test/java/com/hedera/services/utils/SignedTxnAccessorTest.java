@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -35,6 +36,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -42,12 +45,14 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
@@ -72,6 +77,7 @@ import java.util.function.Function;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
@@ -91,6 +97,17 @@ class SignedTxnAccessorTest {
 	private static final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
 	private static final byte[] memoUtf8Bytes = memo.getBytes();
 	private static final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
+
+	private static final AccountID spender1 = asAccount("0.0.1000");
+	private static final TokenID token1 = asToken("0.0.2000");
+	private static final TokenID token2 = asToken("0.0.3000");
+	private static final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).build();
+	private static final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).setTokenId(token1).build();
+	private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
+			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+
 
 	private static final SignatureMap expectedMap = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
@@ -566,6 +583,22 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void setCryptoApproveUsageMetaWorks() {
+		final var txn = signedCryptoApproveTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
+
+		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(now, expandedMeta.getEffectiveNow());
+		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
+		assertEquals(1,  expandedMeta.getNumOfCryptoAllowances());
+		assertEquals(1, expandedMeta.getNumOfTokenAllowances());
+		assertEquals(1, expandedMeta.getNumOfNftAllowances());
+	}
+
+	@Test
 	void getGasLimitWorksForCreate() {
 		final var op = ContractCreateTransactionBody.newBuilder()
 				.setGas(123456789L)
@@ -601,6 +634,10 @@ class SignedTxnAccessorTest {
 		return buildTransactionFrom(cryptoUpdateOp());
 	}
 
+	private Transaction signedCryptoApproveTxn() {
+		return buildTransactionFrom(cryptoApproveOp());
+	}
+
 	private TransactionBody cryptoCreateOp() {
 		final var op = CryptoCreateTransactionBody.newBuilder()
 				.setMemo(memo)
@@ -627,6 +664,20 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoUpdateAccount(op)
+				.build();
+	}
+
+	private TransactionBody cryptoApproveOp() {
+		final var op = CryptoApproveAllowanceTransactionBody.newBuilder()
+				.addAllCryptoAllowances(List.of(cryptoAllowance1))
+				.addAllTokenAllowances(List.of(tokenAllowance1))
+				.addAllNftAllowances(List.of(nftAllowance1))
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoApproveAllowance(op)
 				.build();
 	}
 

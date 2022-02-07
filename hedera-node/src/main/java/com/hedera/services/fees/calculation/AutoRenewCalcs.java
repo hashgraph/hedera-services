@@ -21,6 +21,8 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -134,6 +136,10 @@ public class AutoRenewCalcs {
 				.setCurrentMemo(account.getMemo())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())
 				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+				.setCurrentCryptoAllowanceCount(account.getCryptoAllowances().size())
+				.setCurrentTokenAllowanceCount(account.getFungibleTokenAllowances().size())
+				.setCurrentNftAllowanceCount(account.getNftAllowances().size())
+				.setCurrentNftSerialsCount(countSerials(account.getNftAllowances()))
 				.build();
 		return cryptoOpsUsage.cryptoAutoRenewRb(extantCtx);
 	}
@@ -142,5 +148,13 @@ public class AutoRenewCalcs {
 		return prices.getNodedata().getConstant()
 				+ prices.getNetworkdata().getConstant()
 				+ prices.getServicedata().getConstant();
+	}
+
+	static int countSerials(Map<FcTokenAllowanceId, FcTokenAllowance> allowanceMap) {
+		int serials = 0;
+		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> e : allowanceMap.entrySet()) {
+			serials += e.getValue().getSerialNumbers().size();
+		}
+		return serials;
 	}
 }

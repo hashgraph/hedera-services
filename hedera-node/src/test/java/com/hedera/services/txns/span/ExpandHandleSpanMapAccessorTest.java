@@ -20,6 +20,7 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -138,5 +140,23 @@ class ExpandHandleSpanMapAccessorTest {
 		subject.setCryptoUpdate(accessor, opMeta);
 
 		assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
+	}
+
+	@Test
+	void testsForCryptoApproveMetaAsExpected() {
+		final var opMeta  = CryptoApproveAllowanceMeta.newBuilder()
+				.numOfCryptoAllowances(1)
+				.numOfTokenAllowances(2)
+				.numOfNftAllowances(3)
+				.aggregatedNftAllowancesWithSerials(10)
+				.effectiveNow(Instant.now().getEpochSecond())
+				.build();
+
+		subject.setCryptoApproveMeta(accessor, opMeta);
+
+		assertEquals(1, subject.getCryptoApproveMeta(accessor).getNumOfCryptoAllowances());
+		assertEquals(2, subject.getCryptoApproveMeta(accessor).getNumOfTokenAllowances());
+		assertEquals(3, subject.getCryptoApproveMeta(accessor).getNumOfNftAllowances());
+		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
 	}
 }
