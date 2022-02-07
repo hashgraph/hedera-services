@@ -210,7 +210,7 @@ public class TypedTokenStore {
 		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
-	private MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
+	public MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
 		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 

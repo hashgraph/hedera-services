@@ -62,6 +62,13 @@ public class FeeBuilder {
 	public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 	public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 	public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
+	public static final int CRYPTO_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + INT_SIZE + LONG_SIZE; // owner, spender ,
+	// amount
+	public static final int TOKEN_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + LONG_SIZE; // owner, tokenNum,
+	// spender num, amount
+	public static final int NFT_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + BOOL_SIZE; // owner, tokenNum,
+	// spender num, approvedForAll
+
 	/**
 	 * Fields included: status, exchangeRate.
 	 */
@@ -291,7 +298,7 @@ public class FeeBuilder {
 		try {
 			return CommonUtils.extractSignatureMap(transaction).getSerializedSize();
 		} catch (InvalidProtocolBufferException ignored) {
-          return 0;
+			return 0;
 		}
 	}
 
