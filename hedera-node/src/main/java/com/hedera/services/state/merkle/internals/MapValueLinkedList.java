@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * Represents a linked list of {@link MapValueListNode}s <b>with distinct keys</b>.
@@ -55,8 +54,9 @@ public interface MapValueLinkedList<K, S extends MapValueListNode<K, S>, V> {
 	 * 		a callback to get a node from the map
 	 * @throws InvalidTransactionException
 	 * 		if list maximum size would be exceeded
+	 * @return whether there was capacity in the list to create the mapping
 	 */
-	void addLast(K key, S node, int maxSize, BiConsumer<K, S> adder, Function<K, S> getter);
+	boolean addLast(K key, S node, int maxSize, BiConsumer<K, S> adder, Function<K, S> getter);
 
 	/**
 	 * Removes an existing node from this list, using the provided function objects to update the map that
@@ -64,14 +64,12 @@ public interface MapValueLinkedList<K, S extends MapValueListNode<K, S>, V> {
 	 *
 	 * @param node
 	 * 		the node to remove
-	 * @param check
-	 * 		an existence check for map keys
 	 * @param remover
 	 * 		a callback remove an existing mapping
 	 * @throws IllegalArgumentException
 	 * 		if the node does not exist
 	 */
-	void remove(S node, Predicate<K> check, Consumer<S> remover, Function<K, S> getter);
+	void remove(S node, Consumer<K> remover, Function<K, S> getter);
 
 	/**
 	 * Provides a view of all the values in this list.
