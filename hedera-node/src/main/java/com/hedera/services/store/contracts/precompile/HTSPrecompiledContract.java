@@ -40,6 +40,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -119,6 +120,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
+import static com.hedera.services.ledger.properties.TokenProperty.NAME;
+import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
+import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -968,7 +973,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected TokenID tokenID;
 		private TransactionBody.Builder syntheticTxn;
 		private SideEffectsTracker sideEffects;
-		protected HederaTokenStore hederaTokenStore;
 
 		public ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
@@ -977,15 +981,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input.slice(24));
-
 			this.sideEffects = sideEffectsFactory.get();
-			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-					ids,
-					validator,
-					sideEffects,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+
 			return syntheticTxn;
 		}
 
@@ -1103,7 +1100,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final var name = hederaTokenStore.get(tokenID).name();
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			var name = (String) tokensLedger.get(tokenID, NAME);
+
 			return encoder.encodeName(name);
 		}
 	}
@@ -1116,7 +1115,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final var symbol = hederaTokenStore.get(tokenID).symbol();
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			var symbol = (String) tokensLedger.get(tokenID, SYMBOL);
+
 			return encoder.encodeSymbol(symbol);
 		}
 	}
@@ -1129,7 +1130,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final var decimals = hederaTokenStore.get(tokenID).decimals();
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			var decimals = (Integer) tokensLedger.get(tokenID, DECIMALS);
+
 			return encoder.encodeDecimals(decimals);
 		}
 	}
@@ -1142,7 +1145,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final var totalSupply = hederaTokenStore.get(tokenID).totalSupply();
+			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			var totalSupply = (long) tokensLedger.get(tokenID, TOTAL_SUPPLY);
+
 			return encoder.encodeTotalSupply(totalSupply);
 		}
 	}
@@ -1158,9 +1163,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var nestedInput = input.slice(24);
 			tokenUriWrapper = decoder.decodeTokenUriNFT(nestedInput);
-			super.sideEffects = sideEffectsFactory.get();
 
-			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+			return super.body(input, aliasResolver);
 		}
 
 		@Override
@@ -1186,9 +1190,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var nestedInput = input.slice(24);
 			ownerWrapper = decoder.decodeOwnerOf(nestedInput);
-			super.sideEffects = sideEffectsFactory.get();
 
-			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+			return super.body(input, aliasResolver);
 		}
 
 		@Override
@@ -1213,9 +1216,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var nestedInput = input.slice(24);
 			balanceWrapper = decoder.decodeBalanceOf(nestedInput, aliasResolver);
-			super.sideEffects = sideEffectsFactory.get();
 
-			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+			return super.body(input, aliasResolver);
 		}
 
 		@Override
