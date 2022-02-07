@@ -29,4 +29,6 @@ import java.util.function.Function;
 public interface LedgerCheck<A, P>  {
 	ResponseCodeEnum checkUsing(A account, Map<P, Object> changeSet);
 	ResponseCodeEnum checkUsing(Function<P, Object> extantProps, Map<P, Object> changeSet);
+	ResponseCodeEnum validateNftAllowance(A account, Function<P, Object> extantProps, Map<P, Object> changeSet);
+	ResponseCodeEnum validateFungibleTokenAllowance(A account, Function<P, Object> extantProps, Map<P, Object> changeSet);
 }

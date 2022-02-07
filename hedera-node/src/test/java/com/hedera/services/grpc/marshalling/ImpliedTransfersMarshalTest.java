@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -52,6 +53,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
+import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
@@ -68,6 +70,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -137,7 +141,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedMeta = new ImpliedTransfersMeta(
 				propsWithAutoCreation, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
@@ -155,7 +159,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedMeta = new ImpliedTransfersMeta(
 				propsWithAutoCreation, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
@@ -172,7 +176,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedMeta = new ImpliedTransfersMeta(
 				propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
@@ -187,7 +191,7 @@ class ImpliedTransfersMarshalTest {
 
 		givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		assertEquals(result.getMeta(), expectedMeta);
 	}
@@ -208,7 +212,7 @@ class ImpliedTransfersMarshalTest {
 
 		givenValidity(OK);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		// then:
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
@@ -233,21 +237,82 @@ class ImpliedTransfersMarshalTest {
 		op = builder.build();
 
 		final List<BalanceChange> expectedChanges = new ArrayList<>();
-		expectedChanges.add(changingHbar(adjustFrom(a, -100)));
-		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100)));
+		expectedChanges.add(changingHbar(adjustFrom(a, -100), payer));
+		expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100), payer));
 
 		final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(),
 				NO_ALIASES);
 
 		givenValidity(OK);
 
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
 		assertEquals(aliasA.toByteString(), result.getAllBalanceChanges().get(0).alias());
 		assertEquals(aliasB.toByteString(), result.getAllBalanceChanges().get(1).alias());
 		assertEquals(result.getMeta(), expectedMeta);
 		assertTrue(result.getAssessedCustomFees().isEmpty());
+	}
+
+	@Test
+	void aggregatesAccountAmountsAsExpected() {
+		final var account1 = asAccount("0.0.1001");
+		final var account2 = asAccount("0.0.1002");
+		final var token1 = asToken("0.0.1010");
+		final var aa1 = AccountAmount.newBuilder()
+				.setAccountID(account1)
+				.setAmount(-100).setIsApproval(true).build();
+		final var aa2 = AccountAmount.newBuilder()
+				.setAccountID(account2)
+				.setAmount(100).setIsApproval(true).build();
+		final var aa3 = AccountAmount.newBuilder()
+				.setAccountID(account1)
+				.setAmount(-100).setIsApproval(false).build();
+		final var aa4 = AccountAmount.newBuilder()
+				.setAccountID(account2)
+				.setAmount(100).setIsApproval(false).build();
+		setupProps();
+
+		final var builder = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(TransferList.newBuilder().addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4)).build())
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(token1)
+								.setExpectedDecimals(UInt32Value.of(1))
+								.addAllTransfers(List.of(aa1, aa2, aa3, aa4))
+								.build());
+		op = builder.build();
+		final var bc1 = changingHbar(adjustFrom(account1, -100), payer);
+		bc1.aggregateUnits(-100);
+		bc1.addAllowanceUnits(-100);
+		final var bc2 = changingHbar(adjustFrom(account2, +100), payer);
+		bc2.aggregateUnits(+100);
+		bc2.addAllowanceUnits(+100);
+		final var bc3 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
+		bc3.aggregateUnits(-100);
+		final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);
+		bc4.aggregateUnits(+100);
+
+		final List<BalanceChange> expectedChanges = new ArrayList<>();
+		expectedChanges.add(bc1);
+		expectedChanges.add(bc2);
+		expectedChanges.add(bc3);
+		expectedChanges.add(bc4);
+
+		givenValidity(OK);
+		given(changeManagerFactory.from(any(), anyInt())).willReturn(changeManager);
+		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
+
+		final var result = subject.unmarshalFromGrpc(op, payer);
+
+		assertEquals(expectedChanges.get(0).getAggregatedUnits(), result.getAllBalanceChanges().get(0).getAggregatedUnits());
+		assertEquals(expectedChanges.get(1).getAggregatedUnits(), result.getAllBalanceChanges().get(1).getAggregatedUnits());
+		assertEquals(expectedChanges.get(0).getAllowanceUnits(), result.getAllBalanceChanges().get(0).getAllowanceUnits());
+		assertEquals(expectedChanges.get(1).getAllowanceUnits(), result.getAllBalanceChanges().get(1).getAllowanceUnits());
+		assertEquals(expectedChanges.get(2).getAggregatedUnits(), result.getAllBalanceChanges().get(2).getAggregatedUnits());
+		assertEquals(expectedChanges.get(3).getAggregatedUnits(), result.getAllBalanceChanges().get(3).getAggregatedUnits());
+		assertEquals(expectedChanges.get(2).getAllowanceUnits(), result.getAllBalanceChanges().get(2).getAllowanceUnits());
+		assertEquals(expectedChanges.get(3).getAllowanceUnits(), result.getAllBalanceChanges().get(3).getAllowanceUnits());
 	}
 
 	@Test
@@ -275,7 +340,7 @@ class ImpliedTransfersMarshalTest {
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
@@ -311,7 +376,7 @@ class ImpliedTransfersMarshalTest {
 		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
-		final var result = subject.unmarshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op, payer);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
@@ -380,20 +445,20 @@ class ImpliedTransfersMarshalTest {
 
 	private List<BalanceChange> expNonFeeChanges(boolean incTokens) {
 		final List<BalanceChange> ans = new ArrayList<>();
-		ans.add(changingHbar(adjustFrom(aModel, -100)));
-		ans.add(changingHbar(adjustFrom(bModel, +50)));
-		ans.add(changingHbar(adjustFrom(cModel, +50)));
+		ans.add(changingHbar(adjustFrom(aModel, -100), payer));
+		ans.add(changingHbar(adjustFrom(bModel, +50), payer));
+		ans.add(changingHbar(adjustFrom(cModel, +50), payer));
 		if (incTokens) {
-			final var adjustOne = tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50);
+			final var adjustOne = tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false);
 			adjustOne.setExpectedDecimals(2);
 
 			ans.add(adjustOne);
-			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25));
-			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25));
-			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100));
-			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100));
-			ans.add(changingNftOwnership(Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberA)));
-			ans.add(changingNftOwnership(Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberB)));
+			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
+			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
+			ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false));
+			ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false));
+			ans.add(changingNftOwnership(Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberA), payer));
+			ans.add(changingNftOwnership(Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberB), payer));
 		}
 		return ans;
 	}
@@ -435,7 +500,8 @@ class ImpliedTransfersMarshalTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("2.3.4");
 	private final AccountID c = asAccount("3.4.5");
+	private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
-	private final BalanceChange aTrigger = BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
-	private final BalanceChange bTrigger = BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
+	private final BalanceChange aTrigger = BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1, null, false);
+	private final BalanceChange bTrigger = BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2, null, false);
 }

@@ -29,10 +29,14 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -83,7 +87,7 @@ public class ImpliedTransfersMarshal {
 		this.schedulesManagerFactory = schedulesManagerFactory;
 	}
 
-	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
+	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op, AccountID payerID) {
 		final var props = currentProps();
 
 		var numAutoCreations = 0;
@@ -109,10 +113,18 @@ public class ImpliedTransfersMarshal {
 			return ImpliedTransfers.invalid(props, validity);
 		}
 
-		final List<BalanceChange> changes = new ArrayList<>();
+		Map<AccountID, BalanceChange> aggregatedHbarChanges = new LinkedHashMap<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
-			changes.add(changingHbar(aa));
+			var currChange = changingHbar(aa, payerID);
+			if (!aggregatedHbarChanges.containsKey(currChange.accountId())) {
+				aggregatedHbarChanges.put(currChange.accountId(), currChange);
+			} else {
+				var existingChange = aggregatedHbarChanges.get(currChange.accountId());
+				existingChange.aggregateUnits(currChange.getAggregatedUnits());
+				existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
+			}
 		}
+		final List<BalanceChange> changes = new ArrayList<>(aggregatedHbarChanges.values());
 		if (!hasTokenChanges(op)) {
 			return ImpliedTransfers.valid(
 					props, changes, NO_CUSTOM_FEE_META, NO_CUSTOM_FEES, resolvedAliases, numAutoCreations);
@@ -120,7 +132,7 @@ public class ImpliedTransfersMarshal {
 
 		/* Add in the HTS balance changes from the transaction */
 		final var hbarOnly = changes.size();
-		appendToken(op, changes);
+		appendToken(op, changes, payerID);
 
 		return assessCustomFeesAndValidate(hbarOnly, numAutoCreations, changes, resolvedAliases, props);
 	}
@@ -157,7 +169,7 @@ public class ImpliedTransfersMarshal {
 				props, changes, schedulesManager.metaUsed(), fees, resolvedAliases, numAutoCreations);
 	}
 
-	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {
+	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes, AccountID payerID) {
 		/* First add all fungible changes, then NFT ownership changes. This ensures
 		fractional fees are applied to the fungible value exchanges before royalty
 		fees are assessed. */
@@ -167,21 +179,37 @@ public class ImpliedTransfersMarshal {
 			final var tokenId = Id.fromGrpcToken(grpcTokenId);
 
 			boolean decimalsSet = false;
+			Map<TokenAndAccountID, BalanceChange> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
 			for (var aa : xfers.getTransfersList()) {
-				var change = changingFtUnits(tokenId, grpcTokenId, aa);
+				var currChange = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
 				// set only for the first balance change of the token with expectedDecimals
 				if (xfers.hasExpectedDecimals() && !decimalsSet) {
-					change.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
+					currChange.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
 					decimalsSet = true;
 				}
-				changes.add(change);
+
+				var tokenAndAccountId = new TokenAndAccountID(EntityNum.fromLong(tokenId.num()), currChange.accountId());
+
+				if(!aggregatedFungibleTokenChanges.containsKey(tokenAndAccountId)) {
+					aggregatedFungibleTokenChanges.put(tokenAndAccountId, currChange);
+				} else {
+					var existingChange = aggregatedFungibleTokenChanges.get(tokenAndAccountId);
+					existingChange.aggregateUnits(currChange.getAggregatedUnits());
+					existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
+
+					// not needed as the exiting change would already have the decimals set if needed
+//					if (!existingChange.hasExpectedDecimals() && currChange.hasExpectedDecimals()) {
+//						existingChange.setExpectedDecimals(currChange.getExpectedDecimals());
+//					}
+				}
 			}
+			changes.addAll(aggregatedFungibleTokenChanges.values());
 
 			for (var oc : xfers.getNftTransfersList()) {
 				if (ownershipChanges == null) {
 					ownershipChanges = new ArrayList<>();
 				}
-				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc));
+				ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc, payerID));
 			}
 		}
 		if (ownershipChanges != null) {
@@ -207,5 +235,39 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.maxXferBalanceChanges(),
 				dynamicProperties.areNftsEnabled(),
 				dynamicProperties.isAutoCreationEnabled());
+	}
+
+	class TokenAndAccountID {
+		EntityNum tokenNum;
+		AccountID accountID;
+
+		TokenAndAccountID(EntityNum tokenNum, AccountID accountID) {
+			this.tokenNum = tokenNum;
+			this.accountID = accountID;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null || !obj.getClass().equals(TokenAndAccountID.class)) {
+				return false;
+			}
+
+			final var that = (TokenAndAccountID) obj;
+			return new EqualsBuilder()
+					.append(tokenNum, that.tokenNum)
+					.append(accountID, that.accountID)
+					.isEquals();
+		}
+
+		@Override
+		public int hashCode() {
+			return new HashCodeBuilder()
+					.append(tokenNum)
+					.append(accountID)
+					.toHashCode();
+		}
 	}
 }

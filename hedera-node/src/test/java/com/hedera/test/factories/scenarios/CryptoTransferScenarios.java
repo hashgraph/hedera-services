@@ -28,6 +28,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.approvedTinyBarsFromTo;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -319,4 +320,36 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CRYPTO_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(approvedTinyBarsFromTo(OWNER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
+							.get()
+			));
+		}
+	},
+	TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.approvedAdjusting(OWNER_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
+							.get()
+			));
+		}
+	},
+	NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.approvedChangingOwner(KNOWN_TOKEN_NFT, OWNER_ACCOUNT, TOKEN_RECEIVER)
+							.get()
+			));
+		}
+	}
 }

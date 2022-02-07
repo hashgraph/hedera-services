@@ -53,9 +53,10 @@ public class BalanceChange {
 	private Id token;
 
 	private Id account;
-	private long units;
 	private long originalUnits;
 	private long newBalance;
+	private long aggregatedUnits;
+	private long allowanceUnits;
 	private boolean exemptFromCustomFees = false;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
@@ -64,72 +65,86 @@ public class BalanceChange {
 	private ResponseCodeEnum codeForInsufficientBalance;
 	private ByteString alias;
 	private int expectedDecimals = -1;
+	private boolean isApprovedAllowance = false;
+	private AccountID payerID = null;
 
-	public static BalanceChange changingHbar(AccountAmount aa) {
-		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
+	public static BalanceChange changingHbar(AccountAmount aa, AccountID payerID) {
+		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
 	}
 
-	public static BalanceChange changingFtUnits(Id token, TokenID tokenId, AccountAmount aa) {
-		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
+	public static BalanceChange changingFtUnits(Id token, TokenID tokenId, AccountAmount aa, AccountID payerID) {
+		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE, payerID);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}
 
-	public static BalanceChange hbarAdjust(Id id, long amount) {
-		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
+	public static BalanceChange hbarAdjust(Id id, long amount, AccountID payerID, boolean isApprovedAllowance) {
+		return new BalanceChange(id, amount, payerID, isApprovedAllowance, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer) {
-		final var serialNo = nftTransfer.getSerialNumber();
+	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer, AccountID payerID) {
 		final var nftChange = new BalanceChange(
 				token,
 				nftTransfer.getSenderAccountID(),
 				nftTransfer.getReceiverAccountID(),
-				serialNo,
+				nftTransfer.getSerialNumber(),
 				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-		nftChange.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
 		nftChange.tokenId = tokenId;
+		nftChange.isApprovedAllowance = nftTransfer.getIsApproval();
+		nftChange.payerID = payerID;
 		return nftChange;
 	}
 
-	public static BalanceChange tokenAdjust(Id account, Id token, long amount) {
-		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
+	public static BalanceChange tokenAdjust(Id account, Id token, long amount, AccountID payerID, boolean isApprovedAllowance) {
+		final var tokenChange = new BalanceChange(account, amount, payerID, isApprovedAllowance, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.payerID = payerID;
 		tokenChange.token = token;
 		tokenChange.tokenId = token.asGrpcToken();
 		return tokenChange;
 	}
 
 	/* ℏ constructor */
-	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
+	private BalanceChange(Id account, long amount, AccountID payerID, boolean isApprovedAllowance, ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
 		this.alias = accountId.getAlias();
-		this.units = amount;
 		this.originalUnits = amount;
+		this.isApprovedAllowance = isApprovedAllowance;
+		this.payerID = payerID;
 		this.codeForInsufficientBalance = code;
+		this.aggregatedUnits = amount;
+		if (isApprovedAllowance) {
+			this.allowanceUnits = amount;
+		}
 	}
 
 	/* HTS constructor */
-	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
+	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code, AccountID payerID) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
 		this.alias = accountId.getAlias();
 		this.account = Id.fromGrpcAccount(accountId);
-		this.units = aa.getAmount();
-		this.originalUnits = units;
+		this.isApprovedAllowance = aa.getIsApproval();
+		this.originalUnits = aa.getAmount();
 		this.codeForInsufficientBalance = code;
+		this.payerID = payerID;
+		this.aggregatedUnits = aa.getAmount();
+		if (isApprovedAllowance) {
+			this.allowanceUnits = aa.getAmount();
+		}
 	}
 
 	/* NFT constructor */
 	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
 		this.token = token;
+		this.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
 		this.accountId = sender;
 		this.counterPartyAccountId = receiver;
 		this.account = Id.fromGrpcAccount(accountId);
 		this.alias = accountId.getAlias();
-		this.units = serialNo;
 		this.codeForInsufficientBalance = code;
+		this.aggregatedUnits = serialNo;
 	}
 
 	public void replaceAliasWith(final AccountID createdId) {
@@ -138,12 +153,12 @@ public class BalanceChange {
 		alias = ByteString.EMPTY;
 	}
 
-	public void adjustUnits(long units) {
-		this.units += units;
-	}
-
 	public boolean isForHbar() {
 		return token == null;
+	}
+
+	public boolean isForFungibleToken() {
+		return token != null && counterPartyAccountId == null;
 	}
 
 	public boolean isForNft() {
@@ -154,16 +169,12 @@ public class BalanceChange {
 		return nftId;
 	}
 
-	public long units() {
-		return units;
-	}
-
 	public long originalUnits() {
 		return originalUnits;
 	}
 
 	public long serialNo() {
-		return units;
+		return aggregatedUnits;
 	}
 
 	public long getNewBalance() {
@@ -214,6 +225,30 @@ public class BalanceChange {
 		this.expectedDecimals = expectedDecimals;
 	}
 
+	public boolean isApprovedAllowance() {
+		return this.allowanceUnits == 0 ? isApprovedAllowance : this.allowanceUnits < 0;
+	}
+
+	public AccountID getPayerID() {
+		return payerID;
+	}
+
+	public void aggregateUnits(long amount) {
+		this.aggregatedUnits += amount;
+	}
+
+	public long getAggregatedUnits() {
+		return this.aggregatedUnits;
+	}
+
+	public void addAllowanceUnits(long amount) {
+		this.allowanceUnits += amount;
+	}
+
+	public long getAllowanceUnits() {
+		return this.allowanceUnits;
+	}
+
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
 	this model object is not used in hash-based collections, so the performance of these
 	methods doesn't matter. */
@@ -235,13 +270,13 @@ public class BalanceChange {
 					.add("token", token == null ? "ℏ" : token)
 					.add("account", account)
 					.add("alias", alias.toStringUtf8())
-					.add("units", units)
+					.add("units", aggregatedUnits)
 					.add("expectedDecimals", expectedDecimals)
 					.toString();
 		} else {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("nft", token)
-					.add("serialNo", units)
+					.add("serialNo", aggregatedUnits)
 					.add("from", account)
 					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
 					.toString();

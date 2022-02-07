@@ -227,37 +227,37 @@ class BalanceChangeManagerTest {
 			.setAccountID(funding.asGrpcAccount())
 			.setAmount(+amountOfSecondFungibleDebit)
 			.build();
-	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit);
+	private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit, payer.asGrpcAccount());
 	private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(
-			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit);
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit, payer.asGrpcAccount());
 	private final BalanceChange firstFungibleTrigger = BalanceChange.changingFtUnits(
-			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit, payer.asGrpcAccount());
 	private final BalanceChange exemptFungibleTrigger = BalanceChange.changingFtUnits(
-			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit);
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleDebit, payer.asGrpcAccount());
 	{
 		exemptFungibleTrigger.setExemptFromCustomFees(true);
 	}
 	private final BalanceChange firstFungibleNonTrigger = BalanceChange.changingFtUnits(
-			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleCredit);
+			firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), firstFungibleCredit, payer.asGrpcAccount());
 	private final BalanceChange secondFungibleTrigger = BalanceChange.changingFtUnits(
-			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleDebit);
+			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleDebit, payer.asGrpcAccount());
 	private final BalanceChange secondFungibleNonTrigger = BalanceChange.changingFtUnits(
-			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleCredit);
+			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleCredit, payer.asGrpcAccount());
 	private final BalanceChange firstCredit = BalanceChange.changingFtUnits(
-			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), firstFungibleCredit);
+			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), firstFungibleCredit, payer.asGrpcAccount());
 	private final BalanceChange secondCredit = BalanceChange.changingFtUnits(
-			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), secondFungibleCredit);
+			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), secondFungibleCredit, payer.asGrpcAccount());
 	private final NftTransfer firstOwnershipChange = NftTransfer.newBuilder()
 			.setSenderAccountID(payer.asGrpcAccount())
 			.setReceiverAccountID(funding.asGrpcAccount())
 			.build();
 	private final BalanceChange firstNonFungibleTrigger = BalanceChange.changingNftOwnership(
-			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange);
+			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange, payer.asGrpcAccount());
 	private final BalanceChange secondNonFungibleTrigger = BalanceChange.changingNftOwnership(
-			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange);
-	private final BalanceChange payerHbarAdjust = BalanceChange.hbarAdjust(payer, -1_234_567);
-	private final BalanceChange fundingHbarAdjust = BalanceChange.hbarAdjust(funding, +1_234_567);
-	private final BalanceChange miscHbarAdjust = BalanceChange.hbarAdjust(misc, +1);
+			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange, payer.asGrpcAccount());
+	private final BalanceChange payerHbarAdjust = BalanceChange.hbarAdjust(payer, -1_234_567, null, false);
+	private final BalanceChange fundingHbarAdjust = BalanceChange.hbarAdjust(funding, +1_234_567, null, false);
+	private final BalanceChange miscHbarAdjust = BalanceChange.hbarAdjust(misc, +1, null, false);
 
 	private final List<BalanceChange> startingList = new ArrayList<>();
 	{

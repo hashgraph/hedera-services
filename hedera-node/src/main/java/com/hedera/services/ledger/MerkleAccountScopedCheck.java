@@ -23,7 +23,10 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.annotation.Nullable;
@@ -31,11 +34,16 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
 	private final GlobalDynamicProperties dynamicProperties;
@@ -83,12 +91,92 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 
-		final var newBalance = balance + balanceChange.units();
+		final var validity = validateHbarAllowance(account, extantProps, changeSet);
+		if (validity != OK) {
+			return validity;
+		}
+
+		final var newBalance = balance + balanceChange.getAggregatedUnits();
 		if (newBalance < 0L) {
 			return balanceChange.codeForInsufficientBalance();
 		}
 		balanceChange.setNewBalance(newBalance);
 
+		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum validateNftAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForNft()) {
+			final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) getEffective(
+					NFT_ALLOWANCES, account, extantProps, changeSet);
+			final var nftAllowance = nftAllowances.getOrDefault(
+					FcTokenAllowanceId.from(
+							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),
+					null
+			);
+
+			if (nftAllowance == null) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			} else {
+				final var allowAll = nftAllowance.isApprovedForAll();
+				final var allowedSerialNums = nftAllowance.getSerialNumbers();
+
+				if (allowAll) {
+					return OK;
+				} else {
+					if (!allowedSerialNums.contains(balanceChange.serialNo())) {
+						return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+					}
+				}
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateHbarAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForHbar() && balanceChange.getAggregatedUnits() < 0) {
+			final var cryptoAllowances = (Map<EntityNum, Long>) getEffective(
+					CRYPTO_ALLOWANCES, account, extantProps, changeSet);
+			final var allowance = cryptoAllowances.getOrDefault(
+					EntityNum.fromAccountId(balanceChange.getPayerID()), 0L);
+			if (allowance == 0L) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			}
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
+			if (newAllowance < 0L) {
+				return AMOUNT_EXCEEDS_ALLOWANCE;
+			}
+		}
+		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum validateFungibleTokenAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForFungibleToken() && balanceChange.getAggregatedUnits() < 0) {
+			final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) getEffective(
+					FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
+			final var allowance = fungibleAllowances.getOrDefault(
+					FcTokenAllowanceId.from(
+							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),
+					0L);
+			if (allowance == 0L) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			}
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
+			if (newAllowance < 0L) {
+				return AMOUNT_EXCEEDS_ALLOWANCE;
+			}
+		}
 		return OK;
 	}
 
@@ -114,6 +202,12 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
 			case EXPIRY:
 				return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
+			case CRYPTO_ALLOWANCES:
+				return useExtantProps ? extantProps.apply(CRYPTO_ALLOWANCES) : account.getCryptoAllowances();
+			case FUNGIBLE_TOKEN_ALLOWANCES:
+				return useExtantProps ? extantProps.apply(FUNGIBLE_TOKEN_ALLOWANCES) : account.getFungibleTokenAllowances();
+			case NFT_ALLOWANCES:
+				return useExtantProps ? extantProps.apply(NFT_ALLOWANCES) : account.getNftAllowances();
 			default:
 				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}

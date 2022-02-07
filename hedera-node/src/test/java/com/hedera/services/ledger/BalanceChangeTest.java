@@ -46,13 +46,14 @@ class BalanceChangeTest {
 	private final long serialNo = 1234L;
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("2.3.4");
+	private final AccountID payer = asAccount("0.0.1234");
 
 	@Test
 	void objectContractSanityChecks() {
 		// given:
 		final var hbarChange = IdUtils.hbarChange(a, delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
-		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
+		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
 		// and:
 		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234, expectedDecimals=-1}";
 		final var tokenRepr = "BalanceChange{token=Id[shard=1, realm=2, num=3], account=Id[shard=1, realm=2, num=3], " +
@@ -69,7 +70,7 @@ class BalanceChangeTest {
 		assertEquals(nftRepr, nftChange.toString());
 		// and:
 		assertSame(a, hbarChange.accountId());
-		assertEquals(delta, hbarChange.units());
+		assertEquals(delta, hbarChange.getAggregatedUnits());
 		assertEquals(t.asGrpcToken(), tokenChange.tokenId());
 	}
 
@@ -94,19 +95,20 @@ class BalanceChangeTest {
 
 	@Test
 	void hbarAdjust() {
-		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
 		assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
 		assertTrue(hbarAdjust.isForHbar());
-		assertEquals(10, hbarAdjust.units());
+		assertEquals(0, hbarAdjust.getAllowanceUnits());
+		assertEquals(10, hbarAdjust.getAggregatedUnits());
 		assertEquals(10, hbarAdjust.originalUnits());
-		hbarAdjust.adjustUnits(10);
-		assertEquals(20, hbarAdjust.units());
+		hbarAdjust.aggregateUnits(10);
+		assertEquals(20, hbarAdjust.getAggregatedUnits());
 		assertEquals(10, hbarAdjust.originalUnits());
 	}
 
 	@Test
 	void objectContractWorks() {
-		final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+		final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
 		adjust.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, adjust.codeForInsufficientBalance());
 		adjust.setExemptFromCustomFees(false);
@@ -118,8 +120,9 @@ class BalanceChangeTest {
 		final var tokenAdjust = BalanceChange.tokenAdjust(
 				IdUtils.asModelId("1.2.3"),
 				IdUtils.asModelId("3.2.1"),
-				10);
-		assertEquals(10, tokenAdjust.units());
+				10, null, true);
+		assertEquals(10, tokenAdjust.getAggregatedUnits());
+		assertEquals(10, tokenAdjust.getAllowanceUnits());
 		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
 		assertEquals(new Id(3, 2, 1), tokenAdjust.getToken());
 	}
@@ -134,7 +137,7 @@ class BalanceChangeTest {
 				.build();
 
 		// given:
-		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer);
+		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
 
 		// expect:
 		assertEquals(a, nftChange.accountId());
@@ -154,7 +157,7 @@ class BalanceChangeTest {
 				.setAmount(1234)
 				.setAccountID(AccountID.newBuilder()
 						.setAlias(anAlias))
-				.build());
+				.build(), payer);
 
 		subject.replaceAliasWith(created);
 		assertFalse(subject.hasNonEmptyAlias());
@@ -169,7 +172,7 @@ class BalanceChangeTest {
 				AccountAmount.newBuilder()
 						.setAmount(1234)
 						.setAccountID(created.asGrpcAccount())
-						.build());
+						.build(), payer);
 		assertEquals(-1, subject.getExpectedDecimals());
 		assertFalse(subject.hasExpectedDecimals());
 

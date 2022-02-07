@@ -30,11 +30,14 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,10 +45,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -112,7 +121,14 @@ public class TransferLogic {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
-				validity = tokenStore.tryTokenChange(change);
+				if (change.isForFungibleToken()) {
+					validity = accountsLedger.validateFungibleAllowance(change.accountId(), scopedCheck.setBalanceChange(change));
+				} else if (change.isForNft()) {
+					validity = accountsLedger.validateNftAllowance(change.accountId(), scopedCheck.setBalanceChange(change));
+				}
+				if (validity == OK) {
+					validity = tokenStore.tryTokenChange(change);
+				}
 			}
 			if (validity != OK) {
 				break;
@@ -120,7 +136,7 @@ public class TransferLogic {
 		}
 
 		if (validity == OK) {
-			adjustHbarUnchecked(changes);
+			adjustBalancesAndAllowances(changes);
 			if (autoCreationFee > 0) {
 				payFunding(autoCreationFee);
 				autoCreationLogic.submitRecordsTo(recordsHistorian);
@@ -142,13 +158,59 @@ public class TransferLogic {
 		sideEffectsTracker.trackHbarChange(funding, autoCreationFee);
 	}
 
-	private void adjustHbarUnchecked(final List<BalanceChange> changes) {
+	private void adjustBalancesAndAllowances(final List<BalanceChange> changes) {
 		for (var change : changes) {
+			final var accountId = change.accountId();
 			if (change.isForHbar()) {
-				final var accountId = change.accountId();
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
-				sideEffectsTracker.trackHbarChange(accountId, change.units());
+				sideEffectsTracker.trackHbarChange(accountId, change.getAggregatedUnits());
+
+				if (change.isApprovedAllowance() && change.getAggregatedUnits() < 0) {
+					final var payerNum = EntityNum.fromAccountId(change.getPayerID());
+					final var hbarAllowances =  new TreeMap<>(
+							(Map<EntityNum, Long>) accountsLedger.get(accountId, CRYPTO_ALLOWANCES));
+					final var currentAllowance = hbarAllowances.get(payerNum);
+					final var newAllowance = currentAllowance + change.getAllowanceUnits();
+					if (newAllowance != 0) {
+						hbarAllowances.put(payerNum, newAllowance);
+					} else {
+						hbarAllowances.remove(payerNum);
+					}
+					accountsLedger.set(accountId, CRYPTO_ALLOWANCES, hbarAllowances);
+					sideEffectsTracker.setCryptoAllowances(hbarAllowances); // TODO : remove.. added only for testing
+				}
+			} else if (change.isApprovedAllowance() && change.isForFungibleToken() && change.getAggregatedUnits() < 0) {
+				final var allowanceId = FcTokenAllowanceId.from(
+						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
+				final var fungibleAllowances =  new TreeMap<>(
+						(Map<FcTokenAllowanceId, Long>) accountsLedger.get(accountId, FUNGIBLE_TOKEN_ALLOWANCES));
+				final var currentAllowance = fungibleAllowances.get(allowanceId);
+				final var newAllowance = currentAllowance + change.getAllowanceUnits();
+				if (newAllowance == 0) {
+					fungibleAllowances.remove(allowanceId);
+				} else {
+					fungibleAllowances.put(allowanceId, newAllowance);
+				}
+				accountsLedger.set(accountId, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+				sideEffectsTracker.setFungibleTokenAllowances(fungibleAllowances); // TODO : remove.. added only for testing
+			} else if (change.isApprovedAllowance() && change.isForNft()) {
+				final var allowanceId = FcTokenAllowanceId.from(
+						change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
+				final var nftAllowances = new TreeMap<>(
+						(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(accountId, NFT_ALLOWANCES));
+				final var currentAllowance = nftAllowances.get(allowanceId);
+				if (!currentAllowance.isApprovedForAll()) {
+					var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
+					mutableAllowanceList.remove(change.serialNo());
+					if (mutableAllowanceList.isEmpty()) {
+						nftAllowances.remove(allowanceId);
+					} else {
+						nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
+					}
+					accountsLedger.set(accountId, NFT_ALLOWANCES, nftAllowances);
+					sideEffectsTracker.setNftAllowances(nftAllowances); // TODO : remove.. added only for testing
+				}
 			}
 		}
 	}
