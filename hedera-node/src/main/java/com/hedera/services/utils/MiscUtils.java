@@ -558,6 +558,12 @@ public final class MiscUtils {
 		if (txn.hasTokenBurn()) {
 			return TokenBurn;
 		}
+		if (txn.hasCryptoApproveAllowance()) {
+			return CryptoApproveAllowance;
+		}
+		if (txn.hasCryptoAdjustAllowance()) {
+			return CryptoAdjustAllowance;
+		}
 		return NONE;
 	}
 
