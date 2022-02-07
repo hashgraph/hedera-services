@@ -6,6 +6,7 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -32,11 +33,8 @@ final public class SerializationUtils {
 		}
 	}
 
-	public static void deserializeAllowances(
-			SerializableDataInputStream in,
-			Map<EntityNum, Long> cryptoAllowances,
-			Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-			Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) throws IOException {
+	public static Map<EntityNum, Long> deserializeCryptoAllowances(SerializableDataInputStream in) throws IOException {
+		Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 		var numCryptoAllowances = in.readInt();
 		if(numCryptoAllowances > 0){
 			cryptoAllowances = new TreeMap<>();
@@ -46,7 +44,11 @@ final public class SerializationUtils {
 			final var allowance = in.readLong();
 			cryptoAllowances.put(entityNum, allowance);
 		}
+		return cryptoAllowances;
+	}
 
+	public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(SerializableDataInputStream in) throws IOException {
+		Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 		var numFungibleTokenAllowances = in.readInt();
 		if(numFungibleTokenAllowances > 0){
 			fungibleTokenAllowances = new TreeMap<>();
@@ -56,7 +58,11 @@ final public class SerializationUtils {
 			final Long value = in.readLong();
 			fungibleTokenAllowances.put(fungibleAllowanceId, value);
 		}
+		return fungibleTokenAllowances;
+	}
 
+	public static Map<FcTokenAllowanceId, FcTokenAllowance> deserializeNftAllowances(SerializableDataInputStream in) throws IOException {
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
 		var numNftAllowances = in.readInt();
 		if(numNftAllowances > 0){
 			nftAllowances = new TreeMap<>();
@@ -66,5 +72,6 @@ final public class SerializationUtils {
 			final FcTokenAllowance value = in.readSerializable();
 			nftAllowances.put(nftAllowanceId, value);
 		}
+		return nftAllowances;
 	}
 }

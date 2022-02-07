@@ -48,7 +48,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hedera.services.utils.SerializationUtils.deserializeAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftAllowances;
 import static com.hedera.services.utils.SerializationUtils.serializeAllowances;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
@@ -171,7 +173,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numContractKvPairs = in.readInt();
 		}
 		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowances(in, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+			cryptoAllowances = deserializeCryptoAllowances(in);
+			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
+			nftAllowances = deserializeNftAllowances(in);
 		}
 	}
 

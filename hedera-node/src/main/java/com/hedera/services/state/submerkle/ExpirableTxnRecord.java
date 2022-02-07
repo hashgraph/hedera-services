@@ -52,7 +52,9 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.SerializationUtils.deserializeAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftAllowances;
 import static com.hedera.services.utils.SerializationUtils.serializeAllowances;
 import static java.util.stream.Collectors.joining;
 
@@ -407,7 +409,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowances(in, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+			cryptoAllowances = deserializeCryptoAllowances(in);
+			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
+			nftAllowances = deserializeNftAllowances(in);
 		}
 	}
 
