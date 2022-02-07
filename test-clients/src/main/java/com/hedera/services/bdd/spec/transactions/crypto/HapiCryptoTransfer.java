@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -98,6 +99,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
+	private Optional<BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder>> explicitDef = Optional.empty();
 	private boolean fullyAggregateTokenTransfers = true;
 	private static boolean transferToKey = false;
 
@@ -167,6 +169,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			transferCollector(accountMerge);
 	private final static Collector<TransferList, ?, TransferList> mergingSortedAccounts =
 			sortedTransferCollector(accountMerge);
+
+	public HapiCryptoTransfer(BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+		explicitDef = Optional.of(def);
+	}
+
 
 	@SafeVarargs
 	public HapiCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
@@ -346,7 +353,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		CryptoTransferTransactionBody opBody = spec.txns()
 				.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
 						CryptoTransferTransactionBody.class, b -> {
-							if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
+							if (explicitDef.isPresent()) {
+								explicitDef.get().accept(spec, b);
+							} else if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
 								b.setTransfers(hbarOnlyProvider.apply(spec));
 							} else {
 								var xfers = transfersAllFor(spec);
@@ -359,7 +368,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 										b.addTokenTransfers(scopedXfers);
 									}
 								}
-
 								misconfigureIfRequested(b, spec);
 							}
 						}

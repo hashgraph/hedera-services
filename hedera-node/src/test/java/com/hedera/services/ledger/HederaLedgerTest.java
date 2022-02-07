@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -38,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -230,6 +232,20 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.memo(genesis);
 
 		verify(accountsLedger).get(genesis, MEMO);
+	}
+
+	@Test
+	void delegatesToCorrectAliasProperty() {
+		subject.alias(genesis);
+
+		verify(accountsLedger).get(genesis, ALIAS);
+	}
+
+	@Test
+	void delegatesToClearAliasProperly() {
+		subject.clearAlias(genesis);
+
+		verify(accountsLedger).set(genesis, ALIAS, ByteString.EMPTY);
 	}
 
 	@Test

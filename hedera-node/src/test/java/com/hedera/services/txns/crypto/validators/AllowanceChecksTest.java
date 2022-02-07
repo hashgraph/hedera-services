@@ -1,28 +1,27 @@
-/*
- * -
- *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
- *
- */
-
 package com.hedera.services.txns.crypto.validators;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.BoolValue;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -56,7 +55,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.txns.crypto.CryptoApproveAllowanceTransitionLogic.TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -87,6 +85,8 @@ class AllowanceChecksTest {
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	@Mock
 	private TypedTokenStore tokenStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private Account owner;
 
@@ -127,13 +127,13 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new AllowanceChecks(nftsLedger, tokenStore);
+		subject = new AllowanceChecks(nftsLedger, tokenStore, dynamicProperties);
 	}
 
 	private void setUpForTest() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
-		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
@@ -153,9 +153,65 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.addAllTokenAllowances(tokenAllowances)
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+
+		subject.allowancesValidation(cryptoApproveAllowanceTxn, owner);
+
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(nftAllowances.stream().map(a -> a.getSpender()).toList()));
+	}
+
+	@Test
+	void returnsValidationOnceFailed(){
+		cryptoAllowances.add(cryptoAllowance1);
+		tokenAllowances.add(tokenAllowance1);
+		nftAllowances.add(nftAllowance1);
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllTokenAllowances(tokenAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+
+		assertEquals(MAX_ALLOWANCES_EXCEEDED,
+				subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
 	}
 
 	@Test
@@ -262,7 +318,7 @@ class AllowanceChecksTest {
 	@Test
 	void failsForNftInFungibleTokenAllowances() {
 		givenNecessaryStubs();
-		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token2).setOwner(ownerId).build();
 
@@ -273,7 +329,7 @@ class AllowanceChecksTest {
 	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
 	}
@@ -282,6 +338,7 @@ class AllowanceChecksTest {
 	void happyPath() {
 		setUpForTest();
 		getValidTxnCtx();
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(cryptoApproveAllowanceTxn, owner));
@@ -290,8 +347,8 @@ class AllowanceChecksTest {
 	@Test
 	void fungibleInNFTAllowances() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenStore.loadToken(token2Model.getId())).willReturn(token2Model);
-		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
@@ -314,7 +371,7 @@ class AllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 		given(nftsLedger.exists(token2Nft1)).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -325,19 +382,22 @@ class AllowanceChecksTest {
 		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
 	@Test
 	void validateRepeatedSerials() {
 		final var serials = List.of(1L, 10L, 1L);
-		given(nftsLedger.exists(token2Nft1)).willReturn(true);
-		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-
-		var validity = subject.validateSerialNums(serials, owner, token2Model);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
+	}
+
+	@Test
+	void validateIfSerialsEmptyWithoutApproval() {
+		final List<Long> serials = List.of();
+		var validity = subject.validateSerialNums(serials, owner, token2Model, false);
+		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
 	@Test
@@ -361,13 +421,12 @@ class AllowanceChecksTest {
 	}
 
 	private void addAllowances() {
-		for (int i = 0; i < TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT; i++) {
+		for (int i = 0; i < dynamicProperties.maxAllowanceLimitPerAccount(); i++) {
 			cryptoAllowances.add(cryptoAllowance1);
 			tokenAllowances.add(tokenAllowance1);
 			nftAllowances.add(nftAllowance1);
 		}
 	}
-
 
 	private void getValidTxnCtx() {
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
@@ -392,7 +451,7 @@ class AllowanceChecksTest {
 
 	private void givenNecessaryStubs() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(tokenStore.loadToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 	}
 }

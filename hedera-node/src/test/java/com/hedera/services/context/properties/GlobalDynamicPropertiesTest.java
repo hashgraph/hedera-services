@@ -233,6 +233,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(53, subject.changeHistorianMemorySecs());
 		assertEquals(54, subject.maxAggregateContractKvPairs());
 		assertEquals(55, subject.maxIndividualContractKvPairs());
+		assertEquals(57, subject.maxAllowanceLimitPerTransaction());
+		assertEquals(58, subject.maxAllowanceLimitPerAccount());
 	}
 
 	@Test
@@ -341,6 +343,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
 		given(properties.getIntProperty("contracts.maxKvPairs.individual")).willReturn(i + 53);
 		given(properties.getIntProperty("ledger.records.maxQueryableByAccount")).willReturn(i + 54);
+		given(properties.getIntProperty("hedera.allowances.maxTransactionLimit")).willReturn(i + 55);
+		given(properties.getIntProperty("hedera.allowances.maxAccountLimit")).willReturn(i + 56);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

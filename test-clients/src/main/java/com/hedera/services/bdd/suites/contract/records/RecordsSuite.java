@@ -21,9 +21,7 @@ package com.hedera.services.bdd.suites.contract.records;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -44,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 public class RecordsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordsSuite.class);
@@ -55,10 +52,9 @@ public class RecordsSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 				bigCall(),
-				txRecordsContainValidTransfers(),
-				invalidContract()
+				txRecordsContainValidTransfers()
 		});
 	}
 
@@ -110,11 +106,11 @@ public class RecordsSuite extends HapiApiSuite {
 							// validate transfer list
 							List<AccountAmount> expectedTransfers = new ArrayList<>(2);
 							AccountAmount receiverTransfer = AccountAmount.newBuilder().setAccountID(
-											AccountID.newBuilder().setAccountNum(parent.getContractNum()).build())
+									AccountID.newBuilder().setAccountNum(parent.getContractNum()).build())
 									.setAmount(-10_000L).build();
 							expectedTransfers.add(receiverTransfer);
 							AccountAmount contractTransfer = AccountAmount.newBuilder().setAccountID(
-											AccountID.newBuilder().setAccountNum(child.getContractNum()).build())
+									AccountID.newBuilder().setAccountNum(child.getContractNum()).build())
 									.setAmount(10_000L).build();
 							expectedTransfers.add(contractTransfer);
 
@@ -136,15 +132,6 @@ public class RecordsSuite extends HapiApiSuite {
 			sumToReturn += currAccAmount.getAmount();
 		}
 		return sumToReturn;
-	}
-
-	HapiApiSpec invalidContract() {
-		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
-
-		return defaultHapiSpec("InvalidContract")
-				.given().when().then(
-						QueryVerbs.getContractRecords(invalidContract)
-								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
 	}
 
 	@Override

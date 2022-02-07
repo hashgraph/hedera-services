@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
@@ -37,10 +38,9 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
@@ -62,9 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -181,7 +180,7 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMissingContract() {
 		given(stateChildren.accounts()).willReturn(accounts);
 
-		final var result = subject.contractSigningMetaFor(unknownContract, null);
+		final var result = subject.aliasableContractSigningMetaFor(unknownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -192,7 +191,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isDeleted()).willReturn(true);
 
-		final var result = subject.contractSigningMetaFor(knownContract, null);
+		final var result = subject.aliasableContractSigningMetaFor(knownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -202,7 +201,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 
-		final var result = subject.contractSigningMetaFor(knownContract, null);
+		final var result = subject.aliasableContractSigningMetaFor(knownContract, null);
 
 		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
@@ -213,11 +212,11 @@ class StateChildrenSigMetadataLookupTest {
 		given(accounts.get(EntityNum.fromContractId(knownContract))).willReturn(account);
 		given(account.isSmartContract()).willReturn(true);
 
-		final var nullResult = subject.contractSigningMetaFor(knownContract, null);
+		final var nullResult = subject.aliasableContractSigningMetaFor(knownContract, null);
 		assertEquals(IMMUTABLE_CONTRACT, nullResult.failureIfAny());
 
 		given(account.getAccountKey()).willReturn(contract);
-		final var contractResult = subject.contractSigningMetaFor(knownContract, null);
+		final var contractResult = subject.aliasableContractSigningMetaFor(knownContract, null);
 		assertEquals(IMMUTABLE_CONTRACT, contractResult.failureIfAny());
 	}
 
@@ -230,7 +229,7 @@ class StateChildrenSigMetadataLookupTest {
 		given(account.isReceiverSigRequired()).willReturn(true);
 
 		final var linkedRefs = new LinkedRefs();
-		final var result = subject.contractSigningMetaFor(knownContract, linkedRefs);
+		final var result = subject.aliasableContractSigningMetaFor(knownContract, linkedRefs);
 
 		assertTrue(result.succeeded());
 		assertEquals(knownContract.getContractNum(), linkedRefs.linkedNumbers()[0]);
@@ -283,6 +282,76 @@ class StateChildrenSigMetadataLookupTest {
 		assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertTrue(result.metadata().receiverSigRequired());
 		assertSame(simple, result.metadata().key());
+	}
+
+	@Test
+	void recognizesMirrorAddressFromAccount() {
+		final var knownNum = EntityNum.fromAccountId(knownAccount);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.isMirror(knownMirrorAddress.toByteArray())).willReturn(true);
+		given(accounts.get(knownNum)).willReturn(account);
+		given(account.getAccountKey()).willReturn(simple);
+		given(account.isReceiverSigRequired()).willReturn(true);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableAccountSigningMetaFor(mirrorAccount, linkedRefs);
+
+		assertTrue(result.succeeded());
+		assertTrue(linkedRefs.linkedAliases().isEmpty());
+		assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertTrue(result.metadata().receiverSigRequired());
+		assertSame(simple, result.metadata().key());
+	}
+
+	@Test
+	void recognizesExtantContractMirrorAlias() {
+		final var knownNum = EntityNum.fromContractId(knownContract);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.isMirror(mirrorAddressContract.getEvmAddress().toByteArray())).willReturn(true);
+		given(accounts.get(knownNum)).willReturn(account);
+		given(account.getAccountKey()).willReturn(simple);
+		given(account.isSmartContract()).willReturn(true);
+		given(account.isReceiverSigRequired()).willReturn(true);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableContractSigningMetaFor(mirrorAddressContract, linkedRefs);
+
+		assertTrue(result.succeeded());
+		assertTrue(linkedRefs.linkedAliases().isEmpty());
+		assertEquals(knownContract.getContractNum(), linkedRefs.linkedNumbers()[0]);
+		assertTrue(result.metadata().receiverSigRequired());
+		assertSame(simple, result.metadata().key());
+	}
+
+	@Test
+	void recognizesExtantContractAlias() {
+		final var knownNum = EntityNum.fromContractId(knownContract);
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(aliasManager.lookupIdBy(aliasedContract.getEvmAddress())).willReturn(knownNum);
+		given(accounts.get(knownNum)).willReturn(account);
+		given(account.getAccountKey()).willReturn(simple);
+		given(account.isSmartContract()).willReturn(true);
+		given(account.isReceiverSigRequired()).willReturn(true);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableContractSigningMetaFor(aliasedContract, linkedRefs);
+
+		assertTrue(result.succeeded());
+		assertEquals(List.of(aliasedContract.getEvmAddress()), linkedRefs.linkedAliases());
+		assertEquals(knownContract.getContractNum(), linkedRefs.linkedNumbers()[0]);
+		assertTrue(result.metadata().receiverSigRequired());
+		assertSame(simple, result.metadata().key());
+	}
+
+	@Test
+	void recognizesMissingContractAlias() {
+		given(aliasManager.lookupIdBy(aliasedContract.getEvmAddress())).willReturn(EntityNum.MISSING_NUM);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.aliasableContractSigningMetaFor(aliasedContract, linkedRefs);
+
+		assertEquals(List.of(aliasedContract.getEvmAddress()), linkedRefs.linkedAliases());
+		assertEquals(INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -424,7 +493,6 @@ class StateChildrenSigMetadataLookupTest {
 	private static final TokenID unknownToken = IdUtils.asToken("0.0.2222");
 	private static final long expiry = 1_234_567L;
 	private static final JKey simple = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-	private static final JKey payerAliadKey = new JEd25519Key("aaaaaaaaaabbbbbbaaaaaaaaaaa".getBytes());
 	private static final JKeyList wacl = new JKeyList(List.of(
 			new JECDSASecp256k1Key("012345789012345789012345789012".getBytes())
 	));
@@ -432,27 +500,21 @@ class StateChildrenSigMetadataLookupTest {
 	private static final AccountID alias = AccountID.newBuilder()
 			.setAlias(asKeyUnchecked(simple).toByteString())
 			.build();
-	private static final AccountID payerAlias = AccountID.newBuilder()
-			.setAlias(asKeyUnchecked(payerAliadKey).toByteString())
-			.build();
-	private static final AccountID knownPayer = IdUtils.asAccount("0.0.1001");
-	private static final AccountID unKnownPayer = IdUtils.asAccount("0.0.1002");
+	private static final EntityNum knownId = EntityNum.fromLong(1234);
+	private static final ByteString knownMirrorAddress = ByteString.copyFrom(knownId.toRawEvmAddress());
 	private static final AccountID knownAccount = IdUtils.asAccount("0.0.1234");
+	private static final AccountID mirrorAccount = AccountID.newBuilder()
+			.setAlias(knownMirrorAddress)
+			.build();
 	private static final AccountID unknownAccount = IdUtils.asAccount("0.0.4321");
 	private static final ContractID knownContract = IdUtils.asContract("0.0.1234");
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");
 	private static final ScheduleID knownSchedule = IdUtils.asSchedule("0.0.1234");
 	private static final ScheduleID unknownSchedule = IdUtils.asSchedule("0.0.4321");
-	private static final FcTokenAllowanceId payerTokenAllowanceId = FcTokenAllowanceId.from(
-			EntityNum.fromTokenId(knownToken), EntityNum.fromAccountId(knownPayer));
-	private static final FcTokenAllowance payerTokenAllowance = FcTokenAllowance.from(true);
-	private static final Map<EntityNum, Long> cryptoAllowances = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new HashMap<>();
-
-	static {
-		cryptoAllowances.put(EntityNum.fromAccountId(knownPayer), 500L);
-		fungibleTokenAllowances.put(payerTokenAllowanceId, 250L);
-		nftTokenAllowances.put(payerTokenAllowanceId, payerTokenAllowance);
-	}
+	private static final ContractID aliasedContract = ContractID.newBuilder()
+			.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex("abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde")))
+			.build();
+	private static final ContractID mirrorAddressContract = ContractID.newBuilder()
+			.setEvmAddress(ByteString.copyFrom(EntityIdUtils.asEvmAddress(knownContract)))
+			.build();
 }

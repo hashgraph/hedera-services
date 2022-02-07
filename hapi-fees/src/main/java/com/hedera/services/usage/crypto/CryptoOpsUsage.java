@@ -193,15 +193,13 @@ public class CryptoOpsUsage {
 
 		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 
-		final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
-				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry()); // should this be different ?
-		final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(
+		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(
 				cryptoApproveMeta.getEffectiveNow(), ctx.currentExpiry());
 		final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				cryptoAutoRenewRb(ctx),
-				oldLifetime,
+				lifeTime,
 				sharedFixedBytes + newVariableSerialBytes,
-				newLifetime);
+				lifeTime);
 		if (rbsDelta > 0) {
 			accumulator.addRbs(rbsDelta);
 		}

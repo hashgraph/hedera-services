@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
@@ -74,15 +75,17 @@ class GetContractInfoResourceUsageTest {
 	private ContractGetInfoUsage estimator;
 	private MockedStatic<ContractGetInfoUsage> mockedStatic;
 	private FeeData expected;
+	private AliasManager aliasManager;
 
 	private GetContractInfoResourceUsage subject;
 
 	@BeforeEach
 	private void setup() {
 		expected = mock(FeeData.class);
+		aliasManager = mock(AliasManager.class);
 
 		view = mock(StateView.class);
-		given(view.infoForContract(target)).willReturn(Optional.of(info));
+		given(view.infoForContract(target, aliasManager)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
 		mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -93,7 +96,7 @@ class GetContractInfoResourceUsageTest {
 		given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
-		subject = new GetContractInfoResourceUsage();
+		subject = new GetContractInfoResourceUsage(aliasManager);
 	}
 
 	@AfterEach
@@ -132,7 +135,7 @@ class GetContractInfoResourceUsageTest {
 	@Test
 	void onlySetsContractInfoInQueryCxtIfFound() {
 		final var queryCtx = new HashMap<String, Object>();
-		given(view.infoForContract(target)).willReturn(Optional.empty());
+		given(view.infoForContract(target, aliasManager)).willReturn(Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

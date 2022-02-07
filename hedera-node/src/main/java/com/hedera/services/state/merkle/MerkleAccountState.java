@@ -519,17 +519,17 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final EntityNum spenderNum,
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {
-		final var allowanceId = FcTokenAllowanceId.from(tokenNum, spenderNum);
-		final var allowance = FcTokenAllowance.from(approvedForAll, serialNumbers);
-		nftAllowances.put(allowanceId, allowance);
+		final var nftKey = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		final var nftValue = FcTokenAllowance.from(approvedForAll, serialNumbers);
+		nftAllowances.put(nftKey, nftValue);
 	}
 
 	public void addFungibleTokenAllowance(
 			final EntityNum tokenNum,
 			final EntityNum spenderNum,
 			final Long allowance) {
-		final var allowanceId = FcTokenAllowanceId.from(tokenNum, spenderNum);
-		fungibleTokenAllowances.put(allowanceId, allowance);
+		final var fungibleKey = FcTokenAllowanceId.from(tokenNum, spenderNum);
+		fungibleTokenAllowances.put(fungibleKey, allowance);
 	}
 
 	public void removeCryptoAllowance(final EntityNum spender) {

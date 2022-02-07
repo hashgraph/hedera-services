@@ -355,7 +355,7 @@ public class SigRequirements {
 		List<JKey> required = EMPTY_LIST;
 
 		var target = op.getContractID();
-		var targetResult = sigMetaLookup.contractSigningMetaFor(target, linkedRefs);
+		var targetResult = sigMetaLookup.aliasableContractSigningMetaFor(target, linkedRefs);
 		if (!targetResult.succeeded()) {
 			return contractFailure(targetResult.failureIfAny(), factory);
 		}
@@ -372,7 +372,7 @@ public class SigRequirements {
 			}
 		} else if (op.hasTransferContractID()) {
 			var beneficiary = op.getTransferContractID();
-			var beneficiaryResult = sigMetaLookup.contractSigningMetaFor(beneficiary, linkedRefs);
+			var beneficiaryResult = sigMetaLookup.aliasableContractSigningMetaFor(beneficiary, linkedRefs);
 			if (!beneficiaryResult.succeeded()) {
 				return factory.forInvalidContract();
 			} else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -391,7 +391,7 @@ public class SigRequirements {
 		List<JKey> required = EMPTY_LIST;
 
 		var target = op.getContractID();
-		var result = sigMetaLookup.contractSigningMetaFor(target, linkedRefs);
+		var result = sigMetaLookup.aliasableContractSigningMetaFor(target, linkedRefs);
 		if (needsCurrentAdminSig(op)) {
 			if (!result.succeeded()) {
 				return contractFailure(result.failureIfAny(), factory);

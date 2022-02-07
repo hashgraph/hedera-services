@@ -23,9 +23,11 @@ package com.hedera.services.contracts.execution;
 import com.google.protobuf.ByteString;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -34,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,13 +70,42 @@ class CallLocalExecutorTest {
 	ContractCallLocalQuery query;
 
 	@Mock
-	AccountStore accountStore;
+	private AccountStore accountStore;
 	@Mock
-	CallLocalEvmTxProcessor evmTxProcessor;
+	private CallLocalEvmTxProcessor evmTxProcessor;
+	@Mock
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
 		query = localCallQuery(contractID.asGrpcContract(), ANSWER_ONLY);
+	}
+
+	@Test
+	void processingSuccessfulWithAlias() {
+		// setup:
+		final var targetAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+		final var target = ContractID.newBuilder()
+				.setEvmAddress(ByteString.copyFrom(targetAlias))
+				.build();
+		query = localCallQuery(target, ANSWER_ONLY);
+		given(aliasManager.lookupIdBy(target.getEvmAddress())).willReturn(EntityNum.fromLong(contractID.num()));
+
+		final var transactionProcessingResult = TransactionProcessingResult
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+		final var expected = response(OK, transactionProcessingResult);
+
+		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
+		given(accountStore.loadContract(contractID)).willReturn(new Account(contractID));
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
+
+		// when:
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+
+		// then:
+		assertEquals(expected, result);
 	}
 
 	@Test
@@ -89,7 +121,8 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
 
 		// then:
 		assertEquals(expected, result);
@@ -108,7 +141,8 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
 
 		// then:
 		assertEquals(expected, result);
@@ -127,7 +161,8 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
 
 		// then:
 		assertEquals(expected, result);
@@ -146,7 +181,8 @@ class CallLocalExecutorTest {
 				.willReturn(transactionProcessingResult);
 
 		// when:
-		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
 
 		// then:
 		assertEquals(expected, result);
@@ -158,7 +194,8 @@ class CallLocalExecutorTest {
 		given(accountStore.loadAccount(any())).willThrow(new InvalidTransactionException(INVALID_ACCOUNT_ID));
 
 		// when:
-		final var result = CallLocalExecutor.execute(accountStore, evmTxProcessor, query);
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
 
 		assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
 		// and:

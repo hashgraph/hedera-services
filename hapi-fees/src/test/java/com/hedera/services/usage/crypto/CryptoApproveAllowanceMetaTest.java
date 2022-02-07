@@ -1,26 +1,24 @@
-/*
- * -
- *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
- *
- */
-
 package com.hedera.services.usage.crypto;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import com.hedera.services.test.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -52,12 +50,13 @@ class CryptoApproveAllowanceMetaTest {
 	void allGettersAndToStringWork() {
 		final var expected = "CryptoApproveAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
 				"numOfNftAllowances=3, aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567, " +
-				"msgBytesUsed=0}";
+				"msgBytesUsed=112}";
 		final var now = 1_234_567;
 		final var subject = CryptoApproveAllowanceMeta.newBuilder()
 				.numOfCryptoAllowances(1)
 				.numOfTokenAllowances(2)
 				.numOfNftAllowances(3)
+				.msgBytesUsed(112)
 				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(now)
 				.build();
@@ -67,6 +66,7 @@ class CryptoApproveAllowanceMetaTest {
 		assertEquals(1, subject.getNumOfCryptoAllowances());
 		assertEquals(2, subject.getNumOfTokenAllowances());
 		assertEquals(3, subject.getNumOfNftAllowances());
+		assertEquals(112, subject.getMsgBytesUsed());
 		assertEquals(expected, subject.toString());
 	}
 

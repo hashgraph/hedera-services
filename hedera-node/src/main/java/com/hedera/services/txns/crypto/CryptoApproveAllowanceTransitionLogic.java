@@ -1,28 +1,27 @@
-/*
- * -
- *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
  */
 
 package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -42,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -54,21 +54,20 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountStore accountStore;
 	private final AllowanceChecks allowanceChecks;
-
-	// Should these be dynamic properties?
-	public static final int ALLOWANCE_LIMIT_PER_TRANSACTION = 20;
-	public static final int TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT = 100;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
 			final AccountStore accountStore,
-			final AllowanceChecks allowanceChecks) {
+			final AllowanceChecks allowanceChecks,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.accountStore = accountStore;
 		this.allowanceChecks = allowanceChecks;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -123,7 +122,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoAllowancesMap = ownerAccount.getCryptoAllowances();
+		Map<EntityNum, Long> cryptoAllowancesMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
@@ -149,7 +148,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = ownerAccount.getNftAllowances();
+		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(ownerAccount.getNftAllowances());
 		for (var allowance : nftAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -164,8 +163,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				continue;
 			}
 
-			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue())
-					: FcTokenAllowance.from(serialNums);
+			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
@@ -181,7 +179,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = ownerAccount.getFungibleTokenAllowances();
+		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
 		for (var allowance : tokenAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var spender = Id.fromGrpcAccount(spenderAccount);
@@ -209,6 +207,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	 * @return
 	 */
 	private boolean exceedsAccountLimit(final Account ownerAccount) {
-		return ownerAccount.getTotalAllowances() > TOTAL_ALLOWANCE_LIMIT_PER_ACCOUNT;
+		return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
 	}
 }

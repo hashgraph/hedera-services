@@ -366,4 +366,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public int numRecords() {
 		return records().size();
 	}
+
+	public boolean hasAlias() {
+		return !getAlias().isEmpty();
+	}
 }

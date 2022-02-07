@@ -216,6 +216,19 @@ class OpUsageCtxHelperTest {
 	}
 
 	@Test
+	void returnsMissingCtxWhenApproveAccountNotFound() {
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
+
+		final var ctx = subject.ctxForCryptoApprove(TransactionBody.getDefaultInstance());
+
+		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
+		assertEquals(0, ctx.currentNftAllowancesCount());
+		assertEquals(0, ctx.currentTokenAllowancesCount());
+		assertEquals(0, ctx.currentCryptoAllowanceCount());
+		assertEquals(0, ctx.currentSerialNumsInNfts());
+	}
+
+	@Test
 	void getMetaForTokenMintWorks() {
 		TokenMintTransactionBody mintTxnBody = getUniqueTokenMintOp();
 		TransactionBody txn = getTxnBody(mintTxnBody);

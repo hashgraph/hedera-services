@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -52,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 @Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public CallLocalEvmTxProcessor(
@@ -60,10 +62,12 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final AliasManager aliasManager
 	) {
 		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
@@ -86,7 +90,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	) {
 		final long gasPrice = 1;
 
-		return super.execute(sender,
+		return super.execute(
+				sender,
 				receiver,
 				gasPrice,
 				providedGasLimit,
@@ -105,7 +110,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final Address to,
 			final Bytes payload
 	) {
-		final var code = codeCache.getIfPresent(to);
+		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's
 		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
 		 * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means

@@ -22,8 +22,10 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -35,6 +37,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -45,9 +48,11 @@ public class GetBytecodeAnswer implements AnswerService {
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 
 	private final OptionValidator validator;
+	private final AliasManager aliasManager;
 
 	@Inject
-	public GetBytecodeAnswer(OptionValidator validator) {
+	public GetBytecodeAnswer(final AliasManager aliasManager, final OptionValidator validator) {
+		this.aliasManager = aliasManager;
 		this.validator = validator;
 	}
 
@@ -64,7 +69,7 @@ public class GetBytecodeAnswer implements AnswerService {
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
 		var op = query.getContractGetBytecode();
-		var target = op.getContractID();
+		final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 
 		var response = ContractGetBytecodeResponse.newBuilder();
 		var type = op.getHeader().getResponseType();
@@ -88,7 +93,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var id = query.getContractGetBytecode().getContractID();
+		final var id = unaliased(query.getContractGetBytecode().getContractID(), aliasManager);
 
 		return validator.queryableContractStatus(id, view.contracts());
 	}

@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.store.AccountStore;
@@ -44,6 +45,7 @@ import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -57,6 +59,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			ContractCallLocalAnswer.class.getSimpleName() + "_localCallResponse";
 
 	private final AccountStore accountStore;
+	private final AliasManager aliasManager;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -66,6 +69,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	@Inject
 	public ContractCallLocalAnswer(
 			final EntityIdSource ids,
+			final AliasManager aliasManager,
 			final AccountStore accountStore,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
@@ -84,12 +88,14 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 					} else if (op.getGas() > dynamicProperties.maxGas()) {
 						return MAX_GAS_LIMIT_EXCEEDED;
 					} else {
-						return validator.queryableContractStatus(op.getContractID(), view.contracts());
+						final var target = unaliased(op.getContractID(), aliasManager);
+						return validator.queryableContractStatus(target, view.contracts());
 					}
 				});
 
 		this.ids = ids;
 		this.validator = validator;
+		this.aliasManager = aliasManager;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
 		this.nodeProperties = nodeProperties;
@@ -158,13 +164,14 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			/* If answering from a zero-stake node, there are no node payments, and the
 			usage estimator won't have cached the result it got from the local call. */
 			try {
-				final var entityAccess = new StaticEntityAccess(view, validator, dynamicProperties);
+				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, dynamicProperties);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
 				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
-				final var callLocalResponse = CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op);
-				response.mergeFrom(withCid(callLocalResponse, op.getContractID()));
+				final var opResponse =
+						CallLocalExecutor.execute(accountStore, callLocalEvmTxProcessor, op, aliasManager);
+				response.mergeFrom(withCid(opResponse, op.getContractID()));
 			} catch (Exception e) {
 				response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
 			}

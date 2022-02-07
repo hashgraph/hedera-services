@@ -21,11 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.txns.contract.helpers.DeletionLogic;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -33,28 +29,18 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 
 class ContractDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
@@ -62,31 +48,35 @@ class ContractDeleteTransitionLogicTest {
 	final private AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();
 
 	private Instant consensusTime;
-	private HederaLedger ledger;
-	private OptionValidator validator;
-	private ContractDeleteTransitionLogic.LegacyDeleter delegate;
+	private DeletionLogic deletionLogic;
 	private TransactionBody contractDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private SigImpactHistorian sigImpactHistorian;
-	MerkleMap<EntityNum, MerkleAccount> contracts;
 	ContractDeleteTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		consensusTime = Instant.now();
 
-		delegate = mock(ContractDeleteTransitionLogic.LegacyDeleter.class);
+		deletionLogic = mock(DeletionLogic.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		accessor = mock(PlatformTxnAccessor.class);
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
-		ledger = mock(HederaLedger.class);
-		sigImpactHistorian = mock(SigImpactHistorian.class);
 
-		subject = new ContractDeleteTransitionLogic(
-				ledger, delegate, validator, sigImpactHistorian, txnCtx, () -> contracts);
+		subject = new ContractDeleteTransitionLogic(deletionLogic, txnCtx);
+	}
+
+	@Test
+	void happyPathWorksWithDelegate() {
+		givenValidTxnCtx();
+		final var op = contractDeleteTxn.getContractDeleteInstance();
+		final var tbd = op.getContractID();
+		given(deletionLogic.performFor(op)).willReturn(tbd);
+
+		subject.doStateTransition();
+
+		verify(deletionLogic).performFor(op);
+		verify(txnCtx).setTargetedContract(tbd);
 	}
 
 	@Test
@@ -99,89 +89,13 @@ class ContractDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsDetached() {
-		givenValidTxnCtx();
-		given(ledger.exists(transfer)).willReturn(true);
-		given(ledger.isDetached(transfer)).willReturn(true);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-		verifyNoInteractions(delegate);
-	}
-
-	@Test
-	void capturesBadDelete() {
-		// setup:
-		TransactionRecord deleteRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(MODIFYING_IMMUTABLE_CONTRACT)
-						.build())
-				.build();
-
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(deleteRec);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(MODIFYING_IMMUTABLE_CONTRACT);
-	}
-
-	@Test
-	void followsHappyPathWithOverrides() {
-		// setup:
-		TransactionRecord updateRec = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(SUCCESS)
-						.build())
-				.build();
-
-		givenValidTxnCtx();
-		// and:
-		given(delegate.perform(contractDeleteTxn, consensusTime)).willReturn(updateRec);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
-		verify(txnCtx).setStatus(SUCCESS);
-	}
-
-	@Test
 	void acceptsOkSyntax() {
 		givenValidTxnCtx();
 
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(contractDeleteTxn));
-	}
+		given(deletionLogic.precheckValidity(contractDeleteTxn.getContractDeleteInstance()))
+				.willReturn(CONTRACT_DELETED);
 
-	@Test
-	void rejectsInvalidCid() {
-		givenValidTxnCtx();
-		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
-
-		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractDeleteTxn));
-	}
-
-	@Test
-	void translatesUnknownException() {
-		givenValidTxnCtx();
-
-		given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	private void givenValidTxnCtx() {
@@ -202,9 +116,5 @@ class ContractDeleteTransitionLogicTest {
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
 				.build();
-	}
-
-	private void withRubberstampingValidator() {
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
 	}
 }

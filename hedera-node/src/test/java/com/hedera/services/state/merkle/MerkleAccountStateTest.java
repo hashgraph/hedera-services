@@ -839,7 +839,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void gettersForAllowancesWork() {
+	void gettersForAllowancesWork(){
 		var subject = new MerkleAccountState();
 		assertEquals(Collections.emptyMap(), subject.getCryptoAllowances());
 		assertEquals(Collections.emptyMap(), subject.getFungibleTokenAllowances());
@@ -847,7 +847,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void settersForAllowancesWork() {
+	void settersForAllowancesWork(){
 		var subject = new MerkleAccountState();
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
