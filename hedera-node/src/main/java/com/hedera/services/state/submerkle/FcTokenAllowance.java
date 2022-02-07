@@ -139,8 +139,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	public static FcTokenAllowance from(
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {
-		Collections.sort(serialNumbers);
-		return new FcTokenAllowance(approvedForAll, serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(approvedForAll, modifiableList);
 	}
 
 	public static FcTokenAllowance from(final boolean approvedForAll) {
@@ -148,7 +149,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	}
 
 	public static FcTokenAllowance from(final List<Long> serialNumbers) {
-		Collections.sort(serialNumbers);
-		return new FcTokenAllowance(serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(modifiableList);
 	}
 }

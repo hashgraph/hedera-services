@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance.asList;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -86,11 +87,65 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 				ownerNotPayerFails(),
 				serialsWipedIfApprovedForAll(),
 				serialsNotValidatedIfApprovedForAll(),
+				serialsInAscendingOrder(),
 				exceedsTransactionLimit(),
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked()
 		});
 	}
+
+	private HapiApiSpec serialsInAscendingOrder() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String spender1 = "spender1";
+		final String nft = "nft";
+		return defaultHapiSpec("serialsWipedIfApprovedForAll")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoAdjustAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, spender, true, asList(1L))
+								.fee(ONE_HBAR),
+						cryptoAdjustAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, spender1, false, asList(1L, 100L, 10L))
+								.fee(ONE_HBAR)
+				)
+				.then(
+						getAccountInfo(owner)
+								.has(accountWith()
+										.nftAllowancesCount(2)
+										.nftAllowancesContaining(nft, spender, true, asList())
+										.nftAllowancesContaining(nft, spender1, false, asList(10L, 1L, 100L))
+								));
+	}
+
 
 	private HapiApiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
 		final String owner = "owner";

@@ -234,4 +234,12 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 			return new NftAllowances(owner, token, spender, approvedForAll, serials);
 		}
 	}
+
+	public static List<Long> asList(Long... serials) {
+		List<Long> mutableList = new ArrayList<>();
+		for (var n : serials) {
+			mutableList.add(n);
+		}
+		return mutableList;
+	}
 }
