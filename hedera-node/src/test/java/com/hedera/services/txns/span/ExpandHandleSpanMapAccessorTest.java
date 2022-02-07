@@ -20,6 +20,7 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
@@ -158,5 +159,23 @@ class ExpandHandleSpanMapAccessorTest {
 		assertEquals(2, subject.getCryptoApproveMeta(accessor).getNumOfTokenAllowances());
 		assertEquals(3, subject.getCryptoApproveMeta(accessor).getNumOfNftAllowances());
 		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
+	}
+
+	@Test
+	void testsForCryptoAdjustMetaAsExpected() {
+		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
+				.numOfCryptoAllowances(1)
+				.numOfTokenAllowances(2)
+				.numOfNftAllowances(3)
+				.aggregatedNftAllowancesWithSerials(10)
+				.effectiveNow(Instant.now().getEpochSecond())
+				.build();
+
+		subject.setCryptoAdjustMeta(accessor, opMeta);
+
+		assertEquals(1, subject.getCryptoAdjustMeta(accessor).getNumOfCryptoAllowances());
+		assertEquals(2, subject.getCryptoAdjustMeta(accessor).getNumOfTokenAllowances());
+		assertEquals(3, subject.getCryptoAdjustMeta(accessor).getNumOfNftAllowances());
+		assertEquals(10, subject.getCryptoAdjustMeta(accessor).getAggregatedNftAllowancesWithSerials());
 	}
 }

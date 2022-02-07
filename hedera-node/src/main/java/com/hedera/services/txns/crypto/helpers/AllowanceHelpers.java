@@ -126,7 +126,7 @@ public class AllowanceHelpers {
 		return totalSerials;
 	}
 
-	private static Long absolute(Long val) {
+	public static Long absolute(Long val) {
 		return val < 0 ? val * -1 : val;
 	}
 }

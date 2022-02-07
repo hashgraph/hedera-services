@@ -37,10 +37,12 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
 public class AdjustAllowanceChecks extends AllowanceChecks {
+	@Inject
 	public AdjustAllowanceChecks(
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TypedTokenStore tokenStore,
@@ -197,11 +200,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 		}
 
 		for (var serial : serialNums) {
-			var absoluteSerial = serial;
-			if (serial < 0) {
-				absoluteSerial = -1 * serial;
-			}
-
+			var absoluteSerial = absolute(serial);
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
 
 			if (serial < 0 && !existingSerials.contains(absoluteSerial)) {

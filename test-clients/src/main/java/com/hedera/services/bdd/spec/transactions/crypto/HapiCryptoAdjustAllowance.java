@@ -32,8 +32,8 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -143,15 +143,15 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 		List<TokenAllowance> tallowances = new ArrayList<>();
 		List<NftAllowance> nftallowances = new ArrayList<>();
 		calculateAllowances(spec, callowances, tallowances, nftallowances);
-		CryptoApproveAllowanceTransactionBody opBody = spec
+		CryptoAdjustAllowanceTransactionBody opBody = spec
 				.txns()
-				.<CryptoApproveAllowanceTransactionBody, CryptoApproveAllowanceTransactionBody.Builder>body(
-						CryptoApproveAllowanceTransactionBody.class, b -> {
+				.<CryptoAdjustAllowanceTransactionBody, CryptoAdjustAllowanceTransactionBody.Builder>body(
+						CryptoAdjustAllowanceTransactionBody.class, b -> {
 							b.addAllTokenAllowances(tallowances);
 							b.addAllCryptoAllowances(callowances);
 							b.addAllNftAllowances(nftallowances);
 						});
-		return b -> b.setCryptoApproveAllowance(opBody);
+		return b -> b.setCryptoAdjustAllowance(opBody);
 	}
 
 	private void calculateAllowances(final HapiApiSpec spec,
@@ -196,7 +196,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::approveAllowances;
+		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::adjustAllowance;
 	}
 
 	@Override
