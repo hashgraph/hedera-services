@@ -24,6 +24,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -32,6 +33,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -48,6 +50,7 @@ public class EncodingFacade {
 	private static final TupleType nameType = TupleType.parse("(string)");
 	private static final TupleType symbolType = TupleType.parse("(string)");
 	private static final TupleType tokenUriType = TupleType.parse("(string)");
+	private static final TupleType ercTransferType = TupleType.parse("(bool)");
 
 	@Inject
 	public EncodingFacade() {
@@ -137,8 +140,16 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes ercFungibleTransfer(final boolean ercFungibleTransferStatus) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.ERC_TRANSFER)
+				.withErcFungibleTransferStatus(ercFungibleTransferStatus)
+				.withTotalSupply(0L)
+				.build();
+	}
+
 	private enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -149,6 +160,7 @@ public class EncodingFacade {
 		private FunctionType functionType;
 		private TupleType tupleType;
 		private int status;
+		private boolean ercFungibleTransferStatus;
 		private long totalSupply;
 		private long balance;
 		private long[] serialNumbers;
@@ -169,6 +181,7 @@ public class EncodingFacade {
 				case NAME -> tupleType = nameType;
 				case SYMBOL -> tupleType = symbolType;
 				case TOKEN_URI -> tupleType = tokenUriType;
+				case ERC_TRANSFER -> tupleType = ercTransferType;
 			}
 
 			this.functionType = functionType;
@@ -220,6 +233,11 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withErcFungibleTransferStatus(final boolean ercFungibleTransferStatus) {
+			this.ercFungibleTransferStatus = ercFungibleTransferStatus;
+			return this;
+		}
+
 		private Bytes build() {
 			Tuple result;
 
@@ -233,6 +251,7 @@ public class EncodingFacade {
 				case NAME -> result = Tuple.of(name);
 				case SYMBOL -> result = Tuple.of(symbol);
 				case TOKEN_URI -> result = Tuple.of(metadata);
+				case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
 				default -> result = Tuple.of(status);
 			}
 
@@ -244,13 +263,12 @@ public class EncodingFacade {
 		final List<Object> paramsConverted = new ArrayList<>();
 		for (final var param : params) {
 			if (param instanceof Address) {
-				final com.esaulpaugh.headlong.abi.Address address =
-						com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(((Address) param).toBigInteger()));
-				paramsConverted.add(address);
+				paramsConverted.add(convertBesuAddressToHeadlongAddress((Address) param));
 			} else {
 				paramsConverted.add(param);
 			}
 		}
+
 		final var tuple = Tuple.of(paramsConverted.toArray());
 		final var tupleType = generateTupleType(params);
 		if(indexed) {
@@ -282,16 +300,30 @@ public class EncodingFacade {
 		final List<LogTopic> logTopics = new ArrayList<>();
 		for (final var param : params) {
 			if (param instanceof Address) {
-//				logTopics.add(LogTopic.wrap(Bytes.wrap((byte[]) param)));
-				logTopics.add(LogTopic.wrap(Bytes.wrap(((Address) param).toArray())));
+				byte[] array = ((Address) param).toArray();
+				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
 			} else if (param instanceof BigInteger) {
-				logTopics.add(LogTopic.wrap(Bytes.wrap(((BigInteger)param).toByteArray())));
+				byte[] array = ((BigInteger) param).toByteArray();
+				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
 			} else if (param instanceof Boolean) {
 				boolean value = (Boolean) param;
-				byte [] valueBytes = new byte[]{(byte) (value?1:0)};
-				logTopics.add(LogTopic.wrap(Bytes.wrap(valueBytes)));
+				byte[] array = new byte[]{(byte) (value?1:0)};
+				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
 			}
 		}
 		return logTopics;
+	}
+
+	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+		byte[] expandedArray = new byte[32];
+
+		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+		return expandedArray;
+	}
+
+	private static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address addressToBeConverted) {
+		final com.esaulpaugh.headlong.abi.Address convertedAddress =
+				com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(((Address) addressToBeConverted).toBigInteger()));
+		return convertedAddress;
 	}
 }

@@ -132,7 +132,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
-	private static final Bytes FAILURE_RESULT = resultFrom(FAIL_INVALID);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
@@ -426,6 +425,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		} else {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
+
 		return result;
 	}
 
@@ -1013,9 +1013,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nestedInput = input.slice(24);
 
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeTokenTransfer(nestedInput, tokenID,
+				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID,
 						EntityIdUtils.accountIdFromEvmAddress(callerAccount), aliasResolver);
-				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeTokenTransferFrom(nestedInput, tokenID,
+				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
 						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
@@ -1075,9 +1075,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
 			if(isFungible && SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
-				return SUCCESS_RESULT;
+				return encoder.ercFungibleTransfer(true);
 			} else if(isFungible) {
-				return FAILURE_RESULT;
+				return encoder.ercFungibleTransfer(false);
 			} else {
 				return Bytes.EMPTY;
 			}

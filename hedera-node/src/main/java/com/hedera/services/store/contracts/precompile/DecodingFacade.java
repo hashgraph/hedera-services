@@ -126,15 +126,15 @@ public class DecodingFacade {
 	private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
 	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create("(uint256)");
 
-	private static final Function TOKEN_TRANSFER_FUNCTION =
+	private static final Function ERC_TRANSFER_FUNCTION =
 			new Function("transfer(address,uint256)", BOOL_OUTPUT);
-	private static final Bytes TOKEN_TRANSFER_SELECTOR = Bytes.wrap(TOKEN_TRANSFER_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
+	private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
+	private static final ABIType<Tuple> ERC_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
 
-	private static final Function TOKEN_TRANSFER_FROM_FUNCTION =
+	private static final Function ERC_TRANSFER_FROM_FUNCTION =
 			new Function("transferFrom(address,address,uint256)");
-	private static final Bytes TOKEN_TRANSFER_FROM_SELECTOR = Bytes.wrap(TOKEN_TRANSFER_FROM_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
+	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
+	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
 	@Inject
 	public DecodingFacade() {
@@ -194,9 +194,9 @@ public class DecodingFacade {
 		return new BalanceOfWrapper(account);
 	}
 
-	public List<TokenTransferWrapper> decodeTokenTransfer(final Bytes input, final TokenID token,
-														  final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_SELECTOR, TOKEN_TRANSFER_DECODER);
+	public List<TokenTransferWrapper> decodeErcTransfer(final Bytes input, final TokenID token,
+														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
 
 		final var recipient = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var amount = (BigInteger) decodedArguments.get(1);
@@ -208,22 +208,23 @@ public class DecodingFacade {
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 	}
 
-	public List<TokenTransferWrapper> decodeTokenTransferFrom(final Bytes input,
-															  final TokenID caller, final boolean isFungible,
-															  final UnaryOperator<byte[]> aliasResolver) {
-		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_TRANSFER_FROM_SELECTOR, TOKEN_TRANSFER_FROM_DECODER);
+	public List<TokenTransferWrapper> decodeERCTransferFrom(final Bytes input,
+															final TokenID token, final boolean isFungible,
+															final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
 		final var from = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
 		if(isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-			final var amount = (long) decodedArguments.get(2);
-			fungibleTransfers.add(new SyntheticTxnFactory.FungibleTokenTransfer(amount, caller, from, to));
+			final var amount = (BigInteger) decodedArguments.get(2);
+			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue());
+			addAdjustmentAsTransfer(fungibleTransfers, token, from, -amount.longValue());
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
 			final var serialNumber = (long) decodedArguments.get(2);
-			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber, caller, from, to));
+			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber, token, from, to));
 			return Collections.singletonList(new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
 		}
 	}
