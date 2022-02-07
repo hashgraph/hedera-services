@@ -251,6 +251,8 @@ public class UsageAccumulator {
 				.add("nodeVpt", getNodeVpt())
 				.add("serviceSbh", getServiceSbh())
 				.add("serviceRbh", getServiceRbh())
+				.add("gas", getGas())
+				.add("rbs", getRbs())
 				.toString();
 	}
 

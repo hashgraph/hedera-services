@@ -20,11 +20,15 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -298,4 +302,67 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		});
 		return this;
 	}
+
+	public AccountInfoAsserts cryptoAllowancesContaining(String spender, long allowance) {
+
+		registerProvider((spec, o) -> {
+			var cryptoAllowance = CryptoAllowance.newBuilder().setAmount(allowance)
+					.setSpender(spec.registry().getAccountID(spender)).build();
+			assertTrue(((AccountInfo) o).getCryptoAllowancesList().contains(cryptoAllowance),
+					"Bad CryptoAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts tokenAllowancesContaining(String token, String spender, long allowance) {
+		registerProvider((spec, o) -> {
+			var tokenAllowance = TokenAllowance.newBuilder()
+					.setAmount(allowance)
+					.setTokenId(spec.registry().getTokenID(token))
+					.setSpender(spec.registry().getAccountID(spender)).build();
+			assertTrue(((AccountInfo) o).getTokenAllowancesList().contains(tokenAllowance),
+					"Bad TokenAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts nftAllowancesContaining(String token, String spender, boolean approvedForAll,
+			List<Long> serials) {
+		registerProvider((spec, o) -> {
+			var nftAllowance = NftAllowance.newBuilder()
+					.setApprovedForAll(BoolValue.of(approvedForAll))
+					.setTokenId(spec.registry().getTokenID(token))
+					.setSpender(spec.registry().getAccountID(spender))
+					.addAllSerialNumbers(serials)
+					.build();
+			assertTrue(((AccountInfo) o).getNftAllowancesList().contains(nftAllowance),
+					"Bad NftAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts cryptoAllowancesCount(int count) {
+		registerProvider((spec, o) -> {
+			assertEquals(count, ((AccountInfo) o).getCryptoAllowancesCount(),
+					"Bad CryptoAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts tokenAllowancesCount(int count) {
+		registerProvider((spec, o) -> {
+			assertEquals(count, ((AccountInfo) o).getTokenAllowancesCount(),
+					"Bad TokenAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts nftAllowancesCount(int count) {
+		registerProvider((spec, o) -> {
+			assertEquals(count, ((AccountInfo) o).getNftAllowancesCount(),
+					"Bad NFTAllowances!");
+		});
+		return this;
+	}
+
 }
