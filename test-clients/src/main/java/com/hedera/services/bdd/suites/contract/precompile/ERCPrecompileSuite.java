@@ -21,9 +21,12 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,7 +36,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -41,32 +43,39 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.hex;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final String FUNGIBLE_TOKEN = "fungibleToken";
 	private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
 	private static final String MULTI_KEY = "purpose";
@@ -76,6 +85,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final String ACCOUNT = "anybody";
 	private static final String RECIPIENT = "recipient";
 	private static final ByteString FIRST_META = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+	private static final ByteString SECOND_META = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+	private static final String TRANSFER_SIG_NAME = "transferSig";
 
 	public static void main(String... args) {
 		new ERCPrecompileSuite().runSuiteAsync();
@@ -96,13 +107,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_20() {
 		return List.of(
-//				getErc20TokenName(),
+//				getErc20TokenName()
 //				getErc20TokenSymbol(),
 //				getErc20TokenDecimals(),
 //				getErc20TotalSupply(),
 //				getErc20BalanceOfAccount(),
-				transferErc20Token()
-//				transferErc20TokenFrom(),
+				transferErc20Token(),
+				transferErc20TokenFrom()
 //				erc20AllowanceReturnsFailure(),
 //				erc20ApproveReturnsFailure()
 		);
@@ -116,7 +127,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 //				getErc721OwnerOf(),
 //				getErc721BalanceOf(),
 //				getErc721TotalSupply(),
-//				getErc721TransferFrom()
+				getErc721TransferFrom()
 		);
 	}
 
@@ -363,15 +374,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME),
-//								.gas(300_000),
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
 				).when(withOpContext(
-								(spec, opLog) -> {
-									final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
-									final var sender = spec.registry().getAccountID(ACCOUNT);
-									final var receiver = spec.registry().getAccountID(RECIPIENT);
+								(spec, opLog) ->
 										allRunFor(
 												spec,
 												contractCall(ERC_20_CONTRACT_NAME,
@@ -379,23 +386,28 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
 														.payingWith(ACCOUNT).alsoSigningWithFullPrefix(MULTI_KEY)
-														.via(transferTxn).gas(50_000_000L)
+														.via(transferTxn).gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
-										); }
+										)
 						)
-
 				).then(
-						getTxnRecord(transferTxn).andAllChildRecords().logged(),
-						childRecordsCheck(transferTxn, SUCCESS,
-								recordWith().status(SUCCESS),
-								recordWith().contractCallResult(
-										resultWith().logs(
-												inOrder(
-														logWith()
-																.accountAtBytes(TOKEN_TREASURY, 0)
-																.accountAtBytes(RECIPIENT, 32)
-																.longValue(2))))),
-						getAccountBalance(TOKEN_TREASURY)
+						getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
+						getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
+						withOpContext((spec, log) -> {
+							final var sender = spec.registry().getAccountInfo(ACCOUNT).getAccountID();
+							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
+
+							var txnRecord=
+									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(logWith().withTopicsInOrder(List.of(
+															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(receiver.getAccountNum()),
+															parsedToByteString(2)
+													)))
+											))).andAllChildRecords().logged();
+							allRunFor(spec, txnRecord);
+						}),
+						getAccountBalance(ACCOUNT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
@@ -403,35 +415,31 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec transferErc20TokenFrom() {
-		final var payerKeyShape = SIMPLE;
-		final var recipientKeyShape = SIMPLE;
-		final var payerSigsName = "payerSigs";
-		final var recipientSigsName = "recipientSigs";
-		final var theRecipient = "theRecipient";
-		final var transferFromTxn = "transferFromTxn";
+		final var accountNotAssignedToTokenTxn = "accountNotAssignedToTokenTxn";
+		final var transferFromAccountTxn = "transferFromAccountTxn";
+		final var transferFromOtherAccountWithSignaturesTxn = "transferFromOtherAccountWithSignaturesTxn";
+		final var transferWithZeroAddressesTxn = "transferWithZeroAddressesTxn";
+		final var transferWithAccountWithZeroAddressTxn = "transferWithAccountWithZeroAddressTxn";
+		final var transferWithRecipientWithZeroAddressTxn = "transferWithRecipientWithZeroAddressTxn";
 
 		return defaultHapiSpec("ERC_20_TRANSFER_FROM")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						newKeyNamed(payerSigsName).shape(payerKeyShape),
-						newKeyNamed(recipientSigsName).shape(recipientKeyShape),
-						cryptoCreate(ACCOUNT).key(payerSigsName).balance(100 * ONE_HUNDRED_HBARS),
-						cryptoCreate(theRecipient).key(recipientSigsName).receiverSigRequired(true),
+						cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
+						cryptoCreate(RECIPIENT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.INFINITE)
 								.initialSupply(35)
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						fileCreate(ERC_20_CONTRACT_NAME),
-						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
+						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME,
+								extractByteCode(ContractResources.ERC_20_CONTRACT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
-								.gas(300_000),
-						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-						cryptoTransfer(moving(20, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
+								.gas(300_000)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -440,31 +448,112 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_20_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)),
-														asAddress(spec.registry().getAccountID(theRecipient)), 8)
-														.payingWith(ACCOUNT).sigControl(
-																forKey(ACCOUNT, payerKeyShape),
-																forKey(theRecipient, recipientKeyShape))
-														.via(transferFromTxn)
-														.hasKnownStatus(SUCCESS)
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 5)
+														.payingWith(GENESIS)
+														.via(accountNotAssignedToTokenTxn)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+												tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+												cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN).
+														between(TOKEN_TREASURY, ACCOUNT)).payingWith(ACCOUNT),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 5)
+														.payingWith(ACCOUNT)
+														.via(transferFromAccountTxn)
+														.hasKnownStatus(SUCCESS),
+												newKeyNamed(TRANSFER_SIG_NAME).shape(
+														SIMPLE.signedWith(ON)),
+												cryptoUpdate(ACCOUNT).key(TRANSFER_SIG_NAME),
+												cryptoUpdate(RECIPIENT).key(TRANSFER_SIG_NAME),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 5)
+														.payingWith(GENESIS).alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+														.via(transferFromOtherAccountWithSignaturesTxn)
+														.hasKnownStatus(SUCCESS),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(AccountID.parseFrom(new byte[]{})),
+														asAddress(AccountID.parseFrom(new byte[]{})), 5)
+														.payingWith(GENESIS)
+														.via(transferWithZeroAddressesTxn)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(AccountID.parseFrom(new byte[]{})),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 5)
+														.payingWith(GENESIS)
+														.via(transferWithAccountWithZeroAddressTxn)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														asAddress(AccountID.parseFrom(new byte[]{})), 5)
+														.payingWith(ACCOUNT)
+														.via(transferWithRecipientWithZeroAddressTxn)
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 										)
+
 						)
 				).then(
-						getTxnRecord(transferFromTxn).andAllChildRecords().logged(),
-						childRecordsCheck(transferFromTxn, SUCCESS,
-								recordWith().status(SUCCESS),
-								recordWith().contractCallResult(
-										resultWith().logs(
-												inOrder(
-														logWith()
-																.accountAtBytes(ACCOUNT, 0)
-																.accountAtBytes(theRecipient, 32)
-																.longValue(8))))),
+						getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
+						getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
+						withOpContext((spec, log) -> {
+							final var sender = spec.registry().getAccountInfo(ACCOUNT).getAccountID();
+							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
+
+							var accountNotAssignedToTokenRecord=
+									getTxnRecord(accountNotAssignedToTokenTxn).hasChildRecords(recordWith().status(INVALID_SIGNATURE)
+									).andAllChildRecords().logged();
+
+							var transferWithZeroAddressesRecord=
+									getTxnRecord(transferWithZeroAddressesTxn).hasChildRecords(recordWith().status(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+									).andAllChildRecords().logged();
+
+							var transferWithAccountWithZeroAddressRecord=
+									getTxnRecord(transferWithAccountWithZeroAddressTxn).hasChildRecords(recordWith().status(INVALID_ACCOUNT_ID)
+									).andAllChildRecords().logged();
+
+							var transferWithRecipientWithZeroAddressRecord=
+									getTxnRecord(transferWithRecipientWithZeroAddressTxn).hasChildRecords(recordWith().status(INVALID_ACCOUNT_ID)
+									).andAllChildRecords().logged();
+
+							var transferFromAccountRecord=
+									getTxnRecord(transferFromAccountTxn).hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(logWith().withTopicsInOrder(List.of(
+															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(receiver.getAccountNum()),
+															parsedToByteString(5)
+													)))
+											))).andAllChildRecords().logged();
+							var transferFromNotOwnerWithSignaturesRecord=
+									getTxnRecord(transferFromOtherAccountWithSignaturesTxn).hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(logWith().withTopicsInOrder(List.of(
+															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(receiver.getAccountNum()),
+															parsedToByteString(5)
+													)))
+											))).andAllChildRecords().logged();
+
+							allRunFor(spec,
+									accountNotAssignedToTokenRecord,transferWithZeroAddressesRecord, transferWithAccountWithZeroAddressRecord,
+									transferWithRecipientWithZeroAddressRecord, transferFromAccountRecord, transferFromNotOwnerWithSignaturesRecord
+							);
+						}),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 27),
+								.hasTokenBalance(FUNGIBLE_TOKEN, 15),
 						getAccountBalance(ACCOUNT)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 12),
-						getAccountBalance(theRecipient)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 8)
+								.hasTokenBalance(FUNGIBLE_TOKEN, 10),
+						getAccountBalance(RECIPIENT)
+								.hasTokenBalance(FUNGIBLE_TOKEN, 10)
 				);
 	}
 
@@ -775,17 +864,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-
 	private HapiApiSpec getErc721TransferFrom() {
-		final var notOwnerKeyShape = SIMPLE;
-		final var notOwner = "notOwner";
 		final var ownerNotAssignedToTokenTxn = "ownerNotAssignedToTokenTxn";
-		final var transferFromToAccountTxn = "transferFromToAccountTxn";
+		final var transferFromOwnerTxn = "transferFromToAccountTxn";
+		final var transferFromNotOwnerWithSignaturesTxn = "transferFromNotOwnerWithSignaturesTxn";
+		final var transferWithZeroAddressesTxn = "transferWithZeroAddressesTxn";
+		final var transferWithOwnerWithZeroAddressTxn = "transferWithOwnerWithZeroAddressTxn";
+		final var transferWithRecipientWithZeroAddressTxn = "transferWithRecipientWithZeroAddressTxn";
 
 		return defaultHapiSpec("ERC_721_TRANSFER_FROM")
 				.given(
 						newKeyNamed(MULTI_KEY),
-						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(OWNER).balance(10 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -799,7 +889,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						contractCreate(ERC_721_CONTRACT_NAME)
 								.bytecode(ERC_721_CONTRACT_NAME)
 								.gas(300_000),
-						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META))
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -809,41 +899,106 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
-														.payingWith(OWNER)
-														.via(ownerNotAssignedToTokenTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+														.payingWith(GENESIS)
+														.via(ownerNotAssignedToTokenTxn),
 												tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+												tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
+												cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1, 2).
+														between(TOKEN_TREASURY, OWNER)).payingWith(OWNER),
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
 														.payingWith(OWNER)
-														.via(transferFromToAccountTxn)
+														.via(transferFromOwnerTxn)
+														.hasKnownStatus(SUCCESS),
+												newKeyNamed(TRANSFER_SIG_NAME).shape(
+														SIMPLE.signedWith(ON)),
+												cryptoUpdate(OWNER).key(TRANSFER_SIG_NAME),
+												cryptoUpdate(RECIPIENT).key(TRANSFER_SIG_NAME),
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
+														.payingWith(GENESIS).alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
+														.via(transferFromNotOwnerWithSignaturesTxn)
 														.hasKnownStatus(SUCCESS),
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
-														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(AccountID.parseFrom(new byte[]{})),
+														asAddress(AccountID.parseFrom(new byte[]{})), 1)
+														.payingWith(GENESIS)
+														.via(transferWithZeroAddressesTxn),
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(AccountID.parseFrom(new byte[]{})),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
-														.payingWith(notOwner)
-														.via(ownerNotAssignedToTokenTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+														.payingWith(GENESIS)
+														.via(transferWithOwnerWithZeroAddressTxn),
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_TRANSFER_FROM_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
-														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
-														.payingWith(notOwner).sigControl(
-																forKey(notOwner, notOwnerKeyShape))
-														.via(ownerNotAssignedToTokenTxn)
-														.hasKnownStatus(SUCCESS)
+														asAddress(AccountID.parseFrom(new byte[]{})), 1)
+														.payingWith(OWNER)
+														.via(transferWithRecipientWithZeroAddressTxn)
 										)
 
 						)
 				).then(
-						getTxnRecord(ownerNotAssignedToTokenTxn).andAllChildRecords().logged(),
-						getTxnRecord(transferFromToAccountTxn).andAllChildRecords().logged()
+						getAccountInfo(OWNER).savingSnapshot(OWNER),
+						getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
+						withOpContext((spec, log) -> {
+							final var sender = spec.registry().getAccountInfo(OWNER).getAccountID();
+							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
+
+							var ownerNotAssignedToTokenRecord=
+									getTxnRecord(ownerNotAssignedToTokenTxn).hasChildRecords(recordWith().status(INVALID_SIGNATURE)
+											).andAllChildRecords().logged();
+
+							var transferWithZeroAddressesRecord=
+									getTxnRecord(transferWithZeroAddressesTxn).hasChildRecords(recordWith().status(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+									).andAllChildRecords().logged();
+
+							var transferWithOwnerWithZeroAddressRecord=
+									getTxnRecord(transferWithOwnerWithZeroAddressTxn).hasChildRecords(recordWith().status(INVALID_ACCOUNT_ID)
+									).andAllChildRecords().logged();
+
+							var transferWithRecipientWithZeroAddressRecord=
+									getTxnRecord(transferWithRecipientWithZeroAddressTxn).hasChildRecords(recordWith().status(INVALID_ACCOUNT_ID)
+									).andAllChildRecords().logged();
+
+							var transferFromOwnerRecord=
+									getTxnRecord(transferFromOwnerTxn).hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(logWith().withTopicsInOrder(List.of(
+															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(receiver.getAccountNum()),
+															parsedToByteString(1)
+													)))
+											))).andAllChildRecords().logged();
+							var transferFromNotOwnerWithSignaturesRecord=
+									getTxnRecord(transferFromNotOwnerWithSignaturesTxn).hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(logWith().withTopicsInOrder(List.of(
+															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(receiver.getAccountNum()),
+															parsedToByteString(2)
+													)))
+											))).andAllChildRecords().logged();
+
+							allRunFor(spec,
+									ownerNotAssignedToTokenRecord,transferWithZeroAddressesRecord, transferWithOwnerWithZeroAddressRecord,
+									transferWithRecipientWithZeroAddressRecord,transferFromOwnerRecord, transferFromNotOwnerWithSignaturesRecord);
+						}),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+						getAccountBalance(OWNER)
+								.hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+						getAccountBalance(RECIPIENT)
+								.hasTokenBalance(NON_FUNGIBLE_TOKEN, 2)
 				);
 	}
 

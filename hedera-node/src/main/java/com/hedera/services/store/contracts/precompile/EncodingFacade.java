@@ -260,15 +260,7 @@ public class EncodingFacade {
 	}
 
 	public static Log generateLog(final Address logger,  boolean indexed, final Object... params) {
-		final List<Object> paramsConverted = new ArrayList<>();
-		for (final var param : params) {
-			if (param instanceof Address) {
-				paramsConverted.add(convertBesuAddressToHeadlongAddress((Address) param));
-			} else {
-				paramsConverted.add(param);
-			}
-		}
-
+		final var paramsConverted = convertParamsForLog(params);
 		final var tuple = Tuple.of(paramsConverted.toArray());
 		final var tupleType = generateTupleType(params);
 		if(indexed) {
@@ -278,12 +270,27 @@ public class EncodingFacade {
 		}
 	}
 
+	private static List<Object> convertParamsForLog(final Object... params) {
+		final List<Object> paramsConverted = new ArrayList<>();
+		for (final var param : params) {
+			if (param instanceof Address) {
+				paramsConverted.add(convertBesuAddressToHeadlongAddress((Address) param));
+			} else if (param instanceof Long) {
+				paramsConverted.add(BigInteger.valueOf((Long) param));
+			} else {
+				paramsConverted.add(param);
+			}
+		}
+
+		return paramsConverted;
+	}
+
 	private static TupleType generateTupleType(final Object... params) {
 		final StringBuilder tupleTypes = new StringBuilder("(");
 		for (final var param : params) {
 			if (param instanceof Address) {
 				tupleTypes.append("address,");
-			} else if (param instanceof BigInteger) {
+			} else if (param instanceof BigInteger || param instanceof Long) {
 				tupleTypes.append("uint256,");
 			} else if (param instanceof Boolean) {
 				tupleTypes.append("boolean,");
@@ -304,6 +311,9 @@ public class EncodingFacade {
 				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
 			} else if (param instanceof BigInteger) {
 				byte[] array = ((BigInteger) param).toByteArray();
+				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
+			} else if (param instanceof Long) {
+				byte[] array = BigInteger.valueOf((Long) param).toByteArray();
 				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
 			} else if (param instanceof Boolean) {
 				boolean value = (Boolean) param;

@@ -1067,9 +1067,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nftExchange = nftExchanges.get(0).asGrpc();
 			final var sender = EntityIdUtils.asTypedEvmAddress(nftExchange.getSenderAccountID());
 			final var receiver = EntityIdUtils.asTypedEvmAddress(nftExchange.getReceiverAccountID());
+			final var serialNumber = nftExchange.getSerialNumber();
 
 			return EncodingFacade.generateLog(logger, true, sender,
-					receiver, nftExchange.getSerialNumber());
+					receiver, serialNumber);
 		}
 
 		@Override
