@@ -73,6 +73,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRACEABILITY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
@@ -137,7 +138,11 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				nestedStateChangeCalls_1(),
+				nestedStateChangeCalls_2(),
+				nestedStateChangeCalls_4(),
+				nestedStateChangeCalls_6(),
+				nestedStateChangeCalls_10(),
+				nestedStateChangeCalls_11(),
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -258,6 +263,374 @@ public class ContractCallSuite extends HapiApiSuite {
 													.logged()
 									);
 								}
+						)
+				);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_2() {
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_2")
+				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+
+						fileCreate("bytecode").payingWith("payer"),
+						updateLargeFile("payer", "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 0, 0, 0)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 0, 0, 99)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 0, 88, 0)
+								.bytecode("bytecode")
+								.gas(300_000)
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+
+									allRunFor(spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_EET_2,
+													contractBAddress, contractCAddress)
+													.gas(1000000)
+													.via("nestedthenesttxn")
+									);
+								})
+				).then(
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										getTxnRecord("nestedthenesttxn")
+												.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+														StateChange.stateChangeFor(contractA)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(55))
+																),
+														StateChange.stateChangeFor(contractB)
+																.withStorageChanges(
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(100)),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0)),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(2),
+																				formattedAssertionValue(99),
+																				formattedAssertionValue(143))
+																)
+												)))
+												.logged()
+								)
+						)
+				);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_4() {
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_4")
+				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+
+						fileCreate("bytecode").payingWith("payer"),
+						updateLargeFile("payer", "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 2, 3, 4)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 0, 0, 0)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 0, 0, 0)
+								.bytecode("bytecode")
+								.gas(300_000)
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+
+									allRunFor(spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_EET_4,
+													contractBAddress, contractCAddress)
+													.gas(1000000)
+													.via("nestedthenesttxn")
+									);
+								})
+				).then(
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										getTxnRecord("nestedthenesttxn")
+												.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+														StateChange.stateChangeFor(contractA)
+																.withStorageChanges(
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(2),
+																				formattedAssertionValue(55)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(3),
+																				formattedAssertionValue(4)),
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(2),
+																				formattedAssertionValue(4))
+																)
+												)))
+												.logged()
+								)
+						)
+				);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_6() {
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_6")
+				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+
+						fileCreate("bytecode").payingWith("payer"),
+						updateLargeFile("payer", "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 2, 3, 4)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 0, 0, 3)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 0, 1, 0)
+								.bytecode("bytecode")
+								.gas(300_000)
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+
+									allRunFor(spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_EET_6,
+													contractBAddress, contractCAddress)
+													.gas(1000000)
+													.via("nestedthenesttxn")
+									);
+								})
+				).then(
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										getTxnRecord("nestedthenesttxn")
+												.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+														StateChange.stateChangeFor(contractA)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(2)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(3),
+																				formattedAssertionValue(4)),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(2),
+																				formattedAssertionValue(4),
+																				formattedAssertionValue(5))
+																),
+														StateChange.stateChangeFor(contractC)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0)
+																		),
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(1))
+																)
+												)))
+												.logged()
+								)
+						)
+				);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_10() {
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_10")
+				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+
+						fileCreate("bytecode").payingWith("payer"),
+						updateLargeFile("payer", "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 2, 3, 4)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 0, 0, 3)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 0, 1, 0)
+								.bytecode("bytecode")
+								.gas(300_000)
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+
+									allRunFor(spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_EET_10,
+													contractBAddress, contractCAddress)
+													.gas(1000000)
+													.via("nestedthenesttxn")
+									);
+								})
+				).then(
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										getTxnRecord("nestedthenesttxn")
+												.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+														StateChange.stateChangeFor(contractA)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(2)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(3),
+																				formattedAssertionValue(4))
+																),
+														StateChange.stateChangeFor(contractB)
+																.withStorageChanges(
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(2),
+																				formattedAssertionValue(3),
+																				formattedAssertionValue(5)
+																		)
+																),
+														StateChange.stateChangeFor(contractC)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0)
+																		),
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(1))
+																)
+												)))
+												.logged()
+								)
+						)
+				);
+	}
+
+	private HapiApiSpec nestedStateChangeCalls_11() {
+		final var contractA = "contractA";
+		final var contractB = "contractB";
+		final var contractC = "contractC";
+
+		return defaultHapiSpec("NestedStateChangeCalls_11")
+				.given(
+						cryptoCreate("payer").balance(ONE_MILLION_HBARS),
+
+						fileCreate("bytecode").payingWith("payer"),
+						updateLargeFile("payer", "bytecode",
+								extractByteCode(ContractResources.TRACEABILITY_RECURSIVE_CALLS)),
+
+						contractCreate(contractA, TRACEABILITY_CONSTRUCTOR, 2, 3, 4)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractB, TRACEABILITY_CONSTRUCTOR, 0, 0, 3)
+								.bytecode("bytecode")
+								.gas(300_000),
+						contractCreate(contractC, TRACEABILITY_CONSTRUCTOR, 0, 1, 0)
+								.bytecode("bytecode")
+								.gas(300_000)
+				).when(
+						withOpContext(
+								(spec, opLog) -> {
+									final var contractBAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractB, spec);
+									final var contractCAddress =
+											ContractMintHTSSuite.getNestedContractAddress(contractC, spec);
+
+									allRunFor(spec,
+											contractCall(contractA, ContractResources.TRACEABILITY_EET_11,
+													contractBAddress, contractCAddress)
+													.gas(1000000)
+													.via("nestedthenesttxn")
+									);
+								})
+				).then(
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										getTxnRecord("nestedthenesttxn")
+												.hasPriority(recordWith().contractCallResult(resultWith().stateChanges(
+														StateChange.stateChangeFor(contractA)
+																.withStorageChanges(
+																		StorageChange.onlyRead(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(2)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(3),
+																				formattedAssertionValue(4))
+																),
+														StateChange.stateChangeFor(contractC)
+																.withStorageChanges(
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(0),
+																				formattedAssertionValue(123)
+																		),
+																		StorageChange.readAndWritten(
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(1),
+																				formattedAssertionValue(0))
+																)
+												)))
+												.logged()
+								)
 						)
 				);
 	}
