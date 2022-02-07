@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.utils.AddressComparator;
 import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -286,7 +287,7 @@ public class SolidityFnResult implements SelfSerializable {
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
 						)),
 						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE))),
+						() -> new TreeMap<>(AddressComparator.INSTANCE))),
 				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES
 		);
 	}

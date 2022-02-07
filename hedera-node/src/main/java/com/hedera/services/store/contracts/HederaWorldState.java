@@ -29,8 +29,7 @@ import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.BytesComparator;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.AddressComparator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -346,7 +345,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				new HederaAccountCustomizer().isSmartContract(true);
 
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
-		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> storageChanges = new TreeMap<>(BytesComparator.INSTANCE);
+		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> storageChanges = new TreeMap<>(AddressComparator.INSTANCE);
 		Gas sbhRefund = Gas.ZERO;
 
 
