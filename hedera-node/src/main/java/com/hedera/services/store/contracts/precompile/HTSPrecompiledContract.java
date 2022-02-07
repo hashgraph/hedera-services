@@ -49,6 +49,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.SolidityFnResult;
@@ -98,8 +99,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -110,7 +113,13 @@ import java.util.function.UnaryOperator;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.ledger.properties.NftProperty.METADATA;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
@@ -119,6 +128,8 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -787,7 +798,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 				var hasReceiverSigIfReq = true;
 				if (change.isForNft()) {
-					final var counterPartyAddress = EntityIdUtils.asTypedEvmAddress(change.counterPartyAccountId());
+					final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
 					hasReceiverSigIfReq = validateKey(frame, counterPartyAddress,
 							sigsVerifier::hasActiveKeyOrNoReceiverSigReq);
 				} else if (units > 0) {
@@ -1050,10 +1061,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			BigInteger amount = BigInteger.ZERO;
 			for(final var fungibleTransfer: fungibleTransfers) {
 				if(fungibleTransfer.sender!=null) {
-					sender = EntityIdUtils.asTypedEvmAddress(fungibleTransfer.sender);
+					sender = asTypedEvmAddress(fungibleTransfer.sender);
 				}
 				if(fungibleTransfer.receiver!=null) {
-					receiver = EntityIdUtils.asTypedEvmAddress(fungibleTransfer.receiver);
+					receiver = asTypedEvmAddress(fungibleTransfer.receiver);
 					amount = BigInteger.valueOf(fungibleTransfer.amount);
 				}
 			}
@@ -1065,8 +1076,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		private Log getLogForNftExchange(final Address logger) {
 			final var nftExchanges = super.transferOp.get(0).nftExchanges();
 			final var nftExchange = nftExchanges.get(0).asGrpc();
-			final var sender = EntityIdUtils.asTypedEvmAddress(nftExchange.getSenderAccountID());
-			final var receiver = EntityIdUtils.asTypedEvmAddress(nftExchange.getReceiverAccountID());
+			final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
+			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
 
 			return EncodingFacade.generateLog(logger, true, sender,
 					receiver, nftExchange.getSerialNumber());
@@ -1137,7 +1148,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
-		private OwnerOfAndTokenURIWrapper tokenUri;
+		private OwnerOfAndTokenURIWrapper tokenUriWrapper;
 
 		public TokenURIPrecompile(final TokenID tokenID) {
 			super(tokenID);
@@ -1145,13 +1156,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			tokenUri = decoder.decodeTokenUriNFT(input);
-			return TransactionBody.newBuilder();
+			final var nestedInput = input.slice(24);
+			tokenUriWrapper = decoder.decodeTokenUriNFT(nestedInput);
+			super.sideEffects = sideEffectsFactory.get();
+
+			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
+			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), tokenUriWrapper.tokenId());
+			var metaData =  (byte[]) nftsLedger.get(nftId, METADATA);
+
+			String metaDataString = new String(metaData);
+
+			return encoder.encodeTokenUri(metaDataString);
 		}
 	}
 
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
-		private OwnerOfAndTokenURIWrapper owner;
+		private OwnerOfAndTokenURIWrapper ownerWrapper;
 
 		public OwnerOfPrecompile(final TokenID tokenID) {
 			super(tokenID);
@@ -1159,13 +1184,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			owner = decoder.decodeOwnerOf(input);
-			return TransactionBody.newBuilder();
+			final var nestedInput = input.slice(24);
+			ownerWrapper = decoder.decodeOwnerOf(nestedInput);
+			super.sideEffects = sideEffectsFactory.get();
+
+			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
+			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), ownerWrapper.tokenId());
+			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+			var accountIdOwner = owner.toGrpcAccountId();
+
+			return encoder.encodeOwner(asTypedEvmAddress(accountIdOwner));
 		}
 	}
 
 	protected class BalanceOfPrecompile extends ERCReadOnlyAbstractPrecompile {
-		private BalanceOfWrapper balance;
+		private BalanceOfWrapper balanceWrapper;
 
 		public BalanceOfPrecompile(final TokenID tokenID) {
 			super(tokenID);
@@ -1173,8 +1211,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			balance = decoder.decodeBalanceOf(input, aliasResolver);
-			return TransactionBody.newBuilder();
+			final var nestedInput = input.slice(24);
+			balanceWrapper = decoder.decodeBalanceOf(nestedInput, aliasResolver);
+			super.sideEffects = sideEffectsFactory.get();
+
+			return syntheticTxnFactory.createTransactionCall(1L, nestedInput);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
+			var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
+
+			var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+
+			return encoder.encodeBalance(balance);
 		}
 	}
 
