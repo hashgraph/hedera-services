@@ -76,19 +76,19 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				happyPathWorks(),
-//				emptyAllowancesRejected(),
-//				spenderSameAsOwnerFails(),
-//				spenderAccountRepeatedFails(),
-//				negativeAmountFailsForFungible(),
-//				tokenNotAssociatedToAccountFails(),
-//				invalidTokenTypeFails(),
-//				validatesSerialNums(),
-//				tokenExceedsMaxSupplyFails(),
-//				OwnerNotPayerFails(),
-//				serialsWipedIfApprovedForAll(),
-//				exceedsTransactionLimit(),
-//				exceedsAccountLimit(),
+				happyPathWorks(),
+				emptyAllowancesRejected(),
+				spenderSameAsOwnerFails(),
+				spenderAccountRepeatedFails(),
+				negativeAmountFailsForFungible(),
+				tokenNotAssociatedToAccountFails(),
+				invalidTokenTypeFails(),
+				validatesSerialNums(),
+				tokenExceedsMaxSupplyFails(),
+				OwnerNotPayerFails(),
+				serialsWipedIfApprovedForAll(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked()
 		});
 	}
