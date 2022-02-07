@@ -223,8 +223,8 @@ public class DecodingFacade {
 			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 		} else {
 			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
-			final var serialNumber = (long) decodedArguments.get(2);
-			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber, token, from, to));
+			final var serialNumber = (BigInteger) decodedArguments.get(2);
+			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber.longValue(), token, from, to));
 			return Collections.singletonList(new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
 		}
 	}

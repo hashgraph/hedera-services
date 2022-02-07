@@ -100,10 +100,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -116,8 +114,6 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -133,7 +129,6 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -586,7 +581,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
 		}
 	}
@@ -634,7 +629,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
 		}
 	}
@@ -693,7 +688,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			Objects.requireNonNull(mintOp);
 
 			return precompilePricingUtils.getMinimumPriceInTinybars(
@@ -950,21 +945,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			Objects.requireNonNull(burnOp);
 			return precompilePricingUtils.getMinimumPriceInTinybars(
 					(burnOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var receiptBuilder = childRecord.getReceiptBuilder();
 			validateTrue(receiptBuilder != null, FAIL_INVALID);
 			return encoder.encodeBurnSuccess(childRecord.getReceiptBuilder().getNewTotalSupply());
 		}
 
 		@Override
-		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 			return encoder.encodeBurnFailure(status);
 		}
 	}
@@ -972,7 +967,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
 		protected TokenID tokenID;
 		private TransactionBody.Builder syntheticTxn;
-		private SideEffectsTracker sideEffects;
 
 		public ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
@@ -981,7 +975,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input.slice(24));
-			this.sideEffects = sideEffectsFactory.get();
 
 			return syntheticTxn;
 		}
@@ -993,7 +986,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(tokenID);
 
 			final var sideEffects = sideEffectsFactory.get();
-
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 
@@ -1075,13 +1067,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nftExchange = nftExchanges.get(0).asGrpc();
 			final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
 			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
+			final var serialNumber = nftExchange.getSerialNumber();
 
 			return EncodingFacade.generateLog(logger, true, sender,
-					receiver, nftExchange.getSerialNumber());
+					receiver, serialNumber);
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			if(isFungible && SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
 				return encoder.ercFungibleTransfer(true);
 			} else if(isFungible) {
@@ -1099,9 +1092,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			var name = (String) tokensLedger.get(tokenID, NAME);
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			final var name = (String) tokensLedger.get(tokenID, NAME);
 
 			return encoder.encodeName(name);
 		}
@@ -1114,9 +1107,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			var symbol = (String) tokensLedger.get(tokenID, SYMBOL);
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			final var symbol = (String) tokensLedger.get(tokenID, SYMBOL);
 
 			return encoder.encodeSymbol(symbol);
 		}
@@ -1129,9 +1122,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			var decimals = (Integer) tokensLedger.get(tokenID, DECIMALS);
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			final var decimals = (Integer) tokensLedger.get(tokenID, DECIMALS);
 
 			return encoder.encodeDecimals(decimals);
 		}
@@ -1145,8 +1138,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			var totalSupply = (long) tokensLedger.get(tokenID, TOTAL_SUPPLY);
+			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+			final var totalSupply = (long) tokensLedger.get(tokenID, TOTAL_SUPPLY);
 
 			return encoder.encodeTotalSupply(totalSupply);
 		}
@@ -1168,7 +1161,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), tokenUriWrapper.tokenId());
 			var metaData =  (byte[]) nftsLedger.get(nftId, METADATA);
@@ -1195,7 +1188,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), ownerWrapper.tokenId());
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
@@ -1221,11 +1214,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
-			var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
-
-			var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
+			final var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
+			final var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 
 			return encoder.encodeBalance(balance);
 		}
