@@ -39,7 +39,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Iterator;
 
-import static com.hedera.services.stream.RecordStreamType.RECORD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -70,12 +69,14 @@ class RecordStreamFileParsingTest {
 
 	@Test
 	void parseSigFileV5() throws Exception {
-		final String streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2021-01-12T19_44_30.442332000Z.rcd";
+		final var streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2022-02-01T20_08_44.147325000Z.rcd";
 		final File streamFile = new File(streamFilePath);
 		final File sigFile = new File(streamFilePath + "_sig");
 		Hash expectedEntireHash = LinkedObjectStreamUtilities.computeEntireHash(streamFile);
-		Hash expectedMetaHash = LinkedObjectStreamUtilities.computeMetaHash(streamFile, RECORD);
-		Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parsedResult = LinkedObjectStreamUtilities.parseSigFile(sigFile, RECORD);
+		Hash expectedMetaHash = LinkedObjectStreamUtilities.computeMetaHash(
+				streamFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
+		Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parsedResult = LinkedObjectStreamUtilities.parseSigFile(
+				sigFile, Release023xStreamType.RELEASE_023x_STREAM_TYPE);
 		Hash entireHashInSig = parsedResult.getLeft().getLeft();
 		Hash metaHashInSig = parsedResult.getRight().getLeft();
 		assertEquals(expectedEntireHash, entireHashInSig);
@@ -87,7 +88,7 @@ class RecordStreamFileParsingTest {
 		// these files are generated with initial Hash be an empty Hash
 		final File recordsDir = new File(dir);
 		Iterator<SelfSerializable> iterator = LinkedObjectStreamUtilities.parseStreamDirOrFile(recordsDir,
-				RECORD);
+				Release023xStreamType.RELEASE_023x_STREAM_TYPE);
 
 		Hash startHash = null;
 		int recordsCount = 0;
