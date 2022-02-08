@@ -69,9 +69,9 @@ public class SStoreSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 				setupAppProperties(),
 				multipleSStoreOpsSucceed(),
-				//benchmarkSingleSetter(),
-				//childStorage(),
-//				temporarySStoreRefundTest(),
+				benchmarkSingleSetter(),
+				childStorage(),
+				temporarySStoreRefundTest(),
 				cleanupAppProperties()
 		});
 	}

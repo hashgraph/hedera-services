@@ -70,7 +70,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
 			final boolean slotIsWarm = frame.warmUpStorage(address, key);
 			final Optional<Gas> optionalCost = slotIsWarm ? warmCost : coldCost;
-			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {
+			if (frame.getRemainingGas().compareTo(optionalCost.orElse(Gas.ZERO)) < 0) {
 				return new OperationResult(
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
