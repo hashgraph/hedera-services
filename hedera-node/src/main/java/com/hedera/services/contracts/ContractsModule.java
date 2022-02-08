@@ -179,7 +179,7 @@ public interface ContractsModule {
 	@Binds
 	@Singleton
 	@IntoSet
-	public abstract Operation bindHederaSLoadOperation(HederaSLoadOperation sstore);
+	Operation bindHederaSLoadOperation(HederaSLoadOperation sload);
 
 	@Binds
 	@Singleton

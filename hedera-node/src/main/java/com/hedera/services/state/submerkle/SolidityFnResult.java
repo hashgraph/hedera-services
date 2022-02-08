@@ -75,7 +75,7 @@ public class SolidityFnResult implements SelfSerializable {
 	private EntityId contractId;
 	private List<EntityId> createdContractIds = new ArrayList<>();
 	private List<SolidityLog> logs = new ArrayList<>();
-	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
 
 	public SolidityFnResult() {
 		/* RuntimeConstructable */
@@ -155,8 +155,8 @@ public class SolidityFnResult implements SelfSerializable {
 		serdes.writeNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
-		out.write(stateChanges.size());
 		out.writeByteArray(evmAddress);
+		out.write(stateChanges.size());
 		for (Map.Entry<Address, Map<Bytes, Pair<Bytes, Bytes>>> entry : stateChanges.entrySet()) {
 			out.writeByteArray(entry.getKey().trimLeadingZeros().toArrayUnsafe());
 			Map<Bytes, Pair<Bytes, Bytes>> slots = entry.getValue();
