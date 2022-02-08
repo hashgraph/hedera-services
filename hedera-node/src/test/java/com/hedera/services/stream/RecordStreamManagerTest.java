@@ -83,9 +83,6 @@ public class RecordStreamManagerTest {
 	private static final RecordStreamManager RECORD_STREAM_MANAGER = new RecordStreamManager(
 			multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
-	private static NodeLocalProperties disabledProps;
-	private static NodeLocalProperties enabledProps;
-
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
@@ -94,25 +91,28 @@ public class RecordStreamManagerTest {
 	@BeforeAll
 	public static void init() throws Exception {
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
-		disabledProps = mock(NodeLocalProperties.class);
+		NodeLocalProperties disabledProps = mock(NodeLocalProperties.class);
 		given(disabledProps.isRecordStreamEnabled()).willReturn(false);
-		enabledProps = mock(NodeLocalProperties.class);
+		NodeLocalProperties enabledProps = mock(NodeLocalProperties.class);
 		given(enabledProps.isRecordStreamEnabled()).willReturn(true);
 		configProps(disabledProps);
 		configProps(enabledProps);
+		RecordStreamType streamType = mock(RecordStreamType.class);
 
 		disableStreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,
 				disabledProps,
 				recordMemo,
-				INITIAL_RANDOM_HASH);
+				INITIAL_RANDOM_HASH,
+				streamType);
 		enableStreamingInstance = new RecordStreamManager(
 				platform,
 				runningAvgsMock,
 				enabledProps,
 				recordMemo,
-				INITIAL_RANDOM_HASH);
+				INITIAL_RANDOM_HASH,
+				streamType);
 	}
 
 	private static void configProps(NodeLocalProperties props) {
