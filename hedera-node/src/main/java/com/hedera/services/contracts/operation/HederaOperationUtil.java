@@ -62,8 +62,7 @@ public final class HederaOperationUtil {
 	 * {@link com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount}. The expiry to be used is
 	 * the expiry of the first account found in the stack
 	 *
-	 * @param frame
-	 * 		Current message frame
+	 * @param frame Current message frame
 	 * @return Expiry to be used for new contracts
 	 */
 	public static long newContractExpiryIn(MessageFrame frame) {
@@ -97,16 +96,11 @@ public final class HederaOperationUtil {
 	 * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
 	 * the account does not exist, or it is deleted.
 	 *
-	 * @param frame
-	 * 		The current message frame
-	 * @param supplierAddressBytes
-	 * 		Supplier for the address bytes
-	 * @param supplierHaltGasCost
-	 * 		Supplier for the gas cost
-	 * @param supplierExecution
-	 * 		Supplier with the execution
-	 * @param addressValidator
-	 * 		Address validator predicate
+	 * @param frame                The current message frame
+	 * @param supplierAddressBytes Supplier for the address bytes
+	 * @param supplierHaltGasCost  Supplier for the gas cost
+	 * @param supplierExecution    Supplier with the execution
+	 * @param addressValidator     Address validator predicate
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressCheckExecution(
@@ -143,18 +137,12 @@ public final class HederaOperationUtil {
 	 * provided signature is performed. If the signature is not
 	 * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
 	 *
-	 * @param sigsVerifier
-	 * 		The signature
-	 * @param frame
-	 * 		The current message frame
-	 * @param address
-	 * 		The target address
-	 * @param supplierHaltGasCost
-	 * 		Supplier for the gas cost
-	 * @param supplierExecution
-	 * 		Supplier with the execution
-	 * @param addressValidator
-	 * 		Address validator predicate
+	 * @param sigsVerifier           The signature
+	 * @param frame                  The current message frame
+	 * @param address                The target address
+	 * @param supplierHaltGasCost    Supplier for the gas cost
+	 * @param supplierExecution      Supplier with the execution
+	 * @param addressValidator       Address validator predicate
 	 * @param precompiledContractMap
 	 * @return The operation result of the execution
 	 */
@@ -220,9 +208,7 @@ public final class HederaOperationUtil {
 			final var addressSlots =
 					((HederaWorldState.Updater) updater).getStorageChanges()
 							.computeIfAbsent(address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
-			if (!addressSlots.containsKey(key)) {
-				addressSlots.put(key, new MutablePair<>(storageValue, null));
-			}
+			addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
 		}
 	}
 }
