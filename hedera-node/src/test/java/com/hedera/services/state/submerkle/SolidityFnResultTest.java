@@ -238,6 +238,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void viewWorks() {
+		final var actual = subject.toGrpc();
 		final var expected = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
 				.setContractCallResult(ByteString.copyFrom(result))
@@ -246,27 +247,10 @@ class SolidityFnResultTest {
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
 				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(ContractID.newBuilder().setContractNum(9).build())
-						.addStorageChanges(
-								StorageChange.newBuilder()
-										.setSlot(ByteString.copyFrom(new byte[] {10}))
-										.setValueRead(ByteString.copyFrom(new byte[] {11}))
-										.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(new byte[] {12})).build())
-										.build())
-						.build())
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(ContractID.newBuilder().setContractNum(6).build())
-						.addStorageChanges(
-								StorageChange.newBuilder()
-										.setSlot(ByteString.copyFrom(new byte[] {7}))
-										.setValueRead(ByteString.copyFrom(new byte[] {8}))
-										.build())
-						.build())
+				.addStateChanges(actual.getStateChanges(0))
+				.addStateChanges(actual.getStateChanges(1))
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.build();
-
-		final var actual = subject.toGrpc();
 
 		assertEquals(expected, actual);
 	}
