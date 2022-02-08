@@ -412,6 +412,7 @@ class HederaWorldStateTest {
 		assertEquals(234L, actualSubject.getSbhRefund().toLong());
 		actualSubject.revert();
 		assertEquals(0, actualSubject.getSbhRefund().toLong());
+		assertTrue(actualSubject.getStorageChanges().isEmpty());
 	}
 
 	@Test

@@ -26,8 +26,13 @@ import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.FixedStack;
@@ -43,6 +48,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +67,8 @@ class HederaOperationUtilTest {
 	private MessageFrame messageFrame;
 	@Mock
 	private HederaStackedWorldStateUpdater hederaWorldUpdater;
+	@Mock
+	private HederaWorldState.Updater updater;
 	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
 	@Mock
@@ -274,6 +282,44 @@ class HederaOperationUtilTest {
 	}
 
 	@Test
+	void haltsWithInvalidSignatureWhenAccountSignatureCheckExecutionForNonDelegateCall() {
+		// given:
+		final var mockTarget = Address.ZERO;
+		given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
+		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
+		given(sigsVerifier
+				.hasActiveKeyOrNoReceiverSigReq(
+						mockTarget, Address.ALTBN128_MUL, Address.ALTBN128_MUL, Address.ALTBN128_MUL, aliases))
+				.willReturn(false);
+		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(hederaWorldUpdater.aliases()).willReturn(aliases);
+
+		// when:
+		final var result = HederaOperationUtil.addressSignatureCheckExecution(
+				sigsVerifier,
+				messageFrame,
+				Address.ZERO,
+				gasSupplier,
+				executionSupplier,
+				(a, b) -> true, precompiledContractMap);
+
+		// then:
+		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
+		assertEquals(expectedHaltGas, result.getGasCost());
+		// and:
+		verify(messageFrame).getWorldUpdater();
+		verify(hederaWorldUpdater).get(Address.ZERO);
+		verify(worldStateAccount).getAddress();
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
+				mockTarget, PRETEND_CONTRACT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_CONTRACT_ADDR, aliases);
+		verify(gasSupplier).get();
+		verify(executionSupplier, never()).get();
+	}
+
+	@Test
 	void successfulWhenAddressSignatureCheckExecution() {
 		// given:
 		final var mockTarget = Address.ZERO;
@@ -310,6 +356,33 @@ class HederaOperationUtilTest {
 		verify(gasSupplier, never()).get();
 		verify(executionSupplier).get();
 	}
+
+	@Test
+	void setOriginalReadValue() {
+		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);
+		given(messageFrame.popStackItem()).willReturn(Bytes.of(1));
+		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(hederaWorldUpdater.parentUpdater()).willReturn(Optional.of(updater));
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
+		TreeMap<Address, Map<Bytes, Pair<Bytes, Bytes>>> map = new TreeMap<>();
+		given(updater.getStorageChanges()).willReturn(map);
+		given(hederaWorldUpdater.get(PRETEND_RECIPIENT_ADDR)).willReturn(worldStateAccount);
+
+		Bytes32 key = UInt256.fromBytes(messageFrame.popStackItem());
+		Account account = messageFrame.getWorldUpdater().get(messageFrame.getRecipientAddress());
+		HederaOperationUtil.cacheExistingValue(
+				messageFrame,
+				PRETEND_RECIPIENT_ADDR,
+				key,
+				account.getStorageValue(UInt256.fromBytes(key)));
+
+		assertTrue(updater.getStorageChanges().containsKey(PRETEND_RECIPIENT_ADDR));
+		assertTrue(updater.getStorageChanges().get(PRETEND_RECIPIENT_ADDR).containsKey(UInt256.ONE));
+	}
+
 
 	private void givenFrameAddresses() {
 		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);
