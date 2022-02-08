@@ -48,13 +48,11 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class SolidityFnResult implements SelfSerializable {
 	private static final byte[] MISSING_BYTES = new byte[0];
 
-	static final int RELEASE_021_VERSION = 2;
 	static final int MERKLE_VERSION = 2;
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
@@ -91,8 +89,8 @@ public class SolidityFnResult implements SelfSerializable {
 			long gasUsed,
 			List<SolidityLog> logs,
 			List<EntityId> createdContractIds,
-			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			byte[] evmAddress
+			byte[] evmAddress,
+			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -101,8 +99,8 @@ public class SolidityFnResult implements SelfSerializable {
 		this.gasUsed = gasUsed;
 		this.logs = logs;
 		this.createdContractIds = createdContractIds;
-		this.stateChanges = stateChanges;
 		this.evmAddress = evmAddress;
+		this.stateChanges = stateChanges;
 	}
 
 	/* --- SelfSerializable --- */
@@ -125,7 +123,8 @@ public class SolidityFnResult implements SelfSerializable {
 		contractId = serdes.readNullableSerializable(in);
 		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
-		if (version > RELEASE_021_VERSION) {
+		if (version >= RELEASE_0230_VERSION) {
+			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
 			int contractLen = in.readInt();
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new HashMap<>(contractLen);
 			while (contractLen > 0) {
@@ -144,11 +143,6 @@ public class SolidityFnResult implements SelfSerializable {
 				contractLen--;
 			}
 			stateChanges = state;
-		} else {
-			stateChanges = Map.of();
-		}
-		if (version >= RELEASE_0230_VERSION) {
-			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
 		}
 	}
 
@@ -162,6 +156,7 @@ public class SolidityFnResult implements SelfSerializable {
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
 		out.write(stateChanges.size());
+		out.writeByteArray(evmAddress);
 		for (Map.Entry<Address, Map<Bytes, Pair<Bytes, Bytes>>> entry : stateChanges.entrySet()) {
 			out.writeByteArray(entry.getKey().trimLeadingZeros().toArrayUnsafe());
 			Map<Bytes, Pair<Bytes, Bytes>> slots = entry.getValue();
@@ -178,7 +173,6 @@ public class SolidityFnResult implements SelfSerializable {
 				}
 			}
 		}
-		out.writeByteArray(evmAddress);
 	}
 
 	/* --- Object --- */
@@ -273,7 +267,8 @@ public class SolidityFnResult implements SelfSerializable {
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
 				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).collect(toList()),
+				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
+				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES,
 				that.getStateChangesList().stream().collect(Collectors.toMap(
 						csc -> Address.wrap(Bytes.wrap(asEvmAddress(csc.getContractID()))),
 						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
@@ -286,8 +281,7 @@ public class SolidityFnResult implements SelfSerializable {
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
 						)),
 						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE))),
-				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES
+						() -> new TreeMap<>(BytesComparator.INSTANCE)))
 		);
 	}
 
@@ -308,6 +302,7 @@ public class SolidityFnResult implements SelfSerializable {
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
+		grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		for (var stateChanges : stateChanges.entrySet()) {
 			var contractStateChange = ContractStateChange.newBuilder().setContractID(
 					EntityIdUtils.contractIdFromEvmAddress(stateChanges.getKey().toArrayUnsafe()));
@@ -324,7 +319,6 @@ public class SolidityFnResult implements SelfSerializable {
 			}
 			grpc.addStateChanges(contractStateChange);
 		}
-		grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		return grpc.build();
 	}
 }

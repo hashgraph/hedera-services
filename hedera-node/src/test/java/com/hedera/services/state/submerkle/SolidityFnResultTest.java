@@ -93,8 +93,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				stateChanges,
-				evmAddress);
+				evmAddress,
+				stateChanges);
 
 		SolidityFnResult.serdes = serdes;
 	}
@@ -129,8 +129,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				stateChanges,
-				evmAddress);
+				evmAddress,
+				stateChanges);
 		final var three = new SolidityFnResult(
 				contractId,
 				result,
@@ -139,8 +139,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				stateChanges,
-				evmAddress);
+				evmAddress,
+				stateChanges);
 		final var four = new SolidityFnResult(
 				contractId,
 				result,
@@ -149,8 +149,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				stateChanges,
-				Address.ZERO.toArray());
+				Address.ZERO.toArray(),
+				stateChanges);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -173,8 +173,8 @@ class SolidityFnResultTest {
 						subject.getGasUsed(),
 						subject.getLogs(),
 						subject.getCreatedContractIds(),
-						subject.getStateChanges(),
-						subject.getEvmAddress()),
+						subject.getEvmAddress(),
+						subject.getStateChanges()),
 				subject
 		);
 	}
@@ -210,8 +210,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				specialStateChanges,
-				evmAddress);
+				evmAddress,
+				specialStateChanges);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -311,8 +311,8 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds,
-				specialStateChanges,
-				evmAddress
+				evmAddress,
+				specialStateChanges
 		);
 
 		final var in = mock(SerializableDataInputStream.class);

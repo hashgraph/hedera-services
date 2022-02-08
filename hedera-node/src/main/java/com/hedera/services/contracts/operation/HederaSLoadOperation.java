@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.store.contracts.HederaWorldState;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,7 +34,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack.OverflowException;
 import org.hyperledger.besu.evm.internal.FixedStack.UnderflowException;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -77,7 +75,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
 				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-				HederaOperationUtil.setOriginalReadValue(frame, address, key, storageValue);
+				HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
 
 				frame.pushStackItem(storageValue);
 				return slotIsWarm ? warmSuccess : coldSuccess;

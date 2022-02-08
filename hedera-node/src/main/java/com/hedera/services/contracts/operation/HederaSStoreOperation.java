@@ -107,7 +107,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 		}
 
-		HederaOperationUtil.setOriginalReadValue(frame, account.getAddress(), key, currentValue);
+		HederaOperationUtil.cacheExistingValue(frame, account.getAddress(), key, currentValue);
 		account.setStorageValue(key, value);
 		frame.storageWasUpdated(key, value);
 		return new Operation.OperationResult(optionalCost, Optional.empty());

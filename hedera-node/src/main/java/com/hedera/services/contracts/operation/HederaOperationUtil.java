@@ -207,18 +207,15 @@ public final class HederaOperationUtil {
 		return supplierExecution.get();
 	}
 
-	// TODO: Add JavaDocs
-	public static void setOriginalReadValue(
+
+	public static void cacheExistingValue(
 			final MessageFrame frame,
 			final Address address,
 			final Bytes32 key,
 			final UInt256 storageValue
 	) {
 		// Store the read if it is the first read for the slot/address
-		var updater = frame.getWorldUpdater();
-		while (updater != null && !(updater instanceof HederaWorldState.Updater)) {
-			updater = updater.parentUpdater().orElse(null);
-		}
+		var updater = frame.getMessageFrameStack().getLast().getWorldUpdater().parentUpdater().orElse(null);
 		if (updater != null) {
 			final var addressSlots =
 					((HederaWorldState.Updater) updater).getStorageChanges()
