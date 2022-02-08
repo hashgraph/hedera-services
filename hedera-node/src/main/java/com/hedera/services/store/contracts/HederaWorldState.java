@@ -423,10 +423,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
-
-				/* Note that we don't have the equivalent of an account-scoped storage  trie, so we can't
-				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
-				 * this in our global state expiration implementation.) */
+				
 				final Map<UInt256, UInt256> updatedStorage = updatedAccount.getUpdatedStorage();
 				if (!updatedStorage.isEmpty()) {
 					final TreeSet<Map.Entry<UInt256, UInt256>> entries = new TreeSet<>(Map.Entry.comparingByKey());
