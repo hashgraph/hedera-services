@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -51,6 +52,7 @@ public class HTSTestsUtil {
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
 	public static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
+	public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
 	public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
 	public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
 	public static final Id accountId = Id.fromGrpcAccount(account);
@@ -106,6 +108,7 @@ public class HTSTestsUtil {
 	public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
 	public static final Address senderAddr = Address.ALTBN128_PAIRING;
 	public static final Address accountAddr = accountId.asEvmAddress();
+	public static final Bytes ercTransferSuccessResult = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
 
 	public static final Bytes BALANCE_OF = Bytes.fromHexString("0x70a082310000000000000000000000000000000000000000000" +
 			"0000000000000000003ee");
