@@ -22,9 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.utils.AddressComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
@@ -35,15 +33,9 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.hyperledger.besu.datatypes.Address;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.util.List;
@@ -59,9 +51,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.intThat;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 class SolidityFnResultTest {
 	private static final long gasUsed = 1_234;
