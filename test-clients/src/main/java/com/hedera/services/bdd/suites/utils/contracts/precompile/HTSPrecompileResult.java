@@ -26,8 +26,6 @@ import java.math.BigInteger;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.plugin.data.Address;
 
 public class HTSPrecompileResult implements ContractCallResult {
 	private HTSPrecompileResult() {}
@@ -57,7 +55,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private long totalSupply;
 	private long[] serialNumbers;
 	private int decimals;
-	private Address owner;
+	private byte[] owner;
 	private String name;
 	private String symbol;
 	private String metadata;
@@ -107,7 +105,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return this;
 	}
 
-	public HTSPrecompileResult withOwner(final Address address) {
+	public HTSPrecompileResult withOwner(final byte[] address) {
 		this.owner = address;
 		return this;
 	}
@@ -142,7 +140,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
 			case DECIMALS -> result = Tuple.of(decimals);
 			case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
-			case OWNER -> result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
+			case OWNER -> {return Bytes.wrap(expandByteArrayTo32Length(owner));}
 			case NAME -> result = Tuple.of(name);
 			case SYMBOL -> result = Tuple.of(symbol);
 			case TOKEN_URI -> result = Tuple.of(metadata);
@@ -152,9 +150,11 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return Bytes.wrap(tupleType.encode(result).array());
 	}
 
-	private static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address addressToBeConverted) {
-		final com.esaulpaugh.headlong.abi.Address convertedAddress =
-				com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(((Address) addressToBeConverted).toBigInteger()));
-		return convertedAddress;
+	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+		byte[] expandedArray = new byte[32];
+
+		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+		return expandedArray;
 	}
+
 }

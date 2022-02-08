@@ -951,23 +951,23 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-//						withOpContext(
-//								(spec, opLog) ->
-//										allRunFor(
-//												spec,
-//												childRecordsCheck(ownerOfTxn, SUCCESS,
-//														recordWith()
-//																.status(SUCCESS)
-//																.contractCallResult(
-//																		resultWith()
-//																				.contractCallResult(htsPrecompileResult()
-//																						.forFunction(HTSPrecompileResult.FunctionType.OWNER)
-//																						.withOwner(asAddress(spec.registry().getAccountID(OWNER)))
-//																				)
-//																)
-//												)
-//										)
-//						)
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												childRecordsCheck(ownerOfTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.OWNER)
+																						.withOwner(asAddress(spec.registry().getAccountID(OWNER)))
+																				)
+																)
+												)
+										)
+						)
 				);
 	}
 
