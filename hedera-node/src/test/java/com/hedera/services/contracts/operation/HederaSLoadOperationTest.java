@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -78,7 +79,11 @@ class HederaSLoadOperationTest {
 	@Test
 	void executesProperlyWithColdSuccess() {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
-		given(worldUpdater.getStorageChanges()).willReturn(new TreeMap<>());
+
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var coldResult = subject.execute(messageFrame, evm);
 
 		final var expectedColdResult = new Operation.OperationResult(Optional.of(Gas.of(20L)), Optional.empty());
@@ -92,7 +97,10 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executesProperlyWithWarmSuccess() {
-		given(worldUpdater.getStorageChanges()).willReturn(new TreeMap<>());
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		final var warmResult = subject.execute(messageFrame, evm);
 
 		final var expectedWarmResult = new Operation.OperationResult(Optional.of(Gas.of(30L)), Optional.empty());

@@ -91,6 +91,11 @@ class HederaSStoreOperationTest {
 	void executesCorrectly() {
 		givenValidContext(keyBytesMock, valueBytesMock);
 
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
+
 		final var result = subject.execute(messageFrame, evm);
 
 		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
