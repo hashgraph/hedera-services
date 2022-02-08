@@ -1,3 +1,5 @@
+package com.hedera.services.txns.crypto.validators;
+
 /*-
  * ‌
  * Hedera Services Node
@@ -17,8 +19,6 @@
  * limitations under the License.
  * ‍
  */
-
-package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -57,17 +57,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
-public class AdjustAllowanceChecks extends AllowanceChecks {
+public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
+	protected final TypedTokenStore tokenStore;
+	protected final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	protected final GlobalDynamicProperties dynamicProperties;
+
 	@Inject
 	public AdjustAllowanceChecks(
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties) {
-		super(nftsLedger, tokenStore, dynamicProperties);
+		this.tokenStore = tokenStore;
+		this.nftsLedger = nftsLedger;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	protected ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
+	public ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
 			final Account ownerAccount) {
 		if (cryptoAllowancesList.isEmpty()) {
 			return OK;
@@ -100,7 +106,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
+	public ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
 			final Account ownerAccount) {
 		if (tokenAllowancesList.isEmpty()) {
 			return OK;
@@ -143,7 +149,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
+	public ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
 			final Account ownerAccount) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;

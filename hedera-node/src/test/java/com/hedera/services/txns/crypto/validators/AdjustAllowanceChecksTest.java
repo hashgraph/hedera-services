@@ -170,7 +170,8 @@ class AdjustAllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner);
+		subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction());
 
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
@@ -204,7 +205,8 @@ class AdjustAllowanceChecksTest {
 
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -218,7 +220,8 @@ class AdjustAllowanceChecksTest {
 
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -232,7 +235,8 @@ class AdjustAllowanceChecksTest {
 
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 
 		nftAllowances.clear();
 		nftAllowances.add(nftAllowance2);
@@ -248,7 +252,8 @@ class AdjustAllowanceChecksTest {
 
 		assertEquals(OK,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -402,7 +407,8 @@ class AdjustAllowanceChecksTest {
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -514,7 +520,8 @@ class AdjustAllowanceChecksTest {
 				).build();
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 		assertEquals(EMPTY_ALLOWANCES, subject.commonChecks(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList()));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(),
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -523,7 +530,8 @@ class AdjustAllowanceChecksTest {
 		getValidTxnCtx();
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	private void addAllowances() {
