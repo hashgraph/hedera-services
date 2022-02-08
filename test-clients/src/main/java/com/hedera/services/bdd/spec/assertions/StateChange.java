@@ -19,11 +19,6 @@ public class StateChange {
 		return this;
 	}
 
-	public StateChange withoutStorageChanges() {
-		this.storageChanges = List.of();
-		return this;
-	}
-
 	public String getContractID() {
 		return contractID;
 	}
