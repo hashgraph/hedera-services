@@ -591,7 +591,7 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
 
-		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
 		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
 		assertEquals(1, expandedMeta.getNumOfCryptoAllowances());
@@ -607,7 +607,7 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoAdjustMeta(accessor);
 
-		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
 		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
 		assertEquals(1, expandedMeta.getNumOfCryptoAllowances());

@@ -32,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.test.IdUtils.asAccount;
+import static com.hedera.services.usage.crypto.CryptoAllowanceMeta.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +74,7 @@ class CryptoApproveAllowanceMetaTest {
 
 	@Test
 	void calculatesBaseSizeAsExpected() {
-		final var cryptoApproveTxnBody = CryptoApproveAllowanceTransactionBody
+		final var op = CryptoApproveAllowanceTransactionBody
 				.newBuilder()
 				.addAllCryptoAllowances(List.of(cryptoAllowances))
 				.addAllTokenAllowances(List.of(tokenAllowances))
@@ -80,15 +82,16 @@ class CryptoApproveAllowanceMetaTest {
 				.build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoApproveAllowance(
-						cryptoApproveTxnBody
+						op
 				).build();
 
-		var subject = new CryptoAllowanceMeta(cryptoApproveTxnBody,
+		var subject = new CryptoAllowanceMeta(op,
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
-		final var expectedMsgBytes = CRYPTO_ALLOWANCE_SIZE
-				+ TOKEN_ALLOWANCE_SIZE
-				+ NFT_ALLOWANCE_SIZE;
+		final var expectedMsgBytes = (op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE) +
+				countSerials(op.getNftAllowancesList()) * LONG_SIZE;
 
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
 		assertEquals(1, subject.getNumOfCryptoAllowances());

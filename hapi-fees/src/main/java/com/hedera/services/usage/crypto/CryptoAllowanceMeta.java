@@ -30,6 +30,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.util.List;
 
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 
@@ -76,13 +77,15 @@ public class CryptoAllowanceMeta {
 	private int bytesUsedInTxn(CryptoAdjustAllowanceTransactionBody op) {
 		return op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE
 				+ op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE
-				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE;
+				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE
+				+ countSerials(op.getNftAllowancesList()) * LONG_SIZE;
 	}
 
 	private int bytesUsedInTxn(CryptoApproveAllowanceTransactionBody op) {
 		return op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE
 				+ op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE
-				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE;
+				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE
+				+ countSerials(op.getNftAllowancesList()) * LONG_SIZE;
 	}
 
 	public static Builder newBuilder() {

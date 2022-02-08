@@ -41,6 +41,7 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -117,6 +118,7 @@ class BaseOperationUsage {
 			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			.build();
 	private static final AccountID AN_ACCOUNT = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private static final TokenID A_TOKEN = TokenID.newBuilder().setTokenNum(1_235L).build();
 
 	private static final String A_TOKEN_NAME = "012345678912";
 	private static final String A_TOKEN_SYMBOL = "ABCD";
@@ -249,7 +251,14 @@ class BaseOperationUsage {
 	UsageAccumulator cryptoApproveAllowance() {
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()).build();
+				.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody
+						.newBuilder()
+						.addCryptoAllowances(CryptoAllowance.newBuilder()
+								.setSpender(AN_ACCOUNT)
+								.setAmount(1L)
+								.build())
+				)
+				.build();
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(now)
 				.setCurrentMemo(BLANK_MEMO)
@@ -273,7 +282,13 @@ class BaseOperationUsage {
 	UsageAccumulator cryptoAdjustAllowance() {
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody.newBuilder()).build();
+				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody
+						.newBuilder()
+						.addCryptoAllowances(CryptoAllowance.newBuilder()
+								.setSpender(AN_ACCOUNT)
+								.setAmount(1L)
+								.build()))
+				.build();
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(now)
 				.setCurrentMemo(BLANK_MEMO)

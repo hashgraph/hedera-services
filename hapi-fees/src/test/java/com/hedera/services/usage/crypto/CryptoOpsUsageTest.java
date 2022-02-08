@@ -407,26 +407,14 @@ class CryptoOpsUsageTest {
 				.setCurrentTokenAllowanceCount(0)
 				.build();
 
-		long msgBytesUsed = CRYPTO_ALLOWANCE_SIZE +
-				TOKEN_ALLOWANCE_SIZE +
-				NFT_ALLOWANCE_SIZE;
+		long msgBytesUsed = (approveOp.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (approveOp.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (approveOp.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE) +
+				countSerials(approveOp.getNftAllowancesList()) * LONG_SIZE;
 
 		expected.addBpt(msgBytesUsed);
-
-		long newVariableBytes = countSerials(txn.getCryptoApproveAllowance().getNftAllowancesList()) * LONG_SIZE;
-
-		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
-				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-						+ ctx.currentNonBaseRb()
-						+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr(),
-				lifetime,
-				sharedFixedBytes + newVariableBytes,
-				lifetime);
-		if (rbsDelta > 0) {
-			expected.addRbs(rbsDelta);
-		}
+		expected.addRbs(msgBytesUsed * lifetime);
 
 		var actual = new UsageAccumulator();
 
@@ -462,9 +450,10 @@ class CryptoOpsUsageTest {
 				.setCurrentTokenAllowanceCount(0)
 				.build();
 
-		long msgBytesUsed = CRYPTO_ALLOWANCE_SIZE +
-				TOKEN_ALLOWANCE_SIZE +
-				NFT_ALLOWANCE_SIZE;
+		long msgBytesUsed = (adjustOp.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (adjustOp.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (adjustOp.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE) +
+				countSerials(adjustOp.getNftAllowancesList()) * LONG_SIZE;
 
 		expected.addBpt(msgBytesUsed);
 

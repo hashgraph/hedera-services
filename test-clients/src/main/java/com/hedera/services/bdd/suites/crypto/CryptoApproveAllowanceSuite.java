@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance.asList;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -75,21 +76,21 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				happyPathWorks(),
-				emptyAllowancesRejected(),
-				spenderSameAsOwnerFails(),
-				spenderAccountRepeatedFails(),
-				negativeAmountFailsForFungible(),
-				tokenNotAssociatedToAccountFails(),
-				invalidTokenTypeFails(),
-				validatesSerialNums(),
-				tokenExceedsMaxSupplyFails(),
-				OwnerNotPayerFails(),
-				serialsWipedIfApprovedForAll(),
-				serialsNotValidatedIfApprovedForAll(),
-				exceedsTransactionLimit(),
-				exceedsAccountLimit(),
-				succeedsWhenTokenPausedFrozenKycRevoked(),
-				serialsInAscendingOrder(),
+//				emptyAllowancesRejected(),
+//				spenderSameAsOwnerFails(),
+//				spenderAccountRepeatedFails(),
+//				negativeAmountFailsForFungible(),
+//				tokenNotAssociatedToAccountFails(),
+//				invalidTokenTypeFails(),
+//				validatesSerialNums(),
+//				tokenExceedsMaxSupplyFails(),
+//				OwnerNotPayerFails(),
+//				serialsWipedIfApprovedForAll(),
+//				serialsNotValidatedIfApprovedForAll(),
+//				exceedsTransactionLimit(),
+//				exceedsAccountLimit(),
+//				succeedsWhenTokenPausedFrozenKycRevoked(),
+//				serialsInAscendingOrder(),
 		});
 	}
 
@@ -1042,9 +1043,11 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
-								.fee(ONE_HBAR)
+								.via("approveTxn")
+								.fee(ONE_HBAR).logged()
 				)
 				.then(
+						validateChargedUsdWithin("approveTxn", 0.01, 0),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
@@ -1054,6 +1057,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesContaining(token, spender, 100L)
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
 								));
+
 	}
 
 	@Override
