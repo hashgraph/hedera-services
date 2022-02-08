@@ -39,11 +39,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 /**
- * Validations for CryptoApproveAllowance and CryptoAdjustAllowance transaction allowances
+ * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
+ * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transaction allowances
  */
 public interface AbstractAllowanceChecks {
 	/**
-	 * Validates the CryptoAllowances given in CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
+	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
 	 * @param cryptoAllowancesList
 	 * 		crypto allowances list
@@ -55,7 +57,8 @@ public interface AbstractAllowanceChecks {
 			final Account ownerAccount);
 
 	/**
-	 * Validate fungible token allowances list CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
+	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
 	 * @param tokenAllowancesList
 	 * 		token allowances list
@@ -67,7 +70,8 @@ public interface AbstractAllowanceChecks {
 			final Account ownerAccount);
 
 	/**
-	 * Validate nft allowances list CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
+	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
 	 * @param nftAllowancesList
 	 * 		nft allowances list
@@ -79,7 +83,8 @@ public interface AbstractAllowanceChecks {
 			final Account ownerAccount);
 
 	/**
-	 * Validate all allowances in CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
+	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
 	 * @param cryptoAllowances
 	 * 		crypto allowances list
@@ -120,7 +125,7 @@ public interface AbstractAllowanceChecks {
 
 		return OK;
 	}
-	
+
 	default ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id allowanceOwner,
 			final Id spender) {
 		if (!ownerId.equals(allowanceOwner)) {

@@ -181,7 +181,7 @@ public class ApproveAllowanceChecks implements AbstractAllowanceChecks {
 	}
 
 	/**
-	 * Validates serial numbers for Nft Allowances
+	 * Validates serial numbers for {@link NftAllowance}
 	 *
 	 * @param serialNums
 	 * 		given serial numbers in the CryptoApproveAllowance operation

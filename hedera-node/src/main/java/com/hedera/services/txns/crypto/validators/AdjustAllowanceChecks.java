@@ -198,10 +198,10 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 	}
 
 	/**
-	 * Validates serial numbers for Nft Allowances
+	 * Validates serial numbers for {@link NftAllowance}
 	 *
 	 * @param serialNums
-	 * 		given serial numbers in the CryptoApproveAllowance operation
+	 * 		given serial numbers in the {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} operation
 	 * @param ownerAccount
 	 * 		owner account
 	 * @param token
