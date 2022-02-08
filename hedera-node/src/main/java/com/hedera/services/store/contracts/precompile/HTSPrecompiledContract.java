@@ -215,10 +215,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//balanceOf(address account)
 	protected static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
 	//transfer(address recipient, uint256 amount)
-	protected static final int ABI_ID_TOKEN_TRANSFER = 0xa9059cbb;
+	protected static final int ABI_ID_ERC_TRANSFER = 0xa9059cbb;
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
-	protected static final int ABI_ID_TOKEN_TRANSFER_FROM = 0x23b872dd;
+	protected static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
 
 	//ownerOf(uint256 tokenId)
 	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
@@ -234,7 +234,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final PrecompilePricingUtils precompilePricingUtils;
 	private WorldLedgers ledgers;
 	private Address originator;
-	private AbstractLedgerWorldUpdater updater;
+	private HederaStackedWorldStateUpdater updater;
 
 
 	@Inject
@@ -284,7 +284,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return null;
 		}
 
-		final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		final UnaryOperator<byte[]> aliasResolver = updater::unaliased;
 		this.originator = messageFrame.getOriginatorAddress();
 		initializeLedgers(messageFrame);
@@ -303,7 +303,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void initializeLedgers(final MessageFrame messageFrame) {
-		updater = (AbstractLedgerWorldUpdater) messageFrame.getWorldUpdater();
+		updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		ledgers = updater.wrappedTrackingLedgers();
 	}
 
@@ -361,8 +361,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
 							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID);
 							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
-							case ABI_ID_TOKEN_TRANSFER,
-									ABI_ID_TOKEN_TRANSFER_FROM -> nestedPrecompile =
+							case ABI_ID_ERC_TRANSFER,
+									ABI_ID_ERC_TRANSFER_FROM -> nestedPrecompile =
 									new ERCTransferPrecompile(tokenID, this.originator);
 							default -> nestedPrecompile = null;
 						}
@@ -974,7 +974,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input.slice(24));
+			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input);
 
 			return syntheticTxn;
 		}
@@ -997,11 +997,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class ERCTransferPrecompile extends TransferPrecompile {
 		private final TokenID tokenID;
-		private final Address callerAccount;
+		private final AccountID callerAccountID;
 		private boolean isFungible;
 
 		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount) {
-			this.callerAccount = callerAccount;
+			this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 			this.tokenID = tokenID;
 		}
 
@@ -1013,9 +1013,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nestedInput = input.slice(24);
 
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_TOKEN_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID,
-						EntityIdUtils.accountIdFromEvmAddress(callerAccount), aliasResolver);
-				case ABI_ID_TOKEN_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID,
+						callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
 						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
