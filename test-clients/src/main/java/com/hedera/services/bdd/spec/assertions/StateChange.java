@@ -20,6 +20,7 @@ public class StateChange {
 	}
 
 	public StateChange withoutStorageChanges() {
+		this.storageChanges = List.of();
 		return this;
 	}
 
