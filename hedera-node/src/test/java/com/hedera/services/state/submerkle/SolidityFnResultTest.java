@@ -196,8 +196,8 @@ class SolidityFnResultTest {
 	@Test
 	void nullEqualsWork() {
 		assertEquals(subject, subject);
-		assertNotEquals(subject, null);
-		assertNotEquals(subject, 1);
+		assertNotEquals(null, subject);
+		assertNotEquals(1, subject);
 	}
 
 	@Test

@@ -303,10 +303,10 @@ public class SolidityFnResult implements SelfSerializable {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
 		grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
-		for (var stateChanges : stateChanges.entrySet()) {
+		for (var changes : stateChanges.entrySet()) {
 			var contractStateChange = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractIdFromEvmAddress(stateChanges.getKey().toArrayUnsafe()));
-			for (var slotChange : stateChanges.getValue().entrySet()) {
+					EntityIdUtils.contractIdFromEvmAddress(changes.getKey().toArrayUnsafe()));
+			for (var slotChange : changes.getValue().entrySet()) {
 				var storageChange = StorageChange.newBuilder();
 				storageChange.setSlot(ByteString.copyFrom(slotChange.getKey().toArrayUnsafe()));
 				Pair<Bytes, Bytes> value = slotChange.getValue();
