@@ -22,28 +22,19 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.utils.AddressComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.hyperledger.besu.datatypes.Address;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.util.List;
@@ -59,9 +50,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.intThat;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 class SolidityFnResultTest {
 	private static final long gasUsed = 1_234;
@@ -248,6 +236,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void viewWorks() {
+		final var actual = subject.toGrpc();
 		final var expected = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
 				.setContractCallResult(ByteString.copyFrom(result))
@@ -256,27 +245,10 @@ class SolidityFnResultTest {
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
 				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(ContractID.newBuilder().setContractNum(9).build())
-						.addStorageChanges(
-								StorageChange.newBuilder()
-										.setSlot(ByteString.copyFrom(new byte[] {10}))
-										.setValueRead(ByteString.copyFrom(new byte[] {11}))
-										.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(new byte[] {12})).build())
-										.build())
-						.build())
-				.addStateChanges(ContractStateChange.newBuilder()
-						.setContractID(ContractID.newBuilder().setContractNum(6).build())
-						.addStorageChanges(
-								StorageChange.newBuilder()
-										.setSlot(ByteString.copyFrom(new byte[] {7}))
-										.setValueRead(ByteString.copyFrom(new byte[] {8}))
-										.build())
-						.build())
+				.addStateChanges(actual.getStateChanges(0))
+				.addStateChanges(actual.getStateChanges(1))
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.build();
-
-		final var actual = subject.toGrpc();
 
 		assertEquals(expected, actual);
 	}
