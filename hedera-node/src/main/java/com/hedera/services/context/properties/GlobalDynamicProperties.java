@@ -97,6 +97,8 @@ public class GlobalDynamicProperties {
 	private long maxAggregateContractKvPairs;
 	private int maxIndividualContractKvPairs;
 	private int maxMostRecentQueryableRecords;
+	private int maxAllowanceLimitPerTransaction;
+	private int maxAllowanceLimitPerAccount;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -176,6 +178,8 @@ public class GlobalDynamicProperties {
 		maxAggregateContractKvPairs = properties.getLongProperty("contracts.maxKvPairs.aggregate");
 		maxIndividualContractKvPairs = properties.getIntProperty("contracts.maxKvPairs.individual");
 		maxMostRecentQueryableRecords = properties.getIntProperty("ledger.records.maxQueryableByAccount");
+		maxAllowanceLimitPerTransaction = properties.getIntProperty("hedera.allowances.maxTransactionLimit");
+		maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
 	}
 
 	public int maxTokensPerAccount() {
@@ -409,4 +413,8 @@ public class GlobalDynamicProperties {
 	public int maxNumQueryableRecords() {
 		return maxMostRecentQueryableRecords;
 	}
+
+	public int maxAllowanceLimitPerTransaction() {return maxAllowanceLimitPerTransaction;}
+
+	public int maxAllowanceLimitPerAccount() {return maxAllowanceLimitPerAccount;}
 }

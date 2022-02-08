@@ -20,6 +20,7 @@ package com.hedera.services.pricing;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -74,6 +75,9 @@ class BaseOperationUsageTest {
 		verify(mock).cryptoCreate(0);
 
 		mock.baseUsageFor(CryptoUpdate, DEFAULT);
+		verify(mock).cryptoUpdate(0);
+
+		mock.baseUsageFor(HederaFunctionality.CryptoApproveAllowance, DEFAULT);
 		verify(mock).cryptoUpdate(0);
 	}
 

@@ -716,4 +716,8 @@ public class Token {
 	public void setCustomFees(final List<FcCustomFee> customFees) {
 		this.customFees = customFees;
 	}
+
+	public void setMaxSupply(long maxSupply) {
+		this.maxSupply = maxSupply;
+	}
 }
