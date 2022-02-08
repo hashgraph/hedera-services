@@ -316,34 +316,44 @@ public class ContractResources {
 			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
 			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
-	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[],\"name\":\"eetScenatio1\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_3 = "{\"inputs\":[],\"name\":\"eetScenatio3\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_5 = "{\"inputs\":[],\"name\":\"eetScenatio5\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_7 = "{\"inputs\":[],\"name\":\"eetScenatio7\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_8 = "{\"inputs\":[],\"name\":\"eetScenatio8\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_9 = "{\"inputs\":[],\"name\":\"eetScenatio9\",\"outputs\":[]," +
-			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_SET_SIBLING = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sibling\",\"type\":\"address\"}],\"name\":\"setSibling\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_GET_SLOT2 = "{\"inputs\":[],\"name\":\"getSlot2\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"uint256\"," +
 			"\"name\":\"_slot0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot2\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario1\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_EET_2 = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
 			"type\":\"address\"}],\"name\":\"eetScenario2\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_3 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario3\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_EET_4 = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
 			"type\":\"address\"}],\"name\":\"eetScenario4\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_5 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario5\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_EET_6 = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
 			"type\":\"address\"}],\"name\":\"eetScenario6\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_7 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario7\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_8 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario8\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_9 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario9\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String TRACEABILITY_EET_10 = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
 			"type\":\"address\"}],\"name\":\"eetScenario10\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
