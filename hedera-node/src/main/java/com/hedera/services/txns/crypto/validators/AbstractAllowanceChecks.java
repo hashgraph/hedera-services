@@ -42,15 +42,57 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  * Validations for CryptoApproveAllowance and CryptoAdjustAllowance transaction allowances
  */
 public interface AbstractAllowanceChecks {
+	/**
+	 * Validates the CryptoAllowances given in CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 *
+	 * @param cryptoAllowancesList
+	 * 		crypto allowances list
+	 * @param ownerAccount
+	 * 		owner account
+	 * @return response code after validation
+	 */
 	ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
 			final Account ownerAccount);
 
+	/**
+	 * Validate fungible token allowances list CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 *
+	 * @param tokenAllowancesList
+	 * 		token allowances list
+	 * @param ownerAccount
+	 * 		owner account
+	 * @return
+	 */
 	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
 			final Account ownerAccount);
 
+	/**
+	 * Validate nft allowances list CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 *
+	 * @param nftAllowancesList
+	 * 		nft allowances list
+	 * @param ownerAccount
+	 * 		owner account
+	 * @return
+	 */
 	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
 			final Account ownerAccount);
 
+	/**
+	 * Validate all allowances in CryptoApproveAllowance or CryptoAdjustAllowance transactions
+	 *
+	 * @param cryptoAllowances
+	 * 		crypto allowances list
+	 * @param tokenAllowances
+	 * 		fungible token allowances list
+	 * @param nftAllowances
+	 * 		nft allowances list
+	 * @param ownerAccount
+	 * 		owner account
+	 * @param maxLimitPerTxn
+	 * 		max allowance limit per transaction
+	 * @return response code after validation
+	 */
 	default ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
@@ -78,7 +120,7 @@ public interface AbstractAllowanceChecks {
 
 		return OK;
 	}
-
+	
 	default ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id allowanceOwner,
 			final Id spender) {
 		if (!ownerId.equals(allowanceOwner)) {

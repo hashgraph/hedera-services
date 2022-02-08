@@ -209,6 +209,7 @@ public class CryptoOpsUsage {
 			final CryptoAllowanceMeta cryptoAdjustMeta,
 			final ExtantCryptoContext ctx,
 			final UsageAccumulator accumulator) {
+
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		accumulator.addBpt(cryptoAdjustMeta.getMsgBytesUsed());
 
@@ -216,7 +217,7 @@ public class CryptoOpsUsage {
 		newVariableSerialBytes += cryptoAdjustMeta.getAggregatedNftAllowancesWithSerials() * LONG_SIZE;
 
 		final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
-
+		//need to confirm lifetime calculation
 		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(
 				cryptoAdjustMeta.getEffectiveNow(), ctx.currentExpiry());
 		final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(

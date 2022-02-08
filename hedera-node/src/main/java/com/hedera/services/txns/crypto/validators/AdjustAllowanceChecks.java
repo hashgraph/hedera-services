@@ -197,6 +197,21 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates serial numbers for Nft Allowances
+	 *
+	 * @param serialNums
+	 * 		given serial numbers in the CryptoApproveAllowance operation
+	 * @param ownerAccount
+	 * 		owner account
+	 * @param token
+	 * 		token for which allowance is related to
+	 * @param approvedForAll
+	 * 		if approvedForAll is set in allowance
+	 * @param existingSerials
+	 * 		existing serial numbers for the nft on owner account
+	 * @return response code after validation
+	 */
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token,
@@ -233,6 +248,15 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates if aggregated amount is less than zero
+	 *
+	 * @param amount
+	 * 		given amount
+	 * @param existingAmount
+	 * 		existing allowance on owner account
+	 * @return response code after validation
+	 */
 	ResponseCodeEnum validateAmount(final long amount, final long existingAmount) {
 		if (amount + existingAmount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
@@ -240,7 +264,20 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateTokenAmount(final long amount, final long existingAllowance,
+	/**
+	 * Validates if the amount given is less tha zero for fungible token or if the
+	 * amount exceeds token max supply
+	 *
+	 * @param amount
+	 * 		given amount in the operation
+	 * @param existingAllowance
+	 * 		existing allowance for the fungible token on owner account
+	 * @param fungibleToken
+	 * 		fungible token for which allowance is related to
+	 * @return response code after validation
+	 */
+	ResponseCodeEnum validateTokenAmount(final long amount,
+			final long existingAllowance,
 			Token fungibleToken) {
 		final long aggregatedAmount = amount + existingAllowance;
 		if (aggregatedAmount < 0) {

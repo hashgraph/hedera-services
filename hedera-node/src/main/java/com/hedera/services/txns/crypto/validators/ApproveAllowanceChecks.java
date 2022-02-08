@@ -180,14 +180,29 @@ public class ApproveAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateSerialNums(final List<Long> serialNums, final Account ownerAccount,
-			final Token token, final boolean approvedForAll) {
+	/**
+	 * Validates serial numbers for Nft Allowances
+	 *
+	 * @param serialNums
+	 * 		given serial numbers in the CryptoApproveAllowance operation
+	 * @param ownerAccount
+	 * 		owner account
+	 * @param token
+	 * 		token for which allowance is related to
+	 * @param approvedForAll
+	 * 		if approvedForAll is set in allowance
+	 * @return response code after validation
+	 */
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
+			final Account ownerAccount,
+			final Token token,
+			final boolean approvedForAll) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 		}
 
 		if (!approvedForAll && serialNums.isEmpty()) {
-			return EMPTY_ALLOWANCES; // need  different response
+			return EMPTY_ALLOWANCES;
 		}
 
 		for (var serial : serialNums) {
@@ -205,6 +220,13 @@ public class ApproveAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates if given amount is less than zero
+	 *
+	 * @param amount
+	 * 		given amount
+	 * @return response code after validation
+	 */
 	private ResponseCodeEnum validateAmount(final long amount) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
@@ -212,6 +234,15 @@ public class ApproveAllowanceChecks implements AbstractAllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates if the amount given is less tha zero for fungible token or if the amount exceeds token max supply
+	 *
+	 * @param amount
+	 * 		given amount in the operation
+	 * @param fungibleToken
+	 * 		fungible token for which allowance is related to
+	 * @return response code after validation
+	 */
 	private ResponseCodeEnum validateTokenAmount(final long amount, Token fungibleToken) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
