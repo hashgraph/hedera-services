@@ -144,13 +144,12 @@ public class ContractCallSuite extends HapiApiSuite {
 //				nestedStateChangeCalls_6(),
 //				nestedStateChangeCalls_10(),
 //				nestedStateChangeCalls_11(),
-//						//				nestedStateChangeCalls_1()
 //				traceabilityE2EScenario1(),
 //				traceabilityE2EScenario3(),
 //				traceabilityE2EScenario5(),
 //				traceabilityE2EScenario7(),
-				traceabilityE2EScenario8()
-//						traceabilityE2EScenario9()
+//				traceabilityE2EScenario8()
+//				traceabilityE2EScenario9()
 //				resultSizeAffectsFees(),
 //				payableSuccess(),
 //				depositSuccess(),
