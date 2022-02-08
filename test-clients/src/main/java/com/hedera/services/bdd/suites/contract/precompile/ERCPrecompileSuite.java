@@ -24,17 +24,20 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -61,6 +64,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -68,6 +72,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -111,10 +116,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 //				getErc20TokenName()
 //				getErc20TokenSymbol(),
 //				getErc20TokenDecimals(),
-//				getErc20TotalSupply(),
-//				getErc20BalanceOfAccount(),
-				transferErc20Token(),
-				transferErc20TokenFrom()
+//				getErc20TotalSupply()
+//				getErc20BalanceOfAccount()
+//				transferErc20Token(),
+//				transferErc20TokenFrom()
 //				erc20AllowanceReturnsFailure(),
 //				erc20ApproveReturnsFailure()
 		);
@@ -124,11 +129,11 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		return List.of(
 //				getErc721TokenName(),
 //				getErc721Symbol(),
-				getErc721TokenURI(),
-//				getErc721OwnerOf()
-//				getErc721BalanceOf(),
-//				getErc721TotalSupply(),
-				getErc721TransferFrom()
+//				getErc721TokenURI()
+				getErc721OwnerOf()
+//				getErc721BalanceOf()
+//				getErc721TotalSupply()
+//				getErc721TransferFrom()
 		);
 	}
 
@@ -168,13 +173,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(nameTxn).andAllChildRecords().logged()
-//						childRecordsCheck(nameTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().utf8data(tokenName)))))
+						childRecordsCheck(nameTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																.withName(tokenName)
+														)
+										)
+						)
 				);
 	}
 
@@ -214,13 +223,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(symbolTxn).andAllChildRecords().logged()
-//						childRecordsCheck(symbolTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().utf8data(tokenSymbol)))))
+						childRecordsCheck(symbolTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																.withSymbol(tokenSymbol)
+														)
+										)
+						)
 				);
 	}
 
@@ -260,13 +273,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(decimalsTxn).andAllChildRecords().logged()
-//						childRecordsCheck(decimalsTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().longValue(decimals)))))
+						childRecordsCheck(decimalsTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
+																.withDecimals(decimals)
+														)
+										)
+						)
 				);
 	}
 
@@ -304,13 +321,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(supplyTxn).andAllChildRecords().logged()
-//						childRecordsCheck(supplyTxn, SUCCESS,
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().longValue(totalSupply)))))
+						childRecordsCheck(supplyTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.TOTAL_SUPPLY)
+																.withTotalSupply(totalSupply)
+														)
+										)
+						)
 				);
 	}
 
@@ -351,13 +372,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(balanceTxn).andAllChildRecords().logged()
-//								recordWith().status(SUCCESS),
-//								recordWith().contractCallResult(
-//										resultWith().logs(
-//												inOrder(
-//														logWith().longValue(5)))))
-//						childRecordsCheck(balanceTxn, SUCCESS,
+						childRecordsCheck(balanceTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																.withBalance(3)
+														)
+										)
+						)
 				);
 	}
 
@@ -678,7 +703,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(nameTxn).andAllChildRecords().logged()
+						childRecordsCheck(nameTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																.withName(tokenName)
+														)
+										)
+						)
 				);
 	}
 
@@ -718,7 +753,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(symbolTxn).andAllChildRecords().logged()
+						childRecordsCheck(symbolTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																.withSymbol(tokenSymbol)
+														)
+										)
+						)
 				);
 	}
 
@@ -756,7 +801,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(tokenURITxn).andAllChildRecords().logged()
+						childRecordsCheck(tokenURITxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.TOKEN_URI)
+																.withTokenUri("FIRST")
+														)
+										)
+						)
 				);
 	}
 
@@ -794,7 +849,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(totalSupplyTxn).andAllChildRecords().logged()
+						childRecordsCheck(totalSupplyTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.TOTAL_SUPPLY)
+																.withTotalSupply(1)
+														)
+										)
+						)
 				);
 	}
 
@@ -836,7 +901,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(balanceOfTxn).andAllChildRecords().logged()
+						childRecordsCheck(balanceOfTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																.withBalance(1)
+														)
+										)
+						)
 				);
 	}
 
@@ -876,7 +951,23 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(ownerOfTxn).andAllChildRecords().logged()
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												childRecordsCheck(ownerOfTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.OWNER)
+																						.withOwner(asAddress(spec.registry().getAccountID(OWNER)))
+																				)
+																)
+												)
+										)
+						)
 				);
 	}
 
