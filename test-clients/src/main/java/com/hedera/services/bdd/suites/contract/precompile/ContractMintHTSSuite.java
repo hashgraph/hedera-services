@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -44,9 +43,6 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
-import static com.hedera.services.bdd.spec.assertions.StateChange.stateChangeFor;
-import static com.hedera.services.bdd.spec.assertions.StorageChange.onlyRead;
-import static com.hedera.services.bdd.spec.assertions.StorageChange.readAndWritten;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_BRRR_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
@@ -85,7 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
 
-	private static final long GAS_TO_OFFER = 4_000_000L;
+	private static final long GAS_TO_OFFER = 2_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
@@ -158,18 +154,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
 								.via(firstMintTxn)
 								.alsoSigningWithFullPrefix(multiKey),
-						getTxnRecord(firstMintTxn).hasPriority(recordWith().contractCallResult(resultWith()
-								.stateChanges(
-										stateChangeFor(hwMint)
-												.withStorageChanges(
-														onlyRead(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue")),
-														readAndWritten(ByteString.copyFromUtf8("Slot"),
-																ByteString.copyFromUtf8("ReadValue"),
-																ByteString.copyFromUtf8("WrittenValue"))
-												)
-								)
-						)).andAllChildRecords().logged(),
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
 						/* And now make the token contract-controlled so no explicit supply sig is required */
 						newKeyNamed(contractKey)
