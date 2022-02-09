@@ -4,7 +4,7 @@ package com.hedera.services.stream;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,78 +21,34 @@ package com.hedera.services.stream;
  */
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.File;
-
-import static com.hedera.services.stream.RecordStreamType.RECORD;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doCallRealMethod;
 
+@ExtendWith(MockitoExtension.class)
 class RecordStreamTypeTest {
-	public static final File NULL_FILE = null;
+	private static final String expectedRecordDescription = "records";
+	private static final String expectedRecordExtension = "rcd";
+	private static final String expectedRecordSigExtension = "rcd_sig";
+	private static final byte[] expectedRecordSigFileHeader = new byte[] { 5 };
 
-	public static final String RECORD_FILE_NAME = "test.rcd";
-	public static final File RECORD_FILE = new File(RECORD_FILE_NAME);
-	public static final String RECORD_SIG_FILE_NAME = "test.rcd_sig";
-	public static final File RECORD_SIG_FILE = new File(RECORD_SIG_FILE_NAME);
-
-	public static final String EVENT_FILE_NAME = "test.evts";
-	public static final File EVENT_FILE = new File(EVENT_FILE_NAME);
-	public static final String EVENT_SIG_FILE_NAME = "test.evts_sig";
-	public static final File EVENT_SIG_FILE = new File(EVENT_SIG_FILE_NAME);
-
-	public static final String NON_STREAM_FILE_NAME = "test.soc";
-	public static final File NON_STREAM_FILE = new File(NON_STREAM_FILE_NAME);
-
-	private static final String IS_STREAM_FILE_ERROR_MSG = "isStreamFile() returns unexpected result";
-	private static final String IS_STREAM_SIG_FILE_ERROR_MSG = "isStreamSigFile() returns unexpected result";
+	@Mock
+	private RecordStreamType subject;
 
 	@Test
-	void isStreamFileTest() {
-		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_FILE_ERROR_MSG);
+	void capturesV5RecordStreamMetadata() {
+		doCallRealMethod().when(subject).getDescription();
+		doCallRealMethod().when(subject).getExtension();
+		doCallRealMethod().when(subject).getSigExtension();
+		doCallRealMethod().when(subject).getSigFileHeader();
 
-		assertTrue(RECORD.isStreamFile(RECORD_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
-		assertTrue(RECORD.isStreamFile(RECORD_FILE), IS_STREAM_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamFile(RECORD_SIG_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamFile(RECORD_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamFile(NON_STREAM_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamFile(NON_STREAM_FILE), IS_STREAM_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamFile(EVENT_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamFile(EVENT_FILE), IS_STREAM_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamFile(EVENT_SIG_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamFile(EVENT_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
-	}
-
-	@Test
-	void isStreamSigFileTest() {
-		assertFalse(RECORD.isStreamFile(NULL_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-
-		assertTrue(RECORD.isStreamSigFile(RECORD_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
-		assertTrue(RECORD.isStreamSigFile(RECORD_SIG_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamSigFile(RECORD_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamSigFile(RECORD_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamSigFile(EVENT_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamSigFile(EVENT_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamSigFile(EVENT_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamSigFile(EVENT_SIG_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-
-		assertFalse(RECORD.isStreamSigFile(NON_STREAM_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
-		assertFalse(RECORD.isStreamSigFile(NON_STREAM_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
-	}
-
-	@Test
-	void getTest() {
-		assertEquals(RecordStreamType.RECORD_DESCRIPTION, RECORD.getDescription());
-		assertEquals(RecordStreamType.RECORD_EXTENSION, RECORD.getExtension());
-		assertEquals(RecordStreamType.RECORD_SIG_EXTENSION, RECORD.getSigExtension());
+		assertEquals(expectedRecordDescription, subject.getDescription());
+		assertEquals(expectedRecordExtension, subject.getExtension());
+		assertEquals(expectedRecordSigExtension, subject.getSigExtension());
+		assertArrayEquals(expectedRecordSigFileHeader, subject.getSigFileHeader());
 	}
 }
-
