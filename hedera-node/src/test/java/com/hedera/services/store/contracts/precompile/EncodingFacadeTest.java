@@ -22,8 +22,18 @@ package com.hedera.services.store.contracts.precompile;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,6 +88,12 @@ class EncodingFacadeTest {
 
 	private static final Bytes RETURN_TRANSFER_TRUE = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000001");
+
+	private static final Bytes RETURN_OWNER = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008");
+
+    private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+
+	final Address logger = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 	@Test
 	void decodeReturnResultForFungibleMint() {
@@ -137,6 +153,28 @@ class EncodingFacadeTest {
 	void decodeReturnResultForTransfer() {
 		final var decodedResult = subject.ercFungibleTransfer(true);
 		assertEquals(RETURN_TRANSFER_TRUE, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForOwnerr() {
+		final var decodedResult = subject.encodeOwner(senderAddress);
+		assertEquals(RETURN_OWNER, decodedResult);
+	}
+
+	@Test
+	void logBuilder() {
+		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+				.forEventSignature(TRANSFER_EVENT)
+				.forIndexedArgument(senderAddress)
+				.forIndexedArgument(recipientAddress)
+				.build();
+
+		List<LogTopic> topics = new ArrayList<>();
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000006")));
+
+		assertEquals(new Log(logger, Bytes.EMPTY, topics), log);
 	}
 
 	@Test
