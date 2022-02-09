@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -54,6 +55,30 @@ class EncodingFacadeTest {
 			"0x00000000000000000000000000000000000000000000000000000000000000fc" +
 					"0000000000000000000000000000000000000000000000000000000000000000");
 
+	private static final Bytes RETURN_TOTAL_SUPPLY_FOR_50_TOKENS = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000032");
+
+	private static final Bytes RETURN_DECIMALS_10 = Bytes.fromHexString(
+			"0x000000000000000000000000000000000000000000000000000000000000000a");
+
+	private static final Bytes RETURN_BALANCE_3 = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000003");
+
+	private static final Bytes RETURN_TOKEN_URI_FIRST = Bytes.fromHexString(
+			"0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000" +
+					"000000000000000000000000054649525354000000000000000000000000000000000000000000000000000000");
+
+	private static final Bytes RETURN_NAME_TOKENA = Bytes.fromHexString(
+			"0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000" +
+					"00000000000000000000006546f6b656e410000000000000000000000000000000000000000000000000000");
+
+	private static final Bytes RETURN_SYMBOL_F = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000" +
+					"00000000000000000000000014600000000000000000000000000000000000000000000000000000000000000");
+
+	private static final Bytes RETURN_TRANSFER_TRUE = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000001");
+
 	@Test
 	void decodeReturnResultForFungibleMint() {
 		final var decodedResult = subject.encodeMintSuccess(10, null);
@@ -73,6 +98,48 @@ class EncodingFacadeTest {
 	}
 
 	@Test
+	void decodeReturnResultForTotalSupply() {
+		final var decodedResult = subject.encodeTotalSupply(50);
+		assertEquals(RETURN_TOTAL_SUPPLY_FOR_50_TOKENS, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForDecimals() {
+		final var decodedResult = subject.encodeDecimals(10);
+		assertEquals(RETURN_DECIMALS_10, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForBalance() {
+		final var decodedResult = subject.encodeBalance(3);
+		assertEquals(RETURN_BALANCE_3, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForTokenUri() {
+		final var decodedResult = subject.encodeTokenUri("FIRST");
+		assertEquals(RETURN_TOKEN_URI_FIRST, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForName() {
+		final var decodedResult = subject.encodeName("TokenA");
+		assertEquals(RETURN_NAME_TOKENA, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForSymbol() {
+		final var decodedResult = subject.encodeSymbol("F");
+		assertEquals(RETURN_SYMBOL_F, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForTransfer() {
+		final var decodedResult = subject.ercFungibleTransfer(true);
+		assertEquals(RETURN_TRANSFER_TRUE, decodedResult);
+	}
+
+	@Test
 	void createsExpectedMintFailureResult() {
 		assertEquals(MINT_FAILURE_FROM_INVALID_TOKEN_ID, subject.encodeMintFailure(INVALID_TOKEN_ID));
 	}
@@ -81,5 +148,6 @@ class EncodingFacadeTest {
 	void createsExpectedBurnFailureResult() {
 		assertEquals(BURN_FAILURE_FROM_TREASURY_NOT_OWNER, subject.encodeBurnFailure(TREASURY_MUST_OWN_BURNED_NFT));
 	}
+
 }
 
