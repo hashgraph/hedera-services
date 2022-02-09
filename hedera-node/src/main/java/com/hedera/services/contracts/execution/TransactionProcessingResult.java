@@ -228,20 +228,12 @@ public class TransactionProcessingResult {
 			ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
 					EntityIdUtils.contractIdFromEvmAddress(address.toArray()));
 			states.forEach((slot, changePair) -> {
-				var slotTrimmed = slot.trimLeadingZeros().isEmpty() ?
-						Bytes.ofUnsignedInt(0) : slot.trimLeadingZeros();
-				var valueReadTrimmed = changePair.getLeft().trimLeadingZeros().isEmpty() ?
-						Bytes.ofUnsignedInt(0) : changePair.getLeft().trimLeadingZeros();
 				StorageChange.Builder stateChange = StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(slotTrimmed.toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(valueReadTrimmed.trimLeadingZeros().toArrayUnsafe()));
+						.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
 				Bytes changePairRight = changePair.getRight();
 				if (changePairRight != null) {
-					var valueWrittenTrimmed = changePairRight.trimLeadingZeros().isEmpty() ?
-							Bytes.ofUnsignedInt(0) : changePairRight.trimLeadingZeros();
-					stateChange.setValueWritten(
-							BytesValue.newBuilder().setValue(
-									ByteString.copyFrom(valueWrittenTrimmed.toArrayUnsafe())).build());
+					stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
 				}
 				contractChanges.addStorageChanges(stateChange.build());
 			});
