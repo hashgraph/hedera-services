@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.math.BigDecimal;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
@@ -46,6 +48,12 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
 		testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
 		testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE);
 		testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+	}
+
+	@Test
+	void computesExpectedPriceForCryptoAllowances() throws IOException {
+		testCanonicalPriceFor(CryptoApproveAllowance, DEFAULT);
+		testCanonicalPriceFor(CryptoAdjustAllowance, DEFAULT);
 	}
 
 	@Test

@@ -29,7 +29,7 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
@@ -54,7 +54,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.crypto.CryptoAllowanceMeta.countSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowance> {
@@ -106,13 +105,12 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
-						.setCurrentCryptoAllowanceCount(info.getCryptoAllowancesCount())
-						.setCurrentTokenAllowanceCount(info.getTokenAllowancesCount())
-						.setCurrentNftAllowanceCount(info.getNftAllowancesCount())
-						.setCurrentNftSerialsCount(countSerials(info.getNftAllowancesList()))
+						.setCurrentCryptoAllowances(info.getCryptoAllowancesList())
+						.setCurrentTokenAllowances(info.getTokenAllowancesList())
+						.setCurrentNftAllowances(info.getNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-				var opMeta = new CryptoAllowanceMeta(_txn.getCryptoAdjustAllowance(),
+				var opMeta = new CryptoAdjustAllowanceMeta(_txn.getCryptoAdjustAllowance(),
 						_txn.getTransactionID().getTransactionValidStart().getSeconds());
 				var accumulator = new UsageAccumulator();
 				cryptoOpsUsage.cryptoAdjustAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);

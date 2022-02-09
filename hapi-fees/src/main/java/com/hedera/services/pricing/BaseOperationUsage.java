@@ -27,7 +27,8 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -41,6 +42,7 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -64,6 +66,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -249,7 +252,14 @@ class BaseOperationUsage {
 	UsageAccumulator cryptoApproveAllowance() {
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()).build();
+				.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody
+						.newBuilder()
+						.addCryptoAllowances(CryptoAllowance.newBuilder()
+								.setSpender(AN_ACCOUNT)
+								.setAmount(1L)
+								.build())
+				)
+				.build();
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(now)
 				.setCurrentMemo(BLANK_MEMO)
@@ -257,13 +267,12 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(0)
-				.setCurrentTokenAllowanceCount(0)
-				.setCurrentNftAllowanceCount(0)
-				.setCurrentNftSerialsCount(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 
-		final var cryptoApproveMeta = new CryptoAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
+		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoApproveAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoApproveMeta,
 				ctx, into);
@@ -273,7 +282,13 @@ class BaseOperationUsage {
 	UsageAccumulator cryptoAdjustAllowance() {
 		final var now = Instant.now().getEpochSecond();
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody.newBuilder()).build();
+				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody
+						.newBuilder()
+						.addCryptoAllowances(CryptoAllowance.newBuilder()
+								.setSpender(AN_ACCOUNT)
+								.setAmount(1L)
+								.build()))
+				.build();
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(now)
 				.setCurrentMemo(BLANK_MEMO)
@@ -281,13 +296,12 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(0)
-				.setCurrentTokenAllowanceCount(0)
-				.setCurrentNftAllowanceCount(0)
-				.setCurrentNftSerialsCount(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 
-		final var cryptoAdjustMeta = new CryptoAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
+		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoAdjustAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoAdjustMeta,
 				ctx, into);
@@ -310,10 +324,9 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(0)
-				.setCurrentTokenAllowanceCount(0)
-				.setCurrentNftAllowanceCount(0)
-				.setCurrentNftSerialsCount(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

@@ -27,12 +27,20 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.test.IdUtils.asAccount;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,74 +53,88 @@ class CryptoAdjustAllowanceMetaTest {
 	private NftAllowance nftAllowances = NftAllowance.newBuilder().setSpender(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L, 2L, 3L)).build();
+	private Map<Long, Long> cryptoAllowancesMap = new HashMap<>();
+	private Map<ExtantCryptoContext.AllowanceMapKey, Long> tokenAllowancesMap = new HashMap<>();
+	private Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> nftAllowancesMap =
+			new HashMap<>();
+
+	@BeforeEach
+	void setUp() {
+		cryptoAllowancesMap = convertToCryptoMap(List.of(cryptoAllowances));
+		tokenAllowancesMap = convertToTokenMap(List.of(tokenAllowances));
+		nftAllowancesMap = convertToNftMap(List.of(nftAllowances));
+	}
 
 	@Test
 	void allGettersAndToStringWork() {
-		final var expected = "CryptoAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
-				"numOfNftAllowances=3, aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567, " +
-				"msgBytesUsed=112}";
+		final var expected = "CryptoAdjustAllowanceMeta{cryptoAllowances={1234=10}, " +
+				"tokenAllowances={AllowanceMapKey[tokenNum=1000, spenderNum=1234]=10}, " +
+				"nftAllowances={AllowanceMapKey[tokenNum=1000, " +
+				"spenderNum=1234]=AllowanceMapValue[approvedForAll=false," +
+				" serialNums=[1, 2, 3]]}, effectiveNow=1234567, msgBytesUsed=112}";
 		final var now = 1_234_567;
-		final var subject = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
+		final var subject = CryptoAdjustAllowanceMeta.newBuilder()
 				.msgBytesUsed(112)
-				.aggregatedNftAllowancesWithSerials(10)
+				.cryptoAllowances(cryptoAllowancesMap)
+				.tokenAllowances(tokenAllowancesMap)
+				.nftAllowances(nftAllowancesMap)
 				.effectiveNow(now)
 				.build();
 
 		assertEquals(now, subject.getEffectiveNow());
-		assertEquals(10, subject.getAggregatedNftAllowancesWithSerials());
-		assertEquals(1, subject.getNumOfCryptoAllowances());
-		assertEquals(2, subject.getNumOfTokenAllowances());
-		assertEquals(3, subject.getNumOfNftAllowances());
 		assertEquals(112, subject.getMsgBytesUsed());
 		assertEquals(expected, subject.toString());
 	}
 
 	@Test
 	void calculatesBaseSizeAsExpected() {
-		final var cryptoAdjustTxnBody = CryptoAdjustAllowanceTransactionBody
+		final var op = CryptoAdjustAllowanceTransactionBody
 				.newBuilder()
 				.addAllCryptoAllowances(List.of(cryptoAllowances))
 				.addAllTokenAllowances(List.of(tokenAllowances))
 				.addAllNftAllowances(List.of(nftAllowances))
 				.build();
 		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoAdjustAllowance(
-						cryptoAdjustTxnBody
-				).build();
+				.setCryptoAdjustAllowance(op).build();
 
-		var subject = new CryptoAllowanceMeta(cryptoAdjustTxnBody,
+		var subject = new CryptoAdjustAllowanceMeta(op,
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
-		final var expectedMsgBytes = CRYPTO_ALLOWANCE_SIZE
-				+ TOKEN_ALLOWANCE_SIZE
-				+ NFT_ALLOWANCE_SIZE;
+		final var expectedMsgBytes = (op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE) +
+				countSerials(op.getNftAllowancesList()) * LONG_SIZE;
 
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
-		assertEquals(1, subject.getNumOfCryptoAllowances());
-		assertEquals(1, subject.getNumOfTokenAllowances());
-		assertEquals(1, subject.getNumOfNftAllowances());
-		assertEquals(3, subject.getAggregatedNftAllowancesWithSerials());
+
+		final var expectedCryptoMap = new HashMap<>();
+		final var expectedTokenMap = new HashMap<>();
+		final var expectedNftMap = new HashMap<>();
+		expectedCryptoMap.put(proxy.getAccountNum(), 10L);
+		expectedTokenMap.put(new ExtantCryptoContext.AllowanceMapKey(1000L, proxy.getAccountNum()), 10L);
+		expectedNftMap.put(new ExtantCryptoContext.AllowanceMapKey(1000L, proxy.getAccountNum()),
+				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L, 2L, 3L)));
+		assertEquals(expectedCryptoMap, subject.getCryptoAllowances());
+		assertEquals(expectedTokenMap, subject.getTokenAllowances());
+		assertEquals(expectedNftMap, subject.getNftAllowances());
 	}
 
 	@Test
 	void hashCodeAndEqualsWork() {
 		final var now = 1_234_567;
-		final var subject1 = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
-				.aggregatedNftAllowancesWithSerials(10)
+		final var subject1 = CryptoAdjustAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.cryptoAllowances(cryptoAllowancesMap)
+				.tokenAllowances(tokenAllowancesMap)
+				.nftAllowances(nftAllowancesMap)
 				.effectiveNow(now)
 				.build();
 
-		final var subject2 = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
-				.aggregatedNftAllowancesWithSerials(10)
+		final var subject2 = CryptoAdjustAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.cryptoAllowances(cryptoAllowancesMap)
+				.tokenAllowances(tokenAllowancesMap)
+				.nftAllowances(nftAllowancesMap)
 				.effectiveNow(now)
 				.build();
 

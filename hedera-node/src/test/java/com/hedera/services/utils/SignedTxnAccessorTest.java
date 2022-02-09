@@ -77,6 +77,9 @@ import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -591,12 +594,9 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
 
-		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
 		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
-		assertEquals(1, expandedMeta.getNumOfCryptoAllowances());
-		assertEquals(1, expandedMeta.getNumOfTokenAllowances());
-		assertEquals(1, expandedMeta.getNumOfNftAllowances());
 	}
 
 	@Test
@@ -607,12 +607,11 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoAdjustMeta(accessor);
 
-		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
-		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
-		assertEquals(1, expandedMeta.getNumOfCryptoAllowances());
-		assertEquals(1, expandedMeta.getNumOfTokenAllowances());
-		assertEquals(1, expandedMeta.getNumOfNftAllowances());
+		assertEquals(convertToCryptoMap(List.of(cryptoAllowance1)), expandedMeta.getCryptoAllowances());
+		assertEquals(convertToTokenMap(List.of(tokenAllowance1)), expandedMeta.getTokenAllowances());
+		assertEquals(convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
 	}
 
 
