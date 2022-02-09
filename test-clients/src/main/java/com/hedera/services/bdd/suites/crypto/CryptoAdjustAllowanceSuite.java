@@ -225,10 +225,10 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustNftSingleRemove", 0.05, 0.01),
+						validateChargedUsdWithin("adjustNftSingleRemove", 0.05010, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
-								.addNftAllowance(owner, nft, "spender2", true, List.of(2L))
+								.addNftAllowance(owner, nft, "spender2", true, List.of())
 								.via("adjustNftSingleApproveForAll")
 								.fee(ONE_HBAR)
 								.blankMemo()
