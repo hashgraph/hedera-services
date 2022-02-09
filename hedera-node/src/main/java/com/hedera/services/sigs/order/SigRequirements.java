@@ -1114,8 +1114,9 @@ public class SigRequirements {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
 				final var meta = result.metadata();
+				final var isUnapprovedDebit = adjust.getAmount() < 0  && !adjust.getIsApproval();
 
-				if (((adjust.getAmount() < 0  && !adjust.getIsApproval()) || meta.receiverSigRequired())) {
+				if ((isUnapprovedDebit || meta.receiverSigRequired())) {
 					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
 					required.add(meta.key());
 				}
@@ -1151,7 +1152,10 @@ public class SigRequirements {
 			}
 			final var meta = result.metadata();
 			final var isSender = counterparty == null;
-			if (((isSender && !isApproval) || meta.receiverSigRequired())) {
+			final var isUnapprovedTransfer = isSender && !isApproval;
+			final var isGatedReceipt = !isSender && meta.receiverSigRequired();
+
+			if (isUnapprovedTransfer || isGatedReceipt) {
 				required.add(meta.key());
 			} else if (!isSender) {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);

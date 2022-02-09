@@ -166,10 +166,10 @@ public class TransferLogic {
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
 				sideEffectsTracker.trackHbarChange(accountId, change.getAggregatedUnits());
-				if (change.isApprovedAllowance() && change.getAggregatedUnits() < 0) {
+				if (change.isApprovedAllowance()) {
 					adjustCryptoAllowance(change, accountId);
 				}
-			} else if (change.isApprovedAllowance() && change.isForFungibleToken() && change.getAggregatedUnits() < 0) {
+			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
 			} else if (change.isApprovedAllowance() && change.isForNft()) {
 				adjustNftAllowance(change, accountId);
