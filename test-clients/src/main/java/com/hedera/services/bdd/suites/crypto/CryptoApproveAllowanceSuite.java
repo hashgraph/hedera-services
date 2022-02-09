@@ -91,7 +91,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked(),
 				serialsInAscendingOrder(),
-//				feesAsExpected() will enable with txn record changes
+				feesAsExpected()
 		});
 	}
 
@@ -143,7 +143,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender, 100L)
 								.via("approve")
 								.fee(ONE_HBAR).logged(),
-						validateChargedUsdWithin("approve", 0.05, 0.1),
+						validateChargedUsdWithin("approve", 0.05, 2.5),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender1", 100L)
@@ -153,7 +153,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR).logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.05, 0.1),
+						validateChargedUsdWithin("approveTxn", 0.0536, 2.5),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
@@ -1071,6 +1071,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	private HapiApiSpec happyPathWorks() {
 		final String owner = "owner";
 		final String spender = "spender";
+		final String spender1 = "spender1";
 		final String token = "token";
 		final String nft = "nft";
 		return defaultHapiSpec("happyPathWorks")
@@ -1080,6 +1081,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
 						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
@@ -1112,16 +1115,22 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
+								.via("baseApproveTxn")
+								.logged(),
+						validateChargedUsdWithin("baseApproveTxn", 0.05, 2.5),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, spender1, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
 								.via("approveTxn")
-								.fee(ONE_HBAR).logged()
+								.logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.01, 0),
+						validateChargedUsdWithin("approveTxn", 0.054, 2.5),
 						getAccountInfo(owner)
 								.has(accountWith()
-										.cryptoAllowancesCount(1)
+										.cryptoAllowancesCount(2)
 										.nftAllowancesCount(1)
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 100L)
