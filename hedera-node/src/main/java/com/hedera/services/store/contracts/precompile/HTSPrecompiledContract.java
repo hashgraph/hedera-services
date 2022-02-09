@@ -226,7 +226,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//ownerOf(uint256 tokenId)
 	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
-	private static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
+	protected static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)

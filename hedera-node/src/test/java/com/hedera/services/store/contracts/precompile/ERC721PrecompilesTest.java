@@ -44,9 +44,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
@@ -77,8 +74,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,19 +84,15 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOKEN_URI_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.BALANCE_OF;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.OWNER_OF;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_URI;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -319,6 +310,7 @@ public class ERC721PrecompilesTest {
     @Test
     void balanceOf() {
         givenMinimalFrameContext();
+        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_BALANCE_OF_TOKEN);
@@ -335,9 +327,16 @@ public class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(
-                balanceOfOp);
+                BALANCE_OF_WRAPPER);
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
+
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.initializeLedgers(frame);
@@ -349,18 +348,38 @@ public class ERC721PrecompilesTest {
         assertEquals(successResult, result);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
     void ownerOf() {
         givenMinimalFrameContext();
         givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(OWNER_OF);
-        given(decoder.decodeOwnerOf(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+//        given(pretendArguments.slice(24)).willReturn(OWNER_OF);
+//        given(decoder.decodeOwnerOf(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        given(tokenRels.get(any(), any())).willReturn(10L);
+        given(encoder.encodeBalance(10L)).willReturn(successResult);
 
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -451,12 +470,29 @@ public class ERC721PrecompilesTest {
     void tokenURI() {
         givenMinimalFrameContext();
         givenLedgers();
-        given(pretendArguments.slice(24)).willReturn(TOKEN_URI);
-        given(decoder.decodeTokenUriNFT(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        given(tokenRels.get(any(), any())).willReturn(10L);
+        given(encoder.encodeBalance(10L)).willReturn(successResult);
 
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
