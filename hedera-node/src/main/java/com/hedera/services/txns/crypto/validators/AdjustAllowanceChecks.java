@@ -1,8 +1,10 @@
+package com.hedera.services.txns.crypto.validators;
+
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +19,6 @@
  * limitations under the License.
  * ‍
  */
-
-package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -57,17 +57,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
-public class AdjustAllowanceChecks extends AllowanceChecks {
+public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
+	protected final TypedTokenStore tokenStore;
+	protected final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	protected final GlobalDynamicProperties dynamicProperties;
+
 	@Inject
 	public AdjustAllowanceChecks(
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties) {
-		super(nftsLedger, tokenStore, dynamicProperties);
+		this.tokenStore = tokenStore;
+		this.nftsLedger = nftsLedger;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	protected ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
+	public ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
 			final Account ownerAccount) {
 		if (cryptoAllowancesList.isEmpty()) {
 			return OK;
@@ -100,7 +106,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
+	public ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
 			final Account ownerAccount) {
 		if (tokenAllowancesList.isEmpty()) {
 			return OK;
@@ -143,7 +149,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
+	public ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
 			final Account ownerAccount) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
@@ -191,6 +197,21 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates serial numbers for {@link NftAllowance}
+	 *
+	 * @param serialNums
+	 * 		given serial numbers in the {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} operation
+	 * @param ownerAccount
+	 * 		owner account
+	 * @param token
+	 * 		token for which allowance is related to
+	 * @param approvedForAll
+	 * 		if approvedForAll is set in allowance
+	 * @param existingSerials
+	 * 		existing serial numbers for the nft on owner account
+	 * @return response code after validation
+	 */
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token,
@@ -227,6 +248,15 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates if aggregated amount is less than zero
+	 *
+	 * @param amount
+	 * 		given amount
+	 * @param existingAmount
+	 * 		existing allowance on owner account
+	 * @return response code after validation
+	 */
 	ResponseCodeEnum validateAmount(final long amount, final long existingAmount) {
 		if (amount + existingAmount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
@@ -234,7 +264,20 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 		return OK;
 	}
 
-	ResponseCodeEnum validateTokenAmount(final long amount, final long existingAllowance,
+	/**
+	 * Validates if the amount given is less tha zero for fungible token or if the
+	 * amount exceeds token max supply
+	 *
+	 * @param amount
+	 * 		given amount in the operation
+	 * @param existingAllowance
+	 * 		existing allowance for the fungible token on owner account
+	 * @param fungibleToken
+	 * 		fungible token for which allowance is related to
+	 * @return response code after validation
+	 */
+	ResponseCodeEnum validateTokenAmount(final long amount,
+			final long existingAllowance,
 			Token fungibleToken) {
 		final long aggregatedAmount = amount + existingAllowance;
 		if (aggregatedAmount < 0) {

@@ -201,6 +201,7 @@ public class CryptoOpsUsage {
 			final CryptoAdjustAllowanceMeta cryptoAdjustMeta,
 			final ExtantCryptoContext ctx,
 			final UsageAccumulator accumulator) {
+
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		accumulator.addBpt(cryptoAdjustMeta.getMsgBytesUsed());
 

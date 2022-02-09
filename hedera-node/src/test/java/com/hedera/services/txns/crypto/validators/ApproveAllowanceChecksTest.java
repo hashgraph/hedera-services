@@ -4,7 +4,7 @@ package com.hedera.services.txns.crypto.validators;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,7 @@ import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.TypedTokenStore;
@@ -43,7 +41,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,9 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AllowanceChecksTest {
-	@Mock
-	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+class ApproveAllowanceChecksTest {
 	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	@Mock
@@ -90,7 +85,7 @@ class AllowanceChecksTest {
 	@Mock
 	private Account owner;
 
-	AllowanceChecks subject;
+	ApproveAllowanceChecks subject;
 
 	private final AccountID spender1 = asAccount("0.0.123");
 	private final AccountID spender2 = asAccount("0.0.1234");
@@ -128,7 +123,7 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new AllowanceChecks(nftsLedger, tokenStore, dynamicProperties);
+		subject = new ApproveAllowanceChecks(nftsLedger, tokenStore, dynamicProperties);
 	}
 
 	private void setUpForTest() {
@@ -154,7 +149,8 @@ class AllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner);
+		subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction());
 
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream().map(a -> a.getSpender()).toList()));
 		assertTrue(hasRepeatedSpender(tokenAllowances.stream().map(a -> a.getSpender()).toList()));
@@ -179,7 +175,8 @@ class AllowanceChecksTest {
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -193,7 +190,8 @@ class AllowanceChecksTest {
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -207,7 +205,8 @@ class AllowanceChecksTest {
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
-						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -338,7 +337,8 @@ class AllowanceChecksTest {
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -408,7 +408,8 @@ class AllowanceChecksTest {
 
 
 		assertEquals(EMPTY_ALLOWANCES, subject.commonChecks(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList()));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(),
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	@Test
@@ -417,7 +418,8 @@ class AllowanceChecksTest {
 		getValidTxnCtx();
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner));
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
+				dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
 
 	private void addAllowances() {
