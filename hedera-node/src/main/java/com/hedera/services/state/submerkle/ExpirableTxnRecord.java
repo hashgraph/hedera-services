@@ -827,7 +827,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			receipt = null;
 			consensusTime = null;
 
-			nullOutSideEffectFields();
+			nullOutSideEffectFields(true);
 
 			return this;
 		}
@@ -837,7 +837,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				throw new IllegalStateException("Cannot revert a record with a built receipt");
 			}
 			receiptBuilder.revert();
-			nullOutSideEffectFields();
+			nullOutSideEffectFields(false);
 		}
 
 		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
@@ -897,9 +897,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.thenComparingLong(EntityId::shard)
 				.thenComparingLong(EntityId::realm);
 
-		private void nullOutSideEffectFields() {
+		private void nullOutSideEffectFields(boolean removeCallResult) {
 			transferList = null;
-			contractCallResult = null;
 			contractCreateResult = null;
 			tokens = NO_TOKENS;
 			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
@@ -908,6 +907,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			assessedCustomFees = NO_CUSTOM_FEES;
 			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 			alias = MISSING_ALIAS;
+			/*- if this is a revert of a child record we want to have contractCallResult -*/
+			if (removeCallResult) {
+				contractCallResult = null;
+			}
 			cryptoAllowances = Collections.emptyMap();
 			nftAllowances = Collections.emptyMap();
 			fungibleTokenAllowances = Collections.emptyMap();

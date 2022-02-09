@@ -50,6 +50,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
@@ -71,6 +72,7 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -123,6 +125,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
+
+	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
@@ -341,15 +345,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		try {
 			childRecord = precompile.run(frame, ledgers);
 			result = precompile.getSuccessResultFor(childRecord);
+			addContractCallResultToRecord(childRecord, result, Optional.empty());
+
 			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
+			addContractCallResultToRecord(childRecord, result, Optional.of(status));
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID));
 		}
 
 		/*-- The updater here should always have a parent updater --*/
@@ -361,6 +369,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
 		return result;
+	}
+
+	private void addContractCallResultToRecord(final ExpirableTxnRecord.Builder childRecord,
+											   final Bytes result,
+											   final Optional<ResponseCodeEnum> errorStatus) {
+		final var contractCallResult = ContractFunctionResult.newBuilder()
+				.setContractID(EntityIdUtils.contractIdFromEvmAddress(
+						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+				.setGasUsed(this.gasRequirement.toLong())
+				.setContractCallResult(ByteString.copyFrom(result.toArray()));
+		if (errorStatus.isPresent()) {
+			contractCallResult.setErrorMessage(errorStatus.get().name());
+		}
+
+		childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 	}
 
 	/* --- Constructor functional interfaces for mocking --- */

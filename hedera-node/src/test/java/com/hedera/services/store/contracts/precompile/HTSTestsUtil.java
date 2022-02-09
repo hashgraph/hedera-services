@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -43,6 +44,7 @@ public class HTSTestsUtil {
 
 	public static final long AMOUNT = 1_234_567L;
 	public static final long DEFAULT_GAS_PRICE = 10_000L;
+	public static final long TEST_CONSENSUS_TIME = 1_640_000_000L; // Monday, December 20, 2021 11:33:20 AM UTC
 	public static final TokenID token = IdUtils.asToken("0.0.1");
 	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	public static final AccountID sender = IdUtils.asAccount("0.0.2");
@@ -62,6 +64,7 @@ public class HTSTestsUtil {
 			Dissociation.singleDissociation(account, nonFungible);
 	public static final Dissociation multiDissociateOp =
 			Dissociation.singleDissociation(account, nonFungible);
+	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
 	public static final Association associateOp =
