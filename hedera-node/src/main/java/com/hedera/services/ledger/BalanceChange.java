@@ -82,9 +82,8 @@ public class BalanceChange {
 		return tokenChange;
 	}
 
-	public static BalanceChange hbarAdjust(
-			final Id id, final long amount, final AccountID payerID, final boolean isApprovedAllowance) {
-		return new BalanceChange(id, amount, payerID, isApprovedAllowance, INSUFFICIENT_ACCOUNT_BALANCE);
+	public static BalanceChange hbarAdjust(final Id id, final long amount) {
+		return new BalanceChange(id, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	public static BalanceChange changingNftOwnership(
@@ -99,6 +98,10 @@ public class BalanceChange {
 		nftChange.isApprovedAllowance = nftTransfer.getIsApproval();
 		nftChange.payerID = payerID;
 		return nftChange;
+	}
+
+	public static BalanceChange tokenAdjust(final Id account, final Id token, final long amount) {
+		return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL);
 	}
 
 	public static BalanceChange tokenAdjust(

@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.ledger.BalanceChange.DEFAULT_PAYER;
 import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -95,7 +96,7 @@ class BalanceChangeTest {
 
 	@Test
 	void hbarAdjust() {
-		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
+		final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
 		assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
 		assertTrue(hbarAdjust.isForHbar());
 		assertEquals(0, hbarAdjust.getAllowanceUnits());
@@ -108,7 +109,7 @@ class BalanceChangeTest {
 
 	@Test
 	void objectContractWorks() {
-		final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10, null, false);
+		final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
 		adjust.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, adjust.codeForInsufficientBalance());
 		adjust.setExemptFromCustomFees(false);
@@ -120,7 +121,7 @@ class BalanceChangeTest {
 		final var tokenAdjust = BalanceChange.tokenAdjust(
 				IdUtils.asModelId("1.2.3"),
 				IdUtils.asModelId("3.2.1"),
-				10, null, true);
+				10, DEFAULT_PAYER, true);
 		assertEquals(10, tokenAdjust.getAggregatedUnits());
 		assertEquals(10, tokenAdjust.getAllowanceUnits());
 		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());

@@ -69,9 +69,9 @@ class FractionalFeeAssessorTest {
 				skippedFixedFee,
 				fractionalFeeNetOfTransfers);
 		final var firstCollectorChange = BalanceChange.tokenAdjust(
-				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L, null, false);
+				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var secondCollectorChange = BalanceChange.tokenAdjust(
-				secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L, null, false);
+				secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
 		// and:
 		final var firstExpectedFee =
@@ -349,11 +349,11 @@ class FractionalFeeAssessorTest {
 			notNetOfTransfers,
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(
-			payer, tokenWithFractionalFee, -vanillaTriggerAmount, null, false);
+			payer, tokenWithFractionalFee, -vanillaTriggerAmount);
 	private final BalanceChange firstVanillaReclaim = BalanceChange.tokenAdjust(
-			firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount, null, false);
+			firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
 	private final BalanceChange secondVanillaReclaim = BalanceChange.tokenAdjust(
-			secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount, null, false);
+			secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
 	private final BalanceChange wildlyInsufficientChange = BalanceChange.tokenAdjust(
-			payer, tokenWithFractionalFee, -1, null, false);
+			payer, tokenWithFractionalFee, -1);
 }

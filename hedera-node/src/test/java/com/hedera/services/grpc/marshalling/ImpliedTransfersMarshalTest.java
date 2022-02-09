@@ -520,6 +520,6 @@ class ImpliedTransfersMarshalTest {
 	private final AccountID c = asAccount("3.4.5");
 	private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
-	private final BalanceChange aTrigger = BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1, null, false);
-	private final BalanceChange bTrigger = BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2, null, false);
+	private final BalanceChange aTrigger = BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
+	private final BalanceChange bTrigger = BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
 }

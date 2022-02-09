@@ -255,9 +255,9 @@ class BalanceChangeManagerTest {
 			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange, payer.asGrpcAccount());
 	private final BalanceChange secondNonFungibleTrigger = BalanceChange.changingNftOwnership(
 			nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), firstOwnershipChange, payer.asGrpcAccount());
-	private final BalanceChange payerHbarAdjust = BalanceChange.hbarAdjust(payer, -1_234_567, null, false);
-	private final BalanceChange fundingHbarAdjust = BalanceChange.hbarAdjust(funding, +1_234_567, null, false);
-	private final BalanceChange miscHbarAdjust = BalanceChange.hbarAdjust(misc, +1, null, false);
+	private final BalanceChange payerHbarAdjust = BalanceChange.hbarAdjust(payer, -1_234_567);
+	private final BalanceChange fundingHbarAdjust = BalanceChange.hbarAdjust(funding, +1_234_567);
+	private final BalanceChange miscHbarAdjust = BalanceChange.hbarAdjust(misc, +1);
 
 	private final List<BalanceChange> startingList = new ArrayList<>();
 	{
