@@ -32,6 +32,10 @@ import java.util.List;
 import java.util.Map;
 
 public class CryptoContextUtils {
+	private CryptoContextUtils() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {
 		Map<Long, Long> allowanceMap = new HashMap<>();
 		for (var a : allowances) {

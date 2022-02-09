@@ -120,7 +120,6 @@ class BaseOperationUsage {
 			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			.build();
 	private static final AccountID AN_ACCOUNT = AccountID.newBuilder().setAccountNum(1_234L).build();
-	private static final TokenID A_TOKEN = TokenID.newBuilder().setTokenNum(1_235L).build();
 
 	private static final String A_TOKEN_NAME = "012345678912";
 	private static final String A_TOKEN_SYMBOL = "ABCD";
