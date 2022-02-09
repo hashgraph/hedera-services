@@ -20,8 +20,6 @@ package com.hedera.services.txns.crypto.helpers;
  * ‍
  */
 
-package com.hedera.services.txns.crypto.helpers;
-
 import com.google.protobuf.BoolValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
