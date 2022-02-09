@@ -1019,17 +1019,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
 		protected TokenID tokenID;
-		private TransactionBody.Builder syntheticTxn;
 
-		public ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
+		protected ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
 			this.tokenID = tokenID;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			syntheticTxn = syntheticTxnFactory.createTransactionCall(1L, input);
-
-			return syntheticTxn;
+			return syntheticTxnFactory.createTransactionCall(1L, input);
 		}
 
 		@Override
@@ -1051,7 +1048,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class ERCTransferPrecompile extends TransferPrecompile {
 		private final TokenID tokenID;
 		private final AccountID callerAccountID;
-		private boolean isFungible;
+		private final boolean isFungible;
 
 		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount, final boolean isFungible) {
 			this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
@@ -1340,7 +1337,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Address target,
 			final ContractActivationTest activationTest
 	) {
-		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		final var aliases = updater.aliases();
 
 		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
