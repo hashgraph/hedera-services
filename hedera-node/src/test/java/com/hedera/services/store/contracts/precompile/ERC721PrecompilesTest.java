@@ -83,6 +83,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
@@ -379,7 +380,6 @@ public class ERC721PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
@@ -412,8 +412,6 @@ public class ERC721PrecompilesTest {
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
 
-        given(hederaTokenStore.get(any())).willReturn(merkleToken);
-        given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
@@ -426,7 +424,9 @@ public class ERC721PrecompilesTest {
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
 
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
 
@@ -437,8 +437,14 @@ public class ERC721PrecompilesTest {
         final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(successResult, result);
+        assertEquals(Bytes.EMPTY, result);
 
+        // and:
+        verify(transferLogic).doZeroSum(tokenTransferChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+
+        entityIdUtils.close();
     }
 
     @Test
@@ -470,8 +476,7 @@ public class ERC721PrecompilesTest {
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
-            List.of(new SyntheticTxnFactory.NftExchange(1, token, null, receiver),
-                    new SyntheticTxnFactory.NftExchange(-1, token, sender, null)),
+            List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
             new ArrayList<>() {}
     );
 
