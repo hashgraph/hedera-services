@@ -119,6 +119,7 @@ import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -144,6 +145,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
+	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
@@ -292,6 +295,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final UnaryOperator<byte[]> aliasResolver = updater::unaliased;
 		this.originator = messageFrame.getOriginatorAddress();
 		initializeLedgers(messageFrame);
+
 		prepareComputation(input, aliasResolver);
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
@@ -355,19 +359,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						final var tokenAddress = input.slice(4, 20);
 						final var tokenID = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArray());
 						final var nestedInput = input.slice(24);
+						final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(tokensLedger.get(tokenID,
+								TOKEN_TYPE));
 
 						Precompile nestedPrecompile;
 						switch (nestedInput.getInt(0)) {
 							case ABI_ID_NAME -> nestedPrecompile = new NamePrecompile(tokenID);
 							case ABI_ID_SYMBOL -> nestedPrecompile = new SymbolPrecompile(tokenID);
-							case ABI_ID_DECIMALS -> nestedPrecompile = new DecimalsPrecompile(tokenID);
+							case ABI_ID_DECIMALS -> nestedPrecompile = new DecimalsPrecompile(tokenID, isFungibleToken);
 							case ABI_ID_TOTAL_SUPPLY_TOKEN -> nestedPrecompile = new TotalSupplyPrecompile(tokenID);
 							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
-							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID);
-							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID);
+							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID, isFungibleToken);
+							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID, isFungibleToken);
 							case ABI_ID_ERC_TRANSFER,
 									ABI_ID_ERC_TRANSFER_FROM -> nestedPrecompile =
-									new ERCTransferPrecompile(tokenID, this.originator);
+									new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
 							default -> nestedPrecompile = null;
 						}
 						yield nestedPrecompile;
@@ -723,7 +730,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected List<TokenTransferWrapper> transferOp;
 		protected HederaTokenStore hederaTokenStore;
 
-		protected void setUp() {
+		protected void initializeHederaTokenStore() {
 			this.sideEffects = sideEffectsFactory.get();
 			this.hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
 					ids,
@@ -749,7 +756,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
 
-			setUp();
+			initializeHederaTokenStore();
 			return syntheticTxn;
 		}
 
@@ -1004,21 +1011,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		private final AccountID callerAccountID;
 		private boolean isFungible;
 
-		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount) {
+		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount, final boolean isFungible) {
 			this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
 			this.tokenID = tokenID;
+			this.isFungible = isFungible;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			super.setUp();
+			super.initializeHederaTokenStore();
 
-			isFungible = TokenType.FUNGIBLE_COMMON.equals(super.hederaTokenStore.get(tokenID).tokenType());
 			final var nestedInput = input.slice(24);
-
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID,
-						callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> {
+					if(!isFungible) {
+						throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
+								FAIL_INVALID);
+					}
+					yield decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
+				}
 				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
 						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
@@ -1135,8 +1146,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class DecimalsPrecompile extends ERCReadOnlyAbstractPrecompile {
 
-		public DecimalsPrecompile(final TokenID tokenID) {
+		public DecimalsPrecompile(final TokenID tokenID, final boolean isFungible) {
 			super(tokenID);
+
+			if(!isFungible) {
+				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
+			}
 		}
 
 		@Override
@@ -1166,8 +1181,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private OwnerOfAndTokenURIWrapper tokenUriWrapper;
 
-		public TokenURIPrecompile(final TokenID tokenID) {
+		public TokenURIPrecompile(final TokenID tokenID, final boolean isFungible) {
 			super(tokenID);
+
+			if(isFungible) {
+				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
+			}
 		}
 
 		@Override
@@ -1193,8 +1212,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private OwnerOfAndTokenURIWrapper ownerWrapper;
 
-		public OwnerOfPrecompile(final TokenID tokenID) {
+		public OwnerOfPrecompile(final TokenID tokenID, final boolean isFungible) {
 			super(tokenID);
+
+			if(isFungible) {
+				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
+			}
 		}
 
 		@Override
