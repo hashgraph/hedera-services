@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -75,7 +74,6 @@ public class SyntheticTxnFactory {
 
 		return TransactionBody.newBuilder().setContractCall(builder);
 	}
-
 
 	public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {
 		final var builder = TokenBurnTransactionBody.newBuilder();
