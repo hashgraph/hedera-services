@@ -71,21 +71,24 @@ public class BalanceChange {
 	private boolean isApprovedAllowance = false;
 	private AccountID payerID = null;
 
-	public static BalanceChange changingHbar(AccountAmount aa, AccountID payerID) {
+	public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
 	}
 
-	public static BalanceChange changingFtUnits(Id token, TokenID tokenId, AccountAmount aa, AccountID payerID) {
+	public static BalanceChange changingFtUnits(
+			final Id token, final TokenID tokenId, final AccountAmount aa, final AccountID payerID) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE, payerID);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}
 
-	public static BalanceChange hbarAdjust(Id id, long amount, AccountID payerID, boolean isApprovedAllowance) {
+	public static BalanceChange hbarAdjust(
+			final Id id, final long amount, final AccountID payerID, final boolean isApprovedAllowance) {
 		return new BalanceChange(id, amount, payerID, isApprovedAllowance, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer, AccountID payerID) {
+	public static BalanceChange changingNftOwnership(
+			final Id token, final TokenID tokenId, final NftTransfer nftTransfer, final AccountID payerID) {
 		final var nftChange = new BalanceChange(
 				token,
 				nftTransfer.getSenderAccountID(),
@@ -98,7 +101,8 @@ public class BalanceChange {
 		return nftChange;
 	}
 
-	public static BalanceChange tokenAdjust(Id account, Id token, long amount, AccountID payerID, boolean isApprovedAllowance) {
+	public static BalanceChange tokenAdjust(
+			final Id account, final Id token, final long amount, final AccountID payerID, final boolean isApprovedAllowance) {
 		final var tokenChange = new BalanceChange(account, amount, payerID, isApprovedAllowance, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.payerID = payerID;
 		tokenChange.token = token;
@@ -107,7 +111,8 @@ public class BalanceChange {
 	}
 
 	/* ℏ constructor */
-	private BalanceChange(Id account, long amount, AccountID payerID, boolean isApprovedAllowance, ResponseCodeEnum code) {
+	private BalanceChange(
+			final Id account, final long amount, final AccountID payerID, final boolean isApprovedAllowance, final ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
@@ -123,7 +128,8 @@ public class BalanceChange {
 	}
 
 	/* HTS constructor */
-	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code, AccountID payerID) {
+	private BalanceChange(
+			final Id token, final AccountAmount aa, final ResponseCodeEnum code, final AccountID payerID) {
 		this.token = token;
 		this.accountId = aa.getAccountID();
 		this.alias = accountId.getAlias();
@@ -139,7 +145,8 @@ public class BalanceChange {
 	}
 
 	/* NFT constructor */
-	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
+	private BalanceChange(
+			final Id token, final AccountID sender, final AccountID receiver, final long serialNo, final ResponseCodeEnum code) {
 		this.token = token;
 		this.nftId = new NftId(token.shard(), token.realm(), token.num(), serialNo);
 		this.accountId = sender;

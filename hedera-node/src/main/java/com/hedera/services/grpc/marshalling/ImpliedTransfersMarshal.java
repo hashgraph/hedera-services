@@ -196,11 +196,6 @@ public class ImpliedTransfersMarshal {
 					var existingChange = aggregatedFungibleTokenChanges.get(tokenAndAccountId);
 					existingChange.aggregateUnits(currChange.getAggregatedUnits());
 					existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
-
-					// not needed as the exiting change would already have the decimals set if needed
-//					if (!existingChange.hasExpectedDecimals() && currChange.hasExpectedDecimals()) {
-//						existingChange.setExpectedDecimals(currChange.getExpectedDecimals());
-//					}
 				}
 			}
 			changes.addAll(aggregatedFungibleTokenChanges.values());

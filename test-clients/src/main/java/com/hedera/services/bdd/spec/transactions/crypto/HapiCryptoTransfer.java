@@ -599,23 +599,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 					}
 					return accountAmounts.stream();
 				}).collect(Collectors.toList());
-
-//		List<AccountAmount> aaList = new ArrayList<>();
-//		Map<AccountID, Long> aaMap = new HashMap<>();
-//		for (var aa : list) {
-//			if (aaMap.containsKey(aa.getAccountID())) {
-//				aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
-//			} else {
-//				aaMap.put(aa.getAccountID(), aa.getAmount());
-//			}
-//		}
-//		for (var entry : aaMap.entrySet()) {
-//			aaList.add(AccountAmount.newBuilder()
-//					.setAccountID(entry.getKey())
-//					.setAmount(entry.getValue())
-//					.build());
-//		}
-//		return aaList;
 	}
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
