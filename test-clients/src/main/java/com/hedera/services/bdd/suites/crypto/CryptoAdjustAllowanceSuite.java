@@ -148,7 +148,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjust", 0.05, 0.01),
+						validateChargedUsdWithin("adjust", 0.05063, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 100L)
@@ -156,7 +156,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustTokenTxn", 0.05012, 0.01)
+						validateChargedUsdWithin("adjustTokenTxn", 0.05075, 0.01)
 				)
 				.then(
 						cryptoAdjustAllowance()
@@ -166,7 +166,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustNftTxn", 0.05024, 0.01),
+						validateChargedUsdWithin("adjustNftTxn", 0.05088, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender1", true, List.of())
@@ -174,7 +174,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustForAllNftTxn", 0.05, 0.01),
+						validateChargedUsdWithin("adjustForAllNftTxn", 0.05063, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
@@ -184,7 +184,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("adjustTxn", 0.05318, 0.01),
 //						getAccountInfo(owner)
 //								.has(accountWith()
 //										.cryptoAllowancesCount(2)
@@ -209,7 +209,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustTokenSingle", 0.05, 0.01),
+						validateChargedUsdWithin("adjustTokenSingle", 0.05005, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender2", false, List.of(2L))
@@ -217,7 +217,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustNftSingle", 0.05, 0.01),
+						validateChargedUsdWithin("adjustNftSingle", 0.05024, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender2", false, List.of(-2L))

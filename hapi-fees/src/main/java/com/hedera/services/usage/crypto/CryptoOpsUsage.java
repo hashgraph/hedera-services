@@ -244,7 +244,7 @@ public class CryptoOpsUsage {
 				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
 				var newSerials = a.getValue().serialNums();
 				for (var s : newSerials) {
-					if (!existingSerials.contains(s)) {
+					if (!existingSerials.contains(s) && s > 0) {
 						counter++;
 					}
 				}
