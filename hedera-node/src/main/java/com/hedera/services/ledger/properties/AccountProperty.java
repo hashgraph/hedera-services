@@ -31,6 +31,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -221,7 +222,13 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	CRYPTO_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setCryptoAllowances(new TreeMap<>((Map<EntityNum, Long>) t));
+			return (a, t) -> {
+				if (t instanceof TreeMap) {
+					a.setCryptoAllowances((SortedMap<EntityNum, Long>) t);
+				} else {
+					a.setCryptoAllowances(new TreeMap<>((Map<EntityNum, Long>) t));
+				}
+			};
 		}
 
 		@Override
@@ -232,7 +239,13 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	FUNGIBLE_TOKEN_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setFungibleTokenAllowances(new TreeMap<>((Map<FcTokenAllowanceId, Long>) t));
+			return (a, t) -> {
+				if (t instanceof TreeMap) {
+					a.setFungibleTokenAllowances((SortedMap<FcTokenAllowanceId, Long>) t);
+				} else {
+					a.setFungibleTokenAllowances(new TreeMap<>((Map<FcTokenAllowanceId, Long>) t));
+				}
+			};
 		}
 
 		@Override
@@ -243,7 +256,13 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	NFT_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setNftAllowances(new TreeMap<>((Map<FcTokenAllowanceId, FcTokenAllowance>) t));
+			return (a, t) -> {
+				if (t instanceof TreeMap) {
+					a.setNftAllowances((SortedMap<FcTokenAllowanceId, FcTokenAllowance>) t);
+				} else {
+					a.setNftAllowances(new TreeMap<>((Map<FcTokenAllowanceId, FcTokenAllowance>) t));
+				}
+			};
 		}
 
 		@Override
