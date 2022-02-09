@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -171,6 +172,8 @@ class AssociatePrecompileTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
 
 	private HTSPrecompiledContract subject;
 
@@ -180,7 +183,7 @@ class AssociatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

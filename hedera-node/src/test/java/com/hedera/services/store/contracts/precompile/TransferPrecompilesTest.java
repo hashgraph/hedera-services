@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -198,6 +199,8 @@ class TransferPrecompilesTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
 
 	private HTSPrecompiledContract subject;
 
@@ -207,7 +210,7 @@ class TransferPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

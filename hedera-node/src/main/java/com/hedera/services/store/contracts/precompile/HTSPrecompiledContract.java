@@ -30,6 +30,7 @@ import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
@@ -76,13 +77,17 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -179,6 +184,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
+	private final UsagePricesProvider resourceCosts;
 
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
@@ -242,7 +248,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private WorldLedgers ledgers;
 	private Address originator;
 	private HederaStackedWorldStateUpdater updater;
-
+	private boolean isTokenReadOnlyTransaction = false;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -259,7 +265,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ImpliedTransfersMarshal impliedTransfersMarshal,
 			final Provider<FeeCalculator> feeCalculator,
 			final StateView currentView,
-			final PrecompilePricingUtils precompilePricingUtils
+			final PrecompilePricingUtils precompilePricingUtils,
+			final UsagePricesProvider resourceCosts
 	) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
@@ -275,6 +282,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.feeCalculator = feeCalculator;
 		this.currentView = currentView;
 		this.precompilePricingUtils = precompilePricingUtils;
+		this.resourceCosts = resourceCosts;
 	}
 
 	@Override
@@ -305,7 +313,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return null;
 		}
 
-		computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
+		if (isTokenReadOnlyTransaction) {
+			computeViewFunctionGasRequirement(messageFrame.getBlockValues().getTimestamp());
+		} else {
+			computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
+		}
 
 		return computeInternal(messageFrame);
 	}
@@ -316,20 +328,45 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
-		Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
 				blockTimestamp).build();
-		long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-		long calculatedFeeInTinybars = gasFeeInTinybars(
+		final long calculatedFeeInTinybars = gasFeeInTinybars(
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
 
-		long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-		long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
 
 		// convert to gas cost
-		Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+
+		// charge premium
+		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+	}
+
+	void computeViewFunctionGasRequirement(final long blockTimestamp) {
+		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
+				blockTimestamp).build();
+		final var usagePrices = resourceCosts.defaultPricesGiven(HederaFunctionality.TokenGetInfo, timestamp);
+		final var transactionGetRecordQuery = TransactionGetRecordQuery.newBuilder()
+				.build();
+		final var query = Query.newBuilder().setTransactionGetRecord(transactionGetRecordQuery);
+		final var fee =
+				feeCalculator.get().estimatePayment(query.buildPartial(), usagePrices, currentView, timestamp,
+						ResponseType.ANSWER_ONLY);
+
+		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+
+		final long calculatedFeeInTinybars = fee.getNetworkFee() + fee.getNodeFee() + fee.getServiceFee();
+
+		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+
+		// convert to gas cost
+		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
 		// charge premium
 		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
@@ -359,11 +396,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						final var tokenAddress = input.slice(4, 20);
 						final var tokenID = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArray());
 						final var nestedInput = input.slice(24);
-						final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
+						final var tokensLedger = ledgers.tokens();
 						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(tokensLedger.get(tokenID,
 								TOKEN_TYPE));
 
 						Precompile nestedPrecompile;
+						this.isTokenReadOnlyTransaction = true;
 						switch (nestedInput.getInt(0)) {
 							case ABI_ID_NAME -> nestedPrecompile = new NamePrecompile(tokenID);
 							case ABI_ID_SYMBOL -> nestedPrecompile = new SymbolPrecompile(tokenID);
@@ -372,10 +410,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
 							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID, isFungibleToken);
 							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID, isFungibleToken);
-							case ABI_ID_ERC_TRANSFER,
-									ABI_ID_ERC_TRANSFER_FROM -> nestedPrecompile =
-									new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
-							default -> nestedPrecompile = null;
+							case ABI_ID_ERC_TRANSFER, ABI_ID_ERC_TRANSFER_FROM -> {
+								this.isTokenReadOnlyTransaction = false;
+								nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
+							}
+							default -> {
+								this.isTokenReadOnlyTransaction = false;
+								nestedPrecompile = null;
+							}
 						}
 						yield nestedPrecompile;
 					}

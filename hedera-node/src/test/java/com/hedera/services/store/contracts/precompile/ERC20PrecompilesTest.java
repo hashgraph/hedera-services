@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -159,8 +160,6 @@ public class ERC20PrecompilesTest {
     @Mock
     private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock
-    private MerkleToken merkleToken;
-    @Mock
     private ExpiringCreations creator;
     @Mock
     private DissociationFactory dissociationFactory;
@@ -192,6 +191,8 @@ public class ERC20PrecompilesTest {
     private ContractAliases aliases;
     @Mock
     private TxnReceipt.Builder txnReceipt;
+    @Mock
+    private UsagePricesProvider resourceCosts;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -202,7 +203,7 @@ public class ERC20PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils);
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
