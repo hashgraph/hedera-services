@@ -133,7 +133,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
-	private AbstractLedgerWorldUpdater worldUpdater;
+	private HederaStackedWorldStateUpdater worldUpdater;
 	@Mock
 	private WorldLedgers wrappedLedgers;
 	@Mock

@@ -225,6 +225,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//tokenURI(uint256 tokenId)
 	private static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
+	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+	//Transfer(address indexed from, address indexed to, uint256 value)
+	private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+
 	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
@@ -447,7 +451,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				.setContractID(EntityIdUtils.contractIdFromEvmAddress(
 						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
 				.setGasUsed(this.gasRequirement.toLong())
-				.setContractCallResult(ByteString.copyFrom(result.toArray()));
+				.setContractCallResult(result!=null ? ByteString.copyFrom(result.toArray()) : ByteString.EMPTY);
 		if (errorStatus.isPresent()) {
 			contractCallResult.setErrorMessage(errorStatus.get().name());
 		}
@@ -1058,8 +1062,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				}
 			}
 
-			return EncodingFacade.generateLog(logger, true, sender,
-					receiver, amount);
+			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+					.forEventSignature(TRANSFER_EVENT)
+					.forIndexedArgument(sender)
+					.forIndexedArgument(receiver)
+					.forArgument(amount).build();
 		}
 
 		private Log getLogForNftExchange(final Address logger) {
@@ -1069,18 +1076,29 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
 			final var serialNumber = nftExchange.getSerialNumber();
 
-			return EncodingFacade.generateLog(logger, true, sender,
-					receiver, serialNumber);
+			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+					.forEventSignature(TRANSFER_EVENT)
+					.forIndexedArgument(sender)
+					.forIndexedArgument(receiver)
+					.forIndexedArgument(serialNumber).build();
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			if(isFungible && SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
+			if(isFungible) {
 				return encoder.ercFungibleTransfer(true);
-			} else if(isFungible) {
-				return encoder.ercFungibleTransfer(false);
-			} else {
+			}
+			else {
 				return Bytes.EMPTY;
+			}
+		}
+
+		@Override
+		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+			if(isFungible) {
+				return resultFrom(status);
+			} else {
+				return null;
 			}
 		}
 	}

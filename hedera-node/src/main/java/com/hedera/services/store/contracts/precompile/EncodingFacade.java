@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.sigs.utils.MiscCryptoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -33,7 +34,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -171,7 +171,7 @@ public class EncodingFacade {
 		private String metadata;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			switch(functionType) {
+			switch (functionType) {
 				case MINT -> tupleType = mintReturnType;
 				case BURN -> tupleType = burnReturnType;
 				case TOTAL_SUPPLY -> tupleType = totalSupplyType;
@@ -241,7 +241,7 @@ public class EncodingFacade {
 		private Bytes build() {
 			Tuple result;
 
-			switch(functionType) {
+			switch (functionType) {
 				case MINT -> result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
 				case BURN -> result = Tuple.of(status, BigInteger.valueOf(totalSupply));
 				case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
@@ -259,69 +259,86 @@ public class EncodingFacade {
 		}
 	}
 
-	public static Log generateLog(final Address logger,  boolean indexed, final Object... params) {
-		final var paramsConverted = convertParamsForLog(params);
-		final var tuple = Tuple.of(paramsConverted.toArray());
-		final var tupleType = generateTupleType(params);
-		if(indexed) {
-			return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), generateLogTopics(params));
-		} else {
-			return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), new ArrayList<>());
-		}
-	}
-
-	private static List<Object> convertParamsForLog(final Object... params) {
-		final List<Object> paramsConverted = new ArrayList<>();
-		for (final var param : params) {
-			if (param instanceof Address) {
-				paramsConverted.add(convertBesuAddressToHeadlongAddress((Address) param));
-			} else if (param instanceof Long) {
-				paramsConverted.add(BigInteger.valueOf((Long) param));
-			} else {
-				paramsConverted.add(param);
-			}
-		}
-
-		return paramsConverted;
-	}
-
-	private static TupleType generateTupleType(final Object... params) {
+	public static class LogBuilder {
+		private Address logger;
+		private List<Object> arguments = new ArrayList<>();
+		private List<LogTopic> topics = new ArrayList<>();
 		final StringBuilder tupleTypes = new StringBuilder("(");
-		for (final var param : params) {
-			if (param instanceof Address) {
-				tupleTypes.append("address,");
-			} else if (param instanceof BigInteger || param instanceof Long) {
-				tupleTypes.append("uint256,");
-			} else if (param instanceof Boolean) {
-				tupleTypes.append("boolean,");
+
+		public static LogBuilder logBuilder() {
+			return new LogBuilder();
+		}
+
+		public LogBuilder forLogger(final Address logger) {
+			this.logger = logger;
+			return this;
+		}
+
+		public LogBuilder forEventSignature(final Bytes eventSignature) {
+			topics.add(generateLogTopic(eventSignature));
+			return this;
+		}
+
+		public LogBuilder forArgument(final Object param) {
+			arguments.add(convertParamForLog(param));
+			addTupleType(param, tupleTypes);
+			return this;
+		}
+
+		public LogBuilder forIndexedArgument(final Object param) {
+			topics.add(generateLogTopic(param));
+			return this;
+		}
+
+		public Log build() {
+			if(tupleTypes.length()>1) {
+				tupleTypes.deleteCharAt(tupleTypes.length() - 1);
+				tupleTypes.append(")");
+				final var tuple = Tuple.of(arguments.toArray());
+				final var tupleType = TupleType.parse(tupleTypes.toString());
+				return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), topics);
+			} else {
+				return new Log(logger, Bytes.EMPTY, topics);
 			}
 		}
-		//Delete last comma
-		tupleTypes.deleteCharAt(tupleTypes.length()-1);
-		tupleTypes.append(")");
 
-		return TupleType.parse(tupleTypes.toString());
-	}
-
-	private static List<LogTopic> generateLogTopics(final Object... params) {
-		final List<LogTopic> logTopics = new ArrayList<>();
-		for (final var param : params) {
+		private Object convertParamForLog(final Object param) {
 			if (param instanceof Address) {
-				byte[] array = ((Address) param).toArray();
-				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
-			} else if (param instanceof BigInteger) {
-				byte[] array = ((BigInteger) param).toByteArray();
-				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
+				return convertBesuAddressToHeadlongAddress((Address) param);
 			} else if (param instanceof Long) {
-				byte[] array = BigInteger.valueOf((Long) param).toByteArray();
-				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
+				return BigInteger.valueOf((Long) param);
+			} else {
+				return param;
+			}
+		}
+
+		private static LogTopic generateLogTopic(final Object param) {
+			byte[] array = new byte[]{};
+			if (param instanceof Address) {
+				array = ((Address) param).toArray();
+			} else if (param instanceof BigInteger) {
+				array = ((BigInteger) param).toByteArray();
+			} else if (param instanceof Long) {
+				array = BigInteger.valueOf((Long) param).toByteArray();
 			} else if (param instanceof Boolean) {
 				boolean value = (Boolean) param;
-				byte[] array = new byte[]{(byte) (value?1:0)};
-				logTopics.add(LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array))));
+				array = new byte[]{(byte) (value ? 1 : 0)};
+			} else if (param instanceof Bytes) {
+				array = ((Bytes) param).toArray();
+			}
+
+			return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));
+		}
+
+		private static void addTupleType(final Object param, final StringBuilder stringBuilder) {
+			if (param instanceof Address) {
+				stringBuilder.append("address,");
+			} else if (param instanceof BigInteger || param instanceof Long) {
+				stringBuilder.append("uint256,");
+			} else if (param instanceof Boolean) {
+				stringBuilder.append("boolean,");
 			}
 		}
-		return logTopics;
 	}
 
 	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
