@@ -48,6 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * {@code BackingAccounts} and {@code BackingTokenRels} components whose APIs still use gRPC types.
  */
 public class BalanceChange {
+	public static final AccountID DEFAULT_PAYER = AccountID.getDefaultInstance();
+	public static final boolean DEFAULT_ALLOWANCE_APPROVAL  = false;
+
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
 	private Id token;

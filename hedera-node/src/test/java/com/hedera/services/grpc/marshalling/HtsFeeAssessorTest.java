@@ -54,7 +54,7 @@ class HtsFeeAssessorTest {
 		// setup:
 		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 		// and:
-		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, null, false);
+		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, BalanceChange.DEFAULT_PAYER, BalanceChange.DEFAULT_ALLOWANCE_APPROVAL);
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
 		given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
@@ -76,7 +76,7 @@ class HtsFeeAssessorTest {
 		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
 		// given:
-		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, null, false);
+		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, BalanceChange.DEFAULT_PAYER, BalanceChange.DEFAULT_ALLOWANCE_APPROVAL);
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
 		// when:
@@ -84,7 +84,7 @@ class HtsFeeAssessorTest {
 
 		// then:
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
-		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee, null, false));
+		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee, BalanceChange.DEFAULT_PAYER, BalanceChange.DEFAULT_ALLOWANCE_APPROVAL));
 		// and:
 		assertEquals(1, accumulator.size());
 		assertEquals(expectedAssess, accumulator.get(0));
@@ -96,7 +96,7 @@ class HtsFeeAssessorTest {
 		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
 		// given:
-		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, null, false);
+		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee, BalanceChange.DEFAULT_PAYER, BalanceChange.DEFAULT_ALLOWANCE_APPROVAL);
 		expectedPayerChange.setExemptFromCustomFees(true);
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
@@ -105,7 +105,7 @@ class HtsFeeAssessorTest {
 
 		// then:
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
-		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee, null, false));
+		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee, BalanceChange.DEFAULT_PAYER, BalanceChange.DEFAULT_ALLOWANCE_APPROVAL));
 		// and:
 		assertEquals(1, accumulator.size());
 		assertEquals(expectedAssess, accumulator.get(0));
