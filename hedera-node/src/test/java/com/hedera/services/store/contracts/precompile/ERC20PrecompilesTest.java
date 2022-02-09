@@ -78,6 +78,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
@@ -230,6 +231,12 @@ public class ERC20PrecompilesTest {
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
 
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -241,6 +248,7 @@ public class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
@@ -263,8 +271,14 @@ public class ERC20PrecompilesTest {
                 .willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
-
         given(encoder.encodeSymbol(any())).willReturn(successResult);
+
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.initializeLedgers(frame);
@@ -277,6 +291,7 @@ public class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
@@ -303,6 +318,13 @@ public class ERC20PrecompilesTest {
         given(tokens.get(any(), any())).willReturn(10);
         given(encoder.encodeDecimals(10)).willReturn(successResult);
 
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -314,6 +336,7 @@ public class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
@@ -339,6 +362,13 @@ public class ERC20PrecompilesTest {
         given(tokens.get(any(), any())).willReturn(10L);
         given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
 
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -350,11 +380,14 @@ public class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
     void balanceOf() {
         givenMinimalFrameContext();
+
+        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_BALANCE_OF_TOKEN);
@@ -377,6 +410,12 @@ public class ERC20PrecompilesTest {
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
 
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -388,6 +427,7 @@ public class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        entityIdUtils.close();
     }
 
     @Test
@@ -434,10 +474,6 @@ public class ERC20PrecompilesTest {
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-
-
-        given(hederaTokenStore.get(any())).willReturn(merkleToken);
-        given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(decoder.decodeErcTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
@@ -450,7 +486,9 @@ public class ERC20PrecompilesTest {
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.ercFungibleTransfer(true)).willReturn(successResult);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
@@ -515,8 +553,6 @@ public class ERC20PrecompilesTest {
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
 
-        given(hederaTokenStore.get(any())).willReturn(merkleToken);
-        given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(true), any())).willReturn(
                 Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 
@@ -529,7 +565,9 @@ public class ERC20PrecompilesTest {
                 .thenReturn(precompiledContract);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
+        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.ercFungibleTransfer(true)).willReturn(successResult);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
