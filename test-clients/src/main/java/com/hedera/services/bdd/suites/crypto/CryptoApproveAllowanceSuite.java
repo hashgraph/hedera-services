@@ -75,22 +75,22 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				happyPathWorks(),
-//				emptyAllowancesRejected(),
-//				spenderSameAsOwnerFails(),
-//				spenderAccountRepeatedFails(),
-//				negativeAmountFailsForFungible(),
-//				tokenNotAssociatedToAccountFails(),
-//				invalidTokenTypeFails(),
-//				validatesSerialNums(),
-//				tokenExceedsMaxSupplyFails(),
-//				OwnerNotPayerFails(),
-//				serialsWipedIfApprovedForAll(),
-//				serialsNotValidatedIfApprovedForAll(),
-//				exceedsTransactionLimit(),
-//				exceedsAccountLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked(),
-//				serialsInAscendingOrder(),
+				happyPathWorks(),
+				emptyAllowancesRejected(),
+				spenderSameAsOwnerFails(),
+				spenderAccountRepeatedFails(),
+				negativeAmountFailsForFungible(),
+				tokenNotAssociatedToAccountFails(),
+				invalidTokenTypeFails(),
+				validatesSerialNums(),
+				tokenExceedsMaxSupplyFails(),
+				OwnerNotPayerFails(),
+				serialsWipedIfApprovedForAll(),
+				serialsNotValidatedIfApprovedForAll(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked(),
+				serialsInAscendingOrder(),
 				feesAsExpected()
 		});
 	}
@@ -187,8 +187,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
-										.nftAllowancesCount(1)
-										.tokenAllowancesCount(1)
+										.nftAllowancesCount(3)
+										.tokenAllowancesCount(2)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
@@ -1146,18 +1146,20 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
 								.via("baseApproveTxn")
+								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("baseApproveTxn", 0.05, 2.5),
+						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender1, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
 								.via("approveTxn")
+								.blankMemo()
 								.logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.054, 2.5),
+						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)

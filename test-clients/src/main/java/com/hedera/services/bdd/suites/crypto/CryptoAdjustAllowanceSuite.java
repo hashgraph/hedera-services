@@ -76,22 +76,22 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				happyPathWorks(),
-//				emptyAllowancesRejected(),
-//				spenderSameAsOwnerFails(),
-//				spenderAccountRepeatedFails(),
-//				negativeAmountWorksAsExpectedForFungible(),
-//				tokenNotAssociatedToAccountFails(),
-//				invalidTokenTypeFails(),
-//				validatesSerialNums(),
-//				tokenExceedsMaxSupplyFails(),
-//				ownerNotPayerFails(),
-//				serialsWipedIfApprovedForAll(),
-//				serialsNotValidatedIfApprovedForAll(),
-//				serialsInAscendingOrder(),
-//				exceedsTransactionLimit(),
-//				exceedsAccountLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked(),
+				happyPathWorks(),
+				emptyAllowancesRejected(),
+				spenderSameAsOwnerFails(),
+				spenderAccountRepeatedFails(),
+				negativeAmountWorksAsExpectedForFungible(),
+				tokenNotAssociatedToAccountFails(),
+				invalidTokenTypeFails(),
+				validatesSerialNums(),
+				tokenExceedsMaxSupplyFails(),
+				ownerNotPayerFails(),
+				serialsWipedIfApprovedForAll(),
+				serialsNotValidatedIfApprovedForAll(),
+				serialsInAscendingOrder(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked(),
 				feesAsExpected()
 		});
 	}
@@ -185,15 +185,15 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.blankMemo()
 								.logged(),
 						validateChargedUsdWithin("adjustTxn", 0.05318, 0.01),
-//						getAccountInfo(owner)
-//								.has(accountWith()
-//										.cryptoAllowancesCount(2)
-//										.nftAllowancesCount(1)
-//										.tokenAllowancesCount(1)
-//										.cryptoAllowancesContaining(spender, 100L)
-//										.tokenAllowancesContaining(token, spender, 100L)
-//										.nftAllowancesContaining(nft, spender, false, List.of(1L))
-//								),
+						getAccountInfo(owner)
+								.has(accountWith()
+										.cryptoAllowancesCount(2)
+										.nftAllowancesCount(3)
+										.tokenAllowancesCount(2)
+										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+										.nftAllowancesContaining(nft, spender, false, List.of(1L))
+								),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 200L)
@@ -234,13 +234,11 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.blankMemo()
 								.logged(),
 						validateChargedUsdWithin("adjustNftSingleApproveForAll", 0.05, 0.01),
-
-
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
-										.nftAllowancesCount(1)
-										.tokenAllowancesCount(1)
+										.nftAllowancesCount(3)
+										.tokenAllowancesCount(2)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
@@ -1227,15 +1225,16 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
+								.blankMemo()
 								.via("baseAdjustTxn"),
-						validateChargedUsdWithin("baseAdjustTxn", 0.05, 2.5),
+						validateChargedUsdWithin("baseAdjustTxn", 0.05063, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
 								.via("otherAdjustTxn"),
-						validateChargedUsdWithin("otherAdjustTxn", 0.054, 2.5),
+						validateChargedUsdWithin("otherAdjustTxn", 0.05296, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
@@ -1252,9 +1251,10 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender, 10L)
 								.addTokenAllowance(owner, token, spender, -10L)
 								.addNftAllowance(owner, nft, spender, false, List.of(-1L, 2L))
-								.via("adjustTxn"),
-						validateChargedUsdWithin("adjustTxn", 0.051, 2.5),
-						// fee isless because only a serial number changed
+								.via("adjustTxn")
+								.logged(),
+						validateChargedUsdWithin("adjustTxn", 0.05173, 0.01),
+
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)

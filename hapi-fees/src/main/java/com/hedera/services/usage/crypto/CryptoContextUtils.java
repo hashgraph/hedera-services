@@ -24,10 +24,10 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class CryptoContextUtils {
 	private CryptoContextUtils() {
@@ -65,14 +65,6 @@ public class CryptoContextUtils {
 		return allowanceMap;
 	}
 
-	public static int countSerialNums(final Collection<ExtantCryptoContext.AllowanceMapValue> nftAllowancesListValues) {
-		int totalSerials = 0;
-		for (var allowance : nftAllowancesListValues) {
-			totalSerials += allowance.serialNums().size();
-		}
-		return totalSerials;
-	}
-
 	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
 		int totalSerials = 0;
 		for (var allowance : nftAllowancesList) {
@@ -80,4 +72,50 @@ public class CryptoContextUtils {
 		}
 		return totalSerials;
 	}
+
+	static int getNewSerials(
+			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances,
+			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
+		int counter = 0;
+		for (var a : newAllowances.entrySet()) {
+			final var isApprovedForAll = a.getValue().approvedForAll();
+			if (existingAllowances.containsKey(a.getKey()) && !isApprovedForAll) {
+				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
+				var newSerials = a.getValue().serialNums();
+				for (var s : newSerials) {
+					if (!existingSerials.contains(s) && s > 0) {
+						counter++;
+					}
+				}
+			} else {
+				if (!isApprovedForAll) {
+					counter += a.getValue().serialNums().size();
+				}
+			}
+		}
+		return counter;
+	}
+
+
+	static int getChangedCryptoKeys(final Set<Long> newKeys, final Set<Long> existingKeys) {
+		int counter = 0;
+		for (var key : newKeys) {
+			if (!existingKeys.contains(key)) {
+				counter++;
+			}
+		}
+		return counter;
+	}
+
+	static int getChangedTokenKeys(final Set<ExtantCryptoContext.AllowanceMapKey> newKeys,
+			final Set<ExtantCryptoContext.AllowanceMapKey> existingKeys) {
+		int counter = 0;
+		for (var key : newKeys) {
+			if (!existingKeys.contains(key)) {
+				counter++;
+			}
+		}
+		return counter;
+	}
 }
+

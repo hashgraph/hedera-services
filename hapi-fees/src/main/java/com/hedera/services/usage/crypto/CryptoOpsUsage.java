@@ -33,12 +33,13 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedCryptoKeys;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedTokenKeys;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getNewSerials;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -221,11 +222,11 @@ public class CryptoOpsUsage {
 
 		adjustedBytesCount += adjustedCryptoBytes * CRYPTO_ALLOWANCE_SIZE;
 
-		final var adjustedTokenBytes = getChangedKeys(cryptoAdjustMeta.getTokenAllowances().keySet(),
+		final var adjustedTokenBytes = getChangedTokenKeys(cryptoAdjustMeta.getTokenAllowances().keySet(),
 				ctx.currentTokenAllowances().keySet());
 		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
 
-		final var adjustedNftBytes = getChangedKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
+		final var adjustedNftBytes = getChangedTokenKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
 				ctx.currentNftAllowances().keySet());
 		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
 
@@ -233,47 +234,5 @@ public class CryptoOpsUsage {
 		adjustedBytesCount += adjustedSerials * LONG_SIZE;
 
 		return adjustedBytesCount;
-	}
-
-	private int getNewSerials(
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances,
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
-		int counter = 0;
-		for (var a : newAllowances.entrySet()) {
-			if (existingAllowances.containsKey(a.getKey())) {
-				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
-				var newSerials = a.getValue().serialNums();
-				for (var s : newSerials) {
-					if (!existingSerials.contains(s) && s > 0) {
-						counter++;
-					}
-				}
-			} else {
-				counter += a.getValue().serialNums().size();
-			}
-		}
-		return counter;
-	}
-
-
-	private int getChangedCryptoKeys(final Set<Long> newKeys, final Set<Long> existingKeys) {
-		int counter = 0;
-		for (var key : newKeys) {
-			if (!existingKeys.contains(key)) {
-				counter++;
-			}
-		}
-		return counter;
-	}
-
-	private int getChangedKeys(final Set<ExtantCryptoContext.AllowanceMapKey> newKeys,
-			final Set<ExtantCryptoContext.AllowanceMapKey> existingKeys) {
-		int counter = 0;
-		for (var key : newKeys) {
-			if (!existingKeys.contains(key)) {
-				counter++;
-			}
-		}
-		return counter;
 	}
 }

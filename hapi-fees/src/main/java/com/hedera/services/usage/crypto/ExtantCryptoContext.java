@@ -179,26 +179,6 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(Map<Long, Long> currentCryptoAllowances) {
-			this.currentCryptoAllowances = currentCryptoAllowances;
-			mask |= CRYPTO_ALLOWANCES_MASK;
-			return this;
-		}
-
-		public ExtantCryptoContext.Builder setCurrentTokenAllowances(
-				Map<AllowanceMapKey, Long> currentTokenAllowances) {
-			this.currentTokenAllowances = currentTokenAllowances;
-			mask |= TOKEN_ALLOWANCES_MASK;
-			return this;
-		}
-
-		public ExtantCryptoContext.Builder setCurrentNftAllowances(
-				Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances) {
-			this.currentNftAllowances = currentNftAllowances;
-			mask |= NFT_ALLOWANCES_MASK;
-			return this;
-		}
-
 		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(List<CryptoAllowance> currentCryptoAllowances) {
 			this.currentCryptoAllowances = convertToCryptoMap(currentCryptoAllowances);
 			mask |= CRYPTO_ALLOWANCES_MASK;
