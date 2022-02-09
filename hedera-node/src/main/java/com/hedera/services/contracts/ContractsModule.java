@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 
 @Module(includes = {
 		StoresModule.class
@@ -184,7 +185,7 @@ public interface ContractsModule {
 	@Binds
 	@Singleton
 	@IntoMap
-	@StringKey("0x167")
+	@StringKey(HTS_PRECOMPILED_CONTRACT_ADDRESS)
 	PrecompiledContract bindHTSPrecompile(HTSPrecompiledContract htsPrecompiledContract);
 
 
