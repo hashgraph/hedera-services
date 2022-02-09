@@ -75,22 +75,22 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				happyPathWorks(),
-				emptyAllowancesRejected(),
-				spenderSameAsOwnerFails(),
-				spenderAccountRepeatedFails(),
-				negativeAmountFailsForFungible(),
-				tokenNotAssociatedToAccountFails(),
-				invalidTokenTypeFails(),
-				validatesSerialNums(),
-				tokenExceedsMaxSupplyFails(),
-				OwnerNotPayerFails(),
-				serialsWipedIfApprovedForAll(),
-				serialsNotValidatedIfApprovedForAll(),
-				exceedsTransactionLimit(),
-				exceedsAccountLimit(),
-				succeedsWhenTokenPausedFrozenKycRevoked(),
-				serialsInAscendingOrder(),
+//				happyPathWorks(),
+//				emptyAllowancesRejected(),
+//				spenderSameAsOwnerFails(),
+//				spenderAccountRepeatedFails(),
+//				negativeAmountFailsForFungible(),
+//				tokenNotAssociatedToAccountFails(),
+//				invalidTokenTypeFails(),
+//				validatesSerialNums(),
+//				tokenExceedsMaxSupplyFails(),
+//				OwnerNotPayerFails(),
+//				serialsWipedIfApprovedForAll(),
+//				serialsNotValidatedIfApprovedForAll(),
+//				exceedsTransactionLimit(),
+//				exceedsAccountLimit(),
+//				succeedsWhenTokenPausedFrozenKycRevoked(),
+//				serialsInAscendingOrder(),
 				feesAsExpected()
 		});
 	}
@@ -109,6 +109,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoCreate(spender)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("spender1")
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("spender2")
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
@@ -142,18 +144,46 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
 								.via("approve")
-								.fee(ONE_HBAR).logged(),
-						validateChargedUsdWithin("approve", 0.05, 2.5),
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.logged(),
+						validateChargedUsdWithin("approve", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(owner, "spender1", 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
-								.addNftAllowance(owner, nft, spender, false, List.of(1L))
-								.via("approveTxn")
-								.fee(ONE_HBAR).logged()
+								.via("approveTokenTxn")
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.logged(),
+						validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01)
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.0536, 2.5),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.via("approveNftTxn")
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.logged(),
+						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, "spender1", true, List.of())
+								.via("approveForAllNftTxn")
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.logged(),
+						validateChargedUsdWithin("approveForAllNftTxn", 0.05, 0.01),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, "spender2", 100L)
+								.addTokenAllowance(owner, token, "spender2", 100L)
+								.addNftAllowance(owner, nft, "spender2", false, List.of(1L))
+								.via("approveTxn")
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.logged(),
+						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)

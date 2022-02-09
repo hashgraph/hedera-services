@@ -33,11 +33,12 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerialNums;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -208,26 +209,71 @@ public class CryptoOpsUsage {
 		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoAdjustMeta.getEffectiveNow(), ctx.currentExpiry());
 
 		final var adjustedBytes = getAdjustedBytes(cryptoAdjustMeta, ctx);
-		accumulator.addRbs(adjustedBytes * lifeTime);
+		if (adjustedBytes > 0) {
+			accumulator.addRbs(adjustedBytes * lifeTime);
+		}
 	}
 
 	private long getAdjustedBytes(final CryptoAdjustAllowanceMeta cryptoAdjustMeta, final ExtantCryptoContext ctx) {
 		long adjustedBytesCount = 0;
-		final var adjustedCryptoBytes =
-				cryptoAdjustMeta.getCryptoAllowances().size() - ctx.currentCryptoAllowances().size();
-		adjustedBytesCount += adjustedCryptoBytes > 0 ? adjustedCryptoBytes * CRYPTO_ALLOWANCE_SIZE : 0;
+		final var adjustedCryptoBytes = getChangedCryptoKeys(cryptoAdjustMeta.getCryptoAllowances().keySet(),
+				ctx.currentCryptoAllowances().keySet());
 
-		final var adjustedTokenBytes =
-				cryptoAdjustMeta.getTokenAllowances().size() - ctx.currentTokenAllowances().size();
-		adjustedBytesCount += adjustedTokenBytes > 0 ? adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE : 0;
+		adjustedBytesCount += adjustedCryptoBytes * CRYPTO_ALLOWANCE_SIZE;
 
-		final var adjustedNftBytes = cryptoAdjustMeta.getNftAllowances().size() - ctx.currentNftAllowances().size();
-		adjustedBytesCount += adjustedNftBytes > 0 ? adjustedNftBytes * NFT_ALLOWANCE_SIZE : 0;
+		final var adjustedTokenBytes = getChangedKeys(cryptoAdjustMeta.getTokenAllowances().keySet(),
+				ctx.currentTokenAllowances().keySet());
+		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
 
-		final var adjustedSerials = countSerialNums(cryptoAdjustMeta.getNftAllowances().values()) -
-				countSerialNums(ctx.currentNftAllowances().values());
-		adjustedBytesCount += adjustedSerials > 0 ? adjustedSerials * LONG_SIZE : 0;
+		final var adjustedNftBytes = getChangedKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
+				ctx.currentNftAllowances().keySet());
+		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
+
+		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances(), ctx.currentNftAllowances());
+		adjustedBytesCount += adjustedSerials * LONG_SIZE;
 
 		return adjustedBytesCount;
+	}
+
+	private int getNewSerials(
+			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances,
+			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
+		int counter = 0;
+		for (var a : newAllowances.entrySet()) {
+			if (existingAllowances.containsKey(a.getKey())) {
+				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
+				var newSerials = a.getValue().serialNums();
+				for (var s : newSerials) {
+					if (!existingSerials.contains(s)) {
+						counter++;
+					}
+				}
+			} else {
+				counter += a.getValue().serialNums().size();
+			}
+		}
+		return counter;
+	}
+
+
+	private int getChangedCryptoKeys(final Set<Long> newKeys, final Set<Long> existingKeys) {
+		int counter = 0;
+		for (var key : newKeys) {
+			if (!existingKeys.contains(key)) {
+				counter++;
+			}
+		}
+		return counter;
+	}
+
+	private int getChangedKeys(final Set<ExtantCryptoContext.AllowanceMapKey> newKeys,
+			final Set<ExtantCryptoContext.AllowanceMapKey> existingKeys) {
+		int counter = 0;
+		for (var key : newKeys) {
+			if (!existingKeys.contains(key)) {
+				counter++;
+			}
+		}
+		return counter;
 	}
 }
