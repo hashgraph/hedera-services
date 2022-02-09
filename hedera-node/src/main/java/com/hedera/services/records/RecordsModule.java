@@ -26,6 +26,8 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.stream.CurrentRecordStreamType;
+import com.hedera.services.stream.RecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Platform;
@@ -44,6 +46,10 @@ import java.util.function.Consumer;
 
 @Module
 public interface RecordsModule {
+	@Binds
+	@Singleton
+	RecordStreamType bindRecordStreamType(CurrentRecordStreamType recordStreamType);
+
 	@Binds
 	@Singleton
 	AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
@@ -73,7 +79,8 @@ public interface RecordsModule {
 			final MiscRunningAvgs runningAvgs,
 			final NodeLocalProperties nodeLocalProperties,
 			final @StaticAccountMemo String accountMemo,
-			final Hash initialHash
+			final Hash initialHash,
+			final RecordStreamType streamType
 	) {
 		try {
 			return new RecordStreamManager(
@@ -81,7 +88,8 @@ public interface RecordsModule {
 					runningAvgs,
 					nodeLocalProperties,
 					accountMemo,
-					initialHash);
+					initialHash,
+					streamType);
 		} catch (NoSuchAlgorithmException | IOException fatal) {
 			throw new IllegalStateException("Could not construct record stream manager", fatal);
 		}

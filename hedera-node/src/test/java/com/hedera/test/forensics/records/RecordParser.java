@@ -21,7 +21,6 @@ package com.hedera.test.forensics.records;
  */
 
 import com.hedera.services.stream.RecordStreamObject;
-import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
@@ -43,6 +42,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.hedera.services.stream.Release023xStreamType.RELEASE_023x_STREAM_TYPE;
+
 public class RecordParser {
 	private static final Logger log = LogManager.getLogger(RecordParser.class);
 
@@ -62,7 +63,9 @@ public class RecordParser {
 
 	public static List<RecordStreamObject> parseV5From(File fin) {
 		final List<RecordStreamObject> rsos = new ArrayList<>();
-		final Iterator iter = LinkedObjectStreamUtilities.parseStreamFile(fin, RecordStreamType.RECORD);
+		/* NOTE - until release 0.23.x the HAPI version in the file header was left at { 5, 0, 11, 0 }
+		* so for forensics on earlier records this may need a different StreamType implementation. */
+		final Iterator iter = LinkedObjectStreamUtilities.parseStreamFile(fin, RELEASE_023x_STREAM_TYPE);
 		for (; iter.hasNext(); ) {
 			final var next = iter.next();
 			if (next instanceof RecordStreamObject) {
