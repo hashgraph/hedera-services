@@ -42,13 +42,13 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.countSerials;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -121,10 +121,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-					.setCurrentCryptoAllowanceCount(details.getCryptoAllowancesCount())
-					.setCurrentTokenAllowanceCount(details.getTokenAllowancesCount())
-					.setCurrentNftAllowanceCount(details.getNftAllowancesCount())
-					.setCurrentNftSerialsCount(countSerials(details.getNftAllowancesList()))
+					.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
+					.setCurrentTokenAllowances(details.getTokenAllowancesList())
+					.setCurrentNftAllowances(details.getNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -134,10 +133,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)
 					.setCurrentMaxAutomaticAssociations(0)
-					.setCurrentCryptoAllowanceCount(0)
-					.setCurrentTokenAllowanceCount(0)
-					.setCurrentNftAllowanceCount(0)
-					.setCurrentNftSerialsCount(0)
+					.setCurrentCryptoAllowances(Collections.emptyList())
+					.setCurrentTokenAllowances(Collections.emptyList())
+					.setCurrentNftAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;
@@ -156,10 +154,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-					.setCurrentCryptoAllowanceCount(details.getCryptoAllowancesCount())
-					.setCurrentTokenAllowanceCount(details.getTokenAllowancesCount())
-					.setCurrentNftAllowanceCount(details.getNftAllowancesCount())
-					.setCurrentNftSerialsCount(countSerials(details.getNftAllowancesList()))
+					.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
+					.setCurrentTokenAllowances(details.getTokenAllowancesList())
+					.setCurrentNftAllowances(details.getNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -169,10 +166,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)
 					.setCurrentMaxAutomaticAssociations(0)
-					.setCurrentCryptoAllowanceCount(0)
-					.setCurrentTokenAllowanceCount(0)
-					.setCurrentNftAllowanceCount(0)
-					.setCurrentNftSerialsCount(0)
+					.setCurrentCryptoAllowances(Collections.emptyList())
+					.setCurrentTokenAllowances(Collections.emptyList())
+					.setCurrentNftAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;

@@ -30,7 +30,8 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -68,6 +69,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
@@ -368,10 +370,9 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(0)
-				.setCurrentTokenAllowanceCount(0)
-				.setCurrentNftAllowanceCount(0)
-				.setCurrentNftSerialsCount(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -389,10 +390,7 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForCryptoApprove() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
-		final var opMeta = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
+		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
 				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(Instant.now().getEpochSecond())
 				.build();
@@ -403,10 +401,9 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(1)
-				.setCurrentTokenAllowanceCount(2)
-				.setCurrentNftAllowanceCount(3)
-				.setCurrentNftSerialsCount(10)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -424,11 +421,8 @@ class AccessorBasedUsagesTest {
 	@Test
 	void worksAsExpectedForCryptoAdjust() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
-		final var opMeta = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
-				.aggregatedNftAllowancesWithSerials(10)
+		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
 				.effectiveNow(Instant.now().getEpochSecond())
 				.build();
 		final var cryptoContext = ExtantCryptoContext.newBuilder()
@@ -438,10 +432,9 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowanceCount(1)
-				.setCurrentTokenAllowanceCount(2)
-				.setCurrentNftAllowanceCount(3)
-				.setCurrentNftSerialsCount(10)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentNftAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 

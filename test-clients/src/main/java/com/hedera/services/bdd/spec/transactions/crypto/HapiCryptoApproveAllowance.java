@@ -29,7 +29,7 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -54,7 +54,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.crypto.CryptoAllowanceMeta.countSerials;
+import static com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta.countSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
@@ -106,13 +106,13 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
-						.setCurrentCryptoAllowanceCount(info.getCryptoAllowancesCount())
-						.setCurrentTokenAllowanceCount(info.getTokenAllowancesCount())
-						.setCurrentNftAllowanceCount(info.getNftAllowancesCount())
+						.setCurrentCryptoAllowances(info.getCryptoAllowancesList())
+						.setCurrentTokenAllowances(info.getTokenAllowancesList())
+						.setCurrentNftAllowances(info.getNftAllowancesList())
 						.setCurrentNftSerialsCount(countSerials(info.getNftAllowancesList()))
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-				var opMeta = new CryptoAllowanceMeta(_txn.getCryptoApproveAllowance(),
+				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),
 						_txn.getTransactionID().getTransactionValidStart().getSeconds());
 				var accumulator = new UsageAccumulator();
 				cryptoOpsUsage.cryptoApproveAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);

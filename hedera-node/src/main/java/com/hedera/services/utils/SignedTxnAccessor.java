@@ -30,7 +30,8 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
@@ -464,13 +465,13 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setCryptoApproveUsageMeta() {
-		final var cryptoApproveMeta = new CryptoAllowanceMeta(txn.getCryptoApproveAllowance(),
+		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(txn.getCryptoApproveAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoApproveMeta(this, cryptoApproveMeta);
 	}
 
 	private void setCryptoAdjustUsageMeta() {
-		final var cryptoAdjustMeta = new CryptoAllowanceMeta(txn.getCryptoAdjustAllowance(),
+		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(txn.getCryptoAdjustAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
 	}

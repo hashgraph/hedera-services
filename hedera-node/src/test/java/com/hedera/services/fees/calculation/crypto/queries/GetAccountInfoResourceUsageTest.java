@@ -131,13 +131,9 @@ class GetAccountInfoResourceUsageTest {
 		assertEquals(expiry, ctx.currentExpiry());
 		assertEquals(memo, ctx.currentMemo());
 		assertEquals(3, ctx.currentNumTokenRels());
-		assertEquals(1, ctx.currentCryptoAllowanceCount());
-		assertEquals(3, ctx.currentSerialNumsInNfts());
-		assertEquals(1, ctx.currentNftAllowancesCount());
-		assertEquals(1, ctx.currentTokenAllowancesCount());
-		assertEquals(1, ctx.currentCryptoAllowanceCount());
-		assertEquals(1, ctx.currentTokenAllowancesCount());
-		assertEquals(1, ctx.currentNftAllowancesCount());
+		assertEquals(1, ctx.currentCryptoAllowances().size());
+		assertEquals(1, ctx.currentNftAllowances().size());
+		assertEquals(1, ctx.currentTokenAllowances().size());
 		assertTrue(ctx.currentlyHasProxy());
 	}
 

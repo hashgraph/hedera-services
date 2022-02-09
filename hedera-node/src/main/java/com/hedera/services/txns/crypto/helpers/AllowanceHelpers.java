@@ -20,11 +20,17 @@
 
 package com.hedera.services.txns.crypto.helpers;
 
+import com.google.protobuf.BoolValue;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -128,5 +134,50 @@ public class AllowanceHelpers {
 
 	public static Long absolute(Long val) {
 		return val < 0 ? val * -1 : val;
+	}
+
+	public static List<NftAllowance> getNftAllowancesList(final MerkleAccount account) {
+		if (!account.state().getNftAllowances().isEmpty()) {
+			List<NftAllowance> nftAllowances = new ArrayList<>();
+			final var nftAllowance = NftAllowance.newBuilder();
+			for (var a : account.state().getNftAllowances().entrySet()) {
+				nftAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				nftAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				nftAllowance.setApprovedForAll(BoolValue.of(a.getValue().isApprovedForAll()));
+				nftAllowance.addAllSerialNumbers(a.getValue().getSerialNumbers());
+				nftAllowances.add(nftAllowance.build());
+			}
+			return nftAllowances;
+		}
+		return Collections.emptyList();
+	}
+
+	public static List<TokenAllowance> getFungibleTokenAllowancesList(final MerkleAccount account) {
+		if (!account.state().getFungibleTokenAllowances().isEmpty()) {
+			List<TokenAllowance> tokenAllowances = new ArrayList<>();
+			final var tokenAllowance = TokenAllowance.newBuilder();
+			for (var a : account.state().getFungibleTokenAllowances().entrySet()) {
+				tokenAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				tokenAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				tokenAllowance.setAmount(a.getValue());
+				tokenAllowances.add(tokenAllowance.build());
+			}
+			return tokenAllowances;
+		}
+		return Collections.emptyList();
+	}
+
+	public static List<CryptoAllowance> getCryptoAllowancesList(final MerkleAccount account) {
+		if (!account.state().getCryptoAllowances().isEmpty()) {
+			List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+			final var cryptoAllowance = CryptoAllowance.newBuilder();
+			for (var a : account.state().getCryptoAllowances().entrySet()) {
+				cryptoAllowance.setSpender(a.getKey().toGrpcAccountId());
+				cryptoAllowance.setAmount(a.getValue());
+				cryptoAllowances.add(cryptoAllowance.build());
+			}
+			return cryptoAllowances;
+		}
+		return Collections.emptyList();
 	}
 }
