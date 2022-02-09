@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -357,10 +358,9 @@ public class ERC721PrecompilesTest {
     @Test
     void ownerOf() {
         givenMinimalFrameContext();
-        givenLedgers();
-//        given(pretendArguments.slice(24)).willReturn(OWNER_OF);
-//        given(decoder.decodeOwnerOf(pretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -376,8 +376,8 @@ public class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(tokenRels.get(any(), any())).willReturn(10L);
-        given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(nfts.get(any(), eq(NftProperty.OWNER))).willReturn(EntityId.fromGrpcAccountId(sender));
+        given(encoder.encodeOwner(EntityIdUtils.asTypedEvmAddress(sender))).willReturn(successResult);
 
         // when:
         subject.initializeLedgers(frame);
@@ -472,8 +472,9 @@ public class ERC721PrecompilesTest {
     @Test
     void tokenURI() {
         givenMinimalFrameContext();
-        givenLedgers();
 
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -489,8 +490,8 @@ public class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(tokenRels.get(any(), any())).willReturn(10L);
-        given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(nfts.get(any(), eq(NftProperty.METADATA))).willReturn("Metadata".getBytes());
+        given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
 
         // when:
         subject.initializeLedgers(frame);
@@ -503,7 +504,6 @@ public class ERC721PrecompilesTest {
     }
 
     private void givenMinimalFrameContext() {
-        //given(frame.getContractAddress()).willReturn(contractAddr);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
