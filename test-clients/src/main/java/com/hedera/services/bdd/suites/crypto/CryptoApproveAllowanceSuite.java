@@ -75,22 +75,22 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				happyPathWorks(),
-				emptyAllowancesRejected(),
-				spenderSameAsOwnerFails(),
-				spenderAccountRepeatedFails(),
-				negativeAmountFailsForFungible(),
-				tokenNotAssociatedToAccountFails(),
-				invalidTokenTypeFails(),
-				validatesSerialNums(),
-				tokenExceedsMaxSupplyFails(),
-				OwnerNotPayerFails(),
-				serialsWipedIfApprovedForAll(),
-				serialsNotValidatedIfApprovedForAll(),
-				exceedsTransactionLimit(),
-				exceedsAccountLimit(),
-				succeedsWhenTokenPausedFrozenKycRevoked(),
-				serialsInAscendingOrder(),
+//				happyPathWorks(),
+//				emptyAllowancesRejected(),
+//				spenderSameAsOwnerFails(),
+//				spenderAccountRepeatedFails(),
+//				negativeAmountFailsForFungible(),
+//				tokenNotAssociatedToAccountFails(),
+//				invalidTokenTypeFails(),
+//				validatesSerialNums(),
+//				tokenExceedsMaxSupplyFails(),
+//				OwnerNotPayerFails(),
+//				serialsWipedIfApprovedForAll(),
+//				serialsNotValidatedIfApprovedForAll(),
+//				exceedsTransactionLimit(),
+//				exceedsAccountLimit(),
+//				succeedsWhenTokenPausedFrozenKycRevoked(),
+//				serialsInAscendingOrder(),
 				feesAsExpected()
 		});
 	}
@@ -143,7 +143,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender, 100L)
 								.via("approve")
 								.fee(ONE_HBAR).logged(),
-						validateChargedUsdWithin("approve", 0.01, 1),
+						validateChargedUsdWithin("approve", 0.05, 0.1),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender1", 100L)
@@ -153,7 +153,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR).logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.01, 5),
+						validateChargedUsdWithin("approveTxn", 0.05, 0.1),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)

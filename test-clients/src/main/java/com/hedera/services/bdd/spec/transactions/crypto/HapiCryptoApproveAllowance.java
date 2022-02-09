@@ -54,7 +54,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta.countSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
@@ -109,7 +108,6 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentCryptoAllowances(info.getCryptoAllowancesList())
 						.setCurrentTokenAllowances(info.getTokenAllowancesList())
 						.setCurrentNftAllowances(info.getNftAllowancesList())
-						.setCurrentNftSerialsCount(countSerials(info.getNftAllowancesList()))
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),
