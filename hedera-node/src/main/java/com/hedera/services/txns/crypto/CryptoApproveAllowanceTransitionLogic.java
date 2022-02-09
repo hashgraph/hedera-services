@@ -126,7 +126,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
+		final Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
@@ -152,13 +152,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftMap = new TreeMap<>(ownerAccount.getNftAllowances());
+		final Map<FcTokenAllowanceId, FcTokenAllowance> nftMap = new TreeMap<>(ownerAccount.getNftAllowances());
 		for (var allowance : nftAllowances) {
-			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
@@ -184,10 +183,9 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokensMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
+		final Map<FcTokenAllowanceId, Long> tokensMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
 		for (var allowance : tokenAllowances) {
-			final var spenderAccount = allowance.getSpender();
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 

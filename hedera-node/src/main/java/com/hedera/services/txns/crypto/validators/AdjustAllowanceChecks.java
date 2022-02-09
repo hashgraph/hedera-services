@@ -169,7 +169,7 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
-			final var approvedForAll = allowance.getApprovedForAll();
+			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
 			final var existingSerials = existingAllowances.containsKey(key) ?
 					existingAllowances.get(key).getSerialNumbers()
@@ -184,11 +184,10 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 				return validity;
 			}
 
-			if (!approvedForAll.getValue()) {
+			if (!approvedForAll) {
 				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
 				// state
-				validity = validateSerialNums(serialNums, ownerAccount, token, approvedForAll.getValue(),
-						existingSerials);
+				validity = validateSerialNums(serialNums, ownerAccount, token, existingSerials);
 				if (validity != OK) {
 					return validity;
 				}
@@ -215,13 +214,12 @@ public class AdjustAllowanceChecks implements AbstractAllowanceChecks {
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token,
-			final boolean approvedForAll,
 			List<Long> existingSerials) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 		}
 
-		if (!approvedForAll && serialNums.isEmpty()) {
+		if (serialNums.isEmpty()) {
 			return EMPTY_ALLOWANCES;
 		}
 

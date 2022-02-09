@@ -134,6 +134,32 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	}
 
 	@Test
+	void doesntDoAnythingIfAmountZeroForNonExistingKey() {
+		final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
+				0L).build();
+		final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
+				0L).setTokenId(token1).build();
+
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(List.of(cryptoAllowance1))
+								.addAllTokenAllowances(List.of(tokenAllowance1))
+				).build();
+
+		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+
+		subject.doStateTransition();
+
+		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
+		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
+	}
+
+	@Test
 	void wipesSerialsWhenApprovedForAll() {
 		givenValidTxnCtx();
 		addExistingAllowances();

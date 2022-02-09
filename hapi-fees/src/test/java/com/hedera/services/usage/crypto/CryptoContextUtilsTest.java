@@ -28,7 +28,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CryptoContextUtilsTest {
+class CryptoContextUtilsTest {
 	@Test
 	void getsNewSerials() {
 		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newMap = new HashMap<>();

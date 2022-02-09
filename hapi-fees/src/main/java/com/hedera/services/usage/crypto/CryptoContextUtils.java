@@ -78,7 +78,7 @@ public class CryptoContextUtils {
 			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			final var isApprovedForAll = a.getValue().approvedForAll();
+			final var isApprovedForAll = a.getValue().approvedForAll().booleanValue();
 			if (existingAllowances.containsKey(a.getKey()) && !isApprovedForAll) {
 				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
 				var newSerials = a.getValue().serialNums();

@@ -283,6 +283,9 @@ class AdjustAllowanceChecksTest {
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
 				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(ownerId).
 				addAllSerialNumbers(List.of(1L)).build();
+		final var badNftAllowance1 = NftAllowance.newBuilder().setSpender(spender2)
+				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(ownerId).
+				addAllSerialNumbers(List.of(1L, 1L)).build();
 		given(nftsLedger.exists(token2Nft1)).willReturn(true);
 		given(nftsLedger.exists(token2Nft2)).willReturn(true);
 
@@ -294,6 +297,10 @@ class AdjustAllowanceChecksTest {
 
 		nftAllowances.add(badNftAllowance);
 		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateNftAllowances(nftAllowances, owner));
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance1);
+		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, owner));
 	}
 
 	@Test
@@ -438,7 +445,16 @@ class AdjustAllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 		given(nftsLedger.exists(token2Nft1)).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
+		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
+	}
+
+	@Test
+	void returnsIfSerialsFail() {
+		final var serials = List.of(1L, 10L);
+		given(nftsLedger.exists(token2Nft1)).willReturn(false);
+
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -446,7 +462,7 @@ class AdjustAllowanceChecksTest {
 	void validatesIfNegativeSerialsNotInExistingList() {
 		final var serials = List.of(-100L, 10L);
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false,
+		var validity = subject.validateSerialNums(serials, owner, token2Model,
 				existingNftAllowances.get(
 								FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
 										EntityNum.fromAccountId(spender1)))
@@ -461,7 +477,7 @@ class AdjustAllowanceChecksTest {
 		given(nftsLedger.get(token2Nft1, OWNER)).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
@@ -470,11 +486,11 @@ class AdjustAllowanceChecksTest {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
 		var serials = List.of(1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 
 		serials = List.of(10L, 4L);
-		validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 20L);
@@ -485,21 +501,21 @@ class AdjustAllowanceChecksTest {
 		given(nftsLedger.exists(tokenNft2)).willReturn(true);
 
 		serials = List.of(20L, 4L);
-		validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(OK, validity);
 	}
 
 	@Test
 	void validateRepeatedNegativeSerials() {
 		final var serials = List.of(-1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
 	@Test
 	void validateGivingExistingDuplicateSerials() {
 		final var serials = List.of(12L, 1L);
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
@@ -507,7 +523,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
 		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(serials, owner, token2Model, false, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
 		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
