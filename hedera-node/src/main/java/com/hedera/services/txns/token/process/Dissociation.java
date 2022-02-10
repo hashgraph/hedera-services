@@ -53,7 +53,8 @@ public class Dissociation {
 			return new Dissociation(dissociatingAccountRel, null);
 		} else {
 			final var treasury = token.getTreasury();
-			final var dissociatedTokenTreasuryRel = tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury);
+			final var dissociatedTokenTreasuryRel =
+					tokenStore.loadPossiblyMissingTokenRelationship(token, treasury);
 			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		}
 	}
@@ -84,25 +85,39 @@ public class Dissociation {
 		return dissociatedTokenTreasuryRel;
 	}
 
-	public void updateModelRelsSubjectTo(OptionValidator validator) {
-		/* The token-treasury relationship is null either if (1) the token has been auto-removed; or
-		(2) the token is deleted and its treasury has already been dissociated.
-		In either case, there is nothing more to do or validate. */
-		if (dissociatedTokenTreasuryRel != null) {
-			/* Also nothing more to do for an association with a deleted token. */
-			if (dissociatingAccountRel.getToken().isDeleted()) {
-				updateModelsForDissociationFromDeletedToken();
-			} else {
-				updateModelsForDissociationFromActiveToken(validator);
-			}
+	/**
+	 * Updates the model of the account-token relationship (and possibly the model of the
+	 * treasury-token relationship) with the results of the dissociation logic, using the
+	 * given validator to check for an expired token.
+	 *
+	 * There are several cases:
+	 * <ol>
+	 *     <li>If the token is deleted or auto-removed, any fungible units or NFTs
+	 *     owned by the dissociating account simply "disappear" (generating a non-zero-sum
+	 *     token transfer list in the record).</li>
+	 *     <li>If the token is "detached" (i.e., expired but still within its grace
+	 *     period), then any fungible units owned by the dissociating account are
+	 *     transferred back to the treasury immediately; but if the token is non-fungible,
+	 *     the dissociation is still rejected with {@code ACCOUNT_STILL_OWNS_NFTS}.</li>
+	 *     <li>Otherwise, the dissociating account's relationship is removed if and only
+	 *     if it does not own any fungible units or NFTs of the token.</li>
+	 * </ol>
+	 *
+	 * @param validator the validator use to check for an expired token
+	 */
+	public void updateModelRelsSubjectTo(final OptionValidator validator) {
+		Objects.requireNonNull(dissociatingAccountRel);
+		final var token = dissociatingAccountRel.getToken();
+		if (token.isDeleted() || token.isBelievedToHaveBeenAutoRemoved()) {
+			updateModelsForDissociationFromDeletedOrRemovedToken();
+		} else {
+			updateModelsForDissociationFromActiveToken(validator);
 		}
 		dissociatingAccountRel.markAsDestroyed();
 		modelsAreUpdated = true;
 	}
 
-	private void updateModelsForDissociationFromDeletedToken() {
-		Objects.requireNonNull(dissociatingAccountRel);
-
+	private void updateModelsForDissociationFromDeletedOrRemovedToken() {
 		final var disappearingUnits = dissociatingAccountRel.getBalance();
 		dissociatingAccountRel.setBalance(0L);
 
@@ -116,7 +131,6 @@ public class Dissociation {
 
 	private void updateModelsForDissociationFromActiveToken(OptionValidator validator) {
 		Objects.requireNonNull(dissociatedTokenTreasuryRel);
-
 		final var token = dissociatingAccountRel.getToken();
 		final var isAccountTreasuryOfDissociatedToken =
 				dissociatingAccountId().equals(token.getTreasury().getId());
