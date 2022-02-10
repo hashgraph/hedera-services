@@ -1064,8 +1064,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+			return 100;
 		}
 	}
 
