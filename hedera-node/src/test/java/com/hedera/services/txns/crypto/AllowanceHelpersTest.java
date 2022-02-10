@@ -1,10 +1,9 @@
 package com.hedera.services.txns.crypto;
-
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +18,6 @@ package com.hedera.services.txns.crypto;
  * limitations under the License.
  * ‍
  */
-
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -41,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AllowanceHelpersTest {
 
 	@Test
-	void aggregatedCorrectly(){
+	void aggregatedCorrectly() {
 		Map<FcTokenAllowanceId, FcTokenAllowance> map = new TreeMap<>();
 		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(asToken("0.0.1000")),
 				EntityNum.fromAccountId(asAccount("0.0.1001")));
@@ -51,7 +49,7 @@ class AllowanceHelpersTest {
 	}
 
 	@Test
-	void aggregatedListCorrectly(){
+	void aggregatedListCorrectly() {
 		List<NftAllowance> list = new ArrayList<>();
 		final var Nftid = NftAllowance.newBuilder().setSpender(asAccount("0.0.1000"))
 				.addAllSerialNumbers(List.of(1L, 10L)).setTokenId(asToken("0.0.10001"))

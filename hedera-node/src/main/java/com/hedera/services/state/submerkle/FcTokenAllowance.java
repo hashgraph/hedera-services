@@ -31,6 +31,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -138,7 +139,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	public static FcTokenAllowance from(
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {
-		return new FcTokenAllowance(approvedForAll, serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(approvedForAll, modifiableList);
 	}
 
 	public static FcTokenAllowance from(final boolean approvedForAll) {
@@ -146,6 +149,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	}
 
 	public static FcTokenAllowance from(final List<Long> serialNumbers) {
-		return new FcTokenAllowance(serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(modifiableList);
 	}
 }
