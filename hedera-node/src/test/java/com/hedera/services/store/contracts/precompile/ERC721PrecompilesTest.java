@@ -116,7 +116,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class ERC721PrecompilesTest {
+class ERC721PrecompilesTest {
     @Mock
     private Bytes pretendArguments;
     @Mock
@@ -340,7 +340,7 @@ public class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.initializeLedgers(frame);
@@ -448,7 +448,7 @@ public class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
 

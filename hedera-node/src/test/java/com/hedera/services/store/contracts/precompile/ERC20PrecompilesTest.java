@@ -114,7 +114,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class ERC20PrecompilesTest {
+class ERC20PrecompilesTest {
     @Mock
     private Bytes pretendArguments;
     @Mock
@@ -237,7 +237,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -279,7 +279,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.initializeLedgers(frame);
@@ -324,7 +324,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.initializeLedgers(frame);
@@ -368,7 +368,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.initializeLedgers(frame);
@@ -416,7 +416,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -489,7 +489,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.ercFungibleTransfer(true)).willReturn(successResult);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
@@ -568,7 +568,7 @@ public class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
-        given(tokens.get(eq(token), eq(TOKEN_TYPE))).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.ercFungibleTransfer(true)).willReturn(successResult);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
