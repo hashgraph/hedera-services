@@ -385,28 +385,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 	}
 
-	public ResponseCodeEnum validateFungibleAllowance(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		var changeSet = changes.get(id);
-		if (entitiesLedger == null) {
-			final var getterTarget = toGetterTarget(id);
-			return ledgerCheck.validateFungibleTokenAllowance(getterTarget, null, changeSet);
-		} else {
-			final var extantProps = extantLedgerPropsFor(id);
-			return ledgerCheck.validateFungibleTokenAllowance(null, extantProps, changeSet);
-		}
-	}
-
-	public ResponseCodeEnum validateNftAllowance(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		var changeSet = changes.get(id);
-		if (entitiesLedger == null) {
-			final var getterTarget = toGetterTarget(id);
-			return ledgerCheck.validateNftAllowance(getterTarget, null, changeSet);
-		} else {
-			final var extantProps = extantLedgerPropsFor(id);
-			return ledgerCheck.validateNftAllowance(null, extantProps, changeSet);
-		}
-	}
-
 	private void setPropsWithSource(final K id, final A entity, final Function<P, Object> extantProps) {
 		final var changeSet = changes.get(id);
 		for (final var prop : allProps) {

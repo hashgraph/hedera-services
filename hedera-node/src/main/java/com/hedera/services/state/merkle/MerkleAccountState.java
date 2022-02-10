@@ -440,6 +440,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
+		assertMutable("cryptoAllowances");
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
 	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return Collections.unmodifiableMap(nftAllowances);
 	}
@@ -449,12 +458,30 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.nftAllowances = nftAllowances;
 	}
 
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		assertMutable("cryptoAllowances");
+		this.nftAllowances = nftAllowances;
+	}
+
 	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
 		return Collections.unmodifiableMap(fungibleTokenAllowances);
 	}
 
 	public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		assertMutable("fungibleTokenAllowances");
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		assertMutable("cryptoAllowances");
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 

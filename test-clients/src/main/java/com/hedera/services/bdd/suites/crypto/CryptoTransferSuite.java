@@ -251,7 +251,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								movingWithAllowance(10, fungibleToken).between(otherOwner, receiver),
 								movingUnique(nonFungibleToken, 1L).between(owner, receiver),
 								movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver),
-								movingUniqueWithAllowance(nonFungibleToken, 4L).between(otherOwner, receiver)
+								movingUniqueWithAllowance(nonFungibleToken, 4L).between(otherOwner, receiver),
+								movingUniqueWithAllowance(nonFungibleToken, 3L).between(otherOwner, receiver)
 						)
 								.payingWith(spender)
 								.signedBy(spender, owner, otherReceiver, otherOwner)
@@ -267,7 +268,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(1L))),
 						getAccountInfo(otherOwner)
 								.hasToken(relationshipWith(fungibleToken).balance(975))
-								.hasToken(relationshipWith(nonFungibleToken).balance(1))
+								.hasToken(relationshipWith(nonFungibleToken).balance(0))
 								.has(accountWith()
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
@@ -275,7 +276,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.nftAllowancesContaining(nonFungibleToken, spender, true, Collections.EMPTY_LIST)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
-								.hasToken(relationshipWith(nonFungibleToken).balance(3))
+								.hasToken(relationshipWith(nonFungibleToken).balance(4))
 								.has(accountWith().balance(5 * ONE_HBAR)),
 						getAccountInfo(anotherReceiver)
 								.hasToken(relationshipWith(fungibleToken).balance(50))

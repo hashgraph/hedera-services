@@ -22,8 +22,11 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -32,9 +35,12 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 /**
  * Process object that encapsulates a balance change, either ℏ or token unit .
@@ -310,5 +316,70 @@ public class BalanceChange {
 
 	public boolean hasNonEmptyAlias() {
 		return accountId.getAccountNum() == 0 && !alias.isEmpty();
+	}
+
+	public ResponseCodeEnum checkAllowanceUsageUsing(final MerkleAccount ownerAccount) {
+		if (isApprovedAllowance()) {
+			if (isForHbar()) {
+				return validateHbarAllowance(ownerAccount);
+			} else if (isForFungibleToken()) {
+				return validateFungibleAllowance(ownerAccount);
+			} else {
+				return validateNftAllowance(ownerAccount);
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateNftAllowance(final MerkleAccount ownerAccount) {
+		final var nftAllowances = ownerAccount.getNftAllowances();
+		final var nftAllowance = nftAllowances.getOrDefault(
+				FcTokenAllowanceId.from(token.asEntityNum(), EntityNum.fromAccountId(payerID)),null);
+
+		if (nftAllowance == null) {
+			return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+		} else {
+			final var allowAll = nftAllowance.isApprovedForAll();
+			final var allowedSerialNums = nftAllowance.getSerialNumbers();
+
+			if (allowAll) {
+				return OK;
+			} else {
+				if (!allowedSerialNums.contains(aggregatedUnits)) {
+					return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+				}
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateFungibleAllowance(final MerkleAccount ownerAccount) {
+		final var fungibleAllowances = ownerAccount.getFungibleTokenAllowances();
+		final var allowance = fungibleAllowances.getOrDefault(
+				FcTokenAllowanceId.from(
+						token.asEntityNum(), EntityNum.fromAccountId(payerID)),
+				0L);
+		if (allowance == 0L) {
+			return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+		}
+		final var newAllowance = allowance + allowanceUnits;
+		if (newAllowance < 0L) {
+			return AMOUNT_EXCEEDS_ALLOWANCE;
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateHbarAllowance(final MerkleAccount ownerAccount) {
+		final var cryptoAllowances = ownerAccount.getCryptoAllowances();
+		final var allowance = cryptoAllowances.getOrDefault(
+				EntityNum.fromAccountId(payerID), 0L);
+		if (allowance == 0L) {
+			return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+		}
+		final var newAllowance = allowance + allowanceUnits;
+		if (newAllowance < 0L) {
+			return AMOUNT_EXCEEDS_ALLOWANCE;
+		}
+		return OK;
 	}
 }

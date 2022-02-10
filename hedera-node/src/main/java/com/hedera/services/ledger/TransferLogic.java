@@ -119,17 +119,9 @@ public class TransferLogic {
 					autoCreationFee += result.getValue();
 				} else {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
-					// if validity is ok then add allowance changes to sideEffects tracker.
 				}
 			} else {
-				if (change.isForFungibleToken()) {
-					validity = accountsLedger.validateFungibleAllowance(change.accountId(), scopedCheck.setBalanceChange(change));
-				} else if (change.isForNft()) {
-					validity = accountsLedger.validateNftAllowance(change.accountId(), scopedCheck.setBalanceChange(change));
-				}
-				if (validity == OK) {
-					validity = tokenStore.tryTokenChange(change);
-				}
+				validity = tokenStore.tryTokenChange(change);
 			}
 			if (validity != OK) {
 				break;

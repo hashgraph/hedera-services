@@ -341,6 +341,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setCryptoAllowances(cryptoAllowances);
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
+		return state().getCryptoAllowancesUnsafe();
+	}
+
+	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
+		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
+		state().setCryptoAllowancesUnsafe(cryptoAllowances);
+	}
+
 	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return state().getNftAllowances();
 	}
@@ -350,6 +359,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNftAllowances(nftAllowances);
 	}
 
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
+		return state().getNftAllowancesUnsafe();
+	}
+
+	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		throwIfImmutable("Cannot change this account's nft allowances if it's immutable.");
+		state().setNftAllowancesUnsafe(nftAllowances);
+	}
+
 	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
 		return state().getFungibleTokenAllowances();
 	}
@@ -357,6 +375,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
 		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
 		state().setFungibleTokenAllowances(fungibleTokenAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
+		return state().getFungibleTokenAllowancesUnsafe();
+	}
+
+	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
+		state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
 	}
 
 	public Iterator<ExpirableTxnRecord> recordIterator() {

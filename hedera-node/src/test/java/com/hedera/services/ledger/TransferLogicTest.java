@@ -59,10 +59,8 @@ import java.util.TreeMap;
 
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -205,24 +203,6 @@ class TransferLogicTest {
 	}
 
 	@Test
-	void failsAsExpectedWithMissingHbarAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingHbar(allowanceAA(owner, -1_000L), revokedSpender);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-	}
-
-	@Test
-	void failsAsExpectedWithInsufficientHbarAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingHbar(allowanceAA(owner, -1_000L), payer);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), AMOUNT_EXCEEDS_ALLOWANCE);
-	}
-
-	@Test
 	void happyPathHbarAllowance() {
 		setUpAccountWithAllowances();
 		final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
@@ -233,26 +213,6 @@ class TransferLogicTest {
 		updateAllowanceMaps();
 		assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
 		assertEquals(initialAllowance - 50L, cryptoAllowances.get(payerNum));
-	}
-
-	@Test
-	void failsAsExpectedWithMissingFungibleAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingFtUnits(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -1_000L), revokedSpender);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-	}
-
-	@Test
-	void failsAsExpectedWithInsufficientFungibleAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingFtUnits(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -1_000L), payer);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), AMOUNT_EXCEEDS_ALLOWANCE);
 	}
 
 	@Test
@@ -268,26 +228,6 @@ class TransferLogicTest {
 
 		updateAllowanceMaps();
 		assertEquals(initialAllowance - 50L, fungibleAllowances.get(fungibleAllowanceId));
-	}
-
-	@Test
-	void failsAsExpectedWithMissingNFTAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, payer,1L), revokedSpender);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-	}
-
-	@Test
-	void failsAsExpectedWithInsufficientNFTAllowance() {
-		setUpAccountWithAllowances();
-		final var change = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 3L), payer);
-
-		accountsLedger.begin();
-		assertFailsWith(() -> subject.doZeroSum(List.of(change)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 	}
 
 	@Test
@@ -307,81 +247,6 @@ class TransferLogicTest {
 		updateAllowanceMaps();
 		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
 		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
-	}
-
-	@Test
-	void willFailAppropriatelyWhenExhaustedAllHbarAllowance() {
-		setUpAccountWithAllowances();
-		final var change1 = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
-
-		accountsLedger.begin();
-		subject.doZeroSum(List.of(change1));
-
-		updateAllowanceMaps();
-
-		assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
-		assertEquals(initialAllowance - 50L, cryptoAllowances.get(payerNum));
-
-		subject.doZeroSum(List.of(change1));
-
-		updateAllowanceMaps();
-
-		assertEquals(initialBalance - 100L, accountsLedger.get(owner, AccountProperty.BALANCE));
-		assertFalse(cryptoAllowances.containsKey(payerNum));
-
-		final var change2 = BalanceChange.changingHbar(allowanceAA(owner, -1L), payer);
-		assertFailsWith(() -> subject.doZeroSum(List.of(change2)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-	}
-
-	@Test
-	void willFailAppropriatelyWhenExhaustedAllFungibleAllowance() {
-		setUpAccountWithAllowances();
-		final var change1 = BalanceChange.changingFtUnits(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -50L), payer);
-
-		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
-
-		accountsLedger.begin();
-		subject.doZeroSum(List.of(change1));
-
-		updateAllowanceMaps();
-		assertEquals(initialAllowance - 50L, fungibleAllowances.get(fungibleAllowanceId));
-
-		subject.doZeroSum(List.of(change1));
-
-		updateAllowanceMaps();
-		assertFalse(fungibleAllowances.containsKey(fungibleAllowanceId));
-
-		final var change2 = BalanceChange.changingFtUnits(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -1L), payer);
-		assertFailsWith(() -> subject.doZeroSum(List.of(change2)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-	}
-
-	@Test
-	void willFailAppropriatelyWhenExhaustedAllNftAllowance() {
-		setUpAccountWithAllowances();
-		final var change1 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
-
-		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
-
-		accountsLedger.begin();
-		subject.doZeroSum(List.of(change1));
-
-		updateAllowanceMaps();
-
-		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
-		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
-
-		final var change2 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 2L), payer);
-		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
-
-		subject.doZeroSum(List.of(change2));
-
-		updateAllowanceMaps();
-		assertFalse(nftAllowances.containsKey(nftAllowanceId));
-		assertFailsWith(() -> subject.doZeroSum(List.of(change1)), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {

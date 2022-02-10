@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -221,52 +220,34 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	CRYPTO_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> {
-				if (t instanceof TreeMap) {
-					a.setCryptoAllowances((TreeMap<EntityNum, Long>) t);
-				} else {
-					a.setCryptoAllowances(new TreeMap<>((Map<EntityNum, Long>) t));
-				}
-			};
+			return (a, t) -> a.setCryptoAllowancesUnsafe((Map<EntityNum, Long>) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getCryptoAllowances;
+			return MerkleAccount::getCryptoAllowancesUnsafe;
 		}
 	},
 	FUNGIBLE_TOKEN_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> {
-				if (t instanceof TreeMap) {
-					a.setFungibleTokenAllowances((TreeMap<FcTokenAllowanceId, Long>) t);
-				} else {
-					a.setFungibleTokenAllowances(new TreeMap<>((Map<FcTokenAllowanceId, Long>) t));
-				}
-			};
+			return (a, t) -> a.setFungibleTokenAllowancesUnsafe((Map<FcTokenAllowanceId, Long>) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getFungibleTokenAllowances;
+			return MerkleAccount::getFungibleTokenAllowancesUnsafe;
 		}
 	},
 	NFT_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> {
-				if (t instanceof TreeMap) {
-					a.setNftAllowances((TreeMap<FcTokenAllowanceId, FcTokenAllowance>) t);
-				} else {
-					a.setNftAllowances(new TreeMap<>((Map<FcTokenAllowanceId, FcTokenAllowance>) t));
-				}
-			};
+			return (a, t) -> a.setNftAllowancesUnsafe((Map<FcTokenAllowanceId, FcTokenAllowance>) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getNftAllowances;
+			return MerkleAccount::getNftAllowancesUnsafe;
 		}
 	}
 }

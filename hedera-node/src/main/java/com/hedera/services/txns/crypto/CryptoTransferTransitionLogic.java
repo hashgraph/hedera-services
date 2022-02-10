@@ -82,6 +82,11 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 		final var changes = impliedTransfers.getAllBalanceChanges();
 
+		for (var change : changes) {
+			final var validity = change.checkAllowanceUsageUsing(ledger.get(change.accountId()));
+			validateTrue(validity == OK, validity);
+		}
+
 		ledger.doZeroSum(changes);
 
 		txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
