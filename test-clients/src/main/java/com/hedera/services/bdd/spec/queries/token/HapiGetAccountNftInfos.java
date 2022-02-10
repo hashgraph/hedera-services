@@ -87,7 +87,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
                 nftInfo.getExpectedAccountID().ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
                 nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
 
-                expectedNftElement.setLedgerId(rationalize(expectedLedgerId));
+                expectedLedgerId.ifPresent(id -> expectedNftElement.setLedgerId(rationalize(id)));
 
                 var completedNft = expectedNftElement.build();
                 expectedInfo.add(completedNft);

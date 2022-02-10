@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.file;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -167,7 +166,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		expiryTest.ifPresent(p ->
 				Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
 		expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
-		Assertions.assertEquals(rationalize(expectedLedgerId), info.getLedgerId());
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {

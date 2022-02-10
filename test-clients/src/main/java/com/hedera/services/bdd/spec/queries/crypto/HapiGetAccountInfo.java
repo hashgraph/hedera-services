@@ -197,7 +197,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			}
 			Assertions.assertEquals(actualCount, usedCount);
 		});
-		Assertions.assertEquals(rationalize(expectedLedgerId), actualInfo.getLedgerId());
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
 	}
 
 	@Override

@@ -61,12 +61,12 @@ class NetworkInfoTest {
 		final var invalidLedgerId3 = "0xZZ04";
 
 		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId1);
-		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
+		assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
 		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId2);
-		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
+		assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
 		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId3);
-		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
+		assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 	}
 }

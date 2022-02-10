@@ -175,7 +175,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}
-		Assertions.assertEquals(rationalize(expectedLedgerId), info.getLedgerId());
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
 	}
 
 	@Override

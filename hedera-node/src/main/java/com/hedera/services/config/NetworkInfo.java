@@ -26,7 +26,8 @@ import com.hedera.services.context.properties.PropertySource;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HexFormat;
+
+import static com.swirlds.common.CommonUtils.unhex;
 
 @Singleton
 public class NetworkInfo {
@@ -55,14 +56,14 @@ public class NetworkInfo {
 
 	private ByteString rationalize(String ledgerProperty) {
 		if (!ledgerProperty.startsWith("0x")) {
-			throw new IllegalStateException("Ledger Id set in invalid format");
+			throw new IllegalArgumentException("Invalid LedgerId provided in properties ");
 		} else {
 			try {
 				final var hex = ledgerProperty.substring(2);
-				final var bytes = HexFormat.of().parseHex(hex);
+				final var bytes = unhex(hex);
 				return ByteString.copyFrom(bytes);
 			} catch (Exception e) {
-				throw new IllegalStateException("Ledger Id set in invalid format", e);
+				throw new IllegalArgumentException("Invalid LedgerId provided in properties ", e);
 			}
 		}
 	}
