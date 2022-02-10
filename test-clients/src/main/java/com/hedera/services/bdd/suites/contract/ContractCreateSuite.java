@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -54,10 +55,13 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_GET_BYTECODE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.EMPTY_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -70,6 +74,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -85,8 +90,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -115,6 +122,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+				inlineCreateCanFailSafely(),
 				createEmptyConstructor(),
 				insufficientPayerBalanceUponCreation(),
 				rejectsInvalidMemo(),
@@ -137,6 +145,61 @@ public class ContractCreateSuite extends HapiApiSuite {
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				vanillaSuccess()
 		);
+	}
+
+	private HapiApiSpec inlineCreateCanFailSafely() {
+		final var tcValue = 1_234L;
+		final var creation = "creation";
+		final var initcode = "initcode";
+		final var inlineCreateFactory = "inlineCreateFactory";
+
+		final int foo = 22;
+		final int timesToFail = 7;
+		final AtomicLong factoryEntityNum = new AtomicLong();
+		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+		return defaultHapiSpec("CreateWorksAsExpected")
+				.given(
+						overriding("contracts.throttle.throttleByGas", "false"),
+						fileCreate(initcode).path(CREATE_FACTORY_PATH),
+						contractCreate(inlineCreateFactory)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.via(creation)
+								.exposingNumTo(num -> {
+									factoryEntityNum.set(num);
+									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+								})
+				).when(
+						sourcing(() -> contractCallLocal(
+								inlineCreateFactory,
+								CREATE_FACTORY_GET_BYTECODE_ABI, factoryEvmAddress.get(), foo
+						)
+								.exposingTypedResultsTo(results -> {
+									final var tcInitcode = (byte[]) results[0];
+									testContractInitcode.set(tcInitcode);
+									log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
+								})
+								.payingWith(GENESIS)
+								.nodePayment(ONE_HBAR))
+				).then(
+						inParallel(IntStream.range(0, timesToFail).mapToObj(i ->
+										sourcing(() -> contractCall(
+												inlineCreateFactory,
+												NORMAL_DEPLOY_ABI, testContractInitcode.get()
+										)
+												.payingWith(GENESIS)
+												.gas(4_000_000L)
+												.sending(tcValue)
+												.via(creation))
+								).toArray(HapiSpecOperation[]::new)
+						),
+						sourcing(() -> cryptoCreate("nextUp").exposingCreatedIdTo(id ->
+								log.info("Next entity num was {} instead of expected {}",
+										id.getAccountNum(),
+										factoryEntityNum.get() + 1)))
+				);
 	}
 
 	private HapiApiSpec insufficientPayerBalanceUponCreation() {
@@ -166,7 +229,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
-						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						overriding("contracts.throttle.throttleByGas", "false"),
 						fileCreate(initcode)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
@@ -602,7 +665,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
 		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+						overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
 				).when(
 						contractCreate("testContract").bytecode("contractFile").gas(300_000L).via("createTX")
@@ -622,7 +685,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec minChargeIsTXGasUsedByContractCreate() {
 		return defaultHapiSpec("MinChargeIsTXGasUsedByContractCreate")
 				.given(
-						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+						overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
 				).when(
 						contractCreate("testContract").bytecode("contractFile").gas(300_000L).via("createTX")
@@ -642,7 +705,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
-						UtilVerbs.overriding("contracts.maxGas", "100"),
+						overriding("contracts.maxGas", "100"),
 						fileCreate("contractFile").path(ContractResources.VALID_BYTECODE_PATH)
 				).when().then(
 						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(

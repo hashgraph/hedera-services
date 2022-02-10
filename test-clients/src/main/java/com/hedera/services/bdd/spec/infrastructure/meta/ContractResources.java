@@ -106,7 +106,15 @@ public class ContractResources {
 	public static final String STATIC_CONTRACT = bytecodePath("StaticContract");
 	public static final String MIXED_MINT_TOKEN_CONTRACT = bytecodePath("MixedMintTokenContract");
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
+	public static final String CREATE_FACTORY_PATH = bytecodePath("RevertingCreateFactory");
 
+	public static final String NORMAL_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"bytecode\"," +
+			"\"type\":\"bytes\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_FACTORY_GET_BYTECODE_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_foo\"," +
+			"\"type\":\"uint256\"}],\"name\":\"getBytecode\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\"," +
+			"\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
 	public static final String WORKING_HOURS_CONS = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_treasury\"," +
 			"\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";

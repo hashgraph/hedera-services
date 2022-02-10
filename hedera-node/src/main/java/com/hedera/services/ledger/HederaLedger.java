@@ -363,11 +363,13 @@ public class HederaLedger {
 	public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
+		// We must *immediately* track this pending balance change, because if the spawn()
+		// below throws an exception, we need throwIfPendingStateIsInconsistent() to detect
+		// the inconsistent change-set.
+		sideEffectsTracker.trackHbarChange(sponsor, -balance);
 
 		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
-
-		sideEffectsTracker.trackHbarChange(sponsor, -balance);
 		return id;
 	}
 

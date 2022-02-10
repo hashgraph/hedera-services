@@ -30,6 +30,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -57,11 +59,14 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asTypedSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
+	private static final Logger log = LogManager.getLogger(HederaWorldState.class);
+
 	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
 
 	private final EntityIdSource ids;
@@ -106,27 +111,41 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public void customizeSponsoredAccounts() {
-		sponsorMap.forEach((contract, sponsorAddress) -> {
-			final var createdId = accountParsedFromSolidityAddress(contract);
-			final var sponsorId = accountParsedFromSolidityAddress(sponsorAddress);
-			validateTrue(entityAccess.isExtant(createdId), FAIL_INVALID);
-			validateTrue(entityAccess.isExtant(sponsorId), FAIL_INVALID);
+		try {
+			for (final var entry : sponsorMap.entrySet()) {
+				final var createdId = accountParsedFromSolidityAddress(entry.getKey());
+				if (!entityAccess.isExtant(createdId)) {
+					log.warn("Sponsored account {} was not actually created; the entity id will remain unused",
+							() -> asLiteralString(createdId));
+					continue;
+				}
+				final var sponsorId = accountParsedFromSolidityAddress(entry.getValue());
+				if (!entityAccess.isExtant(sponsorId)) {
+					log.warn("Sponsor {} for new account {} does not exist; the account will not be customized",
+							() -> asLiteralString(sponsorId),
+							() -> asLiteralString(createdId));
+					continue;
+				}
 
-			final var sponsorKey = entityAccess.getKey(sponsorId);
-			final var createdKey = (sponsorKey instanceof JContractIDKey)
-					? STATIC_PROPERTIES.scopedContractKeyWith(createdId.getAccountNum())
-					: sponsorKey;
-			final var customizer = new HederaAccountCustomizer()
-					.key(createdKey)
-					.memo(entityAccess.getMemo(sponsorId))
-					.proxy(entityAccess.getProxy(sponsorId))
-					.autoRenewPeriod(entityAccess.getAutoRenew(sponsorId))
-					.expiry(entityAccess.getExpiry(sponsorId))
-					.isSmartContract(true);
+				final var sponsorKey = entityAccess.getKey(sponsorId);
+				final var createdKey = (sponsorKey instanceof JContractIDKey)
+						? STATIC_PROPERTIES.scopedContractKeyWith(createdId.getAccountNum())
+						: sponsorKey;
+				final var customizer = new HederaAccountCustomizer()
+						.key(createdKey)
+						.memo(entityAccess.getMemo(sponsorId))
+						.proxy(entityAccess.getProxy(sponsorId))
+						.autoRenewPeriod(entityAccess.getAutoRenew(sponsorId))
+						.expiry(entityAccess.getExpiry(sponsorId))
+						.isSmartContract(true);
 
-			entityAccess.customize(createdId, customizer);
-		});
-		sponsorMap.clear();
+				entityAccess.customize(createdId, customizer);
+			}
+		} finally {
+			// Given existence of the sponsor and created accounts, it is hard to see how anything above
+			// could throw an exception; but use try-finally here to make sure we reset the sponsor map.
+			sponsorMap.clear();
+		}
 	}
 
 	@Override

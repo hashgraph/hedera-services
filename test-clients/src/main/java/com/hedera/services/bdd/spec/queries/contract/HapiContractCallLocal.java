@@ -42,6 +42,7 @@ import org.ethereum.core.CallTransaction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -61,6 +62,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private Optional<String> saveResultToEntry = Optional.empty();
 	private Optional<ContractFnResultAsserts> expectations = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<Consumer<Object[]>> typedResultsObs = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -80,6 +82,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		this.abi = abi;
 		this.contract = contract;
 		this.params = params;
+	}
+
+	public HapiContractCallLocal exposingTypedResultsTo(final Consumer<Object[]> obs) {
+		typedResultsObs = Optional.of(obs);
+		return this;
 	}
 
 	public HapiContractCallLocal(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
@@ -141,6 +148,12 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
 		if(saveResultToEntry.isPresent()) {
 			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractCallLocal().getFunctionResult().getContractCallResult());
+		}
+		final var rawResult = response.getContractCallLocal().getFunctionResult().getContractCallResult();
+		if (typedResultsObs.isPresent()) {
+			final var function = CallTransaction.Function.fromJsonInterface(abi);
+			final var typedResult = function.decodeResult(rawResult.toByteArray());
+			typedResultsObs.get().accept(typedResult);
 		}
 	}
 
