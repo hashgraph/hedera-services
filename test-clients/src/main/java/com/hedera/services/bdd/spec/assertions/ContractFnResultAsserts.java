@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -112,6 +113,17 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			Assertions.assertEquals(
 					gasUsed, result.getGasUsed(),
 					"Wrong amount of Gas was used!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts contractCallResult(ContractCallResult contractCallResult) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					ByteString.copyFrom(contractCallResult.getBytes().toArray()),
+					result.getContractCallResult(),
+					"Wrong contract call result!");
 		});
 		return this;
 	}
