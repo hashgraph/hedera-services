@@ -22,7 +22,6 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -243,7 +242,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 
-			final var owner = (EntityId) nftsMap.get().get(EntityNumPair.fromNftId(nftId)).getOwner();
+			final var owner = nftsMap.get().get(EntityNumPair.fromNftId(nftId)).getOwner();
 			if (!ownerAccount.getId().asEntityId().equals(owner)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
