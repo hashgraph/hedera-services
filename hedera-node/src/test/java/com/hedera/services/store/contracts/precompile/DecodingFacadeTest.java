@@ -78,8 +78,9 @@ class DecodingFacadeTest {
 
 	private static final Bytes TRANSFER_INPUT = Bytes.fromHexString("0xa9059cbb00000000000000000000000000000000000000000000000000000000000005a50000000000000000000000000000000000000000000000000000000000000002");
 
-	private static final Bytes TRANSFER_FROM_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
+	private static final Bytes TRANSFER_FROM_FUNGIBLE_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
 
+	private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
 
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
@@ -153,13 +154,24 @@ class DecodingFacadeTest {
 	}
 
 	@Test
-	void decodeTransferFromInput() {
-		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+	void decodeTransferFromFungibleInput() {
+		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
 		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
 		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
 		assertEquals(5, fungibleTransfer.get(0).amount);
+	}
+
+	@Test
+	void decodeTransferFromNonFungibleInput() {
+		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_NON_FUNGIBLE_INPUT,
+				TokenID.getDefaultInstance(),false, a -> a);
+		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
+
+		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
+		assertEquals(1, nftTransfer.getSerialNumber());
 	}
 
 	@Test

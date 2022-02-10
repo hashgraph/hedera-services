@@ -1123,7 +1123,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.forEventSignature(TRANSFER_EVENT)
 					.forIndexedArgument(sender)
 					.forIndexedArgument(receiver)
-					.forArgument(amount).build();
+					.forDataItem(amount).build();
 		}
 
 		private Log getLogForNftExchange(final Address logger) {
@@ -1143,7 +1143,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			if(isFungible) {
-				return encoder.ercFungibleTransfer(true);
+				return encoder.encodeEcFungibleTransfer(true);
 			}
 			else {
 				return Bytes.EMPTY;

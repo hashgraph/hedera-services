@@ -20,19 +20,22 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.Test;
 
+import javax.swing.text.html.parser.Entity;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
@@ -151,30 +154,71 @@ class EncodingFacadeTest {
 
 	@Test
 	void decodeReturnResultForTransfer() {
-		final var decodedResult = subject.ercFungibleTransfer(true);
+		final var decodedResult = subject.encodeEcFungibleTransfer(true);
 		assertEquals(RETURN_TRANSFER_TRUE, decodedResult);
 	}
 
 	@Test
-	void decodeReturnResultForOwnerr() {
+	void decodeReturnResultForOwner() {
 		final var decodedResult = subject.encodeOwner(senderAddress);
 		assertEquals(RETURN_OWNER, decodedResult);
 	}
 
 	@Test
-	void logBuilder() {
+	void logBuilderWithTopics() {
 		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
 				.forEventSignature(TRANSFER_EVENT)
 				.forIndexedArgument(senderAddress)
 				.forIndexedArgument(recipientAddress)
 				.build();
 
-		List<LogTopic> topics = new ArrayList<>();
+		final List<LogTopic> topics = new ArrayList<>();
 		topics.add(LogTopic.wrap(Bytes.fromHexString("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000006")));
 
 		assertEquals(new Log(logger, Bytes.EMPTY, topics), log);
+	}
+
+	@Test
+	void logBuilderWithTopicsWithDifferentTypes() {
+		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+				.forEventSignature(TRANSFER_EVENT)
+				.forIndexedArgument(senderAddress)
+				.forIndexedArgument(20L)
+				.forIndexedArgument(Boolean.TRUE)
+				.build();
+
+		final List<LogTopic> topics = new ArrayList<>();
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString(
+				"0x0000000000000000000000000000000000000000000000000000000000000014")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString(
+				"0x0000000000000000000000000000000000000000000000000000000000000001")));
+
+		assertEquals(new Log(logger, Bytes.EMPTY, topics), log);
+	}
+
+	@Test
+	void logBuilderWithData() {
+		final var tupleType = TupleType.parse("(address,uint256)");
+		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+				.forEventSignature(TRANSFER_EVENT)
+				.forDataItem(senderAddress)
+				.forDataItem(9L)
+				.build();
+
+
+		final var dataItems = new ArrayList<>();
+		dataItems.add(convertBesuAddressToHeadlongAddress(senderAddress));
+		dataItems.add(BigInteger.valueOf(9));
+		final var tuple = Tuple.of(dataItems.toArray());
+
+		final List<LogTopic> topics = new ArrayList<>();
+		topics.add(LogTopic.wrap(Bytes.fromHexString("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")));
+
+		assertEquals(new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), topics), log);
 	}
 
 	@Test
@@ -187,5 +231,7 @@ class EncodingFacadeTest {
 		assertEquals(BURN_FAILURE_FROM_TREASURY_NOT_OWNER, subject.encodeBurnFailure(TREASURY_MUST_OWN_BURNED_NFT));
 	}
 
+	private com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address addressToBeConverted) {
+		return com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressToBeConverted.toBigInteger()));
+	}
 }
-

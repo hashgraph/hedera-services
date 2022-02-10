@@ -93,7 +93,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.balanceOfOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
@@ -192,8 +191,6 @@ class ERC721PrecompilesTest {
     @Mock
     private ContractAliases aliases;
     @Mock
-    private MerkleToken merkleToken;
-    @Mock
     private TxnReceipt.Builder txnReceipt;
     @Mock
     private UsagePricesProvider resourceCosts;
@@ -225,19 +222,18 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -256,12 +252,11 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeSymbol(any())).willReturn(successResult);
@@ -269,7 +264,7 @@ class ERC721PrecompilesTest {
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -288,12 +283,11 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(tokens.get(any(), any())).willReturn(10L);
@@ -302,7 +296,7 @@ class ERC721PrecompilesTest {
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -322,12 +316,11 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(
@@ -345,7 +338,7 @@ class ERC721PrecompilesTest {
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -367,12 +360,11 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
@@ -382,7 +374,7 @@ class ERC721PrecompilesTest {
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -481,12 +473,11 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build())
-                .willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
-        given(feeCalculator.computeFee(any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
@@ -496,7 +487,7 @@ class ERC721PrecompilesTest {
         // when:
         subject.initializeLedgers(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:

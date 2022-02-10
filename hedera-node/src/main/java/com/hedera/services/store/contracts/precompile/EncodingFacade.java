@@ -149,7 +149,7 @@ public class EncodingFacade {
 				.build();
 	}
 
-	public Bytes ercFungibleTransfer(final boolean ercFungibleTransferStatus) {
+	public Bytes encodeEcFungibleTransfer(final boolean ercFungibleTransferStatus) {
 		return functionResultBuilder()
 				.forFunction(FunctionType.ERC_TRANSFER)
 				.withErcFungibleTransferStatus(ercFungibleTransferStatus)
@@ -288,7 +288,7 @@ public class EncodingFacade {
 
 	public static class LogBuilder {
 		private Address logger;
-		private final List<Object> arguments = new ArrayList<>();
+		private final List<Object> data = new ArrayList<>();
 		private final List<LogTopic> topics = new ArrayList<>();
 		final StringBuilder tupleTypes = new StringBuilder("(");
 
@@ -306,9 +306,9 @@ public class EncodingFacade {
 			return this;
 		}
 
-		public LogBuilder forArgument(final Object param) {
-			arguments.add(convertParamForLog(param));
-			addTupleType(param, tupleTypes);
+		public LogBuilder forDataItem(final Object dataItem) {
+			data.add(convertDataItem(dataItem));
+			addTupleType(dataItem, tupleTypes);
 			return this;
 		}
 
@@ -321,7 +321,7 @@ public class EncodingFacade {
 			if(tupleTypes.length()>1) {
 				tupleTypes.deleteCharAt(tupleTypes.length() - 1);
 				tupleTypes.append(")");
-				final var tuple = Tuple.of(arguments.toArray());
+				final var tuple = Tuple.of(data.toArray());
 				final var tupleType = TupleType.parse(tupleTypes.toString());
 				return new Log(logger, Bytes.wrap(tupleType.encode(tuple).array()), topics);
 			} else {
@@ -329,7 +329,7 @@ public class EncodingFacade {
 			}
 		}
 
-		private Object convertParamForLog(final Object param) {
+		private Object convertDataItem(final Object param) {
 			if (param instanceof Address address) {
 				return convertBesuAddressToHeadlongAddress(address);
 			} else if (param instanceof Long numeric) {
@@ -348,7 +348,7 @@ public class EncodingFacade {
 			} else if (param instanceof Long numeric) {
 				array = BigInteger.valueOf(numeric).toByteArray();
 			} else if (param instanceof Boolean bool) {
-				array = new byte[]{(byte) (bool ? 1 : 0)};
+				array = new byte[]{(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
 			} else if (param instanceof Bytes bytes) {
 				array = bytes.toArray();
 			}
