@@ -183,6 +183,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
+	//TODO: add tokenCreate address to contract library and put correct 0xaddress
+	protected static final int ABI_ID_TOKEN_CREATE = 0x099794e1;
 
 	private int functionId;
 	private Precompile precompile;
@@ -293,6 +295,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile();
 					case ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
 					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
+					case ABI_ID_TOKEN_CREATE -> new TokenCreatePrecompile();
 					default -> null;
 				};
 		if (precompile != null) {
@@ -615,6 +618,68 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					childRecord.getReceiptBuilder().getSerialNumbers());
 		}
 
+		@Override
+		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
+			return encoder.encodeMintFailure(status);
+		}
+	}
+
+	protected class TokenCreatePrecompile implements Precompile {
+		private TokenCreateWrapper tokenCreateOp;
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, UnaryOperator<byte[]> aliasResolver) {
+			tokenCreateOp = decoder.decodeTokenCreate(input);
+			return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(
+				final MessageFrame frame,
+				final WorldLedgers ledgers
+		) {
+			Objects.requireNonNull(tokenCreateOp);
+
+			/* --- Check required signatures --- */
+			final var tokenId = Id.fromGrpcToken(tokenCreateOp.tokenType());
+			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
+			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var sideEffects = sideEffectsFactory.get();
+			final var scopedAccountStore = createAccountStore(ledgers);
+			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+			// TODO: Add tokenCreateLogicFactory
+			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
+
+			/* --- Execute the transaction and capture its results --- */
+
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			// TODO: Modify for custom minimum fee estimation
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			// TODO: Modify for implicit costs addition
+			Precompile.super.addImplicitCostsIn(accessor);
+		}
+
+		// TODO: Review whether we need the getSuccessResult to be custom made
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			final var receiptBuilder = childRecord.getReceiptBuilder();
+			validateTrue(receiptBuilder != null, FAIL_INVALID);
+			return encoder.encodeMintSuccess(
+					childRecord.getReceiptBuilder().getNewTotalSupply(),
+					childRecord.getReceiptBuilder().getSerialNumbers());
+		}
+
+		// TODO: Review whether we need the getSuccessResult to be custom made
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 			return encoder.encodeMintFailure(status);

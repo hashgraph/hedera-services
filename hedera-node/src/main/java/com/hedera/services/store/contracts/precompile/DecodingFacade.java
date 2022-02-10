@@ -80,6 +80,12 @@ public class DecodingFacade {
 	private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
 
+	// TODO: Modify this to suit for tokenCreate method
+	private static final Function TOKEN_CREATE_FUNCTION = new Function("tokenCreate(address,uint64,bytes[])",
+			INT_OUTPUT);
+	private static final Bytes TOKEN_CREATE_SELECTOR = Bytes.wrap(TOKEN_CREATE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_CREATE_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
+
 	private static final Function BURN_TOKEN_FUNCTION =
 			new Function("burnToken(address,uint64,int64[])", INT_OUTPUT);
 	private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
@@ -172,6 +178,13 @@ public class DecodingFacade {
 			return MintWrapper.forNonFungible(
 					tokenID, metadata);
 		}
+	}
+
+	public TokenCreateWrapper decodeTokenCreate(final Bytes input) {
+		// TODO: Adapt after the TokenCreate function comes to the solidity contract with TOKEN_CREATE_SELECTOR,
+		//  TOKEN_CREATE_DECODER
+		final Tuple decodedArguments = decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
+		return null;
 	}
 
 	public List<TokenTransferWrapper> decodeTransferToken(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {

@@ -59,59 +59,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
  */
 @Singleton
 public class TokenCreateTransitionLogic implements TransitionLogic {
-	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
-	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
-	private Creation.CreationFactory creationFactory = Creation::new;
-
-	private final AccountStore accountStore;
-	private final EntityIdSource ids;
 	private final OptionValidator validator;
-	private final TypedTokenStore tokenStore;
-	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final SideEffectsTracker sideEffectsTracker;
+
+	private final TokenCreateLogic tokenCreateLogic;
 
 	@Inject
 	public TokenCreateTransitionLogic(
 			final OptionValidator validator,
-			final TypedTokenStore tokenStore,
-			final AccountStore accountStore,
 			final TransactionContext txnCtx,
 			final GlobalDynamicProperties dynamicProperties,
-			final EntityIdSource ids,
-			final SigImpactHistorian sigImpactHistorian,
-			final SideEffectsTracker sideEffectsTracker
+			final TokenCreateLogic tokenCreateLogic
 	) {
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
-		this.ids = ids;
-		this.accountStore = accountStore;
-		this.tokenStore = tokenStore;
-		this.sigImpactHistorian = sigImpactHistorian;
-		this.sideEffectsTracker = sideEffectsTracker;
+		this.tokenCreateLogic = tokenCreateLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenCreation();
-		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
-		/* --- Load existing model objects --- */
-		creation.loadModelsWith(txnCtx.activePayer(), ids, validator);
-
-		/* --- Create, update, and validate model objects  --- */
 		final var now = txnCtx.consensusTime().getEpochSecond();
-		creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
 
-		/* --- Persist all new and updated models --- */
-		creation.persist();
-
-		/* --- Record activity in the transaction context --- */
-		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
-		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());
+		tokenCreateLogic.create(now, txnCtx.activePayer(), op);
 	}
 
 	@Override
@@ -196,10 +169,5 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 		return validity;
-	}
-
-	/* --- Only used by unit tests --- */
-	public void setCreationFactory(Creation.CreationFactory creationFactory) {
-		this.creationFactory = creationFactory;
 	}
 }

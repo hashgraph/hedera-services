@@ -52,8 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.RELS_LISTING;
+import static com.hedera.services.txns.token.TokenCreateLogic.MODEL_FACTORY;
+import static com.hedera.services.txns.token.TokenCreateLogic.RELS_LISTING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -117,13 +117,15 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
+	private TokenCreateLogic tokenCreateLogic;
 	private TokenCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
+		tokenCreateLogic = new TokenCreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian,
+				sideEffectsTracker, ids, validator);
 		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore,
-				txnCtx, dynamicProperties, ids, sigImpactHistorian, sideEffectsTracker);
+				validator, txnCtx, dynamicProperties, tokenCreateLogic);
 	}
 
 	@Test
@@ -131,10 +133,11 @@ class TokenCreateTransitionLogicTest {
 		final List<FcTokenAssociation> mockAssociations = List.of(
 				new FcTokenAssociation(1L, 2L));
 		givenValidTxnCtx();
-		subject.setCreationFactory(creationFactory);
 
-		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		tokenCreateLogic.setCreationFactory(creationFactory);
+
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(creationFactory.processFrom(

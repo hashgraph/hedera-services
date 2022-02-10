@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -82,6 +83,14 @@ public class SyntheticTxnFactory {
 		}
 
 		return TransactionBody.newBuilder().setTokenMint(builder);
+	}
+
+	public TransactionBody.Builder createTokenCreate(final TokenCreateWrapper tokenCreateWrapper) {
+		final var builder = TokenCreateTransactionBody.newBuilder();
+
+		// TODO: Fill in the proper synthetic token create transaction body with all its data.
+
+		return TransactionBody.newBuilder().setTokenCreation(builder);
 	}
 
 	/**
