@@ -345,6 +345,8 @@ public class Account {
 	}
 
 	public int getTotalAllowances() {
+		// each serial number of an NFT is considered as an allowance.
+		// So for Nft allowances aggregated amount is considered for limit calculation.
 		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
 	}
 }

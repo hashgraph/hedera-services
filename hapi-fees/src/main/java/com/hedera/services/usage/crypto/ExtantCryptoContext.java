@@ -20,10 +20,18 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
@@ -35,10 +43,9 @@ public class ExtantCryptoContext {
 	private final String currentMemo;
 	private final boolean currentlyHasProxy;
 	private final int currentMaxAutomaticAssociations;
-	private final int currentCryptoAllowanceCount;
-	private final int currentTokenAllowancesCount;
-	private final int currentNftAllowancesCount;
-	private final int currentSerialNumsInNfts;
+	private final Map<Long, Long> currentCryptoAllowances;
+	private final Map<AllowanceMapKey, Long> currentTokenAllowances;
+	private final Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -47,10 +54,9 @@ public class ExtantCryptoContext {
 		currentKey = builder.currentKey;
 		currentlyHasProxy = builder.currentlyHasProxy;
 		currentMaxAutomaticAssociations = builder.currentMaxAutomaticAssociations;
-		this.currentCryptoAllowanceCount = builder.currentCryptoAllowanceCount;
-		this.currentTokenAllowancesCount = builder.currentTokenAllowancesCount;
-		this.currentNftAllowancesCount = builder.currentNftAllowancesCount;
-		this.currentSerialNumsInNfts = builder.currentSerialNumsInNfts;
+		this.currentCryptoAllowances = builder.currentCryptoAllowances;
+		this.currentTokenAllowances = builder.currentTokenAllowances;
+		this.currentNftAllowances = builder.currentNftAllowances;
 	}
 
 	public long currentNonBaseRb() {
@@ -84,20 +90,16 @@ public class ExtantCryptoContext {
 		return currentMaxAutomaticAssociations;
 	}
 
-	public int currentCryptoAllowanceCount() {
-		return currentCryptoAllowanceCount;
+	public Map<Long, Long> currentCryptoAllowances() {
+		return currentCryptoAllowances;
 	}
 
-	public int currentTokenAllowancesCount() {
-		return currentTokenAllowancesCount;
+	public Map<AllowanceMapKey, Long> currentTokenAllowances() {
+		return currentTokenAllowances;
 	}
 
-	public int currentNftAllowancesCount() {
-		return currentNftAllowancesCount;
-	}
-
-	public int currentSerialNumsInNfts() {
-		return currentSerialNumsInNfts;
+	public Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances() {
+		return currentNftAllowances;
 	}
 
 	public static ExtantCryptoContext.Builder newBuilder() {
@@ -114,11 +116,10 @@ public class ExtantCryptoContext {
 		private static final int CRYPTO_ALLOWANCES_MASK = 1 << 6;
 		private static final int TOKEN_ALLOWANCES_MASK = 1 << 7;
 		private static final int NFT_ALLOWANCES_MASK = 1 << 8;
-		private static final int NFT_SERIALS_MASK = 1 << 9;
 
 		private static final int ALL_FIELDS_MASK =
 				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK | MAX_AUTO_ASSOCIATIONS_MASK
-						| CRYPTO_ALLOWANCES_MASK | TOKEN_ALLOWANCES_MASK | NFT_ALLOWANCES_MASK | NFT_SERIALS_MASK;
+						| CRYPTO_ALLOWANCES_MASK | TOKEN_ALLOWANCES_MASK | NFT_ALLOWANCES_MASK;
 
 		private int mask = 0;
 
@@ -128,10 +129,9 @@ public class ExtantCryptoContext {
 		private boolean currentlyHasProxy;
 		private long currentExpiry;
 		private int currentMaxAutomaticAssociations;
-		private int currentCryptoAllowanceCount;
-		private int currentTokenAllowancesCount;
-		private int currentNftAllowancesCount;
-		private int currentSerialNumsInNfts;
+		private Map<Long, Long> currentCryptoAllowances;
+		private Map<AllowanceMapKey, Long> currentTokenAllowances;
+		private Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
 
 		private Builder() {
 		}
@@ -179,28 +179,29 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentCryptoAllowanceCount(int currentCryptoAllowanceCount) {
-			this.currentCryptoAllowanceCount = currentCryptoAllowanceCount;
+		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(List<CryptoAllowance> currentCryptoAllowances) {
+			this.currentCryptoAllowances = convertToCryptoMap(currentCryptoAllowances);
 			mask |= CRYPTO_ALLOWANCES_MASK;
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentTokenAllowanceCount(int currentTokenAllowancesCount) {
-			this.currentTokenAllowancesCount = currentTokenAllowancesCount;
+		public ExtantCryptoContext.Builder setCurrentTokenAllowances(
+				List<TokenAllowance> currentTokenAllowances) {
+			this.currentTokenAllowances = convertToTokenMap(currentTokenAllowances);
 			mask |= TOKEN_ALLOWANCES_MASK;
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentNftAllowanceCount(int currentNftAllowancesCount) {
-			this.currentNftAllowancesCount = currentNftAllowancesCount;
+		public ExtantCryptoContext.Builder setCurrentNftAllowances(List<NftAllowance> currentNftAllowances) {
+			this.currentNftAllowances = convertToNftMap(currentNftAllowances);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}
+	}
 
-		public ExtantCryptoContext.Builder setCurrentNftSerialsCount(int currentSerialNumsInNfts) {
-			this.currentSerialNumsInNfts = currentSerialNumsInNfts;
-			mask |= NFT_SERIALS_MASK;
-			return this;
-		}
+	record AllowanceMapKey(Long tokenNum, Long spenderNum) {
+	}
+
+	record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
 	}
 }

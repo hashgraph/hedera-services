@@ -41,11 +41,13 @@ import static org.mockito.Mockito.times;
 
 class FcTokenAllowanceTest {
 	private boolean approvedForAll = true;
-	private List<Long> serialNums = List.of(1L, 2L);
+	private List<Long> serialNums = new ArrayList<>();
 	private FcTokenAllowance subject;
 
 	@BeforeEach
 	void setup() {
+		serialNums.add(1L);
+		serialNums.add(2L);
 		subject = FcTokenAllowance.from(approvedForAll, serialNums);
 	}
 
@@ -167,5 +169,26 @@ class FcTokenAllowanceTest {
 	void serializableDetWorks() {
 		assertEquals(FcTokenAllowance.RELEASE_023X_VERSION, subject.getVersion());
 		assertEquals(FcTokenAllowance.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void keepsSortedSerialNumsList() {
+		serialNums = new ArrayList();
+		serialNums.add(100L);
+		serialNums.add(2L);
+		serialNums.add(1L);
+		serialNums.add(20L);
+		var subject = FcTokenAllowance.from(serialNums);
+		assertEquals(1L, subject.getSerialNumbers().get(0));
+		assertEquals(2L, subject.getSerialNumbers().get(1));
+		assertEquals(20L, subject.getSerialNumbers().get(2));
+		assertEquals(100L, subject.getSerialNumbers().get(3));
+
+
+		subject = FcTokenAllowance.from(true, serialNums);
+		assertEquals(1L, subject.getSerialNumbers().get(0));
+		assertEquals(2L, subject.getSerialNumbers().get(1));
+		assertEquals(20L, subject.getSerialNumbers().get(2));
+		assertEquals(100L, subject.getSerialNumbers().get(3));
 	}
 }
