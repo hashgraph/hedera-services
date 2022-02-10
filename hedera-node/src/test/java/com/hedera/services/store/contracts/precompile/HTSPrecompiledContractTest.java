@@ -61,6 +61,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
@@ -112,7 +113,6 @@ class HTSPrecompiledContractTest {
 
 	private HTSPrecompiledContract subject;
 
-	private static final long TEST_CONSENSUS_TIME = 1_640_000_000; // Monday, December 20, 2021 11:33:20 AM UTC
 	private static final long TEST_SERVICE_FEE = 5_000_000;
 	private static final long TEST_NETWORK_FEE = 400_000;
 	private static final long TEST_NODE_FEE = 300_000;
