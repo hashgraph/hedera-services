@@ -107,6 +107,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenT
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -209,6 +210,27 @@ class ERC20PrecompilesTest {
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
         subject.setAccountStoreFactory(accountStoreFactory);
         subject.setSideEffectsFactory(() -> sideEffects);
+    }
+
+    @Test
+    void invalidNestedFunctionSelector () {
+        givenMinimalFrameContextWithoutParentUpdater();
+
+        given(frame.isStatic()).willReturn(true);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(nestedPretendArguments.getInt(0)).willReturn(0);
+
+        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+
+        subject.initializeLedgers(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        final var result = subject.compute(pretendArguments, frame);
+        assertNull(result);
     }
 
     @Test
@@ -598,6 +620,14 @@ class ERC20PrecompilesTest {
         given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
     }
 
+    private void givenMinimalFrameContextWithoutParentUpdater() {
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+        given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
+        given(pretendArguments.slice(4, 20)).willReturn(fungibleTokenAddr);
+        given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
+    }
+
     private void givenLedgers() {
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
@@ -606,14 +636,6 @@ class ERC20PrecompilesTest {
     }
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
-
-    public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
-            new SyntheticTxnFactory.FungibleTokenTransfer(
-                    AMOUNT,
-                    token,
-                    sender,
-                    receiver
-            );
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
             new ArrayList<>() {},
