@@ -409,16 +409,35 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						} else if(ABI_ID_SYMBOL == nestedFunctionSelector) {
 							nestedPrecompile = new SymbolPrecompile(tokenID);
 						} else if(ABI_ID_DECIMALS == nestedFunctionSelector) {
-							nestedPrecompile = new DecimalsPrecompile(tokenID, isFungibleToken);
+							if (!isFungibleToken) {
+								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
+										FAIL_INVALID);
+							}
+							nestedPrecompile = new DecimalsPrecompile(tokenID);
 						} else if(ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new TotalSupplyPrecompile(tokenID);
 						} else if(ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new BalanceOfPrecompile(tokenID);
 						} else if(ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
-							nestedPrecompile = new OwnerOfPrecompile(tokenID, isFungibleToken);
+							if (isFungibleToken) {
+								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
+										FAIL_INVALID);
+							}
+							nestedPrecompile = new OwnerOfPrecompile(tokenID);
 						} else if(ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
-							nestedPrecompile = new TokenURIPrecompile(tokenID, isFungibleToken);
-						} else if(ABI_ID_ERC_TRANSFER == nestedFunctionSelector || ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+							if (isFungibleToken) {
+								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
+										FAIL_INVALID);
+							}
+							nestedPrecompile = new TokenURIPrecompile(tokenID);
+						} else if (ABI_ID_ERC_TRANSFER == nestedFunctionSelector) {
+							this.isTokenReadOnlyTransaction = false;
+							if (!isFungibleToken) {
+								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
+										FAIL_INVALID);
+							}
+							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
+						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
 						} else {
@@ -1069,13 +1088,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> {
-					if(!isFungible) {
-						throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
-								FAIL_INVALID);
-					}
-					yield decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
-				}
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
 				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
 						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
@@ -1192,12 +1205,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class DecimalsPrecompile extends ERCReadOnlyAbstractPrecompile {
 
-		public DecimalsPrecompile(final TokenID tokenID, final boolean isFungible) {
+		public DecimalsPrecompile(final TokenID tokenID) {
 			super(tokenID);
-
-			if(!isFungible) {
-				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
-			}
 		}
 
 		@Override
@@ -1227,12 +1236,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private OwnerOfAndTokenURIWrapper tokenUriWrapper;
 
-		public TokenURIPrecompile(final TokenID tokenID, final boolean isFungible) {
+		public TokenURIPrecompile(final TokenID tokenID) {
 			super(tokenID);
-
-			if(isFungible) {
-				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
-			}
 		}
 
 		@Override
@@ -1258,12 +1263,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private OwnerOfAndTokenURIWrapper ownerWrapper;
 
-		public OwnerOfPrecompile(final TokenID tokenID, final boolean isFungible) {
+		public OwnerOfPrecompile(final TokenID tokenID) {
 			super(tokenID);
-
-			if(isFungible) {
-				throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, FAIL_INVALID);
-			}
 		}
 
 		@Override

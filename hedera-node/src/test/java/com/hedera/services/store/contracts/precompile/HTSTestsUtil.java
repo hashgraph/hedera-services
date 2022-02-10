@@ -108,6 +108,9 @@ public class HTSTestsUtil {
 	public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
 	public static final Address senderAddr = Address.ALTBN128_PAIRING;
 	public static final Address accountAddr = accountId.asEvmAddress();
+	public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
+	public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
+
 	public static final Bytes ercTransferSuccessResult = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
 
 	public static final Bytes BALANCE_OF = Bytes.fromHexString("0x70a082310000000000000000000000000000000000000000000" +
