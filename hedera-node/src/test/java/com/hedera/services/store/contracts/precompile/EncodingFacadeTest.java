@@ -184,12 +184,15 @@ class EncodingFacadeTest {
 				.forEventSignature(TRANSFER_EVENT)
 				.forIndexedArgument(senderAddress)
 				.forIndexedArgument(20L)
+				.forIndexedArgument(BigInteger.valueOf(20))
 				.forIndexedArgument(Boolean.TRUE)
 				.build();
 
 		final List<LogTopic> topics = new ArrayList<>();
 		topics.add(LogTopic.wrap(Bytes.fromHexString("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000008")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString(
+				"0x0000000000000000000000000000000000000000000000000000000000000014")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString(
 				"0x0000000000000000000000000000000000000000000000000000000000000014")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString(
@@ -200,17 +203,21 @@ class EncodingFacadeTest {
 
 	@Test
 	void logBuilderWithData() {
-		final var tupleType = TupleType.parse("(address,uint256)");
+		final var tupleType = TupleType.parse("(address,uint256,uint256,bool)");
 		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
 				.forEventSignature(TRANSFER_EVENT)
 				.forDataItem(senderAddress)
 				.forDataItem(9L)
+				.forDataItem(BigInteger.valueOf(9))
+				.forDataItem(Boolean.TRUE)
 				.build();
 
 
 		final var dataItems = new ArrayList<>();
 		dataItems.add(convertBesuAddressToHeadlongAddress(senderAddress));
 		dataItems.add(BigInteger.valueOf(9));
+		dataItems.add(BigInteger.valueOf(9));
+		dataItems.add(true);
 		final var tuple = Tuple.of(dataItems.toArray());
 
 		final List<LogTopic> topics = new ArrayList<>();
