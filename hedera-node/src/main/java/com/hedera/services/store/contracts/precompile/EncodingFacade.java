@@ -256,7 +256,7 @@ public class EncodingFacade {
 		}
 
 		private Bytes build() {
-			Tuple result;
+			Tuple result = Tuple.of(status);
 
 			if (MINT.equals(functionType)) {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
@@ -278,8 +278,6 @@ public class EncodingFacade {
 				result = Tuple.of(metadata);
 			} else if (ERC_TRANSFER.equals(functionType)) {
 				result = Tuple.of(ercFungibleTransferStatus);
-			} else {
-				result = Tuple.of(status);
 			}
 
 			return Bytes.wrap(tupleType.encode(result).array());
@@ -362,7 +360,7 @@ public class EncodingFacade {
 			} else if (param instanceof BigInteger || param instanceof Long) {
 				stringBuilder.append("uint256,");
 			} else if (param instanceof Boolean) {
-				stringBuilder.append("boolean,");
+				stringBuilder.append("bool,");
 			}
 		}
 
