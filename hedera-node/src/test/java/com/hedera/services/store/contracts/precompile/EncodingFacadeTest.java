@@ -22,14 +22,12 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.Test;
 
-import javax.swing.text.html.parser.Entity;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
