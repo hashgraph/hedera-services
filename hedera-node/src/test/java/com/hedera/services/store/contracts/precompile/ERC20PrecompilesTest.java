@@ -231,6 +231,8 @@ class ERC20PrecompilesTest {
         subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.compute(pretendArguments, frame);
         assertNull(result);
+
+        entityIdUtils.close();
     }
 
     @Test

@@ -95,9 +95,8 @@ class HederaWorldStateTest {
 	final Id contract = new Id(0, 0, 2);
 	final AccountID accountId = IdUtils.asAccount("0.0.12345");
 	final Bytes code = Bytes.of("0x60606060".getBytes());
-	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS =
-			"6080604052348015600f57600080fd5b506000610167905077618dc65e0000000000000000000000000000000000000000600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
-
+	private static final Bytes TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS = Bytes.fromHexString(
+			"6080604052348015600f57600080fd5b506000610167905077618dc65e0000000000000000000000000000000000000000600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033");
 	private HederaWorldState subject;
 
 	@BeforeEach
@@ -437,7 +436,6 @@ class HederaWorldStateTest {
 		assertEquals(expected.getBalance(), result.getBalance());
 		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
 		assertEquals(expected.getExpiry(), result.getExpiry());
-		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
 		verify(entityAccess).getBalance(zeroAddress);
@@ -466,6 +464,7 @@ class HederaWorldStateTest {
 		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
 		assertEquals(expected.getExpiry(), result.getExpiry());
 		assertEquals(-1, result.getNonce());
+		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
 	}
