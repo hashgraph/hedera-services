@@ -33,6 +33,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -65,6 +66,7 @@ import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.DissociateLogic;
 import com.hedera.services.txns.token.MintLogic;
+import com.hedera.services.txns.token.TokenCreateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -143,6 +145,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
 	};
 
+	private TokenCreateLogicFactory tokenCreateLogicFactory = TokenCreateLogic::new;
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
@@ -159,6 +162,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 	private final SoliditySigsVerifier sigsVerifier;
+	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
@@ -203,6 +207,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
+			final SigImpactHistorian sigImpactHistorian,
 			final AccountRecordsHistorian recordsHistorian,
 			final TxnAwareSoliditySigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
@@ -216,6 +221,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final PrecompilePricingUtils precompilePricingUtils
 	) {
 		super("HTS", gasCalculator);
+		this.sigImpactHistorian = sigImpactHistorian;
 		this.decoder = decoder;
 		this.encoder = encoder;
 		this.sigsVerifier = sigsVerifier;
@@ -393,6 +399,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@FunctionalInterface
 	interface MintLogicFactory {
 		MintLogic newMintLogic(OptionValidator validator, TypedTokenStore tokenStore, AccountStore accountStore);
+	}
+
+	@FunctionalInterface
+	interface TokenCreateLogicFactory {
+		TokenCreateLogic newTokenCreateLogic(AccountStore accountStore,
+											 TypedTokenStore tokenStore,
+											 GlobalDynamicProperties dynamicProperties,
+											 SigImpactHistorian sigImpactHistorian,
+											 SideEffectsTracker sideEffectsTracker,
+											 EntityIdSource entityIdSource,
+											 OptionValidator validator);
 	}
 
 	@FunctionalInterface
@@ -664,19 +681,23 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(tokenCreateOp);
 
 			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(tokenCreateOp.tokenType());
-			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
+			// TODO: Perform proper validations before any further action
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
 			final var scopedAccountStore = createAccountStore(ledgers);
 			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+
 			// TODO: Add tokenCreateLogicFactory
-			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
+			final var tokenCreateLogic = tokenCreateLogicFactory.newTokenCreateLogic(scopedAccountStore, scopedTokenStore,
+					dynamicProperties, sigImpactHistorian, sideEffects, ids, validator);
 
 			/* --- Execute the transaction and capture its results --- */
+			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
+			tokenCreateLogic.create(creationTime.getEpochSecond(), null /*TODO: Fix payer account*/,
+					transactionBody.getTokenCreation());
 
+			// TODO: Come up with proper ContractFunctionResult for the TokenCreate operation
 			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 		}
 
@@ -702,7 +723,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					childRecord.getReceiptBuilder().getSerialNumbers());
 		}
 
-		// TODO: Review whether we need the getSuccessResult to be custom made
+		// TODO: Review whether we need the getFailureResult to be custom made
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 			return encoder.encodeMintFailure(status);
