@@ -121,7 +121,11 @@ public class TransferLogic {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
-				validity = tokenStore.tryTokenChange(change);
+				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+
+				if (validity == OK) {
+					validity = tokenStore.tryTokenChange(change);
+				}
 			}
 			if (validity != OK) {
 				break;

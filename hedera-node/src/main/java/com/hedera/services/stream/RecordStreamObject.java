@@ -23,7 +23,6 @@ package com.hedera.services.stream;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializableRunningHashable;
@@ -34,8 +33,6 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -46,7 +43,6 @@ import java.time.Instant;
  */
 public class RecordStreamObject
 		extends AbstractSerializableHashable implements Timestamped, SerializableRunningHashable {
-	private static final Logger log = LogManager.getLogger(RecordStreamObject.class);
 	private static final long CLASS_ID = 0xe370929ba5429d8bL;
 	static final int CLASS_VERSION = 1;
 
@@ -84,9 +80,8 @@ public class RecordStreamObject
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		ensureNonNullGrpcRecord();final var recordBytes = transactionRecord.toByteArray();
-		out.writeByteArray(recordBytes);
-		log.info("Writing record bytes {}", CommonUtils.hex(recordBytes));
+		ensureNonNullGrpcRecord();
+		out.writeByteArray(transactionRecord.toByteArray());
 		out.writeByteArray(transaction.toByteArray());
 	}
 

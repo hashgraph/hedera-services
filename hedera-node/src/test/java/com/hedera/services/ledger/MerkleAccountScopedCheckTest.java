@@ -23,7 +23,13 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -40,8 +47,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -72,6 +81,7 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedForDeletedAccount() {
+		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(true);
 		assertEquals(ACCOUNT_DELETED, subject.checkUsing(account, changeSet));
 
@@ -81,6 +91,7 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failAsExpectedForDeletedAccountInChangeSet() {
+		when(balanceChange.isForHbar()).thenReturn(true);
 		Map<AccountProperty, Object> changes = new HashMap<>();
 		changes.put(IS_DELETED, true);
 
@@ -91,6 +102,7 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedForExpiredAccount() {
 		final var expiry = 1234L;
 
+		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
 		when(account.getBalance()).thenReturn(0L);
@@ -106,6 +118,7 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenInsufficientBalance() {
+		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 
@@ -117,7 +130,120 @@ class MerkleAccountScopedCheckTest {
 	}
 
 	@Test
+	void failsAsExpectedWhenSpenderIsNotGrantedAllowance() {
+		when(account.isDeleted()).thenReturn(false);
+		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(account.getBalance()).thenReturn(10L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
+		when(balanceChange.isForHbar()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failsAsExpectedWhenSpenderHasInsufficientAllowance() {
+		when(account.isDeleted()).thenReturn(false);
+		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(account.getBalance()).thenReturn(110L);
+		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
+		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
+		when(balanceChange.isForHbar()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+
+		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnFungible() {
+		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
+		when(balanceChange.isForFungibleToken()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failsAsExpectedWhenSpenderIsHasInsufficientAllowanceOnFungible() {
+		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
+		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
+		when(balanceChange.isForFungibleToken()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
+
+		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void happyPathWithSpenderIsHasAllowanceOnFungible() {
+		when(balanceChange.getAggregatedUnits()).thenReturn(-15L);
+		when(balanceChange.isForFungibleToken()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
+
+		assertEquals(OK, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
+		when(balanceChange.isForNft()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
+		when(balanceChange.serialNo()).thenReturn(4L);
+		when(balanceChange.isForNft()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void happyPathWithSpenderIsHasAllowanceOnAllNFT() {
+		when(balanceChange.isForNft()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
+
+		assertEquals(OK, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
+	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
+		when(balanceChange.serialNo()).thenReturn(2L);
+		when(balanceChange.isForNft()).thenReturn(true);
+		when(balanceChange.isApprovedAllowance()).thenReturn(true);
+		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(balanceChange.getPayerID()).thenReturn(payerID);
+		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+
+		assertEquals(OK, subject.checkUsing(account, changeSet));
+	}
+
+	@Test
 	void happyPath() {
+		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(0L);
@@ -131,5 +257,24 @@ class MerkleAccountScopedCheckTest {
 		var iae = assertThrows(IllegalArgumentException.class,
 				() -> subject.getEffective(AUTO_RENEW_PERIOD, account, null, changeSet));
 		assertEquals("Invalid Property "+ AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
+	}
+
+	private static final AccountID revokedSpender = AccountID.newBuilder().setAccountNum(123L).build();
+	private static final AccountID payerID = AccountID.newBuilder().setAccountNum(12345L).build();
+	private static final EntityNum payerNum = EntityNum.fromAccountId(payerID);
+	private static final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
+	private static final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
+	private static final FcTokenAllowanceId fungibleAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
+	private static final FcTokenAllowanceId nftAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
+	private static final Map<EntityNum, Long> CRYPTO_ALLOWANCES = new HashMap<>();
+	private static final Map<FcTokenAllowanceId, Long> FUNGIBLE_ALLOWANCES = new HashMap<>();
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> NFT_ALLOWANCES = new HashMap<>();
+	static {
+		CRYPTO_ALLOWANCES.put(payerNum, 100L);
+		FUNGIBLE_ALLOWANCES.put(fungibleAllowanceId, 100L);
+		NFT_ALLOWANCES.put(fungibleAllowanceId, FcTokenAllowance.from(true));
+		NFT_ALLOWANCES.put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
 	}
 }

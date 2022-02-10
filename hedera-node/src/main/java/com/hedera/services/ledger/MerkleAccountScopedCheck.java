@@ -23,7 +23,10 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.annotation.Nullable;
@@ -38,7 +41,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, AccountProperty> {
 	private final GlobalDynamicProperties dynamicProperties;
@@ -74,25 +79,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet
 	) {
-		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
-			return ResponseCodeEnum.ACCOUNT_DELETED;
+		if (balanceChange.isForHbar()) {
+			return hbarCheck(account, extantProps, changeSet);
+		} else if (balanceChange.isForFungibleToken()) {
+			return validateFungibleTokenAllowance(account, extantProps, changeSet);
+		} else {
+			return validateNftAllowance(account, extantProps, changeSet);
 		}
-
-		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-		final var isDetached = dynamicProperties.autoRenewEnabled() &&
-				balance == 0L &&
-				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
-		if (isDetached) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		}
-
-		final var newBalance = balance + balanceChange.getAggregatedUnits();
-		if (newBalance < 0L) {
-			return balanceChange.codeForInsufficientBalance();
-		}
-		balanceChange.setNewBalance(newBalance);
-
-		return OK;
 	}
 
 	Object getEffective(
@@ -126,5 +119,108 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			default:
 				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
+	}
+
+	private ResponseCodeEnum hbarCheck(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if ((boolean) getEffective(IS_DELETED, account, extantProps, changeSet)) {
+			return ResponseCodeEnum.ACCOUNT_DELETED;
+		}
+
+		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
+		final var isDetached = dynamicProperties.autoRenewEnabled() &&
+				balance == 0L &&
+				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
+		if (isDetached) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+		}
+
+		final var validity = validateHbarAllowance(account, extantProps, changeSet);
+		if (validity != OK) {
+			return validity;
+		}
+
+		final var newBalance = balance + balanceChange.getAggregatedUnits();
+		if (newBalance < 0L) {
+			return balanceChange.codeForInsufficientBalance();
+		}
+		balanceChange.setNewBalance(newBalance);
+
+		return OK;
+	}
+
+	public ResponseCodeEnum validateNftAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForNft()) {
+			final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) getEffective(
+					NFT_ALLOWANCES, account, extantProps, changeSet);
+			final var nftAllowance = nftAllowances.getOrDefault(
+					FcTokenAllowanceId.from(
+							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),
+					null
+			);
+
+			if (nftAllowance == null) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			} else {
+				final var allowAll = nftAllowance.isApprovedForAll();
+				final var allowedSerialNums = nftAllowance.getSerialNumbers();
+
+				if (allowAll) {
+					return OK;
+				} else {
+					if (!allowedSerialNums.contains(balanceChange.serialNo())) {
+						return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+					}
+				}
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateHbarAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForHbar() && balanceChange.getAggregatedUnits() < 0) {
+			final var cryptoAllowances = (Map<EntityNum, Long>) getEffective(
+					CRYPTO_ALLOWANCES, account, extantProps, changeSet);
+			final var allowance = cryptoAllowances.getOrDefault(
+					EntityNum.fromAccountId(balanceChange.getPayerID()), 0L);
+			if (allowance == 0L) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			}
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
+			if (newAllowance < 0L) {
+				return AMOUNT_EXCEEDS_ALLOWANCE;
+			}
+		}
+		return OK;
+	}
+
+	public ResponseCodeEnum validateFungibleTokenAllowance(
+			@Nullable final MerkleAccount account,
+			@Nullable final Function<AccountProperty, Object> extantProps,
+			final Map<AccountProperty, Object> changeSet) {
+		if (balanceChange.isApprovedAllowance() && balanceChange.isForFungibleToken() && balanceChange.getAggregatedUnits() < 0) {
+			final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) getEffective(
+					FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
+			final var allowance = fungibleAllowances.getOrDefault(
+					FcTokenAllowanceId.from(
+							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),
+					0L);
+			if (allowance == 0L) {
+				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+			}
+			final var newAllowance = allowance + balanceChange.getAllowanceUnits();
+			if (newAllowance < 0L) {
+				return AMOUNT_EXCEEDS_ALLOWANCE;
+			}
+		}
+		return OK;
 	}
 }

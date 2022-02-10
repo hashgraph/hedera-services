@@ -463,7 +463,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		assertMutable("cryptoAllowances");
+		assertMutable("nftAllowances");
 		this.nftAllowances = nftAllowances;
 	}
 
@@ -481,7 +481,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-		assertMutable("cryptoAllowances");
+		assertMutable("fungibleTokenAllowances");
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 
