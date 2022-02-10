@@ -186,6 +186,7 @@ class EncodingFacadeTest {
 				.forIndexedArgument(20L)
 				.forIndexedArgument(BigInteger.valueOf(20))
 				.forIndexedArgument(Boolean.TRUE)
+				.forIndexedArgument(false)
 				.build();
 
 		final List<LogTopic> topics = new ArrayList<>();
@@ -197,19 +198,22 @@ class EncodingFacadeTest {
 				"0x0000000000000000000000000000000000000000000000000000000000000014")));
 		topics.add(LogTopic.wrap(Bytes.fromHexString(
 				"0x0000000000000000000000000000000000000000000000000000000000000001")));
+		topics.add(LogTopic.wrap(Bytes.fromHexString(
+				"0x0000000000000000000000000000000000000000000000000000000000000000")));
 
 		assertEquals(new Log(logger, Bytes.EMPTY, topics), log);
 	}
 
 	@Test
 	void logBuilderWithData() {
-		final var tupleType = TupleType.parse("(address,uint256,uint256,bool)");
+		final var tupleType = TupleType.parse("(address,uint256,uint256,bool,bool)");
 		final var log = EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
 				.forEventSignature(TRANSFER_EVENT)
 				.forDataItem(senderAddress)
 				.forDataItem(9L)
 				.forDataItem(BigInteger.valueOf(9))
 				.forDataItem(Boolean.TRUE)
+				.forDataItem(false)
 				.build();
 
 
@@ -218,6 +222,7 @@ class EncodingFacadeTest {
 		dataItems.add(BigInteger.valueOf(9));
 		dataItems.add(BigInteger.valueOf(9));
 		dataItems.add(true);
+		dataItems.add(false);
 		final var tuple = Tuple.of(dataItems.toArray());
 
 		final List<LogTopic> topics = new ArrayList<>();
