@@ -330,10 +330,10 @@ public class EncodingFacade {
 		}
 
 		private Object convertParamForLog(final Object param) {
-			if (param instanceof Address) {
-				return convertBesuAddressToHeadlongAddress((Address) param);
-			} else if (param instanceof Long) {
-				return BigInteger.valueOf((Long) param);
+			if (param instanceof Address address) {
+				return convertBesuAddressToHeadlongAddress(address);
+			} else if (param instanceof Long numeric) {
+				return BigInteger.valueOf(numeric);
 			} else {
 				return param;
 			}
@@ -341,17 +341,16 @@ public class EncodingFacade {
 
 		private static LogTopic generateLogTopic(final Object param) {
 			byte[] array = new byte[]{};
-			if (param instanceof Address) {
-				array = ((Address) param).toArray();
-			} else if (param instanceof BigInteger) {
-				array = ((BigInteger) param).toByteArray();
-			} else if (param instanceof Long) {
-				array = BigInteger.valueOf((Long) param).toByteArray();
-			} else if (param instanceof Boolean) {
-				boolean value = (Boolean) param;
-				array = new byte[]{(byte) (value ? 1 : 0)};
-			} else if (param instanceof Bytes) {
-				array = ((Bytes) param).toArray();
+			if (param instanceof Address address) {
+				array = address.toArray();
+			} else if (param instanceof BigInteger numeric) {
+				array = numeric.toByteArray();
+			} else if (param instanceof Long numeric) {
+				array = BigInteger.valueOf(numeric).toByteArray();
+			} else if (param instanceof Boolean bool) {
+				array = new byte[]{(byte) (bool ? 1 : 0)};
+			} else if (param instanceof Bytes bytes) {
+				array = bytes.toArray();
 			}
 
 			return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));

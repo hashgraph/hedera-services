@@ -402,23 +402,30 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 						Precompile nestedPrecompile;
 						this.isTokenReadOnlyTransaction = true;
-						switch (nestedInput.getInt(0)) {
-							case ABI_ID_NAME -> nestedPrecompile = new NamePrecompile(tokenID);
-							case ABI_ID_SYMBOL -> nestedPrecompile = new SymbolPrecompile(tokenID);
-							case ABI_ID_DECIMALS -> nestedPrecompile = new DecimalsPrecompile(tokenID, isFungibleToken);
-							case ABI_ID_TOTAL_SUPPLY_TOKEN -> nestedPrecompile = new TotalSupplyPrecompile(tokenID);
-							case ABI_ID_BALANCE_OF_TOKEN -> nestedPrecompile = new BalanceOfPrecompile(tokenID);
-							case ABI_ID_OWNER_OF_NFT -> nestedPrecompile = new OwnerOfPrecompile(tokenID, isFungibleToken);
-							case ABI_ID_TOKEN_URI_NFT -> nestedPrecompile = new TokenURIPrecompile(tokenID, isFungibleToken);
-							case ABI_ID_ERC_TRANSFER, ABI_ID_ERC_TRANSFER_FROM -> {
-								this.isTokenReadOnlyTransaction = false;
-								nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
-							}
-							default -> {
-								this.isTokenReadOnlyTransaction = false;
-								nestedPrecompile = null;
-							}
+						final var nestedFunctionSelector = nestedInput.getInt(0);
+
+						if(ABI_ID_NAME == nestedFunctionSelector) {
+							nestedPrecompile = new NamePrecompile(tokenID);
+						} else if(ABI_ID_SYMBOL == nestedFunctionSelector) {
+							nestedPrecompile = new SymbolPrecompile(tokenID);
+						} else if(ABI_ID_DECIMALS == nestedFunctionSelector) {
+							nestedPrecompile = new DecimalsPrecompile(tokenID, isFungibleToken);
+						} else if(ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
+							nestedPrecompile = new TotalSupplyPrecompile(tokenID);
+						} else if(ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
+							nestedPrecompile = new BalanceOfPrecompile(tokenID);
+						} else if(ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
+							nestedPrecompile = new OwnerOfPrecompile(tokenID, isFungibleToken);
+						} else if(ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
+							nestedPrecompile = new TokenURIPrecompile(tokenID, isFungibleToken);
+						} else if(ABI_ID_ERC_TRANSFER == nestedFunctionSelector || ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+							this.isTokenReadOnlyTransaction = false;
+							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
+						} else {
+							this.isTokenReadOnlyTransaction = false;
+							nestedPrecompile = null;
 						}
+
 						yield nestedPrecompile;
 					}
 					default -> null;
