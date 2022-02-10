@@ -167,7 +167,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		expiryTest.ifPresent(p ->
 				Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
 		expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), info.getLedgerId());
+		Assertions.assertEquals(rationalize(expectedLedgerId), info.getLedgerId());
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {

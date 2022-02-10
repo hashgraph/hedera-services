@@ -376,7 +376,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				"Wrong token pause key!",
 				registry);
 
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
+		Assertions.assertEquals(rationalize(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	private <T, R> void assertFor(

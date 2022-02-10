@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -38,7 +37,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -263,11 +261,5 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		} else {
 			return "KeyAlias(" + aliasKeySource + ")";
 		}
-	}
-
-	private ByteString rationalize(final String expectedLedgerId) {
-		final var hex = expectedLedgerId.substring(2);
-		final var bytes = HexFormat.of().parseHex(hex);
-		return ByteString.copyFrom(bytes);
 	}
 }

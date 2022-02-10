@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -431,5 +432,11 @@ public abstract class HapiSpecOperation {
 		if (!suppressStats) {
 			spec.registry().record(obs);
 		}
+	}
+
+	protected ByteString rationalize(final String expectedLedgerId) {
+		final var hex = expectedLedgerId.substring(2);
+		final var bytes = HexFormat.of().parseHex(hex);
+		return ByteString.copyFrom(bytes);
 	}
 }

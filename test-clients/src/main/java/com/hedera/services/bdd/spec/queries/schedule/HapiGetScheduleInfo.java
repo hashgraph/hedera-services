@@ -229,7 +229,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 				"Wrong schedule admin key!",
 				registry);
 
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
+		Assertions.assertEquals(rationalize(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	private void assertTimestampMatches(

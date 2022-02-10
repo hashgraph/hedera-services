@@ -132,7 +132,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 		var actualTokenRels = actualInfo.getTokenRelationshipsList();
 		assertExpectedRels(contract, relationships, actualTokenRels, spec);
 		assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
+		Assertions.assertEquals(rationalize(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	@Override
