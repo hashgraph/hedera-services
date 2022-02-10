@@ -1,26 +1,24 @@
-/*
- * -
- *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
- *
- */
-
 package com.hedera.services.txns.crypto;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -119,7 +117,8 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final var op = cryptoAllowanceTxn.getCryptoAdjustAllowance();
 		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
 		return adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount);
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount,
+				dynamicProperties.maxAllowanceLimitPerTransaction());
 	}
 
 	/**
@@ -138,7 +137,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
+		final Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
@@ -146,6 +145,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			// if there is no key in the map, adjust transaction acts as approve transaction
 			if (!cryptoMap.containsKey(spender.asEntityNum())) {
 				if (amount == 0) {
+					//no-op transaction
 					continue;
 				}
 				cryptoMap.put(spender.asEntityNum(), amount);
@@ -178,7 +178,8 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(ownerAccount.getNftAllowances());
+		final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(
+				ownerAccount.getNftAllowances());
 		for (var allowance : nftAllowances) {
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -197,9 +198,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				if (approvedForAll.getValue()) {
 					value = FcTokenAllowance.from(approvedForAll.getValue());
 				} else {
-					List<Long> newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums, key,
-							nftAllowancesMap);
+					final var newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums);
 					if (newSerials.isEmpty()) {
+						nftAllowancesMap.remove(key);
 						continue;
 					}
 					value = FcTokenAllowance.from(newSerials);
@@ -227,10 +228,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
+		final Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(
+				ownerAccount.getFungibleTokenAllowances());
 		for (var allowance : tokenAllowances) {
-			final var spenderAccount = allowance.getSpender();
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 
@@ -272,16 +273,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 * 		existing allowance serial numbers for the account
 	 * @param opSerials
 	 * 		serial numbers given in CryptoAdjustAllowance operation
-	 * @param key
-	 * 		key for NftAllowance map
-	 * @param nftAllowancesMap
-	 * 		Nft allowance map of owner account
 	 * @return adjusted serial numbers to be set for the allowance
 	 */
-	private List<Long> adjustSerials(final List<Long> oldSerials,
-			final List<Long> opSerials,
-			final FcTokenAllowanceId key,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap) {
+	private List<Long> adjustSerials(final List<Long> oldSerials, final List<Long> opSerials) {
 		List<Long> newSerials = new ArrayList<>();
 		newSerials.addAll(oldSerials);
 
@@ -292,9 +286,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			} else {
 				newSerials.add(serial);
 			}
-		}
-		if (newSerials.isEmpty()) {
-			nftAllowancesMap.remove(key);
 		}
 		return newSerials;
 	}

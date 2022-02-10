@@ -1288,6 +1288,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						).via("transferTxn")
 				).then(
 						getAccountInfo("payer")
+								.logged()
 								.hasExpectedLedgerId("0x03")
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),

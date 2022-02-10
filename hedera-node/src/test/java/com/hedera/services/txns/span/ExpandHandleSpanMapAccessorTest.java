@@ -20,7 +20,8 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
-import com.hedera.services.usage.crypto.CryptoAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -32,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -144,37 +146,36 @@ class ExpandHandleSpanMapAccessorTest {
 
 	@Test
 	void testsForCryptoApproveMetaAsExpected() {
-		final var opMeta = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
+		final var secs = Instant.now().getEpochSecond();
+		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
 				.aggregatedNftAllowancesWithSerials(10)
-				.effectiveNow(Instant.now().getEpochSecond())
+				.effectiveNow(secs)
 				.build();
 
 		subject.setCryptoApproveMeta(accessor, opMeta);
 
-		assertEquals(1, subject.getCryptoApproveMeta(accessor).getNumOfCryptoAllowances());
-		assertEquals(2, subject.getCryptoApproveMeta(accessor).getNumOfTokenAllowances());
-		assertEquals(3, subject.getCryptoApproveMeta(accessor).getNumOfNftAllowances());
 		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
+		assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
+		assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
 	}
 
 	@Test
 	void testsForCryptoAdjustMetaAsExpected() {
-		final var opMeta = CryptoAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
-				.aggregatedNftAllowancesWithSerials(10)
-				.effectiveNow(Instant.now().getEpochSecond())
+		final var now = Instant.now().getEpochSecond();
+		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.cryptoAllowances(Map.of(2L, 10L))
+				.tokenAllowances((Collections.emptyMap()))
+				.nftAllowances((Collections.emptyMap()))
+				.effectiveNow(now)
 				.build();
 
 		subject.setCryptoAdjustMeta(accessor, opMeta);
-
-		assertEquals(1, subject.getCryptoAdjustMeta(accessor).getNumOfCryptoAllowances());
-		assertEquals(2, subject.getCryptoAdjustMeta(accessor).getNumOfTokenAllowances());
-		assertEquals(3, subject.getCryptoAdjustMeta(accessor).getNumOfNftAllowances());
-		assertEquals(10, subject.getCryptoAdjustMeta(accessor).getAggregatedNftAllowancesWithSerials());
+		assertEquals(Map.of(2L, 10L), subject.getCryptoAdjustMeta(accessor).getCryptoAllowances());
+		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getTokenAllowances());
+		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getNftAllowances());
+		assertEquals(112, subject.getCryptoAdjustMeta(accessor).getMsgBytesUsed());
+		assertEquals(now, subject.getCryptoAdjustMeta(accessor).getEffectiveNow());
 	}
 }

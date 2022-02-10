@@ -32,8 +32,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.countSerials;
-
 @Singleton
 public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
@@ -71,10 +69,9 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-				.setCurrentCryptoAllowanceCount(details.getCryptoAllowancesCount())
-				.setCurrentTokenAllowanceCount(details.getTokenAllowancesCount())
-				.setCurrentNftAllowanceCount(details.getNftAllowancesCount())
-				.setCurrentNftSerialsCount(countSerials(details.getNftAllowancesList()))
+				.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
+				.setCurrentTokenAllowances(details.getTokenAllowancesList())
+				.setCurrentNftAllowances(details.getNftAllowancesList())
 				.build();
 		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
 	}

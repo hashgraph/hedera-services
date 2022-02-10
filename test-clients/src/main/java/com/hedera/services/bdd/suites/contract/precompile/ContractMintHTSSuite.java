@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -32,11 +33,9 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -76,6 +75,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
@@ -331,6 +331,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var outerContract = "transferContract";
 		final var nestedTransferTxn = "nestedTransferTxn";
 
+		final long expectedGasUsage = 1_063_830L;
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(
 						newKeyNamed(multiKey),
@@ -381,9 +382,25 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
 						childRecordsCheck(nestedTransferTxn, SUCCESS,
-								recordWith().status(SUCCESS),
-								recordWith().status(SUCCESS).tokenTransfers(NonFungibleTransfers.changingNFTBalances().
-												including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)))
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.gasUsed(expectedGasUsage)
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1L)
+																.withSerialNumbers(1L)
+														)
+										),
+								recordWith()
+										.status(SUCCESS)
+										.tokenTransfers(NonFungibleTransfers
+												.changingNFTBalances()
+												.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
+										)
+						)
 				);
 	}
 
