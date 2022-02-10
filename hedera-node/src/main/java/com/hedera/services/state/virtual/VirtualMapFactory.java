@@ -70,8 +70,7 @@ public class VirtualMapFactory {
 				.keySerializer(blobKeySerializer)
 				.maxNumOfKeys(MAX_BLOBS)
 				.preferDiskBasedIndexes(false)
-				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
-				.mergingEnabled(true);
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
 		return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
 	}
 
@@ -96,8 +95,7 @@ public class VirtualMapFactory {
 				.keySerializer(storageKeySerializer)
 				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
 				.preferDiskBasedIndexes(false)
-				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES)
-				.mergingEnabled(true);
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
 		return new VirtualMap<>(STORAGE_VM_NAME, dsBuilder);
 	}
 }
