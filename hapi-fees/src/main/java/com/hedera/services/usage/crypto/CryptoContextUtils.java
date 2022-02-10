@@ -31,7 +31,7 @@ import java.util.Set;
 
 public class CryptoContextUtils {
 	private CryptoContextUtils() {
-		throw new IllegalStateException("Utility class");
+		throw new UnsupportedOperationException("Utility class");
 	}
 
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {

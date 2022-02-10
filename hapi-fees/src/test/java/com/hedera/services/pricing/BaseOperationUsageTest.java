@@ -78,10 +78,10 @@ class BaseOperationUsageTest {
 		verify(mock).cryptoUpdate(0);
 
 		mock.baseUsageFor(HederaFunctionality.CryptoApproveAllowance, DEFAULT);
-		verify(mock).cryptoUpdate(0);
+		verify(mock).cryptoApproveAllowance();
 
 		mock.baseUsageFor(HederaFunctionality.CryptoAdjustAllowance, DEFAULT);
-		verify(mock).cryptoUpdate(0);
+		verify(mock).cryptoAdjustAllowance();
 	}
 
 	@Test

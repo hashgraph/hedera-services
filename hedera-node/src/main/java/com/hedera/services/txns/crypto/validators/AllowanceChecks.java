@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
  * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transaction allowances
  */
-public interface AbstractAllowanceChecks {
+public interface AllowanceChecks {
 	/**
 	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
 	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
