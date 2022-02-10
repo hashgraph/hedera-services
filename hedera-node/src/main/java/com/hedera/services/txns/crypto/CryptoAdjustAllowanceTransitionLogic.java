@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -57,6 +58,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final AdjustAllowanceChecks adjustAllowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
@@ -64,12 +66,14 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final AccountStore accountStore,
 			final AdjustAllowanceChecks allowanceChecks,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties,
+			final SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.accountStore = accountStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -157,6 +161,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		}
 
 		ownerAccount.setCryptoAllowances(cryptoMap);
+		sideEffectsTracker.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
@@ -204,6 +209,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
+		sideEffectsTracker.setNftAllowances(nftAllowancesMap);
 	}
 
 	/**
@@ -247,6 +253,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			}
 		}
 		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
+		sideEffectsTracker.setFungibleTokenAllowances(tokenAllowancesMap);
 	}
 
 	/**

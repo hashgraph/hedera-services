@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -85,6 +86,8 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
 	private CryptoAdjustAllowanceTransactionBody op;
@@ -94,8 +97,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore,
-				adjustAllowanceChecks,
-				dynamicProperties);
+				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker);
 	}
 
 	@Test
