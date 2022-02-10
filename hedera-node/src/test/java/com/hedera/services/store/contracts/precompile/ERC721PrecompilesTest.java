@@ -238,7 +238,7 @@ class ERC721PrecompilesTest {
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -269,7 +269,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeSymbol(any())).willReturn(successResult);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -301,7 +301,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -343,7 +343,7 @@ class ERC721PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -379,7 +379,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeOwner(EntityIdUtils.asTypedEvmAddress(sender))).willReturn(successResult);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -452,7 +452,7 @@ class ERC721PrecompilesTest {
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -492,7 +492,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -517,7 +517,7 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
@@ -542,7 +542,7 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));

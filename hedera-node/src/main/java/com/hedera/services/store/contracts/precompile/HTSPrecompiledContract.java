@@ -299,10 +299,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return null;
 		}
 
-		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+		prepareFieldsFromFrame(messageFrame);
 		final UnaryOperator<byte[]> aliasResolver = updater::unaliased;
-		this.originator = messageFrame.getOriginatorAddress();
-		initializeLedgers(messageFrame);
 
 		prepareComputation(input, aliasResolver);
 
@@ -322,9 +320,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return computeInternal(messageFrame);
 	}
 
-	void initializeLedgers(final MessageFrame messageFrame) {
-		updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
-		ledgers = updater.wrappedTrackingLedgers();
+	void prepareFieldsFromFrame(final MessageFrame messageFrame) {
+		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+		this.ledgers = updater.wrappedTrackingLedgers();
+		this.originator = messageFrame.getOriginatorAddress();
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -455,12 +454,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	/* --- Helpers --- */
-	private AccountStore createAccountStore(final WorldLedgers ledgers) {
+	private AccountStore createAccountStore() {
 		return accountStoreFactory.newAccountStore(validator, dynamicProperties, ledgers.accounts());
 	}
 
 	private TypedTokenStore createTokenStore(
-			final WorldLedgers ledgers,
 			final AccountStore accountStore,
 			final SideEffectsTracker sideEffects
 	) {
@@ -649,8 +647,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var accountStore = createAccountStore(ledgers);
-			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
+			final var accountStore = createAccountStore();
+			final var tokenStore = createTokenStore(accountStore, sideEffects);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var associateLogic = associateLogicFactory.newAssociateLogic(
@@ -697,8 +695,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var accountStore = createAccountStore(ledgers);
-			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
+			final var accountStore = createAccountStore();
+			final var tokenStore = createTokenStore(accountStore, sideEffects);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
@@ -751,8 +749,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var scopedAccountStore = createAccountStore(ledgers);
-			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+			final var scopedAccountStore = createAccountStore();
+			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffects);
 			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
@@ -1009,8 +1007,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
-			final var scopedAccountStore = createAccountStore(ledgers);
-			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+			final var scopedAccountStore = createAccountStore();
+			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffects);
 			final var burnLogic = burnLogicFactory.newBurnLogic(scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */

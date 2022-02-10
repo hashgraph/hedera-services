@@ -247,7 +247,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -305,7 +305,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -352,7 +352,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -408,7 +408,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -469,7 +469,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -531,7 +531,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -598,7 +598,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -670,7 +670,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -737,7 +737,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.initializeLedgers(frame);
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);

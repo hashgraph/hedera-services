@@ -232,7 +232,7 @@ class ERC20PrecompilesTest {
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.compute(pretendArguments, frame);
         assertNull(result);
@@ -267,7 +267,7 @@ class ERC20PrecompilesTest {
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -309,7 +309,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -353,7 +353,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -396,7 +396,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -442,7 +442,7 @@ class ERC20PrecompilesTest {
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -518,7 +518,7 @@ class ERC20PrecompilesTest {
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -597,7 +597,7 @@ class ERC20PrecompilesTest {
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
         // when:
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -628,7 +628,7 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
@@ -653,7 +653,7 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
-        subject.initializeLedgers(frame);
+        subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
