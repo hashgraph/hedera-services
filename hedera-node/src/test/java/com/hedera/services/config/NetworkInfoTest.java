@@ -20,7 +20,6 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,10 +45,28 @@ class NetworkInfoTest {
 
 	@Test
 	void getsLedgerIdFromProperties() {
-		final var ledgerId = "0xff";
-		final var ledgerID = ByteString.copyFromUtf8(ledgerId);
-		given(properties.getStringProperty("ledger.id")).willReturn(ledgerId);
+		final var bytes = new byte[]{4};
+		final var ledgerId = "0x04";
 
-		assertEquals(ledgerID, subject.ledgerId());
+		given(properties.getStringProperty("ledger.id")).willReturn(ledgerId);
+		final var actual = subject.ledgerId();
+
+		assertArrayEquals(bytes, actual.toByteArray());
+	}
+
+	@Test
+	void throwsAsExpected() {
+		final var invalidLedgerId1 = "0v04";
+		final var invalidLedgerId2 = "0xv04";
+		final var invalidLedgerId3 = "0xZZ04";
+
+		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId1);
+		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
+
+		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId2);
+		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
+
+		given(properties.getStringProperty("ledger.id")).willReturn(invalidLedgerId3);
+		assertThrows(IllegalStateException.class, () -> subject.ledgerId());
 	}
 }

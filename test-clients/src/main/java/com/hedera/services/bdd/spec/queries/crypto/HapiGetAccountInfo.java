@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -198,7 +199,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			}
 			Assertions.assertEquals(actualCount, usedCount);
 		});
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), actualInfo.getLedgerId());
+		Assertions.assertEquals(rationalize(expectedLedgerId), actualInfo.getLedgerId());
 	}
 
 	@Override
@@ -262,5 +263,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		} else {
 			return "KeyAlias(" + aliasKeySource + ")";
 		}
+	}
+
+	private ByteString rationalize(final String expectedLedgerId) {
+		final var hex = expectedLedgerId.substring(2);
+		final var bytes = HexFormat.of().parseHex(hex);
+		return ByteString.copyFrom(bytes);
 	}
 }
