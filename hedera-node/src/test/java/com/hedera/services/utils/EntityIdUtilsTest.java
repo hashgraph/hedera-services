@@ -130,12 +130,14 @@ class EntityIdUtilsTest {
 
 		final var actual = asEvmAddress(shard, realm, num);
 		final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
+		final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
 		final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
 		final var actualHex = EntityIdUtils.asHexedEvmAddress(equivAccount);
 
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
 		assertArrayEquals(expected, typedActual.toArray());
+		assertArrayEquals(expected, typedToken.toArray());
 		assertEquals(CommonUtils.hex(expected), actualHex);
 		assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
 		assertEquals(equivContract, contractIdFromEvmAddress(actual));
@@ -186,6 +188,17 @@ class EntityIdUtilsTest {
 	@Test
 	void asSolidityAddressBytesWorksProperly() {
 		final var id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+
+		final var result = EntityIdUtils.asEvmAddress(id);
+
+		final var expectedBytes = new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+
+		assertArrayEquals(expectedBytes, result);
+	}
+
+	@Test
+	void asSolidityAddressBytesFromToken() {
+		final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 
 		final var result = EntityIdUtils.asEvmAddress(id);
 
