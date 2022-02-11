@@ -305,7 +305,6 @@ class ImpliedTransfersMarshalTest {
 		bc1.addAllowanceUnits(-100);
 		final var bc2 = changingHbar(adjustFrom(account2, +100), payer);
 		bc2.aggregateUnits(+100);
-		bc2.addAllowanceUnits(+100);
 		final var bc3 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
 		bc3.aggregateUnits(-100);
 		final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);

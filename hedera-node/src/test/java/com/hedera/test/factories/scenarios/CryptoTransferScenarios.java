@@ -320,7 +320,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	CRYPTO_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+	CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(

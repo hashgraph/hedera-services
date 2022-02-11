@@ -122,7 +122,7 @@ class BalanceChangeTest {
 				IdUtils.asModelId("3.2.1"),
 				10, null, true);
 		assertEquals(10, tokenAdjust.getAggregatedUnits());
-		assertEquals(10, tokenAdjust.getAllowanceUnits());
+		assertEquals(0, tokenAdjust.getAllowanceUnits());
 		assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
 		assertEquals(new Id(3, 2, 1), tokenAdjust.getToken());
 	}

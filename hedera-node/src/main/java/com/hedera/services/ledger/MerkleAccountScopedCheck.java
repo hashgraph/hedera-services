@@ -155,7 +155,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
-		if (balanceChange.isApprovedAllowance() && balanceChange.isForNft()) {
+		if (balanceChange.isApprovedAllowance()) {
 			final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) getEffective(
 					NFT_ALLOWANCES, account, extantProps, changeSet);
 			final var nftAllowance = nftAllowances.getOrDefault(
@@ -186,7 +186,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
-		if (balanceChange.isApprovedAllowance() && balanceChange.isForHbar() && balanceChange.getAggregatedUnits() < 0) {
+		if (balanceChange.isApprovedAllowance()) {
 			final var cryptoAllowances = (Map<EntityNum, Long>) getEffective(
 					CRYPTO_ALLOWANCES, account, extantProps, changeSet);
 			final var allowance = cryptoAllowances.getOrDefault(
@@ -206,7 +206,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
-		if (balanceChange.isApprovedAllowance() && balanceChange.isForFungibleToken() && balanceChange.getAggregatedUnits() < 0) {
+		if (balanceChange.isApprovedAllowance()) {
 			final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>) getEffective(
 					FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
 			final var allowance = fungibleAllowances.getOrDefault(

@@ -125,7 +125,8 @@ public class BalanceChange {
 		this.payerID = payerID;
 		this.codeForInsufficientBalance = code;
 		this.aggregatedUnits = amount;
-		if (isApprovedAllowance) {
+		// Only set allowanceUnits if it is an allowance transfer and the account is the sender.
+		if (isApprovedAllowance && amount < 0) {
 			this.allowanceUnits = amount;
 		}
 	}
@@ -142,8 +143,9 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 		this.payerID = payerID;
 		this.aggregatedUnits = aa.getAmount();
-		if (isApprovedAllowance) {
-			this.allowanceUnits = aa.getAmount();
+		// Only set allowanceUnits if it is an allowance transfer and the account is the sender.
+		if (isApprovedAllowance && originalUnits < 0) {
+			this.allowanceUnits = originalUnits;
 		}
 	}
 
@@ -238,6 +240,14 @@ public class BalanceChange {
 		this.expectedDecimals = expectedDecimals;
 	}
 
+	/**
+	 * allowanceUnits are always non-positive.
+	 * If negative that accountId has some allowanceUnits to be taken off from its allowanceMap with the respective payer.
+	 * It will be 0 for nft ownership changes, use the boolean isApprovedAllowance in that case.
+	 * @return
+	 * 		true if the accountId has negative allowanceUnits
+	 * 		if allowanceUnits is 0, then return isApprovedAllowance
+	 */
 	public boolean isApprovedAllowance() {
 		return this.allowanceUnits == 0 ? isApprovedAllowance : this.allowanceUnits < 0;
 	}
