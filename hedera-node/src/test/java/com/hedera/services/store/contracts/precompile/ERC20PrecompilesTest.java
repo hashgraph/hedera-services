@@ -63,6 +63,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -202,6 +203,8 @@ class ERC20PrecompilesTest {
     private TxnReceipt.Builder txnReceipt;
     @Mock
     private UsagePricesProvider resourceCosts;
+    @Mock
+    private BlockValues blockValues;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -246,6 +249,110 @@ class ERC20PrecompilesTest {
         subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.compute(pretendArguments, frame);
         assertNull(result);
+    }
+
+    @Test
+    void gasCalculationForReadOnlyMethod() {
+        givenMinimalFrameContext();
+
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_NAME);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(encoder.encodeName(any())).willReturn(successResult);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
+        // when:
+        subject.prepareFieldsFromFrame(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.compute(pretendArguments, frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void gasCalculationForModifyingMethod() {
+        givenMinimalFrameContext();
+        givenLedgers();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
+
+        given(hederaTokenStoreFactory.newHederaTokenStore(
+                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+        )).willReturn(hederaTokenStore);
+
+        given(transferLogicFactory.newLogic(
+                accounts, nfts, tokenRels, hederaTokenStore,
+                sideEffects,
+                NOOP_VIEWS_MANAGER,
+                dynamicProperties,
+                validator,
+                null,
+                recordsHistorian
+        )).willReturn(transferLogic);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().setCryptoTransfer(cryptoTransferTransactionBody).build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(decoder.decodeErcTransfer(eq(nestedPretendArguments), any(), any(), any())).willReturn(
+                Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
+        given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
+        // when:
+        subject.prepareFieldsFromFrame(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.compute(pretendArguments, frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(tokenTransferChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
