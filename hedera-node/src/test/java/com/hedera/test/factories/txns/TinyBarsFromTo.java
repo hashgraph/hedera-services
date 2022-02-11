@@ -31,17 +31,23 @@ public class TinyBarsFromTo {
 	private final long amount;
 	private final boolean payerIsAlias;
 	private final boolean payeeIsAlias;
+	private final boolean isApproval;
 
 	private TinyBarsFromTo(String payer, String payee, long amount) {
-		this(payer, payee, amount, false, false);
+		this(payer, payee, amount, false, false, false);
 	}
 
 	private TinyBarsFromTo(String payer, String payee, long amount, boolean payerIsAlias, boolean payeeIsAlias) {
+		this(payer, payee, amount, payerIsAlias, payeeIsAlias, false);
+	}
+
+	private TinyBarsFromTo(String payer, String payee, long amount, boolean payerIsAlias, boolean payeeIsAlias, boolean isApproval) {
 		this.payer = payer;
 		this.payee = payee;
 		this.amount = amount;
 		this.payerIsAlias = payerIsAlias;
 		this.payeeIsAlias = payeeIsAlias;
+		this.isApproval = isApproval;
 	}
 
 	public static TinyBarsFromTo tinyBarsFromTo(String payer, String payee, long amount) {
@@ -60,6 +66,10 @@ public class TinyBarsFromTo {
 		return new TinyBarsFromTo(payer, payee, amount, true, true);
 	}
 
+	public static TinyBarsFromTo approvedTinyBarsFromTo(String payer, String payee, long amount) {
+		return new TinyBarsFromTo(payer, payee, amount, false, false, true);
+	}
+
 	public String getPayer() {
 		return payer;
 	}
@@ -70,6 +80,10 @@ public class TinyBarsFromTo {
 
 	public long getAmount() {
 		return amount;
+	}
+
+	public boolean isApproval() {
+		return isApproval;
 	}
 
 	public AccountID payerId() {

@@ -20,15 +20,17 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -62,6 +64,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
 class ContractUpdateTransitionLogicTest {
+	private static final ByteString pretendAlias = ByteString.copyFromUtf8("abcd");
 	final private AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
@@ -72,6 +75,7 @@ class ContractUpdateTransitionLogicTest {
 
 	private Instant consensusTime;
 	private HederaLedger ledger;
+	private AliasManager aliasManager;
 	private MerkleAccount contract = new MerkleAccount();
 	private OptionValidator validator;
 	private SigImpactHistorian sigImpactHistorian;
@@ -96,9 +100,10 @@ class ContractUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		aliasManager = mock(AliasManager.class);
 
 		subject = new ContractUpdateTransitionLogic(
-				ledger, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
+				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
 	}
 
 	@Test
@@ -132,8 +137,29 @@ class ContractUpdateTransitionLogicTest {
 
 		// then:
 		verify(ledger).customize(targetId, customizer);
+		verify(txnCtx).setTargetedContract(target);
 		verify(txnCtx).setStatus(SUCCESS);
 		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
+	}
+
+	@Test
+	void runsHappyPathWithAlias() {
+		// setup:
+		customizer = mock(HederaAccountCustomizer.class);
+
+		givenValidTxnCtx();
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+				.willReturn(Pair.of(Optional.of(customizer), OK));
+		contract.setAlias(pretendAlias);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).customize(targetId, customizer);
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
+		verify(sigImpactHistorian).markAliasChanged(pretendAlias);
 	}
 
 	@Test
@@ -175,7 +201,7 @@ class ContractUpdateTransitionLogicTest {
 	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.queryableContractStatus(target, contracts)).willReturn(CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
@@ -235,7 +261,7 @@ class ContractUpdateTransitionLogicTest {
 
 	private void withRubberstampingValidator() {
 		Duration autoRenewDuration = Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
-		given(validator.queryableContractStatus(target, contracts)).willReturn(OK);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
 		given(validator.memoCheck(memo)).willReturn(OK);
 	}

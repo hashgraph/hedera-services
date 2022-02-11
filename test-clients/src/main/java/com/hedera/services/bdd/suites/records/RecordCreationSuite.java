@@ -52,7 +52,6 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -101,7 +100,6 @@ public class RecordCreationSuite extends HapiApiSuite {
 						ensureDefaultSystemFiles(),
 						confirmNftToggleIsWorksThenReenable(),
 						payerRecordCreationSanityChecks(),
-						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
 						calledContractNoLongerGetsRecord(),
 						thresholdRecordsDontExistAnymore(),
@@ -415,21 +413,11 @@ public class RecordCreationSuite extends HapiApiSuite {
 				.given(
 						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
 				).when(
-						contractCreate("contract").bytecode("bytecode").via("createTxn"),
-						contractCall("contract", ContractResources.DEPOSIT_ABI, 1_000L).via("callTxn").sending(1_000L)
-				).then(
-						getContractRecords("contract").has(inOrder())
-				);
-	}
-
-	private HapiApiSpec newlyCreatedContractNoLongerGetsRecord() {
-		return defaultHapiSpec("NewlyCreatedContractNoLongerGetsRecord")
-				.given(
-						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
-				).when(
 						contractCreate("contract").bytecode("bytecode").via("createTxn")
 				).then(
-						getContractRecords("contract").has(inOrder())
+						contractCall("contract", ContractResources.DEPOSIT_ABI, 1_000L)
+								.via("callTxn")
+								.sending(1_000L)
 				);
 	}
 

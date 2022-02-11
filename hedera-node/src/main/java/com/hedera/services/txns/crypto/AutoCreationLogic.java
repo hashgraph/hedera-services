@@ -168,11 +168,11 @@ public class AutoCreationLogic {
 		final var key = asPrimitiveKeyUnchecked(alias);
 		final var syntheticCreation = syntheticTxnFactory.createAccount(key, 0L);
 		final var fee = autoCreationFeeFor(syntheticCreation);
-		if (fee > change.units()) {
+		if (fee > change.getAggregatedUnits()) {
 			return Pair.of(change.codeForInsufficientBalance(), 0L);
 		}
-		change.adjustUnits(-fee);
-		change.setNewBalance(change.units());
+		change.aggregateUnits(-fee);
+		change.setNewBalance(change.getAggregatedUnits());
 
 		final var sideEffects = new SideEffectsTracker();
 		final var newAccountId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());

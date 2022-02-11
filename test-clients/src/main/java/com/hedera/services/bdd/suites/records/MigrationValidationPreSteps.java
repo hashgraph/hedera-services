@@ -155,20 +155,6 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
                 .saveContext(true);
     }
 
-    private HapiSpecOperation[] recordActionsDone() {
-        return new HapiSpecOperation[]{
-                QueryVerbs.getContractRecords(MIGRATION_SMART_CONTRACT)
-                        .savingTo(smartContractRecords),
-                sleepFor(2_000L),
-                QueryVerbs.getContractInfo(MIGRATION_SMART_CONTRACT).savingTo(smartContractInfo),
-                sleepFor(2_000L),
-                QueryVerbs.getAccountRecords(MIGRATION_ACCOUNT_A).savingTo(cryptoRecordsA),
-                sleepFor(2_000L),
-                QueryVerbs.getAccountRecords(MIGRATION_ACCOUNT_B).savingTo(cryptoRecordsB),
-                sleepFor(2_000L)
-        };
-    }
-
     private HapiSpecOperation[] doSmartContractActions() {
         return new HapiSpecOperation[]{
                 TxnVerbs.fileCreate(smartContractFileName)

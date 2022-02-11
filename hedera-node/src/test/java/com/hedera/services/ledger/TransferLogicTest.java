@@ -33,13 +33,18 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,12 +54,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -64,6 +73,29 @@ import static org.mockito.Mockito.verify;
 class TransferLogicTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
+
+	private final long initialBalance = 1_000_000L;
+	private final long initialAllowance = 100L;
+	private final AccountID revokedSpender = AccountID.newBuilder().setAccountNum(12346L).build();
+	private final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
+	private final AccountID owner = AccountID.newBuilder().setAccountNum(12347L).build();
+	private final EntityNum payerNum = EntityNum.fromAccountId(payer);
+	private final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
+	private final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
+	private final FcTokenAllowanceId fungibleAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
+	private final FcTokenAllowanceId nftAllowanceId =
+			FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
+	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
+		put(payerNum, initialAllowance);
+	}};
+	private TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, initialAllowance);
+	}};
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
+		put(fungibleAllowanceId, FcTokenAllowance.from(true));
+		put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+	}};
 
 	@Mock
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -97,7 +129,7 @@ class TransferLogicTest {
 	void throwsIseOnNonEmptyAliasWithNullAutoCreationLogic() {
 		final var firstAmount = 1_000L;
 		final var firstAlias = ByteString.copyFromUtf8("fake");
-		final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
+		final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
 
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
@@ -113,7 +145,7 @@ class TransferLogicTest {
 		final var mockCreation = IdUtils.asAccount("0.0.1234");
 		final var firstAmount = 1_000L;
 		final var firstAlias = ByteString.copyFromUtf8("fake");
-		final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
+		final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
 
 		given(autoCreationLogic.create(failingTrigger, accountsLedger))
 				.willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
@@ -137,22 +169,22 @@ class TransferLogicTest {
 		final var firstNewAccount = IdUtils.asAccount("0.0.1234");
 		final var secondNewAccount = IdUtils.asAccount("0.0.1235");
 
-		final var firstTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount));
-		final var secondTrigger = BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount));
+		final var firstTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
+		final var secondTrigger = BalanceChange.changingHbar(aliasedAa(secondAlias, secondAmount), payer);
 		given(autoCreationLogic.create(firstTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(firstNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(firstNewAccount);
-			change.adjustUnits(-autoFee);
-			change.setNewBalance(change.units());
+			change.aggregateUnits(-autoFee);
+			change.setNewBalance(change.getAggregatedUnits());
 			return Pair.of(OK, autoFee);
 		});
 		given(autoCreationLogic.create(secondTrigger, accountsLedger)).willAnswer(invocationOnMock -> {
 			accountsLedger.create(secondNewAccount);
 			final var change = (BalanceChange) invocationOnMock.getArgument(0);
 			change.replaceAliasWith(secondNewAccount);
-			change.adjustUnits(-autoFee);
-			change.setNewBalance(change.units());
+			change.aggregateUnits(-autoFee);
+			change.setNewBalance(change.getAggregatedUnits());
 			return Pair.of(OK, autoFee);
 		});
 		final var changes = List.of(firstTrigger, secondTrigger);
@@ -170,10 +202,93 @@ class TransferLogicTest {
 		verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
 	}
 
+	@Test
+	void happyPathHbarAllowance() {
+		setUpAccountWithAllowances();
+		final var change = BalanceChange.changingHbar(allowanceAA(owner, -50L), payer);
+
+		accountsLedger.begin();
+		subject.doZeroSum(List.of(change));
+
+		updateAllowanceMaps();
+		assertEquals(initialBalance - 50L, accountsLedger.get(owner, AccountProperty.BALANCE));
+		assertEquals(initialAllowance - 50L, cryptoAllowances.get(payerNum));
+	}
+
+	@Test
+	void happyPathFungibleAllowance() {
+		setUpAccountWithAllowances();
+		final var change = BalanceChange.changingFtUnits(
+				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceAA(owner, -50L), payer);
+
+		given(tokenStore.tryTokenChange(change)).willReturn(OK);
+
+		accountsLedger.begin();
+		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change)));
+
+		updateAllowanceMaps();
+		assertEquals(initialAllowance - 50L, fungibleAllowances.get(fungibleAllowanceId));
+	}
+
+	@Test
+	void happyPathNFTAllowance() {
+		setUpAccountWithAllowances();
+		final var change1 = BalanceChange.changingNftOwnership(
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
+		final var change2 = BalanceChange.changingNftOwnership(
+				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, nftTransfer(owner, revokedSpender, 123L), payer);
+
+		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
+		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
+
+		accountsLedger.begin();
+		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
+
+		updateAllowanceMaps();
+		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
+		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
+	}
+
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
 		return AccountAmount.newBuilder()
 				.setAccountID(AccountID.newBuilder().setAlias(alias))
 				.setAmount(amount)
 				.build();
+	}
+
+	private AccountAmount allowanceAA(final AccountID accountID, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(accountID)
+				.setAmount(amount)
+				.setIsApproval(true)
+				.build();
+	}
+
+	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+		return NftTransfer.newBuilder()
+				.setIsApproval(true)
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(serialNum)
+				.build();
+	}
+
+	private void setUpAccountWithAllowances() {
+		accountsLedger.begin();
+		accountsLedger.create(owner);
+		accountsLedger.set(owner, AccountProperty.CRYPTO_ALLOWANCES, cryptoAllowances);
+		accountsLedger.set(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+		accountsLedger.set(owner, AccountProperty.NFT_ALLOWANCES, nftAllowances);
+		accountsLedger.set(owner, AccountProperty.BALANCE, initialBalance);
+		accountsLedger.commit();
+	}
+
+	private void updateAllowanceMaps() {
+		cryptoAllowances = new TreeMap<>(
+				(Map<EntityNum, Long>) accountsLedger.get(owner, AccountProperty.CRYPTO_ALLOWANCES));
+		fungibleAllowances = new TreeMap<>(
+				(Map<FcTokenAllowanceId, Long>) accountsLedger.get(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
+		nftAllowances = new TreeMap<>(
+				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.NFT_ALLOWANCES));
 	}
 }

@@ -72,7 +72,7 @@ public class BalanceChangeManager {
 		final List<BalanceChange> ans = new ArrayList<>();
 		for (int i = levelStart; i < levelEnd; i++) {
 			final var change = changesSoFar.get(i);
-			if (change.units() > 0L && denom.equals(change.getToken())) {
+			if (change.getAggregatedUnits() > 0L && denom.equals(change.getToken())) {
 				ans.add(change);
 			}
 		}
@@ -154,7 +154,7 @@ public class BalanceChangeManager {
 		if (candidate.isExemptFromCustomFees()) {
 			return false;
 		} else {
-			return candidate.isForNft() || (!candidate.isForHbar() && candidate.units() < 0);
+			return candidate.isForNft() || (!candidate.isForHbar() && candidate.getAggregatedUnits() < 0);
 		}
 	}
 }

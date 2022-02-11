@@ -123,14 +123,14 @@ class TypedTokenStoreTest {
 	void loadPossiblyDeletedTokenRelationshipWorks() {
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 
-		final var actualTokenRel = subject.loadPossiblyDeletedTokenRelationship(token, miscAccount);
+		final var actualTokenRel = subject.loadPossiblyMissingTokenRelationship(token, miscAccount);
 
 		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
 	@Test
 	void loadPossiblyDeletedTokenRelationshipReturnsNullAsExpected() {
-		assertNull(subject.loadPossiblyDeletedTokenRelationship(token, miscAccount));
+		assertNull(subject.loadPossiblyMissingTokenRelationship(token, miscAccount));
 	}
 
 	@Test

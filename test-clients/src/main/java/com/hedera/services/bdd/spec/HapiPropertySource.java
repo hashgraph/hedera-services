@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -158,6 +159,7 @@ public interface HapiPropertySource {
 	default SigControl.KeyAlgo getKeyAlgorithm(String property) {
 		return SigControl.KeyAlgo.valueOf(get(property));
 	}
+
 	default HapiApiSpec.SpecStatus getSpecStatus(String property) {
 		return HapiApiSpec.SpecStatus.valueOf(get(property));
 	}
@@ -278,11 +280,15 @@ public interface HapiPropertySource {
 	}
 
 	static byte[] asSolidityAddress(final AccountID accountId) {
-		return asSolidityAddress((int) accountId.getAccountNum(), accountId.getRealmNum(), accountId.getAccountNum());
+		return asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+	}
+
+	static byte[] asSolidityAddress(final ContractID contractId) {
+		return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
 
 	static byte[] asSolidityAddress(final TokenID tokenId) {
-		return asSolidityAddress((int) tokenId.getTokenNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+		return asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
 	}
 
 	static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
@@ -293,5 +299,12 @@ public interface HapiPropertySource {
 		arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
 
 		return solidityAddress;
+	}
+
+	static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
+		return ContractID.newBuilder()
+				.setContractNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build();
 	}
 }

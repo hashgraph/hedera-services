@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -42,11 +43,13 @@ import org.ethereum.core.CallTransaction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 
 public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private static final Logger log = LogManager.getLogger(HapiContractCallLocal.class);
@@ -61,6 +64,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private Optional<String> saveResultToEntry = Optional.empty();
 	private Optional<ContractFnResultAsserts> expectations = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+	private Optional<Consumer<Object[]>> typedResultsObs = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -95,6 +99,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
 	public HapiContractCallLocal has(ContractFnResultAsserts provider) {
 		expectations = Optional.of(provider);
+		return this;
+	}
+
+	public HapiContractCallLocal exposingTypedResultsTo(final Consumer<Object[]> obs) {
+		typedResultsObs = Optional.of(obs);
 		return this;
 	}
 
@@ -139,8 +148,12 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 			log.info(spec.logPrefix() + this + " result = " + response.getContractCallLocal().getFunctionResult());
 		}
 
-		if(saveResultToEntry.isPresent()) {
-			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractCallLocal().getFunctionResult().getContractCallResult());
+		final var rawResult = response.getContractCallLocal().getFunctionResult().getContractCallResult();
+		saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, rawResult));
+		if (typedResultsObs.isPresent()) {
+			final var function = CallTransaction.Function.fromJsonInterface(abi);
+			final var typedResult = function.decodeResult(rawResult.toByteArray());
+			typedResultsObs.get().accept(typedResult);
 		}
 	}
 
@@ -164,15 +177,18 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		byte[] callData = (abi != FALLBACK_ABI)
 				? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
 
-		var target = TxnUtils.asContractId(contract, spec);
-		ContractCallLocalQuery query = ContractCallLocalQuery.newBuilder()
+		final var opBuilder = ContractCallLocalQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-				.setContractID(target)
 				.setFunctionParameters(ByteString.copyFrom(callData))
 				.setGas(gas.orElse(spec.setup().defaultCallGas()))
-				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()))
-				.build();
-		return Query.newBuilder().setContractCallLocal(query).build();
+				.setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
+		if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+			opBuilder.setContractID(ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+		} else {
+			opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
+		}
+		return Query.newBuilder().setContractCallLocal(opBuilder).build();
 	}
 
 	@Override

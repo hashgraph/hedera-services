@@ -23,7 +23,6 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
@@ -57,6 +56,7 @@ import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
@@ -88,9 +88,15 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<Object[]> args = Optional.empty();
 	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	Optional<LongConsumer> newNumObserver = Optional.empty();
+	private Optional<String> proxy = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
+		return this;
+	}
+
+	public HapiContractCreate proxy(String proxy) {
+		this.proxy = Optional.of(proxy);
 		return this;
 	}
 
@@ -216,13 +222,16 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		}
 		spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
 		spec.registry().saveContractId(contract, newId);
-		ContractGetInfoResponse.ContractInfo otherInfo = ContractGetInfoResponse.ContractInfo.newBuilder()
+		final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
 				.setMemo(memo.orElse(spec.setup().defaultMemo()))
 				.setAutoRenewPeriod(
 						Duration.newBuilder().setSeconds(
-								autoRenewPeriodSecs.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds())).build())
-				.build();
+								autoRenewPeriodSecs.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds())).build());
+		if (!omitAdminKey && !useDeprecatedAdminKey) {
+			otherInfoBuilder.setAdminKey(adminKey);
+		}
+		final var otherInfo = otherInfoBuilder.build();
 		spec.registry().saveContractInfo(contract, otherInfo);
 		successCb.ifPresent(cb -> cb.accept(spec.registry()));
 		if (advertiseCreation) {
@@ -268,6 +277,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							balance.ifPresent(b::setInitialBalance);
 							memo.ifPresent(b::setMemo);
 							gas.ifPresent(b::setGas);
+							proxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
 						}
 				);

@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,8 @@ import javax.inject.Singleton;
 import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
@@ -55,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			FileAppend,
-			CryptoTransfer, CryptoCreate, CryptoUpdate,
+			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoAdjustAllowance,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
 			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause
@@ -101,6 +103,10 @@ public class AccessorBasedUsages {
 			estimateCryptoCreate(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoUpdate) {
 			estimateCryptoUpdate(sigUsage, accessor, baseMeta, into);
+		} else if (function == CryptoApproveAllowance) {
+			estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into);
+		} else if (function == CryptoAdjustAllowance) {
+			estimateCryptoAdjustAllowance(sigUsage, accessor, baseMeta, into);
 		} else if (function == ConsensusSubmitMessage) {
 			estimateSubmitMessage(sigUsage, accessor, baseMeta, into);
 		} else if (function == TokenFeeScheduleUpdate) {
@@ -180,6 +186,20 @@ public class AccessorBasedUsages {
 		cryptoOpsUsage.cryptoUpdateUsage(sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into);
 	}
 
+	private void estimateCryptoApproveAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
+		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
+		cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
+	}
+
+	private void estimateCryptoAdjustAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
+			UsageAccumulator into) {
+		final var cryptoAdjustMeta = accessor.getSpanMapAccessor().getCryptoAdjustMeta(accessor);
+		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
+		cryptoOpsUsage.cryptoAdjustAllowanceUsage(sigUsage, baseMeta, cryptoAdjustMeta, cryptoContext, into);
+	}
+
 	private void estimateSubmitMessage(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
@@ -229,6 +249,7 @@ public class AccessorBasedUsages {
 		final var tokenWipeMeta = accessor.getSpanMapAccessor().getTokenWipeMeta(accessor);
 		tokenOpsUsage.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, into);
 	}
+
 	private void estimateTokenFreezeAccount(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
@@ -238,6 +259,7 @@ public class AccessorBasedUsages {
 		final var tokenFreezeMeta = accessor.getSpanMapAccessor().getTokenFreezeMeta(accessor);
 		tokenOpsUsage.tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, into);
 	}
+
 	private void estimateTokenUnfreezeAccount(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
@@ -247,6 +269,7 @@ public class AccessorBasedUsages {
 		final var tokenUnFreezeMeta = accessor.getSpanMapAccessor().getTokenUnfreezeMeta(accessor);
 		tokenOpsUsage.tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnFreezeMeta, into);
 	}
+
 	private void estimateTokenPause(
 			SigUsage sigUsage,
 			TxnAccessor accessor,
@@ -256,6 +279,7 @@ public class AccessorBasedUsages {
 		final var tokenPauseMeta = accessor.getSpanMapAccessor().getTokenPauseMeta(accessor);
 		tokenOpsUsage.tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, into);
 	}
+
 	private void estimateTokenUnpause(
 			SigUsage sigUsage,
 			TxnAccessor accessor,

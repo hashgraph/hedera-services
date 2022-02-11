@@ -109,6 +109,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractKeysHTSSuite extends HapiApiSuite {
+    private static final long GAS_TO_OFFER = 4_000_000L;
+
     private static final Logger log = LogManager.getLogger(ContractKeysHTSSuite.class);
     private static final String TOKEN_TREASURY = "treasury";
     private static final long TOTAL_SUPPLY = 1_000;
@@ -275,7 +277,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000)))
+                                                        .gas(GAS_TO_OFFER)))
                 )
                 .when(
                         newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, theContract))),
@@ -284,7 +286,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
                         contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
                                 .via("burn with delegate contract key")
-                                .gas(48_000),
+                                .gas(GAS_TO_OFFER),
 
                         childRecordsCheck("burn with delegate contract key", SUCCESS, recordWith()
                                 .status(SUCCESS)
@@ -304,7 +306,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
                         contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
                                 .via("burn with contract key")
-                                .gas(48_000),
+                                .gas(GAS_TO_OFFER),
 
                         childRecordsCheck("burn with contract key", SUCCESS, recordWith()
                                 .status(SUCCESS)
@@ -333,7 +335,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -359,7 +361,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ON, OUTER_CONTRACT, INNER_CONTRACT))),
@@ -371,7 +373,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("delegateTransferCallWithDelegateContractKeyTxn")
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -399,7 +401,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -425,7 +427,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
@@ -437,7 +439,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateTransferCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
 
@@ -462,7 +464,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -482,7 +484,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
@@ -492,7 +494,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 )
@@ -516,7 +518,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.DELEGATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -534,7 +536,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.DELEGATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
@@ -544,7 +546,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 )
@@ -571,7 +573,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -586,13 +588,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 contractCall(OUTER_CONTRACT, STATIC_DISSOCIATE_CALL_ABI,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("staticDissociateCallTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -617,7 +619,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -643,7 +645,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
@@ -655,7 +657,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticTransferCallWithContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
 
@@ -677,7 +679,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -697,7 +699,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
@@ -707,7 +709,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 )
@@ -730,7 +732,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -748,7 +750,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
@@ -758,7 +760,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
 
                                         )
                         )
@@ -784,7 +786,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -810,7 +812,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
@@ -822,7 +824,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticTransferCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
 
@@ -844,7 +846,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -864,7 +866,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
@@ -874,7 +876,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 )
@@ -897,7 +899,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                         updateLargeFile(GENESIS, OUTER_CONTRACT, extractByteCode(ContractResources.STATIC_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -915,7 +917,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.STATIC_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
 
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
@@ -925,7 +927,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("staticBurnCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
 
                                         )
                         )
@@ -951,7 +953,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -965,13 +967,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 contractCall(OUTER_CONTRACT, STATIC_ASSOCIATE_CALL_ABI,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get()))
                                                         .payingWith(ACCOUNT)
                                                         .via("staticAssociateCallTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -1007,7 +1009,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 ).when(
                         sourcing(() -> contractCreate(theContract)
                                 .bytecode(mintContractByteCode).payingWith(theAccount)
-                                .gas(300_000L))
+                                .gas(GAS_TO_OFFER))
                 ).then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1067,7 +1069,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 ).when(
                         sourcing(() -> contractCreate(theContract)
                                 .bytecode(mintContractByteCode).payingWith(theAccount)
-                                .gas(300_000L))
+                                .gas(GAS_TO_OFFER))
                 ).then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1126,7 +1128,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
                                                         CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("contractKey"),
@@ -1143,7 +1145,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .fee(ONE_HBAR)
                                                         .hasKnownStatus(SUCCESS)
                                                         .payingWith(GENESIS)
-                                                        .gas(48_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .via("distributeTx")))
                 ).then(
                         getTokenInfo(NFT).hasTotalSupply(2),
@@ -1187,7 +1189,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
                                                         CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("delegateContractKey"),
@@ -1204,7 +1206,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .fee(ONE_HBAR)
                                                         .hasKnownStatus(SUCCESS)
                                                         .payingWith(GENESIS)
-                                                        .gas(48_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .via("distributeTx")))
                 ).then(
                         getTokenInfo(NFT).hasTotalSupply(2),
@@ -1243,7 +1245,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
 
                                                 newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("delegateContractKey"),
@@ -1252,7 +1254,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
-                                                        .gas(300_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1284,7 +1286,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
 
                                                 newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("contractKey"),
@@ -1293,7 +1295,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1329,7 +1331,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed("delegateContractKey").shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("delegateContractKey"),
                                                 cryptoUpdate(TOKEN_TREASURY).key("delegateContractKey"),
@@ -1343,7 +1345,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 
                                                 cryptoTransfer(
@@ -1354,7 +1356,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1391,7 +1393,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key("contractKey"),
                                                 cryptoUpdate(TOKEN_TREASURY).key("contractKey"),
@@ -1405,7 +1407,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 
                                                 cryptoTransfer(
@@ -1416,7 +1418,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1456,7 +1458,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000)))
+                                                        .gas(GAS_TO_OFFER)))
                 )
                 .when(
 
@@ -1466,7 +1468,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
                         contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
                                 .via("burn with contract key")
-                                .gas(48_000),
+                                .gas(GAS_TO_OFFER),
 
                         childRecordsCheck("burn with contract key", SUCCESS, recordWith()
                                 .status(SUCCESS)
@@ -1500,7 +1502,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -1515,7 +1517,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
@@ -1523,7 +1525,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateAssociateCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -1549,7 +1551,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -1563,7 +1565,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -1572,7 +1574,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateDissociateCallWithDelegateContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -1605,12 +1607,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -1618,13 +1620,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -1660,7 +1662,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
@@ -1668,13 +1670,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateFromTreasuryFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 cryptoTransfer(
@@ -1684,7 +1686,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoTransfer(
                                                         moving(1, VANILLA_TOKEN)
@@ -1693,7 +1695,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("tokenDissociateWithDelegateContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1734,7 +1736,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 tokenAssociate(ACCOUNT, FROZEN_TOKEN),
@@ -1742,14 +1744,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateWithDelegateContractKeyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("UnfrozenTokenAssociateWithDelegateContractKeyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1785,21 +1787,21 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenAssociate(ACCOUNT, KYC_TOKEN),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenDissociateWithDelegateContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1839,7 +1841,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
@@ -1847,13 +1849,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(treasuryID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateFromTreasuryFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 cryptoTransfer(movingUnique(VANILLA_TOKEN, 1)
@@ -1862,7 +1864,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("nonZeroNFTBalanceDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 cryptoTransfer(movingUnique(VANILLA_TOKEN, 1)
                                                         .between(ACCOUNT, TOKEN_TREASURY)),
@@ -1870,7 +1872,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("NFTDissociateWithDelegateContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1912,7 +1914,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 tokenAssociate(ACCOUNT, FROZEN_TOKEN),
@@ -1920,14 +1922,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateWithDelegateContractKeyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("UnfrozenNFTAssociateWithDelegateContractKeyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -1964,21 +1966,21 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTDissociateWithDelegateContractKeyFailedTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 tokenAssociate(ACCOUNT, KYC_TOKEN),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycNFTDissociateWithDelegateContractKeyHappyTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS)
                                         )
                         )
@@ -2015,12 +2017,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -2028,13 +2030,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenNFTSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -2069,12 +2071,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -2082,13 +2084,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaNFTSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -2124,12 +2126,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -2137,13 +2139,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(kycTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("kycTokenSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -2181,12 +2183,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -2194,13 +2196,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(frozenTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("frozenTokenSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -2234,12 +2236,12 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(100_000),
+                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT).gas(GAS_TO_OFFER),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -2247,13 +2249,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenAssociateTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
                                                         asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
                                                         .payingWith(GENESIS)
                                                         .via("vanillaTokenSecondAssociateFailsTxn")
-                                                        .gas(250_000)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                         )
                         )
@@ -2283,7 +2285,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2297,7 +2299,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                                                 contractCall(OUTER_CONTRACT, DELEGATE_ASSOCIATE_CALL_ABI,
@@ -2305,7 +2307,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateAssociateCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -2331,7 +2333,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                 extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
                         contractCreate(INNER_CONTRACT)
                                 .bytecode(INNER_CONTRACT)
-                                .gas(100_000),
+                                .gas(GAS_TO_OFFER),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2345,7 +2347,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                 contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
                                                         getNestedContractAddress(INNER_CONTRACT, spec))
                                                         .bytecode(OUTER_CONTRACT)
-                                                        .gas(100_000),
+                                                        .gas(GAS_TO_OFFER),
                                                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                                                 cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
@@ -2354,7 +2356,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS)
                                                         .via("delegateDissociateCallWithContractKeyTxn")
                                                         .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                                        .gas(5_000_000)
+                                                        .gas(GAS_TO_OFFER)
                                         )
                         )
                 ).then(
@@ -2391,7 +2393,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .bytecode("bytecode")
                                                         .via("creationTx")
-                                                        .gas(88_000))))
+                                                        .gas(GAS_TO_OFFER))))
                 .when(
                         newKeyNamed("contractKey").shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, theContract))),
                         tokenUpdate(TOKEN)
@@ -2399,7 +2401,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
                         contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
                                 .via("burn with contract key")
-                                .gas(48_000),
+                                .gas(GAS_TO_OFFER),
 
                         childRecordsCheck("burn with contract key", SUCCESS, recordWith()
                                 .status(SUCCESS)
@@ -2445,7 +2447,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
                 ).when(
                         sourcing(() -> contractCreate(theContract)
                                 .bytecode(burnContractByteCode).payingWith(theAccount)
-                                .gas(300_000L))
+                                .gas(GAS_TO_OFFER))
                 ).then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -2510,7 +2512,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						updateLargeFile(theAccount, outerContract, extractByteCode(ContractResources.MIXED_FRAMES_SCENARIOS)),
 						contractCreate(innerContract)
 								.bytecode(innerContract)
-								.gas(100_000),
+								.gas(GAS_TO_OFFER),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -2520,7 +2522,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 														.payingWith(theAccount)
 														.bytecode(outerContract)
 														.via("creationTx")
-														.gas(100_000)))
+														.gas(GAS_TO_OFFER)))
 				)
 				.when(
 						withOpContext(

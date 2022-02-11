@@ -22,13 +22,18 @@ package com.hedera.services.ledger.accounts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HederaAccountCustomizerTest {
@@ -51,5 +56,38 @@ class HederaAccountCustomizerTest {
 		final var alias = ByteString.copyFromUtf8("FAKE");
 		subject.alias(alias).customizing(target);
 		assertEquals(alias, target.getAlias());
+	}
+
+	@Test
+	void customizesSyntheticContractCreation() {
+		final var memo = "Inherited";
+		final var proxy = new EntityId(0, 0, 4);
+		final var adminKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+		final var autoRenew = 7776001L;
+		final var expiry = 1_234_567L;
+
+		final var customizer = new HederaAccountCustomizer()
+				.key(adminKey)
+				.memo(memo)
+				.proxy(proxy)
+				.autoRenewPeriod(autoRenew)
+				.expiry(expiry)
+				.isSmartContract(true);
+
+		final var op = ContractCreateTransactionBody.newBuilder();
+		customizer.applyToSynthetic(op);
+
+		assertEquals(MiscUtils.asKeyUnchecked(adminKey), op.getAdminKey());
+		assertEquals(memo, op.getMemo());
+		assertEquals(proxy.toGrpcAccountId(), op.getProxyAccountID());
+		assertEquals(autoRenew, op.getAutoRenewPeriod().getSeconds());
+	}
+
+	@Test
+	void noopCustomizationIsSafe() {
+		final var customizer = new HederaAccountCustomizer().isSmartContract(true);
+		final var op = ContractCreateTransactionBody.newBuilder();
+
+		assertDoesNotThrow(() -> customizer.applyToSynthetic(op));
 	}
 }

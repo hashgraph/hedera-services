@@ -70,4 +70,37 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 			return TestAccount::getTokenThing;
 		}
 	},
+	HBAR_ALLOWANCES {
+		@Override
+		public BiConsumer<TestAccount, Object> setter() {
+			return (a, v) -> a.setValidHbarAllowances((TestAccount.Allowance) v);
+		}
+
+		@Override
+		public Function<TestAccount, Object> getter() {
+			return TestAccount::getValidHbarAllowances;
+		}
+	},
+	FUNGIBLE_ALLOWANCES {
+		@Override
+		public BiConsumer<TestAccount, Object> setter() {
+			return (a, v) -> a.setValidFungibleAllowances((TestAccount.Allowance) v);
+		}
+
+		@Override
+		public Function<TestAccount, Object> getter() {
+			return TestAccount::getValidFungibleAllowances;
+		}
+	},
+	NFT_ALLOWANCES {
+		@Override
+		public BiConsumer<TestAccount, Object> setter() {
+			return (a, v) -> a.setValidNftAllowances((TestAccount.Allowance) v);
+		}
+
+		@Override
+		public Function<TestAccount, Object> getter() {
+			return TestAccount::getValidNftAllowances;
+		}
+	}
 }

@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
@@ -36,12 +37,16 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -59,13 +64,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -175,6 +184,35 @@ class OpUsageCtxHelperTest {
 	}
 
 	@Test
+	void returnsExpectedCtxForCryptoApproveAccount() {
+		var mockInfo = mock(AccountInfo.class);
+		var mockTimeStamp = mock(Timestamp.class);
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
+		given(mockInfo.getKey()).willReturn(key);
+		given(mockInfo.getMemo()).willReturn(memo);
+		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
+		given(mockTimeStamp.getSeconds()).willReturn(now);
+		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
+		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
+		given(mockInfo.hasProxyAccountID()).willReturn(true);
+		given(mockInfo.getCryptoAllowancesList()).willReturn(List.of(cryptoAllowance));
+		given(mockInfo.getTokenAllowancesList()).willReturn(List.of(tokenAllowance));
+		given(mockInfo.getNftAllowancesList()).willReturn(List.of(nftAllowance));
+		given(mockInfo.getNftAllowancesList()).willReturn(List.of(NftAllowance.newBuilder()
+				.setTokenId(IdUtils.asToken("0.0.1000"))
+				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
+
+		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
+
+		assertEquals(memo, ctx.currentMemo());
+		assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
+		assertEquals(Map.of(spender1.getAccountNum(), 10L), ctx.currentCryptoAllowances());
+		assertEquals(1, ctx.currentTokenAllowances().size());
+		assertEquals(1, ctx.currentTokenAllowances().size());
+		assertEquals(1, ctx.currentNftAllowances().size());
+	}
+
+	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
 		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
 
@@ -182,6 +220,18 @@ class OpUsageCtxHelperTest {
 
 		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
 		assertEquals(0, ctx.currentExpiry());
+	}
+
+	@Test
+	void returnsMissingCtxWhenApproveAccountNotFound() {
+		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
+
+		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
+
+		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
+		assertEquals(Collections.emptyMap(), ctx.currentNftAllowances());
+		assertEquals(Collections.emptyMap(), ctx.currentTokenAllowances());
+		assertEquals(Collections.emptyMap(), ctx.currentCryptoAllowances());
 	}
 
 	@Test
@@ -353,4 +403,14 @@ class OpUsageCtxHelperTest {
 							.setFileID(specialFile)
 							.setContents(ByteString.copyFrom(new byte[newFileBytes])))
 			.build();
+	private static final AccountID spender1 = asAccount("0.0.123");
+	private static final TokenID token1 = asToken("0.0.100");
+	private static final TokenID token2 = asToken("0.0.200");
+	private static final AccountID ownerId = asAccount("0.0.5000");
+	private final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).setOwner(ownerId).build();
+	private final TokenAllowance tokenAllowance = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).setTokenId(token1).setOwner(ownerId).build();
+	private final NftAllowance nftAllowance = NftAllowance.newBuilder().setSpender(spender1).setOwner(ownerId)
+			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
 }

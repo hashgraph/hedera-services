@@ -96,13 +96,16 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.swirlds.common.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
@@ -179,8 +182,8 @@ public class StateView {
 		}
 	}
 
-	public Optional<byte[]> bytecodeOf(final ContractID id) {
-		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
+	public Optional<byte[]> bytecodeOf(final EntityNum contractId) {
+		return Optional.ofNullable(contractBytecode.get(contractId.toRawEvmAddress()));
 	}
 
 	public Optional<MerkleToken> tokenWith(final TokenID id) {
@@ -429,10 +432,11 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id, final AliasManager aliasManager) {
-		final var accountEntityNum = id.getAlias().isEmpty() 
-                      ? fromAccountId(id) 
-                      : aliasManager.lookupIdBy(id.getAlias());
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
+			final AliasManager aliasManager) {
+		final var accountEntityNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
 		final var account = accounts().get(accountEntityNum);
 		if (account == null) {
 			return Optional.empty();
@@ -450,7 +454,7 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(accountID))
+				.setContractAccountID(asHexedEvmAddress(accountID))
 				.setOwnedNfts(account.getNftsOwned())
 				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
 		Optional.ofNullable(account.getProxy())
@@ -460,7 +464,15 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		setAllowancesIfAny(info, account);
 		return Optional.of(info.build());
+	}
+
+	private void setAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		info.addAllCryptoAllowances(getCryptoAllowancesList(account));
+		info.addAllTokenAllowances(getFungibleTokenAllowancesList(account));
+		info.addAllNftAllowances(getNftAllowancesList(account));
 	}
 
 	public long numNftsOwnedBy(AccountID target) {
@@ -492,26 +504,33 @@ public class StateView {
 		return Optional.of(infoWithLedgerId);
 	}
 
-	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(final ContractID id) {
-		final var contractId = fromContractId(id);
+	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
+			final ContractID id,
+			final AliasManager aliasManager
+	) {
+		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
 		if (contract == null) {
 			return Optional.empty();
 		}
 
-		var mirrorId = asAccount(id);
+		final var mirrorId = contractId.toGrpcAccountId();
 		final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
 		final var info = ContractGetInfoResponse.ContractInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setAccountID(mirrorId)
 				.setDeleted(contract.isDeleted())
-				.setContractID(id)
+				.setContractID(contractId.toGrpcContractID())
 				.setMemo(contract.getMemo())
 				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(mirrorId));
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()));
+		if (contract.hasAlias()) {
+			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
+		} else {
+			info.setContractAccountID(asHexedEvmAddress(mirrorId));
+		}
 		final var tokenRels = tokenRelsFn.apply(this, contractId);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);

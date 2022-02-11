@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -67,30 +69,32 @@ class EntityNumTest {
 		assertEquals(expected, EntityNum.fromTopicId(IdUtils.asTopic("0.0.123")));
 		assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
 		assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
+		assertEquals(expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(
+				EntityIdUtils.asEvmAddress(0, 0, 123)))));
 	}
 
 	@Test
 	void factoriesWorkForInvalidShard() {
-		final var expectedVal = MISSING_NUM;
-
-		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
-		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("1.0.123")));
-		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("1.0.123")));
-		assertEquals(expectedVal, EntityNum.fromTopicId(IdUtils.asTopic("1.0.123")));
-		assertEquals(expectedVal, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
-		assertEquals(expectedVal, EntityNum.fromModel(new Id(1, 0, 123)));
+		assertEquals(MISSING_NUM, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromTokenId(IdUtils.asToken("1.0.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromScheduleId(IdUtils.asSchedule("1.0.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromTopicId(IdUtils.asTopic("1.0.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(1, 0, 123)));
+		assertEquals(MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(
+				EntityIdUtils.asEvmAddress(1, 0, 123)))));
 	}
 
 	@Test
 	void factoriesWorkForInvalidRealm() {
-		final var expectedVal = MISSING_NUM;
-
-		assertEquals(expectedVal, EntityNum.fromAccountId(IdUtils.asAccount("0.1.123")));
-		assertEquals(expectedVal, EntityNum.fromTokenId(IdUtils.asToken("0.1.123")));
-		assertEquals(expectedVal, EntityNum.fromScheduleId(IdUtils.asSchedule("0.1.123")));
-		assertEquals(expectedVal, EntityNum.fromTopicId(IdUtils.asTopic("0.1.123")));
-		assertEquals(expectedVal, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
-		assertEquals(expectedVal, EntityNum.fromModel(new Id(0, 1, 123)));
+		assertEquals(MISSING_NUM, EntityNum.fromAccountId(IdUtils.asAccount("0.1.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromTokenId(IdUtils.asToken("0.1.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromScheduleId(IdUtils.asSchedule("0.1.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromTopicId(IdUtils.asTopic("0.1.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
+		assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(0, 1, 123)));
+		assertEquals(MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(
+			EntityIdUtils.asEvmAddress(0, 1, 123)))));
 	}
 
 	@Test
@@ -122,5 +126,18 @@ class EntityNumTest {
 		final var subject = EntityNum.fromLong(realNum);
 
 		assertEquals(realNum, subject.longValue());
+	}
+
+	@Test
+	void orderingSortsByValue() {
+		int value = 100;
+
+		final var base = new EntityNum(value);
+		final var sameButDiff = EntityNum.fromInt(value);
+		assertEquals(0, base.compareTo(sameButDiff));
+		final var largerNum = new EntityNum(value + 1);
+		assertEquals(-1, base.compareTo(largerNum));
+		final var smallerNum = new EntityNum(value -1);
+		assertEquals(+1, base.compareTo(smallerNum));
 	}
 }

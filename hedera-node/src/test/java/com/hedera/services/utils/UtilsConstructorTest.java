@@ -148,7 +148,8 @@ class UtilsConstructorTest {
 			TopicConversion.class,
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
-			GasCalculatorHederaUtil.class
+			GasCalculatorHederaUtil.class,
+			SerializationUtils.class
 	));
 
 	@Test

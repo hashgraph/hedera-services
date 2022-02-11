@@ -37,12 +37,18 @@ import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedCryptoKeys;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedTokenKeys;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getNewSerials;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
@@ -177,5 +183,56 @@ public class CryptoOpsUsage {
 		accumulator.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime);
 		accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
 		accumulator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	public void cryptoApproveAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoApproveAllowanceMeta cryptoApproveMeta,
+			final ExtantCryptoContext ctx,
+			final UsageAccumulator accumulator) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoApproveMeta.getMsgBytesUsed());
+
+		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoApproveMeta.getEffectiveNow(),
+				ctx.currentExpiry());
+		accumulator.addRbs(cryptoApproveMeta.getMsgBytesUsed() * lifeTime);
+	}
+
+	public void cryptoAdjustAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoAdjustAllowanceMeta cryptoAdjustMeta,
+			final ExtantCryptoContext ctx,
+			final UsageAccumulator accumulator) {
+
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoAdjustMeta.getMsgBytesUsed());
+
+		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoAdjustMeta.getEffectiveNow(), ctx.currentExpiry());
+
+		final var adjustedBytes = getAdjustedBytes(cryptoAdjustMeta, ctx);
+		if (adjustedBytes > 0) {
+			accumulator.addRbs(adjustedBytes * lifeTime);
+		}
+	}
+
+	private long getAdjustedBytes(final CryptoAdjustAllowanceMeta cryptoAdjustMeta, final ExtantCryptoContext ctx) {
+		long adjustedBytesCount = 0;
+		final var adjustedCryptoBytes = getChangedCryptoKeys(cryptoAdjustMeta.getCryptoAllowances().keySet(),
+				ctx.currentCryptoAllowances().keySet());
+
+		adjustedBytesCount += adjustedCryptoBytes * CRYPTO_ALLOWANCE_SIZE;
+
+		final var adjustedTokenBytes = getChangedTokenKeys(cryptoAdjustMeta.getTokenAllowances().keySet(),
+				ctx.currentTokenAllowances().keySet());
+		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
+
+		final var adjustedNftBytes = getChangedTokenKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
+				ctx.currentNftAllowances().keySet());
+		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
+
+		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances(), ctx.currentNftAllowances());
+		adjustedBytesCount += adjustedSerials * LONG_SIZE;
+
+		return adjustedBytesCount;
 	}
 }

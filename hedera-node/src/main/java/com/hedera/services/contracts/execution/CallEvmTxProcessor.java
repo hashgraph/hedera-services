@@ -23,6 +23,7 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -48,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 @Singleton
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
+	private final AliasManager aliasManager;
 
 	@Inject
 	public CallEvmTxProcessor(
@@ -57,10 +59,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final AliasManager aliasManager
 	) {
 		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
+		this.aliasManager = aliasManager;
 	}
 
 	public TransactionProcessingResult execute(
@@ -97,7 +101,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final Address to,
 			final Bytes payload
 	) {
-		final var code = codeCache.getIfPresent(to);
+		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* The ContractCallTransitionLogic would have rejected a missing or deleted
 		* contract, so at this point we should have non-null bytecode available. */
 		validateTrue(code != null, FAIL_INVALID);

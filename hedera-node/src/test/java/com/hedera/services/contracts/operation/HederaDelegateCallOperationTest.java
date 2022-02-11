@@ -73,7 +73,7 @@ class HederaDelegateCallOperationTest {
 	@BeforeEach
 	void setup() {
 		subject = new HederaDelegateCallOperation(calc, addressValidator);
-		commonSetup(evmMsgFrame, worldUpdater, acc, accountAddr);
+		commonSetup(evmMsgFrame, worldUpdater, acc);
 	}
 
 	@Test

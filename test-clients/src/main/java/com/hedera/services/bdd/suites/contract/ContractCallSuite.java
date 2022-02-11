@@ -110,6 +110,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -129,7 +130,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
@@ -158,7 +159,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				imapUserExercise(),
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated()
-		);
+		});
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {
@@ -244,7 +245,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Take a ticket */
 						contractCall(workingHours, WORKING_HOURS_TAKE_TICKET)
 								.payingWith(user)
-								.gas(400_000)
+								.gas(4_000_000)
 								.via(ticketTaking)
 								.alsoSigningWithFullPrefix(treasury)
 								.exposingResultTo(result -> {
@@ -256,11 +257,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						/* Our ticket number is 3 (b/c of the two pre-mints), so we must call
 						 * work twice before the contract will actually accept our ticket. */
 						sourcing(() ->
-								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get()).payingWith(
-										user)),
+								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
+										.payingWith(user)),
 						getAccountBalance(user).hasTokenBalance(ticketToken, 1L),
 						sourcing(() ->
 								contractCall(workingHours, WORKING_HOURS_WORK_TICKET, ticketSerialNo.get())
+										.gas(2_000_000)
 										.payingWith(user)
 										.via(ticketWorking)),
 						getAccountBalance(user).hasTokenBalance(ticketToken, 0L),
@@ -506,21 +509,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									"Dave's final balance should be 0");
 						})
 				).then(
-						assertionsHold((spec, ctxLog) -> {
-							var finalOp = getContractRecords("tokenContract")
-									.saveRecordNumToRegistry("tokenContractRecordNum")
-									.hasCostAnswerPrecheck(OK);
-
-							allRunFor(spec, finalOp);
-
-							int totalRecordNum = spec.registry().getIntValue("tokenContractRecordNum");
-							ctxLog.info("Finished {}", totalRecordNum);
-
-							Assertions.assertEquals(
-									0,
-									totalRecordNum,
-									"Contracts should no longer receive records!");
-						})
+						getContractRecords("tokenContract").hasCostAnswerPrecheck(NOT_SUPPORTED),
+						getContractRecords("tokenContract").nodePayment(100L).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
 				);
 	}
 

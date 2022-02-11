@@ -21,11 +21,11 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -55,7 +53,6 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,15 +65,13 @@ class RenewalRecordsHelperTest {
 	private final EntityNum keyId = EntityNum.fromAccountId(removedId);
 
 	@Mock
-	private RecordStreamManager recordStreamManager;
-	@Mock
-	private Consumer<RunningHash> updateRunningHash;
+	private RecordStreaming recordStreaming;
 
 	private RenewalRecordsHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalRecordsHelper(recordStreamManager, new MockGlobalDynamicProps(), updateRunningHash);
+		subject = new RenewalRecordsHelper(recordStreaming, new MockGlobalDynamicProps());
 	}
 
 	@Test
@@ -104,8 +99,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
-		verify(updateRunningHash).accept(any());
-		verify(recordStreamManager).addRecordStreamObject(rso);
+		verify(recordStreaming).stream(rso);
 
 		subject.endRenewalCycle();
 		assertNull(subject.getCycleStart());
@@ -122,8 +116,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);
 
 		// then:
-		verify(updateRunningHash).accept(any());
-		verify(recordStreamManager).addRecordStreamObject(rso);
+		verify(recordStreaming).stream(rso);
 
 		subject.endRenewalCycle();
 		assertNull(subject.getCycleStart());

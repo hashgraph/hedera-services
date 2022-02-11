@@ -31,6 +31,8 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractDelete;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractUpdate;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -62,11 +64,13 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -94,6 +98,10 @@ public class TxnVerbs {
 		return new HapiCryptoTransfer(providers);
 	}
 
+	public static HapiCryptoTransfer cryptoTransfer(BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+		return new HapiCryptoTransfer(def);
+	}
+
 	public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {
 		return new HapiCryptoTransfer(sources);
 	}
@@ -104,6 +112,14 @@ public class TxnVerbs {
 
 	public static HapiCryptoUpdate cryptoUpdateAliased(final String alias) {
 		return new HapiCryptoUpdate(alias, ReferenceType.ALIAS_KEY_NAME);
+	}
+
+	public static HapiCryptoApproveAllowance cryptoApproveAllowance() {
+		return new HapiCryptoApproveAllowance();
+	}
+
+	public static HapiCryptoAdjustAllowance cryptoAdjustAllowance() {
+		return new HapiCryptoAdjustAllowance();
 	}
 
 	/* CONSENSUS */
