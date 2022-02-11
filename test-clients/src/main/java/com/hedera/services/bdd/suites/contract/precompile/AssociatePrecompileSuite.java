@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDeploy;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -123,21 +124,21 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(new HapiApiSpec[] {
-						nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-						functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-						invalidSingleAbiCallConsumesAllProvidedGas(),
+//						nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls()
+//						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
+//						invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+//						functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+//						invalidSingleAbiCallConsumesAllProvidedGas(),
 				}
 		);
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				nestedAssociateWorksAsExpected(),
-				associatePrecompileTokensPerAccountLimitExceeded()
+//				multipleAssociatePrecompileWithSignatureWorksForFungible(),
+//				nestedAssociateWorksAsExpected(),
+//				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
 
@@ -284,9 +285,10 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+						contractDeploy("AssociateDissociateContract", ACCOUNT),
+//						fileCreate(THE_CONTRACT),
+//						updateLargeFile(ACCOUNT, THE_CONTRACT,
+//								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
@@ -297,17 +299,17 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
+//												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
 												newKeyNamed(DELEGATE_KEY).shape(
-														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, "AssociateDissociateContract"))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+												contractCall("AssociateDissociateContract", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), invalidAbiArgument)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+												contractCall("AssociateDissociateContract", SINGLE_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")

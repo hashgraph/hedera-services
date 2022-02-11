@@ -74,6 +74,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+
 public class TxnVerbs {
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
@@ -328,6 +331,13 @@ public class TxnVerbs {
 
 	public static HapiContractUpdate contractUpdate(String contract) {
 		return new HapiContractUpdate(contract);
+	}
+
+	public static HapiContractCreate contractDeploy(final String contractName, final String accountName) {
+		final var path =  String.format("src/main/resource/contract/%1$s/%1$s.bin", contractName);
+		fileCreate(contractName);
+		updateLargeFile(accountName, contractName, extractByteCode(path));
+		return contractCreate(contractName).bytecode(contractName);
 	}
 
 	/* SYSTEM */
