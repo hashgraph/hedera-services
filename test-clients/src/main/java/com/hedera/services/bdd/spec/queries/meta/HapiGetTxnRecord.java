@@ -121,6 +121,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+	private Optional<Integer> cryptoAllowanceCount = Optional.empty();
+	private Optional<Integer> tokenAllowanceCount = Optional.empty();
+	private Optional<Integer> nftAllowanceCount = Optional.empty();
 
 	private record ExpectedChildInfo(String aliasingKey) {}
 	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
@@ -323,6 +326,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasCryptoAllowanceCount(final int cryptoAllowanceCount) {
+		this.cryptoAllowanceCount = Optional.of(cryptoAllowanceCount);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasTokenAllowanceCount(final int tokenAllowanceCount) {
+		this.tokenAllowanceCount = Optional.of(tokenAllowanceCount);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasNftAllowanceCount(final int nftAllowanceCount) {
+		this.nftAllowanceCount = Optional.of(nftAllowanceCount);
+		return this;
+	}
+
 	public TransactionRecord getResponseRecord() {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
@@ -487,6 +505,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				}
 			}
 		}
+		cryptoAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getCryptoAdjustmentsCount(),
+				"expected cryptoAllowanceCount was : " + n + " but is : " + actualRecord.getCryptoAdjustmentsCount()));
 		for (var expectedCryptoAllowance : expectedCryptoAllowances) {
 			final var ownerId = spec.registry().getAccountID(expectedCryptoAllowance.owner);
 			final var spenderId = spec.registry().getAccountID(expectedCryptoAllowance.spender);
@@ -504,6 +524,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			assertTrue(found, "Couldn't find crypto allowance with ->" +
 					" owner : " + ownerId + " spender : " + spenderId + " allowance : " + allowance);
 		}
+		tokenAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getTokenAdjustmentsCount(),
+				"expected tokenAllowanceCount was : " + n + " but is : " + actualRecord.getTokenAdjustmentsCount()));
 		for (var expectedTokenAllowance : expectedTokenAllowances) {
 			final var ownerId = spec.registry().getAccountID(expectedTokenAllowance.owner);
 			final var tokenId = spec.registry().getTokenID(expectedTokenAllowance.token);
@@ -523,6 +545,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			assertTrue(found, "Couldn't find token allowance with ->" +
 					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId + " allowance : " + allowance);
 		}
+		nftAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getNftAdjustmentsCount(),
+				"expected nftAllowanceCount was : " + n + " but is : " + actualRecord.getNftAdjustmentsCount()));
+
 		for (var expectedNftAllowance : expectedNftAllowances) {
 			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner);
 			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token);

@@ -445,28 +445,32 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner).hasToken(relationshipWith(fungibleToken).balance(950L)),
+						getAccountInfo(owner)
+								.has(accountWith().tokenAllowancesContaining(fungibleToken, spender, 1450))
+								.hasToken(relationshipWith(fungibleToken).balance(950L)),
 						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
 						cryptoTransfer(
-								movingWithAllowance(1451, fungibleToken).between(owner, receiver),
-								movingUniqueWithAllowance(nonFungibleToken, 2).between(owner, receiver))
+								movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver),
+								movingWithAllowance(1451, fungibleToken).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE),
-						getAccountInfo(owner).hasToken(relationshipWith(nonFungibleToken).balance(2)),
+						getAccountInfo(owner)
+								.has(accountWith().nftAllowancesContaining(nonFungibleToken, spender, false, List.of(2L, 6L)))
+								.hasToken(relationshipWith(nonFungibleToken).balance(2)),
 						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
 								.payingWith(spender)
 								.signedBy(spender),
 						cryptoTransfer(
 								movingWithAllowance(50, fungibleToken).between(owner, receiver),
-								movingUniqueWithAllowance(nonFungibleToken, 2).between(owner, receiver))
+								movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender),
 						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2).between(owner, receiver))
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),

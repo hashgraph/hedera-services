@@ -225,6 +225,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
+		verify(sideEffectsTracker).reset();
 		verify(accountStore, never()).commitAccount(ownerAcccount);
 	}
 

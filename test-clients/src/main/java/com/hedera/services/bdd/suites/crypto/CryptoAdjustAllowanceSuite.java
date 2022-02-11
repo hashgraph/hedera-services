@@ -571,7 +571,12 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender1, 100L)
+								.via("maxExceeded")
 								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+						getTxnRecord("maxExceeded")
+								.hasCryptoAllowanceCount(0)
+								.hasTokenAllowanceCount(0)
+								.hasNftAllowanceCount(0),
 						// reset
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
