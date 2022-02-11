@@ -34,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
@@ -55,6 +56,11 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	@Override
 	public void revert() {
+		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+	}
+
+	@Override
+	public void filterPendingChanges(Predicate<Address> filter) {
 		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
 	}
 

@@ -77,10 +77,16 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 		getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
 		wrapped.deletedAccounts.addAll(getDeletedAccounts());
 
+		final var ledgers = trackingLedgers();
 		/* We need to commit the ledgers first to make sure that any accounts we created exist in the parent,
 		* so that any set(..., BALANCE, ...) calls made by the UpdateTrackingLedgerAccounts below will be
-		* harmless repetitions of the balances we just flushed via commit(). */
-		trackingLedgers().commit();
+		* harmless repetitions of the balances we just flushed via commit().
+		*
+		* We filter any pending aliases to ensure the target address has actually been updated in this
+		* frame (it is possible for a spawned child message to have reverted during creation, _without_
+		* reverting this frame; and then the target address would not even exist.) */
+		ledgers.aliases().filterPendingChanges(updatedAccounts::containsKey);
+		ledgers.commit();
 		for (final var updatedAccount : getUpdatedAccounts()) {
 			/* First check if there is already a mutable tracker for this account in our parent updater;
 			* if there is, we commit by propagating the changes from our tracker into that tracker. */

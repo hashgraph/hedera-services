@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
+
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,6 +55,7 @@ class StackedContractAliasesTest {
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
 	private static final Address mirrorAddress = num.toEvmAddress();
+	private static final Address otherMirrorAddress = EntityNum.fromLong(1235L).toEvmAddress();
 	private static final ContractID normalId = num.toGrpcContractID();
 	private static final ContractID aliasedId = ContractID.newBuilder()
 			.setEvmAddress(ByteString.copyFrom(rawNonMirrorAddress))
@@ -180,13 +183,24 @@ class StackedContractAliasesTest {
 	}
 
 	@Test
-	void canCommitNothing() {
+	void canCommitAndFilterNothing() {
 		assertDoesNotThrow(() -> subject.commit(null));
+		assertDoesNotThrow(() -> subject.filterPendingChanges(null));
 	}
 
 	@Test
 	void revertingDoesNothingWithNoChanges() {
 		assertDoesNotThrow(subject::revert);
+	}
+
+	@Test
+	void filteringChangesWorks() {
+		subject.changedLinks().put(nonMirrorAddress, mirrorAddress);
+		subject.changedLinks().put(otherNonMirrorAddress, otherMirrorAddress);
+
+		subject.filterPendingChanges(address -> address.equals(mirrorAddress));
+
+		assertEquals(Map.of(nonMirrorAddress, mirrorAddress), subject.changedLinks());
 	}
 
 	@Test

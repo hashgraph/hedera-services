@@ -74,6 +74,7 @@ class AliasManagerTest {
 	@Test
 	void doesntSupportTransactionalSemantics() {
 		assertThrows(UnsupportedOperationException.class, () -> subject.commit(null));
+		assertThrows(UnsupportedOperationException.class, () -> subject.filterPendingChanges(null));
 		assertThrows(UnsupportedOperationException.class, subject::revert);
 	}
 
