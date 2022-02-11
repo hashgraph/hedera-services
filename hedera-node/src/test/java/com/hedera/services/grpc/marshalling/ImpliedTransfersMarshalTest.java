@@ -276,6 +276,7 @@ class ImpliedTransfersMarshalTest {
 	void aggregatesAccountAmountsAsExpected() {
 		final var account1 = asAccount("0.0.1001");
 		final var account2 = asAccount("0.0.1002");
+		final var account3 = asAccount("0.0.1003");
 		final var token1 = asToken("0.0.1010");
 		final var aa1 = AccountAmount.newBuilder()
 				.setAccountID(account1)
@@ -289,32 +290,42 @@ class ImpliedTransfersMarshalTest {
 		final var aa4 = AccountAmount.newBuilder()
 				.setAccountID(account2)
 				.setAmount(100).setIsApproval(false).build();
+		final var aa5 = AccountAmount.newBuilder()
+				.setAccountID(account3)
+				.setAmount(-50).setIsApproval(true).build();
+		final var aa6 = AccountAmount.newBuilder()
+				.setAccountID(account1)
+				.setAmount(50).setIsApproval(true).build();
 		setupProps();
 
 		final var builder = CryptoTransferTransactionBody.newBuilder()
-				.setTransfers(TransferList.newBuilder().addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4)).build())
+				.setTransfers(TransferList.newBuilder().addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4, aa5, aa6)).build())
 				.addTokenTransfers(
 						TokenTransferList.newBuilder()
 								.setToken(token1)
 								.setExpectedDecimals(UInt32Value.of(1))
-								.addAllTransfers(List.of(aa1, aa2, aa3, aa4))
+								.addAllTransfers(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
 								.build());
 		op = builder.build();
-		final var bc1 = changingHbar(adjustFrom(account1, -100), payer);
-		bc1.aggregateUnits(-100);
-		bc1.addAllowanceUnits(-100);
-		final var bc2 = changingHbar(adjustFrom(account2, +100), payer);
+		final var bc1 = changingHbar(aa1, payer);
+		bc1.aggregateUnits(-50);
+		final var bc2 = changingHbar(aa2, payer);
 		bc2.aggregateUnits(+100);
-		final var bc3 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
-		bc3.aggregateUnits(-100);
-		final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);
-		bc4.aggregateUnits(+100);
+		final var bc3 = changingHbar(aa5, payer);
+		final var bc4 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa1, payer);
+		bc4.aggregateUnits(-50);
+		final var bc5 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa2, payer);
+		bc5.aggregateUnits(+100);
+		final var bc6 = changingFtUnits(Id.fromGrpcToken(token1), token1, aa5, payer);
+
 
 		final List<BalanceChange> expectedChanges = new ArrayList<>();
 		expectedChanges.add(bc1);
 		expectedChanges.add(bc2);
 		expectedChanges.add(bc3);
 		expectedChanges.add(bc4);
+		expectedChanges.add(bc5);
+		expectedChanges.add(bc6);
 
 		givenValidity(OK);
 		given(changeManagerFactory.from(any(), anyInt())).willReturn(changeManager);

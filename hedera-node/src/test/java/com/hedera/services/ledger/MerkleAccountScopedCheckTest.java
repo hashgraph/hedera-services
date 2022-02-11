@@ -134,7 +134,6 @@ class MerkleAccountScopedCheckTest {
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(10L);
-		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
@@ -148,7 +147,6 @@ class MerkleAccountScopedCheckTest {
 		when(account.isDeleted()).thenReturn(false);
 		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
 		when(account.getBalance()).thenReturn(110L);
-		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
 		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
@@ -160,7 +158,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnFungible() {
-		when(balanceChange.getAggregatedUnits()).thenReturn(-5L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
@@ -172,7 +169,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenSpenderIsHasInsufficientAllowanceOnFungible() {
-		when(balanceChange.getAggregatedUnits()).thenReturn(-105L);
 		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
@@ -185,7 +181,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnFungible() {
-		when(balanceChange.getAggregatedUnits()).thenReturn(-15L);
 		when(balanceChange.isForFungibleToken()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getFungibleTokenAllowances()).thenReturn(FUNGIBLE_ALLOWANCES);
@@ -197,7 +192,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
-		when(balanceChange.isForNft()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
@@ -209,7 +203,6 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(4L);
-		when(balanceChange.isForNft()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
@@ -220,7 +213,6 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnAllNFT() {
-		when(balanceChange.isForNft()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
@@ -232,7 +224,6 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(2L);
-		when(balanceChange.isForNft()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
