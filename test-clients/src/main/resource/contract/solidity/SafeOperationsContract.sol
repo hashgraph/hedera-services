@@ -2,44 +2,56 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./SafeHederaTokenService.sol";
+import "./SafeHTS.sol";
 
-contract SafeOperationsContract is SafeHederaTokenService {
+contract SafeOperationsContract {
+    using SafeHTS for IHTS;
+
     function safeTokenAssociate(address sender, address tokenAddress) external {
-        SafeHederaTokenService.safeAssociateToken(sender, tokenAddress);
+        IHTS(tokenAddress).safeAssociateToken(sender);
     }
+
     function safeTokenDissociate(address sender, address tokenAddress) external {
-        SafeHederaTokenService.safeDissociateToken(sender, tokenAddress);
+        IHTS(tokenAddress).safeDissociateToken(sender);
     }
-    function safeTokensAssociate(address account, address[] memory tokens) external {
-        SafeHederaTokenService.safeAssociateTokens(account, tokens);
-    }
-    function safeTokensDissociate(address account, address[] memory tokens) external {
-        SafeHederaTokenService.safeDissociateTokens(account, tokens);
-    }
+
     function safeTokensTransfer(address token, address[] memory accountIds, int64[] memory amounts) external {
-        SafeHederaTokenService.safeTransferTokens(token, accountIds, amounts);
+        IHTS(token).safeTransferTokens(accountIds, amounts);
     }
+
     function safeNFTsTransfer(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) external {
-        SafeHederaTokenService.safeTransferNFTs(token, sender, receiver, serialNumber);
+        IHTS(token).safeTransferNFTs(sender, receiver, serialNumber);
     }
+
     function safeTokenTransfer(address token, address sender, address receiver, int64 amount) external {
-        SafeHederaTokenService.safeTransferToken(token, sender, receiver, amount);
+        IHTS(token).safeTransferToken(sender, receiver, amount);
     }
+
     function safeNFTTransfer(address token, address sender, address receiver, int64 serialNum) external {
-        SafeHederaTokenService.safeTransferNFT(token, sender, receiver, serialNum);
+        IHTS(token).safeTransferNFT(sender, receiver, serialNum);
     }
-    function safeTransferCrypto(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
-        SafeHederaTokenService.safeCryptoTransfer(tokenTransfers);
-    }
+
     function safeTokenMint(address token, uint64 amount, bytes[] memory metadata) external
-    returns (uint64 newTotalSupply, int[] memory serialNumbers)
+    returns (uint64 newTotalSupply, int64[] memory serialNumbers)
     {
-        (newTotalSupply, serialNumbers) = SafeHederaTokenService.safeMintToken(token, amount, metadata);
+        (newTotalSupply, serialNumbers) = IHTS(token).safeMintToken(amount, metadata);
     }
+
     function safeTokenBurn(address token, uint64 amount, int64[] memory serialNumbers) external
     returns (uint64 newTotalSupply)
     {
-        (newTotalSupply) = SafeHederaTokenService.safeBurnToken(token, amount, serialNumbers);
+        (newTotalSupply) = IHTS(token).safeBurnToken(amount, serialNumbers);
+    }
+
+    function safeTokensAssociate(address account, address[] memory tokens) external {
+        SafeHTS.safeAssociateTokens(account, tokens);
+    }
+
+    function safeTokensDissociate(address account, address[] memory tokens) external {
+        SafeHTS.safeDissociateTokens(account, tokens);
+    }
+
+    function safeTransferCrypto(IHTS.TokenTransferList[] memory tokenTransfers) external {
+        SafeHTS.safeCryptoTransfer(tokenTransfers);
     }
 }

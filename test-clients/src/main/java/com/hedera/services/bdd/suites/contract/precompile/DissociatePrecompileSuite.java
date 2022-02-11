@@ -361,7 +361,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						childRecordsCheck("multipleDissociationTxn", SUCCESS, recordWith().status(SUCCESS)),
-						getAccountInfo(ACCOUNT).hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT),
+						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(KNOWABLE_TOKEN)
 				);
 	}

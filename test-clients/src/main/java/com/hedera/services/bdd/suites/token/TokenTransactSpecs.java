@@ -117,54 +117,52 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnAccountBalancesForTreasury(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn(),
-						cannotSendFungibleToDissociatedContractsOrAccounts(),
-						cannotGiveNftsToDissociatedContractsOrAccounts(),
-						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-						transferListsEnforceTokenTypeRestrictions(),
-						/* HIP-18 charging case studies */
-						fixedHbarCaseStudy(),
-						fractionalCaseStudy(),
-						simpleHtsFeeCaseStudy(),
-						nestedHbarCaseStudy(),
-						nestedFractionalCaseStudy(),
-						nestedHtsCaseStudy(),
-						treasuriesAreExemptFromAllCustomFees(),
-						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-						multipleRoyaltyFallbackCaseStudy(),
-						normalRoyaltyCaseStudy(),
-						canTransactInTokenWithSelfDenominatedFixedFee(),
-						nftOwnersChangeAtomically(),
-						fractionalNetOfTransfersCaseStudy(),
-						royaltyAndFractionalTogetherCaseStudy(),
-						respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-						/* HIP-23 */
-						happyPathAutoAssociationsWorkForBothTokenTypes(),
-						failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
-						newSlotsCanBeOpenedViaUpdate(),
-						newSlotsCanBeOpenedViaDissociate(),
-						autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-						autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
-				}
-		);
+		return List.of(
+				balancesChangeOnTokenTransfer(),
+				accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+				senderSigsAreValid(),
+				balancesAreChecked(),
+				duplicateAccountsInTokenTransferRejected(),
+				tokenOnlyTxnsAreAtomic(),
+				tokenPlusHbarTxnsAreAtomic(),
+				nonZeroTransfersRejected(),
+				missingEntitiesRejected(),
+				allRequiredSigsAreChecked(),
+				uniqueTokenTxnAccountBalance(),
+				uniqueTokenTxnAccountBalancesForTreasury(),
+				uniqueTokenTxnWithNoAssociation(),
+				uniqueTokenTxnWithFrozenAccount(),
+				uniqueTokenTxnWithSenderNotSigned(),
+				uniqueTokenTxnWithReceiverNotSigned(),
+				uniqueTokenTxnsAreAtomic(),
+				uniqueTokenDeletedTxn(),
+				cannotSendFungibleToDissociatedContractsOrAccounts(),
+				cannotGiveNftsToDissociatedContractsOrAccounts(),
+				recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+				transferListsEnforceTokenTypeRestrictions(),
+				/* HIP-18 charging case studies */
+				fixedHbarCaseStudy(),
+				fractionalCaseStudy(),
+				simpleHtsFeeCaseStudy(),
+				nestedHbarCaseStudy(),
+				nestedFractionalCaseStudy(),
+				nestedHtsCaseStudy(),
+				treasuriesAreExemptFromAllCustomFees(),
+				collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+				multipleRoyaltyFallbackCaseStudy(),
+				normalRoyaltyCaseStudy(),
+				canTransactInTokenWithSelfDenominatedFixedFee(),
+				nftOwnersChangeAtomically(),
+				fractionalNetOfTransfersCaseStudy(),
+				royaltyAndFractionalTogetherCaseStudy(),
+				respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
+				/* HIP-23 */
+				happyPathAutoAssociationsWorkForBothTokenTypes(),
+				failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
+				newSlotsCanBeOpenedViaUpdate(),
+				newSlotsCanBeOpenedViaDissociate(),
+				autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
+				autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory());
 	}
 
 	public HapiApiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
@@ -805,7 +803,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.via("transactTxn"),
 						getAccountBalance("firstTreasury")
-								.hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR))
+								.hasTinyBars(changeFromSnapshot("treasuryBefore", ONE_HBAR))
 								.hasTokenBalance(A_TOKEN, 23),
 						getAccountBalance("beneficiary")
 								.hasTinyBars(changeFromSnapshot("beneBefore", -1 * ONE_HBAR))
@@ -2109,7 +2107,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(edgar)
 								.hasTokenBalance(topLevelToken, 1_000L - 50L),
 						getAccountBalance(nonTreasury)
-								.hasTokenBalance(topLevelToken, 1_000L - 1_000L)
+								.hasTokenBalance(topLevelToken, 0L)
 								.hasTokenBalance(feeToken, 1_000L - 50L)
 				);
 	}
@@ -2161,7 +2159,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasAssessedCustomFee(HBAR_TOKEN_SENTINEL, secondCollectorForTopLevel, 2 * ONE_HBAR)
 								.hasHbarAmount(secondCollectorForTopLevel, 2 * ONE_HBAR),
 						getAccountBalance(firstCollectorForTopLevel)
-								.hasTokenBalance(topLevelToken, 1_000L - 1_000L),
+								.hasTokenBalance(topLevelToken, 0L),
 						getAccountBalance(secondCollectorForTopLevel)
 								.hasTinyBars((10 + 2) * ONE_HBAR)
 								.hasTokenBalance(topLevelToken, 1_000L + 100L),
