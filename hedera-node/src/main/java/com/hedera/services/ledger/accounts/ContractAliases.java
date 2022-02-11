@@ -26,12 +26,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.annotation.Nullable;
+import java.util.function.Predicate;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 
 public interface ContractAliases {
 	void revert();
+
+	void filterPendingChanges(Predicate<Address> filter);
 
 	void commit(@Nullable SigImpactHistorian observer);
 
