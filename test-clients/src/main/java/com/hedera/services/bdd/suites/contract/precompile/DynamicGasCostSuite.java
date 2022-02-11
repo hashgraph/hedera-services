@@ -42,7 +42,9 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -60,7 +62,11 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_GET_BYTECODE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
@@ -108,6 +114,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -182,6 +189,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						priorityAddressIsCreate2ForInternalMessages(),
 						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
+						inlineCreateCanFailSafely(),
+						inlineCreate2CanFailSafely(),
 				}
 		);
 	}
@@ -199,6 +208,117 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				tokensTransferDynamicGasCostPrecompile(),
 				nftsTransferDynamicGasCostPrecompile()
 		);
+	}
+
+	private HapiApiSpec inlineCreate2CanFailSafely() {
+		final var tcValue = 1_234L;
+		final var creation = "creation";
+		final var initcode = "initcode";
+		final var inlineCreate2Factory = "inlineCreate2Factory";
+
+		final int foo = 22;
+		final int salt = 23;
+		final int timesToFail = 7;
+		final AtomicLong factoryEntityNum = new AtomicLong();
+		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+		return defaultHapiSpec("InlineCreate2CanFailSafely")
+				.given(
+						overriding("contracts.throttle.throttleByGas", "false"),
+						fileCreate(initcode).path(REVERTING_CREATE2_FACTORY_PATH),
+						contractCreate(inlineCreate2Factory)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.via(creation)
+								.exposingNumTo(num -> {
+									factoryEntityNum.set(num);
+									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+								})
+				).when(
+						sourcing(() -> contractCallLocal(
+								inlineCreate2Factory,
+								CREATE2_FACTORY_GET_BYTECODE_ABI, factoryEvmAddress.get(), foo
+						)
+								.exposingTypedResultsTo(results -> {
+									final var tcInitcode = (byte[]) results[0];
+									testContractInitcode.set(tcInitcode);
+									log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
+								})
+								.payingWith(GENESIS)
+								.nodePayment(ONE_HBAR))
+				).then(
+						inParallel(IntStream.range(0, timesToFail).mapToObj(i ->
+										sourcing(() -> contractCall(
+												inlineCreate2Factory,
+												CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+										)
+												.payingWith(GENESIS)
+												.gas(4_000_000L)
+												.sending(tcValue)
+												.via(creation))
+								).toArray(HapiSpecOperation[]::new)
+						),
+						sourcing(() -> cryptoCreate("nextUp").exposingCreatedIdTo(id ->
+								log.info("Next entity num was {} instead of expected {}",
+										id.getAccountNum(),
+										factoryEntityNum.get() + 1)))
+				);
+	}
+
+	private HapiApiSpec inlineCreateCanFailSafely() {
+		final var tcValue = 1_234L;
+		final var creation = "creation";
+		final var initcode = "initcode";
+		final var inlineCreateFactory = "inlineCreateFactory";
+
+		final int foo = 22;
+		final int timesToFail = 7;
+		final AtomicLong factoryEntityNum = new AtomicLong();
+		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+		return defaultHapiSpec("InlineCreateCanFailSafely")
+				.given(
+						overriding("contracts.throttle.throttleByGas", "false"),
+						fileCreate(initcode).path(REVERTING_CREATE_FACTORY_PATH),
+						contractCreate(inlineCreateFactory)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.via(creation)
+								.exposingNumTo(num -> {
+									factoryEntityNum.set(num);
+									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+								})
+				).when(
+						sourcing(() -> contractCallLocal(
+								inlineCreateFactory,
+								CREATE_FACTORY_GET_BYTECODE_ABI, factoryEvmAddress.get(), foo
+						)
+								.exposingTypedResultsTo(results -> {
+									final var tcInitcode = (byte[]) results[0];
+									testContractInitcode.set(tcInitcode);
+									log.info("Contract reported TestContract initcode is {} bytes", tcInitcode.length);
+								})
+								.payingWith(GENESIS)
+								.nodePayment(ONE_HBAR))
+				).then(
+						inParallel(IntStream.range(0, timesToFail).mapToObj(i ->
+										sourcing(() -> contractCall(
+												inlineCreateFactory,
+												NORMAL_DEPLOY_ABI, testContractInitcode.get()
+										)
+												.payingWith(GENESIS)
+												.gas(4_000_000L)
+												.sending(tcValue)
+												.via(creation))
+								).toArray(HapiSpecOperation[]::new)
+						),
+						sourcing(() -> cryptoCreate("nextUp").exposingCreatedIdTo(id ->
+								log.info("Next entity num was {} instead of expected {}",
+										id.getAccountNum(),
+										factoryEntityNum.get() + 1)))
+				);
 	}
 
 	private HapiApiSpec create2FactoryWorksAsExpected() {
@@ -473,12 +593,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									.setToken(ftId)
 									.addTransfers(aaWith(tt, -6))
 									.addTransfers(aaWith(userMirrorAddr.get(), +6)))
-								.addTokenTransfers(TokenTransferList.newBuilder()
-										.setToken(nftId)
-										.addNftTransfers(NftTransfer.newBuilder()
-												.setSerialNumber(2L)
-												.setSenderAccountID(tt)
-												.setReceiverAccountID(aa(userMirrorAddr.get()))));
+									.addTokenTransfers(TokenTransferList.newBuilder()
+											.setToken(nftId)
+											.addNftTransfers(NftTransfer.newBuilder()
+													.setSerialNumber(2L)
+													.setSenderAccountID(tt)
+													.setReceiverAccountID(aa(userMirrorAddr.get()))));
 						}).signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
 						sourcing(() -> getContractInfo(userLiteralId.get()).logged())
 				);

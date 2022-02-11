@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class StackedContractAliases extends AbstractContractAliases {
 	private static final Logger log = LogManager.getLogger(StackedContractAliases.class);
@@ -53,6 +54,13 @@ public class StackedContractAliases extends AbstractContractAliases {
 	public void revert() {
 		removedLinks = null;
 		changedLinks = null;
+	}
+
+	@Override
+	public void filterPendingChanges(final Predicate<Address> filter) {
+		if (changedLinks != null) {
+			changedLinks().entrySet().removeIf(entry -> !filter.test(entry.getValue()));
+		}
 	}
 
 	@Override
