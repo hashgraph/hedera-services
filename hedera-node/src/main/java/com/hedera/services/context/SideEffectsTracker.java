@@ -21,12 +21,15 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -73,6 +76,9 @@ public class SideEffectsTracker {
 	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
+	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -396,6 +402,32 @@ public class SideEffectsTracker {
 		return all;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowances(
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowances(
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		this.nftAllowances = nftAllowances;
+	}
+
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */
@@ -405,6 +437,9 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
+		cryptoAllowances = Collections.emptyMap();
+		fungibleTokenAllowances = Collections.emptyMap();
+		nftAllowances = Collections.emptyMap();
 	}
 
 	/**

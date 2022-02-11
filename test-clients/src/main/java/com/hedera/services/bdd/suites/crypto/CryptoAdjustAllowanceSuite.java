@@ -35,6 +35,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -570,7 +571,12 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender1, 100L)
+								.via("maxExceeded")
 								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+						getTxnRecord("maxExceeded")
+								.hasCryptoAllowanceCount(0)
+								.hasTokenAllowanceCount(0)
+								.hasNftAllowanceCount(0),
 						// reset
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
@@ -1227,6 +1233,8 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender, 100L)
 								.blankMemo()
 								.via("baseAdjustTxn"),
+						getTxnRecord("baseAdjustTxn")
+								.hasCryptoAllowance(owner, spender, 100L),
 						validateChargedUsdWithin("baseAdjustTxn", 0.05063, 0.01),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
@@ -1234,6 +1242,10 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
 								.via("otherAdjustTxn"),
+						getTxnRecord("otherAdjustTxn")
+								.hasCryptoAllowance(owner, spender, 200L)
+								.hasTokenAllowance(owner, token, spender, 100L)
+								.hasNftAllowance(owner, nft, spender, false, List.of(1L)),
 						validateChargedUsdWithin("otherAdjustTxn", 0.05296, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
@@ -1253,8 +1265,11 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender, false, List.of(-1L, 2L))
 								.via("adjustTxn")
 								.logged(),
+						getTxnRecord("adjustTxn")
+								.hasCryptoAllowance(owner, spender, 210L)
+								.hasTokenAllowance(owner, token, spender, 90L)
+								.hasNftAllowance(owner, nft, spender, false, List.of(2L)),
 						validateChargedUsdWithin("adjustTxn", 0.05173, 0.01),
-
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
