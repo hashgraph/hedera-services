@@ -29,7 +29,7 @@
 		<jackson.version>2.11.2</jackson.version>
 		<besu.version>21.10.9</besu.version>
 		<tuweni.version>2.1.0</tuweni.version>
-		<besu-native.version>0.4.2</besu-native.version>
+		<besu-native.version>0.4.3</besu-native.version>
 	</properties>
 
 	<build>

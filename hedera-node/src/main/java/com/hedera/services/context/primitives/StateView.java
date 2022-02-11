@@ -96,6 +96,9 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -429,10 +432,11 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id, final AliasManager aliasManager) {
-		final var accountEntityNum = id.getAlias().isEmpty() 
-                      ? fromAccountId(id) 
-                      : aliasManager.lookupIdBy(id.getAlias());
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
+			final AliasManager aliasManager) {
+		final var accountEntityNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
 		final var account = accounts().get(accountEntityNum);
 		if (account == null) {
 			return Optional.empty();
@@ -460,7 +464,15 @@ public class StateView {
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
+		setAllowancesIfAny(info, account);
 		return Optional.of(info.build());
+	}
+
+	private void setAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
+			final MerkleAccount account) {
+		info.addAllCryptoAllowances(getCryptoAllowancesList(account));
+		info.addAllTokenAllowances(getFungibleTokenAllowancesList(account));
+		info.addAllNftAllowances(getNftAllowancesList(account));
 	}
 
 	public long numNftsOwnedBy(AccountID target) {
