@@ -137,23 +137,23 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						transferWithMissingAccountGetsInvalidAccountId(),
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-//						baseCryptoTransferFeeChargedAsExpected(),
-//						autoAssociationRequiresOpenSlots(),
-//						royaltyCollectorsCanUseAutoAssociation(),
-//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-//						checksExpectedDecimalsForFungibleTokenTransferList(),
-//						allowanceTransfersWorkAsExpected(),
+						transferWithMissingAccountGetsInvalidAccountId(),
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected(),
+						autoAssociationRequiresOpenSlots(),
+						royaltyCollectorsCanUseAutoAssociation(),
+						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+						checksExpectedDecimalsForFungibleTokenTransferList(),
+						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork()
 				}
 		);
@@ -219,12 +219,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(
 								moving(100, fungibleToken).between(TOKEN_TREASURY, spender),
 								moving(1000, fungibleToken).between(TOKEN_TREASURY, owner),
-								movingUnique(nonFungibleToken, 1,2).between(TOKEN_TREASURY, owner),
+								movingUnique(nonFungibleToken, 1, 2).between(TOKEN_TREASURY, owner),
 								moving(1000, fungibleToken).between(TOKEN_TREASURY, otherOwner),
-								movingUnique(nonFungibleToken, 3,4).between(TOKEN_TREASURY, otherOwner)),
+								movingUnique(nonFungibleToken, 3, 4).between(TOKEN_TREASURY, otherOwner)),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(owner,spender, 10 * ONE_HBAR)
+								.addCryptoAllowance(owner, spender, 10 * ONE_HBAR)
 								.addTokenAllowance(owner, fungibleToken, spender, 500)
 								.addNftAllowance(owner, nonFungibleToken, spender, false, List.of(1L, 2L))
 								.fee(ONE_HUNDRED_HBARS),
@@ -274,7 +274,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 85)
-										.nftAllowancesContaining(nonFungibleToken, spender, true, Collections.EMPTY_LIST)),
+										.nftAllowancesContaining(nonFungibleToken, spender, true,
+												Collections.EMPTY_LIST)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(4))
@@ -457,7 +458,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE),
 						getAccountInfo(owner)
-								.has(accountWith().nftAllowancesContaining(nonFungibleToken, spender, false, List.of(2L, 6L)))
+								.has(accountWith().nftAllowancesContaining(nonFungibleToken, spender, false,
+										List.of(2L, 6L)))
 								.hasToken(relationshipWith(nonFungibleToken).balance(2)),
 						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
 								.payingWith(spender)
