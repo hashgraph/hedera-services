@@ -67,6 +67,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,8 +111,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -199,11 +202,10 @@ class ERC721PrecompilesTest {
     private TxnReceipt.Builder txnReceipt;
     @Mock
     private UsagePricesProvider resourceCosts;
-    @Mock
-    private HTSPrecompiledContract.Precompile precompile;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
+    private MockedStatic<EntityIdUtils> entityIdUtils;
 
     @BeforeEach
     void setUp() {
@@ -217,6 +219,18 @@ class ERC721PrecompilesTest {
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
         subject.setAccountStoreFactory(accountStoreFactory);
         subject.setSideEffectsFactory(() -> sideEffects);
+        entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
+        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
+        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
+                .thenReturn(precompiledContract);
+        entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        entityIdUtils.close();
     }
 
     @Test
@@ -237,6 +251,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
+
         // when:
         subject.prepareFieldsFromFrame(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -335,11 +350,6 @@ class ERC721PrecompilesTest {
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
 
-        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
-        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
-        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
-                .thenReturn(precompiledContract);
-
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
@@ -352,7 +362,6 @@ class ERC721PrecompilesTest {
         assertEquals(successResult, result);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-        entityIdUtils.close();
     }
 
     @Test
@@ -386,7 +395,6 @@ class ERC721PrecompilesTest {
 
         // then:
         assertEquals(successResult, result);
-
     }
 
     @Test
@@ -438,15 +446,6 @@ class ERC721PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-
-        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
-        entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
-        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
-                .thenReturn(precompiledContract);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
-
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
         given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
@@ -464,8 +463,54 @@ class ERC721PrecompilesTest {
         verify(transferLogic).doZeroSum(tokenTransferChanges);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
 
-        entityIdUtils.close();
+    @Test
+    void transferFromFails() {
+        givenMinimalFrameContext();
+        givenLedgers();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER_FROM);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
+        given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(false);
+        given(hederaTokenStoreFactory.newHederaTokenStore(
+                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+        )).willReturn(hederaTokenStore);
+
+        given(creator.createUnsuccessfulSyntheticRecord(eq(INVALID_SIGNATURE))).willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().setCryptoTransfer(cryptoTransferTransactionBody).build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(decoder.decodeERCTransferFrom(eq(nestedPretendArguments), any(), eq(false), any())).willReturn(
+                Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
+
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        // when:
+        subject.prepareFieldsFromFrame(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertNull(result);
     }
 
     @Test
@@ -505,50 +550,26 @@ class ERC721PrecompilesTest {
     void transferNotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
         given(wrappedLedgers.tokens()).willReturn(tokens);
-
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
-
-        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
-        entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
-        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
-                .thenReturn(precompiledContract);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
-
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
         assertEquals(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, exception.getMessage());
-
-        entityIdUtils.close();
     }
 
     @Test
     void decimalsNotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
         given(wrappedLedgers.tokens()).willReturn(tokens);
-
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_DECIMALS);
-
-        MockedStatic<EntityIdUtils> entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
-        entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
-        entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
-                .thenReturn(precompiledContract);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
-        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray())).thenReturn(token);
-
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         subject.prepareFieldsFromFrame(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
         assertEquals(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, exception.getMessage());
-
-        entityIdUtils.close();
     }
 
     private void givenMinimalFrameContext() {
