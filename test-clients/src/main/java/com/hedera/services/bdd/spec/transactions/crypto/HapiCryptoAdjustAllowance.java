@@ -29,11 +29,11 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -56,37 +56,37 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
-	static final Logger log = LogManager.getLogger(HapiCryptoApproveAllowance.class);
+public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowance> {
+	static final Logger log = LogManager.getLogger(HapiCryptoAdjustAllowance.class);
 
 	private List<CryptoAllowances> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowances> tokenAllowances = new ArrayList<>();
 	private List<NftAllowances> nftAllowances = new ArrayList<>();
 
-	public HapiCryptoApproveAllowance() {
+	public HapiCryptoAdjustAllowance() {
 	}
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.CryptoApproveAllowance;
+		return HederaFunctionality.CryptoAdjustAllowance;
 	}
 
 	@Override
-	protected HapiCryptoApproveAllowance self() {
+	protected HapiCryptoAdjustAllowance self() {
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addCryptoAllowance(String owner, String spender, long allowance) {
+	public HapiCryptoAdjustAllowance addCryptoAllowance(String owner, String spender, long allowance) {
 		cryptoAllowances.add(CryptoAllowances.from(owner, spender, allowance));
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addTokenAllowance(String owner, String token, String spender, long allowance) {
+	public HapiCryptoAdjustAllowance addTokenAllowance(String owner, String token, String spender, long allowance) {
 		tokenAllowances.add(TokenAllowances.from(owner, token, spender, allowance));
 		return this;
 	}
 
-	public HapiCryptoApproveAllowance addNftAllowance(String owner, String token, String spender,
+	public HapiCryptoAdjustAllowance addNftAllowance(String owner, String token, String spender,
 			boolean approvedForAll,
 			List<Long> serials) {
 		nftAllowances.add(NftAllowances.from(owner, token, spender, approvedForAll, serials));
@@ -110,13 +110,13 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentNftAllowances(info.getNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),
+				var opMeta = new CryptoAdjustAllowanceMeta(_txn.getCryptoAdjustAllowance(),
 						_txn.getTransactionID().getTransactionValidStart().getSeconds());
 				var accumulator = new UsageAccumulator();
-				cryptoOpsUsage.cryptoApproveAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+				cryptoOpsUsage.cryptoAdjustAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
 				return AdapterUtils.feeDataFrom(accumulator);
 			};
-			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoApproveAllowance, metricsCalc, txn,
+			return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoAdjustAllowance, metricsCalc, txn,
 					numPayerKeys);
 		} catch (Throwable ignore) {
 			return HapiApiSuite.ONE_HBAR;
@@ -141,15 +141,15 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		List<TokenAllowance> tallowances = new ArrayList<>();
 		List<NftAllowance> nftallowances = new ArrayList<>();
 		calculateAllowances(spec, callowances, tallowances, nftallowances);
-		CryptoApproveAllowanceTransactionBody opBody = spec
+		CryptoAdjustAllowanceTransactionBody opBody = spec
 				.txns()
-				.<CryptoApproveAllowanceTransactionBody, CryptoApproveAllowanceTransactionBody.Builder>body(
-						CryptoApproveAllowanceTransactionBody.class, b -> {
+				.<CryptoAdjustAllowanceTransactionBody, CryptoAdjustAllowanceTransactionBody.Builder>body(
+						CryptoAdjustAllowanceTransactionBody.class, b -> {
 							b.addAllTokenAllowances(tallowances);
 							b.addAllCryptoAllowances(callowances);
 							b.addAllNftAllowances(nftallowances);
 						});
-		return b -> b.setCryptoApproveAllowance(opBody);
+		return b -> b.setCryptoAdjustAllowance(opBody);
 	}
 
 	private void calculateAllowances(final HapiApiSpec spec,
@@ -194,7 +194,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::approveAllowances;
+		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::adjustAllowance;
 	}
 
 	@Override
@@ -231,5 +231,13 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 				List<Long> serials) {
 			return new NftAllowances(owner, token, spender, approvedForAll, serials);
 		}
+	}
+
+	public static List<Long> asList(Long... serials) {
+		List<Long> mutableList = new ArrayList<>();
+		for (var n : serials) {
+			mutableList.add(n);
+		}
+		return mutableList;
 	}
 }

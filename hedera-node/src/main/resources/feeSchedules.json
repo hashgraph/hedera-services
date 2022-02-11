@@ -49,6 +49,98 @@
 	  },
 	  {
 		"transactionFeeSchedule": {
+		  "hederaFunctionality": "CryptoApproveAllowance",
+		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 3766772044,
+				"bpt": 6021940,
+				"vpt": 15054849285,
+				"rbh": 4015,
+				"sbh": 301,
+				"gas": 40146,
+				"bpr": 6021940,
+				"sbpr": 150548,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 75335440874,
+				"bpt": 120438794,
+				"vpt": 301096985700,
+				"rbh": 80293,
+				"sbh": 6022,
+				"gas": 802925,
+				"bpr": 120438794,
+				"sbpr": 3010970,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 75335440874,
+				"bpt": 120438794,
+				"vpt": 301096985700,
+				"rbh": 80293,
+				"sbh": 6022,
+				"gas": 802925,
+				"bpr": 120438794,
+				"sbpr": 3010970,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
+		  "hederaFunctionality": "CryptoAdjustAllowance",
+		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 3814402851,
+				"bpt": 6098087,
+				"vpt": 15245217755,
+				"rbh": 4065,
+				"sbh": 305,
+				"gas": 40654,
+				"bpr": 6098087,
+				"sbpr": 152452,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 76288057028,
+				"bpt": 121961742,
+				"vpt": 304904355101,
+				"rbh": 81308,
+				"sbh": 6098,
+				"gas": 813078,
+				"bpr": 121961742,
+				"sbpr": 3049044,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 76288057028,
+				"bpt": 121961742,
+				"vpt": 304904355101,
+				"rbh": 81308,
+				"sbh": 6098,
+				"gas": 813078,
+				"bpr": 121961742,
+				"sbpr": 3049044,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
 		  "hederaFunctionality": "CryptoAccountAutoRenew",
 		  "fees": [
 			{
@@ -3148,6 +3240,98 @@
 				"gas": 67864,
 				"bpr": 10179648,
 				"sbpr": 254491,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
+		  "hederaFunctionality": "CryptoApproveAllowance",
+		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 3766772044,
+				"bpt": 6021940,
+				"vpt": 15054849285,
+				"rbh": 4015,
+				"sbh": 301,
+				"gas": 40146,
+				"bpr": 6021940,
+				"sbpr": 150548,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 75335440874,
+				"bpt": 120438794,
+				"vpt": 301096985700,
+				"rbh": 80293,
+				"sbh": 6022,
+				"gas": 802925,
+				"bpr": 120438794,
+				"sbpr": 3010970,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 75335440874,
+				"bpt": 120438794,
+				"vpt": 301096985700,
+				"rbh": 80293,
+				"sbh": 6022,
+				"gas": 802925,
+				"bpr": 120438794,
+				"sbpr": 3010970,
+				"min": 0,
+				"max": 1000000000000000
+			  }
+			}
+		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule": {
+		  "hederaFunctionality": "CryptoAdjustAllowance",
+		  "fees": [
+			{
+			  "subType": "DEFAULT",
+			  "nodedata": {
+				"constant": 3814402851,
+				"bpt": 6098087,
+				"vpt": 15245217755,
+				"rbh": 4065,
+				"sbh": 305,
+				"gas": 40654,
+				"bpr": 6098087,
+				"sbpr": 152452,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "networkdata": {
+				"constant": 76288057028,
+				"bpt": 121961742,
+				"vpt": 304904355101,
+				"rbh": 81308,
+				"sbh": 6098,
+				"gas": 813078,
+				"bpr": 121961742,
+				"sbpr": 3049044,
+				"min": 0,
+				"max": 1000000000000000
+			  },
+			  "servicedata": {
+				"constant": 76288057028,
+				"bpt": 121961742,
+				"vpt": 304904355101,
+				"rbh": 81308,
+				"sbh": 6098,
+				"gas": 813078,
+				"bpr": 121961742,
+				"sbpr": 3049044,
 				"min": 0,
 				"max": 1000000000000000
 			  }

@@ -178,7 +178,7 @@ public class TypedTokenStore {
 	 * 		the account in the relationship to load
 	 * @return a usable model of the token-account relationship or null if the requested relationship doesnt exist
 	 */
-	public TokenRelationship loadPossiblyDeletedTokenRelationship(Token token, Account account) {
+	public TokenRelationship loadPossiblyMissingTokenRelationship(Token token, Account account) {
 		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
 		if (merkleTokenRel == null) {

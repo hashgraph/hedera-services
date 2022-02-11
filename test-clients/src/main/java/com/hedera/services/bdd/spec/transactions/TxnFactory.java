@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -150,7 +151,7 @@ public class TxnFactory {
 			sampleTxnId.set(defaultTxnId);
 		}
 
-		final var memoToUse = (setup.isMemoUTF8() == TRUE ) ? setup.defaultUTF8memo() : setup.defaultMemo();
+		final var memoToUse = (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
 
 		return builder -> builder
 				.setTransactionID(defaultTxnId)
@@ -162,63 +163,76 @@ public class TxnFactory {
 
 	public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def) throws Throwable {
 		Method newBuilder = tClass.getMethod("newBuilder");
-		B opBuilder = (B)newBuilder.invoke(null);
+		B opBuilder = (B) newBuilder.invoke(null);
 		String defaultBodyMethod = String.format("defaultDef_%s", tClass.getSimpleName());
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
-		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
-		return (T)opBuilder.build();
+		((Consumer<B>) defaultBody.invoke(this)).andThen(def).accept(opBuilder);
+		return (T) opBuilder.build();
 	}
 
 	public Consumer<TokenAssociateTransactionBody.Builder> defaultDef_TokenAssociateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenDissociateTransactionBody.Builder> defaultDef_TokenDissociateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccountTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenRevokeKycTransactionBody.Builder> defaultDef_TokenRevokeKycTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenGrantKycTransactionBody.Builder> defaultDef_TokenGrantKycTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenBurnTransactionBody.Builder> defaultDef_TokenBurnTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenMintTransactionBody.Builder> defaultDef_TokenMintTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenDeleteTransactionBody.Builder> defaultDef_TokenDeleteTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenFreezeAccountTransactionBody.Builder> defaultDef_TokenFreezeAccountTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenUnfreezeAccountTransactionBody.Builder> defaultDef_TokenUnfreezeAccountTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenUpdateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenPauseTransactionBody.Builder> defaultDef_TokenPauseTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenUnpauseTransactionBody.Builder> defaultDef_TokenUnpauseTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
@@ -232,7 +246,8 @@ public class TxnFactory {
 	}
 
 	public Consumer<UncheckedSubmitBody.Builder> defaultDef_UncheckedSubmitBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ConsensusSubmitMessageTransactionBody.Builder> defaultDef_ConsensusSubmitMessageTransactionBody() {
@@ -242,7 +257,8 @@ public class TxnFactory {
 	}
 
 	public Consumer<ConsensusUpdateTopicTransactionBody.Builder> defaultDef_ConsensusUpdateTopicTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ConsensusCreateTopicTransactionBody.Builder> defaultDef_ConsensusCreateTopicTransactionBody() {
@@ -252,15 +268,18 @@ public class TxnFactory {
 	}
 
 	public Consumer<ConsensusDeleteTopicTransactionBody.Builder> defaultDef_ConsensusDeleteTopicTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<FreezeTransactionBody.Builder> defaultDef_FreezeTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<FileDeleteTransactionBody.Builder> defaultDef_FileDeleteTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ContractDeleteTransactionBody.Builder> defaultDef_ContractDeleteTransactionBody() {
@@ -270,7 +289,8 @@ public class TxnFactory {
 	}
 
 	public Consumer<ContractUpdateTransactionBody.Builder> defaultDef_ContractUpdateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ContractCallTransactionBody.Builder> defaultDef_ContractCallTransactionBody() {
@@ -303,7 +323,8 @@ public class TxnFactory {
 	}
 
 	public Consumer<FileUpdateTransactionBody.Builder> defaultDef_FileUpdateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	private Timestamp defaultExpiry() {
@@ -321,11 +342,13 @@ public class TxnFactory {
 	}
 
 	public Consumer<SystemDeleteTransactionBody.Builder> defaultDef_SystemDeleteTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<SystemUndeleteTransactionBody.Builder> defaultDef_SystemUndeleteTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<CryptoCreateTransactionBody.Builder> defaultDef_CryptoCreateTransactionBody() {
@@ -336,7 +359,8 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoUpdateTransactionBody.Builder> defaultDef_CryptoUpdateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
@@ -349,18 +373,26 @@ public class TxnFactory {
 		};
 	}
 
+	public Consumer<CryptoAdjustAllowanceTransactionBody.Builder> defaultDef_CryptoAdjustAllowanceTransactionBody() {
+		return builder -> {
+		};
+	}
+
 	public Consumer<ScheduleCreateTransactionBody.Builder> defaultDef_ScheduleCreateTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ScheduleSignTransactionBody.Builder> defaultDef_ScheduleSignTransactionBody() {
-		return builder -> {};
+		return builder -> {
+		};
 	}
 
 	public Consumer<ScheduleDeleteTransactionBody.Builder> defaultDef_ScheduleDeleteTransactionBody() {
 		return builder -> {
 		};
 	}
+
 	public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder> defaultDef_TokenFeeScheduleUpdateTransactionBody() {
 		return builder -> {
 		};
