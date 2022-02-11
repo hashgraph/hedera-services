@@ -165,8 +165,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		ids.reclaimLastId();
 		liveSideEffects.reset();
 		subject.begin();
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a")));
+		final var customizer = new HederaAccountCustomizer().memo("a");
+		assertThrows(IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
 		assertEquals(1, liveSideEffects.getNetTrackedHbarChanges().getAccountAmountsCount());
 	}
 

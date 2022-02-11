@@ -47,6 +47,8 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 public class AliasManager extends AbstractContractAliases implements ContractAliases {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
+	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
+
 	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
@@ -56,17 +58,17 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	@Override
 	public void revert() {
-		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
 	}
 
 	@Override
 	public void filterPendingChanges(Predicate<Address> filter) {
-		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
 	}
 
 	@Override
 	public void commit(final @Nullable SigImpactHistorian observer) {
-		throw new UnsupportedOperationException("Base alias manager does not buffer changes");
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
 	}
 
 	@Override

@@ -124,17 +124,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 		Objects.requireNonNull(recordsHistorian, "A static call cannot generated sponsored accounts");
 		try {
 			for (final var entry : sponsorMap.entrySet()) {
-				final var createdId = accountIdFromEvmAddress(entry.getKey());
-				if (!entityAccess.isExtant(createdId)) {
-					log.warn("Sponsored account {} was not actually created; the entity id will remain unused",
-							() -> asLiteralString(createdId));
-					continue;
-				}
 				final var sponsorId = accountIdFromEvmAddress(entry.getValue());
-				if (!entityAccess.isExtant(sponsorId)) {
-					log.warn("Sponsor {} for new account {} does not exist; the account will not be customized",
-							() -> asLiteralString(sponsorId),
-							() -> asLiteralString(createdId));
+				final var createdId = accountIdFromEvmAddress(entry.getKey());
+				if (!isValidCustomization(sponsorId, createdId)) {
 					continue;
 				}
 
@@ -160,6 +152,21 @@ public class HederaWorldState implements HederaMutableWorldState {
 			// could throw an exception; but use try-finally here to make sure we reset the sponsor map.
 			sponsorMap.clear();
 		}
+	}
+
+	private boolean isValidCustomization(final AccountID sponsorId, final AccountID createdId) {
+		if (!entityAccess.isExtant(createdId)) {
+			final var cId = asLiteralString(createdId);
+			log.warn("Sponsored account {} was not actually created; the entity id will remain unused", cId);
+			return false;
+		}
+		if (!entityAccess.isExtant(sponsorId)) {
+			final var sId = asLiteralString(sponsorId);
+			final var cId = asLiteralString(createdId);
+			log.warn("Sponsor {} for account {} does not exist; the account will not be customized", sId, cId);
+			return false;
+		}
+		return true;
 	}
 
 	@Override
@@ -343,10 +350,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			this.expiry = expiry;
 		}
 
-		public AccountID getAccount() {
-			return account;
-		}
-
 		private Code getCodeInternal() {
 			final var code = codeCache.getIfPresent(address);
 			return (code == null) ? EMPTY_CODE : code;
@@ -484,7 +487,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 	}
 
-	private boolean isCreationOf(
+	static boolean isCreationOf(
 			final AccountID backingId,
 			final ExpirableTxnRecord.Builder recordBuilder
 	) {

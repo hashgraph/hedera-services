@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -552,6 +553,27 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	void onlyStoresCodeIfUpdated() {
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		final var someAddress = contract.asEvmAddress();
+		given(aliases.resolveForEvm(someAddress)).willReturn(someAddress);
+
+		final var actualSubject = subject.updater();
+
+		final var accountId = accountIdFromEvmAddress(someAddress);
+		given(entityAccess.isExtant(accountId)).willReturn(true);
+		given(entityAccess.getBalance(accountId)).willReturn(balance);
+		given(entityAccess.getProxy(accountId)).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(accountId)).willReturn(123L);
+
+		actualSubject.getAccount(someAddress);
+		actualSubject.commit();
+
+		verify(entityAccess, never()).storeCode(any(), any());
+	}
+
+	@Test
 	void persistNewlyCreatedContracts() {
 		givenNonNullWorldLedgers();
 		final var newAddress = contract.asEvmAddress();
@@ -574,6 +596,17 @@ class HederaWorldStateTest {
 		// and:
 		assertEquals(1, result.size());
 		assertEquals(contract.asGrpcContract(), result.get(0));
+	}
+
+	@Test
+	void creationPredicateDoesntMatchUnlessContractIdMatchesBackingId() {
+		final var receiptBuilder = TxnReceipt.newBuilder()
+				.setContractId(contract.asEntityId())
+				.setStatus(SUCCESS_LITERAL);
+		final var recordBuilder = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(receiptBuilder);
+
+		assertFalse(HederaWorldState.isCreationOf(sponsor.asGrpcAccount(), recordBuilder));
 	}
 
 	private void givenNonNullWorldLedgers() {
