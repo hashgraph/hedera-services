@@ -47,7 +47,7 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 	boolean adjustmentsAreSet = false;
 	List<AccountAmount> hbarAdjustments = new ArrayList<>();
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
-	Map<NftID, List<AccountID>> ownershipChanges = new HashMap<>();
+	Map<NftID, NftTransfer> ownershipChanges = new HashMap<>();
 	CryptoTransferTransactionBody.Builder xfers = CryptoTransferTransactionBody.newBuilder();
 
 	private List<TinyBarsFromTo> transfers = DEFAULT_TRANSFERS;
@@ -72,7 +72,22 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
 	public CryptoTransferFactory changingOwner(NftID nft, AccountID sender, AccountID receiver) {
 		usesTokenBuilders = true;
-		ownershipChanges.put(nft, List.of(sender, receiver));
+		ownershipChanges.put(nft, NftTransfer.newBuilder()
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(nft.getSerialNumber())
+				.build());
+		return this;
+	}
+
+	public CryptoTransferFactory approvedChangingOwner(NftID nft, AccountID sender, AccountID receiver) {
+		usesTokenBuilders = true;
+		ownershipChanges.put(nft, NftTransfer.newBuilder()
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(nft.getSerialNumber())
+				.setIsApproval(true)
+				.build());
 		return this;
 	}
 
@@ -82,6 +97,17 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 				.add(AccountAmount.newBuilder()
 						.setAccountID(aId)
 						.setAmount(amount)
+						.build());
+		return this;
+	}
+
+	public CryptoTransferFactory approvedAdjusting(AccountID aId, TokenID tId, long amount) {
+		usesTokenBuilders = true;
+		adjustments.computeIfAbsent(tId, ignore -> new ArrayList<>())
+				.add(AccountAmount.newBuilder()
+						.setAccountID(aId)
+						.setAmount(amount)
+						.setIsApproval(true)
 						.build());
 		return this;
 	}
@@ -112,10 +138,7 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 				ownershipChanges.entrySet().stream()
 						.forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
 								.setToken(entry.getKey().getTokenID())
-								.addNftTransfers(NftTransfer.newBuilder()
-										.setSenderAccountID(entry.getValue().get(0))
-										.setReceiverAccountID(entry.getValue().get(1))
-										.setSerialNumber(entry.getKey().getSerialNumber()))));
+								.addNftTransfers(entry.getValue())));
 				xfers.setTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
 				adjustmentsAreSet = true;
 			}
@@ -128,9 +151,14 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 				.stream()
 				.flatMap(fromTo -> List.of(
 						AccountAmount.newBuilder()
-								.setAccountID(fromTo.payerId()).setAmount(-1 * fromTo.getAmount()).build(),
+								.setAccountID(fromTo.payerId())
+								.setAmount(-1 * fromTo.getAmount())
+								.setIsApproval(fromTo.isApproval())
+								.build(),
 						AccountAmount.newBuilder()
-								.setAccountID(fromTo.payeeId()).setAmount(fromTo.getAmount()).build()
+								.setAccountID(fromTo.payeeId())
+								.setAmount(fromTo.getAmount())
+								.build()
 				).stream()).collect(toList());
 	}
 }

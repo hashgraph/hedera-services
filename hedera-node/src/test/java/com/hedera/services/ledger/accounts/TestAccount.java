@@ -23,26 +23,46 @@ package com.hedera.services.ledger.accounts;
 import com.google.common.base.MoreObjects;
 
 public class TestAccount {
+	public enum Allowance {
+		MISSING,
+		INSUFFICIENT,
+		OK
+	}
+
 	public static final long DEFAULT_TOKEN_THING = 123L;
 
 	public long value;
 	public long tokenThing;
 	public Object thing;
 	public boolean flag;
+	public Allowance validHbarAllowances = Allowance.MISSING;
+	public Allowance validFungibleAllowances = Allowance.MISSING;
+	public Allowance validNftAllowances= Allowance.MISSING;
 
 	public TestAccount() {
 		tokenThing = DEFAULT_TOKEN_THING;
 	}
 
 	public TestAccount(long value, Object thing, boolean flag, long tokenThing) {
+		this(value, thing, flag, tokenThing, Allowance.MISSING, Allowance.MISSING, Allowance.MISSING);
+	}
+
+	public TestAccount(long value, Object thing, boolean flag, long tokenThing,
+			Allowance validHbarAllowances,
+			Allowance validFungibleAllowances,
+			Allowance validNftAllowances
+			) {
 		this.value = value;
 		this.thing = thing;
 		this.flag = flag;
 		this.tokenThing = tokenThing;
+		this.validHbarAllowances = validHbarAllowances;
+		this.validFungibleAllowances = validFungibleAllowances;
+		this.validNftAllowances = validNftAllowances;
 	}
 
 	public TestAccount(long value, Object thing, boolean flag) {
-		this(value, thing, flag, DEFAULT_TOKEN_THING);
+		this(value, thing, flag, DEFAULT_TOKEN_THING, Allowance.MISSING, Allowance.MISSING, Allowance.MISSING);
 	}
 
 	public Object getThing() {
@@ -77,6 +97,30 @@ public class TestAccount {
 		this.tokenThing = tokenThing;
 	}
 
+	public Allowance getValidHbarAllowances() {
+		return validHbarAllowances;
+	}
+
+	public void setValidHbarAllowances(final Allowance validHbarAllowances) {
+		this.validHbarAllowances = validHbarAllowances;
+	}
+
+	public Allowance getValidFungibleAllowances() {
+		return validFungibleAllowances;
+	}
+
+	public void setValidFungibleAllowances(final Allowance validFungibleAllowances) {
+		this.validFungibleAllowances = validFungibleAllowances;
+	}
+
+	public Allowance getValidNftAllowances() {
+		return validNftAllowances;
+	}
+
+	public void setValidNftAllowances(final Allowance validNftAllowances) {
+		this.validNftAllowances = validNftAllowances;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
@@ -89,7 +133,10 @@ public class TestAccount {
 		return thing.equals(that.thing)
 				&& (flag == that.flag)
 				&& (value == that.value)
-				&& this.tokenThing == that.tokenThing;
+				&& this.tokenThing == that.tokenThing
+				&& this.validHbarAllowances == that.validHbarAllowances
+				&& this.validFungibleAllowances == that.validFungibleAllowances
+				&& this.validNftAllowances == that.validNftAllowances;
 	}
 
 	@Override
@@ -99,6 +146,9 @@ public class TestAccount {
 				.add("thing", thing)
 				.add("value", value)
 				.add("tokenThing", tokenThing)
+				.add("hbarAllowances", validHbarAllowances)
+				.add("fungibleAllowances", validFungibleAllowances)
+				.add("nftAllowances", validNftAllowances)
 				.toString();
 	}
 }

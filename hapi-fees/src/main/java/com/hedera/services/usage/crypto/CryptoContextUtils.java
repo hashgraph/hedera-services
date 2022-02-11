@@ -118,4 +118,3 @@ public class CryptoContextUtils {
 		return counter;
 	}
 }
-

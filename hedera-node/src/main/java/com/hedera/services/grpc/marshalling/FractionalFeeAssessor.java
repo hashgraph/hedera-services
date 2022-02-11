@@ -52,7 +52,7 @@ public class FractionalFeeAssessor {
 			BalanceChangeManager changeManager,
 			List<FcAssessedCustomFee> accumulator
 	) {
-		final var initialUnits = -change.units();
+		final var initialUnits = -change.getAggregatedUnits();
 		if (initialUnits < 0) {
 			throw new IllegalArgumentException("Cannot assess fees to a credit");
 		}
@@ -115,7 +115,7 @@ public class FractionalFeeAssessor {
 	void reclaim(long amount, List<BalanceChange> credits) {
 		var availableToReclaim = 0L;
 		for (var credit : credits) {
-			availableToReclaim += credit.units();
+			availableToReclaim += credit.getAggregatedUnits();
 			if (availableToReclaim < 0L) {
 				throw new ArithmeticException();
 			}
@@ -123,16 +123,16 @@ public class FractionalFeeAssessor {
 
 		var amountReclaimed = 0L;
 		for (var credit : credits) {
-			var toReclaimHere = AdjustmentUtils.safeFractionMultiply(credit.units(), availableToReclaim, amount);
-			credit.adjustUnits(-toReclaimHere);
+			var toReclaimHere = AdjustmentUtils.safeFractionMultiply(credit.getAggregatedUnits(), availableToReclaim, amount);
+			credit.aggregateUnits(-toReclaimHere);
 			amountReclaimed += toReclaimHere;
 		}
 
 		if (amountReclaimed < amount) {
 			var leftToReclaim = amount - amountReclaimed;
 			for (var credit : credits) {
-				final var toReclaimHere = Math.min(credit.units(), leftToReclaim);
-				credit.adjustUnits(-toReclaimHere);
+				final var toReclaimHere = Math.min(credit.getAggregatedUnits(), leftToReclaim);
+				credit.aggregateUnits(-toReclaimHere);
 				leftToReclaim -= toReclaimHere;
 				if (leftToReclaim == 0) {
 					break;

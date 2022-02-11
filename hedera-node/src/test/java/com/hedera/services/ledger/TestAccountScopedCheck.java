@@ -28,12 +28,15 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProperty> {
 	@Override
@@ -61,6 +64,12 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
 		}
 		if (!extantProps.apply(OBJ).equals("DEFAULT")) {
 			return ACCOUNT_STILL_OWNS_NFTS;
+		}
+		if (extantProps.apply(HBAR_ALLOWANCES) == TestAccount.Allowance.MISSING) {
+			return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+		}
+		if (extantProps.apply(HBAR_ALLOWANCES) == TestAccount.Allowance.INSUFFICIENT) {
+			return AMOUNT_EXCEEDS_ALLOWANCE;
 		}
 		return OK;
 	}
