@@ -481,7 +481,7 @@ class ERC721PrecompilesTest {
                 ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
-        given(creator.createUnsuccessfulSyntheticRecord(eq(INVALID_SIGNATURE))).willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
