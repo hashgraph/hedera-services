@@ -57,7 +57,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -71,6 +73,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -142,12 +145,51 @@ class HederaWorldStateTest {
 				(Consumer<InProgressChildRecord>) customizerCaptor.getValue(),
 				EntityIdUtils.contractIdFromEvmAddress(Address.RIPEMD160),
 				specialMemo);
+	}
 
-		/* sad path with existing but not accessible account */
-		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
-		updater.commit();
-		given(entityAccess.isExtant(any())).willReturn(false);
-		assertFailsWith(() -> subject.customizeSponsoredAccounts(), ResponseCodeEnum.FAIL_INVALID);
+	@Test
+	void alwaysClearsSponsorMapEvenAfterUnforseeableFailure() {
+		givenNonNullWorldLedgers();
+
+		given(entityAccess.isExtant(any())).willReturn(true);
+		given(entityAccess.getMemo(any())).willReturn("memo");
+		given(entityAccess.getProxy(any())).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(any())).willReturn(100L);
+		willThrow(RuntimeException.class).given(entityAccess).customize(any(), any());
+
+		final var subjectUpdater = subject.updater();
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
+		subjectUpdater.commit();
+
+		assertThrows(RuntimeException.class, subject::customizeSponsoredAccounts);
+		/* Now the sponsor map should be cleared */
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
+	}
+
+	@Test
+	void doesntFailWhenSponsoredAccountIsMissing() {
+		givenNonNullWorldLedgers();
+
+		final var subjectUpdater = subject.updater();
+
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
+		subjectUpdater.commit();
+
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
+	}
+
+	@Test
+	void doesntFailWhenSponsorIsMissing() {
+		givenNonNullWorldLedgers();
+
+		final var subjectUpdater = subject.updater();
+
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.BLS12_MAP_FP2_TO_G2);
+		subjectUpdater.commit();
+
+		given(entityAccess.isExtant(accountIdFromEvmAddress(Address.RIPEMD160))).willReturn(true);
+		given(entityAccess.isExtant(accountIdFromEvmAddress(Address.BLS12_MAP_FP2_TO_G2))).willReturn(false);
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
 	}
 
 	private void assertCapturedWorkAsExpected(
