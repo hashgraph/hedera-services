@@ -20,6 +20,7 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -41,12 +42,15 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
+	private final GlobalDynamicProperties dynamicProperties;
+
 	@Inject
 	public HederaCreate2Operation(
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final AccountRecordsHistorian recordsHistorian
+			final AccountRecordsHistorian recordsHistorian,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(
 				0xF5,
@@ -58,6 +62,7 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -67,6 +72,11 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 		return effGasCalculator
 				.create2OperationGasCost(frame)
 				.plus(storageAndMemoryGasForCreation(frame, effGasCalculator));
+	}
+
+	@Override
+	protected boolean isEnabled() {
+		return dynamicProperties.isCreate2Enabled();
 	}
 
 	@Override

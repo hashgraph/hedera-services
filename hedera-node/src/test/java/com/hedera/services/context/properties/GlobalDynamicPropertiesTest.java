@@ -79,6 +79,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldThrottleByGas());
 		assertFalse(subject.isAutoCreationEnabled());
 		assertFalse(subject.expandSigsFromLastSignedState());
+		assertTrue(subject.shouldExportPrecompileResults());
+		assertFalse(subject.isCreate2Enabled());
 	}
 
 	@Test
@@ -196,6 +198,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.shouldThrottleByGas());
 		assertTrue(subject.isAutoCreationEnabled());
 		assertTrue(subject.expandSigsFromLastSignedState());
+		assertFalse(subject.shouldExportPrecompileResults());
+		assertTrue(subject.isCreate2Enabled());
 	}
 
 	@Test
@@ -345,6 +349,10 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("ledger.records.maxQueryableByAccount")).willReturn(i + 54);
 		given(properties.getIntProperty("hedera.allowances.maxTransactionLimit")).willReturn(i + 55);
 		given(properties.getIntProperty("hedera.allowances.maxAccountLimit")).willReturn(i + 56);
+		given(properties.getBooleanProperty("contracts.precompile.exportRecordResults"))
+				.willReturn((i + 57) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.allowCreate2"))
+				.willReturn((i + 58) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
