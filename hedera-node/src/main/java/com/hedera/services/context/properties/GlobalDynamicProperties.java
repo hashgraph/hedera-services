@@ -99,6 +99,7 @@ public class GlobalDynamicProperties {
 	private int maxMostRecentQueryableRecords;
 	private int maxAllowanceLimitPerTransaction;
 	private int maxAllowanceLimitPerAccount;
+	private boolean exportPrecompileResults;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -180,6 +181,7 @@ public class GlobalDynamicProperties {
 		maxMostRecentQueryableRecords = properties.getIntProperty("ledger.records.maxQueryableByAccount");
 		maxAllowanceLimitPerTransaction = properties.getIntProperty("hedera.allowances.maxTransactionLimit");
 		maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
+		exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
 	}
 
 	public int maxTokensPerAccount() {
@@ -417,4 +419,8 @@ public class GlobalDynamicProperties {
 	public int maxAllowanceLimitPerTransaction() {return maxAllowanceLimitPerTransaction;}
 
 	public int maxAllowanceLimitPerAccount() {return maxAllowanceLimitPerAccount;}
+
+	public boolean shouldExportPrecompileResults() {
+		return exportPrecompileResults;
+	}
 }

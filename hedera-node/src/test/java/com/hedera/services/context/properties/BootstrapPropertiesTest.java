@@ -103,6 +103,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
+			entry("contracts.precompile.exportRecordResults", false),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
