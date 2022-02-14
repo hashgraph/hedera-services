@@ -55,6 +55,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.automaticContractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDeploy;
@@ -123,7 +124,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 //						nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
 						invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls()
 //						nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
@@ -285,31 +286,27 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
 				.given(
 						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						contractDeploy("AssociateDissociateContract", ACCOUNT),
-//						fileCreate(THE_CONTRACT),
-//						updateLargeFile(ACCOUNT, THE_CONTRACT,
-//								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+						contractDeploy("AssociateDissociateContract")
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-//												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, "AssociateDissociateContract"))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall("AssociateDissociateContract", SINGLE_TOKEN_ASSOCIATE,
+												automaticContractCall("AssociateDissociateContract", "tokenAssociate",
 														asAddress(accountID.get()), invalidAbiArgument)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												contractCall("AssociateDissociateContract", SINGLE_TOKEN_ASSOCIATE,
+												automaticContractCall("AssociateDissociateContract", "tokenAssociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
@@ -424,20 +421,20 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
 				)
 				.when(withOpContext(
-						(spec, opLog) ->
-								allRunFor(
-										spec,
-										contractCreate(OUTER_CONTRACT,
-												ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-												getNestedContractAddress(INNER_CONTRACT, spec))
-												.bytecode(OUTER_CONTRACT),
-										contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
-												asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-												.payingWith(ACCOUNT)
-												.via("nestedAssociateTxn")
-												.gas(GAS_TO_OFFER)
-												.hasKnownStatus(ResponseCodeEnum.SUCCESS)
-								)
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCreate(OUTER_CONTRACT,
+														ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
+														getNestedContractAddress(INNER_CONTRACT, spec))
+														.bytecode(OUTER_CONTRACT),
+												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+														.payingWith(ACCOUNT)
+														.via("nestedAssociateTxn")
+														.gas(GAS_TO_OFFER)
+														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
+										)
 						)
 				).then(
 						childRecordsCheck("nestedAssociateTxn", SUCCESS,

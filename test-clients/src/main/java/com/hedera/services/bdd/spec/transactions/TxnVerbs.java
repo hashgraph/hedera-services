@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -67,17 +68,28 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class TxnVerbs {
+	public static final String RESOURCE_PATH = "src/main/resource/contract/%1$s/%1$s";
+
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
 		return new HapiCryptoCreate(account);
@@ -313,6 +325,30 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, params);
 	}
 
+	//TODO Handle wrong arguments
+	public static HapiContractCall automaticContractCall(final String contract, final String function, final Object... params) {
+		var product = getFunctionABI(contract, function);
+		return new HapiContractCall(product, contract, params);
+	}
+
+	private static String getFunctionABI(final String contract, final String function) {
+		final var path = String.format(RESOURCE_PATH + ".json", contract);
+		var functionABI = EMPTY;
+		try (final var input = new FileInputStream(path)) {
+			final var array = new JSONArray(new JSONTokener(input));
+			functionABI = IntStream
+					.range(0, array.length())
+					.mapToObj(array::getJSONObject)
+					.filter(object -> object.getString("type").equals("function") && object.getString("name").equals(function))
+					.map(JSONObject::toString)
+					.findFirst()
+					.orElse(EMPTY);
+		} catch (IOException e) {
+			e.getCause();
+		}
+		return functionABI;
+	}
+
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
 		return new HapiContractCall(abi, contract, fn);
 	}
@@ -333,11 +369,15 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
-	public static HapiContractCreate contractDeploy(final String contractName, final String accountName) {
-		final var path =  String.format("src/main/resource/contract/%1$s/%1$s.bin", contractName);
-		fileCreate(contractName);
-		updateLargeFile(accountName, contractName, extractByteCode(path));
-		return contractCreate(contractName).bytecode(contractName);
+	public static HapiSpecOperation contractDeploy(final String contract) {
+		return withOpContext((spec, ctxLog) -> {
+			final var path = String.format(RESOURCE_PATH + ".bin", contract);
+			final var payer = cryptoCreate("PAYER");
+			final var file = fileCreate(contract);
+			final var updatedFile = updateLargeFile("PAYER", contract, extractByteCode(path));
+			final var deployedContract = contractCreate(contract).bytecode(contract);
+			allRunFor(spec, payer, file, updatedFile, deployedContract);
+		});
 	}
 
 	/* SYSTEM */
