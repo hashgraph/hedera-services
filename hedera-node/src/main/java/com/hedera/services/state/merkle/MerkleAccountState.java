@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -49,6 +48,10 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeAllowances;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
@@ -170,7 +173,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numContractKvPairs = in.readInt();
 		}
 		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowances(in);
+			cryptoAllowances = deserializeCryptoAllowances(in);
+			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
+			nftAllowances = deserializeNftAllowances(in);
 		}
 	}
 
@@ -190,7 +195,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
-		serializeAllowances(out);
+		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
 	}
 
 	/* --- Copyable --- */
@@ -435,11 +440,29 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
+		assertMutable("cryptoAllowances");
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
 	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
 		return Collections.unmodifiableMap(nftAllowances);
 	}
 
 	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		assertMutable("nftAllowances");
+		this.nftAllowances = nftAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
 		assertMutable("nftAllowances");
 		this.nftAllowances = nftAllowances;
 	}
@@ -453,59 +476,18 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		assertMutable("fungibleTokenAllowances");
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
-		}
-	}
-
-	private void serializeAllowances(final SerializableDataOutputStream out) throws IOException {
-		out.writeInt(cryptoAllowances.size());
-		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
-			out.writeLong(entry.getKey().longValue());
-			out.writeLong(entry.getValue());
-		}
-		out.writeInt(fungibleTokenAllowances.size());
-		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeLong(entry.getValue());
-		}
-		out.writeInt(nftAllowances.size());
-		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : nftAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeSerializable(entry.getValue(), true);
-		}
-	}
-
-	private void deserializeAllowances(final SerializableDataInputStream in) throws IOException {
-		var numCryptoAllowances = in.readInt();
-		if(numCryptoAllowances > 0){
-			cryptoAllowances = new TreeMap<>();
-		}
-		while (numCryptoAllowances-- > 0) {
-			final var entityNum = EntityNum.fromLong(in.readLong());
-			final var allowance = in.readLong();
-			cryptoAllowances.put(entityNum, allowance);
-		}
-
-		var numFungibleTokenAllowances = in.readInt();
-		if(numFungibleTokenAllowances > 0){
-			fungibleTokenAllowances = new TreeMap<>();
-		}
-		while (numFungibleTokenAllowances-- > 0) {
-			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
-			final Long value = in.readLong();
-			fungibleTokenAllowances.put(fungibleAllowanceId, value);
-		}
-
-		var numNftAllowances = in.readInt();
-		if(numNftAllowances > 0){
-			nftAllowances = new TreeMap<>();
-		}
-		while (numNftAllowances-- > 0) {
-			final FcTokenAllowanceId nftAllowanceId = in.readSerializable();
-			final FcTokenAllowance value = in.readSerializable();
-			nftAllowances.put(nftAllowanceId, value);
 		}
 	}
 

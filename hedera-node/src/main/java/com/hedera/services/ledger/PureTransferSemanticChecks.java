@@ -23,6 +23,7 @@ package com.hedera.services.ledger;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -200,9 +201,20 @@ public class PureTransferSemanticChecks {
 		if (n < 2) {
 			return false;
 		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (adjusts.get(i).getAccountID().equals(adjusts.get(j).getAccountID())) {
+		Set<AccountID> allowanceAAs = new HashSet<>();
+		Set<AccountID> normalAAs = new HashSet<>();
+		for (var i = 0; i < n; i++) {
+			final var adjust = adjusts.get(i);
+			if (adjust.getIsApproval()) {
+				if (!allowanceAAs.contains(adjust.getAccountID())) {
+					allowanceAAs.add(adjust.getAccountID());
+				} else {
+					return true;
+				}
+			} else {
+				if (!normalAAs.contains(adjust.getAccountID())) {
+					normalAAs.add(adjust.getAccountID());
+				} else {
 					return true;
 				}
 			}

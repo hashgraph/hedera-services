@@ -42,6 +42,7 @@ class LegacyTokenStoreTest {
 	private final TokenID tId = t.asGrpcToken();
 	private final long delta = -1_234L;
 	private final long serialNo = 1234L;
+	private final AccountID payer = asAccount("1.2.345");
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("2.3.4");
 	private final NftId tNft = new NftId(1, 2, 3, serialNo);
@@ -50,7 +51,7 @@ class LegacyTokenStoreTest {
 	void adaptsBehaviorToFungibleType() {
 		// setup:
 		final var aa = AccountAmount.newBuilder().setAccountID(a).setAmount(delta).build();
-		final var fungibleChange = BalanceChange.changingFtUnits(t, t.asGrpcToken(), aa);
+		final var fungibleChange = BalanceChange.changingFtUnits(t, t.asGrpcToken(), aa, payer);
 		// and:
 		final var hybridSubject = Mockito.mock(TokenStore.class);
 
@@ -69,7 +70,7 @@ class LegacyTokenStoreTest {
 	@Test
 	void adaptsBehaviorToNonfungibleType() {
 		// setup:
-		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo));
+		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
 		// and:
 		final var hybridSubject = Mockito.mock(TokenStore.class);
 

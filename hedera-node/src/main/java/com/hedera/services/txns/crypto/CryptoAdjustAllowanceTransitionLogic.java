@@ -20,8 +20,10 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -46,7 +48,6 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -57,6 +58,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final AdjustAllowanceChecks adjustAllowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
@@ -64,12 +66,14 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final AccountStore accountStore,
 			final AdjustAllowanceChecks allowanceChecks,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties,
+			final SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.accountStore = accountStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -89,7 +93,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		adjustNftAllowances(op.getNftAllowancesList(), ownerAccount);
 
 		/* --- validate --- */
-		validateFalse(exceedsAccountLimit(ownerAccount), MAX_ALLOWANCES_EXCEEDED);
+		if (exceedsAccountLimit(ownerAccount)) {
+			sideEffectsTracker.reset();
+			throw new InvalidTransactionException(MAX_ALLOWANCES_EXCEEDED);
+		}
 
 		/* --- Persist the owner account --- */
 		accountStore.commitAccount(ownerAccount);
@@ -157,6 +164,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		}
 
 		ownerAccount.setCryptoAllowances(cryptoMap);
+		sideEffectsTracker.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
@@ -204,6 +212,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			nftAllowancesMap.put(key, value);
 		}
 		ownerAccount.setNftAllowances(nftAllowancesMap);
+		sideEffectsTracker.setNftAllowances(nftAllowancesMap);
 	}
 
 	/**
@@ -247,6 +256,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			}
 		}
 		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
+		sideEffectsTracker.setFungibleTokenAllowances(tokenAllowancesMap);
 	}
 
 	/**

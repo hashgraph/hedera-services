@@ -64,10 +64,10 @@ class HbarFeeAssessorTest {
 		subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
 
 		// then:
-		verify(payerChange).adjustUnits(-amountOfHbarFee);
+		verify(payerChange).aggregateUnits(-amountOfHbarFee);
 		verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 		// and:
-		verify(collectorChange).adjustUnits(+amountOfHbarFee);
+		verify(collectorChange).aggregateUnits(+amountOfHbarFee);
 		// and:
 		assertEquals(1, accumulator.size());
 		assertEquals(expectedFee, accumulator.get(0));

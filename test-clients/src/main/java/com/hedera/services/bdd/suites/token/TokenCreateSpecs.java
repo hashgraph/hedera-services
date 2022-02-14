@@ -1024,20 +1024,23 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+										.between(TOKEN_TREASURY, FIRST_USER))
+								.dontFullyAggregateTokenTransfers()
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						cryptoTransfer(
 								movingHbar(1)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								movingHbar(1)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+										.between(TOKEN_TREASURY, FIRST_USER))
+								.dontFullyAggregateTokenTransfers()
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						cryptoTransfer(
 								moving(1, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER),
 								moving(1, A_TOKEN)
-										.between(TOKEN_TREASURY, FIRST_USER)
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+										.between(TOKEN_TREASURY, FIRST_USER))
+								.dontFullyAggregateTokenTransfers()
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
 						cryptoTransfer(
 								moving(0, A_TOKEN)
 										.between(TOKEN_TREASURY, FIRST_USER)

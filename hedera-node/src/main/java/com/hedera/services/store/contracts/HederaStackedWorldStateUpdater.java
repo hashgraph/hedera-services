@@ -31,6 +31,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
@@ -70,9 +71,12 @@ public class HederaStackedWorldStateUpdater
 	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {
 		final var mirrorAddress = newContractAddress(sponsor);
 		final var curAliases = aliases();
-		/* Only link the alias if it's not already in use (a CREATE2 that tries to
-		 * re-use an existing alias address is going to fail in short order). */
-		if (!curAliases.isInUse(alias)) {
+		/* Only link the alias if it's not already in use, or if the target of the alleged link
+		 * doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
+		 * alias address is going to fail in short order; in the second case, the existing link
+		 * must have been created by an inline create2 that failed, but didn't revert us---we are
+		 * free to re-use this alias). */
+		if (!curAliases.isInUse(alias) || isMissingTarget(alias)) {
 			curAliases.link(alias, mirrorAddress);
 		}
 		return mirrorAddress;
@@ -141,5 +145,11 @@ public class HederaStackedWorldStateUpdater
 				(AbstractLedgerWorldUpdater) this,
 				worldState,
 				trackingLedgers().wrapped());
+	}
+
+	/* --- Internal helpers --- */
+	private boolean isMissingTarget(final Address alias) {
+		final var target = aliases().resolveForEvm(alias);
+		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
 	}
 }

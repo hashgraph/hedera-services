@@ -588,12 +588,12 @@ public class SigRequirements {
 			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				final var sender = adjust.getSenderAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, sender, null, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, sender, null, adjust.getIsApproval(), required, token, op, linkedRefs))
 						!= NONE) {
 					return accountFailure(failure, factory);
 				}
 				final var receiver = adjust.getReceiverAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, false, required, token, op, linkedRefs))
 						!= NONE) {
 					return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
 				}
@@ -1113,8 +1113,11 @@ public class SigRequirements {
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
-				var meta = result.metadata();
-				if (adjust.getAmount() < 0 || meta.receiverSigRequired()) {
+				final var meta = result.metadata();
+				final var isUnapprovedDebit = adjust.getAmount() < 0  && !adjust.getIsApproval();
+
+				if ((isUnapprovedDebit || meta.receiverSigRequired())) {
+					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
 					required.add(meta.key());
 				}
 			} else {
@@ -1136,6 +1139,7 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID party,
 			final AccountID counterparty,
+			final boolean isApproval,
 			final List<JKey> required,
 			final TokenID token,
 			final CryptoTransferTransactionBody op,
@@ -1146,11 +1150,14 @@ public class SigRequirements {
 			if (!result.succeeded()) {
 				return result.failureIfAny();
 			}
-			var meta = result.metadata();
+			final var meta = result.metadata();
 			final var isSender = counterparty == null;
-			if (isSender || meta.receiverSigRequired()) {
+			final var isUnapprovedTransfer = isSender && !isApproval;
+			final var isGatedReceipt = !isSender && meta.receiverSigRequired();
+
+			if (isUnapprovedTransfer || isGatedReceipt) {
 				required.add(meta.key());
-			} else {
+			} else if (!isSender) {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);
 				if (!tokenResult.succeeded()) {
 					return tokenResult.failureIfAny();
