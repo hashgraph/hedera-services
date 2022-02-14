@@ -34,6 +34,7 @@ import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +84,11 @@ class HederaCreateOperationTest {
 	@BeforeEach
 	void setup() {
 		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
+	}
+
+	@Test
+	void isAlwaysEnabled() {
+		Assertions.assertTrue(subject.isEnabled());
 	}
 
 	@Test
