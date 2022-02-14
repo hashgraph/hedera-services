@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_CONSTRUCTOR;
@@ -76,6 +78,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -220,10 +223,23 @@ public class ContractHTSSuite extends HapiApiSuite {
 				.then(
 						childRecordsCheck("contractCallTxn", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(REVERTED_SUCCESS),
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
 								recordWith()
 										.status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+														)
+										)
 						),
+
 						getAccountInfo(feeCollector).has(AccountInfoAsserts.accountWith().balance(0L))
 				);
 	}
@@ -265,26 +281,45 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.gas(GAS_TO_OFFER)
 								.via("receiverTx")
 				).then(
-						childRecordsCheck("zeno",
-								SUCCESS,
+						childRecordsCheck("zeno", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -50L)
 														.including(A_TOKEN, CONTRACT, 50L)
 										)),
-						childRecordsCheck("receiverTx",
-								SUCCESS,
-								recordWith()
-										.status(SUCCESS),
+
+						childRecordsCheck("receiverTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, CONTRACT, -25L)
 														.including(A_TOKEN, RECEIVER, 25L)
-										))
+										)
+						)
+
 				);
 	}
 
@@ -348,14 +383,22 @@ public class ContractHTSSuite extends HapiApiSuite {
 								})
 
 				).then(
-						childRecordsCheck("distributeTx", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										changingFungibleBalances()
-												.including(A_TOKEN, ACCOUNT, -10L)
-												.including(A_TOKEN, RECEIVER, 5L)
-												.including(A_TOKEN, theSecondReceiver, 5L)
-								))
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+														.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												changingFungibleBalances()
+														.including(A_TOKEN, ACCOUNT, -10L)
+														.including(A_TOKEN, RECEIVER, 5L)
+														.including(A_TOKEN, theSecondReceiver, 5L)
+										)
+						)
 				);
 	}
 
@@ -471,6 +514,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -10L)
@@ -479,6 +528,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 										),
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
@@ -487,15 +542,41 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(REVERTED_SUCCESS),
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
 								recordWith()
-										.status(INVALID_SIGNATURE)),
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_SIGNATURE)
+														)
+										)
+						),
 
 						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(REVERTED_SUCCESS),
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
 								recordWith()
-										.status(INSUFFICIENT_TOKEN_BALANCE)),
+										.status(INSUFFICIENT_TOKEN_BALANCE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INSUFFICIENT_TOKEN_BALANCE)
+														)
+										)
+						),
 
 						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
 						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
@@ -614,6 +695,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -10L)
@@ -622,23 +709,56 @@ public class ContractHTSSuite extends HapiApiSuite {
 										),
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(FEE_TOKEN, FEE_COLLECTOR, -100L)
 														.including(FEE_TOKEN, ACCOUNT, 100L)
-										)),
+										)
+						),
 
 						childRecordsCheck("missingSignatureTx", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(REVERTED_SUCCESS),
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
 								recordWith()
-										.status(INVALID_SIGNATURE)),
+										.status(INVALID_SIGNATURE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INVALID_SIGNATURE)
+														)
+										)
+						),
 
 						childRecordsCheck("failingChildFrameTx", CONTRACT_REVERT_EXECUTED,
 								recordWith()
-										.status(REVERTED_SUCCESS),
+										.status(REVERTED_SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										),
 								recordWith()
-										.status(INSUFFICIENT_TOKEN_BALANCE)),
+										.status(INSUFFICIENT_TOKEN_BALANCE)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(INSUFFICIENT_TOKEN_BALANCE)
+														)
+										)
+						),
 
 						getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
 						getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0)
@@ -716,11 +836,19 @@ public class ContractHTSSuite extends HapiApiSuite {
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)
 														.including(A_TOKEN, RECEIVER, AMOUNT_TO_SEND)
-										)),
+										)
+						),
+
 						getAccountBalance(SECOND_RECEIVER).hasTinyBars(CUSTOM_HBAR_FEE_AMOUNT)
 				);
 	}
@@ -789,12 +917,20 @@ public class ContractHTSSuite extends HapiApiSuite {
 						getAccountInfo(ACCOUNT).hasOwnedNfts(0),
 						getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
 
-						childRecordsCheck("distributeTx", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										NonFungibleTransfers.changingNFTBalances()
-												.including(NFT, ACCOUNT, RECEIVER, 1L)
-								))
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												NonFungibleTransfers.changingNFTBalances()
+														.including(NFT, ACCOUNT, RECEIVER, 1L)
+										)
+						)
 				);
 	}
 
@@ -860,13 +996,22 @@ public class ContractHTSSuite extends HapiApiSuite {
 								})
 
 				).then(
-						childRecordsCheck("distributeTx", SUCCESS, recordWith()
-								.status(SUCCESS)
-								.tokenTransfers(
-										NonFungibleTransfers.changingNFTBalances()
-												.including(NFT, ACCOUNT, RECEIVER, 1L)
-												.including(NFT, ACCOUNT, RECEIVER, 2L)
-								)),
+						childRecordsCheck("distributeTx", SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
+										.tokenTransfers(
+												NonFungibleTransfers.changingNFTBalances()
+														.including(NFT, ACCOUNT, RECEIVER, 1L)
+														.including(NFT, ACCOUNT, RECEIVER, 2L)
+										)
+						),
+
 						getTokenInfo(NFT).hasTotalSupply(2),
 						getAccountInfo(RECEIVER).hasOwnedNfts(2),
 						getAccountBalance(RECEIVER).hasTokenBalance(NFT, 2),
@@ -937,7 +1082,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 				).then(
 						childRecordsCheck("distributeTx", CONTRACT_REVERT_EXECUTED,
-								recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
+								recordWith()
+										.status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+														)
+										)
+						)
 				);
 	}
 

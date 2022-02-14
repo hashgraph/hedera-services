@@ -166,15 +166,26 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.via(secondMintTxn),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount),
+
 						childRecordsCheck(secondMintTxn, SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2469134L)
+																.withSerialNumbers()
+														)
+										)
 										.newTotalSupply(2469134L)
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(fungibleToken, DEFAULT_PAYER, amount)
 										)
 						)
+
 				);
 	}
 
@@ -211,6 +222,23 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.gas(GAS_TO_OFFER)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1)
+																.withSerialNumbers(1)
+														)
+										)
+										.newTotalSupply(1)
+										.serialNos(List.of(1L))
+						),
+
 						getTokenInfo(nonFungibleToken).hasTotalSupply(1),
 						/* And now make the token contract-controlled so no explicit supply sig is required */
 						newKeyNamed(contractKey)
@@ -222,6 +250,23 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.via(secondMintTxn)
 								.gas(GAS_TO_OFFER),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
+
+						childRecordsCheck(secondMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2)
+																.withSerialNumbers(2)
+														)
+										)
+										.newTotalSupply(2)
+										.serialNos(List.of(2L))
+						),
+
 						getTokenInfo(nonFungibleToken).hasTotalSupply(2),
 						getTokenNftInfo(nonFungibleToken, 2L).logged()
 				);
@@ -262,12 +307,22 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.via(firstMintTxn).payingWith(theAccount)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTxnRecord(firstMintTxn).hasPriority(
-								recordWith().contractCallResult(
-										resultWith().logs(inOrder(logWith().noData().withTopicsInOrder(
-												List.of(
-														parsedToByteString(amount),
-														parsedToByteString(0))))))),
+
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(10)
+																.withSerialNumbers()
+														)
+										)
+										.newTotalSupply(10)
+						),
+
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
 				);
@@ -311,12 +366,24 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.gas(GAS_TO_OFFER)
 								.alsoSigningWithFullPrefix(multiKey),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						getTxnRecord(firstMintTxn).hasPriority(
-								recordWith().contractCallResult(
-										resultWith().logs(inOrder(logWith().noData().withTopicsInOrder(
-												List.of(
-														parsedToByteString(totalSupply),
-														parsedToByteString(1))))))),
+
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2L)
+																.withSerialNumbers(1L, 2L)
+														)
+										)
+										.newTotalSupply(2)
+										.serialNos(Arrays.asList(1L, 2L))
+						),
+
+
 						getTokenInfo(nonFungibleToken).hasTotalSupply(totalSupply),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, totalSupply)
 				);
@@ -396,6 +463,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										),
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.withStatus(SUCCESS)
+														)
+										)
 										.tokenTransfers(NonFungibleTransfers
 												.changingNFTBalances()
 												.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
