@@ -128,6 +128,7 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -379,6 +380,19 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									expectedCreate2Address.set(hexedAddress);
 								})
 								.payingWith(GENESIS)),
+						// First check the feature toggle
+						overriding("contracts.allowCreate2", "false"),
+						sourcing(() -> contractCall(
+								create2Factory,
+								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.sending(tcValue)
+								.via(creation2)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)),
+						// Now re-enable CREATE2 and proceed
+						overriding("contracts.allowCreate2", "true"),
 						sourcing(() -> contractCall(
 								create2Factory,
 								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
