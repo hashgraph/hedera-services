@@ -359,10 +359,10 @@ class ServicesStateTest {
 	@Test
 	void minimumChildCountsAsExpected() {
 		assertEquals(
-				StateChildIndices.NUM_PRE_0220_CHILDREN,
+				StateChildIndices.NUM_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
-				StateChildIndices.NUM_POST_0220_CHILDREN,
+				StateChildIndices.NUM_POST_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0230_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
