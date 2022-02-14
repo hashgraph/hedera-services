@@ -153,7 +153,7 @@
 		<maven-surefire.version>3.0.0-M5</maven-surefire.version>
 		<maven-dependency.version>3.2.0</maven-dependency.version>
 		<maven-versions.version>2.9.0</maven-versions.version>
-		<maven-javadoc.version>3.3.1</maven-javadoc.version>
+		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
 		<!-- Dependency properties in alphabetical order -->
 		<bouncycastle.version>1.70</bouncycastle.version>
