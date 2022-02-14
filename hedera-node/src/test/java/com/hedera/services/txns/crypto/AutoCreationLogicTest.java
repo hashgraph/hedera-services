@@ -109,7 +109,7 @@ class AutoCreationLogicTest {
 		final var result = subject.create(input, accountsLedger);
 		subject.submitRecordsTo(recordsHistorian);
 
-		assertEquals(initialTransfer - totalFee, input.units());
+		assertEquals(initialTransfer - totalFee, input.getAggregatedUnits());
 		assertEquals(initialTransfer - totalFee, input.getNewBalance());
 		verify(aliasManager).link(alias, createdNum);
 		verify(sigImpactHistorian).markAliasChanged(alias);
@@ -143,7 +143,8 @@ class AutoCreationLogicTest {
 		return BalanceChange.changingHbar(AccountAmount.newBuilder()
 				.setAmount(initialTransfer)
 				.setAccountID(AccountID.newBuilder().setAlias(alias).build())
-				.build());
+				.build(),
+				payer);
 	}
 
 	private static final TransactionBody.Builder mockSyntheticCreation = TransactionBody.newBuilder();
@@ -153,6 +154,7 @@ class AutoCreationLogicTest {
 			.build();
 	private static final ByteString alias = aPrimitiveKey.toByteString();
 	private static final AccountID created = IdUtils.asAccount("0.0.1234");
+	public static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	private static final EntityNum createdNum = EntityNum.fromAccountId(created);
 	private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
 	private static final long totalFee = 6L;

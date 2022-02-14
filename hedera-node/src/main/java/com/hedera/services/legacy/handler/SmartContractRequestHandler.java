@@ -21,16 +21,11 @@ package com.hedera.services.legacy.handler;
  */
 
 import com.google.protobuf.TextFormat;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.validation.PureValidation;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
@@ -38,7 +33,6 @@ import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,19 +40,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_SYSTEM_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.builder.RequestBuilder.getTimestamp;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
@@ -74,34 +60,17 @@ public class SmartContractRequestHandler {
 	private final Map<EntityId, Long> entityExpiries;
 
 	private final HederaLedger ledger;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private final HbarCentExchange exchange;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public SmartContractRequestHandler(
-			HederaLedger ledger,
-			HbarCentExchange exchange,
-			Map<EntityId, Long> entityExpiries,
-			GlobalDynamicProperties dynamicProperties,
-			Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final HederaLedger ledger,
+			final HbarCentExchange exchange,
+			final Map<EntityId, Long> entityExpiries
 	) {
 		this.ledger = ledger;
-		this.accounts = accounts;
 		this.exchange = exchange;
 		this.entityExpiries = entityExpiries;
-		this.dynamicProperties = dynamicProperties;
-	}
-
-	/**
-	 * check if a contract with given contractId exists
-	 *
-	 * @param contractID
-	 * 		the contract id to check for existence
-	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
-	 */
-	public ResponseCodeEnum validateContractExistence(ContractID contractID) {
-		return PureValidation.queryableContractStatus(contractID, accounts.get());
 	}
 
 	/**
@@ -199,76 +168,4 @@ public class SmartContractRequestHandler {
 		}
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
 	}
-
-	/**
-	 * Delete an existing contract
-	 *
-	 * @param transaction
-	 * 		API request to delete the contract.
-	 * @param consensusTime
-	 * 		Platform consensus time
-	 * @return Details of contract deletion result
-	 */
-	public TransactionRecord deleteContract(TransactionBody transaction, Instant consensusTime) {
-		TransactionReceipt transactionReceipt;
-		ContractDeleteTransactionBody op = transaction.getContractDeleteInstance();
-
-		ContractID cid = op.getContractID();
-		ResponseCodeEnum validity = validateContractExistence(cid);
-		if (validity == ResponseCodeEnum.OK) {
-			AccountID beneficiary = Optional.ofNullable(getBeneficiary(op)).orElse(dynamicProperties.fundingAccount());
-			validity = validateContractDelete(op);
-			if (validity == SUCCESS) {
-				validity = ledger.exists(beneficiary) ? SUCCESS : OBTAINER_DOES_NOT_EXIST;
-				if (validity == SUCCESS) {
-					validity = validateIfDeleted(beneficiary);
-				}
-			}
-			if (validity == SUCCESS) {
-				AccountID id = asAccount(cid);
-				ledger.delete(id, beneficiary);
-			}
-			transactionReceipt = getTransactionReceipt(validity, exchange.activeRates());
-		} else {
-			transactionReceipt = getTransactionReceipt(validity, exchange.activeRates());
-		}
-		return getTransactionRecord(
-				transaction.getTransactionFee(),
-				transaction.getMemo(),
-				transaction.getTransactionID(),
-				getTimestamp(consensusTime),
-				transactionReceipt).build();
-	}
-
-	private ResponseCodeEnum validateIfDeleted(final AccountID beneficiary) {
-		if (!ledger.isDeleted(beneficiary)) {
-			return SUCCESS;
-		}
-		return ledger.isSmartContract(beneficiary) ? CONTRACT_DELETED : ACCOUNT_DELETED;
-	}
-
-	private ResponseCodeEnum validateContractDelete(ContractDeleteTransactionBody op) {
-		AccountID id = asAccount(op.getContractID());
-		if (ledger.getBalance(id) > 0) {
-			AccountID beneficiary = getBeneficiary(op);
-			if (beneficiary == null) {
-				return OBTAINER_REQUIRED;
-			} else if (beneficiary.equals(id)) {
-				return OBTAINER_SAME_CONTRACT_ID;
-			} else if (!ledger.exists(beneficiary) || ledger.isDeleted(beneficiary)) {
-				return ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
-			}
-		}
-		return SUCCESS;
-	}
-
-	private AccountID getBeneficiary(ContractDeleteTransactionBody op) {
-		if (op.hasTransferAccountID()) {
-			return ledger.lookUpAliasedId(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID).resolvedId();
-		} else if (op.hasTransferContractID()) {
-			return asAccount(op.getTransferContractID());
-		}
-		return null;
-	}
-
 }

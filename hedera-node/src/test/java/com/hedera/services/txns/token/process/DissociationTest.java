@@ -82,7 +82,7 @@ class DissociationTest {
 	void loadsExpectedRelsForExtantToken() {
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
-		given(tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
+		given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
 
 		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
@@ -111,7 +111,7 @@ class DissociationTest {
 	void loadsExpectedRelsForTokenDissociatedFromTreasury() {
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
-		given(tokenStore.loadPossiblyDeletedTokenRelationship(token, treasury)).willReturn(null);
+		given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury)).willReturn(null);
 
 		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
@@ -133,6 +133,7 @@ class DissociationTest {
 	void processesAutoRemovedTokenAsExpected() {
 		final var subject = new Dissociation(dissociatingAccountRel, null);
 		final List<TokenRelationship> changed = new ArrayList<>();
+		token.markAutoRemoved();
 
 		subject.updateModelRelsSubjectTo(validator);
 		subject.addUpdatedModelRelsTo(changed);
@@ -270,6 +271,26 @@ class DissociationTest {
 		assertSame(dissociatingAccountRel, accum.get(0));
 		assertEquals(-balance, dissociatingAccountRel.getBalanceChange());
 		assertEquals(0, account.getOwnedNfts());
+	}
+
+	@Test
+	void stillDissociatesFromDeletedTokenWithBalanceChangeEvenAfterTreasuryGone() {
+		final long balance = 1_234L;
+		account.setOwnedNfts(balance);
+		dissociatingAccountRel.initBalance(balance);
+		token.setTreasury(account);
+		token.setIsDeleted(true);
+		token.setType(FUNGIBLE_COMMON);
+		final List<TokenRelationship> accum = new ArrayList<>();
+
+		final var subject = new Dissociation(dissociatingAccountRel, null);
+
+		subject.updateModelRelsSubjectTo(validator);
+		subject.addUpdatedModelRelsTo(accum);
+
+		assertEquals(1, accum.size());
+		assertSame(dissociatingAccountRel, accum.get(0));
+		assertEquals(-balance, dissociatingAccountRel.getBalanceChange());
 	}
 
 	@Test

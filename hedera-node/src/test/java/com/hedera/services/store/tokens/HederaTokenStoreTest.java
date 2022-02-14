@@ -180,6 +180,7 @@ class HederaTokenStoreTest {
 	private static final int alreadyUsedAutoAssocitaions = 123;
 	private static final boolean freezeDefault = true;
 	private static final long newAutoRenewPeriod = 2_000_000L;
+	private static final AccountID payer = IdUtils.asAccount("0.0.12345");
 	private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.5");
 	private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
 	private static final AccountID newAutoRenewAccountWithAlias = AccountID.newBuilder().setAlias(aliasA).build();
@@ -529,7 +530,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void associatingHappyPathWorks() {
+	void autoAssociatingHappyPathWorks() {
 		final var tokens = mock(MerkleAccountTokens.class);
 		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
@@ -1633,7 +1634,7 @@ class HederaTokenStoreTest {
 	@Test
 	void adaptsBehaviorToFungibleType() {
 		final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa);
+		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
 		fungibleChange.setExpectedDecimals(2);
 
 		assertEquals(2, subject.get(misc).decimals());
@@ -1646,7 +1647,7 @@ class HederaTokenStoreTest {
 	@Test
 	void failsIfMismatchingDecimals() {
 		final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa);
+		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
 		assertFalse(fungibleChange.hasExpectedDecimals());
 
 		fungibleChange.setExpectedDecimals(4);

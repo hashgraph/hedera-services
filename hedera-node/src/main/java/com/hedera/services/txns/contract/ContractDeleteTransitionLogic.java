@@ -25,18 +25,12 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.contract.helpers.DeletionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -48,62 +42,31 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class ContractDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
-
-	private final HederaLedger ledger;
-	private final LegacyDeleter delegate;
-	private final OptionValidator validator;
+	private final DeletionLogic deletionLogic;
 	private final TransactionContext txnCtx;
-	private final SigImpactHistorian sigImpactHistorian;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
 	@Inject
-	public ContractDeleteTransitionLogic(
-			final HederaLedger ledger,
-			final LegacyDeleter delegate,
-			final OptionValidator validator,
-			final SigImpactHistorian sigImpactHistorian,
-			final TransactionContext txnCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
-	) {
-		this.ledger = ledger;
-		this.delegate = delegate;
-		this.validator = validator;
+	public ContractDeleteTransitionLogic(final DeletionLogic deletionLogic, final TransactionContext txnCtx) {
 		this.txnCtx = txnCtx;
-		this.contracts = contracts;
-		this.sigImpactHistorian = sigImpactHistorian;
-	}
-
-	@FunctionalInterface
-	public interface LegacyDeleter {
-		TransactionRecord perform(TransactionBody txn, Instant consensusTime);
+		this.deletionLogic = deletionLogic;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			final var contractDeleteTxn = txnCtx.accessor().getTxn();
-			final var op = contractDeleteTxn.getContractDeleteInstance();
+		final var contractDeleteTxn = txnCtx.accessor().getTxn();
+		final var op = contractDeleteTxn.getContractDeleteInstance();
 
-			if (op.hasTransferAccountID()) {
-				final var receiver = op.getTransferAccountID();
-				final var result = ledger.lookUpAndValidateAliasedId(receiver, INVALID_TRANSFER_ACCOUNT_ID);
-				if (result.response() != OK) {
-					txnCtx.setStatus(result.response());
-					return;
-				}
-			}
+		final var deleted = deletionLogic.performFor(op);
+//			if (op.hasTransferAccountID()) {
+//				final var receiver = op.getTransferAccountID();
+//				final var result = ledger.lookUpAndValidateAliasedId(receiver, INVALID_TRANSFER_ACCOUNT_ID);
+//				if (result.response() != OK) {
+//					txnCtx.setStatus(result.response());
+//					return;
+//				}
+//			}
 
-			final var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
-			final var status = legacyRecord.getReceipt().getStatus();
-			if (status == SUCCESS) {
-				sigImpactHistorian.markEntityChanged(op.getContractID().getContractNum());
-			}
-			txnCtx.setStatus(status);
-		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		txnCtx.setTargetedContract(deleted);
 	}
 
 	@Override
@@ -116,8 +79,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 		return this::validate;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody contractDeleteTxn) {
-		var op = contractDeleteTxn.getContractDeleteInstance();
-		return validator.queryableContractStatus(op.getContractID(), contracts.get());
+	public ResponseCodeEnum validate(final TransactionBody contractDeleteTxn) {
+		return deletionLogic.precheckValidity(contractDeleteTxn.getContractDeleteInstance());
 	}
 }

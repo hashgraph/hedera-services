@@ -24,15 +24,23 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -40,6 +48,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -71,6 +80,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
+	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
 
 	public Account(Id id) {
 		this.id = id;
@@ -102,6 +114,14 @@ public class Account {
 
 	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
 		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public Address canonicalAddress() {
+		if (alias.isEmpty()) {
+			return id.asEvmAddress();
+		} else {
+			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+		}
 	}
 
 	public int getAutoAssociationMetadata() {
@@ -220,6 +240,9 @@ public class Account {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", getAlias().toStringUtf8())
+				.add("cryptoAllowances", cryptoAllowances)
+				.add("fungibleTokenAllowances", fungibleTokenAllowances)
+				.add("nftAllowances", nftAllowances)
 				.toString();
 	}
 
@@ -295,4 +318,35 @@ public class Account {
 		this.alias = alias;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = new TreeMap<>(cryptoAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowances(
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowances(
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		this.nftAllowances = new TreeMap<>(nftAllowances);
+	}
+
+	public int getTotalAllowances() {
+		// each serial number of an NFT is considered as an allowance.
+		// So for Nft allowances aggregated amount is considered for limit calculation.
+		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
+	}
 }

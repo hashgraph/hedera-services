@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,8 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -30,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +43,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanMapAccessorTest {
-	private Map<String, Object>	span = new HashMap<>();
+	private Map<String, Object> span = new HashMap<>();
 
 	@Mock
 	private TxnAccessor accessor;
@@ -79,7 +83,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenFreezeMeta(accessor, tokenFreezeMeta);
 
-		assertEquals(48,  subject.getTokenFreezeMeta(accessor).getBpt());
+		assertEquals(48, subject.getTokenFreezeMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -88,7 +92,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenUnfreezeMeta(accessor, tokenUnfreezeMeta);
 
-		assertEquals(48,  subject.getTokenUnfreezeMeta(accessor).getBpt());
+		assertEquals(48, subject.getTokenUnfreezeMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -97,7 +101,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenPauseMeta(accessor, tokenPauseMeta);
 
-		assertEquals(24,  subject.getTokenPauseMeta(accessor).getBpt());
+		assertEquals(24, subject.getTokenPauseMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -106,7 +110,7 @@ class ExpandHandleSpanMapAccessorTest {
 
 		subject.setTokenUnpauseMeta(accessor, tokenUnpauseMeta);
 
-		assertEquals(24,  subject.getTokenUnpauseMeta(accessor).getBpt());
+		assertEquals(24, subject.getTokenUnpauseMeta(accessor).getBpt());
 	}
 
 	@Test
@@ -138,5 +142,40 @@ class ExpandHandleSpanMapAccessorTest {
 		subject.setCryptoUpdate(accessor, opMeta);
 
 		assertEquals(3, subject.getCryptoUpdateMeta(accessor).getMaxAutomaticAssociations());
+	}
+
+	@Test
+	void testsForCryptoApproveMetaAsExpected() {
+		final var secs = Instant.now().getEpochSecond();
+		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.aggregatedNftAllowancesWithSerials(10)
+				.effectiveNow(secs)
+				.build();
+
+		subject.setCryptoApproveMeta(accessor, opMeta);
+
+		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
+		assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
+		assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
+	}
+
+	@Test
+	void testsForCryptoAdjustMetaAsExpected() {
+		final var now = Instant.now().getEpochSecond();
+		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.cryptoAllowances(Map.of(2L, 10L))
+				.tokenAllowances((Collections.emptyMap()))
+				.nftAllowances((Collections.emptyMap()))
+				.effectiveNow(now)
+				.build();
+
+		subject.setCryptoAdjustMeta(accessor, opMeta);
+		assertEquals(Map.of(2L, 10L), subject.getCryptoAdjustMeta(accessor).getCryptoAllowances());
+		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getTokenAllowances());
+		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getNftAllowances());
+		assertEquals(112, subject.getCryptoAdjustMeta(accessor).getMsgBytesUsed());
+		assertEquals(now, subject.getCryptoAdjustMeta(accessor).getEffectiveNow());
 	}
 }

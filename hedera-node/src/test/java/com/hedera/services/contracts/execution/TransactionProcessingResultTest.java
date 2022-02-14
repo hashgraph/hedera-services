@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -87,7 +88,7 @@ class TransactionProcessingResultTest {
 				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
 
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
 		var result = TransactionProcessingResult.successful(
@@ -101,12 +102,17 @@ class TransactionProcessingResultTest {
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 
+		final var resultAsGrpc = result.toGrpc();
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 		assertEquals(Optional.empty(), result.getHaltReason());
-		assertEquals(expect.getBloom(), result.toGrpc().getBloom());
-		assertEquals(expect.getContractID(), result.toGrpc().getContractID());
-		assertEquals(ByteString.EMPTY, result.toGrpc().getContractCallResult());
-		assertEquals(listOfCreatedContracts, result.toGrpc().getCreatedContractIDsList());
+		assertEquals(expect.getBloom(), resultAsGrpc.getBloom());
+		assertEquals(expect.getContractID(), resultAsGrpc.getContractID());
+		assertEquals(ByteString.EMPTY, resultAsGrpc.getContractCallResult());
+		assertEquals(listOfCreatedContracts, resultAsGrpc.getCreatedContractIDsList());
+
+		final var mockNewAddr = Address.BLAKE2B_F_COMPRESSION.toArrayUnsafe();
+		final var creationResult = result.toCreationGrpc(mockNewAddr);
+		assertEquals(ByteString.copyFrom(mockNewAddr), creationResult.getEvmAddress().getValue());
 	}
 
 	@Test
@@ -129,7 +135,7 @@ class TransactionProcessingResultTest {
 				.setGasUsed(GAS_USAGE)
 				.setBloom(ByteString.copyFrom(new byte[256]));
 		expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-		expect.setContractID(EntityIdUtils.contractParsedFromSolidityAddress(recipient.getId().asEvmAddress().toArray()));
+		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
 		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));

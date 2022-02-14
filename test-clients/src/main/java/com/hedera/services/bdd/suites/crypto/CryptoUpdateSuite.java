@@ -400,7 +400,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(firstUser)
 								.hasAlreadyUsedAutomaticAssociations(originalMax)
-								.hasMaxAutomaticAssociations(originalMax),
+								.hasMaxAutomaticAssociations(originalMax)
+								.has(accountWith().noAllowances()),
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(newBadMax)
 								.hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),

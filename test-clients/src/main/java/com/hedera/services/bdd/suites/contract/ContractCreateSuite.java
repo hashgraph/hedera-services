@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -43,9 +45,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -58,6 +62,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PROPAGATE_NESTED_CREATIONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_REPEATEDLY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_THEN_REVERT_NESTED_SENDS_ABI;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -83,6 +88,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
@@ -117,30 +123,32 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				createEmptyConstructor(),
-				insufficientPayerBalanceUponCreation(),
-				rejectsInvalidMemo(),
-				rejectsInsufficientFee(),
-				rejectsInvalidBytecode(),
-				revertsNonzeroBalance(),
-				createFailsIfMissingSigs(),
-				rejectsInsufficientGas(),
-				createsVanillaContractAsExpectedWithOmittedAdminKey(),
-				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-				cannotCreateTooLargeContract(),
-				revertedTryExtCallHasNoSideEffects(),
-				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-				cannotSendToNonExistentAccount(),
-				canCallPendingContractSafely(),
-				delegateContractIdRequiredForTransferInDelegateCall(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCreate(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				vanillaSuccess(),
-				proxyCanBeUsedAsAlias(),
-				invalidProxyFails()
+		return List.of(new HapiApiSpec[] {
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						revertedTryExtCallHasNoSideEffects(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						cannotSendToNonExistentAccount(),
+						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
+						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+						minChargeIsTXGasUsedByContractCreate(),
+						gasLimitOverMaxGasLimitFailsPrecheck(),
+						vanillaSuccess(),
+						propagatesNestedCreations(),
+				        proxyCanBeUsedAsAlias(),
+				        invalidProxyFails()
+				}
 		);
 	}
 
@@ -323,6 +331,62 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("emptyConstructorTest")
 								.bytecode("contractFile")
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec propagatesNestedCreations() {
+		final var call = "callTxn";
+		final var creation = "createTxn";
+		final var initcode = "initcode";
+		final var nestedCreations = "nestedCreations";
+
+		final var adminKey = "adminKey";
+		final var entityMemo = "JUST DO IT";
+		final var customAutoRenew = 7776001L;
+		final AtomicReference<String> firstLiteralId = new AtomicReference<>();
+		final AtomicReference<String> secondLiteralId = new AtomicReference<>();
+		final AtomicReference<ByteString> expectedFirstAddress = new AtomicReference<>();
+		final AtomicReference<ByteString> expectedSecondAddress = new AtomicReference<>();
+
+		return defaultHapiSpec("PropagatesNestedCreations")
+				.given(
+						newKeyNamed(adminKey),
+						fileCreate(initcode)
+								.path(ContractResources.NESTED_CREATIONS_PATH),
+						contractCreate(nestedCreations)
+								.proxy("0.0.3")
+								.bytecode(initcode)
+								.adminKey(adminKey)
+								.entityMemo(entityMemo)
+								.autoRenewSecs(customAutoRenew)
+								.via(creation)
+				).when(
+						contractCall(nestedCreations, PROPAGATE_NESTED_CREATIONS_ABI)
+								.gas(4_000_000L)
+								.via(call)
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var parentNum = spec.registry().getContractId(nestedCreations);
+							final var firstId = ContractID.newBuilder()
+									.setContractNum(parentNum.getContractNum() + 1L)
+									.build();
+							firstLiteralId.set(HapiPropertySource.asContractString(firstId));
+							expectedFirstAddress.set(ByteString.copyFrom(asSolidityAddress(firstId)));
+							final var secondId = ContractID.newBuilder()
+									.setContractNum(parentNum.getContractNum() + 2L)
+									.build();
+							secondLiteralId.set(HapiPropertySource.asContractString(secondId));
+							expectedSecondAddress.set(ByteString.copyFrom(asSolidityAddress(secondId)));
+						}),
+						sourcing(() -> childRecordsCheck(call, SUCCESS,
+								recordWith()
+										.contractCreateResult(resultWith().evmAddress(expectedFirstAddress.get()))
+										.status(SUCCESS),
+								recordWith()
+										.contractCreateResult(resultWith().evmAddress(expectedSecondAddress.get()))
+										.status(SUCCESS))),
+						sourcing(() -> getContractInfo(firstLiteralId.get())
+								.has(contractWith().propertiesInheritedFrom(nestedCreations)))
 				);
 	}
 

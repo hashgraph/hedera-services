@@ -20,12 +20,16 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class AccountTest {
+	private static final byte[] mockCreate2Addr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 	private final Id subjectId = new Id(0, 0, 12345);
 	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
 	private final long ownedNfts = 5;
@@ -65,6 +71,17 @@ class AccountTest {
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
+	}
+
+	@Test
+	void canonicalAddressIsMirrorWithEmptyAlias() {
+		assertEquals(EntityNum.fromModel(subjectId).toEvmAddress(), subject.canonicalAddress());
+	}
+
+	@Test
+	void canonicalAddressIs20ByteAliasIfPresent() {
+		subject.setAlias(ByteString.copyFrom(mockCreate2Addr));
+		assertEquals(Address.wrap(Bytes.wrap(mockCreate2Addr)), subject.canonicalAddress());
 	}
 
 	@Test
@@ -114,7 +131,7 @@ class AccountTest {
 		final var desired = "Account{id=Id[shard=0, realm=0, num=12345], expiry=0, balance=0, deleted=false, " +
 				"tokens=[0" +
 				".0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
-				"alias=" + subject.getAlias().toStringUtf8() + "}";
+				"alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}" + subject.getAlias().toStringUtf8() + "}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

@@ -42,6 +42,7 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -120,6 +121,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+					.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
+					.setCurrentTokenAllowances(details.getTokenAllowancesList())
+					.setCurrentNftAllowances(details.getNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -129,6 +133,42 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)
 					.setCurrentMaxAutomaticAssociations(0)
+					.setCurrentCryptoAllowances(Collections.emptyList())
+					.setCurrentTokenAllowances(Collections.emptyList())
+					.setCurrentNftAllowances(Collections.emptyList())
+					.build();
+		}
+		return cryptoContext;
+	}
+
+	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
+		ExtantCryptoContext cryptoContext;
+		var info = workingView.infoForAccount(
+				txn.getTransactionID().getAccountID(), aliasManager);
+		if (info.isPresent()) {
+			var details = info.get();
+			cryptoContext = ExtantCryptoContext.newBuilder()
+					.setCurrentKey(details.getKey())
+					.setCurrentMemo(details.getMemo())
+					.setCurrentExpiry(details.getExpirationTime().getSeconds())
+					.setCurrentlyHasProxy(details.hasProxyAccountID())
+					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+					.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
+					.setCurrentTokenAllowances(details.getTokenAllowancesList())
+					.setCurrentNftAllowances(details.getNftAllowancesList())
+					.build();
+		} else {
+			cryptoContext = ExtantCryptoContext.newBuilder()
+					.setCurrentExpiry(txn.getTransactionID().getTransactionValidStart().getSeconds())
+					.setCurrentMemo(DEFAULT_MEMO)
+					.setCurrentKey(Key.getDefaultInstance())
+					.setCurrentlyHasProxy(false)
+					.setCurrentNumTokenRels(0)
+					.setCurrentMaxAutomaticAssociations(0)
+					.setCurrentCryptoAllowances(Collections.emptyList())
+					.setCurrentTokenAllowances(Collections.emptyList())
+					.setCurrentNftAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;

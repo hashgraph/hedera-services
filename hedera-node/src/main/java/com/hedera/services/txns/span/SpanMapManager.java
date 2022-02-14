@@ -90,7 +90,7 @@ public class SpanMapManager {
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 		accessor.setNumAutoCreations(impliedTransfers.getMeta().getNumAutoCreations());
@@ -103,7 +103,7 @@ public class SpanMapManager {
 		}
 	}
 
-	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+	public static void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
 		final var xferMeta = accessor.availXferUsageMeta();
 
 		var customFeeTokenTransfers = 0;

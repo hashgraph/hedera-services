@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,6 +50,7 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate.DEPRECATED_CID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -159,7 +162,12 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 				.txns()
 				.<ContractUpdateTransactionBody, ContractUpdateTransactionBody.Builder>body(
 						ContractUpdateTransactionBody.class, b -> {
-							b.setContractID(spec.registry().getContractId(contract));
+							if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+								b.setContractID(ContractID.newBuilder()
+										.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+							} else {
+								b.setContractID(TxnUtils.asContractId(contract, spec));
+							}
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (wipeToThresholdKey) {

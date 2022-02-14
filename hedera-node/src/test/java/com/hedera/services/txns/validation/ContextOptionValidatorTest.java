@@ -336,6 +336,14 @@ class ContextOptionValidatorTest {
 	}
 
 	@Test
+	void recognizesMissingContractStatusAsNum() {
+		// expect:
+		assertEquals(
+				INVALID_CONTRACT_ID,
+				subject.queryableContractStatus(EntityNum.fromContractId(missingContract), accounts));
+	}
+
+	@Test
 	void recognizesDeletedContractStatus() {
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.queryableContractStatus(deletedContract, accounts));

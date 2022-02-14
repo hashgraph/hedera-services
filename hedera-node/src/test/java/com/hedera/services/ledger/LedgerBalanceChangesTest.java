@@ -618,9 +618,9 @@ class LedgerBalanceChangesTest {
 				tokenChange(token, cModel, cTokenChange),
 				tokenChange(anotherToken, bModel, bAnotherTokenChange),
 				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
-				changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo)),
-				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo)),
-				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)));
+				changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo), payer),
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo), payer),
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo), payer));
 	}
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
@@ -656,6 +656,7 @@ class LedgerBalanceChangesTest {
 
 	private final long aSerialNo = 1_234L;
 	private final long bSerialNo = 2_234L;
+	private final AccountID payer = asAccount("0.0.12345");
 	private final AccountID aModel = asAccount("0.0.3");
 	private final AccountID bModel = asAccount("0.0.4");
 	private final AccountID cModel = asAccount("0.0.5");

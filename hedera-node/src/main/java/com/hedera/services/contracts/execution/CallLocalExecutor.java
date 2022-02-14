@@ -22,13 +22,14 @@ package com.hedera.services.contracts.execution;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -62,14 +63,21 @@ public class CallLocalExecutor {
 	 * 		the query to answer
 	 * @return {@link ContractCallLocalResponse} result of the execution
 	 */
-	public static ContractCallLocalResponse execute(AccountStore accountStore, CallLocalEvmTxProcessor evmTxProcessor,
-			ContractCallLocalQuery op) {
-
+	public static ContractCallLocalResponse execute(
+			final AccountStore accountStore,
+			final CallLocalEvmTxProcessor evmTxProcessor,
+			final ContractCallLocalQuery op,
+			final AliasManager aliasManager
+	) {
 		try {
-			TransactionBody body = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-
-			final var senderId = resolvedSender(body, accountStore);
-			final var contractId = Id.fromGrpcContract(op.getContractID());
+//			TransactionBody body = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
+//
+//			final var senderId = resolvedSender(body, accountStore);
+//			final var contractId = Id.fromGrpcContract(op.getContractID());
+			final var paymentTxn = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
+			final var senderId = Id.fromGrpcAccount(paymentTxn.getTransactionID().getAccountID());
+			final var idOrAlias = op.getContractID();
+			final var contractId = EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
 
 			/* --- Load the model objects --- */
 			final var sender = accountStore.loadAccount(senderId);
@@ -80,7 +88,7 @@ public class CallLocalExecutor {
 			/* --- Do the business logic --- */
 			final var result = evmTxProcessor.execute(
 					sender,
-					receiver.getId().asEvmAddress(),
+					receiver.canonicalAddress(),
 					op.getGas(),
 					0,
 					callData,
@@ -104,10 +112,10 @@ public class CallLocalExecutor {
 		}
 	}
 
-	private static Id resolvedSender(TransactionBody body, AccountStore accountStore) {
-		final var grpcSender = body.getTransactionID().getAccountID();
-		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
-				grpcSender.getAccountNum());
-		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
-	}
+//	private static Id resolvedSender(TransactionBody body, AccountStore accountStore) {
+//		final var grpcSender = body.getTransactionID().getAccountID();
+//		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
+//				grpcSender.getAccountNum());
+//		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
+//	}
 }

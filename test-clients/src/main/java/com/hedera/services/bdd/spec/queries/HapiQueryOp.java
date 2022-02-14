@@ -435,7 +435,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 
 	public T hasExpectedLedgerId(String ledgerId) {
-		this.expectedLedgerId = ledgerId;
+		this.expectedLedgerId = Optional.of(ledgerId);
 		return self();
 	}
 

@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -112,7 +113,7 @@ public abstract class HapiSpecOperation {
 	protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
 	protected boolean useRandomNode = false;
 	protected boolean unavailableNode = false;
-	protected String expectedLedgerId = "0x03";
+	protected Optional<String> expectedLedgerId = Optional.empty();
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
@@ -433,5 +434,11 @@ public abstract class HapiSpecOperation {
 		if (!suppressStats) {
 			spec.registry().record(obs);
 		}
+	}
+
+	protected ByteString rationalize(final String expectedLedgerId) {
+		final var hex = expectedLedgerId.substring(2);
+		final var bytes = HexFormat.of().parseHex(hex);
+		return ByteString.copyFrom(bytes);
 	}
 }

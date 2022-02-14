@@ -118,7 +118,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 			if (change.isForNft()) {
 				validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
 			} else {
-				validity = adjustBalance(change.accountId(), tokenId, change.units());
+				validity = adjustBalance(change.accountId(), tokenId, change.getAggregatedUnits());
 				if (validity == INSUFFICIENT_TOKEN_BALANCE) {
 					validity = change.codeForInsufficientBalance();
 				}

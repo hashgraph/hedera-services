@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BURN_TOKEN_WITH_EVENT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_BURN_ABI;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -79,6 +78,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractBurnHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
+
+	private static final long GAS_TO_OFFER = 4_000_000L;
 
 	private static final String ALICE = "Alice";
 	private static final String TOKEN = "Token";
@@ -141,14 +142,14 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
 						contractCall(theContract, BURN_TOKEN_WITH_EVENT_ABI, 1, new ArrayList<Long>())
 								.payingWith(ALICE)
 								.alsoSigningWithFullPrefix(multiKey)
-								.gas(48_000)
+								.gas(GAS_TO_OFFER)
 								.via("burn"),
 						getTxnRecord("burn").hasPriority(
 								recordWith().contractCallResult(
@@ -171,7 +172,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.supplyKey("contractKey"),
 						contractCall(theContract, BURN_TOKEN_ABI, 1, new ArrayList<Long>())
 								.via("burn with contract key")
-								.gas(48_000),
+								.gas(GAS_TO_OFFER),
 
 						childRecordsCheck("burn with contract key", SUCCESS, recordWith()
 								.status(SUCCESS)
@@ -216,7 +217,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode("bytecode")
 														.via("creationTx")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						getTxnRecord("creationTx").logged()
 				)
 				.when(
@@ -229,7 +230,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 											contractCall(theContract, BURN_TOKEN_ABI, 0, serialNumbers)
 													.payingWith(ALICE)
 													.alsoSigningWithFullPrefix(multiKey)
-													.gas(48_000)
+													.gas(GAS_TO_OFFER)
 													.via("burn"));
 								}
 						),
@@ -267,7 +268,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 						fileCreate(outerContract).path(ContractResources.NESTED_BURN),
 						contractCreate(innerContract)
 								.bytecode(innerContract)
-								.gas(100_000),
+								.gas(GAS_TO_OFFER),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -277,7 +278,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														.payingWith(ALICE)
 														.bytecode(outerContract)
 														.via("creationTx")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						getTxnRecord("creationTx").logged()
 
 				)
@@ -327,7 +328,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 		return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
 				.given(
 						newKeyNamed(supplyKey),
-						cryptoCreate(ALICE).balance(ONE_HBAR),
+						cryptoCreate(ALICE).balance(4 * ONE_HBAR),
 						cryptoCreate(bob).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(feeCollector).balance(0L),
@@ -336,7 +337,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.supplyKey(supplyKey)
 								.initialSupply(0L)
 								.treasury(TOKEN_TREASURY)
-								.withCustom(fixedHbarFee(2 * ONE_HBAR, feeCollector)),
+								.withCustom(fixedHbarFee(5 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
 						fileCreate("bytecode").payingWith(bob),
@@ -350,7 +351,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 														.payingWith(bob)
 														.bytecode("bytecode")
-														.gas(100_000))),
+														.gas(GAS_TO_OFFER))),
 						tokenAssociate(ALICE, tokenWithHbarFee),
 						tokenAssociate(bob, tokenWithHbarFee),
 						tokenAssociate(theContract, tokenWithHbarFee),
@@ -372,7 +373,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 													.payingWith(ALICE)
 													.alsoSigningWithFullPrefix(ALICE)
 													.alsoSigningWithFullPrefix(supplyKey)
-													.gas(70_000)
+													.gas(GAS_TO_OFFER)
 													.via("contractCallTxn")
 													.hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 								}),

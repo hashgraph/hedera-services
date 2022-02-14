@@ -50,6 +50,7 @@ public class TokenMovement {
 	private final Optional<Function<HapiApiSpec, String>> senderFn;
 	private final Optional<Function<HapiApiSpec, String>> receiverFn;
 	private int expectedDecimals;
+	private boolean isApproval = false;
 
 	public static final TokenID HBAR_SENTINEL_TOKEN_ID = TokenID.getDefaultInstance();
 
@@ -94,7 +95,8 @@ public class TokenMovement {
 			long amount,
 			long[] serialNums,
 			Optional<String> receiver,
-			Optional<List<String>> receivers
+			Optional<List<String>> receivers,
+			boolean isApproval
 	) {
 		this.token = token;
 		this.sender = sender;
@@ -102,6 +104,7 @@ public class TokenMovement {
 		this.serialNums = serialNums;
 		this.receiver = receiver;
 		this.receivers = receivers;
+		this.isApproval = isApproval;
 
 		senderFn = Optional.empty();
 		receiverFn = Optional.empty();
@@ -114,7 +117,8 @@ public class TokenMovement {
 			long amount,
 			Optional<String> receiver,
 			Optional<List<String>> receivers,
-			int expectedDecimals
+			int expectedDecimals,
+			boolean isApproval
 	) {
 		this.token = token;
 		this.sender = sender;
@@ -122,6 +126,7 @@ public class TokenMovement {
 		this.receiver = receiver;
 		this.receivers = receivers;
 		this.expectedDecimals = expectedDecimals;
+		this.isApproval = isApproval;
 
 		senderFn = Optional.empty();
 		receiverFn = Optional.empty();
@@ -213,6 +218,7 @@ public class TokenMovement {
 		return AccountAmount.newBuilder()
 				.setAccountID(asIdForKeyLookUp(name, spec))
 				.setAmount(value)
+				.setIsApproval(isApproval)
 				.build();
 	}
 
@@ -221,6 +227,7 @@ public class TokenMovement {
 				.setSenderAccountID(asId(senderName, spec))
 				.setReceiverAccountID(asId(receiverName, spec))
 				.setSerialNumber(value)
+				.setIsApproval(isApproval)
 				.build();
 	}
 
@@ -229,6 +236,13 @@ public class TokenMovement {
 		private long[] serialNums;
 		private final String token;
 		private int expectedDecimals;
+		private boolean isAllowance = false;
+
+		public Builder(long amount, String token, boolean isAllowance) {
+			this.token = token;
+			this.amount = amount;
+			this.isAllowance = isAllowance;
+		}
 
 		public Builder(long amount, String token) {
 			this.token = token;
@@ -245,7 +259,13 @@ public class TokenMovement {
 			this.amount = amount;
 			this.token = token;
 			this.serialNums = serialNums;
+		}
 
+		public Builder(long amount, String token, boolean isAllowance, long... serialNums) {
+			this.amount = amount;
+			this.token = token;
+			this.isAllowance = isAllowance;
+			this.serialNums = serialNums;
 		}
 
 		public TokenMovement between(String sender, String receiver) {
@@ -255,7 +275,8 @@ public class TokenMovement {
 					amount,
 					serialNums,
 					Optional.of(receiver),
-					Optional.empty());
+					Optional.empty(),
+					isAllowance);
 		}
 
 		public TokenMovement betweenWithDecimals(String sender, String receiver) {
@@ -265,7 +286,8 @@ public class TokenMovement {
 					amount,
 					Optional.of(receiver),
 					Optional.empty(),
-					expectedDecimals);
+					expectedDecimals,
+					isAllowance);
 		}
 
 		public TokenMovement between(
@@ -306,6 +328,10 @@ public class TokenMovement {
 		return new Builder(amount, token);
 	}
 
+	public static Builder movingWithAllowance(long amount, String token) {
+		return new Builder(amount, token, true);
+	}
+
 	public static Builder movingWithDecimals(long amount, String token, int expectedDecimals) {
 		return new Builder(amount, token, expectedDecimals);
 	}
@@ -314,7 +340,15 @@ public class TokenMovement {
 		return new Builder(1, token, serialNums);
 	}
 
+	public static Builder movingUniqueWithAllowance(String token, long... serialNums) {
+		return new Builder(1, token, true, serialNums);
+	}
+
 	public static Builder movingHbar(long amount) {
 		return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL);
+	}
+
+	public static Builder movingHbarWithAllowance(long amount) {
+		return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL, true);
 	}
 }

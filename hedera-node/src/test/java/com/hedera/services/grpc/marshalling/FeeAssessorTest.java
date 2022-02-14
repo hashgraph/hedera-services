@@ -361,15 +361,18 @@ class FeeAssessorTest {
 	private final BalanceChange fungibleTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
-			fungibleDebit);
+			fungibleDebit,
+			payer.asGrpcAccount());
 	private final BalanceChange treasuryTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
-			fungibleTreasuryDebit);
+			fungibleTreasuryDebit,
+			payer.asGrpcAccount());
 	private final BalanceChange collectorTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
-			fungibleCollectorDebit);
+			fungibleCollectorDebit,
+			payer.asGrpcAccount());
 	private final BalanceChange royaltyTrigger = BalanceChange.changingNftOwnership(
 			uniqueTokenId,
 			uniqueTokenId.asGrpcToken(),
@@ -377,7 +380,8 @@ class FeeAssessorTest {
 					.setSenderAccountID(payer.asGrpcAccount())
 					.setReceiverAccountID(treasury.asGrpcAccount())
 					.setSerialNumber(666L)
-					.build());
+					.build(),
+			payer.asGrpcAccount());
 	private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
 	private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
 	private final FcCustomFee fractionalFee = FcCustomFee.fractionalFee(

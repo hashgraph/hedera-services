@@ -102,15 +102,6 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final Address to,
 			final Bytes payload
 	) {
-		// Must invalidate cache for contract address to avoid ISS when a contract create +
-		// call are performed in the same round. Scenario that could cause issue:
-		//
-		// 1. pre-fetch ContractCall - tries to find bytes, caches Bytes.EMPTY
-		// 2. handle ContractCreate - populates bytes into storage
-		// 3. handle ContractCall - fetches bytes from cache, receives Bytes.EMPTY
-		//
-		// Cache invalidation will cause (3) to retrieve the correct bytes.
-		//
 		codeCache.invalidate(to);
 
 		return commonInitialFrame

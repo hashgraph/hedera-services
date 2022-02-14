@@ -70,12 +70,29 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts addressOrAlias(final String hexedEvm) {
+		registerProvider((spec, o) -> {
+			assertEquals(
+					hexedEvm,
+					object2ContractInfo(o).getContractAccountID(),
+					"Bad EVM address");
+		});
+		return this;
+	}
+
 	public ContractInfoAsserts solidityAddress(String contract) {
 		registerProvider((spec, o) -> {
 			assertEquals(
 					TxnUtils.solidityIdFrom(spec.registry().getContractId(contract)),
 					TxnUtils.solidityIdFrom(object2ContractInfo(o).getContractID()),
-					"Bad Solidity address!");
+					"Bad Solidity address");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts isDeleted() {
+		registerProvider((spec, o) -> {
+			assertEquals(true, object2ContractInfo(o).getDeleted(), "Bad deletion status!");
 		});
 		return this;
 	}
@@ -99,21 +116,9 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		registerProvider((spec, o) -> {
 			ContractInfo expected = spec.registry().getContractInfo(contract);
 			ContractInfo actual = object2ContractInfo(o);
-			assertEquals(
-					expected.getExpirationTime(),
-					actual.getExpirationTime(),
-					"Bad expiry time!");
-			assertEquals(
-					expected.getAutoRenewPeriod(),
-					actual.getAutoRenewPeriod(),
-					"Bad auto renew period!");
-			assertEquals(expected.getAdminKey(),
-					actual.getAdminKey(),
-					"Bad admin key!");
-			assertEquals(
-					expected.getMemo(),
-					actual.getMemo(),
-					"Bad memo!");
+			assertEquals(expected.getAutoRenewPeriod(), actual.getAutoRenewPeriod(), "Bad auto renew period!");
+			assertEquals(expected.getAdminKey(), actual.getAdminKey(), "Bad admin key!");
+			assertEquals(expected.getMemo(), actual.getMemo(), "Bad memo!");
 		});
 		return this;
 	}

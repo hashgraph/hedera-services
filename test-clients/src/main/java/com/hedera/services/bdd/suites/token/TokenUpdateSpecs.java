@@ -66,7 +66,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -126,9 +128,11 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingRef(),
 						validatesNewExpiry(),
 						/* HIP-18 */
-						canUpdateFeeScheduleKeyWithAdmin(),
+						customFeesOnlyUpdatableWithKey(),
 						updateUniqueTreasuryWithNfts(),
 						updateHappyPath(),
+						safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
+
 						/* HIP-32 */
 						updateWithAliasWorks()
 				}
@@ -729,7 +733,57 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec canUpdateFeeScheduleKeyWithAdmin() {
+	private HapiApiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
+		final var uniqueTokenFeeKey = "uniqueTokenFeeKey";
+		final var hbarCollector = "hbarFee";
+		final var beneficiary = "luckyOne";
+		final var multiKey = "allSeasons";
+		final var sender = "sender";
+		final var numRaces = 3;
+
+		return defaultHapiSpec("SafeToUpdateCustomFeesWithNewFallbackWhileTransferring")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(hbarCollector),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(sender).maxAutomaticTokenAssociations(100),
+						cryptoCreate(beneficiary).maxAutomaticTokenAssociations(100)
+				).when().then(
+						withOpContext((spec, opLog) -> {
+							for (int i = 0; i < 3; i++) {
+								final var name = uniqueTokenFeeKey + i;
+								final var creation = tokenCreate(name)
+										.tokenType(NON_FUNGIBLE_UNIQUE)
+										.treasury(TOKEN_TREASURY)
+										.supplyKey(multiKey)
+										.feeScheduleKey(multiKey)
+										.initialSupply(0);
+								final var mint = mintToken(name, List.of(ByteString.copyFromUtf8("SOLO")));
+								final var normalXfer = cryptoTransfer(movingUnique(name, 1L)
+										.between(TOKEN_TREASURY, sender)
+								)
+										.fee(ONE_HBAR);
+								final var update = tokenFeeScheduleUpdate(name)
+										.withCustom(royaltyFeeWithFallback(
+												1, 10,
+												fixedHbarFeeInheritingRoyaltyCollector(1),
+												hbarCollector))
+										.deferStatusResolution();
+								final var raceXfer = cryptoTransfer(movingUnique(name, 1L)
+										.between(sender, beneficiary)
+								)
+										.signedBy(DEFAULT_PAYER, sender)
+										.fee(ONE_HBAR)
+										/* The beneficiary needs to sign now b/c of the fallback fee (and the
+										 * lack of any fungible value going back to the treasury for this NFT). */
+										.hasKnownStatus(INVALID_SIGNATURE);
+								allRunFor(spec, creation, mint, normalXfer, update, raceXfer);
+							}
+						})
+				);
+	}
+
+	private HapiApiSpec customFeesOnlyUpdatableWithKey() {
 		final var origHbarFee = 1_234L;
 		final var newHbarFee = 4_321L;
 

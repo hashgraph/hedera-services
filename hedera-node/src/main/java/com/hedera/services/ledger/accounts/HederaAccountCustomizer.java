@@ -22,8 +22,13 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -50,6 +55,23 @@ public final class HederaAccountCustomizer extends
 
 	public HederaAccountCustomizer() {
 		super(AccountProperty.class, OPTION_PROPERTIES, new ChangeSummaryManager<>());
+	}
+
+	public void applyToSynthetic(final ContractCreateTransactionBody.Builder op) {
+		final var changes = getChanges();
+		if (changes.containsKey(AccountProperty.KEY)) {
+			op.setAdminKey(MiscUtils.asKeyUnchecked((JKey) changes.get(AccountProperty.KEY)));
+		}
+		if (changes.containsKey(AccountProperty.MEMO)) {
+			op.setMemo((String) changes.get(AccountProperty.MEMO));
+		}
+		if (changes.containsKey(AccountProperty.AUTO_RENEW_PERIOD)) {
+			op.setAutoRenewPeriod(Duration.newBuilder()
+					.setSeconds((long) changes.get(AccountProperty.AUTO_RENEW_PERIOD)));
+		}
+		if (changes.containsKey(AccountProperty.PROXY)) {
+			op.setProxyAccountID(((EntityId) changes.get(AccountProperty.PROXY)).toGrpcAccountId());
+		}
 	}
 
 	@Override

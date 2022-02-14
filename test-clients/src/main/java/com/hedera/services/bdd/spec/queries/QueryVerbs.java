@@ -101,8 +101,11 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
-	public static HapiContractCallLocal contractCallLocal(final String contract, final String abi,
-			final Object... params) {
+	public static HapiContractCallLocal contractCallLocal(
+			final String contract,
+			final String abi,
+			final Object... params
+	) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
 

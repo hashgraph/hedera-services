@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.consensus;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
@@ -185,7 +184,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		if (hasNoAdminKey) {
 			assertFalse(info.hasAdminKey(), "Should have no admin key!");
 		}
-		Assertions.assertEquals(ByteString.copyFromUtf8(expectedLedgerId), info.getLedgerId());
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
 	}
 
 	@Override

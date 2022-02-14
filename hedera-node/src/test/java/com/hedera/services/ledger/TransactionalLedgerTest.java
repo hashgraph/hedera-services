@@ -21,8 +21,8 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
+import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,16 +35,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.LongStream;
 
+import static com.hedera.services.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
+import static com.hedera.services.ledger.accounts.TestAccount.Allowance.MISSING;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
 import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,11 +72,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
 	private final Object[] things = { "a", "b", "c", "d" };
-	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L,
+			TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
 	private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
 	@Mock
 	private BackingStore<Long, TestAccount> backingAccounts;
+	@Mock
+	private TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger;
+	@Mock
+	private Function<TestAccountProperty, Object> extantProps;
 	@Mock
 	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
 
@@ -140,7 +151,8 @@ class TransactionalLedgerTest {
 		given(backingAccounts.contains(1L)).willReturn(true);
 
 		// given:
-		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing);
+		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing,
+				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
 		// and:
 		subject.begin();
 		subject.set(1L, FLAG, !account1.flag);
@@ -388,7 +400,8 @@ class TransactionalLedgerTest {
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 
-		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L);
+		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L,
+				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
 
 		// given:
 		subject.begin();
@@ -498,7 +511,8 @@ class TransactionalLedgerTest {
 		assertEquals("{}", subject.changeSetSoFar());
 		// and:
 		verify(backingAccounts).put(2L, expected2);
-		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false, 667L));
+		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false, 667L,
+				TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK));
 		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
 		verify(backingAccounts).remove(3L);
 	}
@@ -546,6 +560,38 @@ class TransactionalLedgerTest {
 		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
 		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
 		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsWithMissingHbarAllowance() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
+		subject.begin();
+		subject.set(1L, LONG, 123L);
+		subject.set(1L, FLAG, false);
+		subject.set(1L, OBJ, "DEFAULT");
+		subject.set(1L, HBAR_ALLOWANCES, MISSING);
+		subject.commit();
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.validate(1L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsWithInsufficientHbarAllowance() {
+		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingAccounts.contains(1L)).willReturn(true);
+
+		subject.begin();
+		subject.set(1L, LONG, 123L);
+		subject.set(1L, FLAG, false);
+		subject.set(1L, OBJ, "DEFAULT");
+		subject.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
+		subject.commit();
+
+		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.validate(1L, scopedCheck));
 	}
 
 	@Test

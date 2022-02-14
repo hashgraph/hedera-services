@@ -21,6 +21,7 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,11 +29,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
@@ -46,14 +50,56 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
  * Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AliasManager {
+public class AliasManager extends AbstractContractAliases implements ContractAliases {
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
+
+	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
 
 	private Map<ByteString, EntityNum> aliases;
 
 	@Inject
 	public AliasManager() {
 		this.aliases = new HashMap<>();
+	}
+
+	@Override
+	public void revert() {
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
+	}
+
+	@Override
+	public void filterPendingChanges(Predicate<Address> filter) {
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
+	}
+
+	@Override
+	public void commit(final @Nullable SigImpactHistorian observer) {
+		throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
+	}
+
+	@Override
+	public void link(final Address alias, final Address address) {
+		link(ByteString.copyFrom(alias.toArrayUnsafe()), EntityNum.fromEvmAddress(address));
+	}
+
+	@Override
+	public void unlink(final Address alias) {
+		unlink(ByteString.copyFrom(alias.toArrayUnsafe()));
+	}
+
+	@Override
+	public Address resolveForEvm(final Address addressOrAlias) {
+		if (isMirror(addressOrAlias)) {
+			return addressOrAlias;
+		}
+		final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
+		final var contractNum = aliases.get(aliasKey);
+		return (contractNum == null) ? null : contractNum.toEvmAddress();
+	}
+
+	@Override
+	public boolean isInUse(final Address address) {
+		return aliases.containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {

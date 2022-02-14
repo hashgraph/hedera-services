@@ -72,6 +72,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	@Mock
 	private AliasManager aliasManager;
 
+	final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
+
 	@BeforeEach
 	void setup() {
 		commonSetup();
@@ -85,7 +87,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
-		final var sideEffectsTracker = new SideEffectsTracker();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -106,7 +107,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
-				sideEffectsTracker,
+				liveSideEffects,
 				viewManager,
 				new MockGlobalDynamicProps(),
 				tokenRelsLedger,
@@ -114,7 +115,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingTokens(),
 				aliasManager);
 		subject = new HederaLedger(
-				tokenStore, ids, creator, validator, sideEffectsTracker, historian, dynamicProps, accountsLedger,
+				tokenStore, ids, creator, validator, liveSideEffects, historian, dynamicProps, accountsLedger,
 				transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
 	}
@@ -157,6 +158,20 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 		verify(historian).saveExpirableTransactionRecords();
 		verify(historian).noteNewExpirationEvents();
+	}
+
+	@Test
+	void showsInconsistentStateIfSpawnFails() {
+		subject.begin();
+		subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
+		subject.commit();
+
+		ids.reclaimLastId();
+		liveSideEffects.reset();
+		subject.begin();
+		final var customizer = new HederaAccountCustomizer().memo("a");
+		assertThrows(IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
+		assertEquals(1, liveSideEffects.getNetTrackedHbarChanges().getAccountAmountsCount());
 	}
 
 	@Test

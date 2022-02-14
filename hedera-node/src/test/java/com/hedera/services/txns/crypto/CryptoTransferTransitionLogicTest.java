@@ -29,13 +29,11 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.MerkleAccountScopedCheck;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -158,9 +156,10 @@ class CryptoTransferTransitionLogicTest {
 				new ArrayList<>());
 
 		givenValidTxnCtx();
+		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
 				.willReturn(impliedTransfers);
 
 		// when:
@@ -192,9 +191,10 @@ class CryptoTransferTransitionLogicTest {
 				customFeesBalanceChange);
 
 		givenValidTxnCtx();
+		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
 				.willReturn(impliedTransfers);
 
 		// when:
@@ -212,9 +212,10 @@ class CryptoTransferTransitionLogicTest {
 				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		givenValidTxnCtx();
+		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
 				.willReturn(impliedTransfers);
 
 		// when & then:

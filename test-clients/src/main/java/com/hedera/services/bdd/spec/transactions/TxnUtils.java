@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -238,6 +239,11 @@ public class TxnUtils {
 	}
 
 	public static ContractID asContractId(String s, HapiApiSpec lookupSpec) {
+		if (s.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
+			return ContractID.newBuilder()
+					.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(s)))
+					.build();
+		}
 		return isIdLiteral(s) ? asContract(s) : lookupSpec.registry().getContractId(s);
 	}
 

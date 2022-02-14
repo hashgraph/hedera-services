@@ -266,7 +266,7 @@ class BasicTransactionContextTest {
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(SUCCESS);
-		subject.setCreated(contractCreated);
+		subject.setTargetedContract(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.setAssessedCustomFees(Collections.emptyList());
 		// and:
@@ -485,7 +485,7 @@ class BasicTransactionContextTest {
 		given(accessor.getTxn()).willReturn(txn);
 
 		// when:
-		subject.setCreated(contractCreated);
+		subject.setTargetedContract(contractCreated);
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
 

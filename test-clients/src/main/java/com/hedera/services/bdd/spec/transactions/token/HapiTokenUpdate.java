@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -72,6 +73,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<Supplier<Key>> newSupplyKeySupplier = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 	private boolean useImproperEmptyKey = false;
@@ -104,6 +106,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate supplyKey(String name) {
 		newSupplyKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate supplyKey(Supplier<Key> supplyKeySupplier) {
+		newSupplyKeySupplier = Optional.of(supplyKeySupplier);
 		return this;
 	}
 
@@ -266,6 +273,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							}
 							newTreasury.ifPresent(a -> b.setTreasury(getIdWithAliasLookUp(a, spec)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
+							newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							if (useInvalidFeeScheduleKey) {

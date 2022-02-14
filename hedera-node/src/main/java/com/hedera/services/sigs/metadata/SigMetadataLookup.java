@@ -48,8 +48,8 @@ public interface SigMetadataLookup {
 	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
 			ScheduleID id, @Nullable LinkedRefs linkedRefs);
 
-	SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(
-			ContractID id, @Nullable LinkedRefs linkedRefs);
+	SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
+			ContractID idOrAlias, @Nullable LinkedRefs linkedRefs);
 
 	SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
 			AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);

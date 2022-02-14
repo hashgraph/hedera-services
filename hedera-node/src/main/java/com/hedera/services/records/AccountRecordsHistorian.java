@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Defines a type able to manage the history of transactions
@@ -146,4 +148,10 @@ public interface AccountRecordsHistorian {
 	 * @return the consensus time that will be used for the next following child record
 	 */
 	Instant nextFollowingChildConsensusTime();
+
+	/**
+	 * Applies the given customization to the first in-progress successor record (and synthetic transaction)
+	 * that matches the given predicate.
+	 */
+	void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
 }

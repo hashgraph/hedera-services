@@ -22,17 +22,16 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +39,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -51,9 +49,8 @@ public class RenewalRecordsHelper {
 
 	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
 
-	private final RecordStreamManager recordStreamManager;
+	private final RecordStreaming recordStreaming;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final Consumer<RunningHash> updateRunningHash;
 
 	private int consensusNanosIncr = 0;
 	private Instant cycleStart = null;
@@ -61,12 +58,10 @@ public class RenewalRecordsHelper {
 
 	@Inject
 	public RenewalRecordsHelper(
-			final RecordStreamManager recordStreamManager,
-			final GlobalDynamicProperties dynamicProperties,
-			final Consumer<RunningHash> updateRunningHash
+			final RecordStreaming recordStreaming,
+			final GlobalDynamicProperties dynamicProperties
 	) {
-		this.updateRunningHash = updateRunningHash;
-		this.recordStreamManager = recordStreamManager;
+		this.recordStreaming = recordStreaming;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -119,8 +114,7 @@ public class RenewalRecordsHelper {
 
 	private void stream(final ExpirableTxnRecord expiringRecord, final Instant at) {
 		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
-		updateRunningHash.accept(rso.getRunningHash());
-		recordStreamManager.addRecordStreamObject(rso);
+		recordStreaming.stream(rso);
 	}
 
 	public void endRenewalCycle() {

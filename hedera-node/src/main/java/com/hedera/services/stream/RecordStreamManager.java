@@ -120,7 +120,8 @@ public class RecordStreamManager {
 			final MiscRunningAvgs runningAvgs,
 			final NodeLocalProperties nodeLocalProperties,
 			final String accountMemo,
-			final Hash initialHash
+			final Hash initialHash,
+			final RecordStreamType streamType
 	) throws NoSuchAlgorithmException, IOException {
 		final var nodeScopedRecordLogDir = effLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
 		if (nodeLocalProperties.isRecordStreamEnabled()) {
@@ -131,7 +132,7 @@ public class RecordStreamManager {
 					nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
 					platform,
 					startWriteAtCompleteWindow,
-					RecordStreamType.RECORD);
+					streamType);
 			writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
 					.setNodeId(platform.getSelfId().getId())
 					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())

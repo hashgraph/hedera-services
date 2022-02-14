@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -78,7 +79,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
@@ -99,7 +99,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
 	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
-	private boolean fullyAggregateTokenTransfers = false;
+	private Optional<BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder>> explicitDef = Optional.empty();
+	private boolean fullyAggregateTokenTransfers = true;
 	private static boolean transferToKey = false;
 
 	@Override
@@ -149,19 +150,30 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	private final static BinaryOperator<List<AccountAmount>> accountMerge = (a, b) ->
 			Stream.of(a, b).flatMap(List::stream).collect(collectingAndThen(
-					groupingBy(AccountAmount::getAccountID, mapping(AccountAmount::getAmount, toList())),
+					groupingBy(AccountAmount::getAccountID,(groupingBy(AccountAmount::getIsApproval, mapping(AccountAmount::getAmount, toList())))),
 					aMap -> aMap.entrySet()
 							.stream()
-							.map(entry ->
-									AccountAmount.newBuilder()
-											.setAccountID(entry.getKey())
-											.setAmount(entry.getValue().stream().mapToLong(l -> l).sum())
-											.build())
-							.collect(toList())));
+							.flatMap(entry -> {
+									List<AccountAmount> accountAmounts = new ArrayList<>();
+									for(var entrySet : entry.getValue().entrySet()) {
+										var aa = AccountAmount.newBuilder()
+												.setAccountID(entry.getKey())
+												.setIsApproval(entrySet.getKey())
+												.setAmount(entrySet.getValue().stream().mapToLong(l -> l).sum())
+												.build();
+										accountAmounts.add(aa);
+									}
+									return accountAmounts.stream();
+							}).collect(toList())));
 	private final static Collector<TransferList, ?, TransferList> mergingAccounts =
 			transferCollector(accountMerge);
 	private final static Collector<TransferList, ?, TransferList> mergingSortedAccounts =
 			sortedTransferCollector(accountMerge);
+
+	public HapiCryptoTransfer(BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+		explicitDef = Optional.of(def);
+	}
+
 
 	@SafeVarargs
 	public HapiCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
@@ -189,8 +201,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		this.tokenAwareProviders = List.of(sources);
 	}
 
-	public HapiCryptoTransfer fullyAggregateTokenTransfers() {
-		this.fullyAggregateTokenTransfers = true;
+	public HapiCryptoTransfer dontFullyAggregateTokenTransfers() {
+		this.fullyAggregateTokenTransfers = false;
 		return this;
 	}
 
@@ -211,6 +223,20 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		} else {
 			return tokenAwareVariableDefaultSigners();
 		}
+	}
+
+	public static Function<HapiApiSpec, TransferList> allowanceTinyBarsFromTo(String from, String to, long amount) {
+		return spec -> {
+			AccountID toAccount = asId(to, spec);
+			AccountID fromAccount = asId(from, spec);
+			return TransferList.newBuilder()
+					.addAllAccountAmounts(Arrays.asList(
+							AccountAmount.newBuilder().setAccountID(toAccount)
+									.setAmount(amount).setIsApproval(true).build(),
+							AccountAmount.newBuilder().setAccountID(fromAccount)
+									.setAmount(-1L * amount).setIsApproval(true).build())
+					).build();
+		};
 	}
 
 	public static Function<HapiApiSpec, TransferList> tinyBarsFromTo(String from, String to, long amount) {
@@ -327,7 +353,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		CryptoTransferTransactionBody opBody = spec.txns()
 				.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
 						CryptoTransferTransactionBody.class, b -> {
-							if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
+							if (explicitDef.isPresent()) {
+								explicitDef.get().accept(spec, b);
+							} else if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
 								b.setTransfers(hbarOnlyProvider.apply(spec));
 							} else {
 								var xfers = transfersAllFor(spec);
@@ -340,7 +368,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 										b.addTokenTransfers(scopedXfers);
 									}
 								}
-
 								misconfigureIfRequested(b, spec);
 							}
 						}
@@ -562,22 +589,21 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	}
 
 	private List<AccountAmount> aggregateTransfers(List<AccountAmount> list) {
-		List<AccountAmount> aaList = new ArrayList<>();
-		Map<AccountID, Long> aaMap = new HashMap<>();
-		for (var aa : list) {
-			if (aaMap.containsKey(aa.getAccountID())) {
-				aaMap.put(aa.getAccountID(), aa.getAmount() + aaMap.get(aa.getAccountID()));
-			} else {
-				aaMap.put(aa.getAccountID(), aa.getAmount());
-			}
-		}
-		for (var entry : aaMap.entrySet()) {
-			aaList.add(AccountAmount.newBuilder()
-					.setAccountID(entry.getKey())
-					.setAmount(entry.getValue())
-					.build());
-		}
-		return aaList;
+		return list.stream().collect(
+				groupingBy(AccountAmount::getAccountID, groupingBy(AccountAmount::getIsApproval,
+						mapping(AccountAmount::getAmount, toList())))).entrySet().stream()
+				.flatMap(entry -> {
+					List<AccountAmount> accountAmounts = new ArrayList<>();
+					for(var entrySet : entry.getValue().entrySet()) {
+						var aa = AccountAmount.newBuilder()
+								.setAccountID(entry.getKey())
+								.setIsApproval(entrySet.getKey())
+								.setAmount(entrySet.getValue().stream().mapToLong(l -> l).sum())
+								.build();
+						accountAmounts.add(aa);
+					}
+					return accountAmounts.stream();
+				}).collect(Collectors.toList());
 	}
 
 	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {

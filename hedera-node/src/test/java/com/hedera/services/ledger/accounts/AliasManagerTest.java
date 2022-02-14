@@ -25,24 +25,73 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AliasManagerTest {
 	private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
 	private static final EntityNum num = EntityNum.fromLong(1234L);
+	private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
+	private static final Address mirrorAddress = num.toEvmAddress();
+
+	final AliasManager subject = new AliasManager();
+
+	@Test
+	void resolvesLinkedNonMirrorAsExpected() {
+		subject.link(ByteString.copyFrom(rawNonMirrorAddress), num);
+		assertEquals(num.toEvmAddress(), subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void non20ByteStringCannotBeMirror() {
+		assertFalse(subject.isMirror(new byte[] { (byte) 0xab, (byte) 0xcd }));
+		assertFalse(subject.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
+	}
+
+	@Test
+	void resolvesUnlinkedNonMirrorAsExpected() {
+		assertNull(subject.resolveForEvm(nonMirrorAddress));
+	}
+
+	@Test
+	void resolvesMirrorAsExpected() {
+		assertSame(mirrorAddress, subject.resolveForEvm(mirrorAddress));
+	}
+
+	@Test
+	void doesntSupportTransactionalSemantics() {
+		assertThrows(UnsupportedOperationException.class, () -> subject.commit(null));
+		assertThrows(UnsupportedOperationException.class, () -> subject.filterPendingChanges(null));
+		assertThrows(UnsupportedOperationException.class, subject::revert);
+	}
+
+	@Test
+	void canLinkAndUnlinkAddresses() {
+		subject.link(nonMirrorAddress, mirrorAddress);
+		assertEquals(Map.of(ByteString.copyFrom(nonMirrorAddress.toArrayUnsafe()), num), subject.getAliases());
+
+		subject.unlink(nonMirrorAddress);
+		assertEquals(Collections.emptyMap(), subject.getAliases());
+	}
 
 	@Test
 	void createAliasAddsToMap() {
-		final var subject = new AliasManager();
 		subject.link(alias, num);
 
 		assertEquals(Map.of(alias, num), subject.getAliases());
@@ -50,12 +99,18 @@ class AliasManagerTest {
 
 	@Test
 	void forgetAliasRemovesFromMap() {
-		final var subject = new AliasManager();
 		subject.getAliases().put(alias, num);
 
 		subject.unlink(alias);
 
 		assertFalse(subject.getAliases().containsKey(alias));
+	}
+
+	@Test
+	void isAliasChecksForMapMembershipOnly() {
+		assertFalse(subject.isInUse(nonMirrorAddress));
+		subject.link(nonMirrorAddress, mirrorAddress);
+		assertTrue(subject.isInUse(nonMirrorAddress));
 	}
 
 	@Test
@@ -69,7 +124,6 @@ class AliasManagerTest {
 			put(aliasB, b);
 		}};
 
-		var subject = new AliasManager();
 		assertTrue(subject.getAliases().isEmpty());
 
 		subject.setAliases(expectedMap);
@@ -93,7 +147,6 @@ class AliasManagerTest {
 		liveAccounts.put(withNum, accountWithAlias);
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 
-		final var subject = new AliasManager();
 		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 

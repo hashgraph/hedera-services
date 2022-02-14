@@ -21,18 +21,23 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -67,17 +72,27 @@ public class SideEffectsTracker {
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
-	private ByteString newAccountAlias = ByteString.EMPTY;
+	private ContractID newContractId = null;
+	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
+	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
+	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
 		/* For Dagger2 */
 	}
 
-	public void trackAutoCreation(final AccountID accountID, final ByteString alias){
+	public void trackNewContract(final ContractID contractId, final Address evmAddress) {
+		newContractId = contractId;
+		newEntityAlias = ByteString.copyFrom(evmAddress.toArrayUnsafe());
+	}
+
+	public void trackAutoCreation(final AccountID accountID, final ByteString alias) {
 		this.newAccountId = accountID;
-		this.newAccountAlias = alias;
+		this.newEntityAlias = alias;
 	}
 
 	/**
@@ -187,12 +202,20 @@ public class SideEffectsTracker {
 		return newAccountId != null;
 	}
 
-	public ByteString getNewAccountAlias() {
-		return newAccountAlias;
+	public ByteString getNewEntityAlias() {
+		return newEntityAlias;
 	}
 
 	public AccountID getTrackedAutoCreatedAccountId() {
 		return newAccountId;
+	}
+
+	public ContractID getTrackedNewContractId() {
+		return newContractId;
+	}
+
+	public boolean hasTrackedContractCreation() {
+		return newContractId != null;
 	}
 
 	/**
@@ -379,6 +402,32 @@ public class SideEffectsTracker {
 		return all;
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances;
+	}
+
+	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances;
+	}
+
+	public void setFungibleTokenAllowances(
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return nftAllowances;
+	}
+
+	public void setNftAllowances(
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		this.nftAllowances = nftAllowances;
+	}
+
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */
@@ -386,7 +435,11 @@ public class SideEffectsTracker {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
 		newAccountId = null;
-		newAccountAlias = ByteString.EMPTY;
+		newContractId = null;
+		newEntityAlias = ByteString.EMPTY;
+		cryptoAllowances = Collections.emptyMap();
+		fungibleTokenAllowances = Collections.emptyMap();
+		nftAllowances = Collections.emptyMap();
 	}
 
 	/**

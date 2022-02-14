@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -128,9 +129,8 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						contractCreate("toBeDeleted")
 				).when().then(
 						contractDelete("toBeDeleted"),
-						getContractInfo("toBeDeleted").hasCostAnswerPrecheck(CONTRACT_DELETED),
-						getContractInfo("toBeDeleted").nodePayment(27_159_182L)
-								.hasAnswerOnlyPrecheck(ResponseCodeEnum.CONTRACT_DELETED)
+						getContractInfo("toBeDeleted")
+								.has(contractWith().isDeleted())
 				);
 	}
 

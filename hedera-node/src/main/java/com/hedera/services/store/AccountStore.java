@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.util.TreeMap;
+
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -161,6 +163,9 @@ public class AccountStore {
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
 		account.setAlias(merkleAccount.getAlias());
+		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
+		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
+		account.setNftAllowances(merkleAccount.getNftAllowances());
 
 		return account;
 	}
@@ -217,6 +222,9 @@ public class AccountStore {
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
+		mutableAccount.setCryptoAllowances(new TreeMap<>(model.getCryptoAllowances()));
+		mutableAccount.setFungibleTokenAllowances(new TreeMap<>(model.getFungibleTokenAllowances()));
+		mutableAccount.setNftAllowances(new TreeMap<>(model.getNftAllowances()));
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

@@ -259,7 +259,7 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setCreated(final ContractID id) {
+	public void setTargetedContract(final ContractID id) {
 		receiptConfig = receipt -> receipt.setContractId(EntityId.fromGrpcContractId(id));
 	}
 

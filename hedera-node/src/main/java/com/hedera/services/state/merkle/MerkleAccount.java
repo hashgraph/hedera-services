@@ -27,6 +27,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -38,7 +40,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -328,11 +332,69 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNumContractKvPairs(numContractKvPairs);
 	}
 
+	public Map<EntityNum, Long> getCryptoAllowances() {
+		return state().getCryptoAllowances();
+	}
+
+	public void setCryptoAllowances(final SortedMap<EntityNum, Long> cryptoAllowances) {
+		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
+		state().setCryptoAllowances(cryptoAllowances);
+	}
+
+	public Map<EntityNum, Long> getCryptoAllowancesUnsafe() {
+		return state().getCryptoAllowancesUnsafe();
+	}
+
+	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
+		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
+		state().setCryptoAllowancesUnsafe(cryptoAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return state().getNftAllowances();
+	}
+
+	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		throwIfImmutable("Cannot change this account's Nft allowances if it's immutable.");
+		state().setNftAllowances(nftAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
+		return state().getNftAllowancesUnsafe();
+	}
+
+	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		throwIfImmutable("Cannot change this account's nft allowances if it's immutable.");
+		state().setNftAllowancesUnsafe(nftAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return state().getFungibleTokenAllowances();
+	}
+
+	public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
+		state().setFungibleTokenAllowances(fungibleTokenAllowances);
+	}
+
+	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowancesUnsafe() {
+		return state().getFungibleTokenAllowancesUnsafe();
+	}
+
+	public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
+		state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
+	}
+
 	public Iterator<ExpirableTxnRecord> recordIterator() {
 		return records().iterator();
 	}
 
 	public int numRecords() {
 		return records().size();
+	}
+
+	public boolean hasAlias() {
+		return !getAlias().isEmpty();
 	}
 }

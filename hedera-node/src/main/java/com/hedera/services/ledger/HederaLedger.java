@@ -367,11 +367,14 @@ public class HederaLedger {
 	public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
+		// We must *immediately* track this pending balance change, because if the spawn()
+		// below throws an exception, we need throwIfPendingStateIsInconsistent() to detect
+		// the inconsistent change-set.
+		sideEffectsTracker.trackHbarChange(sponsor, -balance);
 
 		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
 
-		sideEffectsTracker.trackHbarChange(sponsor, -balance);
 		return id;
 	}
 
@@ -468,8 +471,12 @@ public class HederaLedger {
 		return (String) accountsLedger.get(id, MEMO);
 	}
 
-	public ByteString alias(AccountID id) {
+	public ByteString alias(final AccountID id) {
 		return (ByteString) accountsLedger.get(id, ALIAS);
+	}
+
+	public void clearAlias(final AccountID id) {
+		accountsLedger.set(id, ALIAS, ByteString.EMPTY);
 	}
 
 	public boolean isPendingCreation(AccountID id) {
