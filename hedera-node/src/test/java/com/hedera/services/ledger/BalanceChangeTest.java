@@ -62,6 +62,7 @@ class BalanceChangeTest {
 				"from=Id[shard=1, realm=2, num=3], to=Id[shard=2, realm=3, num=4]}";
 
 		// expect:
+		assertFalse(nftChange.isApprovedAllowance());
 		assertNotEquals(hbarChange, tokenChange);
 		assertNotEquals(hbarChange.hashCode(), tokenChange.hashCode());
 		// and:
@@ -134,6 +135,7 @@ class BalanceChangeTest {
 				.setSenderAccountID(a)
 				.setReceiverAccountID(b)
 				.setSerialNumber(serialNo)
+				.setIsApproval(true)
 				.build();
 
 		// given:
@@ -146,6 +148,7 @@ class BalanceChangeTest {
 		assertEquals(serialNo, nftChange.serialNo());
 		// and:
 		assertTrue(nftChange.isForNft());
+		assertTrue(nftChange.isApprovedAllowance());
 		assertEquals(new NftId(t.shard(), t.realm(), t.num(), serialNo), nftChange.nftId());
 	}
 
