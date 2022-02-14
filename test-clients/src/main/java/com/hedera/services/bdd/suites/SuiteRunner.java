@@ -66,6 +66,8 @@ import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoAdjustAllowanceSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -491,6 +493,9 @@ public class SuiteRunner {
 		put("FreezeAbort", aof(FreezeAbort::new));
 		/* Memo validation */
 		put("MemoValidation", aof(MemoValidation::new));
+		/* Approval and Allowance */
+		put("CryptoApproveAllowanceSuite", aof(CryptoApproveAllowanceSuite::new));
+		put("CryptoAdjustAllowanceSuite", aof(CryptoAdjustAllowanceSuite::new));
 	}};
 
 	static boolean runAsync;
