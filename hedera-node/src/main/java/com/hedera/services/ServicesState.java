@@ -130,9 +130,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public int getMinimumChildCount(int version) {
 		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
-			return StateChildIndices.NUM_PRE_0220_CHILDREN;
+			return StateChildIndices.NUM_0210_CHILDREN;
 		} else if (version == CURRENT_VERSION) {
-			return StateChildIndices.NUM_0220_CHILDREN;
+			return StateChildIndices.NUM_POST_0210_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -145,7 +145,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-                /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
+		/* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
 	}
 
 	@Override

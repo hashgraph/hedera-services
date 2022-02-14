@@ -9,9 +9,9 @@ package com.hedera.services.state.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,9 +41,10 @@ public final class StateVersions {
 	public static final int RELEASE_0190_AND_020_VERSION = 13;
 	public static final int RELEASE_0210_VERSION = 14;
 	public static final int RELEASE_0220_VERSION = 15;
+	public static final int RELEASE_0230_VERSION = 16;
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0190_AND_020_VERSION;
-	public static final int CURRENT_VERSION = RELEASE_0220_VERSION;
+	public static final int CURRENT_VERSION = RELEASE_0230_VERSION;
 
 	private StateVersions() {
 		throw new UnsupportedOperationException("Utility Class");
