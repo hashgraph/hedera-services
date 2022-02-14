@@ -4,7 +4,7 @@ package com.hedera.services.txns.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.txns.crypto.validators.AllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -62,7 +62,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,19 +80,21 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private AllowanceChecks allowanceChecks;
+	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
+	private CryptoApproveAllowanceTransactionBody op;
 
 	CryptoApproveAllowanceTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks, dynamicProperties);
+		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks,
+				dynamicProperties);
 	}
 
 	@Test
@@ -124,7 +125,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	@Test
-	void wipesSerialsWhenApprovedForAll(){
+	void wipesSerialsWhenApprovedForAll() {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
@@ -166,7 +167,9 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Test
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
-		given(allowanceChecks.allowancesValidation(cryptoApproveAllowanceTxn, ownerAcccount)).willReturn(OK);
+		given(allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
+				op.getNftAllowancesList(), ownerAcccount,
+				dynamicProperties.maxAllowanceLimitPerTransaction())).willReturn(OK);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
 	}
@@ -308,6 +311,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
+		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
 		ownerAcccount.setNftAllowances(new HashMap<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());

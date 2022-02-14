@@ -1,8 +1,10 @@
+package com.hedera.services.txns.crypto;
+
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +20,6 @@
  * ‍
  */
 
-package com.hedera.services.txns.crypto;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -29,7 +29,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.crypto.validators.AllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -53,7 +53,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountStore accountStore;
-	private final AllowanceChecks allowanceChecks;
+	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
@@ -61,7 +61,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
 			final AccountStore accountStore,
-			final AllowanceChecks allowanceChecks,
+			final ApproveAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties) {
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -108,8 +108,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
 		final AccountID owner = cryptoAllowanceTxn.getTransactionID().getAccountID();
+		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
 		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
-		return allowanceChecks.allowancesValidation(cryptoAllowanceTxn, ownerAccount);
+
+		return allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount,
+				dynamicProperties.maxAllowanceLimitPerTransaction());
 	}
 
 	/**
@@ -122,20 +126,20 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		Map<EntityNum, Long> cryptoAllowancesMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
+		final Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
 		for (final var allowance : cryptoAllowances) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			if (cryptoAllowancesMap.containsKey(spender.asEntityNum())) {
+			if (cryptoMap.containsKey(spender.asEntityNum())) {
 				if (amount == 0) {
-					cryptoAllowancesMap.remove(spender.asEntityNum());
+					cryptoMap.remove(spender.asEntityNum());
 				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
-			cryptoAllowancesMap.put(spender.asEntityNum(), amount);
+			cryptoMap.put(spender.asEntityNum(), amount);
 		}
-		ownerAccount.setCryptoAllowances(cryptoAllowancesMap);
+		ownerAccount.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
@@ -148,25 +152,25 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(ownerAccount.getNftAllowances());
+		final Map<FcTokenAllowanceId, FcTokenAllowance> nftMap = new TreeMap<>(ownerAccount.getNftAllowances());
 		for (var allowance : nftAllowances) {
-			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (nftAllowancesMap.containsKey(key)) {
+			if (nftMap.containsKey(key)) {
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
 
-			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
-			nftAllowancesMap.put(key, value);
+			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(
+					approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
+			nftMap.put(key, value);
 		}
-		ownerAccount.setNftAllowances(nftAllowancesMap);
+		ownerAccount.setNftAllowances(nftMap);
 	}
 
 	/**
@@ -179,25 +183,24 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
+		final Map<FcTokenAllowanceId, Long> tokensMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
 		for (var allowance : tokenAllowances) {
-			final var spenderAccount = allowance.getSpender();
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (tokenAllowancesMap.containsKey(key)) {
+			if (tokensMap.containsKey(key)) {
 				if (amount == 0) {
-					tokenAllowancesMap.remove(key);
+					tokensMap.remove(key);
 				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
-			tokenAllowancesMap.put(key, amount);
+			tokensMap.put(key, amount);
 		}
-		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
+		ownerAccount.setFungibleTokenAllowances(tokensMap);
 	}
 
 	/**

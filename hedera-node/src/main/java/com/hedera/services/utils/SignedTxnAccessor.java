@@ -30,6 +30,7 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -60,6 +61,7 @@ import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -385,6 +387,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoUpdateUsageMeta();
 		} else if (function == CryptoApproveAllowance) {
 			setCryptoApproveUsageMeta();
+		} else if (function == CryptoAdjustAllowance) {
+			setCryptoAdjustUsageMeta();
 		}
 	}
 
@@ -464,6 +468,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(txn.getCryptoApproveAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoApproveMeta(this, cryptoApproveMeta);
+	}
+
+	private void setCryptoAdjustUsageMeta() {
+		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(txn.getCryptoAdjustAllowance(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
+		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
 	}
 
 	private void setBaseUsageMeta() {

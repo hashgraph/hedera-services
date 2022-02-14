@@ -22,9 +22,13 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -49,6 +53,7 @@ class HederaStackedWorldStateUpdaterTest {
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 	private static final Address address = Address.fromHexString("0xabc");
+	private static final Address otherAddress = Address.fromHexString("0xdef");
 	private static final ContractID addressId = EntityIdUtils.contractIdFromEvmAddress(address);
 
 	@Mock
@@ -57,6 +62,8 @@ class HederaStackedWorldStateUpdaterTest {
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
 	private AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock
@@ -100,11 +107,15 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void doesntRelinkAliasIfActive() {
+	void doesntRelinkAliasIfActiveAndExtant() {
+		final var targetId = EntityIdUtils.accountIdFromEvmAddress(otherAddress);
 		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
 		given(trackingLedgers.aliases()).willReturn(aliases);
 		given(aliases.isInUse(alias)).willReturn(true);
 		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+		given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
+		given(accountsLedger.exists(targetId)).willReturn(true);
 
 		final var created = subject.newAliasedContractAddress(sponsor, alias);
 
@@ -112,6 +123,23 @@ class HederaStackedWorldStateUpdaterTest {
 		assertEquals(sponsor, subject.getSponsorMap().get(address));
 		assertEquals(addressId, subject.idOfLastNewAddress());
 		verify(aliases, never()).link(alias, address);
+	}
+
+	@Test
+	void doesRelinkAliasIfActiveButWithMissingTarget() {
+		given(worldState.newContractAddress(sponsor)).willReturn(address);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(aliases.isInUse(alias)).willReturn(true);
+		given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+		given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
+
+		final var created = subject.newAliasedContractAddress(sponsor, alias);
+
+		assertSame(address, created);
+		assertEquals(sponsor, subject.getSponsorMap().get(address));
+		assertEquals(addressId, subject.idOfLastNewAddress());
+		verify(aliases).link(alias, address);
 	}
 
 	@Test

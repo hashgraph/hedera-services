@@ -112,10 +112,10 @@ public class RoyaltyFeeAssessor {
 		for (var exchange : exchangedValue) {
 			long value = exchange.originalUnits();
 			long royaltyFee = safeFractionMultiply(spec.numerator(), spec.denominator(), value);
-			if (exchange.units() < royaltyFee) {
+			if (exchange.getAggregatedUnits() < royaltyFee) {
 				return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 			}
-			exchange.adjustUnits(-royaltyFee);
+			exchange.aggregateUnits(-royaltyFee);
 			final var denom = exchange.isForHbar() ? MISSING_ID : exchange.getToken();
 			/* The id of the charging token is only used here to avoid recursively charging
 			 on fees charged in the units of their denominating token; but this is a credit,

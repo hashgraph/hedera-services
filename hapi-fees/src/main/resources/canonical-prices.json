@@ -19,10 +19,10 @@
 	"DEFAULT": 0.005
   },
   "CryptoApproveAllowance": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.05
   },
   "CryptoAdjustAllowance": {
-	"DEFAULT": 0.01
+	"DEFAULT": 0.05
   },
   "CryptoAddLiveHash": {
 	"DEFAULT": 0.1
