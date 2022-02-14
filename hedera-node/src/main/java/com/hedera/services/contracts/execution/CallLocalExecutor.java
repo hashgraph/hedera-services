@@ -30,6 +30,7 @@ import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -70,12 +71,8 @@ public class CallLocalExecutor {
 			final AliasManager aliasManager
 	) {
 		try {
-//			TransactionBody body = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-//
-//			final var senderId = resolvedSender(body, accountStore);
-//			final var contractId = Id.fromGrpcContract(op.getContractID());
 			final var paymentTxn = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-			final var senderId = Id.fromGrpcAccount(paymentTxn.getTransactionID().getAccountID());
+			final var senderId = resolvedSender(paymentTxn, accountStore);
 			final var idOrAlias = op.getContractID();
 			final var contractId = EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
 
@@ -112,10 +109,10 @@ public class CallLocalExecutor {
 		}
 	}
 
-//	private static Id resolvedSender(TransactionBody body, AccountStore accountStore) {
-//		final var grpcSender = body.getTransactionID().getAccountID();
-//		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
-//				grpcSender.getAccountNum());
-//		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
-//	}
+	private static Id resolvedSender(TransactionBody body, AccountStore accountStore) {
+		final var grpcSender = body.getTransactionID().getAccountID();
+		final long senderAccountNum = accountStore.getResolvedAccountNum(grpcSender.getAlias(),
+				grpcSender.getAccountNum());
+		return Id.fromResolvedAccountNum(grpcSender, senderAccountNum);
+	}
 }

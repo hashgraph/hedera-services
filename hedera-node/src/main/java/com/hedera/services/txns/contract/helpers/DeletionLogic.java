@@ -39,9 +39,11 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class DeletionLogic {
 	private final HederaLedger ledger;
@@ -72,9 +74,11 @@ public class DeletionLogic {
 
 	public ContractID performFor(final ContractDeleteTransactionBody op) {
 		final var id = unaliased(op.getContractID(), aliasManager);
-		final var tbd = id.toGrpcAccountId();
+		final var result = aliasManager.lookUpAccount(id.toGrpcAccountId());
+		final var tbd = result.resolvedId();
 		final var obtainer = obtainerOf(op);
 
+		validateTrue(OK == result.response(), INVALID_TRANSFER_ACCOUNT_ID);
 		validateFalse(tbd.equals(obtainer), OBTAINER_SAME_CONTRACT_ID);
 		validateTrue(ledger.exists(obtainer), OBTAINER_DOES_NOT_EXIST);
 		validateFalse(ledger.isDeleted(obtainer), OBTAINER_DOES_NOT_EXIST);
