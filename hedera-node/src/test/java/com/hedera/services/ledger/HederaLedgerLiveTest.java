@@ -79,7 +79,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				liveSideEffects);
 		final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
@@ -89,12 +90,14 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				liveSideEffects);
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				liveSideEffects);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,

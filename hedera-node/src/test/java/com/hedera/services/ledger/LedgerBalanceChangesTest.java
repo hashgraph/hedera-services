@@ -151,11 +151,11 @@ class LedgerBalanceChangesTest {
 	void setUp() throws ConstructableRegistryException {
 		MockitoAnnotations.initMocks(this);
 		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
+				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new SideEffectsTracker());
 		tokenRelsLedger = new TransactionalLedger<>(
-				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
+				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>(), new SideEffectsTracker());
 		nftsLedger = new TransactionalLedger<>(
-				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>(), new SideEffectsTracker());
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 

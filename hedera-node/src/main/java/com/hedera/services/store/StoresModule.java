@@ -20,6 +20,7 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -88,7 +89,8 @@ public interface StoresModule {
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 	}
 
 	@Provides
@@ -100,7 +102,8 @@ public interface StoresModule {
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 	}
 
 	@Provides
@@ -112,7 +115,8 @@ public interface StoresModule {
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				backingTokenRels,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		return tokenRelsLedger;
 	}
@@ -126,7 +130,8 @@ public interface StoresModule {
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 	}
 
 	@Provides

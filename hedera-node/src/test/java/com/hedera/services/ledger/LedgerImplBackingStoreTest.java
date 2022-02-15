@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapTestAccounts;
 import com.hedera.services.ledger.accounts.TestAccount;
@@ -66,7 +67,8 @@ class LedgerImplBackingStoreTest {
 				TestAccountProperty.class,
 				TestAccount::new,
 				backingTestAccounts,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 	}
 
 	@Test
@@ -310,7 +312,8 @@ class LedgerImplBackingStoreTest {
 				TestAccountProperty.class,
 				TestAccount::new,
 				ledger,
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 	}
 
 	private void givenMockSubject() {

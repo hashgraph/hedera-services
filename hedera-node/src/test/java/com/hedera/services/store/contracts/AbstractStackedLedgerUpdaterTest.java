@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -198,22 +199,26 @@ class AbstractStackedLedgerUpdaterTest {
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
-				new ChangeSummaryManager<>());
+				new ChangeSummaryManager<>(),
+				new SideEffectsTracker());
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();

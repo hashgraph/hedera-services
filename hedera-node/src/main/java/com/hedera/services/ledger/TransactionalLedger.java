@@ -20,16 +20,21 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,18 +82,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final TransactionalLedger<K, P, A> entitiesLedger;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
-	private PropertyChangeObserver<K, P> commitInterceptor = null;
+	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
+	private final CommitInterceptor<K, A, P> commitInterceptor = this::checkHbarChanges;
 
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
 			BackingStore<K, A> entities,
-			ChangeSummaryManager<A, P> changeManager
+			ChangeSummaryManager<A, P> changeManager,
+			SideEffectsTracker sideEffectsTracker
 	) {
 		this.entities = entities;
 		this.allProps = propertyType.getEnumConstants();
@@ -96,6 +104,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.propertyType = propertyType;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
+		this.sideEffectsTracker = sideEffectsTracker;
 
 		if (entities instanceof TransactionalLedger) {
 			this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
@@ -126,7 +135,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				sourceLedger.getPropertyType(),
 				sourceLedger.getNewEntity(),
 				sourceLedger,
-				sourceLedger.getChangeManager());
+				sourceLedger.getChangeManager(),
+				sourceLedger.getSideEffectsTracker());
 		wrapper.begin();
 		return wrapper;
 	}
@@ -135,8 +145,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.keyToString = Optional.of(keyToString);
 	}
 
-	public void setCommitInterceptor(final PropertyChangeObserver<K, P> commitInterceptor) {
-		this.commitInterceptor = commitInterceptor;
+	public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
+		this.propertyChangeObserver = propertyChangeObserver;
 	}
 
 	public void begin() {
@@ -189,6 +199,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
+			commitInterceptor.preview(getCurrentAccountChanges());
+
 			flushListed(changedKeys);
 			flushListed(createdKeys);
 			changes.clear();
@@ -240,8 +252,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		final boolean hasPendingChanges = changeSet != null;
 		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
-			if (commitInterceptor != null) {
-				changeManager.persistWithObserver(id, changeSet, entity, commitInterceptor);
+			if (propertyChangeObserver != null) {
+				changeManager.persistWithObserver(id, changeSet, entity, propertyChangeObserver);
 			} else {
 				changeManager.persist(changeSet, entity);
 			}
@@ -508,6 +520,71 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
+	private List<AccountChanges<K, A, P>> getCurrentAccountChanges() {
+		final List<AccountChanges<K, A, P>> accountChanges = new ArrayList<>();
+		for (final var changesEntry : changes.entrySet()) {
+			final var accountId = changesEntry.getKey();
+			final var accountProperties = changesEntry.getValue();
+			final var changesForSingleAccount = new AccountChanges<>(accountId, toGetterTarget(accountId),
+					accountProperties);
+			accountChanges.add(changesForSingleAccount);
+		}
+
+		return accountChanges;
+	}
+
+	private void checkHbarChanges(final List<AccountChanges<K, A, P>> accountChanges) {
+		final List<Long> balances = new ArrayList<>();
+		for (final AccountChanges<K, A, P> changesForSingleAccount : accountChanges) {
+			if (changesForSingleAccount.account() instanceof MerkleAccount merkleAccount) {
+				final var expirableTxnRecord = getExpirableTxnRecordFromMerkleAccount(merkleAccount);
+				if(expirableTxnRecord.isPresent()) {
+					final var hbarAdjustments = expirableTxnRecord.get().getHbarAdjustments();
+					final var transferList = hbarAdjustments.toGrpc();
+
+					for(final AccountAmount accountAmount: transferList.getAccountAmountsList()) {
+						balances.add(accountAmount.getAmount());
+						sideEffectsTracker.trackHbarChange(accountAmount.getAccountID(), accountAmount.getAmount());
+					}
+				}
+			}
+		}
+
+		doZeroSum(balances);
+	}
+
+	private void doZeroSum(final List<Long> balances) {
+		if(!balances.isEmpty()) {
+			final var sum = getArrayLongSum(balances);
+
+			if (sum != 0) {
+				throw new IllegalStateException("Invalid balance changes!");
+			}
+		}
+	}
+
+	private Optional<ExpirableTxnRecord> getExpirableTxnRecordFromMerkleAccount(final MerkleAccount merkleAccount) {
+		if (merkleAccount.getNumberOfChildren() > 0) {
+			for (int i = 0; i < merkleAccount.getNumberOfChildren(); i++) {
+				if (merkleAccount.getChild(i) instanceof Collection collection) {
+					if (collection.iterator().hasNext() && collection.iterator().next() instanceof ExpirableTxnRecord expirableTxnRecord) {
+						return Optional.of(expirableTxnRecord);
+					}
+				}
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	private long getArrayLongSum(final List<Long> balances) {
+		int sum = 0;
+		for (long value : balances) {
+			sum += value;
+		}
+		return sum;
+	}
+
 	ChangeSummaryManager<A, P> getChangeManager() {
 		return changeManager;
 	}
@@ -518,6 +595,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	Class<P> getPropertyType() {
 		return propertyType;
+	}
+
+	SideEffectsTracker getSideEffectsTracker() {
+		return sideEffectsTracker;
 	}
 
 	/* --- Only used by unit tests --- */

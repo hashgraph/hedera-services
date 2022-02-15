@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -93,12 +94,12 @@ class TransactionalLedgerTest {
 		scopedCheck = new TestAccountScopedCheck();
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager);
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager, new SideEffectsTracker());
 	}
 
 	@Test
 	void commitObserverWorks() {
-		subject.setCommitInterceptor(commitObserver);
+		subject.setPropertyChangeObserver(commitObserver);
 
 		subject.begin();
 		subject.create(1L);

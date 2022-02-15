@@ -226,7 +226,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	public WorldLedgers wrappedTrackingLedgers() {
 		final var wrappedLedgers = trackingLedgers.wrapped();
-		wrappedLedgers.accounts().setCommitInterceptor(this::onAccountPropertyChange);
+		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
 		return wrappedLedgers;
 	}
 
@@ -255,7 +255,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			}
 
 			final var newBalance = (long) newValue;
-			updatedAccount.setBalanceFromCommitInterceptor(Wei.of(newBalance));
+			updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));
 		}
 	}
 
