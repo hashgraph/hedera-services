@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,20 +70,19 @@ public class AccessorFactoryTest {
 
 	@Test
 	void constructsCorrectly() throws InvalidProtocolBufferException {
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(Transaction.newBuilder()
+		final var platformTxn = Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
-						.build().toByteArray());
+						.build();
 		assertTrue(subject.constructFrom(platformTxn) instanceof PlatformTxnAccessor);
 
-		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
+		final var  wipeTxn = Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
-				.build().toByteArray());
+				.build();
 		assertTrue(subject.constructFrom(wipeTxn) instanceof TokenWipeAccessor);
 
-		SwirldTransaction accountCreateTxn = new SwirldTransaction(Transaction.newBuilder()
+		final var accountCreateTxn = Transaction.newBuilder()
 				.setBodyBytes(cryptoCreateTxn.toByteString())
-				.build().toByteArray());
+				.build();
 		assertTrue(subject.constructFrom(accountCreateTxn) instanceof CryptoCreateAccessor);
 	}
 }

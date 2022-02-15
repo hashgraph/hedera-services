@@ -53,4 +53,9 @@ public class AccessorFactory {
 			}
 		}
 	}
+
+	public PlatformTxnAccessor constructFrom(Transaction validSignedTxn) throws InvalidProtocolBufferException {
+		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
+		return constructFrom(platformTxn);
+	}
 }

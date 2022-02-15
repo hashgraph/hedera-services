@@ -74,6 +74,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.util.List;
 import java.util.function.Function;
@@ -99,7 +100,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+
 class SignedTxnAccessorTest {
+	@Mock
+	AliasManager aliasManager;
+
+	AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
 	private static final String memo = "Eternal sunshine of the spotless mind";
 	private static final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
 	private static final byte[] memoUtf8Bytes = memo.getBytes();
@@ -560,9 +566,9 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void setCryptoCreateUsageMetaWorks() {
+	void setCryptoCreateUsageMetaWorks() throws InvalidProtocolBufferException {
 		final var txn = signedCryptoCreateTxn();
-		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var accessor = accessorFactory.constructFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
 		final var expandedMeta = spanMapAccessor.getCryptoCreateMeta(accessor);
