@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.updating(MISSING_TOKEN)
 							.withCustom(fixedFee(1, null, MISSING_ENTITY_ID))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY {
@@ -49,7 +49,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.withCustom(fixedFee(1, null, MISSING_ENTITY_ID))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ {
@@ -61,7 +61,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
 							.withCustom(fixedFee(1, null, feeCollectorNoSigReq))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ {
@@ -75,7 +75,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.withCustom(fixedFee(1, null, feeCollectorNoSigReq))
 							.withCustom(fixedFee(2, null, feeCollectorWithSigReq))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 
@@ -90,10 +90,10 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.withCustom(fixedFee(1, null, feeCollectorNoSigReq))
 							.withCustom(fixedFee(2, null, feeCollectorWithSigReq))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
-	UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR{
+	UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var missingFeeCollector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);
@@ -102,7 +102,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
 							.updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
 							.withCustom(fixedFee(1, null, missingFeeCollector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

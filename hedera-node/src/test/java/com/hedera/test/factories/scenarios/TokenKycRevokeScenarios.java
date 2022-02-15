@@ -34,7 +34,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 							.revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	REVOKE_WITH_MISSING_TOKEN {
@@ -45,7 +45,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 							.revoking(MISSING_TOKEN, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	REVOKE_FOR_TOKEN_WITHOUT_KYC {
@@ -56,7 +56,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 							.revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

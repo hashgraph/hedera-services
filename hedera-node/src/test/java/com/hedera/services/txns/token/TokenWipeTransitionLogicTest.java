@@ -33,7 +33,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -53,10 +53,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -73,7 +73,7 @@ class TokenWipeTransitionLogicTest {
 	private long totalAmount = 1000L;
 
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private TokenWipeAccessor accessor;
 	private MerkleToken merkleToken;
 	private Token token;
 
@@ -87,7 +87,7 @@ class TokenWipeTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(TokenWipeAccessor.class);
 		merkleToken = mock(MerkleToken.class);
 		token = mock(Token.class);
 		account = mock(Account.class);

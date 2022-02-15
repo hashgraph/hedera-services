@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedConsensusCreateTopic().get()
-			));
+			), aliasManager());
 		}
 	},
 	CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO {
@@ -42,7 +42,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 							.adminKey(SIMPLE_TOPIC_ADMIN_KEY)
 							.nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO {
@@ -53,7 +53,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 							.autoRenewAccountId(MISC_ACCOUNT_ID)
 							.nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY, MISC_ACCOUNT_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 
@@ -65,7 +65,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 							.autoRenewAccountId(DEFAULT_PAYER_ID)
 							.nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO {
@@ -74,7 +74,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
 					newSignedConsensusCreateTopic()
 							.autoRenewAccountId(MISSING_ACCOUNT_ID)
 							.get()
-			));
+			), aliasManager());
 		}
 	}
 }

@@ -34,7 +34,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 							.wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_WIPE_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	WIPE_WITH_MISSING_TOKEN {
@@ -44,7 +44,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 					newSignedTokenWipe()
 							.wiping(MISSING_TOKEN, MISC_ACCOUNT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	WIPE_FOR_TOKEN_WITHOUT_KEY {
@@ -55,7 +55,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 							.wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

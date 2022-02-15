@@ -34,7 +34,7 @@ public enum TokenPauseScenarios implements TxnHandlingScenario {
 							.pausing(KNOWN_TOKEN_WITH_PAUSE)
 							.nonPayerKts(TOKEN_PAUSE_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

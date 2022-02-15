@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.EntityId;
@@ -84,6 +85,8 @@ class RecordCacheTest {
 	private TxnIdRecentHistory recentHistory;
 	@Mock
 	private TxnIdRecentHistory recentChildHistory;
+	@Mock
+	private AliasManager aliasManager;
 
 	private RecordCache subject;
 
@@ -262,7 +265,7 @@ class RecordCacheTest {
 		final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		final var accessor = uncheckedAccessorFor(platformTxn);
+		final var accessor = uncheckedAccessorFor(platformTxn, aliasManager);
 
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))

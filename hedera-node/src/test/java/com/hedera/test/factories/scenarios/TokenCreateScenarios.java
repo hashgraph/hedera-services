@@ -39,7 +39,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate()
 							.nonPayerKts(TOKEN_ADMIN_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_ADMIN_AND_FREEZE {
@@ -48,14 +48,14 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate().frozen()
 							.nonPayerKts(TOKEN_ADMIN_KT, TOKEN_FREEZE_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_MISSING_ADMIN {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenCreate().missingAdmin().get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_AUTO_RENEW {
@@ -65,7 +65,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.autoRenew(MISC_ACCOUNT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER {
@@ -75,7 +75,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.autoRenew(DEFAULT_PAYER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_AUTO_RENEW {
@@ -85,7 +85,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.autoRenew(MISSING_ACCOUNT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ {
@@ -96,7 +96,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM {
@@ -107,7 +107,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ {
@@ -118,7 +118,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER {
@@ -129,7 +129,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ {
@@ -143,7 +143,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									3, 4,
 									false, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK {
@@ -156,7 +156,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									1, 2,
 									null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK {
@@ -169,7 +169,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									1, 2,
 									null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ {
@@ -183,7 +183,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									new FixedFeeSpec(1, new EntityId(2, 3, 4)),
 									collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ {
@@ -197,7 +197,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									new FixedFeeSpec(1, MISSING_ENTITY_ID),
 									collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_COLLECTOR {
@@ -208,7 +208,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_TREASURY {
@@ -218,7 +218,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.treasury(MISSING_ACCOUNT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_CREATE_WITH_TREASURY_AS_PAYER {
@@ -228,7 +228,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.treasury(DEFAULT_PAYER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

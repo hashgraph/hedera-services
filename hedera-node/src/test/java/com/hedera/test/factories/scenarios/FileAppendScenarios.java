@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,16 +32,16 @@ public enum FileAppendScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedFileAppend(MISC_FILE_ID).get()
-			));
+			), aliasManager());
 		}
 	},
-	SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER{
+	SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(MASTER_PAYER_ID)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TREASURY_SYS_FILE_APPEND_SCENARIO {
@@ -50,7 +50,7 @@ public enum FileAppendScenarios implements TxnHandlingScenario {
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	MASTER_SYS_FILE_APPEND_SCENARIO {
@@ -59,21 +59,21 @@ public enum FileAppendScenarios implements TxnHandlingScenario {
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(MASTER_PAYER_ID)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	IMMUTABLE_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedFileAppend(IMMUTABLE_FILE_ID).get()
-			));
+			), aliasManager());
 		}
 	},
 	FILE_APPEND_MISSING_TARGET_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedFileAppend(MISSING_FILE_ID).get()
-			));
+			), aliasManager());
 		}
 	}
 }

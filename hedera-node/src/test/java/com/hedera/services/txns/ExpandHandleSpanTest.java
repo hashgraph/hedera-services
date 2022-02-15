@@ -9,9 +9,9 @@ package com.hedera.services.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.txns;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -46,7 +47,8 @@ class ExpandHandleSpanTest {
 	@Mock
 	private SpanMapManager handleSpanMap;
 	@Mock
-	private AccessorFactory accessorFactory;
+	private AliasManager aliasManager;
+	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
 
 	private final long duration = 20;
 	private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
@@ -75,8 +77,8 @@ class ExpandHandleSpanTest {
 	@Test
 	void propagatesIpbe() {
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, ()  -> subject.track(invalidTxn));
-		assertThrows(InvalidProtocolBufferException.class, ()  -> subject.accessorFor(invalidTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
 	}
 
 	@Test

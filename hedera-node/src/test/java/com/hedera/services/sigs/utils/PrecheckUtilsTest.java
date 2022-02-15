@@ -21,6 +21,7 @@ package com.hedera.services.sigs.utils;
  */
 
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,6 +49,8 @@ class PrecheckUtilsTest {
 
 	@Mock
 	private NodeInfo nodeInfo;
+	@Mock
+	private AliasManager aliasManager;
 
 	private Predicate<TransactionBody> subject;
 
@@ -60,7 +63,7 @@ class PrecheckUtilsTest {
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
 		final var txn = new PlatformTxnAccessor(from(
 				newSignedCryptoUpdate("0.0.2").get()
-		)).getTxn();
+		), aliasManager).getTxn();
 
 		assertFalse(subject.test(txn));
 	}
@@ -72,7 +75,7 @@ class PrecheckUtilsTest {
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
 				).get()
-		)).getTxn();
+		), aliasManager).getTxn();
 
 		assertFalse(subject.test(txn));
 	}
@@ -84,7 +87,7 @@ class PrecheckUtilsTest {
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo(nodeId, "0.0.2048", 1_000L)
 				).get()
-		)).getTxn();
+		), aliasManager).getTxn();
 
 		assertFalse(subject.test(txn));
 	}

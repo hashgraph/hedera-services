@@ -25,7 +25,7 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenUnpauseFactory.newSignedTokenUnpause;
 
-public enum TokenUnpauseScenarios implements TxnHandlingScenario  {
+public enum TokenUnpauseScenarios implements TxnHandlingScenario {
 	VALID_UNPAUSE_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
@@ -34,7 +34,7 @@ public enum TokenUnpauseScenarios implements TxnHandlingScenario  {
 							.unPausing(KNOWN_TOKEN_WITH_PAUSE)
 							.nonPayerKts(TOKEN_PAUSE_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

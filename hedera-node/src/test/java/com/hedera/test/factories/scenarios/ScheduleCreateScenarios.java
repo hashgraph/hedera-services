@@ -37,7 +37,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 							.missingAdmin()
 							.creating(newSignedScheduleSign().signing(KNOWN_SCHEDULE_IMMUTABLE).get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_NONSENSE {
@@ -46,7 +46,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 					newSignedScheduleCreate()
 							.schedulingNonsense()
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_XFER_NO_ADMIN {
@@ -59,7 +59,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_INVALID_XFER {
@@ -72,7 +72,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISSING_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN {
@@ -84,7 +84,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER {
@@ -97,7 +97,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF {
@@ -110,7 +110,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER {
@@ -124,7 +124,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

@@ -1,10 +1,10 @@
-package com.hedera.services.utils;
+package com.hedera.services.utils.accessors;
 
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.functionExtractor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,6 +65,7 @@ class PlatformTxnAccessorTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
+	private final AliasManager aliasManager = mock(AliasManager.class);
 
 	@Test
 	void hasSpanMap() throws InvalidProtocolBufferException {
@@ -75,7 +77,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// expect:
 		assertThat(subject.getSpanMap(), instanceOf(HashMap.class));
@@ -91,7 +93,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// when:
 		subject.setSigMeta(RationalizedSigMeta.noneAvailable());
@@ -103,7 +105,7 @@ class PlatformTxnAccessorTest {
 	@Test
 	void extractorReturnsNoneWhenExpected() {
 		// expect:
-		assertEquals(HederaFunctionality.NONE, SignedTxnAccessor.functionExtractor.apply(someTxn));
+		assertEquals(HederaFunctionality.NONE, functionExtractor.apply(someTxn));
 	}
 
 	@Test
@@ -128,16 +130,16 @@ class PlatformTxnAccessorTest {
 				.build();
 
 		// expect:
-		assertEquals(ConsensusCreateTopic, SignedTxnAccessor.functionExtractor.apply(someTxn));
+		assertEquals(ConsensusCreateTopic, functionExtractor.apply(someTxn));
 	}
 
 	@Test
 	void usesExtractorToGetFunctionAsExpected() {
 		// setup:
-		var memory = SignedTxnAccessor.functionExtractor;
+		var memory = functionExtractor;
 		Function<TransactionBody, HederaFunctionality> mockFn =
 				(Function<TransactionBody, HederaFunctionality>) mock(Function.class);
-		SignedTxnAccessor.functionExtractor = mockFn;
+		functionExtractor = mockFn;
 		// and:
 		someTxn = someTxn.toBuilder()
 				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
@@ -160,7 +162,7 @@ class PlatformTxnAccessorTest {
 		verify(mockFn, times(1)).apply(any());
 
 		// cleanup:
-		SignedTxnAccessor.functionExtractor = memory;
+		functionExtractor = memory;
 	}
 
 	@Test
@@ -176,7 +178,7 @@ class PlatformTxnAccessorTest {
 	void failsWithIllegalStateOnUncheckedConstruction() {
 		final var txn = new SwirldTransaction(NONSENSE);
 		// expect:
-		assertThrows(IllegalStateException.class, () -> uncheckedAccessorFor(txn));
+		assertThrows(IllegalStateException.class, () -> uncheckedAccessorFor(txn, aliasManager));
 	}
 
 	@Test
@@ -185,7 +187,7 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn, aliasManager));
 	}
 
 	@Test
@@ -199,7 +201,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn, aliasManager));
 	}
 
 	@Test
@@ -212,7 +214,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// then:
 		assertEquals(someTxn, subject.getTxn());
@@ -232,7 +234,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
@@ -259,7 +261,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(txn.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
 		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
@@ -284,7 +286,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// then:
 		assertEquals(payer, subject.getPayer());

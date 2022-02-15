@@ -33,7 +33,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 					newSignedTokenDelete()
 							.deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	DELETE_WITH_MISSING_TOKEN {
@@ -43,7 +43,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 					newSignedTokenDelete()
 							.deleting(MISSING_TOKEN)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {
@@ -53,7 +53,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 					newSignedTokenDelete()
 							.deleting(KNOWN_TOKEN_IMMUTABLE)
 							.get()
-			));
+			), aliasManager());
 		}
 	}
 }
