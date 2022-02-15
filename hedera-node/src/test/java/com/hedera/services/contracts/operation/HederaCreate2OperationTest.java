@@ -20,6 +20,7 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -33,6 +34,7 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Create2Operation;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +46,8 @@ import java.util.Deque;
 import java.util.Iterator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -55,6 +59,8 @@ class HederaCreate2OperationTest {
 	private static final Bytes twoOffsetStackItem = Bytes.of(20);
 	private static final MutableBytes initcode = MutableBytes.of((byte) 0xaa);
 
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private MessageFrame evmMsgFrame;
 	@Mock
@@ -86,7 +92,8 @@ class HederaCreate2OperationTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreate2Operation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
+		subject = new HederaCreate2Operation(
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
 	}
 
 	@Test
@@ -109,6 +116,15 @@ class HederaCreate2OperationTest {
 		var gas = subject.cost(evmMsgFrame);
 
 		assertEquals(0, gas.toLong());
+	}
+
+	@Test
+	void enabledOnlyIfCreate2IsEnabled() {
+		assertFalse(subject.isEnabled());
+
+		given(dynamicProperties.isCreate2Enabled()).willReturn(true);
+
+		assertTrue(subject.isEnabled());
 	}
 
 	@Test
