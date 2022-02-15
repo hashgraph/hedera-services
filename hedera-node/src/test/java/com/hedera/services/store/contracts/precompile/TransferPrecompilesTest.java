@@ -45,6 +45,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
@@ -71,6 +72,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -245,6 +247,7 @@ class TransferPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
 				.willReturn(mockRecordBuilder);
+		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 
 		// when:
 		subject.prepareFieldsFromFrame(frame);
@@ -254,6 +257,9 @@ class TransferPrecompilesTest {
 
 		// then:
 		assertEquals(UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
+		ArgumentCaptor<SolidityFnResult> captor = ArgumentCaptor.forClass(SolidityFnResult.class);
+		verify(mockRecordBuilder).setContractCallResult(captor.capture());
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
 	}
 
 	@Test

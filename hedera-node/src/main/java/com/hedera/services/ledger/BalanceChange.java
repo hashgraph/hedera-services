@@ -96,6 +96,9 @@ public class BalanceChange {
 				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 		nftChange.tokenId = tokenId;
 		nftChange.isApprovedAllowance = nftTransfer.getIsApproval();
+		if (nftTransfer.getIsApproval()) {
+			nftChange.allowanceUnits = -1;
+		}
 		nftChange.payerID = payerID;
 		return nftChange;
 	}
@@ -243,13 +246,12 @@ public class BalanceChange {
 	/**
 	 * allowanceUnits are always non-positive.
 	 * If negative that accountId has some allowanceUnits to be taken off from its allowanceMap with the respective payer.
-	 * It will be 0 for nft ownership changes, use the boolean isApprovedAllowance in that case.
+	 * It will be -1 for nft ownership changes.
 	 * @return
-	 * 		true if the accountId has negative allowanceUnits
-	 * 		if allowanceUnits is 0, then return isApprovedAllowance
+	 * 		true if negative allowanceUnits
 	 */
 	public boolean isApprovedAllowance() {
-		return this.allowanceUnits == 0 ? isApprovedAllowance : this.allowanceUnits < 0;
+		return this.allowanceUnits < 0;
 	}
 
 	public AccountID getPayerID() {
