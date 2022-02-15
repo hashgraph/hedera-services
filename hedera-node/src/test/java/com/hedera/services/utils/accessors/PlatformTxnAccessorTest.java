@@ -1,10 +1,10 @@
-package com.hedera.services.utils;
+package com.hedera.services.utils.accessors;
 
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,7 @@ package com.hedera.services.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -42,6 +41,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.functionExtractor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,7 +103,7 @@ class PlatformTxnAccessorTest {
 	@Test
 	void extractorReturnsNoneWhenExpected() {
 		// expect:
-		assertEquals(HederaFunctionality.NONE, SignedTxnAccessor.functionExtractor.apply(someTxn));
+		assertEquals(HederaFunctionality.NONE, functionExtractor.apply(someTxn));
 	}
 
 	@Test
@@ -128,16 +128,16 @@ class PlatformTxnAccessorTest {
 				.build();
 
 		// expect:
-		assertEquals(ConsensusCreateTopic, SignedTxnAccessor.functionExtractor.apply(someTxn));
+		assertEquals(ConsensusCreateTopic, functionExtractor.apply(someTxn));
 	}
 
 	@Test
 	void usesExtractorToGetFunctionAsExpected() {
 		// setup:
-		var memory = SignedTxnAccessor.functionExtractor;
+		var memory = functionExtractor;
 		Function<TransactionBody, HederaFunctionality> mockFn =
 				(Function<TransactionBody, HederaFunctionality>) mock(Function.class);
-		SignedTxnAccessor.functionExtractor = mockFn;
+		functionExtractor = mockFn;
 		// and:
 		someTxn = someTxn.toBuilder()
 				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
@@ -160,7 +160,7 @@ class PlatformTxnAccessorTest {
 		verify(mockFn, times(1)).apply(any());
 
 		// cleanup:
-		SignedTxnAccessor.functionExtractor = memory;
+		functionExtractor = memory;
 	}
 
 	@Test

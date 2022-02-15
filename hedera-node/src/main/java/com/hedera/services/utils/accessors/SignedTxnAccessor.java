@@ -116,7 +116,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
 
-	static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
+	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
 		try {
 			return functionOf(trans);
 		} catch (UnknownHederaFunctionality ignore) {
