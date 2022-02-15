@@ -95,6 +95,7 @@
         <MarkerFilter marker="CERTIFICATES"           onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="LOCKS"                  onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TIME_MEASURE"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="THREADS"                onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
 
         <!-- Signed State Signatures -->
         <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"   onMismatch="NEUTRAL"/>
