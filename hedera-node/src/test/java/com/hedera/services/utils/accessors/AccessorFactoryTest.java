@@ -22,6 +22,8 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -43,14 +45,23 @@ public class AccessorFactoryTest {
 
 	AccessorFactory subject;
 
-	TransactionBody someTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+	private final AccountID payer = asAccount("1.2.345");
+	private final TransactionID txnId = TransactionID.newBuilder().setAccountID(payer).build();
+	private final TransactionBody someTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
 			.setMemo("Hi!")
 			.build();
-	TransactionBody tokenWipeTxn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+	private final TransactionBody tokenWipeTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
 			.setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
 			.setMemo("Hi!")
+			.build();
+	private final TransactionBody cryptoCreateTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
+			.setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+					.setInitialBalance(100L)
+					.setMemo("Not all those who wander are lost")
+					.build())
 			.build();
 
 	@BeforeEach
@@ -70,5 +81,10 @@ public class AccessorFactoryTest {
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
 		assertTrue(subject.constructFrom(wipeTxn) instanceof TokenWipeAccessor);
+
+		SwirldTransaction accountCreateTxn = new SwirldTransaction(Transaction.newBuilder()
+				.setBodyBytes(cryptoCreateTxn.toByteString())
+				.build().toByteArray());
+		assertTrue(subject.constructFrom(accountCreateTxn) instanceof CryptoCreateAccessor);
 	}
 }

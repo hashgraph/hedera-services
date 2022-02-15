@@ -9,14 +9,12 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.SwirldTransaction;
 
 public class CryptoCreateAccessor extends PlatformTxnAccessor{
-	private final AliasManager aliasManager;
 	private final CryptoCreateTransactionBody transactionBody;
 	private AccountID proxyId = null;
 
 	public CryptoCreateAccessor(final SwirldTransaction txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(txn);
-		this.aliasManager = aliasManager;
+		super(txn, aliasManager);
 		this.transactionBody = getTxn().getCryptoCreateAccount();
 		setCryptoCreateUsageMeta();
 	}
@@ -50,12 +48,12 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 	}
 
 	public AccountID getSponsor() {
-		return aliasManager.unaliased(getPayer()).toGrpcAccountId();
+		return unaliased(getPayer()).toGrpcAccountId();
 	}
 
 	public AccountID getProxy() {
 		if (proxyId == null) {
-			proxyId = aliasManager.unaliased(transactionBody.getProxyAccountID()).toGrpcAccountId();
+			proxyId = unaliased(transactionBody.getProxyAccountID()).toGrpcAccountId();
 		}
 		return proxyId;
 	}
