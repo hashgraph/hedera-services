@@ -72,6 +72,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -357,6 +358,7 @@ public class TxnVerbs {
 	public static HapiSpecOperation contractDeploy(final String contractName) {
 		return withOpContext((spec, ctxLog) -> {
 			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
+			validateFileExists(path);
 			final var payer = cryptoCreate("PAYER");
 			final var file = fileCreate(contractName);
 			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
@@ -368,6 +370,7 @@ public class TxnVerbs {
 	public static HapiSpecOperation nestedContractDeploy(final String contractName, Object... params) {
 		return withOpContext((spec, ctxLog) -> {
 			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
+			validateFileExists(path);
 			final var payer = cryptoCreate("PAYER");
 			final var file = fileCreate(contractName);
 			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
@@ -385,6 +388,7 @@ public class TxnVerbs {
 
 	private static String getABIFor(final FunctionType type, final String functionName, String contractName) {
 		final var path = String.format(RESOURCE_PATH + ".json", contractName);
+		validateFileExists(path);
 		var ABI = EMPTY;
 		try (final var input = new FileInputStream(path)) {
 			final var array = new JSONArray(new JSONTokener(input));
@@ -396,11 +400,18 @@ public class TxnVerbs {
 							: object.getString("type").equals(type.toString().toLowerCase()) && object.getString("name").equals(functionName))
 					.map(JSONObject::toString)
 					.findFirst()
-					.orElse(EMPTY);
+					.orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
 		} catch (IOException e) {
-			e.getCause();
+			e.getStackTrace();
 		}
 		return ABI;
+	}
+
+	private static void validateFileExists(String path) {
+		final var file = new File(path);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
+		}
 	}
 
 	public enum FunctionType {CONSTRUCTOR, FUNCTION}
