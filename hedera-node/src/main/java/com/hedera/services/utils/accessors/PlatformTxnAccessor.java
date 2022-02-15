@@ -38,7 +38,7 @@ import com.swirlds.common.SwirldTransaction;
  */
 public class PlatformTxnAccessor extends SignedTxnAccessor {
 	private final SwirldTransaction platformTxn;
-	protected final AliasManager aliasManager;
+	private final AliasManager aliasManager;
 
 	private RationalizedSigMeta sigMeta = null;
 
