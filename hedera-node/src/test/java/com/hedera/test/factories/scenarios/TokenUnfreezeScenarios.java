@@ -34,7 +34,7 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
 							.unfreezing(KNOWN_TOKEN_WITH_FREEZE)
 							.nonPayerKts(TOKEN_FREEZE_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

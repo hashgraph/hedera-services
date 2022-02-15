@@ -46,7 +46,7 @@ public class AccessorFactory {
 				return new TokenWipeAccessor(transaction, aliasManager);
 			}
 			default -> {
-				return new PlatformTxnAccessor(transaction);
+				return new PlatformTxnAccessor(transaction, aliasManager);
 			}
 		}
 	}

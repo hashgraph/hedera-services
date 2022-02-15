@@ -20,6 +20,7 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
@@ -62,7 +63,7 @@ class PrecheckVerifierTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 			.build();
 	private static final Transaction txn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-	private static final PlatformTxnAccessor realAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn));
+	private static PlatformTxnAccessor realAccessor;
 
 	private final static byte[][] VALID_SIG_BYTES = {
 			"firstSig".getBytes(),
@@ -83,9 +84,12 @@ class PrecheckVerifierTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier subject;
 	private SignedTxnAccessor mockAccessor;
+	private static AliasManager aliasManager;
 
 	@BeforeAll
 	static void setupAll() throws Throwable {
+		aliasManager = mock(AliasManager.class);
+		realAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn), aliasManager);
 		reqKeys = List.of(
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());

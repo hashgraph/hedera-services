@@ -29,18 +29,16 @@ import com.swirlds.common.SwirldTransaction;
 import java.util.List;
 
 public class TokenWipeAccessor extends PlatformTxnAccessor {
-	final AliasManager aliasManager;
 	final TokenWipeAccountTransactionBody body;
 
 	public TokenWipeAccessor(final SwirldTransaction txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(txn);
-		this.aliasManager = aliasManager;
+		super(txn, aliasManager);
 		this.body = getTxn().getTokenWipe();
 	}
 
 	public Id accountToWipe() {
-		return aliasManager.unaliased(body.getAccount()).toId();
+		return unaliased(body.getAccount()).toId();
 	}
 
 	public Id targetToken() {

@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.NodeInfo;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -59,13 +60,14 @@ class InvariantChecksTest {
 					.build()
 					.toByteString())
 			.build();
-	private final PlatformTxnAccessor accessor = PlatformTxnAccessor.uncheckedAccessorFor(
-			new SwirldTransaction(mockTxn.toByteArray()));
+	private PlatformTxnAccessor accessor;
 
 	@Mock
 	private NodeInfo nodeInfo;
 	@Mock
 	private MerkleNetworkContext networkCtx;
+	@Mock
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -75,6 +77,8 @@ class InvariantChecksTest {
 
 	@BeforeEach
 	void setUp() {
+		accessor = PlatformTxnAccessor.uncheckedAccessorFor(
+				new SwirldTransaction(mockTxn.toByteArray()), aliasManager);
 		subject = new InvariantChecks(nodeInfo, () -> networkCtx);
 	}
 

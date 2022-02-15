@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,9 +39,10 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoTransfer()
 							.nonPayerKts(DEFAULT_PAYER_KT)
-							.transfers(tinyBarsFromAccountToAlias(FIRST_TOKEN_SENDER_ID, CURRENTLY_UNUSED_ALIAS, 1_000L))
+							.transfers(tinyBarsFromAccountToAlias(FIRST_TOKEN_SENDER_ID, CURRENTLY_UNUSED_ALIAS,
+									1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO {
@@ -51,7 +52,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromAliasToAlias(CURRENTLY_UNUSED_ALIAS, NO_RECEIVER_SIG_ALIAS, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO {
@@ -61,7 +62,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromAccountToAlias(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ALIAS, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO {
@@ -71,7 +72,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ID, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO {
@@ -81,7 +82,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(RECEIVER_SIG_KT)
 							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO {
@@ -91,7 +92,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(RECEIVER_SIG_KT)
 							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, RECEIVER_SIG_ID, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO {
@@ -101,7 +102,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(RECEIVER_SIG_KT)
 							.transfers(tinyBarsFromTo(DEFAULT_PAYER_ID, MISSING_ACCOUNT_ID, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	VALID_QUERY_PAYMENT_SCENARIO {
@@ -113,7 +114,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 									tinyBarsFromTo(DEFAULT_PAYER_ID, DEFAULT_NODE_ID, 1_000L),
 									tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L)
 							).get()
-			));
+			), aliasManager());
 		}
 	},
 	QUERY_PAYMENT_MISSING_SIGS_SCENARIO {
@@ -125,7 +126,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 									tinyBarsFromTo(DEFAULT_PAYER_ID, DEFAULT_NODE_ID, 1_000L),
 									tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L)
 							).get()
-			));
+			), aliasManager());
 		}
 	},
 	QUERY_PAYMENT_INVALID_SENDER_SCENARIO {
@@ -137,7 +138,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 									tinyBarsFromTo(DEFAULT_PAYER_ID, DEFAULT_NODE_ID, 1_000L),
 									tinyBarsFromTo(MISSING_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L)
 							).get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_EXTANT_SENDERS {
@@ -150,7 +151,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
 							.nonPayerKts(SECOND_TOKEN_SENDER_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER {
@@ -162,7 +163,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.adjustingHbars(TOKEN_RECEIVER, +2_000)
 							.nonPayerKts(FIRST_TOKEN_SENDER_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER {
@@ -174,7 +175,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.adjustingHbars(RECEIVER_SIG, +2_000)
 							.nonPayerKts(FIRST_TOKEN_SENDER_KT, RECEIVER_SIG_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS {
@@ -190,7 +191,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 									SECOND_TOKEN_SENDER_KT,
 									RECEIVER_SIG_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_MISSING_SENDERS {
@@ -203,7 +204,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +2_000)
 							.nonPayerKts(FIRST_TOKEN_SENDER_KT, SECOND_TOKEN_SENDER_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE {
@@ -213,7 +214,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, TOKEN_RECEIVER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS {
@@ -223,7 +224,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER_ALIAS, TOKEN_RECEIVER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ {
@@ -234,7 +235,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, RECEIVER_SIG)
 							.changingOwner(ROYALTY_TOKEN_NFT, SECOND_TOKEN_SENDER, DEFAULT_PAYER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ {
@@ -244,7 +245,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED {
@@ -254,7 +255,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY {
@@ -264,7 +265,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(ROYALTY_TOKEN_NFT, MISC_ACCOUNT, NO_RECEIVER_SIG)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR {
@@ -275,7 +276,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
 							.adjustingHbars(FIRST_TOKEN_SENDER, +1_000)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT {
@@ -286,7 +287,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
 							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN {
@@ -297,7 +298,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.changingOwner(MISSING_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
 							.adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER {
@@ -307,7 +308,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, MISSING_ACCOUNT, TOKEN_RECEIVER)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER {
@@ -317,7 +318,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.changingOwner(KNOWN_TOKEN_NFT, FIRST_TOKEN_SENDER, MISSING_ACCOUNT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
@@ -328,7 +329,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(approvedTinyBarsFromTo(OWNER_ACCOUNT_ID, NO_RECEIVER_SIG_ID, 1_000L))
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
@@ -339,7 +340,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 							.approvedAdjusting(OWNER_ACCOUNT, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
 							.adjusting(TOKEN_RECEIVER, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
@@ -349,7 +350,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.approvedChangingOwner(KNOWN_TOKEN_NFT, OWNER_ACCOUNT, TOKEN_RECEIVER)
 							.get()
-			));
+			), aliasManager());
 		}
 	}
 }

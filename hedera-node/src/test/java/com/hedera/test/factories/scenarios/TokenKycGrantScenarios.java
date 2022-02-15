@@ -34,7 +34,7 @@ public enum TokenKycGrantScenarios implements TxnHandlingScenario {
 							.granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

@@ -22,6 +22,7 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -64,6 +65,7 @@ class PlatformTxnAccessorTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
+	private final AliasManager aliasManager = mock(AliasManager.class);
 
 	@Test
 	void hasSpanMap() throws InvalidProtocolBufferException {
@@ -75,7 +77,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// expect:
 		assertThat(subject.getSpanMap(), instanceOf(HashMap.class));
@@ -91,7 +93,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// given:
-		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// when:
 		subject.setSigMeta(RationalizedSigMeta.noneAvailable());
@@ -176,7 +178,7 @@ class PlatformTxnAccessorTest {
 	void failsWithIllegalStateOnUncheckedConstruction() {
 		final var txn = new SwirldTransaction(NONSENSE);
 		// expect:
-		assertThrows(IllegalStateException.class, () -> uncheckedAccessorFor(txn));
+		assertThrows(IllegalStateException.class, () -> uncheckedAccessorFor(txn, aliasManager));
 	}
 
 	@Test
@@ -185,7 +187,7 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn, aliasManager));
 	}
 
 	@Test
@@ -199,7 +201,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn, aliasManager));
 	}
 
 	@Test
@@ -212,7 +214,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// then:
 		assertEquals(someTxn, subject.getTxn());
@@ -232,7 +234,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
@@ -259,7 +261,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(txn.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
 		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
@@ -284,7 +286,7 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
 
 		// then:
 		assertEquals(payer, subject.getPayer());

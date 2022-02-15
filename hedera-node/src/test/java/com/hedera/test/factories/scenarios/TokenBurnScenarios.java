@@ -34,7 +34,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 							.burning(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	BURN_WITH_MISSING_TOKEN {
@@ -44,7 +44,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 					newSignedTokenBurn()
 							.burning(MISSING_TOKEN)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	BURN_FOR_TOKEN_WITHOUT_SUPPLY {
@@ -54,7 +54,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 					newSignedTokenBurn()
 							.burning(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }

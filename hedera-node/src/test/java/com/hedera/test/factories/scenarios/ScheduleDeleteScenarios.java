@@ -33,7 +33,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 					newSignedScheduleDelete()
 							.deleting(KNOWN_SCHEDULE_WITH_ADMIN)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
@@ -43,7 +43,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 					newSignedScheduleDelete()
 							.deleting(UNKNOWN_SCHEDULE)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
@@ -53,7 +53,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 					newSignedScheduleDelete()
 							.deleting(KNOWN_SCHEDULE_IMMUTABLE)
 							.get()
-			));
+			), aliasManager());
 		}
 	}
 }

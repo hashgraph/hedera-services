@@ -34,7 +34,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 							.minting(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	MINT_WITH_MISSING_TOKEN {
@@ -44,7 +44,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 					newSignedTokenMint()
 							.minting(MISSING_TOKEN)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 	MINT_FOR_TOKEN_WITHOUT_SUPPLY {
@@ -54,7 +54,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 					newSignedTokenMint()
 							.minting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			));
+			), aliasManager());
 		}
 	},
 }
