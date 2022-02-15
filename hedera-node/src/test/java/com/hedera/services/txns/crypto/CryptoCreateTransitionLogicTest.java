@@ -23,14 +23,14 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.CryptoCreateAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -77,8 +77,6 @@ import static org.mockito.BDDMockito.verify;
 class CryptoCreateTransitionLogicTest {
 	private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private static final long CUSTOM_AUTO_RENEW_PERIOD = 100_001L;
-	private static final long CUSTOM_SEND_THRESHOLD = 49_000L;
-	private static final long CUSTOM_RECEIVE_THRESHOLD = 51_001L;
 	private static final Long BALANCE = 1_234L;
 	private static final String MEMO = "The particular is pounded til it is man";
 	private static final int MAX_AUTO_ASSOCIATIONS = 1234;
@@ -93,7 +91,7 @@ class CryptoCreateTransitionLogicTest {
 	private TransactionBody cryptoCreateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private CryptoCreateAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
 
@@ -102,7 +100,7 @@ class CryptoCreateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(CryptoCreateAccessor.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
@@ -316,8 +314,6 @@ class CryptoCreateTransitionLogicTest {
 								.setProxyAccountID(PROXY)
 								.setReceiverSigRequired(true)
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
-								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
-								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
 								.setKey(KEY)
 								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
 				).build();
@@ -337,13 +333,19 @@ class CryptoCreateTransitionLogicTest {
 								.setProxyAccountID(PROXY)
 								.setReceiverSigRequired(true)
 								.setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
-								.setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
-								.setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
 								.setKey(toUse)
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
-		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getSponsor()).willReturn(PAYER);
+		given(accessor.getProxy()).willReturn(PROXY);
+		given(accessor.getInitialBalance()).willReturn(BALANCE);
+		given(accessor.hasProxy()).willReturn(true);
+		given(accessor.getReceiverSigRequired()).willReturn(true);
+		given(accessor.getAutoRenewPeriod()).willReturn(CUSTOM_AUTO_RENEW_PERIOD);
+		given(accessor.getMaxAutomaticTokenAssociations()).willReturn(MAX_AUTO_ASSOCIATIONS);
+		given(accessor.getKey()).willReturn(toUse);
+		given(accessor.getMemo()).willReturn(MEMO);
 	}
 
 	private TransactionID ourTxnId() {
