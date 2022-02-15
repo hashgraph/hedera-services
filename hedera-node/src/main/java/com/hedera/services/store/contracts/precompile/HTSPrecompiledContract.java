@@ -73,6 +73,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -115,6 +116,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -127,6 +129,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
 
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+	public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
+			Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
@@ -371,19 +375,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return result;
 	}
 
-	private void addContractCallResultToRecord(final ExpirableTxnRecord.Builder childRecord,
-											   final Bytes result,
-											   final Optional<ResponseCodeEnum> errorStatus) {
-		final var contractCallResult = ContractFunctionResult.newBuilder()
-				.setContractID(EntityIdUtils.contractIdFromEvmAddress(
-						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
-				.setGasUsed(this.gasRequirement.toLong())
-				.setContractCallResult(ByteString.copyFrom(result.toArray()));
-		if (errorStatus.isPresent()) {
-			contractCallResult.setErrorMessage(errorStatus.get().name());
+	private void addContractCallResultToRecord(
+			final ExpirableTxnRecord.Builder childRecord,
+			final Bytes result,
+			final Optional<ResponseCodeEnum> errorStatus
+	) {
+		if (dynamicProperties.shouldExportPrecompileResults()) {
+			final var contractCallResult = ContractFunctionResult.newBuilder()
+					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
+					.setGasUsed(this.gasRequirement.toLong())
+					.setContractCallResult(ByteString.copyFrom(result.toArrayUnsafe()));
+			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
+			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 		}
-
-		childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 	}
 
 	/* --- Constructor functional interfaces for mocking --- */
