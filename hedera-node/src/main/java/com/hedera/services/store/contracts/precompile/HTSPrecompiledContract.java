@@ -531,7 +531,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var contractCallResult = ContractFunctionResult.newBuilder()
 					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
 					.setGasUsed(this.gasRequirement.toLong())
-					.setContractCallResult(ByteString.copyFrom(result.toArrayUnsafe()));
+			        .setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
 			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
 			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 		}
