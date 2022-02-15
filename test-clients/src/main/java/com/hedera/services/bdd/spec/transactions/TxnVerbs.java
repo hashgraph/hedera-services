@@ -81,6 +81,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -88,7 +90,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class TxnVerbs {
-	public static final String RESOURCE_PATH = "src/main/resource/contract/%1$s/%1$s";
+	// TODO: After refactor: remove the temporary new structure folder and refactor the bellow path
+	public static final String RESOURCE_PATH = "src/main/resource/contract/newstructure/%1$s/%1$s";
 
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
@@ -326,27 +329,9 @@ public class TxnVerbs {
 	}
 
 	//TODO Handle wrong arguments
-	public static HapiContractCall automaticContractCall(final String contract, final String function, final Object... params) {
-		var product = getFunctionABI(contract, function);
-		return new HapiContractCall(product, contract, params);
-	}
-
-	private static String getFunctionABI(final String contract, final String function) {
-		final var path = String.format(RESOURCE_PATH + ".json", contract);
-		var functionABI = EMPTY;
-		try (final var input = new FileInputStream(path)) {
-			final var array = new JSONArray(new JSONTokener(input));
-			functionABI = IntStream
-					.range(0, array.length())
-					.mapToObj(array::getJSONObject)
-					.filter(object -> object.getString("type").equals("function") && object.getString("name").equals(function))
-					.map(JSONObject::toString)
-					.findFirst()
-					.orElse(EMPTY);
-		} catch (IOException e) {
-			e.getCause();
-		}
-		return functionABI;
+	public static HapiContractCall automaticContractCall(final String contractName, final String functionName, final Object... params) {
+		var functionABI = getABIFor(FUNCTION, functionName, contractName);
+		return new HapiContractCall(functionABI, contractName, params);
 	}
 
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
@@ -369,19 +354,54 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
-	public static HapiSpecOperation contractDeploy(final String contract) {
+	public static HapiSpecOperation contractDeploy(final String contractName) {
 		return withOpContext((spec, ctxLog) -> {
-			final var path = String.format(RESOURCE_PATH + ".bin", contract);
+			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
 			final var payer = cryptoCreate("PAYER");
-			final var file = fileCreate(contract);
-			final var updatedFile = updateLargeFile("PAYER", contract, extractByteCode(path));
-			final var deployedContract = contractCreate(contract).bytecode(contract);
+			final var file = fileCreate(contractName);
+			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
+			final var deployedContract = contractCreate(contractName).bytecode(contractName);
 			allRunFor(spec, payer, file, updatedFile, deployedContract);
 		});
 	}
+
+	public static HapiSpecOperation nestedContractDeploy(final String contractName, Object... params) {
+		return withOpContext((spec, ctxLog) -> {
+			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
+			final var payer = cryptoCreate("PAYER");
+			final var file = fileCreate(contractName);
+			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
+			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
+			final var deployedContract = contractCreate(contractName, constructorABI, params).bytecode(contractName);
+			allRunFor(spec, payer, file, updatedFile, deployedContract);
+		});
+	}
+
 
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
 	}
+
+	private static String getABIFor(final FunctionType type, final String functionName, String contractName) {
+		final var path = String.format(RESOURCE_PATH + ".json", contractName);
+		var ABI = EMPTY;
+		try (final var input = new FileInputStream(path)) {
+			final var array = new JSONArray(new JSONTokener(input));
+			ABI = IntStream
+					.range(0, array.length())
+					.mapToObj(array::getJSONObject)
+					.filter(object -> type == CONSTRUCTOR
+							? object.getString("type").equals(type.toString().toLowerCase())
+							: object.getString("type").equals(type.toString().toLowerCase()) && object.getString("name").equals(functionName))
+					.map(JSONObject::toString)
+					.findFirst()
+					.orElse(EMPTY);
+		} catch (IOException e) {
+			e.getCause();
+		}
+		return ABI;
+	}
+
+	public enum FunctionType {CONSTRUCTOR, FUNCTION}
 }
