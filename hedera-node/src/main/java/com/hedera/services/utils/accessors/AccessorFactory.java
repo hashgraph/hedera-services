@@ -47,6 +47,9 @@ public class AccessorFactory {
 			case TokenAccountWipe -> {
 				return new TokenWipeAccessor(transaction, aliasManager);
 			}
+			case CryptoCreate -> {
+				return new CryptoCreateAccessor(transaction, aliasManager);
+			}
 			default -> {
 				return new PlatformTxnAccessor(transaction);
 			}

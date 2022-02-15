@@ -65,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -91,9 +90,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final String ACCESSOR_LITERAL = " accessor";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
-	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
-
 	private final Map<String, Object> spanMap = new HashMap<>();
+
+	static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -116,7 +115,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
 
-	static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
+	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
 		try {
 			return functionOf(trans);
 		} catch (UnknownHederaFunctionality ignore) {
@@ -383,8 +382,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenPauseUsageMeta();
 		} else if (function == TokenUnpause) {
 			setTokenUnpauseUsageMeta();
-		} else if (function == CryptoCreate) {
-			setCryptoCreateUsageMeta();
 		} else if (function == CryptoUpdate) {
 			setCryptoUpdateUsageMeta();
 		} else if (function == CryptoApproveAllowance) {

@@ -34,7 +34,8 @@ public class TokenWipeAccessor extends PlatformTxnAccessor {
 	final AliasManager aliasManager;
 	final TokenWipeAccountTransactionBody body;
 
-	public TokenWipeAccessor(final SwirldTransaction txn,
+	public TokenWipeAccessor(
+			final SwirldTransaction txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
 		super(txn);
 		this.aliasManager = aliasManager;

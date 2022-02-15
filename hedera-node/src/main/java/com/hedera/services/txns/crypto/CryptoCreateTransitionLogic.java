@@ -30,6 +30,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.CryptoCreateAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -42,12 +44,14 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
@@ -91,12 +95,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
-			AccountID sponsor = cryptoCreateTxn.getTransactionID().getAccountID();
+			final var accessor = (CryptoCreateAccessor) txnCtx.accessor();
+			AccountID sponsor = accessor.getSponsor();
 
-			CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-			long balance = op.getInitialBalance();
-			final var created = ledger.create(sponsor, balance, asCustomizer(op));
+			// validate proxy account
+			final var validity = validateProxy(accessor);
+			if (validity != OK) {
+				txnCtx.setStatus(INVALID_PROXY_ACCOUNT_ID);
+				return;
+			}
+
+			long balance = accessor.getInitialBalance();
+			final var created = ledger.create(sponsor, balance, asCustomizer(accessor));
 			sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
 			txnCtx.setCreated(created);
@@ -109,21 +119,31 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-		long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
+	private ResponseCodeEnum validateProxy(final CryptoCreateAccessor accessor) {
+		if (accessor.hasProxy()) {
+			final var proxy = accessor.getProxy();
+			if (EntityNum.fromAccountId(proxy) == MISSING_NUM) {
+				return INVALID_PROXY_ACCOUNT_ID;
+			}
+		}
+		return OK;
+	}
+
+	private HederaAccountCustomizer asCustomizer(CryptoCreateAccessor accessor) {
+		long autoRenewPeriod = accessor.getAutoRenewPeriod();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
 		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
-		JKey key = asFcKeyUnchecked(op.getKey());
+		JKey key = asFcKeyUnchecked(accessor.getKey());
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.key(key)
-				.memo(op.getMemo())
+				.memo(accessor.getMemo())
 				.expiry(expiry)
 				.autoRenewPeriod(autoRenewPeriod)
-				.isReceiverSigRequired(op.getReceiverSigRequired())
-				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations());
-		if (op.hasProxyAccountID()) {
-			customizer.proxy(EntityId.fromGrpcAccountId(op.getProxyAccountID()));
+				.isReceiverSigRequired(accessor.getReceiverSigRequired())
+				.maxAutomaticAssociations(accessor.getMaxAutomaticTokenAssociations());
+		if (accessor.hasProxy()) {
+			customizer.proxy(EntityId.fromGrpcAccountId(accessor.getProxy()));
 		}
 		return customizer;
 	}
