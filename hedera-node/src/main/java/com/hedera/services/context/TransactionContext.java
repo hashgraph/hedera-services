@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;

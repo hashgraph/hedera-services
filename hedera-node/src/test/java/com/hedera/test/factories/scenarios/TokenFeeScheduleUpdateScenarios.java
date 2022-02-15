@@ -21,7 +21,7 @@ package com.hedera.test.factories.scenarios;
  */
 
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;

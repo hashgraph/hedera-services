@@ -23,7 +23,7 @@ package com.hedera.services.keys;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 

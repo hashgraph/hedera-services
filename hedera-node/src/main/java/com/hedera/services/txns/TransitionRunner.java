@@ -23,7 +23,7 @@ package com.hedera.services.txns;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

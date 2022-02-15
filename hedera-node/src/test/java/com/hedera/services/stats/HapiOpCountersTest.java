@@ -21,7 +21,7 @@ package com.hedera.services.stats;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;

@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;

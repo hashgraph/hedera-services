@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.stats.ServicesStatsConfig;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;

@@ -32,7 +32,7 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;

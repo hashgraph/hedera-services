@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

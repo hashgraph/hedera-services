@@ -25,7 +25,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
@@ -28,7 +28,6 @@ import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedSche
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
-import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 	SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN {

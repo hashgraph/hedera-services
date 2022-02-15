@@ -31,7 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;

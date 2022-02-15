@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.FileCreateFactory.newSignedFileCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;

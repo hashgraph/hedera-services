@@ -22,7 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

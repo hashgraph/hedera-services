@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.SwirldDualState;

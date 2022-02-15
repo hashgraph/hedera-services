@@ -28,7 +28,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;

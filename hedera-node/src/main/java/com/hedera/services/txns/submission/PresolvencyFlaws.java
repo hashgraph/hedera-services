@@ -21,7 +21,7 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 

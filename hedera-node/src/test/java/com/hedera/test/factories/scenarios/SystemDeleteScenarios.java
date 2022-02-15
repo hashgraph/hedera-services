@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 
 import java.util.Set;

@@ -30,7 +30,7 @@ import com.hedera.services.sigs.sourcing.KeyType;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.SigObserver;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
@@ -43,7 +43,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;

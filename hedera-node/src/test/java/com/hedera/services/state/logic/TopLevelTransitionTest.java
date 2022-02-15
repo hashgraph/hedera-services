@@ -22,7 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

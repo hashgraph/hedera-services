@@ -30,7 +30,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;

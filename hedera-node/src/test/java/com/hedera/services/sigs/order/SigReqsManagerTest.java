@@ -31,7 +31,7 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.migration.StateVersions;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;

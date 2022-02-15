@@ -30,7 +30,7 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;

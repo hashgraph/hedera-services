@@ -41,7 +41,7 @@ import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;

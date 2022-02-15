@@ -20,7 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LoggingSubject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

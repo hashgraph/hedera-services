@@ -22,7 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.contract.helpers.DeletionLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;

@@ -30,6 +30,8 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;

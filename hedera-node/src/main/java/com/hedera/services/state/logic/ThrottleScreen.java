@@ -20,7 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;

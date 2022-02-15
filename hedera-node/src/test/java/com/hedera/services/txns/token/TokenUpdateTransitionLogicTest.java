@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;

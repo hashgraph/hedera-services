@@ -23,7 +23,7 @@ package com.hedera.services.txns.schedule;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

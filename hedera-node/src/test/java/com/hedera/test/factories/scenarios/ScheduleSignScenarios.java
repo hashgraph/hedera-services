@@ -20,8 +20,8 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;

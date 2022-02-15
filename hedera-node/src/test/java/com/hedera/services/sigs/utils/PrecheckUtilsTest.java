@@ -21,7 +21,7 @@ package com.hedera.services.sigs.utils;
  */
 
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;

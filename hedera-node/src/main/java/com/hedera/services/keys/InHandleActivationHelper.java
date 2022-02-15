@@ -21,7 +21,7 @@ package com.hedera.services.keys;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 

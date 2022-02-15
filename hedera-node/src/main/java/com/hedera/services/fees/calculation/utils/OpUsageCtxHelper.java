@@ -34,7 +34,7 @@ import com.hedera.services.usage.token.meta.TokenBurnMeta;
 import com.hedera.services.usage.token.meta.TokenMintMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;

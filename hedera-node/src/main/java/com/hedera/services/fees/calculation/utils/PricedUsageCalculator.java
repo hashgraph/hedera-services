@@ -25,7 +25,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

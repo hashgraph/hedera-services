@@ -24,7 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
-import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;

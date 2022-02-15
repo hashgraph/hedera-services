@@ -32,7 +32,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;

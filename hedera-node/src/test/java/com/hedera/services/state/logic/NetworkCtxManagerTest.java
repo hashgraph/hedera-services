@@ -34,7 +34,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

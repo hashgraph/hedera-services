@@ -44,7 +44,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;

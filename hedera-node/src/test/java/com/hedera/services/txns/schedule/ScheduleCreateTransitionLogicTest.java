@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

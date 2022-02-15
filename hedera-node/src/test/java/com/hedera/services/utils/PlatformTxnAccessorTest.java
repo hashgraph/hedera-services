@@ -23,6 +23,8 @@ package com.hedera.services.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -39,7 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.hamcrest.MatcherAssert.assertThat;

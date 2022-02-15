@@ -34,7 +34,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;

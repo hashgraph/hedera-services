@@ -51,7 +51,7 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -74,7 +74,7 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;

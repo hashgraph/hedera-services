@@ -23,7 +23,7 @@ package com.hedera.services.txns.auth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;

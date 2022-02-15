@@ -22,7 +22,7 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;

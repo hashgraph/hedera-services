@@ -23,7 +23,7 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

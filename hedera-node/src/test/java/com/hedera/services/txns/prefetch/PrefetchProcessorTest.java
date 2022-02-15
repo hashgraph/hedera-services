@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

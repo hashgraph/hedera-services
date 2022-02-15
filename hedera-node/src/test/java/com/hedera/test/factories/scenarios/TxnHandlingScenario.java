@@ -38,7 +38,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;

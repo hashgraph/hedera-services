@@ -27,7 +27,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;

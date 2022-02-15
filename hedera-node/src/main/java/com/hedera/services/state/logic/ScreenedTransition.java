@@ -23,7 +23,7 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.txns.TransitionRunner;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

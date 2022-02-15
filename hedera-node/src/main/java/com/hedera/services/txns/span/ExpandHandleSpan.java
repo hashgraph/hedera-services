@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,8 @@ package com.hedera.services.txns.span;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 
@@ -33,7 +34,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link SwirldTransaction}
  * between the {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)}
- * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
+ * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
+ * SwirldDualState)}
  * Platform callbacks.
  *
  * At first this span only tracks the {@link PlatformTxnAccessor} parsed from the
@@ -54,16 +56,19 @@ import java.util.concurrent.TimeUnit;
 public class ExpandHandleSpan {
 	private final SpanMapManager spanMapManager;
 	private final Cache<SwirldTransaction, PlatformTxnAccessor> accessorCache;
+	private final AccessorFactory factory;
 
 	public ExpandHandleSpan(
-			long duration,
-			TimeUnit timeUnit,
-			SpanMapManager spanMapManager
+			final long duration,
+			final TimeUnit timeUnit,
+			final SpanMapManager spanMapManager,
+			final AccessorFactory factory
 	) {
 		this.spanMapManager = spanMapManager;
 		this.accessorCache = CacheBuilder.newBuilder()
 				.expireAfterWrite(duration, timeUnit)
 				.build();
+		this.factory = factory;
 	}
 
 	public PlatformTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
@@ -83,7 +88,7 @@ public class ExpandHandleSpan {
 	}
 
 	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = new PlatformTxnAccessor(transaction);
+		final var accessor = factory.constructFrom(transaction);
 		spanMapManager.expandSpan(accessor);
 		return accessor;
 	}

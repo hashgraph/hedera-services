@@ -29,7 +29,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.TriggeredTxnAccessor;
+import com.hedera.services.utils.accessors.TriggeredTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;

@@ -21,7 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;

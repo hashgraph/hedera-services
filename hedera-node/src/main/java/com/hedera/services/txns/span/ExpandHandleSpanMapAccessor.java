@@ -33,7 +33,7 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

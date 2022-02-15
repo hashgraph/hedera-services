@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;

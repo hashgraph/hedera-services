@@ -27,7 +27,7 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.stats.CounterFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -56,7 +56,6 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 class StructuralPrecheckTest {

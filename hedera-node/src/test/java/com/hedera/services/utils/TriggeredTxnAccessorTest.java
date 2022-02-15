@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.utils.accessors.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;

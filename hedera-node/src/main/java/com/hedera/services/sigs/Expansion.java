@@ -27,7 +27,7 @@ import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;

@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;

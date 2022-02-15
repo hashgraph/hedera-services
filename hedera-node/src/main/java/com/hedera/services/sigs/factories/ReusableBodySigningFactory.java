@@ -20,7 +20,7 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import javax.inject.Inject;

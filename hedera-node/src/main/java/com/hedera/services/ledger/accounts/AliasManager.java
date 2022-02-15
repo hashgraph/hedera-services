@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
@@ -108,7 +110,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		aliases.clear();
@@ -141,7 +144,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	/**
 	 * Returns if there is an account linked the given alias.
 	 *
-	 * @param alias the alias of interest
+	 * @param alias
+	 * 		the alias of interest
 	 * @return whether there is a linked account
 	 */
 	public boolean contains(final ByteString alias) {
@@ -166,5 +170,12 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	Map<ByteString, EntityNum> getAliases() {
 		return aliases;
+	}
+
+	public EntityNum unaliased(final AccountID grpcId) {
+		if (isAlias(grpcId)) {
+			return lookupIdBy(grpcId.getAlias());
+		}
+		return EntityNum.fromAccountId(grpcId);
 	}
 }
