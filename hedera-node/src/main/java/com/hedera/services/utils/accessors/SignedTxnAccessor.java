@@ -32,9 +32,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -64,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -113,7 +110,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
 
-	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
+	static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
 		try {
 			return functionOf(trans);
 		} catch (UnknownHederaFunctionality ignore) {
@@ -380,8 +377,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenPauseUsageMeta();
 		} else if (function == TokenUnpause) {
 			setTokenUnpauseUsageMeta();
-		} else if (function == CryptoUpdate) {
-			setCryptoUpdateUsageMeta();
 		} else if (function == CryptoApproveAllowance) {
 			setCryptoApproveUsageMeta();
 		} else if (function == CryptoAdjustAllowance) {
@@ -448,17 +443,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setTokenUnpauseUsageMeta() {
 		final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
 		SPAN_MAP_ACCESSOR.setTokenUnpauseMeta(this, tokenUnpauseMeta);
-	}
-
-	private void setCryptoCreateUsageMeta() {
-		final var cryptoCreateMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
-		SPAN_MAP_ACCESSOR.setCryptoCreateMeta(this, cryptoCreateMeta);
-	}
-
-	private void setCryptoUpdateUsageMeta() {
-		final var cryptoUpdateMeta = new CryptoUpdateMeta(txn.getCryptoUpdateAccount(),
-				txn.getTransactionID().getTransactionValidStart().getSeconds());
-		SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
 	}
 
 	private void setCryptoApproveUsageMeta() {

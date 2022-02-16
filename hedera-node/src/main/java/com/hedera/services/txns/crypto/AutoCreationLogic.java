@@ -40,7 +40,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -49,6 +49,8 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public class AutoCreationLogic {
+	private static final Logger log = LogManager.getLogger(AutoCreationLogic.class);
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 
 	private final StateView currentView;
@@ -206,9 +209,14 @@ public class AutoCreationLogic {
 				.setSignedTransactionBytes(signedTxn.toByteString())
 				.build();
 
-		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
-		final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
-		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+		try {
+			final var accessor = AccessorFactory.constructFrom(txn, aliasManager);
+			final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
+			return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+		} catch (Exception illegal) {
+			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+		}
 	}
 
 	private Key asPrimitiveKeyUnchecked(final ByteString alias) {

@@ -27,10 +27,6 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 		return transactionBody.getAutoRenewPeriod().getSeconds();
 	}
 
-	public String getMemo() {
-		return transactionBody.getMemo();
-	}
-
 	public boolean getReceiverSigRequired() {
 		return transactionBody.getReceiverSigRequired();
 	}

@@ -122,7 +122,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validateProxy(final CryptoCreateAccessor accessor) {
 		if (accessor.hasProxy()) {
 			final var proxy = accessor.getProxy();
-			if (EntityNum.fromAccountId(proxy) == MISSING_NUM) {
+			if (EntityNum.fromAccountId(proxy).equals(MISSING_NUM)) {
 				return INVALID_PROXY_ACCOUNT_ID;
 			}
 		}

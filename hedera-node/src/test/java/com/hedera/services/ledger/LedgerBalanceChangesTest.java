@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
@@ -378,7 +379,7 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void happyPathTransfersWithAutoCreation() {
+	void happyPathTransfersWithAutoCreation() throws InvalidProtocolBufferException {
 		final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
 		final AccountID a = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
 		final AccountID validAliasAccountWithAlias = AccountID.newBuilder().setAlias(aliasA.toByteString()).build();

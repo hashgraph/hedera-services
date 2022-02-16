@@ -39,23 +39,36 @@ public class AccessorFactory {
 	}
 
 	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var body = extractTransactionBody(Transaction.parseFrom(transaction.getContents()));
-		final var function = functionExtractor.apply(body);
-		switch (function) {
-			case TokenAccountWipe -> {
-				return new TokenWipeAccessor(transaction, aliasManager);
-			}
-			case CryptoCreate -> {
-				return new CryptoCreateAccessor(transaction, aliasManager);
-			}
-			default -> {
-				return new PlatformTxnAccessor(transaction, aliasManager);
-			}
-		}
+		return constructFrom(Transaction.parseFrom(transaction.getContents()), aliasManager);
+//		try {
+//			return
+//		}  catch (InvalidProtocolBufferException ignore) {
+//			throw new IllegalStateException("Unchecked accessor construction must get valid gRPC bytes!");
+//		}
 	}
 
 	public PlatformTxnAccessor constructFrom(Transaction validSignedTxn) throws InvalidProtocolBufferException {
 		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
 		return constructFrom(platformTxn);
+	}
+
+	public static PlatformTxnAccessor constructFrom(Transaction validSignedTxn, AliasManager aliasManager) throws InvalidProtocolBufferException {
+		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
+		final var body = extractTransactionBody(validSignedTxn);
+		final var function = functionExtractor.apply(body);
+		switch (function) {
+			case TokenAccountWipe -> {
+				return new TokenWipeAccessor(platformTxn, aliasManager);
+			}
+			case CryptoCreate -> {
+				return new CryptoCreateAccessor(platformTxn, aliasManager);
+			}
+			case CryptoUpdate -> {
+				return new CryptoUpdateAccessor(platformTxn, aliasManager);
+			}
+			default -> {
+				return new PlatformTxnAccessor(platformTxn, aliasManager);
+			}
+		}
 	}
 }

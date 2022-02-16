@@ -21,21 +21,23 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.CryptoUpdateAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -56,6 +58,9 @@ import java.util.EnumSet;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogicTest.ALIASED_PAYER;
+import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogicTest.ALIASED_PROXY_ID;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -65,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -94,6 +100,7 @@ class CryptoUpdateTransitionLogicTest {
 	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
 	private static final AccountID TARGET = AccountID.newBuilder().setAccountNum(9_999L).build();
 	private static final String MEMO = "Not since life began";
+	private static final ByteString ALIAS_KEY = KeyFactory.getDefaultInstance().newEd25519().toByteString();
 
 	private boolean useLegacyFields;
 	private HederaLedger ledger;
@@ -101,7 +108,7 @@ class CryptoUpdateTransitionLogicTest {
 	private TransactionBody cryptoUpdateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private CryptoUpdateAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
 
@@ -112,7 +119,7 @@ class CryptoUpdateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(CryptoUpdateAccessor.class);
 		validator = mock(OptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
@@ -261,6 +268,17 @@ class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
+	void failsIfInvalidAccount() {
+		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.KEY));
+		given(accessor.getTarget()).willReturn(MISSING_NUM.toGrpcAccountId());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
 	void hasCorrectApplicability() {
 		givenTxnCtx();
 
@@ -354,7 +372,7 @@ class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	void preemptsMissingAccountException() {
-		givenTxnCtx();
+		givenTxnCtx(EnumSet.of(EXPIRY), EnumSet.of(EXPIRY));
 		given(ledger.exists(TARGET)).willReturn(false);
 
 		subject.doStateTransition();
@@ -388,12 +406,77 @@ class CryptoUpdateTransitionLogicTest {
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
-		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
+		given(accessor.getKey()).willReturn(unmappableKey());
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
+
+	@Test
+	void acceptsAliasedAccountIDToUpdate() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(ALIASED_PAYER))
+				.build();
+		given(accessor.getTarget()).willReturn(PAYER);
+		given(ledger.exists(PAYER)).willReturn(true);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void failsWhenMissingAliasAsTarget() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(ALIASED_PAYER))
+				.build();
+		given(accessor.getTarget()).willReturn(MISSING_NUM.toGrpcAccountId());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	void acceptsAliasedProxyAccountIDToUpdate() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(ALIASED_PAYER)
+						.setProxyAccountID(ALIASED_PROXY_ID))
+				.build();
+		given(accessor.getProxy()).willReturn(PROXY);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void failsWhenMissingAliasAsProxy() {
+		givenTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder()
+						.setAccountIDToUpdate(ALIASED_PAYER))
+				.build();
+		given(accessor.getProxy()).willReturn(MISSING_NUM.toGrpcAccountId());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
+
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(INVALID_PROXY_ACCOUNT_ID);
 	}
 
 	private Key unmappableKey() {
@@ -439,36 +522,52 @@ class CryptoUpdateTransitionLogicTest {
 		final var op = CryptoUpdateTransactionBody.newBuilder();
 		if (updating.contains(AccountCustomizer.Option.MEMO)) {
 			op.setMemo(StringValue.newBuilder().setValue(MEMO).build());
+			given(accessor.hasMemo()).willReturn(true);
+			given(accessor.getMemo()).willReturn(MEMO);
 		}
 		if (updating.contains(AccountCustomizer.Option.KEY)) {
 			op.setKey(KEY);
+			given(accessor.hasKey()).willReturn(true);
+			given(accessor.getKey()).willReturn(KEY);
 		}
 		if (updating.contains(AccountCustomizer.Option.PROXY)) {
 			op.setProxyAccountID(PROXY);
+			given(accessor.hasProxy()).willReturn(true);
+			given(accessor.getProxy()).willReturn(PROXY);
 		}
 		if (updating.contains(EXPIRY)) {
+			given(accessor.hasExpirationTime()).willReturn(true);
 			if (misconfiguring.contains(EXPIRY)) {
 				op.setExpirationTime(Timestamp.newBuilder().setSeconds(CUR_EXPIRY - 1));
+				given(accessor.getExpirationTime()).willReturn(Timestamp.newBuilder().setSeconds(CUR_EXPIRY - 1).build());
 			} else {
 				op.setExpirationTime(Timestamp.newBuilder().setSeconds(NEW_EXPIRY));
+				given(accessor.getExpirationTime()).willReturn(Timestamp.newBuilder().setSeconds(NEW_EXPIRY).build());
 			}
 		}
 		if (updating.contains(IS_RECEIVER_SIG_REQUIRED)) {
 			if (!useLegacyFields) {
+				given(accessor.hasReceiverSigRequiredWrapper()).willReturn(true);
+				given(accessor.getReceiverSigRequiredWrapperValue()).willReturn(true);
 				op.setReceiverSigRequiredWrapper(BoolValue.newBuilder().setValue(true));
 			} else {
 				op.setReceiverSigRequired(true);
+				given(accessor.getReceiverSigRequired()).willReturn(true);
 			}
 		}
 		if (updating.contains(AccountCustomizer.Option.AUTO_RENEW_PERIOD)) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD));
+			given(accessor.hasAutoRenewPeriod()).willReturn(true);
+			given(accessor.getAutoRenewPeriod()).willReturn(AUTO_RENEW_PERIOD);
 		}
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+			given(accessor.hasMaxAutomaticTokenAssociations()).willReturn(true);
+			given(accessor.getMaxAutomaticTokenAssociations()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS);
 		}
 		op.setAccountIDToUpdate(TARGET);
+		given(accessor.getTarget()).willReturn(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
-		given(accessor.getTxn()).willReturn(cryptoUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
 	}
