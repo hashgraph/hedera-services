@@ -51,19 +51,11 @@ public class AccessorFactory {
 		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
 		final var body = extractTransactionBody(validSignedTxn);
 		final var function = functionExtractor.apply(body);
-		switch (function) {
-			case TokenAccountWipe -> {
-				return new TokenWipeAccessor(platformTxn, aliasManager);
-			}
-			case CryptoCreate -> {
-				return new CryptoCreateAccessor(platformTxn, aliasManager);
-			}
-			case CryptoUpdate -> {
-				return new CryptoUpdateAccessor(platformTxn, aliasManager);
-			}
-			default -> {
-				return new PlatformTxnAccessor(platformTxn, aliasManager);
-			}
-		}
+		return switch (function) {
+			case TokenAccountWipe -> new TokenWipeAccessor(platformTxn, aliasManager);
+			case CryptoCreate -> new CryptoCreateAccessor(platformTxn, aliasManager);
+			case CryptoUpdate -> new CryptoUpdateAccessor(platformTxn, aliasManager);
+			default -> new PlatformTxnAccessor(platformTxn, aliasManager);
+		};
 	}
 }
