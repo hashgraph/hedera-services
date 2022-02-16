@@ -251,7 +251,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final StateView currentView;
 	private final PrecompilePricingUtils precompilePricingUtils;
 	private WorldLedgers ledgers;
-	private Address originator;
+	private Address sender;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
 
@@ -328,7 +328,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	void prepareFieldsFromFrame(final MessageFrame messageFrame) {
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.ledgers = updater.wrappedTrackingLedgers();
-		this.originator = messageFrame.getOriginatorAddress();
+		this.sender = messageFrame.getSenderAddress();
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -440,10 +440,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
 							}
-							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
+							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.sender, isFungibleToken);
 						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
-							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.originator, isFungibleToken);
+							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.sender, isFungibleToken);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;

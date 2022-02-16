@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -405,7 +406,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.bytecode(ERC_20_CONTRACT_NAME),
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
+						tokenAssociate(ERC_20_CONTRACT_NAME, List.of(FUNGIBLE_TOKEN)),
+						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT_NAME))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -414,23 +416,24 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_20_TRANSFER_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
-														.payingWith(ACCOUNT).alsoSigningWithFullPrefix(MULTI_KEY)
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ERC_20_CONTRACT_NAME)
 														.via(transferTxn).gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
 				).then(
-						getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
+						getContractInfo(ERC_20_CONTRACT_NAME).saveToRegistry(ERC_20_CONTRACT_NAME),
 						getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
 						withOpContext((spec, log) -> {
-							final var sender = spec.registry().getAccountInfo(ACCOUNT).getAccountID();
+							final var sender = spec.registry().getContractInfo(ERC_20_CONTRACT_NAME).getContractID();
 							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
 
 							var txnRecord=
 									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
 											.logs(inOrder(logWith().withTopicsInOrder(List.of(
 															eventSignatureOf(TRANSFER_SIGNATURE),
-															parsedToByteString(sender.getAccountNum()),
+															parsedToByteString(sender.getContractNum()),
 															parsedToByteString(receiver.getAccountNum())
 													)).longValue(2))
 											)))
@@ -448,7 +451,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														)
 										)
 						),
-						getAccountBalance(ACCOUNT)
+						getAccountBalance(ERC_20_CONTRACT_NAME)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2)

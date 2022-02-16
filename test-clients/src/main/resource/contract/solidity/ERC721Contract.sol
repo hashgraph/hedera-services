@@ -30,15 +30,6 @@ contract ERC721Contract {
         IERC721(token).ownerOf(tokenId);
     }
 
-    function safeTransferFrom(address token, address from, address to, uint256 tokenId) public {
-        IERC721(token).safeTransferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFromWithData(address token, address from, address to,
-    uint256 tokenId, bytes calldata data) public {
-        IERC721(token).safeTransferFrom(from, to, tokenId, data);
-    }
-
     function transferFrom(address token, address from, address to, uint256 tokenId) public {
         IERC721(token).transferFrom(from, to, tokenId);
     }
@@ -60,6 +51,15 @@ contract ERC721Contract {
     function isApprovedForAll(address token, address owner, address operator) public view {
         IERC721(token).isApprovedForAll(owner, operator);
     }
+
+    function safeTransferFrom(address token, address from, address to, uint256 tokenId) public {
+         IERC721(token).safeTransferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFromWithData(address token, address from, address to,
+         uint256 tokenId, bytes calldata data) public {
+            IERC721(token).safeTransferFrom(from, to, tokenId, data);
+     }
 
 
     function tokenByIndex(address token, uint256 index) public view {
