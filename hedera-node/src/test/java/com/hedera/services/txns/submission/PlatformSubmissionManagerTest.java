@@ -22,10 +22,8 @@ package com.hedera.services.txns.submission;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -79,8 +77,6 @@ class PlatformSubmissionManagerTest {
 	Platform platform;
 	RecordCache recordCache;
 	MiscSpeedometers speedometers;
-	AliasManager aliasManager;
-	AccessorFactory accessorFactory;
 
 	PlatformSubmissionManager subject;
 
@@ -89,14 +85,12 @@ class PlatformSubmissionManagerTest {
 		platform = mock(Platform.class);
 		recordCache = mock(RecordCache.class);
 		speedometers = mock(MiscSpeedometers.class);
-		aliasManager = mock(AliasManager.class);
 
 		accessor = new SignedTxnAccessor(signedTxn);
 		uncheckedAccessor = new SignedTxnAccessor(uncheckedSubTxn);
 		invalidUncheckedAccessor = new SignedTxnAccessor(invalidUncheckedSubTxn);
-		accessorFactory = new AccessorFactory(aliasManager);
 
-		subject = new PlatformSubmissionManager(platform, recordCache, speedometers, accessorFactory);
+		subject = new PlatformSubmissionManager(platform, recordCache, speedometers);
 	}
 
 	@Test
