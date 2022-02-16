@@ -34,6 +34,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.given;
@@ -136,6 +138,8 @@ class StandardProcessLogicTest {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, triggeredConsensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxnId()).willReturn(TransactionID.newBuilder().setAccountID(asAccount("0.0.1234")).build());
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
