@@ -46,18 +46,24 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.cryptoUpdateAliased;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -113,9 +119,97 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
 						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected()
+						usdFeeAsExpected(),
+						canUpdateUsingAlias(),
+						canUpdateProxyUsingAlias(),
+						failsWhenInvalidAliasedIdGiven(),
+						invalidProxyAliasFails()
 				}
 		);
+	}
+
+	private HapiApiSpec failsWhenInvalidAliasedIdGiven() {
+		String alias = "alias";
+		String memo = "Second";
+		return defaultHapiSpec("failsWhenInvalidAliasedIdGiven")
+				.given(
+						newKeyNamed(alias)
+				).when(
+						cryptoUpdateAliased(alias)
+								.entityMemo(memo)
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				).then(
+				);
+	}
+
+	private HapiApiSpec invalidProxyAliasFails() {
+		String alias = "alias";
+		String proxyAlias = "proxyAlias";
+		return defaultHapiSpec("invalidProxyAliasFails")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(proxyAlias),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+								.via("transferTxn")
+				).when(
+						getTxnRecord("transferTxn").andAllChildRecords(),
+						getAliasedAccountInfo(alias)
+								.has(accountWith().memo("auto-created account"))
+				).then(
+						cryptoUpdateAliased(alias)
+								.newProxyWithAlias(proxyAlias)
+								.hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
+				);
+	}
+
+	private HapiApiSpec canUpdateProxyUsingAlias() {
+		String alias = "alias";
+		String proxyAlias = "proxyAlias";
+		String memo = "MEMO";
+		return defaultHapiSpec("canUpdateProxyUsingAlias")
+				.given(
+						newKeyNamed(alias),
+						newKeyNamed(proxyAlias),
+						sortedCryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, proxyAlias, ONE_HUNDRED_HBARS))
+								.via("transferTxn")
+				).when(
+						getTxnRecord("transferTxn").hasChildRecordCount(2),
+						getAliasedAccountInfo(alias)
+								.has(accountWith().memo("auto-created account"))
+								.logged(),
+						cryptoUpdateAliased(alias)
+								.newProxyWithAlias(proxyAlias)
+								.hasKnownStatus(SUCCESS)
+				).then(
+						getAliasedAccountInfo(alias)
+								.has(accountWith().proxyWithAlias(proxyAlias))
+				);
+	}
+
+	private HapiApiSpec canUpdateUsingAlias() {
+		String alias = "alias";
+		String memo = "Second";
+		return defaultHapiSpec("canUpdateUsingAlias")
+				.given(
+						newKeyNamed(alias),
+						cryptoTransfer(
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, "alias", ONE_HUNDRED_HBARS))
+								.via("transferTxn"),
+						getTxnRecord("transferTxn").hasChildRecordCount(1)
+				).when(
+						getAliasedAccountInfo(alias)
+								.has(accountWith().memo("auto-created account")),
+						cryptoUpdateAliased(alias)
+								.key(alias)
+								.entityMemo(memo)
+								.hasKnownStatus(SUCCESS).logged()
+				).then(
+						getAliasedAccountInfo(alias)
+								.has(accountWith().memo(memo))
+				);
 	}
 
 	private HapiApiSpec usdFeeAsExpected() {

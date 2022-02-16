@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.Key;
@@ -40,20 +39,20 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -68,7 +67,14 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				negativeTests()
+				negativeTests(),
+				positiveTests()
+		);
+	}
+
+	private List<HapiApiSpec> positiveTests() {
+		return List.of(
+				createAccountWithAliasedProxy()
 		);
 	}
 
@@ -85,8 +91,37 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
 				maxAutoAssociationSpec(),
-				usdFeeAsExpected()
+				usdFeeAsExpected(),
+				cannotCreateAccountWithMissingAliasedProxy()
 		);
+	}
+
+	private HapiApiSpec cannotCreateAccountWithMissingAliasedProxy() {
+		return defaultHapiSpec("cannotCreateAccountWithMissingAliasedProxy")
+				.given(newKeyNamed("randomAlias"))
+				.when()
+				.then(
+						cryptoCreate("accountWithInvalidAliasProxy")
+								.proxyWithAlias("randomAlias")
+								.hasKnownStatus(INVALID_PROXY_ACCOUNT_ID)
+				);
+	}
+
+
+	private HapiApiSpec createAccountWithAliasedProxy() {
+		final var alias = "alias";
+
+		return defaultHapiSpec("createAccountWithAliasedProxy")
+				.given(
+						newKeyNamed(alias)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HUNDRED_HBARS))
+								.via("proxyCreation"),
+						getTxnRecord("proxyCreation").andAllChildRecords().hasChildRecordCount(1)
+				).then(
+						cryptoCreate("accountWithAliasProxy")
+								.proxyWithAlias(alias)
+				);
 	}
 
 	private HapiApiSpec maxAutoAssociationSpec() {

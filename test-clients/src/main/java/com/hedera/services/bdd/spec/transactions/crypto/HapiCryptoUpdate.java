@@ -57,8 +57,8 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -82,6 +82,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private Optional<Boolean> updSigRequired = Optional.empty();
 	private Optional<Integer> newMaxAutomaticAssociations = Optional.empty();
 	private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+	private ReferenceType proxyReferenceType = ReferenceType.REGISTRY_NAME;
 
 	public HapiCryptoUpdate(String account) {
 		this.account = account;
@@ -107,6 +108,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	public HapiCryptoUpdate newProxy(String name) {
+		newProxy = Optional.of(name);
+		return this;
+	}
+
+	public HapiCryptoUpdate newProxyWithAlias(String name) {
+		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
 		newProxy = Optional.of(name);
 		return this;
 	}
@@ -176,7 +183,6 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 			id = TxnUtils.asId(account, spec);
 		} else {
 			id = asIdForKeyLookUp(aliasKeySource, spec);
-			account = asAccountString(id);
 		}
 
 		CryptoUpdateTransactionBody opBody = spec
@@ -185,7 +191,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 						CryptoUpdateTransactionBody.class, builder -> {
 							builder.setAccountIDToUpdate(id);
 							newProxy.ifPresent(p -> {
-								var proxyId = TxnUtils.asId(p, spec);
+								AccountID proxyId;
+								if (proxyReferenceType == ReferenceType.REGISTRY_NAME) {
+									proxyId = TxnUtils.asId(p, spec);
+								} else {
+									proxyId = asIdForKeyLookUp(p, spec);
+								}
 								builder.setProxyAccountID(proxyId);
 							});
 							updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
@@ -212,7 +223,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return defaultUpdateSigners(account, updKeyName, this::effectivePayer);
+		return defaultUpdateSigners(referenceType == ReferenceType.ALIAS_KEY_NAME ? aliasKeySource : account,
+				updKeyName,
+				this::effectivePayer);
 	}
 
 	@Override
@@ -247,7 +260,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	}
 
 	private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
+		HapiGetAccountInfo subOp;
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			subOp = getAliasedAccountInfo(aliasKeySource).noLogging();
+		} else {
+			subOp = getAccountInfo(account).noLogging();
+		}
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {

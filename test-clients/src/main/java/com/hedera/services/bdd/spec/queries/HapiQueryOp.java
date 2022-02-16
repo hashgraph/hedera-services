@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.COST_ANSWER_QUERY
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -318,10 +320,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 
 	private Consumer<TransactionBody.Builder> opDef(HapiApiSpec spec, long amount) throws Throwable {
+		AccountID payer = getIdWithAliasLookUp(effectivePayer(spec), spec);
 		TransferList transfers = asTransferList(
 				tinyBarsFromTo(
 						amount,
-						spec.registry().getAccountID(effectivePayer(spec)),
+						payer,
 						targetNodeFor(spec)));
 		CryptoTransferTransactionBody opBody = spec
 				.txns()

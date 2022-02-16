@@ -21,11 +21,10 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
@@ -49,6 +48,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
@@ -73,7 +73,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Long> receiveThresh = Optional.empty();
 	private Optional<Long> initialBalance = Optional.empty();
 	private Optional<Long> autoRenewDurationSecs = Optional.empty();
-	private Optional<AccountID> proxy = Optional.empty();
+	private Optional<String> proxy = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<String> keyName = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
@@ -82,7 +82,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
 	private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> newIdObserver = Optional.empty();
-
+	private ReferenceType proxyReferenceType = ReferenceType.REGISTRY_NAME;
 
 	@Override
 	public HederaFunctionality type() {
@@ -184,7 +184,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 	}
 
 	public HapiCryptoCreate proxy(String idLit) {
-		proxy = Optional.of(HapiPropertySource.asAccount(idLit));
+		proxy = Optional.of(idLit);
+		return this;
+	}
+
+	public HapiCryptoCreate proxyWithAlias(String idLit) {
+		proxyReferenceType = ReferenceType.ALIAS_KEY_NAME;
+		proxy = Optional.of(idLit);
 		return this;
 	}
 
@@ -217,7 +223,13 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 				.<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
 						CryptoCreateTransactionBody.class, b -> {
 							b.setKey(key);
-							proxy.ifPresent(b::setProxyAccountID);
+							proxy.ifPresent(p -> {
+								if (proxyReferenceType == ReferenceType.ALIAS_KEY_NAME) {
+									b.setProxyAccountID(asAccount(spec.registry().getKey(p).toByteString()));
+								} else {
+									b.setProxyAccountID(spec.registry().getAccountID(p));
+								}
+							});
 							entityMemo.ifPresent(b::setMemo);
 							sendThresh.ifPresent(b::setSendRecordThreshold);
 							receiveThresh.ifPresent(b::setReceiveRecordThreshold);

@@ -74,10 +74,6 @@ public class QueryVerbs {
 		return new HapiGetAccountInfo(account);
 	}
 
-	public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
-		return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
-	}
-
 	public static HapiGetAccountRecords getAccountRecords(final String account) {
 		return new HapiGetAccountRecords(account);
 	}

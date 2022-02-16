@@ -42,7 +42,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;

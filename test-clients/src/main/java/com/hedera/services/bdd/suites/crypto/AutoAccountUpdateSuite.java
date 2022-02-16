@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;

@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.usage.SigUsage;
@@ -195,12 +196,26 @@ public class TxnUtils {
 						lookupSpec.registry().getAccountID(s) : lookUpAccount(lookupSpec, s));
 	}
 
+	public static ByteString aliasKeyNamed(String alias, HapiApiSpec lookupSpec){
+		return lookupSpec.registry().getKey(alias).toByteString();
+	}
+
 	private static AccountID lookUpAccount(HapiApiSpec spec, String alias) {
 		final var key = spec.registry().getKey(alias);
-		final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
-		return spec.registry().hasAccountId(lookedUpKey) ?
-				spec.registry().getAccountID(lookedUpKey) :
-				asIdWithAlias(key.toByteString());
+		return asIdWithAlias(key.toByteString());
+	}
+
+
+	public static AccountID getIdWithAliasLookUp(final String account, final HapiApiSpec spec) {
+		return asIdForKeyLookUp(account, spec);
+	}
+
+	public static AccountID getResolvedIdFromRegistry(final String idOrAlias, final HapiApiSpec spec,
+			final ReferenceType referenceType) {
+		if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+			return spec.registry().getAccountID(spec.registry().getKey(idOrAlias).toByteString().toStringUtf8());
+		}
+		return spec.registry().getAccountID(idOrAlias);
 	}
 
 	public static AccountID asIdWithAlias(final ByteString s) {

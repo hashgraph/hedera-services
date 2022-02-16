@@ -84,10 +84,6 @@ public class TxnVerbs {
 		return new HapiCryptoDelete(account);
 	}
 
-	public static HapiCryptoDelete cryptoDeleteAliased(final String alias) {
-		return new HapiCryptoDelete(alias, ReferenceType.ALIAS_KEY_NAME);
-	}
-
 	@SafeVarargs
 	public static HapiCryptoTransfer sortedCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		return new HapiCryptoTransfer(true, providers);

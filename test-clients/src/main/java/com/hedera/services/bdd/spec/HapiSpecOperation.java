@@ -26,9 +26,9 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.stats.OpObs;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -56,7 +56,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +69,8 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
+import static com.swirlds.common.CommonUtils.unhex;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 
@@ -125,6 +126,7 @@ public abstract class HapiSpecOperation {
 	protected Optional<String> customTxnId = Optional.empty();
 	protected Optional<String> memo = Optional.empty();
 	protected Optional<String> payer = Optional.empty();
+	protected ReferenceType payerReferenceType = ReferenceType.REGISTRY_NAME;
 	protected Optional<Boolean> genRecord = Optional.empty();
 	protected Optional<AccountID> node = Optional.empty();
 	protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
@@ -251,7 +253,7 @@ public abstract class HapiSpecOperation {
 				builder.clearTransactionID();
 			} else {
 				payer.ifPresent(payerId -> {
-					var id = TxnUtils.asId(payerId, spec);
+					AccountID id = getIdWithAliasLookUp(payerId, spec);
 					TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
 					builder.setTransactionID(txnId);
 				});
@@ -436,7 +438,7 @@ public abstract class HapiSpecOperation {
 
 	protected ByteString rationalize(final String expectedLedgerId) {
 		final var hex = expectedLedgerId.substring(2);
-		final var bytes = HexFormat.of().parseHex(hex);
+		final var bytes = unhex(hex);
 		return ByteString.copyFrom(bytes);
 	}
 }

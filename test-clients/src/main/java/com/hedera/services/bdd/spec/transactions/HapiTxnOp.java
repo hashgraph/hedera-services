@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
 import com.hederahashgraph.api.proto.java.Key;
@@ -431,7 +432,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return UNKNOWN;
 	}
 
-	private Response statusResponse(HapiApiSpec spec, Query receiptQuery) throws Throwable {
+	private Response statusResponse(HapiApiSpec spec, Query receiptQuery) {
 		long before = System.currentTimeMillis();
 		Response response = null;
 		int allowedUnrecognizedExceptions = 10;
@@ -547,6 +548,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T payingWith(String name) {
 		payer = Optional.of(name);
+		return self();
+	}
+
+	public T payingWithAlias(String name) {
+		payer = Optional.of(name);
+		payerReferenceType = ReferenceType.ALIAS_KEY_NAME;
 		return self();
 	}
 

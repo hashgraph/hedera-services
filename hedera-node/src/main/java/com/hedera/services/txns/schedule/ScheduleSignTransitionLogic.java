@@ -87,7 +87,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			ScheduleSignTransactionBody op
 	) throws InvalidProtocolBufferException {
 		var scheduleId = op.getScheduleID();
-		log.info("Signing a the schedule : " + scheduleId);
 		var origSchedule = store.get(scheduleId);
 		if (origSchedule.isExecuted()) {
 			txnCtx.setStatus(SCHEDULE_ALREADY_EXECUTED);
