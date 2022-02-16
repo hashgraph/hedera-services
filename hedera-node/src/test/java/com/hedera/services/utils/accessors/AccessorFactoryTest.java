@@ -37,7 +37,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-public class AccessorFactoryTest {
+class AccessorFactoryTest {
 	@Mock
 	private AliasManager aliasManager;
 

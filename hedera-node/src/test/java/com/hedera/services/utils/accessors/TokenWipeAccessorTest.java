@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class TokenWipeAccessorTest {
+class TokenWipeAccessorTest {
 	private TokenWipeAccessor accessor;
 
 	@Mock

@@ -29,6 +29,7 @@ import javax.inject.Inject;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.functionExtractor;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 public class AccessorFactory {
 	final AliasManager aliasManager;
@@ -41,13 +42,10 @@ public class AccessorFactory {
 	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var body = extractTransactionBody(Transaction.parseFrom(transaction.getContents()));
 		final var function = functionExtractor.apply(body);
-		switch (function) {
-			case TokenAccountWipe -> {
-				return new TokenWipeAccessor(transaction, aliasManager);
-			}
-			default -> {
-				return new PlatformTxnAccessor(transaction, aliasManager);
-			}
+		if (function == TokenAccountWipe) {
+			return new TokenWipeAccessor(transaction, aliasManager);
 		}
+		return new PlatformTxnAccessor(transaction, aliasManager);
 	}
 }
+
