@@ -68,7 +68,7 @@ class LedgerImplBackingStoreTest {
 				TestAccount::new,
 				backingTestAccounts,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Test
@@ -313,7 +313,7 @@ class LedgerImplBackingStoreTest {
 				TestAccount::new,
 				ledger,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	private void givenMockSubject() {

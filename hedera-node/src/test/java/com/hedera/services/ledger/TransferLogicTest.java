@@ -118,7 +118,7 @@ class TransferLogicTest {
 	void setUp() {
 		final var backingAccounts = new HashMapBackingAccounts();
 		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new SideEffectsTracker());
+				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
 				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,

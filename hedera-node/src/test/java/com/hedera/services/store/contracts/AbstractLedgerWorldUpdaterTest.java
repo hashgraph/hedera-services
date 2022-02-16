@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -280,9 +281,11 @@ class AbstractLedgerWorldUpdaterTest {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
+		subject.getAccount(bAddress).getMutable().setBalance(Wei.of(bHbarBalance - 1));
 
 		/* Get the wrapped accounts for the updater */
 		final var wrappedLedgers = subject.wrappedTrackingLedgers();
@@ -405,25 +408,25 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();

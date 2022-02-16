@@ -94,7 +94,7 @@ class TransactionalLedgerTest {
 		scopedCheck = new TestAccountScopedCheck();
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager, new SideEffectsTracker());
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager, new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Test

@@ -13,7 +13,7 @@ import java.util.List;
  * @param <P> the enumerable family of account properties
  */
 @FunctionalInterface
-interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
+public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	/**
 	 * Accepts a pending change set, including creations and removals.
 	 *

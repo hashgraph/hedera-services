@@ -24,6 +24,8 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
+import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
@@ -82,6 +84,15 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
+	static CommitInterceptor<AccountID, MerkleAccount, AccountProperty> bindAccountsCommitInterceptor(
+			AccountsCommitInterceptor accountsCommitInterceptor
+	) {
+		return new AccountsCommitInterceptor(
+				new SideEffectsTracker());
+	}
+
+	@Provides
+	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
 			BackingStore<NftId, MerkleUniqueToken> backingNfts
 	) {
@@ -90,7 +101,7 @@ public interface StoresModule {
 				MerkleUniqueToken::new,
 				backingNfts,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Provides
@@ -103,7 +114,7 @@ public interface StoresModule {
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Provides
@@ -116,7 +127,7 @@ public interface StoresModule {
 				MerkleTokenRelStatus::new,
 				backingTokenRels,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		return tokenRelsLedger;
 	}
@@ -131,7 +142,7 @@ public interface StoresModule {
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Provides

@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -177,25 +178,25 @@ class WorldLedgersTest {
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var liveAccounts = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var liveTokens = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>(),
-				new SideEffectsTracker());
+				new AccountsCommitInterceptor(new SideEffectsTracker()));
 		final var liveAliases = new AliasManager();
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
