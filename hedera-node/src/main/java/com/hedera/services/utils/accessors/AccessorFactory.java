@@ -39,7 +39,7 @@ public class AccessorFactory {
 	}
 
 	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		return constructFrom(Transaction.parseFrom(transaction.getContents()), aliasManager);
+		return constructFrom(transaction, aliasManager);
 	}
 
 	public PlatformTxnAccessor constructFrom(Transaction validSignedTxn) throws InvalidProtocolBufferException {
@@ -47,15 +47,14 @@ public class AccessorFactory {
 		return constructFrom(platformTxn);
 	}
 
-	public static PlatformTxnAccessor constructFrom(Transaction validSignedTxn, AliasManager aliasManager) throws InvalidProtocolBufferException {
-		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
-		final var body = extractTransactionBody(validSignedTxn);
+	public static PlatformTxnAccessor constructFrom(SwirldTransaction transaction, AliasManager aliasManager) throws InvalidProtocolBufferException {
+		final var body = extractTransactionBody(Transaction.parseFrom(transaction.getContents()));
 		final var function = functionExtractor.apply(body);
 		return switch (function) {
-			case TokenAccountWipe -> new TokenWipeAccessor(platformTxn, aliasManager);
-			case CryptoCreate -> new CryptoCreateAccessor(platformTxn, aliasManager);
-			case CryptoUpdate -> new CryptoUpdateAccessor(platformTxn, aliasManager);
-			default -> new PlatformTxnAccessor(platformTxn, aliasManager);
+			case TokenAccountWipe -> new TokenWipeAccessor(transaction, aliasManager);
+			case CryptoCreate -> new CryptoCreateAccessor(transaction, aliasManager);
+			case CryptoUpdate -> new CryptoUpdateAccessor(transaction, aliasManager);
+			default -> new PlatformTxnAccessor(transaction, aliasManager);
 		};
 	}
 }

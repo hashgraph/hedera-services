@@ -113,9 +113,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
 		final var triggeredAccessor = txnCtx.triggeredTxn();
 		if (triggeredAccessor != null) {
-			log.info("Executing a underlying txn of schedule. Triggering txn is : " + txnCtx.accessor().getTxnId());
 			txnManager.process(triggeredAccessor, consensusTime, submittingMember);
-			log.info("Finished execution of underlying txn of triggering txn : " + txnCtx.accessor().getTxnId());
 		}
 		executionTimeTracker.stop();
 	}

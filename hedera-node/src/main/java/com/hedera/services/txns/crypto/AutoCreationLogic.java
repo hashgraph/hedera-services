@@ -48,6 +48,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.SwirldTransaction;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -210,7 +211,8 @@ public class AutoCreationLogic {
 				.build();
 
 		try {
-			final var accessor = AccessorFactory.constructFrom(txn, aliasManager);
+			final var swirldTransaction = new SwirldTransaction(txn.toByteArray());
+			final var accessor = AccessorFactory.constructFrom(swirldTransaction, aliasManager);
 			final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
 			return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 		} catch (Exception illegal) {

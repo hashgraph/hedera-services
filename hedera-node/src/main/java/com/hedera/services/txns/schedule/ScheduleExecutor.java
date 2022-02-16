@@ -26,8 +26,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.accessors.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -42,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  */
 @Singleton
 public final class ScheduleExecutor {
-	private static final Logger log = LogManager.getLogger(ScheduleExecutor.class);
 	@Inject
 	public ScheduleExecutor() {
 		// Default constructor
@@ -77,8 +74,6 @@ public final class ScheduleExecutor {
 			return executionStatus;
 		}
 
-		log.info("Validated the underlying txn of schedule : " + id + " now executing ..");
-
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
 		txnCtx.trigger(
@@ -86,7 +81,6 @@ public final class ScheduleExecutor {
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),
 						id));
-		log.info("Finished execution of underlying txn of schedule : " + id);
 		return OK;
 	}
 }

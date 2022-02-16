@@ -103,11 +103,6 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 				sigMap,
 				activationHelper.currentSigsFn(),
 				activationHelper::visitScheduledCryptoSigs);
-		if (validScheduleKeys.isPresent()) {
-			log.info("Valid keys for schedule : " + scheduleId + " are : " + validScheduleKeys.get().size());
-		} else {
-			log.info("No valid keys for schedule : " + scheduleId);
-		}
 		var signingOutcome = replSigningsWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper);
 
 		var outcome = signingOutcome.getLeft();
@@ -115,12 +110,9 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
 			if (Boolean.TRUE.equals(signingOutcome.getRight())) {
-				log.info("Triggering underlying txn of schedule : " + scheduleId +
-						" with txnID as : " + updatedSchedule.scheduledTransactionId());
 				outcome = executor.processExecution(scheduleId, store, txnCtx);
 			}
 		}
-		log.info("Done signing schedule : " + scheduleId + " with resCode : " + outcome);
 		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
 	}
 

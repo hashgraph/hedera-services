@@ -52,8 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -88,7 +86,6 @@ import static java.util.Collections.EMPTY_LIST;
  * equivalent decision for a crypto account.
  */
 public class SigRequirements {
-	private static final Logger log = LogManager.getLogger(SigRequirements.class);
 	/* The current architecture does not support a triggered transaction itself triggering a transaction. So
 	 * no matter what is in the scheduling.whitelist property, we have to abort any attempt to schedule these. */
 	private static final Set<HederaFunctionality> IMPOSSIBLE_TO_SCHEDULE = EnumSet.of(ScheduleCreate, ScheduleSign);
@@ -1015,7 +1012,6 @@ public class SigRequirements {
 			final SigningOrderResultFactory<T> factory,
 			final @Nullable LinkedRefs linkedRefs
 	) {
-		log.info("adding required sigs for ScheduleSign on schedule  {}", id);
 		List<JKey> required = new ArrayList<>();
 
 		var result = sigMetaLookup.scheduleSigningMetaFor(id, linkedRefs);
@@ -1028,7 +1024,6 @@ public class SigRequirements {
 			if (!payerResult.succeeded()) {
 				return accountFailure(INVALID_ACCOUNT, factory);
 			} else {
-				log.info("adding optionalPayer {} sigs for ScheduleSign on schedule  {}",optionalPayer.get(), id);
 				var dupKey = payerResult.metadata().key().duplicate();
 				dupKey.setForScheduledTxn(true);
 				required.add(dupKey);

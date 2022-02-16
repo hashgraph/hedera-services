@@ -97,7 +97,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		try {
 			final var accessor = (CryptoCreateAccessor) txnCtx.accessor();
 			AccountID sponsor = accessor.getSponsor();
-			log.info("Creating a new account with sponsor : " + sponsor);
 
 			// validate proxy account
 			final var validity = validateProxy(accessor);
@@ -110,7 +109,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 			final var created = ledger.create(sponsor, balance, asCustomizer(accessor));
 			sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
-			log.info("Done creating a new account : " + created +  " with sponsor : " + sponsor);
 			txnCtx.setCreated(created);
 			txnCtx.setStatus(SUCCESS);
 		} catch (InsufficientFundsException ife) {
