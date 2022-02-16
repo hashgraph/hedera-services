@@ -325,14 +325,11 @@ public class TxnVerbs {
 		return new HapiContractCall(contract);
 	}
 
+	// The ternary operator enables the developer to pass either an ABI, or just the name of the function
 	public static HapiContractCall contractCall(String contract, String abi, Object... params) {
-		return new HapiContractCall(abi, contract, params);
-	}
-
-	//TODO Handle wrong arguments
-	public static HapiContractCall automaticContractCall(final String contractName, final String functionName, final Object... params) {
-		var functionABI = getABIFor(FUNCTION, functionName, contractName);
-		return new HapiContractCall(functionABI, contractName, params);
+		return abi.charAt(0) == '{'
+				? new HapiContractCall(abi, contract, params)
+				: new HapiContractCall(getABIFor(FUNCTION, abi, contract), contract, params);
 	}
 
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
@@ -355,31 +352,25 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
-	public static HapiSpecOperation contractDeploy(final String contractName) {
+	public static HapiSpecOperation contractDeploy(final String contractName, final Object... params) {
 		return withOpContext((spec, ctxLog) -> {
 			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
 			validateFileExists(path);
 			final var payer = cryptoCreate("PAYER");
 			final var file = fileCreate(contractName);
 			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
-			final var deployedContract = contractCreate(contractName).bytecode(contractName);
-			allRunFor(spec, payer, file, updatedFile, deployedContract);
+
+			HapiContractCreate contract;
+
+			if (params.length > 0) {
+				final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
+				contract = contractCreate(contractName, constructorABI, params).bytecode(contractName);
+			} else {
+				contract = contractCreate(contractName).bytecode(contractName);
+			}
+			allRunFor(spec, payer, file, updatedFile, contract);
 		});
 	}
-
-	public static HapiSpecOperation nestedContractDeploy(final String contractName, Object... params) {
-		return withOpContext((spec, ctxLog) -> {
-			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
-			validateFileExists(path);
-			final var payer = cryptoCreate("PAYER");
-			final var file = fileCreate(contractName);
-			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
-			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-			final var deployedContract = contractCreate(contractName, constructorABI, params).bytecode(contractName);
-			allRunFor(spec, payer, file, updatedFile, deployedContract);
-		});
-	}
-
 
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {

@@ -48,12 +48,10 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.automaticContractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDeploy;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nestedContractDeploy;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -129,8 +127,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				multipleAssociatePrecompileWithSignatureWorksForFungible(),
 				nestedAssociateWorksAsExpected(),
+				multipleAssociatePrecompileWithSignatureWorksForFungible(),
 				associatePrecompileTokensPerAccountLimitExceeded(),
 				invalidSingleAbiCallConsumesAllProvidedGas()
 		);
@@ -146,7 +144,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												automaticContractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
 														"performLessThanFourBytesFunctionCall", ACCOUNT_ADDRESS, TOKEN_ADDRESS
 												)
 														.notTryingAsHexedliteral()
@@ -170,7 +168,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												automaticContractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
 														"performInvalidlyFormattedFunctionCall", ACCOUNT_ADDRESS,
 														List.of(TOKEN_ADDRESS, TOKEN_ADDRESS)
 												)
@@ -193,7 +191,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												automaticContractCall(
+												contractCall(
 														THE_GRACEFULLY_FAILING_CONTRACT,
 														"performNonExistingServiceFunctionCall",
 														ACCOUNT_ADDRESS,
@@ -233,7 +231,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														.payingWith(GENESIS)
 														.via("notSupportedFunctionCallTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												automaticContractCall(THE_CONTRACT, "tokenAssociate",
+												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
@@ -270,13 +268,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												automaticContractCall(THE_CONTRACT, "tokenAssociate",
+												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()), invalidAbiArgument)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												automaticContractCall(THE_CONTRACT, "tokenAssociate",
+												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
@@ -337,7 +335,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												automaticContractCall(THE_CONTRACT, "tokensAssociate",
+												contractCall(THE_CONTRACT, "tokensAssociate",
 														asAddress(accountID.get()),
 														List.of(
 																asAddress(frozenTokenID.get()),
@@ -383,7 +381,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												nestedContractDeploy(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
+												contractDeploy(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
 												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
@@ -428,13 +426,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												automaticContractCall(THE_CONTRACT, "tokenAssociate",
+												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
-												automaticContractCall(THE_CONTRACT, "tokenAssociate",
+												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()),
 														asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
@@ -463,7 +461,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												automaticContractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
 														"performInvalidlyFormattedSingleFunctionCall",
 														ACCOUNT_ADDRESS)
 														.notTryingAsHexedliteral()
