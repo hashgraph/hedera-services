@@ -74,7 +74,7 @@ public class RecordStreaming implements Runnable {
 		}
 	}
 
-	private void stream(final RecordStreamObject rso) {
+	public void stream(final RecordStreamObject rso) {
 		runningHashUpdate.accept(rso.getRunningHash());
 		while (!nonBlockingHandoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */

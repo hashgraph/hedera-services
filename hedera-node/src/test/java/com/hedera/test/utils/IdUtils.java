@@ -145,11 +145,11 @@ public class IdUtils {
 	}
 
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
-		return BalanceChange.changingHbar(adjustFrom(account, amount));
+		return BalanceChange.changingHbar(adjustFrom(account, amount), null);
 	}
 
 	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
-		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
+		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount), null);
 	}
 
 	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {

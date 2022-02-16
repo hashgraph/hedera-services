@@ -33,6 +33,7 @@ import org.mockito.Mockito;
 import java.util.Collections;
 import java.util.List;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
 import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
@@ -487,5 +488,34 @@ class PureTransferSemanticChecksTest {
 				withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
 		assertTrue(subject.hasRepeatedAccount(
 				withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
+	}
+
+	@Test
+	void distinguishesAllowance() {
+		var aa1 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1001"))
+				.setAmount(-10L).build();
+		var aa2 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1002"))
+				.setAmount(+10L).build();
+		var aa3 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1001"))
+				.setIsApproval(true)
+				.setAmount(-10L).build();
+		var aa4 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1002"))
+				.setIsApproval(true)
+				.setAmount(+10L).build();
+		var aa5 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1001"))
+				.setIsApproval(true)
+				.setAmount(-10L).build();
+		var aa6 = AccountAmount.newBuilder()
+				.setAccountID(asAccount("0.0.1002"))
+				.setIsApproval(true)
+				.setAmount(+10L).build();
+
+		assertFalse(subject.hasRepeatedAccount(List.of(aa1, aa2, aa3, aa4)));
+		assertTrue(subject.hasRepeatedAccount(List.of(aa1, aa2, aa3, aa4, aa5, aa6)));
 	}
 }
