@@ -215,7 +215,7 @@ public class AutoCreationLogic {
 			return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 		} catch (Exception illegal) {
 			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+			throw new IllegalArgumentException("Built Auto creation txn is not a valid signed txn");
 		}
 	}
 

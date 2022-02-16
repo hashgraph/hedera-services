@@ -40,11 +40,6 @@ public class AccessorFactory {
 
 	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		return constructFrom(Transaction.parseFrom(transaction.getContents()), aliasManager);
-//		try {
-//			return
-//		}  catch (InvalidProtocolBufferException ignore) {
-//			throw new IllegalStateException("Unchecked accessor construction must get valid gRPC bytes!");
-//		}
 	}
 
 	public PlatformTxnAccessor constructFrom(Transaction validSignedTxn) throws InvalidProtocolBufferException {

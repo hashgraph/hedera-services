@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -38,6 +39,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,9 +61,11 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -113,6 +117,18 @@ class AutoCreationLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
 		verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
 		assertEquals(Pair.of(OK, totalFee), result);
+	}
+
+	@Test
+	void failsAsExpectedWhenInvalidAutoCreateTxnIsBuilt() {
+		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
+				.willReturn(mockSyntheticCreation);
+		final var input = wellKnownChange();
+		final var mockedStatic = mockStatic(AccessorFactory.class);
+		mockedStatic.when(() -> AccessorFactory.constructFrom(any(), any()))
+				.thenThrow(InvalidProtocolBufferException.class);
+		assertThrows(IllegalArgumentException.class , ()->subject.create(input, accountsLedger));
+		mockedStatic.close();
 	}
 
 	private void givenCollaborators() {

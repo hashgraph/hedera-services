@@ -1,5 +1,25 @@
 package com.hedera.services.utils.accessors;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
@@ -20,6 +40,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +52,7 @@ class CryptoCreateAccessorTest {
 	private final long initialBalance = 100L;
 	private final long payerNum = 345L;
 	private final long proxyNum = 456L;
+	private final long autoRenewDuration = 7776000L;
 	private final int maxAutoAssociations = 10;
 	private final EntityNum payerEntity = EntityNum.fromLong(payerNum);
 	private final EntityNum proxyEntity = EntityNum.fromLong(proxyNum);
@@ -37,7 +60,6 @@ class CryptoCreateAccessorTest {
 	private final AccountID aliasedPayer = asAccountWithAlias("All is well that ends better");
 	private final AccountID proxy = asAccount("0.0." + proxyNum);
 	private final AccountID aliasedProxy = asAccountWithAlias("Courage is found in unlikely places");
-	public  final long autoRenewDuration = 7776000L;
 	private final Key aKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 
 	private CryptoCreateAccessor subject;
@@ -83,6 +105,10 @@ class CryptoCreateAccessorTest {
 		assertEquals(initialBalance, subject.getInitialBalance());
 		assertEquals(maxAutoAssociations, subject.getMaxAutomaticTokenAssociations());
 		assertEquals(aKey, subject.getKey());
+		assertEquals(proxy, subject.getProxy());
+		assertEquals(autoRenewDuration, subject.getAutoRenewPeriod());
+		assertTrue(subject.hasProxy());
+		assertFalse(subject.getReceiverSigRequired());
 		assertEquals(proxy, subject.getProxy());
 	}
 

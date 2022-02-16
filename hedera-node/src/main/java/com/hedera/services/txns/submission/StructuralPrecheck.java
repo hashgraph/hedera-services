@@ -26,6 +26,7 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
@@ -56,17 +57,20 @@ public final class StructuralPrecheck {
 
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
+	private final AccessorFactory accessorFactory;
 	private HapiOpCounters opCounters;
 
 	@Inject
 	public StructuralPrecheck(
 			@MaxSignedTxnSize final int maxSignedTxnSize,
 			@MaxProtoMsgDepth final int maxProtoMessageDepth,
-			final HapiOpCounters counters
+			final HapiOpCounters counters,
+			final AccessorFactory accessorFactory
 	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
 		this.opCounters = counters;
+		this.accessorFactory = accessorFactory;
 	}
 
 	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
@@ -93,7 +97,7 @@ public final class StructuralPrecheck {
 		}
 
 		try {
-			final var accessor = new SignedTxnAccessor(signedTxn);
+			final var accessor = accessorFactory.constructFrom(signedTxn);
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}
