@@ -31,6 +31,8 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ import static com.hedera.services.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 class Expansion {
+	private static final Logger log = LogManager.getLogger(Expansion.class);
 	private final SigRequirements sigReqs;
 	private final PubKeyToSigBytes pkToSigFn;
 	private final CryptoSigsCreation cryptoSigsCreation;
@@ -71,6 +74,7 @@ class Expansion {
 	}
 
 	public void execute() {
+		log.info("expanding payer sigs for {}", txnAccessor.getTxnId());
 		final var payerStatus = expand(Role.PAYER, pkToSigFn, sigReqs::keysForPayer);
 		if (payerStatus != OK) {
 			txnAccessor.setSigMeta(noneAvailable());
@@ -79,6 +83,7 @@ class Expansion {
 			return;
 		}
 
+		log.info("expanding otherParty sigs for {}", txnAccessor.getTxnId());
 		final var otherStatus = expand(Role.OTHER_PARTIES, pkToSigFn, sigReqs::keysForOtherParties);
 		if (otherStatus != OK) {
 			finalizeForExpansionUpTo(Role.PAYER, otherStatus);
