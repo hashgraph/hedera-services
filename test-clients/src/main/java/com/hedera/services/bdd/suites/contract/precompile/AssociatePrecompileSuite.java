@@ -83,7 +83,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
 	private static final String INNER_CONTRACT = "AssociateDissociate";
 	private static final String THE_CONTRACT = "AssociateDissociate";
-	private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailingContract";
+	private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailing";
 	private static final String ACCOUNT = "anybody";
 	private static final String FROZEN_TOKEN = "Frozen token";
 	private static final String UNFROZEN_TOKEN = "Unfrozen token";
@@ -99,6 +99,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	public static void main(String... args) {
 		new AssociatePrecompileSuite().runSuiteSync();
 	}
+
 
 	@Override
 	public boolean canRunAsync() {
