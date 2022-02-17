@@ -39,8 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_ASSOCIATE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NON_SUPPORTED_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -87,7 +85,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final String ACCOUNT = "anybody";
 	private static final String FROZEN_TOKEN = "Frozen token";
 	private static final String UNFROZEN_TOKEN = "Unfrozen token";
-	private static final String COCONUT_TOKEN = "Coconut token";
 	private static final String KYC_TOKEN = "KYC token";
 	private static final String TOKEN = "Token";
 	private static final String DELEGATE_KEY = "Delegate key";
@@ -227,7 +224,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, NON_SUPPORTED_ABI,
+												contractCall(THE_CONTRACT, "nonSupportedFunction",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("notSupportedFunctionCallTxn")
@@ -383,7 +380,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractDeploy(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
-												contractCall(OUTER_CONTRACT, NESTED_TOKEN_ASSOCIATE,
+												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("nestedAssociateTxn")

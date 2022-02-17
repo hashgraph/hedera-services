@@ -68,31 +68,26 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.RESOURCE_PATH;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.validateFileExists;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class TxnVerbs {
 	// TODO: After refactor: remove the temporary new structure folder and refactor the bellow path
-	public static final String RESOURCE_PATH = "src/main/resource/contract/newstructure/%1$s/%1$s";
 
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
@@ -325,11 +320,17 @@ public class TxnVerbs {
 		return new HapiContractCall(contract);
 	}
 
-	// The ternary operator enables the developer to pass either an ABI, or just the name of the function
-	public static HapiContractCall contractCall(String contract, String abi, Object... params) {
-		return abi.charAt(0) == '{'
-				? new HapiContractCall(abi, contract, params)
-				: new HapiContractCall(getABIFor(FUNCTION, abi, contract), contract, params);
+	/*  TODO: remove the ternary operator after complete EETs refactor
+		Note to the reviewer:
+		the bellow implementation of the contractCall() method with ternary operator provides for backward compatibility
+		and interoperability with the EETs, which call the method with a direct String ABI.
+		The " abi.charAt(0) == '{' " will be removed when all the EETs are refactored to depend on the new Utils.getABIFor()
+		logic.
+	*/
+	public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
+		return functionName.charAt(0) == '{'
+				? new HapiContractCall(functionName, contract, params)
+				: new HapiContractCall(getABIFor(FUNCTION, functionName, contract), contract, params);
 	}
 
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
@@ -375,34 +376,6 @@ public class TxnVerbs {
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
-	}
-
-	private static String getABIFor(final FunctionType type, final String functionName, String contractName) {
-		final var path = String.format(RESOURCE_PATH + ".json", contractName);
-		validateFileExists(path);
-		var ABI = EMPTY;
-		try (final var input = new FileInputStream(path)) {
-			final var array = new JSONArray(new JSONTokener(input));
-			ABI = IntStream
-					.range(0, array.length())
-					.mapToObj(array::getJSONObject)
-					.filter(object -> type == CONSTRUCTOR
-							? object.getString("type").equals(type.toString().toLowerCase())
-							: object.getString("type").equals(type.toString().toLowerCase()) && object.getString("name").equals(functionName))
-					.map(JSONObject::toString)
-					.findFirst()
-					.orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
-		} catch (IOException e) {
-			e.getStackTrace();
-		}
-		return ABI;
-	}
-
-	private static void validateFileExists(String path) {
-		final var file = new File(path);
-		if (!file.exists()) {
-			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
-		}
 	}
 
 	public enum FunctionType {CONSTRUCTOR, FUNCTION}
