@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -521,16 +520,28 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private List<AccountChanges<AccountID, MerkleAccount, AccountProperty>> getCurrentAccountChanges() {
 		final List<AccountChanges<AccountID, MerkleAccount, AccountProperty>> accountChanges = new ArrayList<>();
 		for (final var changesEntry : changes.entrySet()) {
-			if(changesEntry.getKey() instanceof AccountID) {
+			if(changesEntry.getKey() instanceof AccountID accountID) {
 				final var accountId = changesEntry.getKey();
-				final var accountProperties = changesEntry.getValue();
-				final A entity = entities.contains(accountId) ? entities.getRef(accountId) : newEntity.get();
-				final var changesForSingleAccount = new AccountChanges(accountId, entity, accountProperties);
+				final var accountProperties = convertAccountPropertiesEnumMap(changesEntry.getValue());
+				final var entity = (MerkleAccount) (entities.contains(accountId) ? entities.getRef(accountId) :
+						newEntity.get());
+				final var changesForSingleAccount = new AccountChanges<>(accountID, entity, accountProperties);
 				accountChanges.add(changesForSingleAccount);
 			}
 		}
 
 		return accountChanges;
+	}
+
+	private Map<AccountProperty, Object> convertAccountPropertiesEnumMap(final EnumMap<P, Object> accountProperties) {
+		final Map<AccountProperty, Object> convertedAccountProperties = new HashMap<>();
+		for(final var accountProperty: accountProperties.entrySet()) {
+			if(accountProperty.getKey() instanceof AccountProperty) {
+				convertedAccountProperties.put((AccountProperty) accountProperty.getKey(), accountProperty.getValue());
+			}
+		}
+
+		return convertedAccountProperties;
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {
