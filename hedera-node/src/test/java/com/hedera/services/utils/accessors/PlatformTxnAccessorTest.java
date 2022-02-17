@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -284,6 +285,7 @@ class PlatformTxnAccessorTest {
 				.build();
 		SwirldTransaction platformTxn =
 				new SwirldTransaction(signedTxnWithBody.toByteArray());
+		given(aliasManager.unaliased(payer)).willReturn(EntityNum.fromAccountId(payer));
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn, aliasManager);
