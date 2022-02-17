@@ -25,7 +25,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -194,7 +193,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
-			commitInterceptor.preview(getCurrentAccountChanges());
+			commitInterceptor.preview(getAccumulatedMerkleLeafChanges());
 
 			flushListed(changedKeys);
 			flushListed(createdKeys);
@@ -515,20 +514,18 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
-	private List<MerkleLeafChanges<K, A, P>> getCurrentAccountChanges() {
-		final List<MerkleLeafChanges<K, A, P>> merkleLeafChanges = new ArrayList<>();
-		for (final var changesEntry : changes.entrySet()) {
-			if(changesEntry.getKey() instanceof AccountID) {
-				final var accountId = changesEntry.getKey();
-				final var accountProperties = changesEntry.getValue();
-				final var entity = entities.contains(accountId) ? entities.getRef(accountId) :
-						newEntity.get();
-				final var changesForSingleAccount = new MerkleLeafChanges<>(accountId, entity, accountProperties);
-				merkleLeafChanges.add(changesForSingleAccount);
-			}
+	private List<MerkleLeafChanges<K, A, P>> getAccumulatedMerkleLeafChanges() {
+		final List<MerkleLeafChanges<K, A, P>> merkleLeavesChanges = new ArrayList<>();
+		for (final var merkleLeafChangesEntry : changes.entrySet()) {
+			final var id = merkleLeafChangesEntry.getKey();
+			final var merkleProperties = merkleLeafChangesEntry.getValue();
+			final var merkleLeaf = entities.contains(id) ? entities.getRef(id) :
+					newEntity.get();
+			final var merkleLeafChanges = new MerkleLeafChanges<>(id, merkleLeaf, merkleProperties);
+			merkleLeavesChanges.add(merkleLeafChanges);
 		}
 
-		return merkleLeafChanges;
+		return merkleLeavesChanges;
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {
