@@ -80,9 +80,9 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 	private static final String TOKEN_TREASURY = "treasury";
-	private static final String OUTER_CONTRACT = "NestedAssociateDissociateContract";
-	private static final String INNER_CONTRACT = "AssociateDissociateContract";
-	private static final String THE_CONTRACT = "AssociateDissociateContract";
+	private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
+	private static final String INNER_CONTRACT = "AssociateDissociate";
+	private static final String THE_CONTRACT = "AssociateDissociate";
 	private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailingContract";
 	private static final String ACCOUNT = "anybody";
 	private static final String FROZEN_TOKEN = "Frozen token";
