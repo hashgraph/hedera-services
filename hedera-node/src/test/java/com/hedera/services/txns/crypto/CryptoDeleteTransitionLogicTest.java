@@ -20,30 +20,33 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoDeleteAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -71,17 +74,20 @@ import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(LogCaptureExtension.class)
 class CryptoDeleteTransitionLogicTest {
-	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final public static AccountID aliasAccountPayer = asAccountWithAlias("aaa");
-	final private AccountID aliasAccountTarget = asAccountWithAlias("bbb");
-	final private boolean withKnownTreasury = true;
+	private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+	private final AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+	private final AccountID aliasAccountPayer = asAccountWithAlias("aaa");
+	private final AccountID aliasAccountTarget = asAccountWithAlias("bbb");
+	private final EntityNum payerNum = EntityNum.fromAccountId(payer);
+	private final EntityNum targetNum = EntityNum.fromAccountId(target);
+	private final boolean withKnownTreasury = true;
 
 	private HederaLedger ledger;
 	private TransactionBody cryptoDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private CryptoDeleteAccessor accessor;
+	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -92,16 +98,18 @@ class CryptoDeleteTransitionLogicTest {
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(CryptoDeleteAccessor.class);
+		aliasManager = mock(AliasManager.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
+		given(aliasManager.unaliased(payer)).willReturn(payerNum);
+		given(aliasManager.unaliased(target)).willReturn(targetNum);
 
 		subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx);
 	}
 
 	@Test
-	void hasCorrectApplicability() {
+	void hasCorrectApplicability() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
 		// expect:
@@ -110,23 +118,23 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsTargetAsBeneficiary() {
+	void rejectsTargetAsBeneficiary() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(target);
 
 		// expect:
-		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.semanticCheck().apply(cryptoDeleteTxn));
+		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void acceptsValidTxn() {
+	void acceptsValidTxn() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(cryptoDeleteTxn));
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void translatesMissingAccount() {
+	void translatesMissingAccount() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
 
@@ -138,7 +146,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void translatesDeletedAccount() {
+	void translatesDeletedAccount() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).delete(any(), any());
 
@@ -150,7 +158,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPath() {
+	void followsHappyPath() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
 		// when:
@@ -163,7 +171,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsDetachedAccountAsTarget() {
+	void rejectsDetachedAccountAsTarget() throws InvalidProtocolBufferException {
 		// setup:
 		givenValidTxnCtx();
 		given(ledger.isDetached(target)).willReturn(true);
@@ -177,11 +185,13 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsDetachedAccountAsReceiver() {
+	void rejectsDetachedAccountAsReceiver() throws InvalidProtocolBufferException {
 		// setup:
-		var receiver = IdUtils.asAccount("0.0.7676");
+		final var receiver = asAccount("0.0.7676");
+		final var receiverNum = EntityNum.fromAccountId(receiver);
 
 		givenValidTxnCtx(receiver);
+		given(aliasManager.unaliased(receiver)).willReturn(receiverNum);
 		given(ledger.isDetached(receiver)).willReturn(true);
 
 		// when:
@@ -193,7 +203,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void capturesFailInvalid() {
+	void capturesFailInvalid() throws InvalidProtocolBufferException {
 		// setup:
 		givenValidTxnCtx();
 		given(ledger.isKnownTreasury(target)).willThrow(RuntimeException.class);
@@ -209,7 +219,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsDeletionOfKnownTreasury() {
+	void rejectsDeletionOfKnownTreasury() throws InvalidProtocolBufferException {
 		// setup:
 		givenValidTxnCtx();
 		given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
@@ -223,7 +233,7 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsIfTargetHasNonZeroTokenBalances() {
+	void rejectsIfTargetHasNonZeroTokenBalances() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(ledger.allTokenBalancesVanish(target)).willReturn(false);
 
@@ -236,36 +246,34 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsIfTargetMissing() {
+	void rejectsIfTargetMissing() throws InvalidProtocolBufferException {
 		givenDeleteTxnMissingTarget();
 
 		// when:
-		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
 	}
 
 	@Test
-	void rejectsIfTransferMissing() {
+	void rejectsIfTransferMissing() throws InvalidProtocolBufferException {
 		givenDeleteTxnMissingTransfer();
 
 		// when:
-		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
 	}
 
 	@Test
-	void worksWithAlias() {
+	void worksWithAlias() throws InvalidProtocolBufferException {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
-		given(accessor.getTarget()).willReturn(target);
-		given(accessor.getTransferAccount()).willReturn(payer);
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		ResponseCodeEnum validity = subject.semanticCheck().apply(cryptoDeleteTxn);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 		assertEquals(OK, validity);
 
 		subject.doStateTransition();
@@ -275,34 +283,30 @@ class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	void failsTransitionIfInvalidAccountID() {
+	void failsTransitionIfInvalidAccountID() throws InvalidProtocolBufferException {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
-		given(accessor.getTarget()).willReturn(aliasAccountTarget);
-		given(accessor.getTransferAccount()).willReturn(payer);
-		given(ledger.allTokenBalancesVanish(aliasAccountTarget)).willReturn(true);
-		willThrow(new MissingAccountException(aliasAccountTarget)).given(ledger).delete(aliasAccountTarget, payer);
+		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
+		willThrow(new MissingAccountException(target)).given(ledger).delete(target, payer);
 
 		subject.doStateTransition();
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test
-	void failsTransitionIfInvalidTransferAccountID() {
+	void failsTransitionIfInvalidTransferAccountID() throws InvalidProtocolBufferException {
 		AccountID aliasedTransfer = asAccountWithAlias("ccc");
 		givenDeleteTxnWithAlias(aliasedTransfer);
-		given(accessor.getTarget()).willReturn(target);
-		given(accessor.getTransferAccount()).willReturn(MISSING_NUM.toGrpcAccountId());
-
+		given(aliasManager.unaliased(aliasedTransfer)).willReturn(EntityNum.MISSING_NUM);
 		subject.doStateTransition();
 		verify(txnCtx).setStatus(INVALID_TRANSFER_ACCOUNT_ID);
 	}
 
-	private void givenValidTxnCtx() {
+	private void givenValidTxnCtx() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(payer);
 	}
 
-	private void givenValidTxnCtx(AccountID transfer) {
+	private void givenValidTxnCtx(AccountID transfer) throws InvalidProtocolBufferException {
 		cryptoDeleteTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoDelete(
@@ -311,12 +315,11 @@ class CryptoDeleteTransitionLogicTest {
 								.setTransferAccountID(transfer)
 								.build()
 				).build();
-		given(accessor.getTarget()).willReturn(target);
-		given(accessor.getTransferAccount()).willReturn(transfer);
+		setAccessor();
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private void givenDeleteTxnMissingTarget() {
+	private void givenDeleteTxnMissingTarget() throws InvalidProtocolBufferException {
 		cryptoDeleteTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoDelete(
@@ -324,19 +327,21 @@ class CryptoDeleteTransitionLogicTest {
 								.setTransferAccountID(asAccount("0.0.1234"))
 								.build()
 				).build();
+		setAccessor();
 	}
 
-	private void givenDeleteTxnMissingTransfer() {
+	private void givenDeleteTxnMissingTransfer() throws InvalidProtocolBufferException {
 		cryptoDeleteTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoDelete(
 						CryptoDeleteTransactionBody.newBuilder()
-								.setDeleteAccountID(asAccount("0.0.1234"))
+								.setDeleteAccountID(target)
 								.build()
 				).build();
+		setAccessor();
 	}
 
-	private void givenDeleteTxnWithAlias(AccountID aliasedTransfer) {
+	private void givenDeleteTxnWithAlias(AccountID aliasedTransfer) throws InvalidProtocolBufferException {
 		cryptoDeleteTxn = TransactionBody.newBuilder()
 				.setTransactionID(txnIdWithAlias())
 				.setCryptoDelete(
@@ -345,8 +350,17 @@ class CryptoDeleteTransitionLogicTest {
 								.setTransferAccountID(aliasedTransfer)
 								.build()
 				).build();
-		given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
+
+		given(aliasManager.unaliased(aliasAccountTarget)).willReturn(targetNum);
+		given(aliasManager.unaliased(aliasedTransfer)).willReturn(payerNum);
+		setAccessor();
 		given(txnCtx.accessor()).willReturn(accessor);
+	}
+
+	private void setAccessor() throws InvalidProtocolBufferException {
+		final var txn = new SwirldTransaction(
+				Transaction.newBuilder().setBodyBytes(cryptoDeleteTxn.toByteString()).build().toByteArray());
+		accessor = new CryptoDeleteAccessor(txn, aliasManager);
 	}
 
 	private TransactionID ourTxnId() {

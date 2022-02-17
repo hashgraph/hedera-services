@@ -23,7 +23,9 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -62,6 +64,14 @@ class AccessorFactoryTest {
 					.setMemo("Not all those who wander are lost")
 					.build())
 			.build();
+	private final TransactionBody cryptoDeleteTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
+			.setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
+			.build();
+	private final TransactionBody cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
+			.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.getDefaultInstance())
+			.build();
 
 	@BeforeEach
 	void setUp() {
@@ -84,5 +94,15 @@ class AccessorFactoryTest {
 				.setBodyBytes(cryptoCreateTxn.toByteString())
 				.build();
 		assertTrue(subject.constructFrom(accountCreateTxn) instanceof CryptoCreateAccessor);
+
+		final var accountDeleteTxn = Transaction.newBuilder()
+				.setBodyBytes(cryptoDeleteTxn.toByteString())
+				.build();
+		assertTrue(subject.constructFrom(accountDeleteTxn) instanceof  CryptoDeleteAccessor);
+
+		final var approveAllowanceTxn = Transaction.newBuilder()
+				.setBodyBytes(cryptoApproveAllowanceTxn.toByteString())
+				.build();
+		assertTrue(subject.constructFrom(approveAllowanceTxn) instanceof  CryptoApproveAllowanceAccessor);
 	}
 }

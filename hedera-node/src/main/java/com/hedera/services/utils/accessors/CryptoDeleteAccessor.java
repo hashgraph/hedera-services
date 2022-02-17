@@ -35,6 +35,14 @@ public class CryptoDeleteAccessor extends PlatformTxnAccessor {
 		this.transactionBody = getTxn().getCryptoDelete();
 	}
 
+	public boolean hasTarget() {
+		return transactionBody.hasDeleteAccountID();
+	}
+
+	public boolean hasTransferAccount() {
+		return transactionBody.hasTransferAccountID();
+	}
+
 	public AccountID getTarget() {
 		return unaliased(transactionBody.getDeleteAccountID()).toGrpcAccountId();
 	}

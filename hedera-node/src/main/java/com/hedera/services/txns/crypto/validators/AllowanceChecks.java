@@ -31,7 +31,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.utils.MiscUtils.validateAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
@@ -108,6 +110,11 @@ public interface AllowanceChecks {
 			return validity;
 		}
 
+		validity = validateSpenders(cryptoAllowances, tokenAllowances, nftAllowances);
+		if (validity != OK) {
+			return validity;
+		}
+
 		validity = validateCryptoAllowances(cryptoAllowances, ownerAccount);
 		if (validity != OK) {
 			return validity;
@@ -169,6 +176,28 @@ public interface AllowanceChecks {
 		}
 		if (emptyAllowances(totalAllowances)) {
 			return EMPTY_ALLOWANCES;
+		}
+		return OK;
+	}
+
+	default ResponseCodeEnum validateSpenders(
+			final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances) {
+		for (var allowance : cryptoAllowances) {
+			if (validateAccountId(allowance.getSpender(), INVALID_ACCOUNT_ID) != OK) {
+				return INVALID_ACCOUNT_ID;
+			}
+		}
+		for (var allowance : tokenAllowances) {
+			if (validateAccountId(allowance.getSpender(), INVALID_ACCOUNT_ID) != OK) {
+				return INVALID_ACCOUNT_ID;
+			}
+		}
+		for (var allowance : nftAllowances) {
+			if (validateAccountId(allowance.getSpender(), INVALID_ACCOUNT_ID) != OK) {
+				return INVALID_ACCOUNT_ID;
+			}
 		}
 		return OK;
 	}

@@ -25,6 +25,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.SwirldTransaction;
 
@@ -39,12 +40,17 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 		setCryptoCreateUsageMeta();
 	}
 
+	@Override
+	public String getMemo() {
+		return transactionBody.getMemo();
+	}
+
 	public long getInitialBalance() {
 		return transactionBody.getInitialBalance();
 	}
 
-	public long getAutoRenewPeriod() {
-		return transactionBody.getAutoRenewPeriod().getSeconds();
+	public Duration getAutoRenewPeriod() {
+		return transactionBody.getAutoRenewPeriod();
 	}
 
 	public boolean getReceiverSigRequired() {
@@ -53,6 +59,14 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 
 	public boolean hasProxy() {
 		return transactionBody.hasProxyAccountID();
+	}
+
+	public boolean hasKey() {
+		return transactionBody.hasKey();
+	}
+
+	public boolean hasAutoRenewPeriod() {
+		return transactionBody.hasAutoRenewPeriod();
 	}
 
 	public int getMaxAutomaticTokenAssociations() {
@@ -72,6 +86,14 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 			proxyId = unaliased(transactionBody.getProxyAccountID()).toGrpcAccountId();
 		}
 		return proxyId;
+	}
+
+	public long getSendRecordThreshold() {
+		return transactionBody.getSendRecordThreshold();
+	}
+
+	public long getReceiveRecordThreshold() {
+		return transactionBody.getReceiveRecordThreshold();
 	}
 
 	private void setCryptoCreateUsageMeta() {

@@ -301,7 +301,7 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoUpdateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -309,7 +309,7 @@ class CryptoUpdateTransitionLogicTest {
 		givenTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoUpdateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -496,8 +496,10 @@ class CryptoUpdateTransitionLogicTest {
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
 				.build();
+		given(accessor.hasKey()).willReturn(true);
+		given(accessor.getKey()).willReturn(key);
 
-		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoUpdateTxn));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
 	}
 
 	private void givenTxnCtx() {
@@ -558,7 +560,7 @@ class CryptoUpdateTransitionLogicTest {
 		if (updating.contains(AccountCustomizer.Option.AUTO_RENEW_PERIOD)) {
 			op.setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD));
 			given(accessor.hasAutoRenewPeriod()).willReturn(true);
-			given(accessor.getAutoRenewPeriod()).willReturn(AUTO_RENEW_PERIOD);
+			given(accessor.getAutoRenewPeriod()).willReturn(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD).build());
 		}
 		if (updating.contains(MAX_AUTOMATIC_ASSOCIATIONS)) {
 			op.setMaxAutomaticTokenAssociations(Int32Value.of(NEW_MAX_AUTOMATIC_ASSOCIATIONS));

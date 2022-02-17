@@ -33,8 +33,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.CryptoUpdateAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
@@ -44,7 +44,6 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.EnumSet;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
@@ -192,7 +191,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.isReceiverSigRequired(true);
 		}
 		if (accessor.hasAutoRenewPeriod()) {
-			customizer.autoRenewPeriod(accessor.getAutoRenewPeriod());
+			customizer.autoRenewPeriod(accessor.getAutoRenewPeriod().getSeconds());
 		}
 		if (accessor.hasMemo()) {
 			customizer.memo(accessor.getMemo());
@@ -209,21 +208,17 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var updateAccessor = (CryptoUpdateAccessor) accessor;
 
-	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
-		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
-
-		var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+		var memoValidity = !updateAccessor.hasMemo() ? OK : validator.memoCheck(updateAccessor.getMemo());
 		if (memoValidity != OK) {
 			return memoValidity;
 		}
 
-		if (op.hasKey()) {
+		if (updateAccessor.hasKey()) {
 			try {
-				JKey fcKey = JKey.mapKey(op.getKey());
+				JKey fcKey = JKey.mapKey(updateAccessor.getKey());
 				/* Note that an empty key is never valid. */
 				if (!fcKey.isValid()) {
 					return BAD_ENCODING;
@@ -233,7 +228,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+		if (updateAccessor.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(updateAccessor.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
 		}
 

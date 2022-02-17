@@ -20,16 +20,19 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoCreateAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,8 +41,10 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -90,6 +95,8 @@ class CryptoCreateTransitionLogicTest {
 	private static final Instant CONSENSUS_TIME = Instant.now();
 	public static final AccountID ALIASED_PROXY_ID = asAccountWithAlias("aaaaaaaaa");
 	public static final AccountID ALIASED_PAYER = asAccountWithAlias("aaa");
+	private static final EntityNum PAYER_NUM = EntityNum.fromAccountId(PAYER);
+	private static final EntityNum PROXY_NUM = EntityNum.fromAccountId(PROXY);
 
 	private HederaLedger ledger;
 	private OptionValidator validator;
@@ -99,24 +106,27 @@ class CryptoCreateTransitionLogicTest {
 	private CryptoCreateAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
+	private AliasManager aliasManager;
 
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(CryptoCreateAccessor.class);
+		aliasManager = mock(AliasManager.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
+		given(aliasManager.unaliased(PAYER)).willReturn(PAYER_NUM);
+		given(aliasManager.unaliased(PROXY)).willReturn(PROXY_NUM);
 
 		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
 	}
 
 	@Test
-	void hasCorrectApplicability() {
+	void hasCorrectApplicability() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
 		assertTrue(subject.applicability().test(cryptoCreateTxn));
@@ -124,84 +134,84 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void returnsMemoTooLongWhenValidatorSays() {
+	void returnsMemoTooLongWhenValidatorSays() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void returnsKeyRequiredOnEmptyKey() {
+	void returnsKeyRequiredOnEmptyKey() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build(), PROXY, ourTxnId());
 
-		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void requiresKey() {
+	void requiresKey() throws InvalidProtocolBufferException {
 		givenMissingKey();
 
-		assertEquals(KEY_REQUIRED, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsMissingAutoRenewPeriod() {
+	void rejectsMissingAutoRenewPeriod() throws InvalidProtocolBufferException {
 		givenMissingAutoRenewPeriod();
 
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsNegativeBalance() {
+	void rejectsNegativeBalance() throws InvalidProtocolBufferException {
 		givenAbsurdInitialBalance();
 
-		assertEquals(INVALID_INITIAL_BALANCE, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsNegativeSendThreshold() {
+	void rejectsNegativeSendThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdSendThreshold();
 
-		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsNegativeReceiveThreshold() {
+	void rejectsNegativeReceiveThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdReceiveThreshold();
 
-		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsKeyWithBadEncoding() {
+	void rejectsKeyWithBadEncoding() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(validator.hasGoodEncoding(any())).willReturn(false);
 
-		assertEquals(BAD_ENCODING, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsInvalidAutoRenewPeriod() {
+	void rejectsInvalidAutoRenewPeriod() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void acceptsValidTxn() {
+	void acceptsValidTxn() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
-		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test
-	void rejectsInvalidMaxAutomaticAssociations() {
+	void rejectsInvalidMaxAutomaticAssociations() throws InvalidProtocolBufferException {
 		givenInvalidMaxAutoAssociations();
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
-				subject.semanticCheck().apply(cryptoCreateTxn));
+				subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -230,7 +240,7 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void translatesInsufficientPayerBalance() {
+	void translatesInsufficientPayerBalance() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
 
@@ -240,12 +250,12 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void translatesUnknownException() {
+	void translatesUnknownException() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		cryptoCreateTxn = cryptoCreateTxn.toBuilder()
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
-		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+		setAccessor();
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
@@ -254,9 +264,11 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void worksWithValidAliasedProxy() {
+	void worksWithValidAliasedProxy() throws InvalidProtocolBufferException {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+		given(aliasManager.unaliased(ALIASED_PAYER)).willReturn(PAYER_NUM);
+		given(aliasManager.unaliased(ALIASED_PROXY_ID)).willReturn(PROXY_NUM);
 
 		subject.doStateTransition();
 
@@ -264,10 +276,11 @@ class CryptoCreateTransitionLogicTest {
 	}
 
 	@Test
-	void failsWithInvalidAliasedProxy() {
+	void failsWithInvalidAliasedProxy() throws InvalidProtocolBufferException {
 		givenValidTxnCtxWithAliasedProxy();
 		given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-		given(accessor.getProxy()).willReturn(MISSING_NUM.toGrpcAccountId());
+		given(aliasManager.unaliased(ALIASED_PAYER)).willReturn(PAYER_NUM);
+		given(aliasManager.unaliased(ALIASED_PROXY_ID)).willReturn(MISSING_NUM);
 
 		subject.doStateTransition();
 		verify(txnCtx).setStatus(INVALID_PROXY_ACCOUNT_ID);
@@ -277,16 +290,18 @@ class CryptoCreateTransitionLogicTest {
 		return Key.getDefaultInstance();
 	}
 
-	private void givenMissingKey() {
+	private void givenMissingKey() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
 						CryptoCreateTransactionBody.newBuilder()
 								.setInitialBalance(BALANCE)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenMissingAutoRenewPeriod() {
+	private void givenMissingAutoRenewPeriod() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -294,9 +309,11 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setInitialBalance(BALANCE)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenAbsurdSendThreshold() {
+	private void givenAbsurdSendThreshold() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -305,9 +322,11 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setSendRecordThreshold(-1L)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenAbsurdReceiveThreshold() {
+	private void givenAbsurdReceiveThreshold() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -316,9 +335,11 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setReceiveRecordThreshold(-1L)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenAbsurdInitialBalance() {
+	private void givenAbsurdInitialBalance() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -327,9 +348,11 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setInitialBalance(-1L)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenInvalidMaxAutoAssociations() {
+	private void givenInvalidMaxAutoAssociations() throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setCryptoCreateAccount(
@@ -342,17 +365,25 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(KEY)
 								.setMaxAutomaticTokenAssociations(MAX_TOKEN_ASSOCIATIONS + 1)
 				).build();
+
+		setAccessor();
 	}
 
-	private void givenValidTxnCtx() {
+	private void setAccessor() throws InvalidProtocolBufferException {
+		final var txn = new SwirldTransaction(
+				Transaction.newBuilder().setBodyBytes(cryptoCreateTxn.toByteString()).build().toByteArray());
+		accessor = new CryptoCreateAccessor(txn, aliasManager);
+	}
+
+	private void givenValidTxnCtx() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(KEY, PROXY, ourTxnId());
 	}
 
-	private void givenValidTxnCtxWithAliasedProxy() {
+	private void givenValidTxnCtxWithAliasedProxy() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(KEY, ALIASED_PROXY_ID, txnIdWithAlias());
 	}
 
-	private void givenValidTxnCtx(final Key toUse, final AccountID proxy, final TransactionID txnId) {
+	private void givenValidTxnCtx(final Key toUse, final AccountID proxy, final TransactionID txnId) throws InvalidProtocolBufferException {
 		cryptoCreateTxn = TransactionBody.newBuilder()
 				.setTransactionID(txnId)
 				.setCryptoCreateAccount(
@@ -365,16 +396,8 @@ class CryptoCreateTransitionLogicTest {
 								.setKey(toUse)
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
+		setAccessor();
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getSponsor()).willReturn(PAYER);
-		given(accessor.getProxy()).willReturn(PROXY);
-		given(accessor.getInitialBalance()).willReturn(BALANCE);
-		given(accessor.hasProxy()).willReturn(true);
-		given(accessor.getReceiverSigRequired()).willReturn(true);
-		given(accessor.getAutoRenewPeriod()).willReturn(CUSTOM_AUTO_RENEW_PERIOD);
-		given(accessor.getMaxAutomaticTokenAssociations()).willReturn(MAX_AUTO_ASSOCIATIONS);
-		given(accessor.getKey()).willReturn(toUse);
-		given(accessor.getMemo()).willReturn(MEMO);
 	}
 
 	private TransactionID ourTxnId() {

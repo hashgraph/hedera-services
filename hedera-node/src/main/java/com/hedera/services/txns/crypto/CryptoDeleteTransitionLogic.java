@@ -27,8 +27,8 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.accessors.CryptoDeleteAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +36,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.utils.MiscUtils.validateAccountId;
@@ -125,18 +124,14 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var deleteAccessor = (CryptoDeleteAccessor) accessor;
 
-	private ResponseCodeEnum validate(TransactionBody cryptoDeleteTxn) {
-		CryptoDeleteTransactionBody op = cryptoDeleteTxn.getCryptoDelete();
-
-		if (!op.hasDeleteAccountID() || !op.hasTransferAccountID()) {
+		if (!deleteAccessor.hasTarget() || !deleteAccessor.hasTransferAccount()) {
 			return ACCOUNT_ID_DOES_NOT_EXIST;
 		}
 
-		if (op.getDeleteAccountID().equals(op.getTransferAccountID())) {
+		if (deleteAccessor.getTarget().equals(deleteAccessor.getTransferAccount())) {
 			return TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 		}
 

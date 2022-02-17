@@ -31,8 +31,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.CryptoCreateAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
@@ -40,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -126,7 +125,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private HederaAccountCustomizer asCustomizer(CryptoCreateAccessor accessor) {
-		long autoRenewPeriod = accessor.getAutoRenewPeriod();
+		long autoRenewPeriod = accessor.getAutoRenewPeriod().getSeconds();
 		long expiry = txnCtx.consensusTime().getEpochSecond() + autoRenewPeriod;
 
 		/* Note that {@code this.validate(TransactionBody)} will have rejected any txn with an invalid key. */
@@ -150,46 +149,41 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
-
-	public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
-		CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
-
-		var memoValidity = validator.memoCheck(op.getMemo());
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var createAccessor = (CryptoCreateAccessor) accessor;
+		var memoValidity = validator.memoCheck(createAccessor.getMemo());
 		if (memoValidity != OK) {
 			return memoValidity;
 		}
-		if (!op.hasKey()) {
+		if (!createAccessor.hasKey()) {
 			return KEY_REQUIRED;
 		}
-		if (!validator.hasGoodEncoding(op.getKey())) {
+		if (!validator.hasGoodEncoding(createAccessor.getKey())) {
 			return BAD_ENCODING;
 		}
-		var fcKey = asFcKeyUnchecked(op.getKey());
+		var fcKey = asFcKeyUnchecked(createAccessor.getKey());
 		if (fcKey.isEmpty()) {
 			return KEY_REQUIRED;
 		}
 		if (!fcKey.isValid()) {
 			return BAD_ENCODING;
 		}
-		if (op.getInitialBalance() < 0L) {
+		if (createAccessor.getInitialBalance() < 0L) {
 			return INVALID_INITIAL_BALANCE;
 		}
-		if (!op.hasAutoRenewPeriod()) {
+		if (!createAccessor.hasAutoRenewPeriod()) {
 			return INVALID_RENEWAL_PERIOD;
 		}
-		if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+		if (!validator.isValidAutoRenewPeriod(createAccessor.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
 		}
-		if (op.getSendRecordThreshold() < 0L) {
+		if (createAccessor.getSendRecordThreshold() < 0L) {
 			return INVALID_SEND_RECORD_THRESHOLD;
 		}
-		if (op.getReceiveRecordThreshold() < 0L) {
+		if (createAccessor.getReceiveRecordThreshold() < 0L) {
 			return INVALID_RECEIVE_RECORD_THRESHOLD;
 		}
-		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
+		if (createAccessor.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
 			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 		}
 

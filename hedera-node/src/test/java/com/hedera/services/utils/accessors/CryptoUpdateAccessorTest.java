@@ -112,7 +112,9 @@ class CryptoUpdateAccessorTest {
 		assertTrue(subject.hasKey());
 		assertEquals(aKey, subject.getKey());
 		assertEquals(proxy, subject.getProxy());
-		assertEquals(autoRenewDuration, subject.getAutoRenewPeriod());
+		assertEquals(autoRenewDuration, subject.getAutoRenewPeriod().getSeconds());
+		assertTrue(subject.hasMaxAutomaticTokenAssociations());
+		assertTrue(subject.hasMemo());
 		assertTrue(subject.hasProxy());
 		assertFalse(subject.getReceiverSigRequired());
 		assertEquals(proxy, subject.getProxy());

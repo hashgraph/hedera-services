@@ -31,6 +31,8 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.CryptoApproveAllowanceAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -42,7 +44,6 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -73,18 +74,17 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
-		final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
-		final AccountID owner = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
-		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+		final var accessor = (CryptoApproveAllowanceAccessor) txnCtx.accessor();
+		final AccountID owner = accessor.getOwner();
 
 		/* --- Use models --- */
 		final Id ownerId = Id.fromGrpcAccount(owner);
 		final var ownerAccount = accountStore.loadAccount(ownerId);
 
 		/* --- Do the business logic --- */
-		applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);
-		applyFungibleTokenAllowances(op.getTokenAllowancesList(), ownerAccount);
-		applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
+		applyCryptoAllowances(accessor.getCryptoAllowances(), ownerAccount);
+		applyFungibleTokenAllowances(accessor.getTokenAllowances(), ownerAccount);
+		applyNftAllowances(accessor.getNftAllowances(), ownerAccount);
 
 		/* --- validate --- */
 		validateFalse(exceedsAccountLimit(ownerAccount), MAX_ALLOWANCES_EXCEEDED);
@@ -102,17 +102,13 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
-
-	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
-		final AccountID owner = cryptoAllowanceTxn.getTransactionID().getAccountID();
-		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var approveAccessor = (CryptoApproveAllowanceAccessor) accessor;
+		final AccountID owner = approveAccessor.getOwner();
 		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
 
-		return allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount,
+		return allowanceChecks.allowancesValidation(approveAccessor.getCryptoAllowances(),
+				approveAccessor.getTokenAllowances(), approveAccessor.getNftAllowances(), ownerAccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction());
 	}
 

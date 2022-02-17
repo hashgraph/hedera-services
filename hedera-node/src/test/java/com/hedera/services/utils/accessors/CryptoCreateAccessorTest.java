@@ -106,7 +106,7 @@ class CryptoCreateAccessorTest {
 		assertEquals(maxAutoAssociations, subject.getMaxAutomaticTokenAssociations());
 		assertEquals(aKey, subject.getKey());
 		assertEquals(proxy, subject.getProxy());
-		assertEquals(autoRenewDuration, subject.getAutoRenewPeriod());
+		assertEquals(autoRenewDuration, subject.getAutoRenewPeriod().getSeconds());
 		assertTrue(subject.hasProxy());
 		assertFalse(subject.getReceiverSigRequired());
 		assertEquals(proxy, subject.getProxy());

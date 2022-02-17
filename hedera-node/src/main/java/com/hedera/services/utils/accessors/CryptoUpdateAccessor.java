@@ -25,6 +25,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.SwirldTransaction;
@@ -88,8 +89,8 @@ public class CryptoUpdateAccessor extends PlatformTxnAccessor{
 		return transactionBody.getMemo().getValue();
 	}
 
-	public long getAutoRenewPeriod() {
-		return transactionBody.getAutoRenewPeriod().getSeconds();
+	public Duration getAutoRenewPeriod() {
+		return transactionBody.getAutoRenewPeriod();
 	}
 
 	public Timestamp getExpirationTime() {
