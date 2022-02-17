@@ -25,8 +25,10 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.AccountsCommitInterceptor;
-import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -84,65 +86,92 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
-	static CommitInterceptor<AccountID, MerkleAccount, AccountProperty> bindAccountsCommitInterceptor(
-			AccountsCommitInterceptor accountsCommitInterceptor
+	static AccountsCommitInterceptor bindAccountsCommitInterceptor(
+			SideEffectsTracker sideEffectsTracker
 	) {
-		return new AccountsCommitInterceptor(
-				new SideEffectsTracker());
+		return new AccountsCommitInterceptor(sideEffectsTracker);
+	}
+
+	@Provides
+	@Singleton
+	static UniqueTokensCommitInterceptor bindUniqueTokenCommitInterceptor(
+			SideEffectsTracker sideEffectsTracker
+	) {
+		return new UniqueTokensCommitInterceptor(sideEffectsTracker);
+	}
+
+	@Provides
+	@Singleton
+	static TokensCommitInterceptor bindTokenCommitInterceptor(
+			SideEffectsTracker sideEffectsTracker
+	) {
+		return new TokensCommitInterceptor(sideEffectsTracker);
+	}
+
+	@Provides
+	@Singleton
+	static TokenRelsCommitInterceptor bindTokenRelsCommitInterceptor(
+			SideEffectsTracker sideEffectsTracker
+	) {
+		return new TokenRelsCommitInterceptor(sideEffectsTracker);
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			BackingStore<NftId, MerkleUniqueToken> backingNfts
+			BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor
 	) {
 		return new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				uniqueTokensCommitInterceptor);
 	}
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-			BackingStore<TokenID, MerkleToken> backingTokens
+	static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
+			BackingStore<TokenID, MerkleToken> backingTokens,
+			TokensCommitInterceptor tokensCommitInterceptor
 	) {
 		return new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				tokensCommitInterceptor);
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
+			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
+			TokenRelsCommitInterceptor tokenRelsCommitInterceptor
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				backingTokenRels,
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				tokenRelsCommitInterceptor);
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		return tokenRelsLedger;
 	}
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final AccountsCommitInterceptor accountsCommitInterceptor
 	) {
 		return new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				accountsCommitInterceptor);
 	}
 
 	@Provides
@@ -159,7 +188,7 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
-	public static CodeCache provideCodeCache(
+	static CodeCache provideCodeCache(
 			final NodeLocalProperties properties,
 			final MutableEntityAccess entityAccess
 	) {

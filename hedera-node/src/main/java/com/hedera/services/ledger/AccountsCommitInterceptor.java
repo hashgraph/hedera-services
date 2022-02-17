@@ -22,14 +22,14 @@ public class AccountsCommitInterceptor  implements
 	}
 
 	@Override
-	public void preview(final List<AccountChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
+	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
 		final List<Long> balances = new ArrayList<>();
-		for (final AccountChanges<AccountID, MerkleAccount, AccountProperty> accountChanges : changesToCommit) {
-			if (accountChanges.changes().containsKey(AccountProperty.BALANCE)) {
+		for (final MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty> merkleLeafChanges : changesToCommit) {
+			if (merkleLeafChanges.changes().containsKey(AccountProperty.BALANCE)) {
 				final long newBalance =
-						(long) accountChanges.changes().get(AccountProperty.BALANCE) - accountChanges.account().getBalance();
+						(long) merkleLeafChanges.changes().get(AccountProperty.BALANCE) - merkleLeafChanges.merkleLeaf().getBalance();
 				balances.add(newBalance);
-				sideEffectsTracker.trackHbarChange(accountChanges.id(), newBalance);
+				sideEffectsTracker.trackHbarChange(merkleLeafChanges.id(), newBalance);
 			}
 		}
 

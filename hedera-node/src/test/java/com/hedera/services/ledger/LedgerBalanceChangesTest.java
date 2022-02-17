@@ -153,9 +153,11 @@ class LedgerBalanceChangesTest {
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
 		tokenRelsLedger = new TransactionalLedger<>(
-				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
+				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>(),
+				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
 		nftsLedger = new TransactionalLedger<>(
-				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
+				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>(),
+				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 

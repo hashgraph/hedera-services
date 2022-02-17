@@ -23,7 +23,10 @@ package com.hedera.services.store.contracts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.AccountsCommitInterceptor;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
@@ -408,7 +411,7 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
@@ -420,13 +423,13 @@ class AbstractLedgerWorldUpdaterTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new TokensCommitInterceptor(new SideEffectsTracker()));
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();

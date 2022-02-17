@@ -91,13 +91,13 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(liveSideEffects));
+				new UniqueTokensCommitInterceptor(liveSideEffects));
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(liveSideEffects));
+				new TokenRelsCommitInterceptor(liveSideEffects));
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,

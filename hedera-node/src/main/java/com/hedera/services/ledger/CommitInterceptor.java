@@ -19,5 +19,5 @@ public interface CommitInterceptor<K, A, P extends Enum<P> & BeanProperty<A>> {
 	 *
 	 * @throws IllegalStateException if these changes are invalid
 	 */
-	void preview(List<AccountChanges<K, A, P>> changesToCommit);
+	void preview(List<MerkleLeafChanges<K, A, P>> changesToCommit);
 }

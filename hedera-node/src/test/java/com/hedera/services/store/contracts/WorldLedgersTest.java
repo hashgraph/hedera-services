@@ -24,7 +24,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -178,7 +181,7 @@ class WorldLedgersTest {
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
 		final var liveAccounts = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
@@ -190,13 +193,13 @@ class WorldLedgersTest {
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
 		final var liveTokens = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new TokensCommitInterceptor(new SideEffectsTracker()));
 		final var liveAliases = new AliasManager();
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);

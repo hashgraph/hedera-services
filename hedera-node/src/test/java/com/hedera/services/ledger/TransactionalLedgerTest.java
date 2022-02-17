@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TestAccountCommitInterceptor;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,7 +95,8 @@ class TransactionalLedgerTest {
 		scopedCheck = new TestAccountScopedCheck();
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager, new AccountsCommitInterceptor(new SideEffectsTracker()));
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager,
+				new TestAccountCommitInterceptor(new SideEffectsTracker()));
 	}
 
 	@Test

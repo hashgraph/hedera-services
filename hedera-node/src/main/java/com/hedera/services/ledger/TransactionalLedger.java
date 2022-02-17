@@ -22,10 +22,8 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -86,14 +84,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private boolean isInTransaction = false;
 	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
-	private final AccountsCommitInterceptor accountsCommitInterceptor;
+	private final CommitInterceptor<K, A, P> commitInterceptor;
 
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
 			BackingStore<K, A> entities,
 			ChangeSummaryManager<A, P> changeManager,
-			AccountsCommitInterceptor accountsCommitInterceptor
+			CommitInterceptor<K, A, P> commitInterceptor
 	) {
 		this.entities = entities;
 		this.allProps = propertyType.getEnumConstants();
@@ -101,7 +99,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.propertyType = propertyType;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
-		this.accountsCommitInterceptor = accountsCommitInterceptor;
+		this.commitInterceptor = commitInterceptor;
 
 		if (entities instanceof TransactionalLedger) {
 			this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
@@ -133,7 +131,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				sourceLedger.getNewEntity(),
 				sourceLedger,
 				sourceLedger.getChangeManager(),
-				sourceLedger.getAccountsCommitInterceptor());
+				sourceLedger.getCommitInterceptor());
 		wrapper.begin();
 		return wrapper;
 	}
@@ -196,7 +194,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
-			accountsCommitInterceptor.preview(getCurrentAccountChanges());
+			commitInterceptor.preview(getCurrentAccountChanges());
 
 			flushListed(changedKeys);
 			flushListed(createdKeys);
@@ -517,31 +515,20 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
-	private List<AccountChanges<AccountID, MerkleAccount, AccountProperty>> getCurrentAccountChanges() {
-		final List<AccountChanges<AccountID, MerkleAccount, AccountProperty>> accountChanges = new ArrayList<>();
+	private List<MerkleLeafChanges<K, A, P>> getCurrentAccountChanges() {
+		final List<MerkleLeafChanges<K, A, P>> merkleLeafChanges = new ArrayList<>();
 		for (final var changesEntry : changes.entrySet()) {
-			if(changesEntry.getKey() instanceof AccountID accountID) {
+			if(changesEntry.getKey() instanceof AccountID) {
 				final var accountId = changesEntry.getKey();
-				final var accountProperties = convertAccountPropertiesEnumMap(changesEntry.getValue());
-				final var entity = (MerkleAccount) (entities.contains(accountId) ? entities.getRef(accountId) :
-						newEntity.get());
-				final var changesForSingleAccount = new AccountChanges<>(accountID, entity, accountProperties);
-				accountChanges.add(changesForSingleAccount);
+				final var accountProperties = changesEntry.getValue();
+				final var entity = entities.contains(accountId) ? entities.getRef(accountId) :
+						newEntity.get();
+				final var changesForSingleAccount = new MerkleLeafChanges<>(accountId, entity, accountProperties);
+				merkleLeafChanges.add(changesForSingleAccount);
 			}
 		}
 
-		return accountChanges;
-	}
-
-	private Map<AccountProperty, Object> convertAccountPropertiesEnumMap(final EnumMap<P, Object> accountProperties) {
-		final Map<AccountProperty, Object> convertedAccountProperties = new HashMap<>();
-		for(final var accountProperty: accountProperties.entrySet()) {
-			if(accountProperty.getKey() instanceof AccountProperty) {
-				convertedAccountProperties.put((AccountProperty) accountProperty.getKey(), accountProperty.getValue());
-			}
-		}
-
-		return convertedAccountProperties;
+		return merkleLeafChanges;
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {
@@ -556,8 +543,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return propertyType;
 	}
 
-	AccountsCommitInterceptor getAccountsCommitInterceptor() {
-		return accountsCommitInterceptor;
+	CommitInterceptor<K, A, P> getCommitInterceptor() {
+		return commitInterceptor;
 	}
 
 	/* --- Only used by unit tests --- */
