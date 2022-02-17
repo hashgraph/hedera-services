@@ -130,7 +130,7 @@ class FileCreateTransitionLogicTest {
 	@Test
 	void happyPathFlows() {
 		// setup:
-		InOrder inOrder = inOrder(hfs, txnCtx, sigImpactHistorian);
+		InOrder inOrder = inOrder(hfs, accessor, txnCtx, sigImpactHistorian);
 
 		givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
 		// and:
@@ -140,7 +140,7 @@ class FileCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		inOrder.verify(txnCtx).activePayer();
+		inOrder.verify(accessor).getPayer();
 		inOrder.verify(hfs).create(
 				argThat(bytes -> Arrays.equals(contents, bytes)),
 				argThat(info ->
@@ -272,6 +272,6 @@ class FileCreateTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(fileCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.activePayer()).willReturn(genesis);
+		given(accessor.getPayer()).willReturn(genesis);
 	}
 }

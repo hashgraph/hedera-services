@@ -28,6 +28,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -74,7 +75,8 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		var op = txnCtx.accessor().getTxn().getFileCreate();
+		final var accessor = (PlatformTxnAccessor) txnCtx.accessor();
+		var op = accessor.getTxn().getFileCreate();
 
 		try {
 			var validity = assessedValidity(op);
@@ -84,7 +86,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 			}
 
 			var attr = asAttr(op);
-			var sponsor = txnCtx.activePayer();
+			var sponsor = accessor.getPayer();
 			var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
 			txnCtx.setCreated(created);

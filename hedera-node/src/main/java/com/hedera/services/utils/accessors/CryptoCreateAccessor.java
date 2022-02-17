@@ -78,7 +78,7 @@ public class CryptoCreateAccessor extends PlatformTxnAccessor{
 	}
 
 	public AccountID getSponsor() {
-		return unaliased(getPayer()).toGrpcAccountId();
+		return super.getPayer();
 	}
 
 	public AccountID getProxy() {

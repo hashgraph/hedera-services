@@ -48,7 +48,7 @@ public class CryptoAllowanceAccessor extends PlatformTxnAccessor{
 	}
 
 	public AccountID getOwner() {
-		return unaliased(getPayer()).toGrpcAccountId();
+		return super.getPayer();
 	}
 
 	public List<CryptoAllowance> getCryptoAllowances() {

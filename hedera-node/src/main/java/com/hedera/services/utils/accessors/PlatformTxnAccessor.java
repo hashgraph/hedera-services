@@ -83,6 +83,11 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 		return sigMeta;
 	}
 
+	@Override
+	public AccountID getPayer() {
+		return unaliased(super.getPayer()).toGrpcAccountId();
+	}
+
 	protected EntityNum unaliased(AccountID grpcId) {
 		return aliasManager.unaliased(grpcId);
 	}
