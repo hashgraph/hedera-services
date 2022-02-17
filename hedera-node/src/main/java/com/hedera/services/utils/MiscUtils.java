@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -106,6 +107,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHi
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -193,6 +195,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFOS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -864,5 +867,22 @@ public final class MiscUtils {
 		} catch (InvalidProtocolBufferException ignore) {
 			return false;
 		}
+	}
+
+	/**
+	 * Validates if the given accountId matches with Missing account 0.0.0
+	 *
+	 * @param target
+	 * 		Account Id to validate.
+	 * @param errCode
+	 * 		Appropriate Error ResponseCodeEnum to return if validation fails.
+	 * @return
+	 * 		errCode if validation fails else return OK.
+	 */
+	public static ResponseCodeEnum validateAccountId(final AccountID target, ResponseCodeEnum errCode) {
+		if (EntityNum.fromAccountId(target).equals(MISSING_NUM)) {
+			return errCode;
+		}
+		return OK;
 	}
 }

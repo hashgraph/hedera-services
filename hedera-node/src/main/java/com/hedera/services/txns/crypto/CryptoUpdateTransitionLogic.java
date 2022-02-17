@@ -32,7 +32,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoUpdateAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -49,8 +48,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.validateAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -134,13 +133,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
-	}
-
-	private ResponseCodeEnum validateAccountId(final AccountID target, ResponseCodeEnum errCode) {
-		if (EntityNum.fromAccountId(target).equals(MISSING_NUM)) {
-			return errCode;
-		}
-		return OK;
 	}
 
 	private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {

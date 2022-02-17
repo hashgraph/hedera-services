@@ -36,16 +36,22 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbsWithAlias.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbsWithAlias.cryptoDeleteAliased;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -72,8 +78,78 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				cannotDeleteAlreadyDeletedAccount(),
 				cannotDeleteAccountWithSameBeneficiary(),
 				cannotDeleteTreasuryAccount(),
-				deletedAccountCannotBePayer()
+				deletedAccountCannotBePayer(),
+				canDeleteAccountSpecifiedWithAlias(),
+				transferAccountCanBeSpecifiedAsAlias()
 		});
+	}
+
+	private HapiApiSpec canDeleteAccountSpecifiedWithAlias() {
+		final var aliasToBeDeleted = "alias";
+		final var invalidAlias ="invalid";
+
+		return defaultHapiSpec("canDeleteAccountSpecifiedWithAlias")
+				.given(
+						newKeyNamed(aliasToBeDeleted),
+						newKeyNamed(invalidAlias),
+						cryptoCreate("transferAccount").balance(0L)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS)).via(
+								"autoCreation"),
+						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(1),
+
+						cryptoDeleteAliased(invalidAlias)
+								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(invalidAlias, "transferAccount", DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transfer("transferAccount")
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, "transferAccount", DEFAULT_PAYER)
+								.via("deleteTxn")
+				).then(
+						getAccountInfo("transferAccount")
+								.has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.05)),
+						getTxnRecord("deleteTxn").logged(),
+						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED));
+	}
+
+	private HapiApiSpec transferAccountCanBeSpecifiedAsAlias() {
+		final var aliasToBeDeleted = "alias";
+		final var transferAccount = "transferAccount";
+		final var invalidTransferAccount = "invalidTransferAccount";
+
+		return defaultHapiSpec("transferAccountCanBeSpecifiedAsAlias")
+				.given(
+						newKeyNamed(aliasToBeDeleted),
+						newKeyNamed(transferAccount),
+						newKeyNamed(invalidTransferAccount)
+				).when(
+						cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, aliasToBeDeleted, ONE_HUNDRED_HBARS),
+								tinyBarsFromToWithAlias(DEFAULT_PAYER, transferAccount, ONE_HUNDRED_HBARS)).via(
+								"autoCreation"),
+						getTxnRecord("autoCreation").andAllChildRecords().hasChildRecordCount(2),
+
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transferAliased(invalidTransferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, invalidTransferAccount, DEFAULT_PAYER)
+								.via("invaliddeleteTxn")
+								.hasKnownStatus(INVALID_TRANSFER_ACCOUNT_ID),
+						cryptoDeleteAliased(aliasToBeDeleted)
+								.transferAliased(transferAccount)
+								.hasKnownStatus(SUCCESS)
+								.signedBy(aliasToBeDeleted, transferAccount, DEFAULT_PAYER)
+								.via("deleteTxn")
+				).then(
+						getAliasedAccountInfo(aliasToBeDeleted).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+						getAliasedAccountInfo(invalidTransferAccount).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+						getAliasedAccountInfo(transferAccount).has(
+								accountWith().expectedBalanceWithChargedUsd(2 * ONE_HUNDRED_HBARS, 0.1, 0.05)),
+						getTxnRecord("deleteTxn").logged());
 	}
 
 	private HapiApiSpec deletedAccountCannotBePayer() {
@@ -102,7 +178,8 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.payingWith(ACCOUNT_TO_BE_DELETED)
 								.hasKnownStatus(PAYER_ACCOUNT_DELETED),
 						getAccountBalance(SUBMITTING_NODE_ACCOUNT)
-								.hasTinyBars(approxChangeFromSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
+								.hasTinyBars(
+										approxChangeFromSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
 								.logged()
 				);
 	}
@@ -174,7 +251,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoDelete("toBeDeleted")
 								.transfer("toBeDeleted")
 								.hasPrecheck(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT)
-						);
+				);
 	}
 
 	private HapiApiSpec cannotDeleteTreasuryAccount() {
@@ -192,6 +269,6 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoDelete("treasury")
 								.transfer("transferAccount")
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
-						);
+				);
 	}
 }
