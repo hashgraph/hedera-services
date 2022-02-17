@@ -22,9 +22,11 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.swirlds.common.SwirldTransaction;
@@ -32,13 +34,17 @@ import com.swirlds.common.SwirldTransaction;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CryptoApproveAllowanceAccessor extends PlatformTxnAccessor{
-	private final CryptoApproveAllowanceTransactionBody transactionBody;
+public class CryptoAllowanceAccessor extends PlatformTxnAccessor{
 
-	public CryptoApproveAllowanceAccessor(final SwirldTransaction platformTxn,
+	public CryptoAllowanceAccessor(
+			final SwirldTransaction platformTxn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
 		super(platformTxn, aliasManager);
-		transactionBody = getTxn().getCryptoApproveAllowance();
+		if (getFunction() == HederaFunctionality.CryptoApproveAllowance) {
+			setCryptoApproveUsageMeta();
+		} else {
+			setCryptoAdjustUsageMeta();
+		}
 	}
 
 	public AccountID getOwner() {
@@ -47,7 +53,7 @@ public class CryptoApproveAllowanceAccessor extends PlatformTxnAccessor{
 
 	public List<CryptoAllowance> getCryptoAllowances() {
 		List<CryptoAllowance> allowances = new ArrayList<>();
-		for (var allowance : transactionBody.getCryptoAllowancesList()) {
+		for (var allowance : getCryptoAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
 							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
@@ -59,7 +65,7 @@ public class CryptoApproveAllowanceAccessor extends PlatformTxnAccessor{
 
 	public List<TokenAllowance> getTokenAllowances() {
 		List<TokenAllowance> allowances = new ArrayList<>();
-		for (var allowance : transactionBody.getTokenAllowancesList()) {
+		for (var allowance : getTokenAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
 							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
@@ -71,7 +77,7 @@ public class CryptoApproveAllowanceAccessor extends PlatformTxnAccessor{
 
 	public List<NftAllowance> getNftAllowances() {
 		List<NftAllowance> allowances = new ArrayList<>();
-		for (var allowance : transactionBody.getNftAllowancesList()) {
+		for (var allowance : getNftAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
 							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
@@ -79,5 +85,41 @@ public class CryptoApproveAllowanceAccessor extends PlatformTxnAccessor{
 			);
 		}
 		return allowances;
+	}
+
+	private List<CryptoAllowance> getCryptoAllowancesList() {
+		if (getFunction() == HederaFunctionality.CryptoApproveAllowance) {
+			return getTxn().getCryptoApproveAllowance().getCryptoAllowancesList();
+		} else {
+			return getTxn().getCryptoAdjustAllowance().getCryptoAllowancesList();
+		}
+	}
+
+	private List<TokenAllowance> getTokenAllowancesList() {
+		if (getFunction() == HederaFunctionality.CryptoApproveAllowance) {
+			return getTxn().getCryptoApproveAllowance().getTokenAllowancesList();
+		} else {
+			return getTxn().getCryptoAdjustAllowance().getTokenAllowancesList();
+		}
+	}
+
+	private List<NftAllowance> getNftAllowancesList() {
+		if (getFunction() == HederaFunctionality.CryptoApproveAllowance) {
+			return getTxn().getCryptoApproveAllowance().getNftAllowancesList();
+		} else {
+			return getTxn().getCryptoAdjustAllowance().getNftAllowancesList();
+		}
+	}
+
+	private void setCryptoApproveUsageMeta() {
+		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(getTxn().getCryptoApproveAllowance(),
+				getTxn().getTransactionID().getTransactionValidStart().getSeconds());
+		SPAN_MAP_ACCESSOR.setCryptoApproveMeta(this, cryptoApproveMeta);
+	}
+
+	private void setCryptoAdjustUsageMeta() {
+		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(getTxn().getCryptoAdjustAllowance(),
+				getTxn().getTransactionID().getTransactionValidStart().getSeconds());
+		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
 	}
 }

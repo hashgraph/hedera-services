@@ -36,7 +36,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.CryptoApproveAllowanceAccessor;
+import com.hedera.services.utils.accessors.CryptoAllowanceAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -91,7 +91,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private AliasManager aliasManager;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
-	private CryptoApproveAllowanceAccessor accessor;
+	private CryptoAllowanceAccessor accessor;
 
 	private CryptoApproveAllowanceTransitionLogic subject;
 
@@ -332,7 +332,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private void setAccessor() throws InvalidProtocolBufferException {
 		final var txn = new SwirldTransaction(
 				Transaction.newBuilder().setBodyBytes(cryptoApproveAllowanceTxn.toByteString()).build().toByteArray());
-		accessor = new CryptoApproveAllowanceAccessor(txn, aliasManager);
+		accessor = new CryptoAllowanceAccessor(txn, aliasManager);
 	}
 
 	private TransactionID ourTxnId() {

@@ -23,6 +23,7 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -37,6 +38,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,6 +76,10 @@ class AccessorFactoryTest {
 			.setTransactionID(txnId)
 			.setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.getDefaultInstance())
 			.build();
+	private final TransactionBody cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+			.setTransactionID(txnId)
+			.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody.getDefaultInstance())
+			.build();
 
 	@BeforeEach
 	void setUp() {
@@ -103,6 +111,15 @@ class AccessorFactoryTest {
 		final var approveAllowanceTxn = Transaction.newBuilder()
 				.setBodyBytes(cryptoApproveAllowanceTxn.toByteString())
 				.build();
-		assertTrue(subject.constructFrom(approveAllowanceTxn) instanceof  CryptoApproveAllowanceAccessor);
+		final var approveAllowanceAccessor = subject.constructFrom(approveAllowanceTxn);
+		assertTrue(approveAllowanceAccessor instanceof CryptoAllowanceAccessor);
+		assertEquals(CryptoApproveAllowance, approveAllowanceAccessor.getFunction());
+
+		final var adjustAllowanceTxn = Transaction.newBuilder()
+				.setBodyBytes(cryptoAdjustAllowanceTxn.toByteString())
+				.build();
+		final var adjustAllowanceAccessor = subject.constructFrom(adjustAllowanceTxn);
+		assertTrue(adjustAllowanceAccessor instanceof  CryptoAllowanceAccessor);
+		assertEquals(CryptoAdjustAllowance, adjustAllowanceAccessor.getFunction());
 	}
 }

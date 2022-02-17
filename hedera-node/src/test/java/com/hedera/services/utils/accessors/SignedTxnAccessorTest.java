@@ -596,9 +596,9 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void setCryptoApproveUsageMetaWorks() {
+	void setCryptoApproveUsageMetaWorks() throws InvalidProtocolBufferException {
 		final var txn = signedCryptoApproveTxn();
-		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var accessor = accessorFactory.constructFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
 		final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
@@ -609,9 +609,9 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void setCryptoAdjustUsageMetaWorks() {
+	void setCryptoAdjustUsageMetaWorks() throws InvalidProtocolBufferException {
 		final var txn = signedCryptoAdjustTxn();
-		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var accessor = accessorFactory.constructFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
 		final var expandedMeta = spanMapAccessor.getCryptoAdjustMeta(accessor);

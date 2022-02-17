@@ -31,7 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.CryptoApproveAllowanceAccessor;
+import com.hedera.services.utils.accessors.CryptoAllowanceAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -74,17 +74,17 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
-		final var accessor = (CryptoApproveAllowanceAccessor) txnCtx.accessor();
-		final AccountID owner = accessor.getOwner();
+		final var approveAccessor = (CryptoAllowanceAccessor) txnCtx.accessor();
+		final AccountID owner = approveAccessor.getOwner();
 
 		/* --- Use models --- */
 		final Id ownerId = Id.fromGrpcAccount(owner);
 		final var ownerAccount = accountStore.loadAccount(ownerId);
 
 		/* --- Do the business logic --- */
-		applyCryptoAllowances(accessor.getCryptoAllowances(), ownerAccount);
-		applyFungibleTokenAllowances(accessor.getTokenAllowances(), ownerAccount);
-		applyNftAllowances(accessor.getNftAllowances(), ownerAccount);
+		applyCryptoAllowances(approveAccessor.getCryptoAllowances(), ownerAccount);
+		applyFungibleTokenAllowances(approveAccessor.getTokenAllowances(), ownerAccount);
+		applyNftAllowances(approveAccessor.getNftAllowances(), ownerAccount);
 
 		/* --- validate --- */
 		validateFalse(exceedsAccountLimit(ownerAccount), MAX_ALLOWANCES_EXCEEDED);
@@ -103,7 +103,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var approveAccessor = (CryptoApproveAllowanceAccessor) accessor;
+		final var approveAccessor = (CryptoAllowanceAccessor) accessor;
 		final AccountID owner = approveAccessor.getOwner();
 		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
 

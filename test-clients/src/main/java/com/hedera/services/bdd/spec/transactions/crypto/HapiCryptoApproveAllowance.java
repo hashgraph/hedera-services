@@ -53,6 +53,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -158,8 +159,8 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 			final List<NftAllowance> nftallowances) {
 		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
-					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
+					.setSpender(getIdWithAliasLookUp(entry.spender(), spec))
+					.setOwner(getIdWithAliasLookUp(entry.owner(), spec))
 					.setAmount(entry.amount())
 					.build();
 			callowances.add(builder);
@@ -168,8 +169,8 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		for (var entry : tokenAllowances) {
 			final var builder = TokenAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
-					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
+					.setSpender(getIdWithAliasLookUp(entry.spender(), spec))
+					.setOwner(getIdWithAliasLookUp(entry.owner(), spec))
 					.setAmount(entry.amount())
 					.build();
 			tallowances.add(builder);
@@ -177,9 +178,9 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		for (var entry : nftAllowances) {
 			final var builder = NftAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
-					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setSpender(getIdWithAliasLookUp(entry.spender(), spec))
+					.setOwner(getIdWithAliasLookUp(entry.owner(), spec))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
 					.addAllSerialNumbers(entry.serials())
 					.build();
 			nftallowances.add(builder);
