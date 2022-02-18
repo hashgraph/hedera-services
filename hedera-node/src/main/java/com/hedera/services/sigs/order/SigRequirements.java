@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -41,9 +42,11 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -247,7 +250,26 @@ public class SigRequirements {
 			return cryptoUpdate(payer, txn, factory, linkedRefs);
 		} else if (txn.hasCryptoDelete()) {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
-		} else {
+		} else if (txn.hasCryptoApproveAllowance()) {
+			final var approveTxn = txn.getCryptoApproveAllowance();
+			return cryptoAllowace(
+					payer,
+					approveTxn.getCryptoAllowancesList(),
+					approveTxn.getTokenAllowancesList(),
+					approveTxn.getNftAllowancesList(),
+					factory,
+					linkedRefs);
+		} else if (txn.hasCryptoAdjustAllowance()) {
+			final var approveTxn = txn.getCryptoAdjustAllowance();
+			return cryptoAllowace(
+					payer,
+					approveTxn.getCryptoAllowancesList(),
+					approveTxn.getTokenAllowancesList(),
+					approveTxn.getNftAllowancesList(),
+					factory,
+					linkedRefs);
+		}
+		else {
 			return null;
 		}
 	}
@@ -507,6 +529,37 @@ public class SigRequirements {
 		return candidate.isPresent()
 				? factory.forValidOrder(List.of(candidate.get()))
 				: SigningOrderResult.noKnownKeys();
+	}
+
+	private <T> SigningOrderResult<T> cryptoAllowace(
+			final AccountID payer,
+			final List<CryptoAllowance> cryptoAllowancesList,
+			final List<TokenAllowance> tokenAllowancesList,
+			final List<NftAllowance> nftAllowancesList,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs) {
+		List<JKey> required =  new ArrayList<>();
+
+		for (final var allowance : cryptoAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : tokenAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : nftAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+
+		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> cryptoDelete(
@@ -1100,6 +1153,21 @@ public class SigRequirements {
 		}
 
 		return factory.forValidOrder(required);
+	}
+
+	private KeyOrderingFailure includeOwnerIfNecessary(
+			final AccountID payer,
+			final AccountID owner,
+			final List<JKey> required,
+			final LinkedRefs linkedRefs) {
+		if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
+			var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
+			if (!ownerResult.succeeded()) {
+				return INVALID_ACCOUNT;
+			}
+			required.add(ownerResult.metadata().key());
+		}
+		return NONE;
 	}
 
 	private KeyOrderingFailure includeIfNecessary(
