@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -75,15 +74,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.CONSTRUCTOR;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.FUNCTION;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.RESOURCE_PATH;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.validateFileExists;
+import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class TxnVerbs {
@@ -353,30 +350,30 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
-	public static HapiSpecOperation contractDeploy(final String contractName, final Object... params) {
-		return withOpContext((spec, ctxLog) -> {
-			final var path = String.format(RESOURCE_PATH + ".bin", contractName);
-			validateFileExists(path);
-			final var payer = cryptoCreate("PAYER");
-			final var file = fileCreate(contractName);
-			final var updatedFile = updateLargeFile("PAYER", contractName, extractByteCode(path));
+	public static HapiContractCreate contractDeploy(final String contractName, final HapiApiSpec spec, final Object... constructorParams) {
+		final var path = getResourcePath(contractName, ".bin");
+		sourcing(() -> cryptoCreate("PAYER")).execFor(spec);
+		sourcing(() -> fileCreate(contractName)).execFor(spec);
+		sourcing(() -> updateLargeFile("PAYER", contractName, extractByteCode(path))).execFor(spec);
 
-			HapiContractCreate contract;
+		HapiContractCreate contract;
 
-			if (params.length > 0) {
-				final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-				contract = contractCreate(contractName, constructorABI, params).bytecode(contractName);
-			} else {
-				contract = contractCreate(contractName).bytecode(contractName);
-			}
-			allRunFor(spec, payer, file, updatedFile, contract);
-		});
+		if (constructorParams.length > 0) {
+			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
+			contract = contractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
+		} else {
+			contract = contractCreate(contractName).bytecode(contractName);
+		}
+
+		sourcing(() -> contract).execFor(spec);
+
+		return contract;
 	}
+
 
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
 	}
 
-	public enum FunctionType {CONSTRUCTOR, FUNCTION}
 }

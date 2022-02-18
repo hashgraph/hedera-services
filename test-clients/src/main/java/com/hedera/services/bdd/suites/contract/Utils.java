@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
@@ -40,7 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.FunctionType.CONSTRUCTOR;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -86,9 +85,8 @@ public class Utils {
 		}
 	}
 
-	public static String getABIFor(final TxnVerbs.FunctionType type, final String functionName, String contractName) {
-		final var path = String.format(RESOURCE_PATH + ".json", contractName);
-		validateFileExists(path);
+	public static String getABIFor(final FunctionType type, final String functionName, String contractName) {
+		final var path = getResourcePath(contractName, ".json");
 		var ABI = EMPTY;
 		try (final var input = new FileInputStream(path)) {
 			final var array = new JSONArray(new JSONTokener(input));
@@ -113,4 +111,16 @@ public class Utils {
 			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
 		}
 	}
+
+	public static String getResourcePath(final String resourceName, final String extension) {
+		final var path = String.format(RESOURCE_PATH + extension, resourceName);
+		final var file = new File(path);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
+		}
+		return path;
+	}
+
+	public enum FunctionType {CONSTRUCTOR, FUNCTION}
+
 }
