@@ -82,6 +82,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class TxnVerbs {
 	// TODO: After refactor: remove the temporary new structure folder and refactor the bellow path
@@ -352,9 +353,8 @@ public class TxnVerbs {
 
 	public static HapiContractCreate contractDeploy(final String contractName, final HapiApiSpec spec, final Object... constructorParams) {
 		final var path = getResourcePath(contractName, ".bin");
-		sourcing(() -> cryptoCreate("PAYER")).execFor(spec);
 		sourcing(() -> fileCreate(contractName)).execFor(spec);
-		sourcing(() -> updateLargeFile("PAYER", contractName, extractByteCode(path))).execFor(spec);
+		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
 
 		HapiContractCreate contract;
 
@@ -369,7 +369,6 @@ public class TxnVerbs {
 
 		return contract;
 	}
-
 
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
