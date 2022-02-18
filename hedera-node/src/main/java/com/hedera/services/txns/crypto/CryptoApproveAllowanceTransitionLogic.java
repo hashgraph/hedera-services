@@ -80,6 +80,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Use models --- */
 		final Id ownerId = Id.fromGrpcAccount(owner);
 		final var ownerAccount = accountStore.loadAccount(ownerId);
+		//validate spender
 
 		/* --- Do the business logic --- */
 		applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);

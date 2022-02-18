@@ -99,7 +99,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (validity != OK) {
 				return validity;
 			}
-			validity = validateCryptoAllowanceBasics(ownerAccount.getId(), allowanceOwner, spender);
+			validity = validateCryptoAllowanceBasics(ownerAccount.getId(), spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -144,7 +144,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spenderId, tokenId, owner);
+			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -186,7 +186,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId, owner);
+			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}

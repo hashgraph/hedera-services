@@ -27,9 +27,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Map;
 
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -58,9 +58,9 @@ public class CryptoAdjustAllowanceMeta {
 			long transactionValidStartSecs) {
 		effectiveNow = transactionValidStartSecs;
 		msgBytesUsed = bytesUsedInTxn(cryptoAdjustTxnBody);
-		cryptoAllowances = convertToCryptoMap(cryptoAdjustTxnBody.getCryptoAllowancesList());
-		tokenAllowances = convertToTokenMap(cryptoAdjustTxnBody.getTokenAllowancesList());
-		nftAllowances = convertToNftMap(cryptoAdjustTxnBody.getNftAllowancesList());
+		cryptoAllowances = CryptoContextUtils.convertToCryptoMap(cryptoAdjustTxnBody.getCryptoAllowancesList());
+		tokenAllowances = CryptoContextUtils.convertToTokenMap(cryptoAdjustTxnBody.getTokenAllowancesList());
+		nftAllowances = CryptoContextUtils.convertToNftMap(cryptoAdjustTxnBody.getNftAllowancesList());
 	}
 
 	private int bytesUsedInTxn(CryptoAdjustAllowanceTransactionBody op) {

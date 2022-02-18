@@ -126,11 +126,7 @@ public interface AllowanceChecks {
 		return OK;
 	}
 
-	default ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id allowanceOwner,
-			final Id spender) {
-		if (!ownerId.equals(allowanceOwner)) {
-			return PAYER_AND_OWNER_NOT_EQUAL;
-		}
+	default ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id spender) {
 		if (ownerId.equals(spender)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
@@ -140,12 +136,7 @@ public interface AllowanceChecks {
 	default ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
-			final TokenID tokenId,
-			final Id owner) {
-		if (!ownerAccount.getId().equals(owner)) {
-			return PAYER_AND_OWNER_NOT_EQUAL;
-		}
-
+			final TokenID tokenId) {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}

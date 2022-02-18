@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.test.IdUtils.asAccount;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -60,9 +60,9 @@ class CryptoAdjustAllowanceMetaTest {
 
 	@BeforeEach
 	void setUp() {
-		cryptoAllowancesMap = convertToCryptoMap(List.of(cryptoAllowances));
-		tokenAllowancesMap = convertToTokenMap(List.of(tokenAllowances));
-		nftAllowancesMap = convertToNftMap(List.of(nftAllowances));
+		cryptoAllowancesMap = CryptoContextUtils.convertToCryptoMap(List.of(cryptoAllowances));
+		tokenAllowancesMap = CryptoContextUtils.convertToTokenMap(List.of(tokenAllowances));
+		nftAllowancesMap = CryptoContextUtils.convertToNftMap(List.of(nftAllowances));
 	}
 
 	@Test

@@ -20,18 +20,18 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
@@ -179,21 +179,21 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(List<CryptoAllowance> currentCryptoAllowances) {
-			this.currentCryptoAllowances = convertToCryptoMap(currentCryptoAllowances);
+		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(List<GrantedCryptoAllowance> currentCryptoAllowances) {
+			this.currentCryptoAllowances = CryptoContextUtils.convertToCryptoMapFromGranted(currentCryptoAllowances);
 			mask |= CRYPTO_ALLOWANCES_MASK;
 			return this;
 		}
 
 		public ExtantCryptoContext.Builder setCurrentTokenAllowances(
-				List<TokenAllowance> currentTokenAllowances) {
-			this.currentTokenAllowances = convertToTokenMap(currentTokenAllowances);
+				List<GrantedTokenAllowance> currentTokenAllowances) {
+			this.currentTokenAllowances = CryptoContextUtils.convertToTokenMapFromGranted(currentTokenAllowances);
 			mask |= TOKEN_ALLOWANCES_MASK;
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentNftAllowances(List<NftAllowance> currentNftAllowances) {
-			this.currentNftAllowances = convertToNftMap(currentNftAllowances);
+		public ExtantCryptoContext.Builder setCurrentNftAllowances(List<GrantedNftAllowance> currentNftAllowances) {
+			this.currentNftAllowances = CryptoContextUtils.convertToNftMapFromGranted(currentNftAllowances);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}
