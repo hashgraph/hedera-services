@@ -108,6 +108,7 @@ public class ContractResources {
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
 	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
 	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
+	public static final String NESTED_ERC_20_CONTRACT = bytecodePath("NestedERC20Contract");
 	public static final String ERC_721_CONTRACT = bytecodePath("ERC721Contract");
 
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
@@ -225,6 +226,12 @@ public class ContractResources {
 	public static final String ERC_20_TRANSFER_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
 			"{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\"," +
 			"\"type\": \"uint256\"}],\"name\": \"transfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String ERC_20_DELEGATE_TRANSFER_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\"," +
+			"\"type\": \"uint256\"}],\"name\": \"delegateTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+
 	public static final String ERC_20_TRANSFER_FROM_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
 			"{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\"," +
 			"\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\",\"type\": \"uint256\"}],\"name\": \"transferFrom\",\"outputs\": []," +

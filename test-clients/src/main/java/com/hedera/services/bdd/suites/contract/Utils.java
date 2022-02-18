@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -52,6 +53,10 @@ public class Utils {
 
 	public static byte[] asAddress(final AccountID id) {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static byte[] asAddress(final ContractID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
