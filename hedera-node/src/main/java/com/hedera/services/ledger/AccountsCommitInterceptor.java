@@ -1,5 +1,6 @@
 package com.hedera.services.ledger;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -39,6 +40,7 @@ public class AccountsCommitInterceptor implements
 			final var changedProperties = changeToCommit.changes();
 
 			if (merkleAccount == null) {
+				trackAutoCreation(changedProperties, account);
 				continue;
 			}
 
@@ -48,6 +50,16 @@ public class AccountsCommitInterceptor implements
 		}
 
 		doZeroSum(balances);
+	}
+
+	private void trackAutoCreation(final Map<AccountProperty, Object> changedProperties, final AccountID account) {
+		final var isContract = changedProperties.containsKey(AccountProperty.IS_SMART_CONTRACT) && (boolean) changedProperties.get(AccountProperty.IS_SMART_CONTRACT);
+		final var alias =
+				changedProperties.containsKey(AccountProperty.ALIAS) ?
+						(ByteString) changedProperties.get(AccountProperty.ALIAS) : ByteString.EMPTY;
+		if(!isContract) {
+			sideEffectsTracker.trackAutoCreation(account, alias);
+		}
 	}
 
 	private void trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
