@@ -1180,7 +1180,28 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-
+  GCP-Daily-Services-Global-3NReconnect2-15N-4C:
+    triggers:
+      - schedule:
+          cron: "40 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_4C/Global3NReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Global-3NReconnect2-15N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
@@ -1226,7 +1247,72 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-
+  GCP-Daily-Services-Recovery2-4N-1C:
+    triggers:
+      - schedule:
+          cron: "55 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Recovery
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Recovery2-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-Recovery3-4N-1C:
+    triggers:
+      - schedule:
+          cron: "55 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Recovery
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Recovery3-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+  GCP-Daily-Services-Recovery4-4N-1C:
+    triggers:
+      - schedule:
+          cron: "55 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/Recovery
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Recovery4-4N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
@@ -1342,7 +1428,28 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-
+  GCP-Daily-Services-Comp-Reconnect2-6N-1C:
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/Reconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-Reconnect2-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
@@ -1365,7 +1472,28 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-
+  GCP-Daily-Services-Comp-NI-Reconnect-Correctness2-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/NIReconnectCorrectness
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness2-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
@@ -1388,7 +1516,28 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-
+  GCP-Daily-Services-Comp-ND-Reconnect-Correctness2-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_1C/NDReconnectCorrectness
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness2-6N-1C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
@@ -1598,6 +1747,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression/; git checkout -b 02051-split-ci-jobs origin/02051-split-ci-jobs; git pull; cd -          
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
