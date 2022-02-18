@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./hip-206/HederaTokenService.sol";
 import "./hip-206/HederaResponseCodes.sol";
+import "../MintToken/MintToken.sol";
 
 contract NestedBurn is HederaTokenService {
 
@@ -20,19 +21,6 @@ contract NestedBurn is HederaTokenService {
 
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token burn failed");
-        }
-
-   }
-
-}
-
-contract MintTokenContract is HederaTokenService {
-
-   function mintToken(uint64 amount, address tokenAddress) public {
-       (int response, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
-
-        if (response != HederaResponseCodes.SUCCESS) {
-            revert ("Token mint failed");
         }
    }
 }
