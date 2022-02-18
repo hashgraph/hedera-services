@@ -519,8 +519,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		for (final var merkleLeafChangesEntry : changes.entrySet()) {
 			final var id = merkleLeafChangesEntry.getKey();
 			final var merkleProperties = merkleLeafChangesEntry.getValue();
-			final var merkleLeaf = entities.contains(id) ? entities.getRef(id) :
-					newEntity.get();
+			final var merkleLeaf = entities.contains(id) ? entities.getRef(id) : null;
 			final var merkleLeafChanges = new MerkleLeafChanges<>(id, merkleLeaf, merkleProperties);
 			merkleLeavesChanges.add(merkleLeafChanges);
 		}
