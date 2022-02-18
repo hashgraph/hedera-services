@@ -136,7 +136,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
 		return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec))
+						withOpContext(
+								(spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -160,7 +161,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -183,7 +184,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -215,7 +216,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -257,7 +258,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -327,7 +328,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -373,8 +374,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec)),
-						withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)))
+						withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
+						withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))
 				)
 				.when(withOpContext(
 								(spec, opLog) ->
@@ -414,7 +415,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -453,7 +454,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
 		return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec))
+						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
 				).when(
 						withOpContext(
 								(spec, opLog) ->

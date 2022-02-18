@@ -365,7 +365,7 @@ public class TxnVerbs {
 			contract = contractCreate(contractName).bytecode(contractName);
 		}
 
-		sourcing(() -> contract).execFor(spec);
+		sourcing(() -> contract);
 
 		return contract;
 	}
