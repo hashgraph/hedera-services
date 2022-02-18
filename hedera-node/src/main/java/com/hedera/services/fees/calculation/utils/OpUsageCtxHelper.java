@@ -154,9 +154,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(details.hasProxyAccountID())
 					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-					.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
-					.setCurrentTokenAllowances(details.getTokenAllowancesList())
-					.setCurrentNftAllowances(details.getNftAllowancesList())
+					.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
+					.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
+					.setCurrentNftAllowances(details.getGrantedNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()

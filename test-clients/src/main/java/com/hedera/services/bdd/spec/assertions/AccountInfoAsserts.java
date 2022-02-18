@@ -187,9 +187,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts noAllowances() {
 		registerProvider((spec, o) -> {
-			assertEquals(((AccountInfo) o).getCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
-			assertEquals(((AccountInfo) o).getTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
-			assertEquals(((AccountInfo) o).getNftAllowancesCount(), 0, "Bad NftAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedNftAllowancesCount(), 0, "Bad NftAllowances count!");
 		});
 		return this;
 	}
@@ -308,7 +308,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		registerProvider((spec, o) -> {
 			var cryptoAllowance = CryptoAllowance.newBuilder().setAmount(allowance)
 					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getCryptoAllowancesList().contains(cryptoAllowance),
+			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().contains(cryptoAllowance),
 					"Bad CryptoAllowances!");
 		});
 		return this;
@@ -320,7 +320,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 					.setAmount(allowance)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getTokenAllowancesList().contains(tokenAllowance),
+			assertTrue(((AccountInfo) o).getGrantedTokenAllowancesList().contains(tokenAllowance),
 					"Bad TokenAllowances!");
 		});
 		return this;
@@ -335,7 +335,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 					.setSpender(spec.registry().getAccountID(spender))
 					.addAllSerialNumbers(serials)
 					.build();
-			assertTrue(((AccountInfo) o).getNftAllowancesList().contains(nftAllowance),
+			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
 					"Bad NftAllowances!");
 		});
 		return this;
@@ -343,7 +343,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts cryptoAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getCryptoAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedCryptoAllowancesCount(),
 					"Bad CryptoAllowances!");
 		});
 		return this;
@@ -351,7 +351,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts tokenAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getTokenAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedTokenAllowancesCount(),
 					"Bad TokenAllowances!");
 		});
 		return this;
@@ -359,7 +359,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts nftAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getNftAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedNftAllowancesCount(),
 					"Bad NFTAllowances!");
 		});
 		return this;

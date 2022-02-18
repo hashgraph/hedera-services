@@ -67,7 +67,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -302,30 +301,6 @@ class AdjustAllowanceChecksTest {
 		nftAllowances.clear();
 		nftAllowances.add(badNftAllowance1);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, owner));
-	}
-
-	@Test
-	void failsIfOwnerNotPayer() {
-		setUpForTest();
-		final var badCryptoAllowance = CryptoAllowance.newBuilder().
-				setSpender(ownerId).setOwner(spender1).setAmount(10L).build();
-		final var badTokenAllowance = TokenAllowance.newBuilder().
-				setSpender(ownerId).setOwner(spender1).setAmount(20L).setTokenId(token1).build();
-		final var badNftAllowance = NftAllowance.newBuilder().setSpender(ownerId)
-				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(spender1).
-				addAllSerialNumbers(List.of(1L)).build();
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
-
-		cryptoAllowances.add(badCryptoAllowance);
-		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateCryptoAllowances(cryptoAllowances, owner));
-
-		tokenAllowances.add(badTokenAllowance);
-		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
-
-		nftAllowances.add(badNftAllowance);
-		assertEquals(PAYER_AND_OWNER_NOT_EQUAL, subject.validateNftAllowances(nftAllowances, owner));
-
 	}
 
 	@Test

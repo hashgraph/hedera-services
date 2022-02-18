@@ -58,7 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_AND_OWNER_NOT_EQUAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -84,7 +83,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				invalidTokenTypeFails(),
 				validatesSerialNums(),
 				tokenExceedsMaxSupplyFails(),
-				OwnerNotPayerFails(),
+//				OwnerNotPayerFails(),
 				serialsWipedIfApprovedForAll(),
 				serialsNotValidatedIfApprovedForAll(),
 				exceedsTransactionLimit(),
@@ -634,57 +633,57 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								));
 	}
 
-	private HapiApiSpec OwnerNotPayerFails() {
-		final String owner = "owner";
-		final String spender = "spender";
-		final String token = "token";
-		final String nft = "nft";
-		return defaultHapiSpec("OwnerNotPayerFails")
-				.given(
-						newKeyNamed("supplyKey"),
-						cryptoCreate(owner)
-								.balance(ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						cryptoCreate(spender)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						tokenCreate(token)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.FINITE)
-								.supplyKey("supplyKey")
-								.maxSupply(1000L)
-								.initialSupply(10L)
-								.treasury(TOKEN_TREASURY),
-						tokenCreate(nft)
-								.maxSupply(10L)
-								.initialSupply(0)
-								.supplyType(TokenSupplyType.FINITE)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyKey("supplyKey")
-								.treasury(TOKEN_TREASURY),
-						tokenAssociate(owner, token),
-						tokenAssociate(owner, nft),
-						mintToken(nft, List.of(
-								ByteString.copyFromUtf8("a"),
-								ByteString.copyFromUtf8("b"),
-								ByteString.copyFromUtf8("c")
-						)).via("nftTokenMint"),
-						mintToken(token, 500L).via("tokenMint"),
-						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
-								.between(TOKEN_TREASURY, owner))
-				)
-				.when(
-						cryptoApproveAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(spender, spender, 100L)
-								.addTokenAllowance(spender, token, spender, 100L)
-								.addNftAllowance(spender, nft, spender, false, List.of(1L))
-								.fee(ONE_HBAR)
-								.hasPrecheck(PAYER_AND_OWNER_NOT_EQUAL)
-				)
-				.then();
-	}
+//	private HapiApiSpec OwnerNotPayerFails() {
+//		final String owner = "owner";
+//		final String spender = "spender";
+//		final String token = "token";
+//		final String nft = "nft";
+//		return defaultHapiSpec("OwnerNotPayerFails")
+//				.given(
+//						newKeyNamed("supplyKey"),
+//						cryptoCreate(owner)
+//								.balance(ONE_HUNDRED_HBARS)
+//								.maxAutomaticTokenAssociations(10),
+//						cryptoCreate(spender)
+//								.balance(ONE_HUNDRED_HBARS),
+//						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+//								.maxAutomaticTokenAssociations(10),
+//						tokenCreate(token)
+//								.tokenType(TokenType.FUNGIBLE_COMMON)
+//								.supplyType(TokenSupplyType.FINITE)
+//								.supplyKey("supplyKey")
+//								.maxSupply(1000L)
+//								.initialSupply(10L)
+//								.treasury(TOKEN_TREASURY),
+//						tokenCreate(nft)
+//								.maxSupply(10L)
+//								.initialSupply(0)
+//								.supplyType(TokenSupplyType.FINITE)
+//								.tokenType(NON_FUNGIBLE_UNIQUE)
+//								.supplyKey("supplyKey")
+//								.treasury(TOKEN_TREASURY),
+//						tokenAssociate(owner, token),
+//						tokenAssociate(owner, nft),
+//						mintToken(nft, List.of(
+//								ByteString.copyFromUtf8("a"),
+//								ByteString.copyFromUtf8("b"),
+//								ByteString.copyFromUtf8("c")
+//						)).via("nftTokenMint"),
+//						mintToken(token, 500L).via("tokenMint"),
+//						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+//								.between(TOKEN_TREASURY, owner))
+//				)
+//				.when(
+//						cryptoApproveAllowance()
+//								.payingWith(owner)
+//								.addCryptoAllowance(spender, spender, 100L)
+//								.addTokenAllowance(spender, token, spender, 100L)
+//								.addNftAllowance(spender, nft, spender, false, List.of(1L))
+//								.fee(ONE_HBAR)
+//								.hasPrecheck(PAYER_AND_OWNER_NOT_EQUAL)
+//				)
+//				.then();
+//	}
 
 	private HapiApiSpec tokenExceedsMaxSupplyFails() {
 		final String owner = "owner";
