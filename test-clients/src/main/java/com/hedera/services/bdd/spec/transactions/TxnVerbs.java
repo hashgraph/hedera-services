@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -69,20 +70,23 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class TxnVerbs {
 	// TODO: After refactor: remove the temporary new structure folder and refactor the bellow path
@@ -351,6 +355,38 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
+	public static HapiSpecOperation newFileCreate(final String... contractsNames) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			for (String contractName : contractsNames) {
+				final var path = getResourcePath(contractName, ".bin");
+				final var file = fileCreate(contractName);
+				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+				ops.add(file);
+				ops.add(updatedFile);
+			}
+			allRunFor(spec, ops);
+		});
+	}
+
+	public static HapiContractCreate newContractCreate(final String contractName, final Object... constructorParams) {
+		if (constructorParams.length > 0) {
+			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
+			return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
+		} else {
+			return new HapiContractCreate(contractName).bytecode(contractName);
+		}
+	}
+
+	/*	Note:
+		This method enables the developer to create a file and deploy a contract with a single method call.
+		The execution of the method requires the spec context, therefore the invocation is not straightforward:
+		"withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
+		It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
+		can happen in the given clause:
+		"withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
+		 withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))"
+	*/
 	public static HapiContractCreate contractDeploy(final String contractName, final HapiApiSpec spec, final Object... constructorParams) {
 		final var path = getResourcePath(contractName, ".bin");
 		sourcing(() -> fileCreate(contractName)).execFor(spec);
@@ -360,9 +396,9 @@ public class TxnVerbs {
 
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-			contract = contractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
+			contract = new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
 		} else {
-			contract = contractCreate(contractName).bytecode(contractName);
+			contract = new HapiContractCreate(contractName).bytecode(contractName);
 		}
 
 		sourcing(() -> contract);

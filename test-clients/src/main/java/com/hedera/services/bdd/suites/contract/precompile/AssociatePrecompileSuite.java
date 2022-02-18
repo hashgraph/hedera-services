@@ -47,9 +47,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDeploy;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -97,7 +98,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 		new AssociatePrecompileSuite().runSuiteSync();
 	}
 
-
 	@Override
 	public boolean canRunAsync() {
 		return false;
@@ -136,21 +136,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
 		return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
 				.given(
-						withOpContext(
-								(spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-														"performLessThanFourBytesFunctionCall", ACCOUNT_ADDRESS, TOKEN_ADDRESS
-												)
-														.notTryingAsHexedliteral()
-														.via("Function call with less than 4 bytes txn")
-														.gas(100_000)
-										)
+						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+								"performLessThanFourBytesFunctionCall", ACCOUNT_ADDRESS, TOKEN_ADDRESS
 						)
+								.notTryingAsHexedliteral()
+								.via("Function call with less than 4 bytes txn")
+								.gas(100_000)
 				).then(
 						childRecordsCheck("Function call with less than 4 bytes txn", SUCCESS)
 				);
@@ -161,20 +155,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-														"performInvalidlyFormattedFunctionCall", ACCOUNT_ADDRESS,
-														List.of(TOKEN_ADDRESS, TOKEN_ADDRESS)
-												)
-														.notTryingAsHexedliteral()
-														.via("Invalid Abi Function call txn")
-										)
+						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+								"performInvalidlyFormattedFunctionCall", ACCOUNT_ADDRESS,
+								List.of(TOKEN_ADDRESS, TOKEN_ADDRESS)
 						)
+								.notTryingAsHexedliteral()
+								.via("Invalid Abi Function call txn")
 				).then(
 						childRecordsCheck("Invalid Abi Function call txn", SUCCESS)
 				);
@@ -184,20 +173,15 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(
-														THE_GRACEFULLY_FAILING_CONTRACT,
-														"performNonExistingServiceFunctionCall",
-														ACCOUNT_ADDRESS,
-														TOKEN_ADDRESS
-												)
-														.notTryingAsHexedliteral()
-														.via("nonExistingFunctionCallTxn")))
+						contractCall(
+								THE_GRACEFULLY_FAILING_CONTRACT, "performNonExistingServiceFunctionCall",
+								ACCOUNT_ADDRESS, TOKEN_ADDRESS
+						)
+								.notTryingAsHexedliteral()
+								.via("nonExistingFunctionCallTxn")
 				).then(
 						childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS)
 				);
@@ -216,7 +200,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_CONTRACT),
+						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -258,7 +243,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_CONTRACT),
+						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -328,7 +314,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_CONTRACT),
+						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -374,13 +361,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
-						withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))
-				)
-				.when(withOpContext(
+						newFileCreate(INNER_CONTRACT, OUTER_CONTRACT),
+						newContractCreate(INNER_CONTRACT)
+				).when(
+						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
+												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
 												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
@@ -415,7 +403,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
-						withOpContext((spec, log) -> contractDeploy(THE_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_CONTRACT),
+						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -454,22 +443,16 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
 		return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
 				.given(
-						withOpContext((spec, log) -> contractDeploy(THE_GRACEFULLY_FAILING_CONTRACT, spec).execFor(spec))
+						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
-														"performInvalidlyFormattedSingleFunctionCall",
-														ACCOUNT_ADDRESS)
-														.notTryingAsHexedliteral()
-														.via("Invalid Single Abi Call txn")
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-												getTxnRecord("Invalid Single Abi Call txn").saveTxnRecordToRegistry(
-														"Invalid Single Abi Call txn")
-										)
+						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
+								"performInvalidlyFormattedSingleFunctionCall", ACCOUNT_ADDRESS
 						)
+								.notTryingAsHexedliteral()
+								.via("Invalid Single Abi Call txn")
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+						getTxnRecord("Invalid Single Abi Call txn").saveTxnRecordToRegistry("Invalid Single Abi Call txn")
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var gasUsed = spec.registry().getTransactionRecord("Invalid Single Abi Call txn")
