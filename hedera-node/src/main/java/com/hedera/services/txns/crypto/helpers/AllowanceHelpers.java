@@ -23,11 +23,15 @@ package com.hedera.services.txns.crypto.helpers;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
 import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,7 +83,7 @@ public class AllowanceHelpers {
 		return nftAllowancesTotal;
 	}
 
-	public static boolean hasRepeatedSpender(List<AccountID> spenders) {
+	public static boolean hasRepeatedSpender(List<EntityNumPair> spenders) {
 		final int n = spenders.size();
 		if (n < 2) {
 			return false;
@@ -109,14 +113,16 @@ public class AllowanceHelpers {
 		return false;
 	}
 
-	public static boolean hasRepeatedId(List<FcTokenAllowanceId> serials) {
-		final int n = serials.size();
+	public static boolean hasRepeatedId(List<Pair<EntityNum, FcTokenAllowanceId>> allowanceKeys) {
+		final int n = allowanceKeys.size();
 		if (n < 2) {
 			return false;
 		}
 		for (var i = 0; i < n - 1; i++) {
 			for (var j = i + 1; j < n; j++) {
-				if (serials.get(i).equals(serials.get(j))) {
+				final var a = allowanceKeys.get(i);
+				final var b = allowanceKeys.get(j);
+				if (a.getLeft().equals(b.getLeft()) && a.getRight().equals(b.getRight())) {
 					return true;
 				}
 			}
@@ -179,5 +185,16 @@ public class AllowanceHelpers {
 			return cryptoAllowances;
 		}
 		return Collections.emptyList();
+	}
+
+	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender) {
+		return EntityNumPair.fromLongs(
+				owner.getAccountNum(), spender.getAccountNum());
+	}
+
+	public static Pair<EntityNum, FcTokenAllowanceId> buildTokenAllowanceKey
+			(AccountID owner, TokenID token, AccountID spender) {
+		return Pair.of(EntityNum.fromAccountId(owner), FcTokenAllowanceId.from(EntityNum.fromTokenId(token),
+				EntityNum.fromAccountId(spender)));
 	}
 }

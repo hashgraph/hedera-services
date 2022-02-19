@@ -28,7 +28,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -42,6 +41,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
@@ -79,7 +80,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		}
 		final var cryptoKeys = cryptoAllowancesList
 				.stream()
-				.map(CryptoAllowance::getSpender)
+				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender()))
 				.toList();
 		if (hasRepeatedSpender(cryptoKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -114,8 +115,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		}
 		final var tokenKeys = tokenAllowancesList
 				.stream()
-				.map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
-						EntityNum.fromAccountId(a.getSpender())))
+				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
 				.toList();
 		if (hasRepeatedId(tokenKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -158,8 +158,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		}
 
 		final var nftKeys = nftAllowancesList.stream()
-				.map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
-						EntityNum.fromAccountId(a.getSpender())))
+				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
 				.toList();
 		if (hasRepeatedId(nftKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
