@@ -146,7 +146,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var allowanceOwner = allowance.getOwner();
 
 			final var accountToAdjust = fetchOwnerAccount(allowanceOwner, payerAccount);
-			final Map<EntityNum, Long> cryptoMap = new TreeMap<>(accountToAdjust.getCryptoAllowances());;
+			final Map<EntityNum, Long> cryptoMap = new TreeMap<>(accountToAdjust.getCryptoAllowances());
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);

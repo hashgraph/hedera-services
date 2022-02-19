@@ -27,9 +27,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Map;
 
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;

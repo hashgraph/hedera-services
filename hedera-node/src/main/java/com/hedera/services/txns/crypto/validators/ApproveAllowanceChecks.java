@@ -84,7 +84,6 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
-			final var allowanceOwner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 
 			var validity = validateAmount(amount);
@@ -117,7 +116,6 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 		for (final var allowance : tokenAllowancesList) {
 			final var spenderAccountId = allowance.getSpender();
-			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
@@ -157,7 +155,6 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 		for (final var allowance : nftAllowancesList) {
 			final var spenderAccountId = allowance.getSpender();
-			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
