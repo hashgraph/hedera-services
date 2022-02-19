@@ -170,9 +170,9 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
-				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setNftAllowances(sideEffectsTracker.getNftAllowances())
-				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
+				.setCryptoAllowances(sideEffectsTracker.getAllCryptoAllowances())
+				.setNftAllowances(sideEffectsTracker.getAllNftAllowances())
+				.setFungibleTokenAllowances(sideEffectsTracker.getAllFungibleTokenAllowances());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));

@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
@@ -302,14 +303,14 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
-	void gettersAndSetterrsWork() {
-		subject.setNftAllowances(nftAllowances);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setCryptoAllowances(cryptoAllowances);
+	void gettersAndSettersWork() {
+		subject.setAllNftAllowances(nftAllowances);
+		subject.setAllFungibleTokenAllowances(fungibleAllowances);
+		subject.setAllCryptoAllowances(cryptoAllowances);
 
-		assertEquals(nftAllowances, subject.getNftAllowances());
-		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
-		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
+		assertEquals(nftAllowances, subject.getAllNftAllowances());
+		assertEquals(cryptoAllowances, subject.getAllCryptoAllowances());
+		assertEquals(fungibleAllowances, subject.getAllFungibleTokenAllowances());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;
@@ -321,6 +322,7 @@ class SideEffectsTrackerTest {
 	private static final TokenID bToken = IdUtils.asToken("0.0.777");
 	private static final TokenID cToken = IdUtils.asToken("0.0.888");
 	private static final NftId cSN1 = new NftId(0, 0, 888, 1);
+	private static final AccountID owner = IdUtils.asAccount("0.0.11111");
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
@@ -330,14 +332,20 @@ class SideEffectsTrackerTest {
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(aToken), EntityNum.fromAccountId(aAccount));
 	private static final FcTokenAllowanceId nftAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(bToken), EntityNum.fromAccountId(aAccount));
-	private static final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
-		put(EntityNum.fromAccountId(aAccount), initialAllowance);
+	private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = new TreeMap<>() {{
+		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
+			put(EntityNum.fromAccountId(aAccount), initialAllowance);
+		}});
 	}};
-	private static final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, initialAllowance);
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {{
+		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
+			put(fungibleAllowanceId, initialAllowance);
+		}});
 	}};
-	private static final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, nftAllowance1);
-		put(nftAllowanceId, nftAllowance2);
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
+		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
+				put(fungibleAllowanceId, nftAllowance1);
+				put(nftAllowanceId, nftAllowance2);
+			}});
 	}};
 }

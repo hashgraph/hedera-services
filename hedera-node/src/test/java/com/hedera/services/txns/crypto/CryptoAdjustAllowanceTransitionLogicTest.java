@@ -153,7 +153,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
-		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
 
@@ -213,6 +212,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 		Account owner = mock(Account.class);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(owner);
+		given(owner.getId()).willReturn(ownerAcccount.getId());
 		given(owner.getTotalAllowances()).willReturn(101);
 
 		givenValidTxnCtx();
@@ -249,7 +249,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
@@ -257,7 +256,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
-		verify(accountStore).commitAccount(ownerAcccount);
+		verify(accountStore, never()).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
