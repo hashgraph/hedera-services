@@ -61,6 +61,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -99,12 +100,13 @@ class ApproveAllowanceChecksTest {
 	private final TokenID token2 = asToken("0.0.200");
 	private final AccountID ownerId1 = asAccount("0.0.5000");
 	private final AccountID ownerId2 = asAccount("0.0.5001");
+	private final AccountID payer = asAccount("0.0.3000");
 
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 
-	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).setOwner(ownerId1).build();
+	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
+			.setSpender(spender1).setAmount(10L).setOwner(ownerId1).build();
 	private final CryptoAllowance cryptoAllowance2 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
 			10L).setOwner(ownerId2).build();
 	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
@@ -140,6 +142,8 @@ class ApproveAllowanceChecksTest {
 	}
 
 	private void setUpForTest() {
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
@@ -339,6 +343,8 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
@@ -359,6 +365,8 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void fungibleInNFTAllowances() {
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
@@ -471,13 +479,15 @@ class ApproveAllowanceChecksTest {
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(ownerId1)
+				.setAccountID(payer)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();
 	}
 
 	private void givenNecessaryStubs() {
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
