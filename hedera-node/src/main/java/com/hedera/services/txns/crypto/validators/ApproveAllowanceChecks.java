@@ -22,13 +22,11 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -40,6 +38,8 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
@@ -76,7 +76,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			return OK;
 		}
 		final var cryptoKeysList = cryptoAllowancesList.stream()
-				.map(CryptoAllowance::getSpender)
+				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender()))
 				.toList();
 		if (hasRepeatedSpender(cryptoKeysList)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -107,8 +107,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		}
 		final var tokenKeysList = tokenAllowancesList
 				.stream()
-				.map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
-						EntityNum.fromAccountId(a.getSpender())))
+				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
 				.toList();
 		if (hasRepeatedId(tokenKeysList)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -146,8 +145,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		}
 		final var nftKeysList = nftAllowancesList
 				.stream()
-				.map(a -> FcTokenAllowanceId.from(EntityNum.fromTokenId(a.getTokenId()),
-						EntityNum.fromAccountId(a.getSpender())))
+				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
 				.toList();
 		if (hasRepeatedId(nftKeysList)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;

@@ -121,9 +121,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
 		final AccountID payer = cryptoAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoAllowanceTxn.getCryptoAdjustAllowance();
-		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
+		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount,
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction());
 	}
 
@@ -149,7 +149,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 
 			final var accountToAdjust = fetchOwnerAccount(allowanceOwner, payerAccount, accountStore, entitiesChanged);
 			final Map<EntityNum, Long> cryptoMap = new TreeMap<>(accountToAdjust.getCryptoAllowances());
-			;
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
