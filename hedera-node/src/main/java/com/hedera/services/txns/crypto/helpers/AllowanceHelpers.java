@@ -197,11 +197,10 @@ public class AllowanceHelpers {
 			final AccountStore accountStore,
 			final Map<Long, Account> entitiesChanged) {
 		final var ownerId = Id.fromGrpcAccount(owner);
-		if (entitiesChanged.containsKey(ownerId.num())) {
-			return entitiesChanged.get(ownerId.num());
-		} else if (owner.equals(AccountID.getDefaultInstance()) ||
-				owner.equals(payerAccount.getId().asGrpcAccount())) {
+		if (owner.equals(AccountID.getDefaultInstance()) || owner.equals(payerAccount.getId().asGrpcAccount())) {
 			return payerAccount;
+		}else if (entitiesChanged.containsKey(ownerId.num())) {
+			return entitiesChanged.get(ownerId.num());
 		} else {
 			return accountStore.loadAccountOrFailWith(ownerId, INVALID_ALLOWANCE_OWNER_ID);
 		}

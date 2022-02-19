@@ -85,7 +85,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
 		final var payerAccount = accountStore.loadAccount(payerId);
-		//validate spender
 
 		/* --- Do the business logic --- */
 		applyCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
@@ -112,12 +111,15 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
-		final AccountID owner = cryptoAllowanceTxn.getTransactionID().getAccountID();
+		final AccountID payer = cryptoAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
-		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
+		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 
-		return allowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), ownerAccount,
+		return allowanceChecks.allowancesValidation(
+				op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				payerAccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction());
 	}
 
@@ -142,17 +144,24 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var amount = allowance.getAmount();
 			if (cryptoMap.containsKey(spender.asEntityNum())) {
 				if (amount == 0) {
-					cryptoMap.remove(spender.asEntityNum());
+					removeEntity(cryptoMap, spender, accountToApprove);
 				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
-			} else {
-				cryptoMap.put(spender.asEntityNum(), amount);
 			}
+			cryptoMap.put(spender.asEntityNum(), amount);
 			accountToApprove.setCryptoAllowances(cryptoMap);
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 		}
+	}
+
+	private void removeEntity(final Map<EntityNum, Long> cryptoMap,
+			final Id spender,
+			final Account accountToApprove) {
+		cryptoMap.remove(spender.asEntityNum());
+		accountToApprove.setCryptoAllowances(cryptoMap);
+		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
 
 	/**
@@ -219,7 +228,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 					spender.asEntityNum());
 			if (tokensMap.containsKey(key)) {
 				if (amount == 0) {
-					tokensMap.remove(key);
+					removeTokenEntity(key, tokensMap, accountToApprove);
 				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
@@ -230,6 +239,14 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 		}
+	}
+
+	private void removeTokenEntity(final FcTokenAllowanceId key,
+			final Map<FcTokenAllowanceId, Long> tokensMap,
+			final Account accountToApprove) {
+		tokensMap.remove(key);
+		accountToApprove.setFungibleTokenAllowances(tokensMap);
+		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
 
 	/**

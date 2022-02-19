@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -82,6 +83,8 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
+	private AccountStore accountStore;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private Account owner;
@@ -133,7 +136,7 @@ class ApproveAllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new ApproveAllowanceChecks(() -> nftsMap, tokenStore, dynamicProperties);
+		subject = new ApproveAllowanceChecks(() -> nftsMap, tokenStore, dynamicProperties, accountStore);
 	}
 
 	private void setUpForTest() {
