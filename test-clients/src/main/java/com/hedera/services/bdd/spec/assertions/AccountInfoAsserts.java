@@ -20,15 +20,14 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -306,7 +305,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts cryptoAllowancesContaining(String spender, long allowance) {
 
 		registerProvider((spec, o) -> {
-			var cryptoAllowance = CryptoAllowance.newBuilder().setAmount(allowance)
+			var cryptoAllowance = GrantedCryptoAllowance.newBuilder().setAmount(allowance)
 					.setSpender(spec.registry().getAccountID(spender)).build();
 			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().contains(cryptoAllowance),
 					"Bad CryptoAllowances!");
@@ -316,7 +315,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts tokenAllowancesContaining(String token, String spender, long allowance) {
 		registerProvider((spec, o) -> {
-			var tokenAllowance = TokenAllowance.newBuilder()
+			var tokenAllowance = GrantedTokenAllowance.newBuilder()
 					.setAmount(allowance)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender)).build();
@@ -329,8 +328,8 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts nftAllowancesContaining(String token, String spender, boolean approvedForAll,
 			List<Long> serials) {
 		registerProvider((spec, o) -> {
-			var nftAllowance = NftAllowance.newBuilder()
-					.setApprovedForAll(BoolValue.of(approvedForAll))
+			var nftAllowance = GrantedNftAllowance.newBuilder()
+					.setApprovedForAll(approvedForAll)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
 					.addAllSerialNumbers(serials)

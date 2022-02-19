@@ -1186,6 +1186,13 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								));
 	}
 
+	private HapiApiSpec canHaveMultipleOwners() {
+		return defaultHapiSpec("canHaveMultipleOwners")
+				.given()
+				.when()
+				.then();
+	}
+
 	private HapiApiSpec happyPathWorks() {
 		final String owner = "owner";
 		final String spender = "spender";
