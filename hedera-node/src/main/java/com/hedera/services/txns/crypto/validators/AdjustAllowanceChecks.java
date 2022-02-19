@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto.validators;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -58,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
 public class AdjustAllowanceChecks implements AllowanceChecks {
+	protected final AccountStore accountStore;
 	protected final TypedTokenStore tokenStore;
 	protected final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap;
 	protected final GlobalDynamicProperties dynamicProperties;
@@ -66,7 +68,9 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 	public AdjustAllowanceChecks(
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap,
 			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
 			final GlobalDynamicProperties dynamicProperties) {
+		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.nftsMap = nftsMap;
 		this.dynamicProperties = dynamicProperties;
@@ -74,7 +78,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 
 	@Override
 	public ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
-			final Account ownerAccount) {
+			final Account payerAccount) {
 		if (cryptoAllowancesList.isEmpty()) {
 			return OK;
 		}
@@ -86,11 +90,17 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		final var existingAllowances = ownerAccount.getCryptoAllowances();
 		for (final var allowance : cryptoAllowancesList) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-
+			final Account ownerAccount;
+			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+				ownerAccount = payerAccount;
+			} else {
+				ownerAccount = accountStore.loadAccount(owner);
+			}
+			final var existingAllowances = ownerAccount.getCryptoAllowances();
 			final var key = spender.asEntityNum();
 			final var existingAmount = existingAllowances.containsKey(key) ? existingAllowances.get(key) : 0;
 
@@ -109,7 +119,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 
 	@Override
 	public ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
-			final Account ownerAccount) {
+			final Account payerAccount) {
 		if (tokenAllowancesList.isEmpty()) {
 			return OK;
 		}
@@ -121,16 +131,21 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
-
 		for (final var allowance : tokenAllowancesList) {
-			final var spenderAccountId = allowance.getSpender();
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
+			final Account ownerAccount;
+			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+				ownerAccount = payerAccount;
+			} else {
+				ownerAccount = accountStore.loadAccount(owner);
+			}
+			final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
 
-			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
+			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
 			final var existingAllowance = existingAllowances.containsKey(key) ? existingAllowances.get(key) : 0;
 
 			if (!token.isFungibleCommon()) {
@@ -142,7 +157,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -152,7 +167,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 
 	@Override
 	public ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
-			final Account ownerAccount) {
+			final Account payerAccount) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}
@@ -164,16 +179,24 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		final var existingAllowances = ownerAccount.getNftAllowances();
-
 		for (final var allowance : nftAllowancesList) {
-			final var spenderAccountId = allowance.getSpender();
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
-			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spenderId.asEntityNum());
+
+			final Account ownerAccount;
+			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+				ownerAccount = payerAccount;
+			} else {
+				ownerAccount = accountStore.loadAccount(owner);
+			}
+
+			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
+			final var existingAllowances = ownerAccount.getNftAllowances();
+
 			final var existingSerials = existingAllowances.containsKey(key) ?
 					existingAllowances.get(key).getSerialNumbers()
 					: new ArrayList<Long>();
@@ -182,7 +205,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
 			}

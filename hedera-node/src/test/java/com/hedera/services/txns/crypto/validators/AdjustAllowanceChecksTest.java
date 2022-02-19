@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -84,6 +85,8 @@ import static org.mockito.BDDMockito.given;
 class AdjustAllowanceChecksTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> nftsMap;
+	@Mock
+	private AccountStore accountStore;
 	@Mock
 	private TypedTokenStore tokenStore;
 	@Mock
@@ -148,7 +151,7 @@ class AdjustAllowanceChecksTest {
 
 		addExistingAllowancesAndSerials();
 
-		subject = new AdjustAllowanceChecks(() -> nftsMap, tokenStore, dynamicProperties);
+		subject = new AdjustAllowanceChecks(() -> nftsMap, tokenStore, accountStore, dynamicProperties);
 	}
 
 	private void addExistingAllowancesAndSerials() {
@@ -388,6 +391,7 @@ class AdjustAllowanceChecksTest {
 		addExistingAllowancesAndSerials();
 
 		given(owner.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
 				4991).setTokenId(token1).setOwner(ownerId1).build();

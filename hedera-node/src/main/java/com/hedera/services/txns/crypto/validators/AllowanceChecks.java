@@ -48,12 +48,12 @@ public interface AllowanceChecks {
 	 *
 	 * @param cryptoAllowancesList
 	 * 		crypto allowances list
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		Account of the payer for the Allowance approve/adjust txn
 	 * @return response code after validation
 	 */
 	ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
-			final Account ownerAccount);
+			final Account payerAccount);
 
 	/**
 	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -61,12 +61,12 @@ public interface AllowanceChecks {
 	 *
 	 * @param tokenAllowancesList
 	 * 		token allowances list
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		Account of the payer for the Allowance approve/adjust txn
 	 * @return
 	 */
 	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
-			final Account ownerAccount);
+			final Account payerAccount);
 
 	/**
 	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -74,12 +74,12 @@ public interface AllowanceChecks {
 	 *
 	 * @param nftAllowancesList
 	 * 		nft allowances list
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		Account of the payer for the Allowance approve/adjust txn
 	 * @return
 	 */
 	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
-			final Account ownerAccount);
+			final Account payerAccount);
 
 	/**
 	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -91,8 +91,8 @@ public interface AllowanceChecks {
 	 * 		fungible token allowances list
 	 * @param nftAllowances
 	 * 		nft allowances list
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		Account of the payer for the allowance approve/adjust txn.
 	 * @param maxLimitPerTxn
 	 * 		max allowance limit per transaction
 	 * @return response code after validation
@@ -100,24 +100,24 @@ public interface AllowanceChecks {
 	default ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
-			final Account ownerAccount,
+			final Account payerAccount,
 			final int maxLimitPerTxn) {
 		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateCryptoAllowances(cryptoAllowances, ownerAccount);
+		validity = validateCryptoAllowances(cryptoAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateFungibleTokenAllowances(tokenAllowances, ownerAccount);
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateNftAllowances(nftAllowances, ownerAccount);
+		validity = validateNftAllowances(nftAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
