@@ -23,6 +23,9 @@ package com.hedera.services.txns.crypto.helpers;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
@@ -33,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
 public class AllowanceHelpers {
 	private AllowanceHelpers() {
@@ -179,5 +184,20 @@ public class AllowanceHelpers {
 			return cryptoAllowances;
 		}
 		return Collections.emptyList();
+	}
+
+	public static Account fetchOwnerAccount(final AccountID owner,
+			final Account payerAccount,
+			final AccountStore accountStore,
+			final Map<Long, Account> entitiesChanged) {
+		final var ownerId = Id.fromGrpcAccount(owner);
+		if (entitiesChanged.containsKey(ownerId.num())) {
+			return entitiesChanged.get(ownerId.num());
+		} else if (owner.equals(AccountID.getDefaultInstance()) ||
+				owner.equals(payerAccount.getId().asGrpcAccount())) {
+			return payerAccount;
+		} else {
+			return accountStore.loadAccountOrFailWith(ownerId, INVALID_ALLOWANCE_OWNER_ID);
+		}
 	}
 }

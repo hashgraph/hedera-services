@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -46,6 +47,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -55,6 +58,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Map<Long, Account> entitiesChanged;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
@@ -68,31 +72,31 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		this.accountStore = accountStore;
 		this.allowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
+		this.entitiesChanged = new HashMap<>();
 	}
 
 	@Override
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
 		final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
-		final AccountID owner = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
+		final AccountID payer = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
 		/* --- Use models --- */
-		final Id ownerId = Id.fromGrpcAccount(owner);
-		final var ownerAccount = accountStore.loadAccount(ownerId);
+		final Id payerId = Id.fromGrpcAccount(payer);
+		final var payerAccount = accountStore.loadAccount(payerId);
 		//validate spender
 
 		/* --- Do the business logic --- */
-		applyCryptoAllowances(op.getCryptoAllowancesList(), ownerAccount);
-		applyFungibleTokenAllowances(op.getTokenAllowancesList(), ownerAccount);
-		applyNftAllowances(op.getNftAllowancesList(), ownerAccount);
+		applyCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
+		applyFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
+		applyNftAllowances(op.getNftAllowancesList(), payerAccount);
 
-		/* --- validate --- */
-		validateFalse(exceedsAccountLimit(ownerAccount), MAX_ALLOWANCES_EXCEEDED);
-
-		/* --- Persist the owner account --- */
-		accountStore.commitAccount(ownerAccount);
-		sigImpactHistorian.markEntityChanged(ownerId.num());
+		/* --- Persist the payer account --- */
+		for (final var entry : entitiesChanged.entrySet()) {
+			accountStore.commitAccount(entry.getValue());
+			sigImpactHistorian.markEntityChanged(entry.getKey());
+		}
 
 		txnCtx.setStatus(SUCCESS);
 	}
@@ -121,15 +125,20 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	 * Applies all changes needed for Crypto allowances from the transaction
 	 *
 	 * @param cryptoAllowances
-	 * @param ownerAccount
+	 * @param payerAccount
 	 */
-	private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account ownerAccount) {
+	private void applyCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account payerAccount) {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		final Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
 		for (final var allowance : cryptoAllowances) {
+			final var owner = allowance.getOwner();
+			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final Map<EntityNum, Long> cryptoMap = new TreeMap<>(accountToApprove.getCryptoAllowances());
+
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+
 			final var amount = allowance.getAmount();
 			if (cryptoMap.containsKey(spender.asEntityNum())) {
 				if (amount == 0) {
@@ -137,28 +146,36 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				}
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
+			} else {
+				cryptoMap.put(spender.asEntityNum(), amount);
 			}
-			cryptoMap.put(spender.asEntityNum(), amount);
+			accountToApprove.setCryptoAllowances(cryptoMap);
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 		}
-		ownerAccount.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
 	 * Applies all changes needed for NFT allowances from the transaction
 	 *
 	 * @param nftAllowances
-	 * @param ownerAccount
+	 * @param payerAccount
 	 */
-	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
+	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		final Map<FcTokenAllowanceId, FcTokenAllowance> nftMap = new TreeMap<>(ownerAccount.getNftAllowances());
 		for (var allowance : nftAllowances) {
+			final var owner = allowance.getOwner();
+			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftMap = new TreeMap<>(accountToApprove.getNftAllowances());
+
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
-			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
@@ -166,27 +183,35 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				// No-Op need to submit adjustAllowance to adjust any allowances
 				continue;
 			}
-
 			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(
 					approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
 			nftMap.put(key, value);
+
+			accountToApprove.setNftAllowances(nftMap);
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 		}
-		ownerAccount.setNftAllowances(nftMap);
 	}
 
 	/**
 	 * Applies all changes needed for fungible token allowances from the transaction
 	 *
 	 * @param tokenAllowances
-	 * @param ownerAccount
+	 * @param payerAccount
 	 */
-	private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, final Account ownerAccount) {
+	private void applyFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances, final Account payerAccount) {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		final Map<FcTokenAllowanceId, Long> tokensMap = new TreeMap<>(ownerAccount.getFungibleTokenAllowances());
 		for (var allowance : tokenAllowances) {
+			final var owner = allowance.getOwner();
+			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final Map<FcTokenAllowanceId, Long> tokensMap =
+					new TreeMap<>(accountToApprove.getFungibleTokenAllowances());
+
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 
@@ -200,8 +225,11 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				continue;
 			}
 			tokensMap.put(key, amount);
+
+			accountToApprove.setFungibleTokenAllowances(tokensMap);
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 		}
-		ownerAccount.setFungibleTokenAllowances(tokensMap);
 	}
 
 	/**
