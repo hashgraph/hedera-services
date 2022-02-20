@@ -96,6 +96,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			accountStore.commitAccount(entry.getValue());
 			sigImpactHistorian.markEntityChanged(entry.getKey());
 		}
+		entitiesChanged.clear();
 
 		txnCtx.setStatus(SUCCESS);
 	}
