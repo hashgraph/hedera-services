@@ -87,6 +87,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final TransactionBody cryptoAdjustAllowanceTxn = txnCtx.accessor().getTxn();
 		final AccountID payer = cryptoAdjustAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+		entitiesChanged.clear();
 
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
@@ -102,7 +103,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			accountStore.commitAccount(entry.getValue());
 			sigImpactHistorian.markEntityChanged(entry.getKey());
 		}
-		entitiesChanged.clear();
 
 		txnCtx.setStatus(SUCCESS);
 	}

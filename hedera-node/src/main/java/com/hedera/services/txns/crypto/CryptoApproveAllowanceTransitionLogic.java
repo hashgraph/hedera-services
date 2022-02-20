@@ -81,6 +81,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		final TransactionBody cryptoApproveAllowanceTxn = txnCtx.accessor().getTxn();
 		final AccountID payer = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+		entitiesChanged.clear();
 
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
@@ -96,7 +97,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			accountStore.commitAccount(entry.getValue());
 			sigImpactHistorian.markEntityChanged(entry.getKey());
 		}
-		entitiesChanged.clear();
 
 		txnCtx.setStatus(SUCCESS);
 	}
