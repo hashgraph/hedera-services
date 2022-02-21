@@ -24,9 +24,12 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountCommitInterceptor;
 import com.hedera.services.ledger.properties.TestAccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,7 +75,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionalLedgerTest {
+class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	private final Object[] things = { "a", "b", "c", "d" };
 	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L,
 			TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
@@ -81,22 +84,39 @@ class TransactionalLedgerTest {
 	@Mock
 	private BackingStore<Long, TestAccount> backingAccounts;
 	@Mock
-	private TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger;
-	@Mock
 	private Function<TestAccountProperty, Object> extantProps;
 	@Mock
 	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+	final private SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
 	@BeforeEach
 	private void setup() {
 		scopedCheck = new TestAccountScopedCheck();
 
+		accountsLedger = new TransactionalLedger<>(
+				AccountProperty.class,
+				MerkleAccount::new,
+				new HashMapBackingAccounts(),
+				new ChangeSummaryManager<>(),
+				new AccountsCommitInterceptor(liveSideEffects));
 		subject = new TransactionalLedger<>(
 				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager,
 				new TestAccountCommitInterceptor(new SideEffectsTracker()));
+	}
+
+	@Test
+	void throwsOnCommittingInconsistentAdjustments() {
+		accountsLedger.begin();
+
+		accountsLedger.create(rand);
+		accountsLedger.set(rand, AccountProperty.BALANCE, 1L);
+		accountsLedger.create(deletable);
+		accountsLedger.set(deletable, AccountProperty.BALANCE, -5L);
+
+		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
 	}
 
 	@Test

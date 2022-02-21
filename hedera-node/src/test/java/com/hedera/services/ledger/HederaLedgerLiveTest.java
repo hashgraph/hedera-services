@@ -22,7 +22,6 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -120,23 +119,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void throwsOnCommittingInconsistentAdjustments() {
-		subject.begin();
-		subject.adjustBalance(genesis, -1L);
-
-		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
-	}
-
-	@Test
-	void doesntIncludeZeroAdjustsInNetTransfers() {
-		subject.begin();
-		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.delete(a, genesis);
-
-		assertEquals(0L, subject.netTransfersInTxn().getAccountAmountsList().size());
-	}
-
-	@Test
 	void recordsCreationOfAccountDeletedInSameTxn() {
 		subject.begin();
 		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
@@ -170,7 +152,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.begin();
 		final var customizer = new HederaAccountCustomizer().memo("a");
 		assertThrows(IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
-		assertEquals(1, liveSideEffects.getNetTrackedHbarChanges().getAccountAmountsCount());
 	}
 
 	@Test

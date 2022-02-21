@@ -323,11 +323,9 @@ class LedgerBalanceChangesTest {
 		TransferList inProgress;
 		List<TokenTransferList> inProgressTokens;
 		subject.begin();
-		// and:
+		// and:HederaLedgerLiveTest
 		assertDoesNotThrow(() -> subject.doZeroSum(fixtureChanges()));
 
-		inProgress = subject.netTransfersInTxn();
-		inProgressTokens = subject.netTokenTransfersInTxn();
 		// and:
 		subject.commit();
 
@@ -365,9 +363,6 @@ class LedgerBalanceChangesTest {
 		assertEquals(
 				bYetAnotherTokenBalance + bYetAnotherTokenChange,
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
-		// and:
-		assertEquals(expectedXfers(), inProgress);
-		assertEquals(expectedTokenXfers(), inProgressTokens);
 	}
 
 	@Test
@@ -414,19 +409,10 @@ class LedgerBalanceChangesTest {
 
 		subject.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(changes));
-		TransferList inProgress = subject.netTransfersInTxn();
-		List<TokenTransferList> inProgressTokens = subject.netTokenTransfersInTxn();
 		subject.commit();
 
 		assertEquals(aStartBalance - 100, backingAccounts.getImmutableRef(a).getBalance());
 		assertEquals(0, backingAccounts.getImmutableRef(validAliasEntityNum.toGrpcAccountId()).getBalance());
-
-		final var expectedTransfers = TransferList.newBuilder()
-				.addAccountAmounts(aaBuilderWith(a, -100))
-				.addAccountAmounts(aaBuilderWith(funding, 100))
-				.build();
-		assertEquals(expectedTransfers, inProgress);
-		assertTrue(inProgressTokens.isEmpty());
 	}
 
 	private void setUpForAutoCreations(Key alias, AccountID sender) {
