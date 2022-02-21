@@ -6,7 +6,7 @@ takes a single argument from the set `{setup | do-swaps | manage-liquidity}`.
 We cover each choice below, after discussing how to configure and target 
 the clients.
 
-:info:&nbsp; Please note the following simplifications:
+:information_source:&nbsp; Please note the following simplifications:
  - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%` (500 basis points).
  - All liquidity positions are minted at the widest possible interval allowed
    by the chosen fee; that is, in the tick range `[-887270, +887270]`.
@@ -76,7 +76,7 @@ The _assets/params.json_ config that applies to setup includes:
     all pools start with zero liquidity, so if we want to allow traders to
     start swapping right away, we need this to be greater than zero.
 
-:info:&nbsp; If a trader tries to swap with a pool with insufficient 
+:information_source:&nbsp; If a trader tries to swap with a pool with insufficient 
 liquidity, the result will be `CONTRACT_REVERT_EXECUTED`.  
 
 # Running liquidity providers and traders
