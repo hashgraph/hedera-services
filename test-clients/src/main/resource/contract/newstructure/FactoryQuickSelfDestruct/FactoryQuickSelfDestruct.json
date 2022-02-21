@@ -1,0 +1,22 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "name": "ChildCreated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "createAndDeleteChild",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

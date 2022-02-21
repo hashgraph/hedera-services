@@ -39,9 +39,9 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 
 public class BalanceOperationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
+	private static final String BALANCE_CHECKER_CONTRACT = "BalanceChecker";
 
 	public static void main(String[] args) {
 		new BalanceOperationSuite().runSuiteAsync();
@@ -64,34 +65,31 @@ public class BalanceOperationSuite extends HapiApiSuite {
 	HapiApiSpec verifiesExistenceOfAccountsAndContracts() {
 		final long BALANCE = 10;
 		final String ACCOUNT = "test";
-		final String CONTRACT = "balanceChecker";
 		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
 		return defaultHapiSpec("VerifiesExistenceOfAccountsAndContracts")
 				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_CHECKER_CONTRACT),
-						contractCreate("balanceChecker")
-								.bytecode("bytecode")
-								.gas(300_000L),
+						newFileCreate(BALANCE_CHECKER_CONTRACT),
+						newContractCreate(BALANCE_CHECKER_CONTRACT).gas(300_000),
 						cryptoCreate("test").balance(BALANCE)
 				).when(
 				).then(
-						contractCall(CONTRACT,
-								ContractResources.BALANCE_CHECKER_BALANCE_OF,
+						contractCall(BALANCE_CHECKER_CONTRACT,
+								"balanceOf",
 								INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(CONTRACT,
+						contractCallLocal(BALANCE_CHECKER_CONTRACT,
 								ContractResources.BALANCE_CHECKER_BALANCE_OF,
 								INVALID_ADDRESS)
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							AccountID id = spec.registry().getAccountID(ACCOUNT);
-							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String solidityAddress = calculateSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-							String contractAddress = calculateSolidityAddress((int)contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
+							ContractID contractID = spec.registry().getContractId(BALANCE_CHECKER_CONTRACT);
+							String solidityAddress = calculateSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+							String contractAddress = calculateSolidityAddress((int) contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
 
-							final var call = contractCall(CONTRACT,
-									ContractResources.BALANCE_CHECKER_BALANCE_OF,
+							final var call = contractCall(BALANCE_CHECKER_CONTRACT,
+									"balanceOf",
 									solidityAddress)
 									.via("callRecord");
 
@@ -106,7 +104,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
 									)
 							);
 
-							final var callLocal = contractCallLocal(CONTRACT,
+							final var callLocal = contractCallLocal(BALANCE_CHECKER_CONTRACT,
 									ContractResources.BALANCE_CHECKER_BALANCE_OF,
 									solidityAddress)
 									.has(
@@ -119,7 +117,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
 													)
 									);
 
-							final var contractCallLocal = contractCallLocal(CONTRACT,
+							final var contractCallLocal = contractCallLocal(BALANCE_CHECKER_CONTRACT,
 									ContractResources.BALANCE_CHECKER_BALANCE_OF,
 									contractAddress)
 									.has(

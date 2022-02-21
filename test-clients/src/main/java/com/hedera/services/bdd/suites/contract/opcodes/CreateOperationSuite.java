@@ -49,8 +49,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
@@ -83,14 +83,12 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec factoryAndSelfDestructInConstructorContract() {
-		final var CONTRACT = "contract";
+		final var CONTRACT = "FactorySelfDestructConstructor";
 
 		return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
 				.given(
-						fileCreate("bytecode")
-								.path(ContractResources.FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 								.gas(4_000_000)
 								.balance(10)
 				)
@@ -105,16 +103,14 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec factoryQuickSelfDestructContract() {
-		final var CONTRACT = "contract";
+		final var CONTRACT = "FactoryQuickSelfDestruct";
 
 		return defaultHapiSpec("FactoryQuickSelfDestructContract")
 				.given(
-						fileCreate("bytecode")
-								.path(ContractResources.FACTORY_QUICK_SELF_DESTRUCT_CONTRACT),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode"))
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT))
 				.when(
-						contractCall(CONTRACT, ContractResources.FACTORY_QUICK_SELF_DESTRUCT_CREATE_AND_DELETE_ABI)
+						contractCall(CONTRACT, "createAndDeleteChild")
 								.gas(4_000_000)
 								.via("callRecord"))
 				.then(
@@ -128,17 +124,17 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec inheritanceOfNestedCreatedContracts() {
-		final var CONTRACT = "inheritanceOfNestedCreatedContracts";
+		final var CONTRACT = "NestedChildren";
 		return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
 				.given(
-						fileCreate("bytecode").path(ContractResources.NESTED_CHILDREN_CONTRACT),
-						contractCreate(CONTRACT).bytecode("bytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 								.logged()
 								.via("createRecord"),
 						getContractInfo(CONTRACT).logged().saveToRegistry("parentInfo")
 				)
 				.when(
-						contractCall(CONTRACT, ContractResources.NESTED_CHILDREN_CALL_CREATE_ABI)
+						contractCall(CONTRACT, "callCreate")
 								.gas(780_000)
 								.via("callRecord")
 				)
@@ -153,18 +149,19 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec simpleFactoryWorks() {
+		final var CONTRACT = "FactoryContract";
 		return defaultHapiSpec("ContractFactoryWorksHappyPath")
 				.given(
-						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+						contractCall(CONTRACT, "deploymentSuccess")
 								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var successTxn = getTxnRecord("deploymentSuccessTxn");
-							final var parentContract = getContractInfo("factoryContract").saveToRegistry(
+							final var parentContract = getContractInfo(CONTRACT).saveToRegistry(
 									"contractInfo");
 							allRunFor(spec, successTxn, parentContract);
 
@@ -181,18 +178,19 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec stackedFactoryWorks() {
+		final var CONTRACT = "FactoryContract";
 		return defaultHapiSpec("StackedFactoryWorks")
 				.given(
-						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory").gas(200_000)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(200_000)
 				).when(
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_SUCCESS)
+						contractCall(CONTRACT, "stackedDeploymentSuccess")
 								.gas(1_000_000)
 								.via("stackedDeploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");
-							final var parentContract = getContractInfo("factoryContract").saveToRegistry(
+							final var parentContract = getContractInfo(CONTRACT).saveToRegistry(
 									"contractInfo");
 							allRunFor(spec, successTxn, parentContract);
 
@@ -211,23 +209,24 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec resetOnFactoryFailureWorks() {
+		final var CONTRACT = "FactoryContract";
 		return defaultHapiSpec("ResetOnFactoryFailureWorks")
 				.given(
-						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory").gas(200_000)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(200_000)
 				).when(
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE)
+						contractCall(CONTRACT, "deploymentFailure")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.gas(780_000)
 								.via("deploymentFailureTxn"),
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+						contractCall(CONTRACT, "deploymentSuccess")
 								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var revertTxn = getTxnRecord("deploymentFailureTxn");
 							final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-							final var parentContract = getContractInfo("factoryContract").saveToRegistry(
+							final var parentContract = getContractInfo(CONTRACT).saveToRegistry(
 									"contractInfo");
 							allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
@@ -246,23 +245,24 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec resetOnFactoryFailureAfterDeploymentWorks() {
+		final var CONTRACT = "FactoryContract";
 		return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
 				.given(
-						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory").gas(200_000)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(200_000)
 				).when(
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_FAILURE_AFTER_DEPLOY)
+						contractCall(CONTRACT, "failureAfterDeploy")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.gas(780_000)
 								.via("failureAfterDeploymentTxn"),
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+						contractCall(CONTRACT, "deploymentSuccess")
 								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var revertTxn = getTxnRecord("failureAfterDeploymentTxn");
 							final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-							final var parentContract = getContractInfo("factoryContract").saveToRegistry(
+							final var parentContract = getContractInfo(CONTRACT).saveToRegistry(
 									"contractInfo");
 							allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
@@ -281,23 +281,24 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec resetOnStackedFactoryFailureWorks() {
+		final var CONTRACT = "FactoryContract";
 		return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
 				.given(
-						fileCreate("factory").path(ContractResources.FACTORY_CONTRACT),
-						contractCreate("factoryContract").bytecode("factory").gas(200_000)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(200_000)
 				).when(
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_STACKED_DEPLOYMENT_FAILURE)
+						contractCall(CONTRACT, "stackedDeploymentFailure")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
 								.gas(780_000)
 								.via("stackedDeploymentFailureTxn"),
-						contractCall("factoryContract", ContractResources.FACTORY_CONTRACT_SUCCESS)
+						contractCall(CONTRACT, "deploymentSuccess")
 								.gas(780_000)
 								.via("deploymentSuccessTxn")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var revertTxn = getTxnRecord("stackedDeploymentFailureTxn");
 							final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-							final var parentContract = getContractInfo("factoryContract").saveToRegistry(
+							final var parentContract = getContractInfo(CONTRACT).saveToRegistry(
 									"contractInfo");
 							allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
@@ -316,15 +317,15 @@ public class CreateOperationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec contractCreateWithNewOpInConstructor() {
+		final var CONTRACT = "AbandoningParent";
 		return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
 				.given(
-						fileCreate("AbandoningParentBytecode").path(ContractResources.ABANDONING_PARENT_BYTECODE_PATH)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(4_000_000).via("AbandoningParentTxn")
 				).when().then(
-						contractCreate("AbandoningParent").bytecode("AbandoningParentBytecode")
-								.gas(4_000_000).via("AbandoningParentTxn"),
-						getContractInfo("AbandoningParent").saveToRegistry("AbandoningParentParentInfo").logged(),
+						getContractInfo(CONTRACT).saveToRegistry("AbandoningParentParentInfo").logged(),
 						getTxnRecord("AbandoningParentTxn")
-								.saveCreatedContractListToRegistry("AbandoningParent")
+								.saveCreatedContractListToRegistry(CONTRACT)
 								.logged(),
 						UtilVerbs.contractListWithPropertiesInheritedFrom("AbandoningParentCreateResult", 6, "AbandoningParentParentInfo")
 				);
@@ -332,24 +333,21 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 	HapiApiSpec childContractStorageWorks() {
 		final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
+		final var CONTRACT = "CreateTrivial";
 
 		return defaultHapiSpec("childContractStorageWorks")
 				.given(
-						fileCreate("createTrivialBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH)
-				).when(
-						contractCreate("firstContract")
-								.bytecode("createTrivialBytecode")
-								.gas(200_000)
-								.via("firstContractTxn")
-				).then(
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(200_000).via("firstContractTxn")
+				).when()
+				.then(
 						assertionsHold((spec, ctxLog) -> {
-							var subop1 = contractCall("firstContract", ContractResources.CREATE_CHILD_ABI)
+							var subop1 = contractCall(CONTRACT, "create")
 									.gas(785_000)
 									.via("createContractTxn");
 
 							// First contract calls created contract and get an integer return value
-							var subop2 = contractCallLocal("firstContract", ContractResources.GET_CHILD_RESULT_ABI)
+							var subop2 = contractCallLocal(CONTRACT, ContractResources.GET_CHILD_RESULT_ABI)
 									.saveResultTo("contractCallContractResultBytes");
 							CustomSpecAssert.allRunFor(spec, subop1, subop2);
 
@@ -372,7 +370,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 
 							// Get created contract's info with call to first contract
-							var subop3 = contractCallLocal("firstContract", ContractResources.GET_CHILD_ADDRESS_ABI)
+							var subop3 = contractCallLocal(CONTRACT, ContractResources.GET_CHILD_ADDRESS_ABI)
 									.saveResultTo("getCreatedContractInfoResultBytes");
 							CustomSpecAssert.allRunFor(spec, subop3);
 
