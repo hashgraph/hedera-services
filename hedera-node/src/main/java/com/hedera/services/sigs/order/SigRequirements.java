@@ -252,24 +252,13 @@ public class SigRequirements {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
 		} else if (txn.hasCryptoApproveAllowance()) {
 			final var approveTxn = txn.getCryptoApproveAllowance();
-			return cryptoAllowace(
-					payer,
-					approveTxn.getCryptoAllowancesList(),
-					approveTxn.getTokenAllowancesList(),
-					approveTxn.getNftAllowancesList(),
-					factory,
-					linkedRefs);
+			return cryptoAllowace(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+					approveTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else if (txn.hasCryptoAdjustAllowance()) {
-			final var approveTxn = txn.getCryptoAdjustAllowance();
-			return cryptoAllowace(
-					payer,
-					approveTxn.getCryptoAllowancesList(),
-					approveTxn.getTokenAllowancesList(),
-					approveTxn.getNftAllowancesList(),
-					factory,
-					linkedRefs);
-		}
-		else {
+			final var adjustTxn = txn.getCryptoAdjustAllowance();
+			return cryptoAllowace(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
+					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
+		} else {
 			return null;
 		}
 	}
@@ -538,7 +527,7 @@ public class SigRequirements {
 			final List<NftAllowance> nftAllowancesList,
 			final SigningOrderResultFactory<T> factory,
 			final @Nullable LinkedRefs linkedRefs) {
-		List<JKey> required =  new ArrayList<>();
+		List<JKey> required = new ArrayList<>();
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var owner = allowance.getOwner();
@@ -641,7 +630,8 @@ public class SigRequirements {
 			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				final var sender = adjust.getSenderAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, sender, null, adjust.getIsApproval(), required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, sender, null, adjust.getIsApproval(), required, token, op,
+						linkedRefs))
 						!= NONE) {
 					return accountFailure(failure, factory);
 				}
@@ -1182,7 +1172,7 @@ public class SigRequirements {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
 				final var meta = result.metadata();
-				final var isUnapprovedDebit = adjust.getAmount() < 0  && !adjust.getIsApproval();
+				final var isUnapprovedDebit = adjust.getAmount() < 0 && !adjust.getIsApproval();
 
 				if ((isUnapprovedDebit || meta.receiverSigRequired())) {
 					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
