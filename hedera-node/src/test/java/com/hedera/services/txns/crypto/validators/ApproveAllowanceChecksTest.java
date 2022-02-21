@@ -143,8 +143,6 @@ class ApproveAllowanceChecksTest {
 	}
 
 	private void setUpForTest() {
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
@@ -297,7 +295,9 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void validateNegativeAmounts() {
-		givenNecessaryStubs();
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
 				-10L).setOwner(ownerId1).build();
@@ -325,7 +325,9 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsWhenExceedsMaxTokenSupply() {
-		givenNecessaryStubs();
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token1).setOwner(ownerId1).build();
 
@@ -335,7 +337,9 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsForNftInFungibleTokenAllowances() {
-		givenNecessaryStubs();
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token2).setOwner(ownerId1).build();
@@ -346,8 +350,6 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
@@ -368,8 +370,6 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void fungibleInNFTAllowances() {
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
@@ -491,7 +491,6 @@ class ApproveAllowanceChecksTest {
 	private void givenNecessaryStubs() {
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(owner);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 	}
