@@ -50,6 +50,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -101,7 +102,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccount(owner);
+				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
 			}
 			final var existingAllowances = ownerAccount.getCryptoAllowances();
 			final var key = spender.asEntityNum();
@@ -144,7 +145,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccount(owner);
+				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
 			}
 			final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
 
@@ -194,7 +195,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccount(owner);
+				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
 			}
 
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());

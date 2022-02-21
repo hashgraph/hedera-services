@@ -159,30 +159,34 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
 					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.setAmount(entry.amount())
-					.build();
-			callowances.add(builder);
+					.setAmount(entry.amount());
+			if(entry.owner() != null){
+				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+			}
+
+			callowances.add(builder.build());
 		}
 
 		for (var entry : tokenAllowances) {
 			final var builder = TokenAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.setAmount(entry.amount())
-					.build();
-			tallowances.add(builder);
+					.setAmount(entry.amount());
+			if(entry.owner() != null){
+				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+			}
+			tallowances.add(builder.build());
 		}
 		for (var entry : nftAllowances) {
 			final var builder = NftAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.addAllSerialNumbers(entry.serials())
-					.build();
-			nftallowances.add(builder);
+					.addAllSerialNumbers(entry.serials());
+			if(entry.owner() != null){
+				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+			}
+			nftallowances.add(builder.build());
 		}
 	}
 

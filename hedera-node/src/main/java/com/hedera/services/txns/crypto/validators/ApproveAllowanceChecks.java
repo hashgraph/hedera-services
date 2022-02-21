@@ -91,15 +91,17 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		for (final var allowance : cryptoAllowancesList) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			final var owner = allowance.getOwner() == null ? payerAccount :
-					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
-							INVALID_ALLOWANCE_OWNER_ID);
+			var owner = Id.fromGrpcAccount(allowance.getOwner());
+
+			if (owner.equals(Id.MISSING_ID)) {
+				owner = payerAccount.getId();
+			}
 
 			var validity = validateAmount(amount);
 			if (validity != OK) {
 				return validity;
 			}
-			validity = validateCryptoAllowanceBasics(owner.getId(), spender);
+			validity = validateCryptoAllowanceBasics(owner, spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -128,9 +130,13 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
-			final var owner = allowance.getOwner() == null ? payerAccount :
-					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
-							INVALID_ALLOWANCE_OWNER_ID);
+			var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final Account ownerAccount;
+			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+				ownerAccount = payerAccount;
+			} else {
+				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+			}
 
 			if (!token.isFungibleCommon()) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -141,7 +147,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(owner, spenderId, tokenId);
+			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -170,15 +176,19 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
-			final var owner = allowance.getOwner() == null ? payerAccount :
-					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
-							INVALID_ALLOWANCE_OWNER_ID);
+			var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final Account ownerAccount;
+			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+				ownerAccount = payerAccount;
+			} else {
+				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+			}
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(owner, spenderId, tokenId);
+			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -186,7 +196,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			if (!approvedForAll) {
 				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
 				// state
-				validity = validateSerialNums(serialNums, owner, token);
+				validity = validateSerialNums(serialNums, ownerAccount, token);
 				if (validity != OK) {
 					return validity;
 				}
