@@ -572,6 +572,11 @@ public interface TxnHandlingScenario {
 			.setSpender(DEFAULT_PAYER)
 			.setAmount(500L).build());
 
+	List<CryptoAllowance> cryptoAllowanceMissingOwnerList = List.of(CryptoAllowance.newBuilder()
+			.setOwner(MISSING_ACCOUNT)
+			.setSpender(DEFAULT_PAYER)
+			.setAmount(500L).build());
+
 	List<CryptoAllowance> cryptoAllowanceNoOwnerList = List.of(CryptoAllowance.newBuilder()
 			.setSpender(DEFAULT_PAYER)
 			.setAmount(500L).build());
@@ -606,5 +611,12 @@ public interface TxnHandlingScenario {
 					.setTokenId(KNOWN_TOKEN_WITH_WIPE)
 					.setSpender(DEFAULT_PAYER)
 					.setApprovedForAll(BoolValue.of(true))
+			.build());
+
+	List<NftAllowance> nftAllowanceMissingOwnerList = List.of(NftAllowance.newBuilder()
+			.setOwner(MISSING_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setApprovedForAll(BoolValue.of(true))
 			.build());
 }

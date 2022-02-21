@@ -450,10 +450,6 @@ public class SideEffectsTracker {
 		allNftAllowances.put(ownerNum, nftAllowances);
 	}
 
-//	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances(final EntityNum ownerNum) {
-//		return allNftAllowances.getOrDefault(ownerNum, Collections.emptyMap());
-//	}
-
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */

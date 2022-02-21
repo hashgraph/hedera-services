@@ -243,6 +243,30 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void tracksAndResetsAllowanceAdjusts() {
+		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
+		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
+		subject.setNftAllowances(ownerNum, nftAllowance);
+
+		final var trackedCryptoAllowances = subject.getAllCryptoAllowances();
+		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));
+		assertEquals(cryptoAllowance, trackedCryptoAllowances.get(ownerNum));
+
+		final var trackedTokenAllowances = subject.getAllFungibleTokenAllowances();
+		assertTrue(trackedTokenAllowances.containsKey(ownerNum));
+		assertEquals(fungibleAllowance, trackedTokenAllowances.get(ownerNum));
+
+		final var trackedNftAllowances = subject.getAllNftAllowances();
+		assertTrue(trackedNftAllowances.containsKey(ownerNum));
+		assertEquals(nftAllowance, trackedNftAllowances.get(ownerNum));
+
+		subject.reset();
+		assertTrue(subject.getAllCryptoAllowances().isEmpty());
+		assertTrue(subject.getAllFungibleTokenAllowances().isEmpty());
+		assertTrue(subject.getAllNftAllowances().isEmpty());
+	}
+
+	@Test
 	void prioritizesExplicitOwnershipChanges() {
 		final var tracker = new OwnershipTracker();
 		tracker.add(
@@ -326,6 +350,7 @@ class SideEffectsTrackerTest {
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final AccountID bAccount = IdUtils.asAccount("0.0.23456");
 	private static final AccountID cAccount = IdUtils.asAccount("0.0.34567");
+	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
 	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
 	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =
@@ -337,15 +362,25 @@ class SideEffectsTrackerTest {
 			put(EntityNum.fromAccountId(aAccount), initialAllowance);
 		}});
 	}};
+	private static final Map<EntityNum, Long> cryptoAllowance = new TreeMap<>() {{
+			put(EntityNum.fromAccountId(aAccount), initialAllowance);
+		}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
+	private static final Map<FcTokenAllowanceId, Long> fungibleAllowance = new TreeMap<>() {{
+			put(fungibleAllowanceId, initialAllowance);
+		}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
 				put(fungibleAllowanceId, nftAllowance1);
 				put(nftAllowanceId, nftAllowance2);
 			}});
 	}};
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
+			put(fungibleAllowanceId, nftAllowance1);
+			put(nftAllowanceId, nftAllowance2);
+		}};
 }

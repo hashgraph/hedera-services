@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -91,7 +92,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		for (final var allowance : cryptoAllowancesList) {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			final var owner = allowance.getOwner() == null ? payerAccount :
+			final var owner = allowance.getOwner().equals(AccountID.getDefaultInstance()) ? payerAccount :
 					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
 							INVALID_ALLOWANCE_OWNER_ID);
 
@@ -128,7 +129,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
-			final var owner = allowance.getOwner() == null ? payerAccount :
+			final var owner = allowance.getOwner().equals(AccountID.getDefaultInstance()) ? payerAccount :
 					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
 							INVALID_ALLOWANCE_OWNER_ID);
 
@@ -170,7 +171,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
-			final var owner = allowance.getOwner() == null ? payerAccount :
+			final var owner = allowance.getOwner().equals(AccountID.getDefaultInstance()) ? payerAccount :
 					accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(allowance.getOwner()),
 							INVALID_ALLOWANCE_OWNER_ID);
 
