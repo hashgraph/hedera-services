@@ -6,7 +6,7 @@ takes a single argument from the set `{setup | do-swaps | manage-liquidity}`.
 We cover each choice below, after discussing how to configure and target 
 the clients.
 
-:information:&nbsp; Please note the following simplifications:
+:info:&nbsp; Please note the following simplifications:
  - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%` (500 basis points).
  - All liquidity positions are minted at the widest possible interval allowed
    by the chosen fee; that is, in the tick range `[-887270, +887270]`.
@@ -69,14 +69,14 @@ The _assets/params.json_ config that applies to setup includes:
   - `ercTokenNames`: Names of the ERC20 tokens to be paired in pools; ticker 
     symbols are derived from the first letters of each word in the name. 
   - `numTraders`: How many trader contracts to create (that is, instances of 
-    [_assets/solidity/TypicalV3Swap.sol_)(./assets/solidity/TypicalV3Swap.sol)).
+    [_assets/solidity/TypicalV3Swap.sol_](./assets/solidity/TypicalV3Swap.sol)).
   - `numLiquidityProviders`: How many LP contracts to create (that is, instances of 
-    [_assets/solidity/TypicalV3LP.sol_)(./assets/solidity/TypicalV3LP.sol)).
+    [_assets/solidity/TypicalV3LP.sol_](./assets/solidity/TypicalV3LP.sol)).
   - `numStartupMints`: How many liquidity positions to mint at the end of setup---
     all pools start with zero liquidity, so if we want to allow traders to
     start swapping right away, we need this to be greater than zero.
 
-:information:&nbsp; If a trader tries to swap with a pool with insufficient 
+:info:&nbsp; If a trader tries to swap with a pool with insufficient 
 liquidity, the result will be `CONTRACT_REVERT_EXECUTED`.  
 
 # Running liquidity providers and traders
