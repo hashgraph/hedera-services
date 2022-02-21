@@ -199,16 +199,16 @@ public class AllowanceHelpers {
 		final var ownerId = Id.fromGrpcAccount(owner);
 		if (owner.equals(AccountID.getDefaultInstance()) || owner.equals(payerAccount.getId().asGrpcAccount())) {
 			return payerAccount;
-		}else if (entitiesChanged.containsKey(ownerId.num())) {
+		} else if (entitiesChanged.containsKey(ownerId.num())) {
 			return entitiesChanged.get(ownerId.num());
 		} else {
 			return accountStore.loadAccountOrFailWith(ownerId, INVALID_ALLOWANCE_OWNER_ID);
 		}
 	}
 
-	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender) {
-		return EntityNumPair.fromLongs(
-				owner.getAccountNum(), spender.getAccountNum());
+	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender, final EntityNum payer) {
+		return EntityNumPair.fromLongs(owner == null ? payer.longValue() : owner.getAccountNum(),
+				spender.getAccountNum());
 	}
 
 	public static Pair<EntityNum, FcTokenAllowanceId> buildTokenAllowanceKey

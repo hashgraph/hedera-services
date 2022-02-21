@@ -84,7 +84,10 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		}
 		final var cryptoKeys = cryptoAllowancesList
 				.stream()
-				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender()))
+				.map(allowance -> buildEntityNumPairFrom(
+						allowance.getOwner(),
+						allowance.getSpender(),
+						payerAccount.getId().asEntityNum()))
 				.toList();
 		if (hasRepeatedSpender(cryptoKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;

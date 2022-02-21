@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -174,6 +175,7 @@ class ApproveAllowanceChecksTest {
 		cryptoAllowances.add(cryptoAllowance1);
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
 		final var validity = subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner,
 				dynamicProperties.maxAllowanceLimitPerTransaction());
@@ -185,7 +187,7 @@ class ApproveAllowanceChecksTest {
 
 	private void assertRepeated() {
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender())).toList()));
+				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(), EntityNum.fromAccountId(payer))).toList()));
 		assertTrue(hasRepeatedId(tokenAllowances.stream()
 				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
 		assertTrue(hasRepeatedId(nftAllowances.stream()
@@ -194,7 +196,7 @@ class ApproveAllowanceChecksTest {
 
 	private void assertNoRepeated() {
 		assertFalse(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender())).toList()));
+				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(), EntityNum.fromAccountId(payer))).toList()));
 		assertFalse(hasRepeatedId(tokenAllowances.stream()
 				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
 		assertFalse(hasRepeatedId(nftAllowances.stream()
@@ -314,6 +316,7 @@ class ApproveAllowanceChecksTest {
 		cryptoAllowances.add(cryptoAllowance1);
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES, subject.validateCryptoAllowances(cryptoAllowances, owner));
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
 				subject.validateFungibleTokenAllowances(tokenAllowances, owner));
