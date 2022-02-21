@@ -161,7 +161,6 @@ public class TransferLogic {
 			if (change.isForHbar()) {
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
-				sideEffectsTracker.trackHbarChange(accountId, change.getAggregatedUnits());
 				if (change.isApprovedAllowance()) {
 					adjustCryptoAllowance(change, accountId);
 				}
