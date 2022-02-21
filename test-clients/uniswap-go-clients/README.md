@@ -10,6 +10,7 @@ the clients.
 1. [Configuring the clients](#configuring-the-clients)
 2. [Setting up the simulation](#setting-up-the-simulation)
 3. [Running liquidity providers and traders](#running-lps-and-traders)
+4. [Limitations](#limitations)
 
 # Configuring the clients
 
@@ -67,15 +68,6 @@ The _assets/params.json_ config that applies to setup includes:
     all pools start with zero liquidity, so if we want to allow traders to
     start swapping right away, we need this to be greater than zero.
 
-:information_source:&nbsp; Please note the following simplifications:
- - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%`.
- - All liquidity positions are minted at the widest possible interval allowed
-   by the chosen fee; that is, in the tick range `[-887270, +887270]`.
- - All positions are minted with an equal amount of both tokens in the pair, and all 
-   swaps (both fixed-input and fixed-output) are always for the same amount.
-
-Future versions of these clients may be more configurable.
-
 # Running liquidity providers and traders
 
 Once the `setup` client has completed against a target network, we can
@@ -122,3 +114,15 @@ Parameters in _assets/params.json_ that affect this client:
 
 :information_source:&nbsp; If a trader tries to swap with a pool with insufficient 
 liquidity, the result will be `CONTRACT_REVERT_EXECUTED`.  
+
+# Limitations
+
+Please note the following fixed assumptions:
+ - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%`.
+ - All liquidity positions are minted at the widest possible interval allowed
+   by the chosen fee; that is, in the tick range `[-887270, +887270]`.
+ - All positions are minted with an equal amount of both tokens in the pair, and all 
+   swaps (both fixed-input and fixed-output) are always for the same amount.
+
+Future versions of these clients may be more configurable.
+
