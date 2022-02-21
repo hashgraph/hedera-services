@@ -6,15 +6,6 @@ takes a single argument from the set `{setup | do-swaps | manage-liquidity}`.
 We cover each choice below, after discussing how to configure and target 
 the clients.
 
-:information_source:&nbsp; Please note the following simplifications:
- - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%` (500 basis points).
- - All liquidity positions are minted at the widest possible interval allowed
-   by the chosen fee; that is, in the tick range `[-887270, +887270]`.
- - All positions are minted with an equal amount of both tokens; and all 
-   swaps (both fixed-input and fixed-output) are always for the same amount.
-
-Future versions of these clients may be more configurable.
-
 **Table of contents**
 1. [Configuring the clients](#configuring-the-clients)
 2. [Setting up the simulation](#setting-up-the-simulation)
@@ -76,8 +67,14 @@ The _assets/params.json_ config that applies to setup includes:
     all pools start with zero liquidity, so if we want to allow traders to
     start swapping right away, we need this to be greater than zero.
 
-:information_source:&nbsp; If a trader tries to swap with a pool with insufficient 
-liquidity, the result will be `CONTRACT_REVERT_EXECUTED`.  
+:information_source:&nbsp; Please note the following simplifications:
+ - Each pool is initialized with a price of 1 (that is, `sqrtPriceX96=79228162514264337594000000000`), and a pool fee of `0.05%`.
+ - All liquidity positions are minted at the widest possible interval allowed
+   by the chosen fee; that is, in the tick range `[-887270, +887270]`.
+ - All positions are minted with an equal amount of both tokens in the pair, and all 
+   swaps (both fixed-input and fixed-output) are always for the same amount.
+
+Future versions of these clients may be more configurable.
 
 # Running liquidity providers and traders
 
@@ -122,3 +119,6 @@ Parameters in _assets/params.json_ that affect this client:
      to "fire-and-forget" swap transactions.
   - `opsBetweenBalanceDisplay`: How many operations to perform before
      displaying the token balances of all traders.
+
+:information_source:&nbsp; If a trader tries to swap with a pool with insufficient 
+liquidity, the result will be `CONTRACT_REVERT_EXECUTED`.  
