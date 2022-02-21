@@ -28,6 +28,5 @@ public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<Accoun
 	@Override
 	public void preview(final List<MerkleLeafChanges<Pair<AccountID, TokenID>, MerkleTokenRelStatus,
 			TokenRelProperty>> changesToCommit) {
-		throw new NotImplementedException();
 	}
 }

@@ -41,7 +41,7 @@ public class AccountsCommitInterceptor implements
 						(long) changedProperties.get(AccountProperty.BALANCE));
 				continue;
 			}
-//
+
 			trackHBarTransfer(changedProperties, account, merkleAccount, balances);
 		}
 
