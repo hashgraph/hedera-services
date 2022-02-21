@@ -59,7 +59,7 @@ func MintRandomlyGiven(
 	}
 
 	fmt.Printf("🍵 LP %s looking to mint %s/%s\n", lpId, tickerA, tickerB)
-	mintVia(client, tokenA, tokenB, mintAmount, mintAmount, lpId, simParams.CheckMintRecords)
+	mintVia(client, tokenA, tokenB, mintAmount, mintAmount, lpId, simParams.CheckMintRecords, simParams.GasOfferPerMint)
 }
 
 func mintVia(
@@ -70,6 +70,7 @@ func mintVia(
 	amount1 uint64,
 	lpId hedera.ContractID,
 	getRecord bool,
+	gasToOffer uint64,
 ) {
 	encAmount0 := Uint256From64(amount0)
 	encAmount1 := Uint256From64(amount1)
@@ -88,7 +89,7 @@ func mintVia(
 		AddUint256(encAmount1)
 	if getRecord {
 		var mintRecord hedera.TransactionRecord
-		mintRecord, err = CallContractTentatively(client, lpId, "mintNewPosition", mintParams)
+		mintRecord, err = CallContractTentatively(client, lpId, "mintNewPosition", mintParams, gasToOffer)
 		if err == nil {
 			result, _ := mintRecord.GetContractExecuteResult()
 			positionNftId := Uint64From256(result.GetUint256(0))
@@ -101,7 +102,7 @@ func mintVia(
 			fmt.Printf("%s\n", err)
 		}
 	} else {
-		FireAndForget(client, lpId, "mintNewPosition", mintParams)
+		FireAndForget(client, lpId, "mintNewPosition", mintParams, gasToOffer)
 		fmt.Print("OK\n")
 	}
 }

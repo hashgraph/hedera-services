@@ -7,12 +7,14 @@
     "Ecru",
     "Fuzzy Wuzzy"
   ],
-  "numTraders": 1,
+  "numTraders": 5,
   "numLiquidityProviders": 1,
   "millisBetweenSwaps": 20,
   "millisBetweenMints": 2000,
-  "checkSwapRecords": false,
+  "checkSwapRecords": true,
   "checkMintRecords": true,
+  "gasOfferPerMint": 1000000,
+  "gasOfferPerSwap": 250000,
   "numStartupMints": 10,
   "opsBetweenBalanceDisplay": 20
 }

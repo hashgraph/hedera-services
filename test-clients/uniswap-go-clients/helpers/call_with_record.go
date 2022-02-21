@@ -37,10 +37,11 @@ func CallContractTentatively(
 	target hedera.ContractID,
 	method string,
 	params *hedera.ContractFunctionParameters,
+	gasToOffer uint64,
 ) (hedera.TransactionRecord, error) {
 	txnId, err := hedera.NewContractExecuteTransaction().
 		SetContractID(target).
-		SetGas(4_000_000).
+		SetGas(gasToOffer).
 		SetFunction(method, params).
 		Execute(client)
 	if err != nil {
@@ -61,10 +62,11 @@ func FireAndForget(
 	target hedera.ContractID,
 	method string,
 	params *hedera.ContractFunctionParameters,
+	gasToOffer uint64,
 ) {
 	_, err := hedera.NewContractExecuteTransaction().
 		SetContractID(target).
-		SetGas(4_000_000).
+		SetGas(gasToOffer).
 		SetFunction(method, params).
 		Execute(client)
 	if err != nil {

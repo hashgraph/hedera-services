@@ -91,11 +91,15 @@ func SwapRandomlyGiven(
 	if fixedInput {
 		fmt.Printf("🍄 Trader %s Looking to swap %d %s for as much %s as possible\n",
 			traderId, swapAmount, tickerIn, tickerOut)
-		swapExactInput(client, tokenIn, tokenOut, swapAmount, traderId, simParams.CheckSwapRecords)
+		swapExactInput(
+			client, tokenIn, tokenOut, swapAmount, traderId,
+			simParams.CheckSwapRecords, simParams.GasOfferPerSwap)
 	} else {
 		fmt.Printf("🌳 Trader %s Looking to swap up %d %s for %d %s\n",
 			traderId, swapAmount, tickerIn, swapAmount/2, tickerOut)
-		swapExactOutput(client, tokenIn, tokenOut, swapAmount, swapAmount/2, traderId, simParams.CheckSwapRecords)
+		swapExactOutput(
+			client, tokenIn, tokenOut, swapAmount, swapAmount/2, traderId,
+			simParams.CheckSwapRecords, simParams.GasOfferPerSwap)
 	}
 }
 
@@ -106,6 +110,7 @@ func swapExactInput(
 	amountIn uint64,
 	traderId hedera.ContractID,
 	getRecord bool,
+	gasToOffer uint64,
 ) {
 	encAmountIn := Uint256From64(amountIn)
 	var swapParams = hedera.NewContractFunctionParameters()
@@ -122,7 +127,8 @@ func swapExactInput(
 		AddUint256(encAmountIn)
 	if getRecord {
 		var swapRecord hedera.TransactionRecord
-		swapRecord, err = CallContractTentatively(client, traderId, "swapExactInputSingle", swapParams)
+		swapRecord, err = CallContractTentatively(
+			client, traderId, "swapExactInputSingle", swapParams, gasToOffer)
 		if err == nil {
 			amountOut := swapRecord.CallResult.GetUint64(0)
 			fmt.Printf("got %d units back\n", amountOut)
@@ -130,7 +136,7 @@ func swapExactInput(
 			fmt.Printf("%s\n", err)
 		}
 	} else {
-		FireAndForget(client, traderId, "swapExactInputSingle", swapParams)
+		FireAndForget(client, traderId, "swapExactInputSingle", swapParams, gasToOffer)
 		fmt.Print("OK\n")
 	}
 }
@@ -143,6 +149,7 @@ func swapExactOutput(
 	amountOut uint64,
 	traderId hedera.ContractID,
 	getRecord bool,
+	gasToOffer uint64,
 ) {
 	encMaxAmountIn := Uint256From64(maxAmountIn)
 	encAmountOut := Uint256From64(amountOut)
@@ -161,7 +168,8 @@ func swapExactOutput(
 	fmt.Print("  🐲 Swapping...")
 	if getRecord {
 		var swapRecord hedera.TransactionRecord
-		swapRecord, err = CallContractTentatively(client, traderId, "swapExactOutputSingle", swapParams)
+		swapRecord, err = CallContractTentatively(
+			client, traderId, "swapExactOutputSingle", swapParams, gasToOffer)
 		if err == nil {
 			amountIn := swapRecord.CallResult.GetUint64(0)
 			fmt.Printf("required %d units\n", amountIn)
@@ -169,7 +177,7 @@ func swapExactOutput(
 			fmt.Printf("%s\n", err)
 		}
 	} else {
-		FireAndForget(client, traderId, "swapExactOutputSingle", swapParams)
+		FireAndForget(client, traderId, "swapExactOutputSingle", swapParams, gasToOffer)
 		fmt.Print("OK\n")
 	}
 }

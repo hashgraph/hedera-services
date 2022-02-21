@@ -15,6 +15,8 @@ type params struct {
 	CheckSwapRecords         bool     `json:"checkSwapRecords"`
 	CheckMintRecords         bool     `json:"checkMintRecords"`
 	OpsBetweenBalanceDisplay int      `json:"opsBetweenBalanceDisplay"`
+	GasOfferPerSwap          uint64   `json:"gasOfferPerSwap"`
+	GasOfferPerMint          uint64   `json:"gasOfferPerMint"`
 }
 
 func LoadParams() params {
