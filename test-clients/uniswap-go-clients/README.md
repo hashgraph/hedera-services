@@ -1,4 +1,4 @@
-# Uniswap V3 mini-simulation 
+# Minimalist Uniswap V3 DEX simulation
 
 The _uniswap_sim.go_ file in this directory runs clients that setup and 
 simulate a minimal Uniswap V3 DEX. The _uniswap_sim.go_ main function 
