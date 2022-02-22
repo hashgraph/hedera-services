@@ -256,15 +256,6 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void adjustsBalance() {
-		// when:
-		subject.adjustBalance(id, balance);
-
-		// then:
-		verify(ledger).adjustBalance(id, balance);
-	}
-
-	@Test
 	void getsBalance() {
 		// given:
 		given(ledger.getBalance(id)).willReturn(balance);

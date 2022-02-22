@@ -425,7 +425,6 @@ class HederaWorldStateTest {
 	@Test
 	void staticInnerUpdaterWorksAsExpected() {
 		final var tbd = IdUtils.asAccount("0.0.321");
-		final var tbdBalance = 123L;
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
 		given(worldLedgers.aliases()).willReturn(aliases);
@@ -437,13 +436,11 @@ class HederaWorldStateTest {
 
 		/* delete branch */
 		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
-		given(entityAccess.getBalance(tbd)).willReturn(tbdBalance).willReturn(0L);
 		var mockTbdAccount = mock(Address.class);
 		actualSubject.getSponsorMap().put(tbdAddress, mockTbdAccount);
 		actualSubject.deleteAccount(tbdAddress);
 		actualSubject.commit();
 		verify(worldLedgers).commit(sigImpactHistorian);
-		verify(entityAccess).adjustBalance(tbd, -tbdBalance);
 		verify(sigImpactHistorian).markEntityChanged(tbd.getAccountNum());
 
 		actualSubject.getSponsorMap().put(Address.ZERO, mockTbdAccount);
@@ -508,8 +505,6 @@ class HederaWorldStateTest {
 
 		final var updater = subject.updater();
 		updater.deleteAccount(tbdAddress);
-		// and:
-		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
 
 		// when:
 		updater.commit();

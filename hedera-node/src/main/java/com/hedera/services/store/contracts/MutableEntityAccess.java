@@ -136,11 +136,6 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void adjustBalance(final AccountID id, final long adjustment) {
-		ledger.adjustBalance(id, adjustment);
-	}
-
-	@Override
 	public long getAutoRenew(final AccountID id) {
 		return ledger.autoRenewPeriod(id);
 	}

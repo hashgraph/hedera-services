@@ -103,11 +103,6 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void adjustBalance(AccountID id, long adjustment) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public long getAutoRenew(AccountID id) {
 		return accounts.get(fromAccountId(id)).getAutoRenewSecs();
 	}

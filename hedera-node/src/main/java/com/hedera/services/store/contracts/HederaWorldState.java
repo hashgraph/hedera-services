@@ -427,15 +427,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 				validateTrue(impactHistorian != null, FAIL_INVALID);
 				impactHistorian.markEntityChanged(accountId.getAccountNum());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				final var deletedBalance = entityAccess.getBalance(accountId);
-				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
 
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
-				entityAccess.adjustBalance(accountId, balanceChange);
 
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());

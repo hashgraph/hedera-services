@@ -57,8 +57,6 @@ public interface EntityAccess {
 
 	void customize(AccountID id, HederaAccountCustomizer customizer);
 
-	void adjustBalance(AccountID id, long adjustment);
-
 	long getAutoRenew(AccountID id);
 
 	long getBalance(AccountID id);
