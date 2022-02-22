@@ -118,7 +118,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-                final var refStorage = storage.get();
+		final var refStorage = storage.get();
 		Objects.requireNonNull(refStorage);
 		return refStorage;
 	}
@@ -136,7 +136,7 @@ public class MutableStateChildren implements StateChildren {
 
 	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
 		this.contractStorage = new WeakReference<>(contractStorage);
-        }
+	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
