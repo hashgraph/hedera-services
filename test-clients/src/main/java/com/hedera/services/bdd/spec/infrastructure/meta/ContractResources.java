@@ -113,6 +113,9 @@ public class ContractResources {
 	public static final String PRECOMPILE_CREATE2_USER_PATH = bytecodePath("Create2PrecompileUser");
 	public static final String REVERTING_CREATE_FACTORY_PATH = bytecodePath("RevertingCreateFactory");
 	public static final String REVERTING_CREATE2_FACTORY_PATH = bytecodePath("RevertingCreate2Factory");
+	public static final String NESTED_TRANSFERRING_CONTRACT_PATH = bytecodePath("NestedTransferringContract");
+	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
+	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
 
 	public static final String NORMAL_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"bytecode\"," +
 			"\"type\":\"bytes\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\"," +
@@ -554,7 +557,7 @@ public class ContractResources {
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String JURISDICTION_CONSTRUCTOR_ABI = "{" +
 			"\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}\n";
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 	public static final String JURISDICTION_ADD_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"name\":\"name\",\"type\":\"string\"}," +
 			"{\"name\":\"taxRate\",\"type\":\"uint256\"}," +
@@ -799,6 +802,25 @@ public class ContractResources {
 			"{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
 			"\"name\": \"transferToAddress\",\"outputs\": [],\"payable\": false," +
 			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String TRANSFER_TO_ADDRESS_MULTIPLE_TIMES = "{\"constant\": false,\"inputs\": " +
+			"[{\"internalType\": \"address payable\",\"name\": \"_address\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"_amount\"," +
+			"\"type\": \"uint256\"}],\"name\": \"transferToAddressMultipleTimes\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_TO_DIFFERENT_ADDRESSES = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"receiver1\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address payable\",\"name\": \"receiver2\",\"type\": \"address\"},{\"internalType\": \"address payable\"," +
+			"\"name\": \"receiver3\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferToDifferentAddresses\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_NEGATIVE_AMOUNT = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"_address\"," +
+			"\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferToAddressNegativeAmount\",\"outputs\": []," +
+			"\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+
+	public static final String NESTED_TRANSFERRING_CONTRACT_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_nestedContract1\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"_nestedContract2\",\"type\": \"address\"}],\"payable\": true,\"stateMutability\": \"payable\"," +
+			"\"type\": \"constructor\"}";
+	public static final String TRANSFER_FROM_DIFFERENT_ADDRESSES_TO_ADDRESS = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferFromDifferentAddressesToAddress\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_FROM_AND_TO_DIFFERENT_ADDRESSES = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"receiver1\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address payable\",\"name\": \"receiver2\",\"type\": \"address\"},{\"internalType\": \"address payable\",\"name\": \"receiver3\",\"type\": \"address\"},{\"internalType\": \"uint256\"," +
+			"\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferFromAndToDifferentAddresses\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+
 	public static final String PARENT_CHILD_TRANSFER_TRANSFER_TO_CHILD_ABI = "{\"constant\": false,\"inputs\": " +
 			"[{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
 			"\"name\": \"transferToChild\",\"outputs\": [],\"payable\": false,\"stateMutability\": \"nonpayable\"," +

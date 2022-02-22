@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -117,6 +118,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
+	private static final String CONTRACT_FROM = "CONTRACT_FROM";
 	private static final long depositAmount = 1000;
 
 	public static void main(String... args) {
@@ -158,7 +160,12 @@ public class ContractCallSuite extends HapiApiSuite {
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				imapUserExercise(),
 				workingHoursDemo(),
-				deletedContractsCannotBeUpdated()
+				deletedContractsCannotBeUpdated(),
+				sendHbarsToAddressesMultipleTimes(),
+				sendHbarsToDifferentAddresses(),
+				sendHbarsFromDifferentAddressessToAddress(),
+				sendHbarsFromAndToDifferentAddressess(),
+				transferNegativeAmountOfHbarsFails()
 		});
 	}
 
@@ -1134,7 +1141,6 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	private HapiApiSpec HSCS_EVM_006_ContractHBarTransferToAccount() {
 		final var ACCOUNT = "account";
-		final var CONTRACT_FROM = "contract1";
 		return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -1236,7 +1242,6 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	private HapiApiSpec HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts() {
 		final var ACCOUNT = "account";
-		final var CONTRACT_FROM = "contract1";
 		final var CONTRACT_TO = "contract2";
 		return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
 				.given(
@@ -1365,6 +1370,214 @@ public class ContractCallSuite extends HapiApiSuite {
 							allRunFor(spec, assertionWithBothKeys);
 						})
 				);
+	}
+
+	private HapiApiSpec sendHbarsToAddressesMultipleTimes() {
+		final var ACCOUNT = "account";
+		return defaultHapiSpec("sendHbarsToAddressesMultipleTimes")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(10_000L),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(
+								ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver").savingSnapshot("receiverInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFER_TO_ADDRESS_MULTIPLE_TIMES,
+									receiverAddr, 64)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance("receiver").hasTinyBars(10_000 + 127)
+				);
+	}
+
+	private HapiApiSpec sendHbarsToDifferentAddresses() {
+		final var ACCOUNT = "account";
+		return defaultHapiSpec("sendHbarsToDifferentAddresses")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver1").balance(10_000L),
+						cryptoCreate("receiver2").balance(10_000L),
+						cryptoCreate("receiver3").balance(10_000L),
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(
+								ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver1").savingSnapshot("receiver1Info"),
+						getAccountInfo("receiver2").savingSnapshot("receiver2Info"),
+						getAccountInfo("receiver3").savingSnapshot("receiver3Info")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiver1Addr = spec.registry().getAccountInfo("receiver1Info").getContractAccountID();
+							var receiver2Addr = spec.registry().getAccountInfo("receiver2Info").getContractAccountID();
+							var receiver3Addr = spec.registry().getAccountInfo("receiver3Info").getContractAccountID();
+
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFER_TO_DIFFERENT_ADDRESSES,
+									receiver1Addr, receiver2Addr, receiver3Addr, 20)
+									.payingWith(ACCOUNT).logged();
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance("receiver1").hasTinyBars(10_000 + 20),
+						getAccountBalance("receiver2").hasTinyBars(10_000 + 10),
+						getAccountBalance("receiver3").hasTinyBars(10_000 + 5)
+				);
+	}
+
+	private HapiApiSpec sendHbarsFromDifferentAddressessToAddress() {
+		final var ACCOUNT = "account";
+		final var NESTED_CONTRACT_1 = "nestedContract1";
+		final var NESTED_CONTRACT_2 = "nestedContract2";
+		return defaultHapiSpec("sendHbarsFromDifferentAddressessToAddress")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(10_000L),
+
+						fileCreate("nestedContract1Bytecode").path(ContractResources.NESTED_TRANSFER_CONTRACT_1_PATH).payingWith(
+								ACCOUNT),
+						contractCreate(NESTED_CONTRACT_1).bytecode("nestedContract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+						fileCreate("nestedContract2Bytecode").path(ContractResources.NESTED_TRANSFER_CONTRACT_2_PATH).payingWith(
+								ACCOUNT),
+						contractCreate(NESTED_CONTRACT_2).bytecode("nestedContract2Bytecode").balance(10_000L).payingWith(ACCOUNT),
+						fileCreate("contract1Bytecode").path(ContractResources.NESTED_TRANSFERRING_CONTRACT_PATH).payingWith(
+								ACCOUNT),
+
+						getContractInfo(NESTED_CONTRACT_1).saveToRegistry("nested_contract_1"),
+						getContractInfo(NESTED_CONTRACT_2).saveToRegistry("nested_contract_2"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver").savingSnapshot("receiverInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+
+							allRunFor(spec,
+									contractCreate(CONTRACT_FROM,
+											ContractResources.NESTED_TRANSFERRING_CONTRACT_CONSTRUCTOR,
+											getNestedContractAddress(NESTED_CONTRACT_1, spec),
+											getNestedContractAddress(NESTED_CONTRACT_2, spec)).bytecode(
+									"contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+									contractCall(
+											CONTRACT_FROM,
+											ContractResources.TRANSFER_FROM_DIFFERENT_ADDRESSES_TO_ADDRESS,
+											receiverAddr, 40)
+											.payingWith(ACCOUNT).logged());
+						})
+				)
+				.then(
+						getAccountBalance("receiver").hasTinyBars(10_000 + 80)
+				);
+	}
+
+	private HapiApiSpec sendHbarsFromAndToDifferentAddressess() {
+		final var ACCOUNT = "account";
+		final var NESTED_CONTRACT_1 = "nestedContract1";
+		final var NESTED_CONTRACT_2 = "nestedContract2";
+		return defaultHapiSpec("sendHbarsFromAndToDifferentAddressess")
+				.given(
+						cryptoCreate(ACCOUNT).balance(200*ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver1").balance(10_000L),
+						cryptoCreate("receiver2").balance(10_000L),
+						cryptoCreate("receiver3").balance(10_000L),
+
+						fileCreate("nestedContract1Bytecode").path(ContractResources.NESTED_TRANSFER_CONTRACT_1_PATH).payingWith(
+								ACCOUNT),
+						contractCreate(NESTED_CONTRACT_1).bytecode("nestedContract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+						fileCreate("nestedContract2Bytecode").path(ContractResources.NESTED_TRANSFER_CONTRACT_2_PATH).payingWith(
+								ACCOUNT),
+						contractCreate(NESTED_CONTRACT_2).bytecode("nestedContract2Bytecode").balance(10_000L).payingWith(ACCOUNT),
+						fileCreate("contract1Bytecode").path(ContractResources.NESTED_TRANSFERRING_CONTRACT_PATH).payingWith(
+								ACCOUNT),
+
+						getContractInfo(NESTED_CONTRACT_1).saveToRegistry("nested_contract_1"),
+						getContractInfo(NESTED_CONTRACT_2).saveToRegistry("nested_contract_2"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver1").savingSnapshot("receiver1Info"),
+						getAccountInfo("receiver2").savingSnapshot("receiver2Info"),
+						getAccountInfo("receiver3").savingSnapshot("receiver3Info")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiver1Addr = spec.registry().getAccountInfo("receiver1Info").getContractAccountID();
+							var receiver2Addr = spec.registry().getAccountInfo("receiver2Info").getContractAccountID();
+							var receiver3Addr = spec.registry().getAccountInfo("receiver3Info").getContractAccountID();
+
+							allRunFor(spec,
+									contractCreate(CONTRACT_FROM,
+											ContractResources.NESTED_TRANSFERRING_CONTRACT_CONSTRUCTOR,
+											getNestedContractAddress(NESTED_CONTRACT_1, spec),
+											getNestedContractAddress(NESTED_CONTRACT_2, spec)).bytecode(
+											"contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+									contractCall(
+											CONTRACT_FROM,
+											ContractResources.TRANSFER_FROM_AND_TO_DIFFERENT_ADDRESSES,
+											receiver1Addr, receiver2Addr, receiver3Addr, 40)
+											.payingWith(ACCOUNT).gas(1_000_000l).logged());
+						})
+				)
+				.then(
+						getAccountBalance("receiver1").hasTinyBars(10_000 + 80),
+						getAccountBalance("receiver2").hasTinyBars(10_000 + 80),
+						getAccountBalance("receiver3").hasTinyBars(10_000 + 80)
+				);
+	}
+
+	private HapiApiSpec transferNegativeAmountOfHbarsFails() {
+		final var ACCOUNT = "account";
+		return defaultHapiSpec("transferNegativeAmountOfHbarsFails")
+				.given(
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate("receiver").balance(10_000L),
+
+						fileCreate("contract1Bytecode").path(ContractResources.TRANSFERRING_CONTRACT).payingWith(
+								ACCOUNT),
+						contractCreate(CONTRACT_FROM).bytecode("contract1Bytecode").balance(10_000L).payingWith(ACCOUNT),
+
+						getContractInfo(CONTRACT_FROM).saveToRegistry("contract_from"),
+						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
+						getAccountInfo("receiver").savingSnapshot("receiverInfo")
+				)
+				.when(
+						withOpContext((spec, log) -> {
+							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							var transferCall = contractCall(
+									CONTRACT_FROM,
+									ContractResources.TRANSFER_NEGATIVE_AMOUNT,
+									receiverAddr, 10)
+									.payingWith(ACCOUNT).hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+							allRunFor(spec, transferCall);
+						})
+				)
+				.then(
+						getAccountBalance("receiver").hasTinyBars(10_000)
+				);
+	}
+
+	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+		return CommonUtils.calculateSolidityAddress(
+				(int) spec.registry().getContractId(contract).getShardNum(),
+				spec.registry().getContractId(contract).getRealmNum(),
+				spec.registry().getContractId(contract).getContractNum());
 	}
 
 	@Override
