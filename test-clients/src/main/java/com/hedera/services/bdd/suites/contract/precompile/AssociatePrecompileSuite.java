@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.legacy.core.CommonUtils;
@@ -74,7 +73,6 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -136,8 +134,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
 				multipleAssociatePrecompileWithSignatureWorksForFungible(),
-				nestedAssociateWorksAsExpected(),
-				associatePrecompileTokensPerAccountLimitExceeded()
+				nestedAssociateWorksAsExpected()
+//				associatePrecompileTokensPerAccountLimitExceeded()
 		);
 	}
 
