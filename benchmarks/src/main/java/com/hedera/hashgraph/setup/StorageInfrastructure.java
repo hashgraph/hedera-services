@@ -29,9 +29,15 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
 
 public record StorageInfrastructure(
@@ -49,5 +55,17 @@ public record StorageInfrastructure(
 		final var ledger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		return new StorageInfrastructure(accountsRef, storageRef, ledger);
+	}
+
+	public void serializeTo(final String storageLoc) throws IOException {
+		final var mMapLoc = InfrastructureManager.mMapIn(storageLoc);
+		try (final var mMapOut = new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
+			mMapOut.writeMerkleTree(accounts.get());
+		}
+
+		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
+		try (final var vMapOut = new SerializableDataOutputStream(Files.newOutputStream(Paths.get(vMapMetaLoc)))) {
+			storage.get().serializeExternal(vMapOut, new File(storageLoc));
+		}
 	}
 }

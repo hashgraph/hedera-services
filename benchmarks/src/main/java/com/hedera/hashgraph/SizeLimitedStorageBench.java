@@ -87,6 +87,7 @@ public class SizeLimitedStorageBench {
             infrastructure = InfrastructureManager.newInfrastructure();
             final var initializer = new InfrastructureInitializer(initContracts, initKvPairs);
             initializer.setup(infrastructure);
+            infrastructure.serializeTo();
         }
         ledger = infrastructure.ledger();
 

@@ -35,6 +35,8 @@ import java.nio.file.Paths;
 public class InfrastructureManager {
 	private static final String SAVED_STORAGE_DIR = "databases";
 	private static final String WORKING_STORAGE_DIR = "database";
+	private static final String VM_META_FILE_NAME = "smartContractKvStore.meta";
+	private static final String MM_FILE_NAME = "accounts.mmap";
 
 	public static StorageInfrastructure newInfrastructure() {
 		final var jdbBuilderFactory = new JasperDbBuilderFactory() {
@@ -67,5 +69,13 @@ public class InfrastructureManager {
 		return SAVED_STORAGE_DIR + File.separator
 				+ "contracts" + initNumContracts + "_"
 				+ "kvPairs" + initNumKvPairs;
+	}
+
+	static String vMapMetaIn(final String loc) {
+		return loc + File.separator + VM_META_FILE_NAME;
+	}
+
+	static String mMapIn(final String storageDir) {
+		return storageDir + File.separator + MM_FILE_NAME;
 	}
 }
