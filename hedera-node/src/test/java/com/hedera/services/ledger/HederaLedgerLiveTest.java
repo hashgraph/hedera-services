@@ -33,7 +33,6 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.MutableEntityAccess;
@@ -41,13 +40,8 @@ import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +57,6 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
-	private static final long thisSecond = 1_234_567L;
 
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
@@ -80,7 +73,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>(),
 				new AccountsCommitInterceptor(liveSideEffects));
-		final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
@@ -161,20 +153,5 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 		assertTrue(subject.isPendingCreation(a));
 		assertFalse(subject.isPendingCreation(genesis));
-	}
-
-	private TokenCreateTransactionBody stdWith(final String symbol, final String tokenName, final AccountID account) {
-		final var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-		return TokenCreateTransactionBody.newBuilder()
-				.setAdminKey(key)
-				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
-				.setSymbol(symbol)
-				.setName(tokenName)
-				.setInitialSupply(0)
-				.setTreasury(account)
-				.setExpiry(Timestamp.newBuilder().setSeconds(2 * thisSecond))
-				.setDecimals(0)
-				.setFreezeDefault(false)
-				.build();
 	}
 }
