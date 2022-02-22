@@ -55,6 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -300,15 +301,15 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.logged(),
 						cryptoAdjustAllowance()
 								.payingWith(payer)
-								.addCryptoAllowance(null, spender, 100L)
+								.addCryptoAllowance(MISSING_OWNER, spender, 100L)
 								.blankMemo()
 								.logged(),
 
 						cryptoAdjustAllowance()
 								.payingWith(payer)
-								.addCryptoAllowance(null, spender1, 100L)
-								.addTokenAllowance(null, token, spender, 100L)
-								.addNftAllowance(null, nft, spender, false, List.of(1L))
+								.addCryptoAllowance(MISSING_OWNER, spender1, 100L)
+								.addTokenAllowance(MISSING_OWNER, token, spender, 100L)
+								.addNftAllowance(MISSING_OWNER, nft, spender, false, List.of(1L))
 								.via("approveTxn")
 								.blankMemo()
 								.logged(),

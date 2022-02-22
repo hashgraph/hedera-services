@@ -54,6 +54,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowance> {
@@ -160,7 +161,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 			final var builder = CryptoAllowance.newBuilder()
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setAmount(entry.amount());
-			if(entry.owner() != null){
+			if(entry.owner() != MISSING_OWNER){
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
 			callowances.add(builder.build());
@@ -171,7 +172,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setAmount(entry.amount());
-			if(entry.owner() != null){
+			if(entry.owner() != MISSING_OWNER){
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
 			tallowances.add(builder.build());
@@ -182,7 +183,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
 					.addAllSerialNumbers(entry.serials());
-			if(entry.owner() != null){
+			if(entry.owner() != MISSING_OWNER){
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
 			nftallowances.add(builder.build());

@@ -77,9 +77,9 @@ public class SideEffectsTracker {
 	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
-	private Map<EntityNum, Map<EntityNum, Long>> allCryptoAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> allFungibleTokenAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> allNftAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -403,51 +403,51 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public Map<EntityNum, Map<EntityNum, Long>> getAllCryptoAllowances() {
-		return allCryptoAllowances;
+	public Map<EntityNum, Map<EntityNum, Long>> getCryptoAllowances() {
+		return cryptoAllowances;
 	}
 
-	public void setAllCryptoAllowances(final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances) {
-		this.allCryptoAllowances = cryptoAllowances;
+	public void setCryptoAllowances(final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances) {
+		this.cryptoAllowances = cryptoAllowances;
 	}
 
 	public void setCryptoAllowances(final EntityNum ownerNum, final Map<EntityNum, Long> cryptoAllowancesOfOwner) {
-		if (allCryptoAllowances.equals(Collections.emptyMap())) {
-			allCryptoAllowances = new TreeMap<>();
+		if (cryptoAllowances.equals(Collections.emptyMap())) {
+			cryptoAllowances = new TreeMap<>();
 		}
-		allCryptoAllowances.put(ownerNum, cryptoAllowancesOfOwner);
+		cryptoAllowances.put(ownerNum, cryptoAllowancesOfOwner);
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> getAllFungibleTokenAllowances() {
-		return allFungibleTokenAllowances;
+	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances;
 	}
 
-	public void setAllFungibleTokenAllowances(Map<EntityNum, Map<FcTokenAllowanceId, Long>> allFungibleTokenAllowances) {
-		this.allFungibleTokenAllowances = allFungibleTokenAllowances;
+	public void setFungibleTokenAllowances(Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
+		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 
 	public void setFungibleTokenAllowances(
 			final EntityNum ownerNum, final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-		if (allFungibleTokenAllowances.equals(Collections.emptyMap())) {
-			allFungibleTokenAllowances = new TreeMap<>();
+		if (this.fungibleTokenAllowances.equals(Collections.emptyMap())) {
+			this.fungibleTokenAllowances = new TreeMap<>();
 		}
-		allFungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
+		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getAllNftAllowances() {
-		return allNftAllowances;
+	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getNftAllowances() {
+		return nftAllowances;
 	}
 
-	public void setAllNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> allNftAllowances) {
-		this.allNftAllowances = allNftAllowances;
+	public void setNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances) {
+		this.nftAllowances = nftAllowances;
 	}
 
 	public void setNftAllowances(
 			final EntityNum ownerNum, final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		if (allNftAllowances.equals(Collections.emptyMap())) {
-			allNftAllowances = new TreeMap<>();
+		if (this.nftAllowances.equals(Collections.emptyMap())) {
+			this.nftAllowances = new TreeMap<>();
 		}
-		allNftAllowances.put(ownerNum, nftAllowances);
+		this.nftAllowances.put(ownerNum, nftAllowances);
 	}
 
 	/**
@@ -459,9 +459,9 @@ public class SideEffectsTracker {
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
-		allCryptoAllowances = Collections.emptyMap();
-		allFungibleTokenAllowances = Collections.emptyMap();
-		allNftAllowances = Collections.emptyMap();
+		cryptoAllowances = Collections.emptyMap();
+		fungibleTokenAllowances = Collections.emptyMap();
+		nftAllowances = Collections.emptyMap();
 	}
 
 	/**

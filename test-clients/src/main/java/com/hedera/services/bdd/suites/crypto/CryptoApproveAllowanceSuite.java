@@ -74,6 +74,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoApproveAllowanceSuite.class);
+	public static String MISSING_OWNER = null;
 
 	public static void main(String... args) {
 		new CryptoApproveAllowanceSuite().runSuiteSync();
@@ -283,9 +284,9 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				.when(
 						cryptoApproveAllowance()
 								.payingWith(payer)
-								.addCryptoAllowance(null, spender1, 100L)
-								.addTokenAllowance(null, token, spender, 100L)
-								.addNftAllowance(null, nft, spender, false, List.of(1L))
+								.addCryptoAllowance(MISSING_OWNER, spender1, 100L)
+								.addTokenAllowance(MISSING_OWNER, token, spender, 100L)
+								.addNftAllowance(MISSING_OWNER, nft, spender, false, List.of(1L))
 								.via("approveTxn")
 								.blankMemo()
 								.logged(),

@@ -252,11 +252,11 @@ public class SigRequirements {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
 		} else if (txn.hasCryptoApproveAllowance()) {
 			final var approveTxn = txn.getCryptoApproveAllowance();
-			return cryptoAllowace(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+			return cryptoAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
 					approveTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else if (txn.hasCryptoAdjustAllowance()) {
 			final var adjustTxn = txn.getCryptoAdjustAllowance();
-			return cryptoAllowace(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
+			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
 					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else {
 			return null;
@@ -520,35 +520,35 @@ public class SigRequirements {
 				: SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> cryptoAllowace(
+	private <T> SigningOrderResult<T> cryptoAllowance(
 			final AccountID payer,
 			final List<CryptoAllowance> cryptoAllowancesList,
 			final List<TokenAllowance> tokenAllowancesList,
 			final List<NftAllowance> nftAllowancesList,
 			final SigningOrderResultFactory<T> factory,
 			final @Nullable LinkedRefs linkedRefs) {
-		List<JKey> required = new ArrayList<>();
+		List<JKey> requiredKeys = new ArrayList<>();
 
 		for (final var allowance : cryptoAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : tokenAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 		for (final var allowance : nftAllowancesList) {
 			final var owner = allowance.getOwner();
-			if ((includeOwnerIfNecessary(payer, owner, required, linkedRefs)) != NONE) {
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
 
-		return factory.forValidOrder(required);
+		return factory.forValidOrder(requiredKeys);
 	}
 
 	private <T> SigningOrderResult<T> cryptoDelete(
