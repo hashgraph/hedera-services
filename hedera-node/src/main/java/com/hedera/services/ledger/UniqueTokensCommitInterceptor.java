@@ -11,14 +11,14 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
-	private final SideEffectsTracker sideEffectsTracker;
+//	private final SideEffectsTracker sideEffectsTracker;
 
 	public UniqueTokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-		this.sideEffectsTracker = sideEffectsTracker;
+//		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
 	public void preview(List<MerkleLeafChanges<NftId, MerkleUniqueToken, NftProperty>> changesToCommit) {
-
+		//to be implemented
 	}
 }
