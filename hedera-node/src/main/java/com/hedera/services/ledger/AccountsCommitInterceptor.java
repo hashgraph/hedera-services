@@ -6,7 +6,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,54 +28,41 @@ public class AccountsCommitInterceptor implements
 	 */
 	@Override
 	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
-		final List<Long> balances = new ArrayList<>();
+		long sum = 0;
 		for (final var changeToCommit : changesToCommit) {
 			final var account = changeToCommit.id();
 			final var merkleAccount = changeToCommit.merkleLeaf();
 			final var changedProperties = changeToCommit.changes();
 
-			if (merkleAccount == null) {
-				balances.add((long) changedProperties.get(AccountProperty.BALANCE));
-				sideEffectsTracker.trackHbarChange(account,
-						(long) changedProperties.get(AccountProperty.BALANCE));
-				continue;
-			}
-
-			trackHBarTransfer(changedProperties, account, merkleAccount, balances);
+			sum += trackHBarTransfer(changedProperties, account, merkleAccount);
 		}
 
-		doZeroSum(balances);
+		if(changesToCommit.size()>1) {
+			checkSum(sum);
+		}
 	}
 
-	private void trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
-								   final AccountID account, final MerkleAccount merkleAccount,
-								   final List<Long> balances) {
+	private long trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
+								   final AccountID account, final MerkleAccount merkleAccount) {
+		long sum = 0L;
+
 		if (changedProperties.containsKey(AccountProperty.BALANCE)) {
-			final long balanceChange =
-					(long) changedProperties.get(AccountProperty.BALANCE) - merkleAccount.getBalance();
+			final long balancePropertyValue = (long) changedProperties.get(AccountProperty.BALANCE);
+			final long balanceChange = merkleAccount!=null ?
+					balancePropertyValue - merkleAccount.getBalance() : balancePropertyValue;
 
 			if(balanceChange!=0L) {
-				balances.add(balanceChange);
+				sum += balanceChange;
 				sideEffectsTracker.trackHbarChange(account, balanceChange);
 			}
 		}
-	}
 
-	private void doZeroSum(final List<Long> balances) {
-		if (balances.size() > 1) {
-			final var sum = getArrayLongSum(balances);
-
-			if (sum != 0) {
-				throw new IllegalStateException("Invalid balance changes!");
-			}
-		}
-	}
-
-	private long getArrayLongSum(final List<Long> balances) {
-		int sum = 0;
-		for (long value : balances) {
-			sum += value;
-		}
 		return sum;
+	}
+
+	private void checkSum(long sum) {
+		if (sum != 0) {
+			throw new IllegalStateException("Invalid balance changes!");
+		}
 	}
 }
