@@ -55,9 +55,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -83,6 +85,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				canHaveMultipleOwners(),
 				noOwnerDefaultsToPayer(),
 				invalidSpenderFails(),
+				invalidOwnerFails(),
 				happyPathWorks(),
 				emptyAllowancesRejected(),
 				spenderSameAsOwnerFails(),
@@ -100,6 +103,76 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				serialsInAscendingOrder(),
 				feesAsExpected()
 		});
+	}
+
+	private HapiApiSpec invalidOwnerFails() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String token = "token";
+		final String nft = "nft";
+		return defaultHapiSpec("invalidOwnerFails")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate("payer")
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(token)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey("supplyKey")
+								.maxSupply(1000L)
+								.initialSupply(10L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						mintToken(token, 500L).via("tokenMint")
+				)
+				.when(
+						cryptoApproveAllowance()
+								.payingWith("payer")
+								.addCryptoAllowance(owner, spender, 100L)
+								.signedBy("payer", owner)
+								.blankMemo(),
+						cryptoDelete(owner),
+
+						cryptoApproveAllowance()
+								.payingWith("payer")
+								.addCryptoAllowance(owner, spender, 100L)
+								.signedBy("payer", owner)
+								.blankMemo()
+								.hasPrecheck(INVALID_ALLOWANCE_OWNER_ID),
+						cryptoApproveAllowance()
+								.payingWith("payer")
+								.addTokenAllowance(owner, token, spender, 100L)
+								.signedBy("payer", owner)
+								.blankMemo()
+								.hasPrecheck(INVALID_ALLOWANCE_OWNER_ID),
+						cryptoApproveAllowance()
+								.payingWith("payer")
+								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.signedBy("payer", owner)
+								.via("baseApproveTxn")
+								.blankMemo()
+								.hasPrecheck(INVALID_ALLOWANCE_OWNER_ID)
+				)
+				.then(
+						getAccountInfo(owner).hasCostAnswerPrecheck(ACCOUNT_DELETED));
 	}
 
 	private HapiApiSpec invalidSpenderFails() {
