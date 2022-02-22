@@ -144,9 +144,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		}
 
 		for (final var allowance : cryptoAllowances) {
-			final var allowanceOwner = allowance.getOwner();
+			final var owner = allowance.getOwner();
 
-			final var accountToAdjust = fetchOwnerAccount(allowanceOwner, payerAccount, accountStore, entitiesChanged);
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
 			final Map<EntityNum, Long> cryptoMap = new TreeMap<>(accountToAdjust.getCryptoAllowances());
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -194,9 +194,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		}
 
 		for (var allowance : nftAllowances) {
-			final var allowanceOwner = allowance.getOwner();
+			final var owner = allowance.getOwner();
 
-			final var accountToAdjust = fetchOwnerAccount(allowanceOwner, payerAccount, accountStore, entitiesChanged);
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
 			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(
 					accountToAdjust.getNftAllowances());
 
@@ -251,9 +251,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		}
 
 		for (var allowance : tokenAllowances) {
-			final var allowanceOwner = allowance.getOwner();
+			final var owner = allowance.getOwner();
 
-			final var accountToAdjust = fetchOwnerAccount(allowanceOwner, payerAccount, accountStore, entitiesChanged);
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
 			final Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(
 					accountToAdjust.getFungibleTokenAllowances());
 
