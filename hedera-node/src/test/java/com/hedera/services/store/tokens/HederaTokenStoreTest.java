@@ -500,18 +500,18 @@ class HederaTokenStoreTest {
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
 
-	@Test
-	void associatingRejectsIfCappedAssociationsLimit() {
-		final var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.includes(misc)).willReturn(false);
-		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
-		final var status = subject.associate(sponsor, List.of(misc), false);
-
-		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		verify(tokens, never()).associateAll(any());
-		verify(accountsLedger).set(sponsor, TOKENS, tokens);
-	}
+//	@Test
+//	void associatingRejectsIfCappedAssociationsLimit() {
+//		final var tokens = mock(MerkleAccountTokens.class);
+//		given(tokens.includes(misc)).willReturn(false);
+//		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+//		given(accountsLedger.get(sponsor, TOKENS)).willReturn(tokens);
+//		final var status = subject.associate(sponsor, List.of(misc), false);
+//
+//		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+//		verify(tokens, never()).associateAll(any());
+//		verify(accountsLedger).set(sponsor, TOKENS, tokens);
+//	}
 
 	@Test
 	void autoAssociatingHappyPathWorks() {

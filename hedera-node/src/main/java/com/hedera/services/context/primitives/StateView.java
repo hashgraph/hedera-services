@@ -615,8 +615,14 @@ public class StateView {
 	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
 		final var account = view.accounts().get(id);
 		final List<TokenRelationship> relationships = new ArrayList<>();
-		final var tokenIds = account.tokens().asTokenIds();
-		for (TokenID tId : tokenIds) {
+		// this tokenIds list can be more than 1000 size now. Limit the List<TokenRelationship> and track the index;
+		final var tokenIdsIndex = account.getTokenIdsIndex();
+		// currently, set to 1000.But can be a dynamic property
+		final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 1000);
+		final var newTokenIdsIndex = limitedTokenIds.getLeft();
+		account.setTokenIdsIndex(newTokenIdsIndex);
+		view.accounts().put(id, account);
+		for (TokenID tId : limitedTokenIds.getRight()) {
 			final var optionalToken = view.tokenWith(tId);
 			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
 			final var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);

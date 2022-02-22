@@ -258,6 +258,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setReceiverSigRequired(receiverSigRequired);
 	}
 
+	public int getTokenIdsIndex() {
+		return state().getTokenIdsIndex();
+	}
+
+	public void setTokenIdsIndex(int tokenIdsIndex) {
+		throwIfImmutable("Cannot change this account's tokenIdsIndex setting if it's immutable.");
+		state().setTokenIdsIndex(tokenIdsIndex);
+	}
+
 	public JKey getAccountKey() {
 		return state().key();
 	}

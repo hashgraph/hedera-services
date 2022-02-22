@@ -51,7 +51,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAuto
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 /**
@@ -158,7 +157,7 @@ public class Account {
 	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
 		final var alreadyAssociated = associatedTokens.size();
 		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
-		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+//		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		final Set<Id> uniqueIds = new HashSet<>();
 		for (var token : tokens) {

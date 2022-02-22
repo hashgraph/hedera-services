@@ -39,7 +39,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutom
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -183,17 +182,17 @@ class AccountTest {
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 	}
 
-	@Test
-	void cantAssociateWithMoreThanMax() {
-		// setup:
-		final var firstNewToken = new Token(new Id(0, 0, 888));
-		final var secondNewToken = new Token(new Id(0, 0, 999));
-
-		// when:
-		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3, false),
-				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-	}
+//	@Test
+//	void cantAssociateWithMoreThanMax() {
+//		// setup:
+//		final var firstNewToken = new Token(new Id(0, 0, 888));
+//		final var secondNewToken = new Token(new Id(0, 0, 999));
+//
+//		// when:
+//		assertFailsWith(
+//				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3, false),
+//				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+//	}
 
 	@Test
 	void canAssociateWithNewToken() {

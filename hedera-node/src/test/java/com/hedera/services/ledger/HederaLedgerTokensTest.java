@@ -34,7 +34,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -94,15 +93,15 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
-	@Test
-	void refusesToAdjustWrongly() {
-		given(tokenStore.adjustBalance(misc, tokenId, 555))
-				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
-		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
-
-		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-	}
+//	@Test
+//	void refusesToAdjustWrongly() {
+//		given(tokenStore.adjustBalance(misc, tokenId, 555))
+//				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+//
+//		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
+//
+//		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+//	}
 
 	@Test
 	void adjustsIfValid() {

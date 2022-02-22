@@ -446,60 +446,60 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	/* -- Not specifically required in the HTS Precompile Test Plan -- */
-	private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
-		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-		final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
-
-		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
-				.given(
-						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(VANILLA_TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						tokenCreate(TOKEN)
-								.tokenType(FUNGIBLE_COMMON)
-								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
-												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-												newKeyNamed(DELEGATE_KEY).shape(
-														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
-												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("vanillaTokenAssociateTxn")
-														.gas(GAS_TO_OFFER)
-														.hasKnownStatus(SUCCESS),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
-														asAddress(accountID.get()),
-														asAddress(secondVanillaTokenID.get()))
-														.payingWith(GENESIS)
-														.via("secondVanillaTokenAssociateFailsTxn")
-														.gas(GAS_TO_OFFER)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-										)
-						)
-				).then(
-						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
-						childRecordsCheck("secondVanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
-								.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)),
-						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
-						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")
-				);
-	}
+//	private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
+//		final AtomicReference<AccountID> accountID = new AtomicReference<>();
+//		final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+//		final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
+//
+//		return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
+//				.given(
+//						cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+//						fileCreate(THE_CONTRACT),
+//						updateLargeFile(ACCOUNT, THE_CONTRACT,
+//								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
+//						cryptoCreate(TOKEN_TREASURY),
+//						tokenCreate(VANILLA_TOKEN)
+//								.tokenType(FUNGIBLE_COMMON)
+//								.treasury(TOKEN_TREASURY)
+//								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+//						tokenCreate(TOKEN)
+//								.tokenType(FUNGIBLE_COMMON)
+//								.treasury(TOKEN_TREASURY)
+//								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id)))
+//				).when(
+//						withOpContext(
+//								(spec, opLog) ->
+//										allRunFor(
+//												spec,
+//												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
+//												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
+//												newKeyNamed(DELEGATE_KEY).shape(
+//														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+//												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+//												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+//														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+//														.payingWith(GENESIS)
+//														.via("vanillaTokenAssociateTxn")
+//														.gas(GAS_TO_OFFER)
+//														.hasKnownStatus(SUCCESS),
+//												contractCall(THE_CONTRACT, SINGLE_TOKEN_ASSOCIATE,
+//														asAddress(accountID.get()),
+//														asAddress(secondVanillaTokenID.get()))
+//														.payingWith(GENESIS)
+//														.via("secondVanillaTokenAssociateFailsTxn")
+//														.gas(GAS_TO_OFFER)
+//														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+//										)
+//						)
+//				).then(
+//						childRecordsCheck("vanillaTokenAssociateTxn", SUCCESS, recordWith().status(SUCCESS)),
+//						childRecordsCheck("secondVanillaTokenAssociateFailsTxn", CONTRACT_REVERT_EXECUTED, recordWith()
+//								.status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)),
+//						getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+//						getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+//						resetAppPropertiesTo("src/main/resource/precompile-bootstrap.properties")
+//				);
+//	}
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
