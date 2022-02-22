@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -229,7 +230,7 @@ class AdjustAllowanceChecksTest {
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(owner);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
@@ -300,6 +301,79 @@ class AdjustAllowanceChecksTest {
 						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
 						dynamicProperties.maxAllowanceLimitPerTransaction()));
 	}
+
+	@Test
+	void returnsInvalidOwnerIdOnceValidationOnceFailed() {
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+
+		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllTokenAllowances(tokenAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+
+		nftAllowances.clear();
+		nftAllowances.add(nftAllowance2);
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+	}
+
 
 	@Test
 	void succeedsWithEmptyLists() {
@@ -424,7 +498,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(owner);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
@@ -611,7 +685,7 @@ class AdjustAllowanceChecksTest {
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(ownerId)
+				.setAccountID(payerId)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();
@@ -619,7 +693,7 @@ class AdjustAllowanceChecksTest {
 
 	private void givenNecessaryStubs() {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(owner);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);

@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -102,7 +103,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+				try {
+					ownerAccount = accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 			final var existingAllowances = ownerAccount.getCryptoAllowances();
 			final var key = spender.asEntityNum();
@@ -145,7 +150,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+				try {
+					ownerAccount = accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 			final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
 
@@ -195,7 +204,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+				try {
+					ownerAccount = accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());

@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -96,6 +97,12 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 			if (owner.equals(Id.MISSING_ID)) {
 				owner = payerAccount.getId();
+			} else {
+				try {
+					accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 
 			var validity = validateAmount(amount);
@@ -136,7 +143,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+				try {
+					ownerAccount = accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 
 			if (!token.isFungibleCommon()) {
@@ -182,7 +193,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 				ownerAccount = payerAccount;
 			} else {
-				ownerAccount = accountStore.loadAccountOrFailWith(owner, INVALID_ALLOWANCE_OWNER_ID);
+				try {
+					ownerAccount = accountStore.loadAccount(owner);
+				} catch (InvalidTransactionException ex) {
+					return INVALID_ALLOWANCE_OWNER_ID;
+				}
 			}
 
 			if (token.isFungibleCommon()) {

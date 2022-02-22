@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -105,6 +106,7 @@ class ApproveAllowanceChecksTest {
 
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
+	private final Account payerAccount = new Account(Id.fromGrpcAccount(payer));
 
 	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
 			.setSpender(spender1).setAmount(10L).setOwner(ownerId1).build();
@@ -349,6 +351,59 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
+	void returnsInvalidOwnerIdOnceValidationOnceFailed() {
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllTokenAllowances(tokenAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+
+		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoApproveAllowance(
+						CryptoApproveAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
+						dynamicProperties.maxAllowanceLimitPerTransaction()));
+	}
+
+	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
@@ -486,12 +541,5 @@ class ApproveAllowanceChecksTest {
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();
-	}
-
-	private void givenNecessaryStubs() {
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId1), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(owner);
-		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 	}
 }
