@@ -76,10 +76,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -522,6 +524,53 @@ class ApproveAllowanceChecksTest {
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
 				dynamicProperties.maxAllowanceLimitPerTransaction()));
+	}
+
+	@Test
+	void loadsOwnerAccountNotDefaultingToPayer() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
+
+		getValidTxnCtx();
+
+		assertEquals(OK, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount));
+		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
+
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount));
+		verify(accountStore, times(2)).loadAccount(Id.fromGrpcAccount(ownerId1));
+	}
+
+	@Test
+	void loadsOwnerAccountInNftNotDefaultingToPayer() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+
+		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
+		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
+		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1))).willReturn(token);
+		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2))).willReturn(token);
+		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1)).getOwner()).willReturn(
+				EntityId.fromGrpcAccountId(ownerId1));
+		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2)).getOwner()).willReturn(
+				EntityId.fromGrpcAccountId(ownerId1));
+		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
+
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
+
+		getValidTxnCtx();
+
+		assertEquals(OK, subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount));
+		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
+
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount));
+		verify(accountStore, times(2)).loadAccount(Id.fromGrpcAccount(ownerId1));
 	}
 
 	@Test
