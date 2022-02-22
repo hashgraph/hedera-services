@@ -616,6 +616,7 @@ public class StateView {
 		final var account = view.accounts().get(id);
 		final List<TokenRelationship> relationships = new ArrayList<>();
 		final var tokenIds = account.tokens().asTokenIds();
+		// tokenAssociations() of this and lastAssociatedToken from MerkleAccount and build a list of tokenIds
 		for (TokenID tId : tokenIds) {
 			final var optionalToken = view.tokenWith(tId);
 			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);

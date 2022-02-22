@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -47,6 +48,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAuto
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
@@ -87,6 +89,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
+	private EntityNumPair lastAssociatedToken = MISSING_NUM_PAIR;
 
 	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
 	// be modified to use MapValueLinkedList in the future
@@ -402,6 +405,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setNftsOwned(long nftsOwned) {
 		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
+	}
+
+	public EntityNumPair getLastAssociatedToken() {
+		return lastAssociatedToken;
+	}
+
+	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
+		assertMutable("lastAssociatedToken");
+		this.lastAssociatedToken = lastAssociatedToken;
 	}
 
 	public int getNumContractKvPairs() {

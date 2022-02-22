@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -171,6 +172,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return a -> a.tokens().tmpNonMerkleCopy();
+		}
+	},
+	LAST_ASSOCIATED_TOKEN {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setLastAssociatedToken((EntityNumPair) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getLastAssociatedToken;
 		}
 	},
 	MAX_AUTOMATIC_ASSOCIATIONS {

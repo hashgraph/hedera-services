@@ -37,7 +37,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLo
 import static com.hedera.services.utils.EntityNum.areValidNums;
 
 public record EntityNumPair(long value) {
-	static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
+	public static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
 
 	public EntityNumPair {
 		Objects.requireNonNull(value);

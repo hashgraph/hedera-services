@@ -51,6 +51,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,18 +72,23 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
+import static com.hedera.services.ledger.properties.TokenRelProperty.KEY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -226,7 +232,23 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
 			final var accountTokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+
+			final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
+			final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
+			var currKey = new EntityNumPair(lastAssociatedToken.value());
+			// if this lastAssociatedToken == 0 then this is account has No token associations currently
+			if (!lastAssociatedToken.equals(MISSING_NUM_PAIR)) {
+				// get All the tokenIds associated by traversing the linkedList
+				while (!currKey.equals(MISSING_NUM_PAIR)) {
+					listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
+					currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
+				}
+			}
+
 			for (var id : tokenIds) {
+				if (listOfAssociatedTokens.contains(id)) {
+					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+				}
 				if (accountTokens.includes(id)) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
@@ -245,6 +267,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 				if (validity == OK) {
 					accountTokens.associateAll(new HashSet<>(tokenIds));
+					currKey = new EntityNumPair(lastAssociatedToken.value());
 					for (var id : tokenIds) {
 						final var relationship = asTokenRel(aId, id);
 						tokenRelsLedger.create(relationship);
@@ -267,9 +290,26 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 							accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
 									alreadyUsedAutomaticAssociations + 1);
 						}
+
+						final var newKey = EntityNumPair.fromLongs(
+								relationship.getKey().getAccountNum(),
+								relationship.getValue().getTokenNum());
+
+						if (currKey.equals(MISSING_NUM_PAIR)) {
+							tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
+							tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
+							tokenRelsLedger.set(relationship, KEY, newKey);
+						} else {
+							final var old_prevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
+							tokenRelsLedger.set(currKey.asAccountTokenRel(), PREV_KEY, newKey);
+							tokenRelsLedger.set(relationship, PREV_KEY, old_prevKey);
+							tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
+						}
+						currKey = newKey;
 					}
 				}
 			}
+			accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 			accountsLedger.set(aId, TOKENS, accountTokens);
 			return validity;
 		});

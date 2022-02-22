@@ -30,6 +30,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -181,6 +182,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
+	// token() should not return MerkleAccountTokens anymore. But should give us a list of tokenIds from a
+	// BaseMapValueLinkedList<EntityNumPair, MerkleTokenRelNode, MerkleTokenRelStatus>
+
 	public MerkleAccountTokens tokens() {
 		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
 	}
@@ -227,6 +231,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		throwIfImmutable("Cannot change this account's alias if it's immutable.");
 		Objects.requireNonNull(alias);
 		state().setAlias(alias);
+	}
+
+	public EntityNumPair getLastAssociatedToken() {
+		return state().getLastAssociatedToken();
+	}
+
+	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
+		throwIfImmutable("Cannot change this account's lastAssociatedToken if it is immutable");
+		state().setLastAssociatedToken(lastAssociatedToken);
 	}
 
 	public long getBalance() {
