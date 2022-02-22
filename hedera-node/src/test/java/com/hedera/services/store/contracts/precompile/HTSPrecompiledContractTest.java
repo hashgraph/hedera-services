@@ -28,6 +28,8 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -66,9 +68,11 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associ
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,6 +114,8 @@ class HTSPrecompiledContractTest {
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
+	@Mock
+	private HederaWorldState.WorldStateAccount worldStateAccount;
 
 	private HTSPrecompiledContract subject;
 
@@ -537,6 +543,30 @@ class HTSPrecompiledContractTest {
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.DissociatePrecompile);
+	}
+
+	@Test
+	void testsAccountIsToken() {
+		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
+		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
+		given(mockUpdater.get(any())).willReturn(worldStateAccount);
+		given(worldStateAccount.getNonce()).willReturn(-1L);
+
+		var result = subject.isToken(messageFrame, fungibleTokenAddr);
+
+		assertTrue(result);
+	}
+
+	@Test
+	void testsAccountIsNotToken() {
+		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
+		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
+		given(mockUpdater.get(any())).willReturn(worldStateAccount);
+		given(worldStateAccount.getNonce()).willReturn(1L);
+
+		var result = subject.isToken(messageFrame, fungibleTokenAddr);
+
+		assertFalse(result);
 	}
 
 	@Test

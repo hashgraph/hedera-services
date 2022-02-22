@@ -951,7 +951,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	private boolean isToken(final MessageFrame frame, final Address address) {
+	boolean isToken(final MessageFrame frame, final Address address) {
 		var account = frame.getWorldUpdater().get(address);
 		if (account != null) {
 			return account.getNonce() == -1;
