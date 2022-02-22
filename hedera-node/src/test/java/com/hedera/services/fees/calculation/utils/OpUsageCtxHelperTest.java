@@ -79,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -166,7 +167,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForAccount() {
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -187,7 +188,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForCryptoApproveAccount() {
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -214,7 +215,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
-		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
+		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
@@ -224,7 +225,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		given(workingView.infoForAccount(any(), any())).willReturn(Optional.empty());
+		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 

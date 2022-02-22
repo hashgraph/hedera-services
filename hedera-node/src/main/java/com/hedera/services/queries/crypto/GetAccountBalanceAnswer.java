@@ -95,7 +95,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
 			// this tokenIds list can be more than 1000 size now. Limit the token balances and track the index;
 			final var tokenIdsIndex = account.getTokenIdsIndex();
-			final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 1000);
+			final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 5);
 			final var newTokenIdsIndex = limitedTokenIds.getLeft();
 			account.setTokenIdsIndex(newTokenIdsIndex);
 			accounts.put(key, account);

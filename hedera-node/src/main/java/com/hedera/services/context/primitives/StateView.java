@@ -89,7 +89,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -115,7 +114,7 @@ public class StateView {
 	public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
-	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
+//	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
@@ -433,7 +432,7 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
-			final AliasManager aliasManager) {
+			final AliasManager aliasManager, final boolean persistTokenIdsIndex) {
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -460,7 +459,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRelsFn.apply(this, accountEntityNum);
+		final var tokenRels = tokenRels(this, accountEntityNum, persistTokenIdsIndex);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -506,7 +505,8 @@ public class StateView {
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
 			final ContractID id,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final boolean persistTokenIdsIndex
 	) {
 		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
@@ -531,7 +531,7 @@ public class StateView {
 		} else {
 			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
-		final var tokenRels = tokenRelsFn.apply(this, contractId);
+		final var tokenRels = tokenRels(this, contractId, persistTokenIdsIndex);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -612,16 +612,18 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
+	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id, final boolean persistTokenIdsIndex) {
 		final var account = view.accounts().get(id);
 		final List<TokenRelationship> relationships = new ArrayList<>();
 		// this tokenIds list can be more than 1000 size now. Limit the List<TokenRelationship> and track the index;
 		final var tokenIdsIndex = account.getTokenIdsIndex();
 		// currently, set to 1000.But can be a dynamic property
-		final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 1000);
+		final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 5);
 		final var newTokenIdsIndex = limitedTokenIds.getLeft();
-		account.setTokenIdsIndex(newTokenIdsIndex);
-		view.accounts().put(id, account);
+		if (persistTokenIdsIndex) {
+			account.setTokenIdsIndex(newTokenIdsIndex);
+			view.accounts().put(id, account);
+		}
 		for (TokenID tId : limitedTokenIds.getRight()) {
 			final var optionalToken = view.tokenWith(tId);
 			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);

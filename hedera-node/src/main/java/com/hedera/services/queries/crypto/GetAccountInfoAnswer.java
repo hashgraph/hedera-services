@@ -78,7 +78,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager);
+				var optionalInfo = view.infoForAccount(id, aliasManager, true);
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());

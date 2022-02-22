@@ -111,7 +111,7 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager);
+		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager, false);
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -144,7 +144,7 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
 		ExtantCryptoContext cryptoContext;
 		var info = workingView.infoForAccount(
-				txn.getTransactionID().getAccountID(), aliasManager);
+				txn.getTransactionID().getAccountID(), aliasManager, false);
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()

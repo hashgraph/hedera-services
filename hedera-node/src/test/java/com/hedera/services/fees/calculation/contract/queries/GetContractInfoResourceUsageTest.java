@@ -85,7 +85,7 @@ class GetContractInfoResourceUsageTest {
 		aliasManager = mock(AliasManager.class);
 
 		view = mock(StateView.class);
-		given(view.infoForContract(target, aliasManager)).willReturn(Optional.of(info));
+		given(view.infoForContract(target, aliasManager, false)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
 		mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -135,7 +135,7 @@ class GetContractInfoResourceUsageTest {
 	@Test
 	void onlySetsContractInfoInQueryCxtIfFound() {
 		final var queryCtx = new HashMap<String, Object>();
-		given(view.infoForContract(target, aliasManager)).willReturn(Optional.empty());
+		given(view.infoForContract(target, aliasManager, false)).willReturn(Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

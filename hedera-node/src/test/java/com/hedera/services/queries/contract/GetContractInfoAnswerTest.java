@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -107,7 +108,7 @@ class GetContractInfoAnswerTest {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.of(info));
+		given(view.infoForContract(asContract(target), aliasManager, true)).willReturn(Optional.of(info));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -141,7 +142,7 @@ class GetContractInfoAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertSame(info, opResponse.getContractInfo());
 		// and:
-		verify(view, never()).infoForContract(any(), any());
+		verify(view, never()).infoForContract(any(), any(), anyBoolean());
 	}
 
 	@Test
@@ -149,7 +150,7 @@ class GetContractInfoAnswerTest {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.empty());
+		given(view.infoForContract(asContract(target), aliasManager, true)).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -172,7 +173,7 @@ class GetContractInfoAnswerTest {
 		ContractGetInfoResponse opResponse = response.getContractGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(view, never()).infoForContract(any(), any());
+		verify(view, never()).infoForContract(any(), any(), anyBoolean());
 	}
 
 	@Test
