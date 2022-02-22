@@ -64,27 +64,6 @@ public final class SerializationUtils {
 			out.writeSerializable(entry.getValue(), true);
 		}
 	}
-	public static void serializeAllowances(
-			SerializableDataOutputStream out,
-			final Map<EntityNum, Long> cryptoAllowances,
-			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) throws IOException {
-		out.writeInt(cryptoAllowances.size());
-		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
-			out.writeLong(entry.getKey().longValue());
-			out.writeLong(entry.getValue());
-		}
-		out.writeInt(fungibleTokenAllowances.size());
-		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeLong(entry.getValue());
-		}
-		out.writeInt(nftAllowances.size());
-		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : nftAllowances.entrySet()) {
-			out.writeSerializable(entry.getKey(), true);
-			out.writeSerializable(entry.getValue(), true);
-		}
-	}
 
 	public static Map<EntityNum, Long> deserializeCryptoAllowances(SerializableDataInputStream in) throws IOException {
 		Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
