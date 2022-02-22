@@ -938,7 +938,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var contract = aliases.resolveForEvm(frame.getContractAddress());
 		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
-		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
+		if (isDelegateCall(frame)) {
 			return activationTest.apply(target, recipient, contract, recipient, aliases);
 		} else {
 			final var parentFrame = getParentFrame(frame);
@@ -949,14 +949,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				return activationTest.apply(target, recipient, contract, sender, aliases);
 			}
 		}
-	}
-
-	boolean isToken(final MessageFrame frame, final Address address) {
-		var account = frame.getWorldUpdater().get(address);
-		if (account != null) {
-			return account.getNonce() == -1;
-		}
-		return false;
 	}
 
 	@FunctionalInterface

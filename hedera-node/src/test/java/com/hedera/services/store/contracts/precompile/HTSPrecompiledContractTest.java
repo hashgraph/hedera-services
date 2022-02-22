@@ -546,30 +546,6 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
-	void testsAccountIsToken() {
-		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
-		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
-		given(mockUpdater.get(any())).willReturn(worldStateAccount);
-		given(worldStateAccount.getNonce()).willReturn(-1L);
-
-		var result = subject.isToken(messageFrame, fungibleTokenAddr);
-
-		assertTrue(result);
-	}
-
-	@Test
-	void testsAccountIsNotToken() {
-		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
-		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
-		given(mockUpdater.get(any())).willReturn(worldStateAccount);
-		given(worldStateAccount.getNonce()).willReturn(1L);
-
-		var result = subject.isToken(messageFrame, fungibleTokenAddr);
-
-		assertFalse(result);
-	}
-
-	@Test
 	void computeReturnsNullForWrongInput() {
 		// given
 		given(input.getInt(0)).willReturn(0x00000000);
