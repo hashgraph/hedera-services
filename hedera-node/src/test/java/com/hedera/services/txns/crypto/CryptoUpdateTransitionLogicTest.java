@@ -208,18 +208,18 @@ class CryptoUpdateTransitionLogicTest {
 		verify(txnCtx).setStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
 	}
 
-	@Test
-	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxMoreThanAllowedTokenAssociations() {
-		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
-		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
-
-		subject.doStateTransition();
-
-		verify(ledger, never()).customize(argThat(TARGET::equals), captor.capture());
-		verify(txnCtx).setStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-	}
+//	@Test
+//	void updateMaxAutomaticAssociationsFailAsExpectedWithMaxMoreThanAllowedTokenAssociations() {
+//		final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+//		givenTxnCtx(EnumSet.of(MAX_AUTOMATIC_ASSOCIATIONS));
+//		given(ledger.alreadyUsedAutomaticAssociations(any())).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
+//		given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
+//
+//		subject.doStateTransition();
+//
+//		verify(ledger, never()).customize(argThat(TARGET::equals), captor.capture());
+//		verify(txnCtx).setStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+//	}
 
 	@Test
 	void updatesMemoIfPresent() {
