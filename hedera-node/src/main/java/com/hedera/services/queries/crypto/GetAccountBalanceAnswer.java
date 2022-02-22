@@ -92,7 +92,15 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var key = EntityNum.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : account.tokens().asTokenIds()) {
+
+			// this tokenIds list can be more than 1000 size now. Limit the token balances and track the index;
+			final var tokenIdsIndex = account.getTokenIdsIndex();
+			final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 1000);
+			final var newTokenIdsIndex = limitedTokenIds.getLeft();
+			account.setTokenIdsIndex(newTokenIdsIndex);
+			accounts.put(key, account);
+
+			for (TokenID tId : limitedTokenIds.getRight()) {
 				var relKey = fromAccountTokenRel(id, tId);
 				var relationship = view.tokenAssociations().get(relKey);
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);

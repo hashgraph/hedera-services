@@ -184,7 +184,9 @@ public class CopyOnWriteIds {
 			indexToFetch = (i+startIndex) % n;
 			modelIds.add(asGrpcTokenId(nativeIdAt(indexToFetch)));
 		}
-		return Pair.of((indexToFetch+1)%size(),modelIds);
+		return Pair.of(
+				size() == 0 || count == 0 ? 0 : (indexToFetch+1)%size(),
+				modelIds);
 	}
 
 	/* --- Helpers --- */
