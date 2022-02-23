@@ -420,8 +420,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_20_TRANSFER_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(RECIPIENT)), 2)
-														.payingWith(ACCOUNT)
-														.alsoSigningWithFullPrefix(ERC_20_CONTRACT_NAME)
 														.via(transferTxn).gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
@@ -504,8 +502,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														ContractResources.ERC_20_TRANSFER_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getContractId(NESTED_ERC_20_CONTRACT_NAME)), 2)
-														.payingWith(ACCOUNT)
-														.alsoSigningWithFullPrefix(ERC_20_CONTRACT_NAME)
 														.via(transferTxn).gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
@@ -838,8 +834,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getContractId(ERC_20_CONTRACT_NAME)),
 														asAddress(spec.registry().getContractId(NESTED_ERC_20_CONTRACT_NAME)), 5)
-														.payingWith(ACCOUNT)
-														.alsoSigningWithFullPrefix(ERC_20_CONTRACT_NAME)
 														.via(transferTxn)
 														.hasKnownStatus(SUCCESS),
 
