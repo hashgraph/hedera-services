@@ -180,7 +180,6 @@ class StaticEntityAccessTest {
 
 	@Test
 	void mutatorsAndTransactionalSemanticsThrows() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.spawn(id, 0, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
 		assertThrows(UnsupportedOperationException.class, () -> subject.putStorage(id, uint256Key, uint256Key));
 		assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));

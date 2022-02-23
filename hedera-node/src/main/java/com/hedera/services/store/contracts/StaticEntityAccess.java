@@ -93,11 +93,6 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
 		throw new UnsupportedOperationException();
 	}

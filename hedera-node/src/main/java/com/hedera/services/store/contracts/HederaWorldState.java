@@ -417,10 +417,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 			commitSizeLimitedStorageTo(entityAccess);
 
-			/* Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
-			 * needed to make sure the record's ℏ transfer list is constructed properly---the
-			 * finishing call to trackingLedgers().commits() at the end of this method will persist
-			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountIdFromEvmAddress(address);
@@ -454,7 +450,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		) {
 			if (!entityAccess.isExtant(accountId)) {
 				provisionalContractCreations.add(asContract(accountId));
-				entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
 			}
 		}
 

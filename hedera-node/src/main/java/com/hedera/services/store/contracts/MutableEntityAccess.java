@@ -126,11 +126,6 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void spawn(final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
-		ledger.spawn(id, balance, customizer);
-	}
-
-	@Override
 	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
 		ledger.customizePotentiallyDeleted(id, customizer);
 	}

@@ -513,7 +513,6 @@ class HederaWorldStateTest {
 		verify(entityAccess).flushStorage();
 		verify(worldLedgers).commit(sigImpactHistorian);
 		verify(entityAccess).recordNewKvUsageTo(any());
-		verify(entityAccess).spawn(any(), anyLong(), any());
 	}
 
 	@Test
