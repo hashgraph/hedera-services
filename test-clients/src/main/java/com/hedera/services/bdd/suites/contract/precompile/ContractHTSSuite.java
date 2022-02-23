@@ -261,7 +261,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.via("zeno"),
 						contractCall(CONTRACT, ZENOS_BANK_WITHDRAW_TOKENS)
 								.payingWith(RECEIVER)
-								.alsoSigningWithFullPrefix(CONTRACT)
 								.gas(GAS_TO_OFFER)
 								.via("receiverTx")
 				).then(
