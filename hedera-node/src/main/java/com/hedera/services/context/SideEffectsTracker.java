@@ -323,7 +323,6 @@ public class SideEffectsTracker {
 		updateFungibleChanges(account, amount, unitChanges);
 	}
 
-
 	/**
 	 * Tracks ownership of the given NFT changing from the given sender to the given receiver. This tracking
 	 * does <b>not</b> perform a "transitive closure" over ownership changes; that is, if say NFT {@code 0.0.666.1}
@@ -355,6 +354,10 @@ public class SideEffectsTracker {
 	public TransferList getNetTrackedHbarChanges() {
 		purgeZeroAdjustments(netHbarChanges);
 		return netHbarChanges.build();
+	}
+
+	public void clearNetHbarChanges() {
+		netHbarChanges.clear();
 	}
 
 	/**

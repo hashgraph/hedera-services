@@ -29,6 +29,13 @@ public class AccountsCommitInterceptor implements
 	@Override
 	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
 		long sum = 0;
+
+		/*We need to reset the hbarChanges currently tracked in the sideEffectsTracker
+		since we have stacked approach for committing the accumulated changes during a transaction.
+		We need to track the hbarChanges accumulated at the last final commit of the given transaction, otherwise we
+		duplicate changes at each new nested commit.*/
+		sideEffectsTracker.clearNetHbarChanges();
+
 		for (final var changeToCommit : changesToCommit) {
 			final var account = changeToCommit.id();
 			final var merkleAccount = changeToCommit.merkleLeaf();
@@ -37,27 +44,26 @@ public class AccountsCommitInterceptor implements
 			sum += trackHBarTransfer(changedProperties, account, merkleAccount);
 		}
 
-		if(changesToCommit.size()>1) {
+		if (changesToCommit.size() > 1) {
 			checkSum(sum);
 		}
 	}
 
 	private long trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
 								   final AccountID account, final MerkleAccount merkleAccount) {
-		long sum = 0L;
 
 		if (changedProperties.containsKey(AccountProperty.BALANCE)) {
 			final long balancePropertyValue = (long) changedProperties.get(AccountProperty.BALANCE);
-			final long balanceChange = merkleAccount!=null ?
+			final long balanceChange = merkleAccount != null ?
 					balancePropertyValue - merkleAccount.getBalance() : balancePropertyValue;
 
-			if(balanceChange!=0L) {
-				sum += balanceChange;
+			if (balanceChange != 0L) {
 				sideEffectsTracker.trackHbarChange(account, balanceChange);
 			}
+			return balanceChange;
 		}
 
-		return sum;
+		return 0L;
 	}
 
 	private void checkSum(long sum) {

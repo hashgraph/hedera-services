@@ -223,9 +223,11 @@ public class HederaLedger {
 	}
 
 	public void commit() {
+		/*We need to first commit the accountsLedger's  changes, before saving the transaction records
+		since we populate the transactional lists, used for creating the records, during the ledger's commit.*/
+		accountsLedger.commit();
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
-		accountsLedger.commit();
 		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
@@ -488,7 +490,7 @@ public class HederaLedger {
 		if (!isLegalToAdjust(balance, adjustment)) {
 			throw new InsufficientFundsException(id, adjustment);
 		}
-		return balance + adjustment;
+			return balance + adjustment;
 	}
 
 	private void setBalance(AccountID id, long newBalance) {
