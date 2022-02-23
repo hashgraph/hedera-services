@@ -43,7 +43,7 @@ public class InfrastructureInitializer {
 		final var perContractKvPairs = initNumKvPairs / initNumContracts;
 
 		for (int i = 0; i < initNumContracts; i++) {
-			final var contractId = AccountID.newBuilder().setAccountNum(i + 1).build();
+			final var contractId = AccountID.newBuilder().setAccountNum(i + 1L).build();
 			for (int j = 0; j < perContractKvPairs; j++) {
 				final var evmKey = EvmKeyValueSource.uniqueKey(j);
 				final var vmKey = ContractKey.from(contractId, evmKey);

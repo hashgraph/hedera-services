@@ -34,6 +34,10 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 public class InfrastructureManager {
+	private InfrastructureManager() {
+		throw new UnsupportedOperationException();
+	}
+
 	private static final String BASE_STORAGE_DIR = "databases";
 	private static final String VM_META_FILE_NAME = "smartContractKvStore.meta";
 	private static final String MM_FILE_NAME = "accounts.mmap";

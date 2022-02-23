@@ -28,13 +28,19 @@ import org.apache.tuweni.units.bigints.UInt256;
 import java.util.SplittableRandom;
 
 public class EvmKeyValueSource {
-	private static final int numKeys = 163_840;
-	private static final long entropySeed = 42_424_242L;
-	private static final UInt256[] keys = new UInt256[numKeys];
-	private static final SplittableRandom r = new SplittableRandom(entropySeed);
+	private EvmKeyValueSource() {
+		throw new UnsupportedOperationException();
+	}
+
+	private static final int NUM_KEYS = 163_840;
+	private static final long ENTROPY_SEED = 42_424_242L;
+	private static final UInt256[] keys = new UInt256[NUM_KEYS];
+	private static final SplittableRandom r = new SplittableRandom(ENTROPY_SEED);
+
+
 	static {
 		final var keyBytes = new byte[32];
-		for (int i = 0; i < numKeys; i++) {
+		for (int i = 0; i < NUM_KEYS; i++) {
 			r.nextBytes(keyBytes);
 			keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));
 		}
@@ -52,7 +58,7 @@ public class EvmKeyValueSource {
 
 		for (int i = 0; i < size; i++) {
 			contracts[i] = AccountID.newBuilder()
-					.setAccountNum(r.nextInt(maxContractNum) + 1)
+					.setAccountNum(r.nextInt(maxContractNum) + 1L)
 					.build();
 			keys[i] = uniqueKey(r.nextInt(maxKvPerContract));
 			values[i] = (r.nextDouble() < removalProb) ? UInt256.ZERO : keys[i];
@@ -62,10 +68,10 @@ public class EvmKeyValueSource {
 	}
 
 	public static UInt256 uniqueKey(final int n) {
-		if (n < numKeys) {
-			return keys[n % numKeys];
+		if (n < NUM_KEYS) {
+			return keys[n % NUM_KEYS];
 		} else {
-			final var baseKey = keys[n % numKeys];
+			final var baseKey = keys[n % NUM_KEYS];
 			final var keyBytes = new byte[32];
 			System.arraycopy(baseKey.toArrayUnsafe(), 0, keyBytes, 0, keyBytes.length);
 			final var noise = Ints.toByteArray(n);
