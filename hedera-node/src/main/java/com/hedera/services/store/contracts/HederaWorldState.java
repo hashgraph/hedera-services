@@ -359,10 +359,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public static class Updater
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
-
-		private static final HederaAccountCustomizer CONTRACT_CUSTOMIZER =
-				new HederaAccountCustomizer().isSmartContract(true);
-
+		
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
 		private Gas sbhRefund = Gas.ZERO;
