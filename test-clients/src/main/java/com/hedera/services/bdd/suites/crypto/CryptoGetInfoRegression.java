@@ -91,11 +91,10 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				.when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 6))
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 3))
 				)
 				.then(
 						getAccountInfo("0.0.1001")
-								.has(accountWith().tokenAllowancesCount(6))
 								.logged()
 				);
 	}
