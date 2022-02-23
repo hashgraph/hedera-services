@@ -264,6 +264,17 @@ class TxnAwareSoliditySigsVerifierTest {
 	}
 
 	@Test
+	void testsAccountAddressAndActiveContractIfEquals() {
+		given(accounts.get(Id.fromGrpcAccount(smartContract).asEntityNum())).willReturn(sigReqAccount);
+
+		final var verdict = subject.hasActiveKey(
+				EntityIdUtils.asTypedEvmAddress(smartContract),
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, EntityIdUtils.asTypedEvmAddress(smartContract), aliases);
+
+		assertTrue(verdict);
+	}
+
+	@Test
 	void createsValidityTestThatAcceptsContractKeysWithJustRecipientActive() {
 		final var uncontrolledId = EntityIdUtils.contractIdFromEvmAddress(Address.BLS12_G1ADD);
 		final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_SENDER_ADDR);
