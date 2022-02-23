@@ -51,7 +51,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -220,7 +219,7 @@ class BurnPrecompilesTest {
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
+				validator, dynamicProperties, accounts, tokenRels
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
@@ -256,7 +255,7 @@ class BurnPrecompilesTest {
 		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
+				validator, dynamicProperties, accounts, tokenRels
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects

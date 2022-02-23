@@ -58,6 +58,10 @@ public class TokenRelationship {
 	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
 	private boolean automaticAssociation = false;
+	private long key;
+	private long nextKey;
+	private long prevKey;
+
 
 	private long balanceChange = 0L;
 
@@ -208,9 +212,33 @@ public class TokenRelationship {
 		return !token.hasKycKey() || kycGranted;
 	}
 
+	public long getKey() {
+		return key;
+	}
+
+	public void setKey(final long key) {
+		this.key = key;
+	}
+
+	public long getNextKey() {
+		return nextKey;
+	}
+
+	public void setNextKey(final long nextKey) {
+		this.nextKey = nextKey;
+	}
+
+	public long getPrevKey() {
+		return prevKey;
+	}
+
+	public void setPrevKey(final long prevKey) {
+		this.prevKey = prevKey;
+	}
+
 	/* The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+		readability of unit tests; model objects are not used in hash-based
+		collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

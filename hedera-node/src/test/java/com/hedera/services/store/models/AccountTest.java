@@ -22,7 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -33,6 +33,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -42,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.swirlds.common.CommonUtils.unhex;
+import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,7 +55,10 @@ import static org.mockito.Mockito.verify;
 class AccountTest {
 	private static final byte[] mockCreate2Addr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 	private final Id subjectId = new Id(0, 0, 12345);
-	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
+	private final List<Id> assocTokens = new ArrayList<>() {{
+		add(new Id(0,0,666));
+		add(new Id(0,0,777));
+	}};
 	private final long ownedNfts = 5;
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int maxAutoAssociations = 1234;
@@ -62,15 +67,17 @@ class AccountTest {
 
 	private Account subject;
 	private OptionValidator validator;
+	private TypedTokenStore tokenStore;
 
 	@BeforeEach
 	void setUp() {
 		subject = new Account(subjectId);
-		subject.setAssociatedTokens(assocTokens);
+		subject.setAssociatedTokenIds(assocTokens);
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		subject.setOwnedNfts(ownedNfts);
 
 		validator = mock(ContextOptionValidator.class);
+		tokenStore = mock(TypedTokenStore.class);
 	}
 
 	@Test
@@ -152,11 +159,11 @@ class AccountTest {
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 
 		// when:
-		subject.dissociateUsing(List.of(dissociationRel), validator);
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+		assertEquals(expectedFinalTokens, assocTokens.stream().map(Id::toString).collect(joining(", ")));
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -169,7 +176,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(notOurId);
 
 		// expect:
-		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
+		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator), FAIL_INVALID);
 	}
 
 	@Test
@@ -207,14 +214,14 @@ class AccountTest {
 		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, true);
 
 		// expect:
-		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+		assertEquals(expectedFinalTokens, assocTokens.stream().map(Id::toString).collect(joining(", ")));
 	}
 
 	@Test
 	void accountEqualsCheck() {
 		// setup:
 		var account = new Account(subjectId);
-		account.setAssociatedTokens(assocTokens);
+		account.setAssociatedTokenIds(assocTokens);
 		account.setExpiry(1000L);
 		account.initBalance(100L);
 		account.setOwnedNfts(1L);
@@ -238,7 +245,7 @@ class AccountTest {
 		// and:
 		assertEquals(account.getId(), subject.getId());
 		// and:
-		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
+		assertEquals(account.getAssociatedTokenIds(), subject.getAssociatedTokenIds());
 		// and:
 		assertEquals(account.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(account.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutomaticAssociations());
@@ -252,7 +259,7 @@ class AccountTest {
 		subject.setOwnedNfts(0);
 		var otherSubject = new Account(subjectId);
 		otherSubject.incrementOwnedNfts();
-		otherSubject.setAssociatedTokens(assocTokens);
+		otherSubject.setAssociatedTokenIds(assocTokens);
 
 		subject.incrementOwnedNfts();
 		otherSubject.setAutoAssociationMetadata(autoAssociationMetadata);

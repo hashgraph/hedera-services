@@ -24,10 +24,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
 
 @Singleton
@@ -56,8 +58,23 @@ public class AssociateLogic {
 		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
 
 		accountStore.commitAccount(account);
+		var currKey = account.getLastAssociatedToken().value();
+		var prevRel = tokenStore.getLatestTokenRelationship(account);
+		List<TokenRelationship> modifiedTokenRelationShips = new ArrayList<>();
+		modifiedTokenRelationShips.add(prevRel);
+		for (var token : tokens) {
+			final var newRel = token.newRelationshipWith(account, false);
+			final var prevKey = prevRel.getPrevKey();
+			newRel.setPrevKey(prevKey);
+			newRel.setNextKey(currKey);
+			prevRel.setPrevKey(newRel.getKey());
+			modifiedTokenRelationShips.add(newRel);
+			prevRel = newRel;
+			currKey = newRel.getKey();
+		}
 
-		tokens.forEach(token -> tokenStore
-				.commitTokenRelationships(List.of(token.newRelationshipWith(account, false))));
+		tokenStore.commitTokenRelationships(modifiedTokenRelationShips);
+//		tokens.forEach(token -> tokenStore
+//				.commitTokenRelationships(List.of(token.newRelationshipWith(account, false))));
 	}
 }

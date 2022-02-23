@@ -36,7 +36,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -75,7 +74,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIA
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
@@ -289,12 +287,12 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
-	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
-		return (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+	public EntityNumPair getLatestAssociatedToken(final AccountID aId) {
+		return (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
 	}
 
-	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
-		accountsLedger.set(aId, TOKENS, tokens);
+	public void setLatestAssociatedToken(final AccountID aId, final EntityNumPair key) {
+		accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, key);
 	}
 
 	public long getTokenBalance(AccountID aId, TokenID tId) {
@@ -319,7 +317,6 @@ public class HederaLedger {
 			}
 		}
 
-		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
 		for (TokenID tId : listOfAssociatedTokens) {
 			if (tokenStore.get(tId).isDeleted()) {
 				continue;

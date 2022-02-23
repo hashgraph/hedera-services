@@ -23,7 +23,6 @@ package com.hedera.test.factories.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -85,13 +84,13 @@ public class MerkleAccountFactory {
 		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
 		maxAutoAssociations.ifPresent(value::setMaxAutomaticAssociations);
 		alreadyUsedAutoAssociations.ifPresent(value::setAlreadyUsedAutomaticAssociations);
-		var tokens = new MerkleAccountTokens();
-		if (useNewStyleTokenIds) {
-			tokens.associate(assocTokens);
-		} else {
-			tokens.associateAll(associatedTokens);
-		}
-		value.setTokens(tokens);
+//		var tokens = new MerkleAccountTokens();
+//		if (useNewStyleTokenIds) {
+//			tokens.associate(assocTokens);
+//		} else {
+//			tokens.associateAll(associatedTokens);
+//		}
+//		value.setTokens(tokens);
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);

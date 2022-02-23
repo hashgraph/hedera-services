@@ -20,19 +20,16 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,14 +51,14 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		setupWithMockLedger();
 	}
 
-	@Test
-	void delegatesToSetTokens() {
-		final var tokens = new MerkleAccountTokens();
-
-		subject.setAssociatedTokens(genesis, tokens);
-
-		verify(accountsLedger).set(genesis, TOKENS, tokens);
-	}
+//	@Test
+//	void delegatesToSetTokens() {
+//		final var tokens = new MerkleAccountTokens();
+//
+//		subject.setAssociatedTokens(genesis, tokens);
+//
+//		verify(accountsLedger).set(genesis, TOKENS, tokens);
+//	}
 
 	@Test
 	void getsTokenBalance() {
@@ -121,15 +118,15 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(creator).setLedger(subject);
 	}
 
-	@Test
-	void delegatesToGetTokens() {
-		final var tokens = new MerkleAccountTokens();
-		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
-
-		final var actual = subject.getAssociatedTokens(genesis);
-
-		Assertions.assertSame(tokens, actual);
-	}
+//	@Test
+//	void delegatesToGetTokens() {
+//		final var tokens = new MerkleAccountTokens();
+//		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
+//
+//		final var actual = subject.getAssociatedTokens(genesis);
+//
+//		Assertions.assertSame(tokens, actual);
+//	}
 
 	@Test
 	void delegatesFreezeOps() {
@@ -159,7 +156,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
-		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
+		verify(accountsLedger).undoChangesOfType(List.of(LAST_ASSOCIATED_TOKEN, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 

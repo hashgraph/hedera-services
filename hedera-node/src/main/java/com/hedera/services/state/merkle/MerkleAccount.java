@@ -98,8 +98,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public MerkleAccount() {
 		addDeserializedChildren(List.of(
 				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+				new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -135,8 +134,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setImmutable(true);
 		return new MerkleAccount(List.of(
 				state().copy(),
-				records().copy(),
-				tokens().copy()), this);
+				records().copy()), this);
 	}
 
 	/* ---- Object ---- */
@@ -150,13 +148,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 		final var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
-				this.records().equals(that.records()) &&
-				this.tokens().equals(that.tokens());
+				this.records().equals(that.records());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), tokens());
+		return Objects.hash(state(), records());
 	}
 
 	@Override
@@ -164,7 +161,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
-				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
@@ -182,17 +178,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
-	// token() should not return MerkleAccountTokens anymore. But should give us a list of tokenIds from a
+	// tokens() should not return MerkleAccountTokens anymore. But should give us a list of tokenIds from a
 	// BaseMapValueLinkedList<EntityNumPair, MerkleTokenRelNode, MerkleTokenRelStatus>
 
-	public MerkleAccountTokens tokens() {
-		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
-	}
-
-	public void setTokens(final MerkleAccountTokens tokens) {
-		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
-	}
+//	public MerkleAccountTokens tokens() {
+//		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
+//	}
+//
+//	public void setTokens(final MerkleAccountTokens tokens) {
+//		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
+//		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
+//	}
 
 	/* ----  Bean  ---- */
 

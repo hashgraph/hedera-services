@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -339,6 +340,7 @@ public class Token {
 		}
 		newRel.setKycGranted(!hasKycKey());
 		newRel.setAutomaticAssociation(automaticAssociation);
+		newRel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()).value());
 		return newRel;
 	}
 

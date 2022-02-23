@@ -188,7 +188,7 @@ class AutoRenewCalcsTest {
 				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
-				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
+				.setCurrentNumTokenRels(100)
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))

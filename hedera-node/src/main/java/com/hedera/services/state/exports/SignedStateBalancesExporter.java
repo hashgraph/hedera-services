@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
+import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -240,8 +241,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			MerkleMap<EntityNum, MerkleToken> tokens,
 			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		var accountTokens = account.tokens();
-		for (TokenID tokenId : accountTokens.asTokenIds()) {
+		var associatedTokens = getAssociatedTokens(tokenAssociations, account);
+		for (TokenID tokenId : associatedTokens) {
 			var token = tokens.get(fromTokenId(tokenId));
 			if (token != null) {
 				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));

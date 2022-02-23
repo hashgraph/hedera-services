@@ -34,7 +34,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -70,7 +69,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -186,9 +184,6 @@ public class BaseHederaLedgerTestHelper {
 		when(accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS)).thenReturn(8);
 		when(accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).thenReturn(5);
 		when(accountsLedger.exists(id)).thenReturn(true);
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(tokenInfo.keySet());
-		when(accountsLedger.get(id, TOKENS)).thenReturn(tokens);
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);

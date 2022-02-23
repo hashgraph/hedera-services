@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -34,6 +35,8 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
@@ -61,6 +63,8 @@ class AccountStoreTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> accounts;
+	@Mock
+	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
 	private AccountStore subject;
 
@@ -68,7 +72,7 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
-		subject = new AccountStore(validator, dynamicProperties, accounts);
+		subject = new AccountStore(validator, dynamicProperties, accounts, tokenRels);
 	}
 
 	@Test
@@ -160,7 +164,7 @@ class AccountStoreTest {
 		assertEquals(expectedReplacement, miscMerkleAccount);
 //		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 		// and:
-		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
+//		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokenIds());
 	}
 
 	@Test
@@ -241,7 +245,7 @@ class AccountStoreTest {
 
 		miscAccount.setExpiry(expiry);
 		miscAccount.initBalance(balance);
-		miscAccount.setAssociatedTokens(miscMerkleAccount.tokens().getIds());
+		miscAccount.setAssociatedTokenIds(List.of(firstAssocTokenId, secondAssocTokenId));
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		miscAccount.setProxy(proxy);

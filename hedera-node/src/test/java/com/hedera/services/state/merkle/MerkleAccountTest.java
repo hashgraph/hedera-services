@@ -84,7 +84,6 @@ class MerkleAccountTest {
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
-	private MerkleAccountTokens tokens;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
@@ -100,9 +99,6 @@ class MerkleAccountTest {
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
-
-		tokens = mock(MerkleAccountTokens.class);
-		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(TreeMap.class);
 		nftAllowances = mock(TreeMap.class);
@@ -124,7 +120,7 @@ class MerkleAccountTest {
 				fungibleTokenAllowances,
 				nftAllowances);
 
-		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
+		subject = new MerkleAccount(List.of(state, payerRecords));
 		subject.setNftsOwned(2L);
 	}
 
@@ -175,12 +171,10 @@ class MerkleAccountTest {
 	@Test
 	void toStringWorks() {
 		given(payerRecords.size()).willReturn(3);
-		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
 						+ ", # records=" + 3
-						+ ", tokens=" + "[1.2.3, 2.3.4]"
 						+ "}",
 				subject.toString());
 	}
@@ -198,7 +192,6 @@ class MerkleAccountTest {
 		assertEquals(state.memo(), subject.getMemo());
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
-		assertSame(tokens, subject.tokens());
 		assertEquals(2L, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
@@ -272,11 +265,10 @@ class MerkleAccountTest {
 	@Test
 	void objectContractMet() {
 		final var one = new MerkleAccount();
-		final var two = new MerkleAccount(List.of(state, payerRecords, tokens));
+		final var two = new MerkleAccount(List.of(state, payerRecords));
 		final var three = two.copy();
 
 		verify(payerRecords).copy();
-		verify(tokens).copy();
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);

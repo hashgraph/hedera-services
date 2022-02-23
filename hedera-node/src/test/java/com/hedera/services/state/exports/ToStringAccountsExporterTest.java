@@ -25,8 +25,6 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
@@ -118,12 +116,10 @@ class ToStringAccountsExporterTest {
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		account1.setBalance(1L);
-		account1.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 1L, 2L, 3L, 3L, 2L, 1L })));
 		account1.setMaxAutomaticAssociations(10);
 		account1.setAlreadyUsedAutomaticAssociations(7);
 		account1.setCryptoAllowances(cryptoAllowances);
 		account2.setBalance(2L);
-		account2.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 0L, 0L, 1234L })));
 		// and:
 		var desired = "0.0.1\n" +
 				"---\n" +
@@ -133,13 +129,13 @@ class ToStringAccountsExporterTest {
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
 				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, " +
-				"fungibleTokenAllowances={}, nftAllowances={}}, # records=0, tokens=[3.2.1, 1.2.3]}\n\n0.0.2\n---\n" +
+				"fungibleTokenAllowances={}, nftAllowances={}}, # records=0}\n\n0.0.2\n---\n" +
 				"MerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519: \"second-fake\"\n" +
 				", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us what we love, " +
 				"deleted=true, smartContract=false, numContractKvPairs=0, receiverSigRequired=false, " +
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}}, #" +
-				" records=0, tokens=[1234.0.0]}\n";
+				" records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

@@ -211,7 +211,11 @@ public class TypedTokenStore {
 	}
 
 	public MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
-		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
+		return getMerkleTokenRelationship(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
+	}
+
+	public MerkleTokenRelStatus getMerkleTokenRelationship(Pair<AccountID, TokenID> key) {
+		return tokenRels.getImmutableRef(key);
 	}
 
 	private TokenRelationship buildTokenRelationship(
@@ -221,7 +225,9 @@ public class TypedTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
-
+		tokenRelationship.setKey(merkleTokenRel.getKey().value());
+		tokenRelationship.setNextKey(merkleTokenRel.nextKey().value());
+		tokenRelationship.setPrevKey(merkleTokenRel.prevKey().value());
 		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;
@@ -239,6 +245,8 @@ public class TypedTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
+		mutableTokenRel.setNextKey(new EntityNumPair(modelRel.getNextKey()));
+		mutableTokenRel.setPrevKey(new EntityNumPair(modelRel.getPrevKey()));
 		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 
@@ -539,6 +547,15 @@ public class TypedTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
+	}
+
+	public TokenRelationship getLatestTokenRelationship(final Account account) {
+		return loadTokenRelationShip(account.getLastAssociatedToken().asAccountTokenRel());
+	}
+
+	public TokenRelationship loadTokenRelationShip(final Pair<AccountID, TokenID> key) {
+		final var merkleTokenRel = getMerkleTokenRelationship(key);
+		return buildTokenRelationship(null, null, merkleTokenRel);
 	}
 
 	@FunctionalInterface

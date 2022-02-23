@@ -54,15 +54,15 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class TransferLogic {
 	public static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS = List.of(
-			TOKENS,
+			LAST_ASSOCIATED_TOKEN,
 			NUM_NFTS_OWNED,
 			ALREADY_USED_AUTOMATIC_ASSOCIATIONS
 	);

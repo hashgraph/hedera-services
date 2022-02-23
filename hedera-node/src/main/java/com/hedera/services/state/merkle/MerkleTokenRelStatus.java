@@ -27,16 +27,13 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
-	private static final int PREV_INDEX = 0;
-	private static final int NEXT_INDEX = 1;
-
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
@@ -44,13 +41,14 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
-	private EntityNumPair[] keys;
 
 	private long numbers;
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
 	private boolean automaticAssociation;
+	private long nextKey;
+	private long prevKey;
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
@@ -174,15 +172,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.kycGranted = kycGranted;
 	}
 
-	public void setKeys(EntityNumPair[] keys) {
-		throwIfImmutable("Cannot change this token relation's ListNode keys if it's immutable.");
-		this.keys = keys;
-	}
-
-	public EntityNumPair[] getKeys() {
-		return keys;
-	}
-
 	public boolean isAutomaticAssociation() {
 		return automaticAssociation;
 	}
@@ -222,19 +211,19 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	}
 
 	public EntityNumPair prevKey() {
-		return keys[PREV_INDEX];
+		return new EntityNumPair(prevKey);
 	}
 
 	public EntityNumPair nextKey() {
-		return keys[NEXT_INDEX];
+		return new EntityNumPair(nextKey);
 	}
 
-	public void setPrevKey(@Nullable final EntityNumPair prevKey) {
-		keys[PREV_INDEX] = prevKey;
+	public void setPrevKey(@NotNull final EntityNumPair prevKey) {
+		this.prevKey = prevKey.value();
 	}
 
-	public void setNextKey(@Nullable final EntityNumPair nextKey) {
-		keys[NEXT_INDEX] = nextKey;
+	public void setNextKey(@NotNull final EntityNumPair nextKey) {
+		this.nextKey = nextKey.value();
 	}
 //
 //	/* --- MapValueListNode --- */

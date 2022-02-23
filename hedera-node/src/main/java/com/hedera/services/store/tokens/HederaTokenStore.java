@@ -31,7 +31,6 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -75,7 +74,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
@@ -231,8 +229,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
-			final var accountTokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
-
 			final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
 			final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
 			var currKey = new EntityNumPair(lastAssociatedToken.value());
@@ -249,12 +245,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (listOfAssociatedTokens.contains(id)) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
-				if (accountTokens.includes(id)) {
-					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-				}
 			}
 			var validity = OK;
-			if ((accountTokens.numAssociations() + tokenIds.size()) > properties.maxTokensPerAccount()) {
+			if ((listOfAssociatedTokens.size() + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			} else {
 				var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
@@ -266,7 +259,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 
 				if (validity == OK) {
-					accountTokens.associateAll(new HashSet<>(tokenIds));
+					listOfAssociatedTokens.addAll(new HashSet<>(tokenIds));
 					currKey = new EntityNumPair(lastAssociatedToken.value());
 					for (var id : tokenIds) {
 						final var relationship = asTokenRel(aId, id);
@@ -310,7 +303,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 			}
 			accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
-			accountsLedger.set(aId, TOKENS, accountTokens);
 			return validity;
 		});
 	}

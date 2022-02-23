@@ -28,7 +28,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
@@ -66,7 +65,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
@@ -152,8 +150,8 @@ class GetAccountInfoAnswerTest {
 				fromAccountTokenRel(payerId, missingToken),
 				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
+//		var tokens = new MerkleAccountTokens();
+//		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
@@ -179,7 +177,7 @@ class GetAccountInfoAnswerTest {
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.nftAllowances(nftAllowances)
 				.get();
-		payerAccount.setTokens(tokens);
+//		payerAccount.setTokens(tokens);
 
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);

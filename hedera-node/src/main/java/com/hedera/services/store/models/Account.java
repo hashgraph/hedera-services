@@ -23,17 +23,19 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
@@ -72,7 +75,7 @@ public class Account {
 	private boolean deleted = false;
 	private boolean isSmartContract = false;
 	private boolean isReceiverSigRequired = false;
-	private CopyOnWriteIds associatedTokens;
+	private List<Id> associatedTokenIds;
 	private long ownedNfts;
 	private long autoRenewSecs;
 	private ByteString alias = ByteString.EMPTY;
@@ -83,13 +86,14 @@ public class Account {
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
+	private EntityNumPair lastAssociatedToken;
 
 	public Account(Id id) {
 		this.id = id;
 	}
 
-	public void setAssociatedTokens(CopyOnWriteIds associatedTokens) {
-		this.associatedTokens = associatedTokens;
+	public void setAssociatedTokenIds(List<Id> associatedTokenIds) {
+		this.associatedTokenIds = associatedTokenIds;
 	}
 
 	public void setExpiry(long expiry) {
@@ -155,56 +159,101 @@ public class Account {
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
+	public EntityNumPair getLastAssociatedToken() {
+		return lastAssociatedToken;
+	}
+
+	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
+		this.lastAssociatedToken = lastAssociatedToken;
+	}
+
 	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
-		final var alreadyAssociated = associatedTokens.size();
+		final var alreadyAssociated = associatedTokenIds.size();
 		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
 		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		final Set<Id> uniqueIds = new HashSet<>();
 		for (var token : tokens) {
 			final var tokenId = token.getId();
-			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			validateFalse(associatedTokenIds.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 			if (automaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
 			uniqueIds.add(tokenId);
+			lastAssociatedToken = EntityNumPair.fromLongs(id.num(), tokenId.num());
 		}
 
-		associatedTokens.addAllIds(uniqueIds);
+		associatedTokenIds.addAll(uniqueIds);
 	}
 
 	/**
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
-	 *
-	 * @param dissociations
+	 *  @param dissociations
 	 * 		the dissociations to perform.
+	 * @param tokenStore
+	 * 		tokenStore to load the prev and next tokenRelationships of the account
 	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * @return
 	 */
-	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
+	public List<TokenRelationship> dissociateUsing(List<Dissociation> dissociations, TypedTokenStore tokenStore, OptionValidator validator) {
 		final Set<Id> dissociatedTokenIds = new HashSet<>();
+		final List<TokenRelationship> touchedRelationships = new ArrayList<>();
 		for (var dissociation : dissociations) {
+			// for each dissociation check if the entityNumPair matches the account's latestAssociatedToken
+			// if it does, then update the accounts latestAssociatedToken to its next key by getting the next Key from the tokenStore
+			// update links
+			// if it does not, then get the next Relationship and prev relationship of the dissociating key using the tokenStore
+			// update links
+			// return the touched relationships.
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			final var tokenId = dissociation.dissociatedTokenId();
+			final var key = EntityNumPair.fromLongs(id.num(),tokenId.num());
+			if (lastAssociatedToken.equals(key)) {
+				// removing the latest associated token from the account
+				final var latestRel = tokenStore.getLatestTokenRelationship(this);
+				final var nextKey = new EntityNumPair(latestRel.getNextKey());
+				final var nextRel = tokenStore.loadTokenRelationShip(nextKey.asAccountTokenRel());
+				lastAssociatedToken = new EntityNumPair(nextRel.getKey());
+				nextRel.setPrevKey(latestRel.getPrevKey());
+				latestRel.setNextKey(0L);
+
+				touchedRelationships.add(latestRel);
+				touchedRelationships.add(nextRel);
+			} else {
+				// get next and prev
+				final var dissociatingRel = tokenStore.loadTokenRelationShip(key.asAccountTokenRel());
+				final var prevKey = new EntityNumPair(dissociatingRel.getPrevKey());
+				final var prevRel = tokenStore.loadTokenRelationShip(prevKey.asAccountTokenRel());
+				final var nextKey = new EntityNumPair(dissociatingRel.getNextKey());
+				final var nextRel = tokenStore.loadTokenRelationShip(nextKey.asAccountTokenRel());
+				nextRel.setPrevKey(prevKey.value());
+				prevRel.setNextKey(nextKey.value());
+
+				touchedRelationships.add(prevRel);
+				touchedRelationships.add(nextRel);
+			}
+
 			dissociation.updateModelRelsSubjectTo(validator);
 			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
 			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
 				decrementUsedAutomaticAssocitions();
 			}
 		}
-		associatedTokens.removeAllIds(dissociatedTokenIds);
+		associatedTokenIds.removeAll(dissociatedTokenIds);
+		return touchedRelationships;
 	}
 
 	public Id getId() {
 		return id;
 	}
 
-	public CopyOnWriteIds getAssociatedTokens() {
-		return associatedTokens;
+	public List<Id> getAssociatedTokenIds() {
+		return associatedTokenIds;
 	}
 
 	public boolean isAssociatedWith(Id token) {
-		return associatedTokens.contains(token);
+		return associatedTokenIds.contains(token);
 	}
 
 	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
@@ -227,8 +276,8 @@ public class Account {
 
 	@Override
 	public String toString() {
-		final var assocTokenRepr = Optional.ofNullable(associatedTokens)
-				.map(CopyOnWriteIds::toReadableIdList)
+		final var assocTokenRepr = Optional.ofNullable(associatedTokenIds)
+				.map(tIds -> tIds.stream().map(Id::toString).collect(joining(", ")))
 				.orElse("<N/A>");
 		return MoreObjects.toStringHelper(Account.class)
 				.add("id", id)

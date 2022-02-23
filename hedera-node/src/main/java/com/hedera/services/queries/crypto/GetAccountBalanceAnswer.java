@@ -43,6 +43,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
+import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -92,7 +93,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var key = EntityNum.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : account.tokens().asTokenIds()) {
+			for (TokenID tId : getAssociatedTokens(view.tokenAssociations(), account)) {
 				var relKey = fromAccountTokenRel(id, tId);
 				var relationship = view.tokenAssociations().get(relKey);
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);

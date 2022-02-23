@@ -25,14 +25,13 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -59,50 +58,22 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountPropertyTest {
 	@Mock
 	private MerkleAccount mockAccount;
-	@Mock
-	private MerkleAccountTokens mockAccountTokens;
-
-	@Test
-	void tokenGetterWorksWithNewFcmParadigm() {
-		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3 });
-		final var copyResult = new MerkleAccountTokens(ids);
-		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
-		given(mockAccount.tokens()).willReturn(mockAccountTokens);
-
-		final var result = TOKENS.getter().apply(mockAccount);
-
-		assertSame(copyResult, result);
-	}
-
-	@Test
-	void tokenSetterWorksWithNewFcmParadigm() {
-		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
-		final var newTokens = new MerkleAccountTokens(ids);
-		given(mockAccount.tokens()).willReturn(mockAccountTokens);
-
-		TOKENS.setter().accept(mockAccount, newTokens);
-
-		verify(mockAccountTokens).shareTokensOf(newTokens);
-	}
 
 	@Test
 	void cannotSetNegativeBalance() {
@@ -155,8 +126,9 @@ class MerkleAccountPropertyTest {
 		final int oldNumKvPairs = 123;
 		final int newNumKvPairs = 123;
 		final long initialAllowance = 100L;
+		final EntityNumPair origLastAssociatedToken = new EntityNumPair(123L);
+		final EntityNumPair newLastAssociatedToken = new EntityNumPair(234L);
 		final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
-		final AccountID owner = AccountID.newBuilder().setAccountNum(12347L).build();
 		final EntityNum payerNum = EntityNum.fromAccountId(payer);
 		final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
 		final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
@@ -188,6 +160,7 @@ class MerkleAccountPropertyTest {
 				.customizing(new MerkleAccount());
 		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
+		account.setLastAssociatedToken(origLastAssociatedToken);
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
@@ -225,6 +198,7 @@ class MerkleAccountPropertyTest {
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
 		NFT_ALLOWANCES.setter().accept(account, nftAllowances);
+		LAST_ASSOCIATED_TOKEN.setter().accept(account, newLastAssociatedToken);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -243,6 +217,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
 		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
+		assertEquals(newAlreadyUsedAutoAssociations, LAST_ASSOCIATED_TOKEN.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

@@ -615,8 +615,7 @@ public class StateView {
 	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
 		final var account = view.accounts().get(id);
 		final List<TokenRelationship> relationships = new ArrayList<>();
-		final var tokenIds = account.tokens().asTokenIds();
-		// tokenAssociations() of this and lastAssociatedToken from MerkleAccount and build a list of tokenIds
+		final var tokenIds = getAssociatedTokens(view.tokenAssociations(), account);
 		for (TokenID tId : tokenIds) {
 			final var optionalToken = view.tokenWith(tId);
 			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
@@ -633,6 +632,20 @@ public class StateView {
 			).asGrpcFor(effectiveToken));
 		}
 		return relationships;
+	}
+
+	public static List<TokenID> getAssociatedTokens(
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleAccount account) {
+		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
+		var currKey = account.getLastAssociatedToken();
+
+		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
+			var currRel = allTokenAssociations.get(currKey);
+			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
+			currKey = currRel.nextKey();
+		}
+		return listOfAssociatedTokens;
 	}
 
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {

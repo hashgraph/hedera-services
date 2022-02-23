@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -161,17 +160,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getNftsOwned;
-		}
-	},
-	TOKENS {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.tokens().shareTokensOf((MerkleAccountTokens) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return a -> a.tokens().tmpNonMerkleCopy();
 		}
 	},
 	LAST_ASSOCIATED_TOKEN {
