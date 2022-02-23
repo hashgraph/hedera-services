@@ -30,20 +30,20 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 
 public class InfrastructureManager {
-	private static final String SAVED_STORAGE_DIR = "databases";
-	private static final String WORKING_STORAGE_DIR = "database";
+	private static final String BASE_STORAGE_DIR = "databases";
 	private static final String VM_META_FILE_NAME = "smartContractKvStore.meta";
 	private static final String MM_FILE_NAME = "accounts.mmap";
 
-	public static StorageInfrastructure newInfrastructure() {
+	public static StorageInfrastructure newInfrastructureAt(final String storageLoc) {
 		final var jdbBuilderFactory = new JasperDbBuilderFactory() {
 			@Override
 			@SuppressWarnings({"rawtypes", "unchecked"})
 			public <K extends VirtualKey<K>, V extends VirtualValue> JasperDbBuilder<K, V> newJdbBuilder() {
-				return new JasperDbBuilder().storageDir(Paths.get(WORKING_STORAGE_DIR));
+				return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
 			}
 		};
 		final var vmFactory = new VirtualMapFactory(jdbBuilderFactory);
@@ -52,23 +52,26 @@ public class InfrastructureManager {
 		return StorageInfrastructure.from(accounts, storage);
 	}
 
-	public static StorageInfrastructure infrastructureWith(final int initNumContracts, final int initNumKvPairs) {
-		throw new AssertionError("Not implemented");
+	public static StorageInfrastructure loadInfrastructureWith(
+			final int initNumContracts,
+			final int initNumKvPairs
+	) throws IOException {
+		return StorageInfrastructure.from(storageLocFor(initNumContracts, initNumKvPairs));
 	}
 
-	public static boolean hasSavedStorageWith(final int initNumContracts, final int initNumKvPairs) {
+	public static boolean hasSavedInfrastructureWith(final int initNumContracts, final int initNumKvPairs) {
 		final var f = new File(vmLocFor(initNumContracts, initNumKvPairs));
 		return f.exists();
 	}
 
-	private static String vmLocFor(final int initNumContracts, final int initNumKvPairs) {
-		return storageLocFor(initNumContracts, initNumKvPairs) + File.separator + "smartContractKvStore.vmap";
-	}
-
-	private static String storageLocFor(final int initNumContracts, final int initNumKvPairs) {
-		return SAVED_STORAGE_DIR + File.separator
+	public static String storageLocFor(final int initNumContracts, final int initNumKvPairs) {
+		return BASE_STORAGE_DIR + File.separator
 				+ "contracts" + initNumContracts + "_"
 				+ "kvPairs" + initNumKvPairs;
+	}
+
+	private static String vmLocFor(final int initNumContracts, final int initNumKvPairs) {
+		return storageLocFor(initNumContracts, initNumKvPairs) + File.separator + "smartContractKvStore.vmap";
 	}
 
 	static String vMapMetaIn(final String loc) {

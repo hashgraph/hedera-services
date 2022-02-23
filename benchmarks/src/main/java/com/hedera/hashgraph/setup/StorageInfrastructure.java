@@ -29,7 +29,10 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.common.merkle.io.MerkleDataOutputStream;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -45,6 +48,8 @@ public record StorageInfrastructure(
 		AtomicReference<VirtualMap<ContractKey, ContractValue>> storage,
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
 
+	private static final Cryptography crypto = new CryptoEngine();
+
 	public static StorageInfrastructure from(
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
 			final VirtualMap<ContractKey, ContractValue> storage
@@ -57,15 +62,52 @@ public record StorageInfrastructure(
 		return new StorageInfrastructure(accountsRef, storageRef, ledger);
 	}
 
+	public static StorageInfrastructure from(final String storageLoc) throws IOException {
+		MerkleMap<EntityNum, MerkleAccount> accounts;
+		final var mMapLoc = InfrastructureManager.mMapIn(storageLoc);
+		try (final var mMapIn = new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
+			mMapIn.readProtocolVersion();
+			accounts = mMapIn.readMerkleTree(Integer.MAX_VALUE);
+		}
+
+		VirtualMap<ContractKey, ContractValue> storage = new VirtualMap<>();
+		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
+		final var path = Paths.get(vMapMetaLoc);
+		final var storageDir = new File(storageLoc);
+		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(path), storageDir)) {
+			storage.deserializeExternal(vMapIn, storageDir, null, 1);
+		}
+
+		return from(accounts, storage);
+	}
+
 	public void serializeTo(final String storageLoc) throws IOException {
+		ensureDir(storageLoc);
+
 		final var mMapLoc = InfrastructureManager.mMapIn(storageLoc);
 		try (final var mMapOut = new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
+			mMapOut.writeProtocolVersion();
 			mMapOut.writeMerkleTree(accounts.get());
 		}
 
 		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
+		final var curStorage = storage.get();
+		final var newStorage = curStorage.copy();
+		crypto.digestTreeSync(curStorage);
 		try (final var vMapOut = new SerializableDataOutputStream(Files.newOutputStream(Paths.get(vMapMetaLoc)))) {
-			storage.get().serializeExternal(vMapOut, new File(storageLoc));
+			curStorage.serializeExternal(vMapOut, new File(storageLoc));
+		}
+		storage.set(newStorage);
+	}
+
+	private static void ensureDir(final String loc) {
+		final var f = new File(loc);
+		if (!f.exists()) {
+			if (!f.mkdirs()) {
+				throw new IllegalStateException("Failed to create directory " + f.getAbsolutePath());
+			}
+		} else if (!f.isDirectory()) {
+			throw new IllegalStateException(f.getAbsolutePath() + " is not a directory");
 		}
 	}
 }
