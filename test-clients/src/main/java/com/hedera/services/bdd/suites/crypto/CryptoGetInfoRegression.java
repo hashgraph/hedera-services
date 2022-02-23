@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -109,6 +111,9 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 		final var token8 = "token8";
 		return defaultHapiSpec("FetchesOnlyALimitedTokenAssociations")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
 						newKeyNamed(aKey),
 						cryptoCreate(account)
 								.balance(ONE_HUNDRED_HBARS),
