@@ -88,7 +88,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
-	private int tokenIdsIndex;
 
 	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
 	// be modified to use MapValueLinkedList in the future
@@ -179,9 +178,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			nftAllowances = deserializeNftAllowances(in);
 		}
-		if (version >= RELEASE_0240_VERSION) {
-			tokenIdsIndex = in.readInt();
-		}
 	}
 
 	@Override
@@ -201,7 +197,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
 		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
-		out.writeInt(tokenIdsIndex);
 	}
 
 	/* --- Copyable --- */
@@ -225,7 +220,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				fungibleTokenAllowances,
 				nftAllowances);
 		copied.setNftsOwned(nftsOwned);
-		copied.setTokenIdsIndex(tokenIdsIndex);
 		return copied;
 	}
 
@@ -256,8 +250,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
-				Objects.equals(this.nftAllowances, that.nftAllowances) &&
-				this.tokenIdsIndex == that.tokenIdsIndex;
+				Objects.equals(this.nftAllowances, that.nftAllowances);
 	}
 
 	@Override
@@ -278,8 +271,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				alias,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances,
-				tokenIdsIndex);
+				nftAllowances);
 	}
 
 	/* --- Bean --- */
@@ -304,7 +296,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
-				.add("tokenIdsIndex", tokenIdsIndex)
 				.toString();
 	}
 
@@ -412,15 +403,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setNftsOwned(long nftsOwned) {
 		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
-	}
-
-	public void setTokenIdsIndex(int tokenIdsIndex) {
-		assertMutable("tokenIdsIndex");
-		this.tokenIdsIndex = tokenIdsIndex;
-	}
-
-	public int getTokenIdsIndex() {
-		return tokenIdsIndex;
 	}
 
 	public int getNumContractKvPairs() {

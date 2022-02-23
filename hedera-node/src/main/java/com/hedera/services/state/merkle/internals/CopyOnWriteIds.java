@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle.internals;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -173,20 +172,12 @@ public class CopyOnWriteIds {
 		return ids;
 	}
 
-	public List<TokenID> getAsIds() {
-		return getAsIds(0, size()).getRight();
-	}
-
-	public Pair<Integer, List<TokenID>> getAsIds(int startIndex, int count) {
+	public List<TokenID> getAsIds(int count) {
 		final List<TokenID> modelIds = new ArrayList<>();
-		int indexToFetch = 0;
 		for (int i = 0, n = size(); i < count && i < n; i++) {
-			indexToFetch = (i+startIndex) % n;
-			modelIds.add(asGrpcTokenId(nativeIdAt(indexToFetch)));
+			modelIds.add(asGrpcTokenId(nativeIdAt(i)));
 		}
-		return Pair.of(
-				size() == 0 || count == 0 ? 0 : (indexToFetch+1)%size(),
-				modelIds);
+		return modelIds;
 	}
 
 	/* --- Helpers --- */

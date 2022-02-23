@@ -31,17 +31,17 @@ import java.util.List;
 import java.util.Set;
 
 public class NewRels {
-	public static List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount) {
+	public static List<TokenRelationship> listFrom(Token provisionalToken) {
 		final var treasury = provisionalToken.getTreasury();
 		final Set<Id> associatedSoFar = new HashSet<>();
 		final List<TokenRelationship> newRels = new ArrayList<>();
 
-		associateGiven(maxTokensPerAccount, provisionalToken, treasury, associatedSoFar, newRels);
+		associateGiven(provisionalToken, treasury, associatedSoFar, newRels);
 
 		for (final var customFee : provisionalToken.getCustomFees()) {
 			if (customFee.requiresCollectorAutoAssociation()) {
 				final var collector = customFee.getValidatedCollector();
-				associateGiven(maxTokensPerAccount, provisionalToken, collector, associatedSoFar, newRels);
+				associateGiven(provisionalToken, collector, associatedSoFar, newRels);
 			}
 		}
 
@@ -49,7 +49,6 @@ public class NewRels {
 	}
 
 	private static void associateGiven(
-			final int maxTokensPerAccount,
 			final Token provisionalToken,
 			final Account account,
 			final Set<Id> associatedSoFar,
@@ -61,7 +60,7 @@ public class NewRels {
 		}
 
 		final var newRel = provisionalToken.newEnabledRelationship(account);
-		account.associateWith(List.of(provisionalToken), maxTokensPerAccount, false);
+		account.associateWith(List.of(provisionalToken), false);
 		newRelations.add(newRel);
 		associatedSoFar.add(accountId);
 	}

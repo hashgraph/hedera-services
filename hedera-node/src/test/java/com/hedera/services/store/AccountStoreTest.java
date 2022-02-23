@@ -152,7 +152,7 @@ class AccountStoreTest {
 		final var model = subject.loadAccount(miscId);
 
 		// when:
-		model.associateWith(List.of(aThirdToken), Integer.MAX_VALUE, false);
+		model.associateWith(List.of(aThirdToken), false);
 		// and:
 		subject.commitAccount(model);
 

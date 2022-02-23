@@ -178,7 +178,7 @@ class AccountTest {
 
 		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(alreadyAssocToken), 100, false),
+				() -> subject.associateWith(List.of(alreadyAssocToken), false),
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 	}
 
@@ -203,7 +203,7 @@ class AccountTest {
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), true);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
@@ -269,7 +269,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken), 10, true),
+				() -> subject.associateWith(List.of(firstNewToken), true),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
@@ -279,7 +279,7 @@ class AccountTest {
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
-		subject.associateWith(List.of(firstNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken), true);
 
 		assertEquals(maxAutoAssociations, subject.getAlreadyUsedAutomaticAssociations());
 	}

@@ -53,7 +53,7 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		account.associateWith(tokens, false);
 
 		accountStore.commitAccount(account);
 

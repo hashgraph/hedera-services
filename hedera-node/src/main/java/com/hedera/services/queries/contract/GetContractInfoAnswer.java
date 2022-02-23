@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -51,11 +52,16 @@ public class GetContractInfoAnswer implements AnswerService {
 
 	private final AliasManager aliasManager;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetContractInfoAnswer(final AliasManager aliasManager, final OptionValidator validator) {
+	public GetContractInfoAnswer(
+			final AliasManager aliasManager,
+			final OptionValidator validator,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.aliasManager = aliasManager;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -151,7 +157,7 @@ public class GetContractInfoAnswer implements AnswerService {
 				response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
 			}
 		} else {
-			var info = view.infoForContract(op.getContractID(), aliasManager, true);
+			var info = view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensPerAccount());
 			if (info.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {

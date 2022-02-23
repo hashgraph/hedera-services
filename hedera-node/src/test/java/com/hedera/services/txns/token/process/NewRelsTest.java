@@ -77,11 +77,11 @@ class NewRelsTest {
 		given(provisionalToken.newEnabledRelationship(treasury)).willReturn(treasuryRel);
 		given(provisionalToken.newEnabledRelationship(collector)).willReturn(collectorRel);
 
-		final var ans = NewRels.listFrom(provisionalToken, MAX_PER_ACCOUNT);
+		final var ans = NewRels.listFrom(provisionalToken);
 
 		assertEquals(List.of(treasuryRel, collectorRel), ans);
-		verify(treasury).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
-		verify(collector).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
+		verify(treasury).associateWith(List.of(provisionalToken), false);
+		verify(collector).associateWith(List.of(provisionalToken), false);
 		verify(provisionalToken, times(1)).newEnabledRelationship(collector);
 	}
 }

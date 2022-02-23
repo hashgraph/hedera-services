@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -49,11 +50,17 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 	private final AliasManager aliasManager;
+	private final GlobalDynamicProperties dynamicProperties;
+
 
 	@Inject
-	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
+	public GetAccountInfoAnswer(
+			final OptionValidator optionValidator,
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.optionValidator = optionValidator;
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -78,7 +85,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager, true);
+				var optionalInfo = view.infoForAccount(id, aliasManager, dynamicProperties.maxTokensPerAccount());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());

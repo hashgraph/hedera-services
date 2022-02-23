@@ -170,10 +170,9 @@ class CreationTest {
 	void mintsInitialSupplyIfSet() {
 		givenSubjectWithEverything();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -192,10 +191,9 @@ class CreationTest {
 	void doesntMintInitialSupplyIfNotSet() {
 		givenSubjectWithEverythingExceptInitialSupply();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, maxTokensPerAccount)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken)).willReturn(List.of(newRel));
 
 		subject.setProvisionalId(provisionalId);
 		subject.setProvisionalToken(provisionalToken);

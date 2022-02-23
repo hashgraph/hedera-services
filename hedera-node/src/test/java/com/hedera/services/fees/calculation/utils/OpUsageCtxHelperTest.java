@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -79,7 +80,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -98,10 +99,12 @@ class OpUsageCtxHelperTest {
 	private OpUsageCtxHelper subject;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager, dynamicProperties);
 	}
 
 	@Test
@@ -165,9 +168,10 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsExpectedCtxForAccount() {
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -186,9 +190,10 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsExpectedCtxForCryptoApproveAccount() {
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
 		var mockInfo = mock(AccountInfo.class);
 		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.ofNullable(mockInfo));
+		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.ofNullable(mockInfo));
 		given(mockInfo.getKey()).willReturn(key);
 		given(mockInfo.getMemo()).willReturn(memo);
 		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
@@ -215,7 +220,8 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
-		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.empty());
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
@@ -225,7 +231,8 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		given(workingView.infoForAccount(any(), any(), anyBoolean())).willReturn(Optional.empty());
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
@@ -383,6 +390,7 @@ class OpUsageCtxHelperTest {
 	private final String memo = "accountInfo";
 	private final int tokenRelationShipCount = 23;
 	private final int maxAutomaticAssociations = 12;
+	private final int maxTokensPerAccountInfo = 10;
 	private final TokenID target = IdUtils.asToken("0.0.1003");
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final HFileMeta fileMeta = new HFileMeta(false, wacl, then);

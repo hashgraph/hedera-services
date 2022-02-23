@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,11 +55,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class GetAccountBalanceAnswer implements AnswerService {
 	private final AliasManager aliasManager;
 	private final OptionValidator optionValidator;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetAccountBalanceAnswer(final AliasManager aliasManager, final OptionValidator optionValidator) {
+	public GetAccountBalanceAnswer(
+			final AliasManager aliasManager,
+			final OptionValidator optionValidator,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -93,14 +99,8 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 
-			// this tokenIds list can be more than 1000 size now. Limit the token balances and track the index;
-			final var tokenIdsIndex = account.getTokenIdsIndex();
-			final var limitedTokenIds = account.tokens().asTokenIds(tokenIdsIndex, 5);
-			final var newTokenIdsIndex = limitedTokenIds.getLeft();
-			account.setTokenIdsIndex(newTokenIdsIndex);
-			accounts.put(key, account);
-
-			for (TokenID tId : limitedTokenIds.getRight()) {
+			final var limitedTokenIds = account.tokens().asTokenIds(dynamicProperties.maxTokensPerAccount());
+			for (TokenID tId : limitedTokenIds) {
 				var relKey = fromAccountTokenRel(id, tId);
 				var relationship = view.tokenAssociations().get(relKey);
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);

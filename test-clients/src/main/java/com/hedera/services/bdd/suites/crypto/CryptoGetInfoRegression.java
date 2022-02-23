@@ -88,9 +88,15 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	private HapiApiSpec getInfo() {
 		return defaultHapiSpec("JustGetInfo")
 				.given()
-				.when()
+				.when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 6))
+				)
 				.then(
-						getAccountInfo("0.0.1001").logged()
+						getAccountInfo("0.0.1001")
+								.has(accountWith().tokenAllowancesCount(6))
+								.logged()
 				);
 	}
 
@@ -205,8 +211,8 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 								movingUnique(token8, 1).between(TOKEN_TREASURY, account))
 				)
 				.then(
-						getAccountInfo(account)
-								.logged()
+//						getAccountInfo(account)
+//								.logged()
 				);
 	}
 

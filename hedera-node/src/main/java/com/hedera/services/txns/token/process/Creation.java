@@ -68,7 +68,7 @@ public class Creation {
 
 	@FunctionalInterface
 	public interface NewRelsListing {
-		List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount);
+		List<TokenRelationship> listFrom(Token provisionalToken);
 	}
 
 	private Id provisionalId;
@@ -120,7 +120,7 @@ public class Creation {
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
-		newRels = listing.listFrom(provisionalToken, dynamicProperties.maxTokensPerAccount());
+		newRels = listing.listFrom(provisionalToken);
 		if (op.getInitialSupply() > 0) {
 			provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
 		}

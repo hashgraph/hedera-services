@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.List;
@@ -117,11 +116,11 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	public List<TokenID> asTokenIds() {
-		return ids.getAsIds();
+		return ids.getAsIds(ids.size());
 	}
 
-	public Pair<Integer, List<TokenID>> asTokenIds(int startIndex, int count) {
-		return ids.getAsIds(startIndex, count);
+	public List<TokenID> asTokenIds(int count) {
+		return ids.getAsIds(count);
 	}
 
 	public CopyOnWriteIds getIds() {
