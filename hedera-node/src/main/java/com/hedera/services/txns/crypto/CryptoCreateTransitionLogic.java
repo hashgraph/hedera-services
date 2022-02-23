@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -70,21 +69,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoCreateTransitionLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
-			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final TransactionContext txnCtx
 	) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -172,9 +168,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 		if (op.getReceiveRecordThreshold() < 0L) {
 			return INVALID_RECEIVE_RECORD_THRESHOLD;
 		}
-//		if (op.getMaxAutomaticTokenAssociations() > dynamicProperties.maxTokensPerAccount()) {
-//			return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-//		}
 
 		return OK;
 	}

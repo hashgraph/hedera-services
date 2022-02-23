@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -76,21 +75,18 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
-			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final TransactionContext txnCtx
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -147,9 +143,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
 				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 			}
-//			if (newMax > dynamicProperties.maxTokensPerAccount()) {
-//				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-//			}
 		}
 
 		return OK;
