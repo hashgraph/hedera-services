@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
-
 public class IterableStorageUtils {
 	private static final String NO_ITERABLE_STORAGE = "[]";
 
@@ -104,7 +102,7 @@ public class IterableStorageUtils {
 	) {
 		final var removedValue = storage.get(key);
 		Objects.requireNonNull(removedValue, "The removed mapping had no value for key " + key);
-		storage.put(key, ZERO_VALUE);
+		storage.remove(key);
 
 		final var contractId = key.getContractId();
 		final var nextKey = removedValue.getNextKeyScopedTo(contractId);

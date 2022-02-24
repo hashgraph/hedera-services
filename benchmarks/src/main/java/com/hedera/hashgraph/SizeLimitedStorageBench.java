@@ -30,6 +30,7 @@ import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Param;
@@ -44,8 +45,9 @@ import static com.hedera.hashgraph.properties.MockDynamicProperties.mockProperti
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 1, time = 5)
-@Measurement(iterations = 1, time = 10)
+@Fork(1)
+@Warmup(iterations = 1, time = 10)
+@Measurement(iterations = 3, time = 30)
 public class SizeLimitedStorageBench {
 	// Application-level config overrides
     @Param("163840")
@@ -64,7 +66,7 @@ public class SizeLimitedStorageBench {
     int maxContractNum;
     @Param("3")
     int mutationsPerInvocation;
-    @Param("300")
+    @Param("1000")
     int uniqueMutationsPerIteration;
     @Param("0.25")
     double removalProb;
@@ -131,6 +133,7 @@ public class SizeLimitedStorageBench {
 			infrastructure = InfrastructureManager.loadInfrastructureWith(initContracts, initKvPairs);
 		} else {
 			final var storageLoc = InfrastructureManager.storageLocFor(initContracts, initKvPairs);
+			System.out.println("\n- No saved storage at " + storageLoc + ", creating now...");
 			infrastructure = InfrastructureManager.newInfrastructureAt(storageLoc);
 			final var initializer = new InfrastructureInitializer(initContracts, initKvPairs);
 			initializer.setup(infrastructure);

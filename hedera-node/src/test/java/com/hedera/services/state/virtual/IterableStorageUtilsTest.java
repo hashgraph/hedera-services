@@ -124,7 +124,7 @@ class IterableStorageUtilsTest {
 		assertEquals(nextKey, newRoot);
 		assertNull(nextValue.getPrevKeyScopedTo(contractNum));
 
-		verify(storage).put(rootKey, ZERO_VALUE);
+		verify(storage).remove(rootKey);
 	}
 
 	@Test
