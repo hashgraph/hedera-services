@@ -32,6 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -54,6 +56,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
@@ -174,6 +177,12 @@ class MerkleAccountPropertyTest {
 			put(fungibleAllowanceId, FcTokenAllowance.from(true));
 			put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
 		}};
+		final UInt256 oldFirstKey =
+				UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+		final int[] explicitOldFirstKey = ContractKey.asPackedInts(oldFirstKey);
+		final UInt256 newFirstKey =
+				UInt256.fromHexString("0x1111fe0432ce31138ecf09aa3e8a410004bbe204ef84efe01ee160febbe22060");
+		final int[] explicitNewFirstKey = ContractKey.asPackedInts(newFirstKey);
 
 		final var account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
@@ -186,6 +195,7 @@ class MerkleAccountPropertyTest {
 				.isSmartContract(origIsContract)
 				.isReceiverSigRequired(origIsReceiverSigReq)
 				.customizing(new MerkleAccount());
+		account.setFirstUint256StorageKey(explicitOldFirstKey);
 		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
 		account.setBalance(origBalance);
@@ -225,6 +235,7 @@ class MerkleAccountPropertyTest {
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
 		NFT_ALLOWANCES.setter().accept(account, nftAllowances);
+		FIRST_CONTRACT_STORAGE_KEY.setter().accept(account, explicitNewFirstKey);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -243,6 +254,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
 		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
+		assertEquals(explicitNewFirstKey, FIRST_CONTRACT_STORAGE_KEY.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

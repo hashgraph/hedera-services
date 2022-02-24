@@ -42,6 +42,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.IterableMappingUtils;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.StoresModule;
@@ -102,6 +103,18 @@ public interface ContractsModule {
 	@Singleton
 	static Map<EntityId, Long> provideEntityExpiries(Map<String, byte[]> blobStore) {
 		return entityExpiryMapFrom(blobStore);
+	}
+
+	@Provides
+	@Singleton
+	static SizeLimitedStorage.IterableStorageAdder provideStorageAdder() {
+		return IterableMappingUtils::addMapping;
+	}
+
+	@Provides
+	@Singleton
+	static SizeLimitedStorage.IterableStorageRemover provideStorageRemover() {
+		return IterableMappingUtils::removeMapping;
 	}
 
 	@Provides

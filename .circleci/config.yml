@@ -1569,7 +1569,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - NONE
+                  - iterable-contract-storage-benchmark
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

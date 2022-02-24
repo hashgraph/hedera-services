@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.virtual.ContractKey.MERKLE_VERSION;
 import static com.hedera.services.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.services.state.virtual.ContractKey.asPackedInts;
+import static com.hedera.services.state.virtual.KeyPackingUtils.asPackedInts;
 import static com.hedera.services.state.virtual.ContractKey.readKeySize;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -282,7 +282,8 @@ class ContractKeyTest {
 
 	@Test
 	void refusesToPackNonsense() {
-		assertThrows(IllegalArgumentException.class, () -> asPackedInts(null));
+		final byte[] nullBytes = null;
+		assertThrows(IllegalArgumentException.class, () -> asPackedInts(nullBytes));
 		final int not32 = 17;
 		final var bytes = new byte[not32];
 		assertThrows(IllegalArgumentException.class, () -> asPackedInts(bytes));
@@ -342,6 +343,6 @@ class ContractKeyTest {
 
 	@Test
 	void computeNonZeroBytesWorkWithZeroInt() {
-		assertEquals(1, ContractKey.computeNonZeroBytes(0));
+		assertEquals(1, KeyPackingUtils.computeNonZeroBytes(0));
 	}
 }

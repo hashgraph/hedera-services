@@ -20,11 +20,15 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -32,21 +36,40 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+
 /**
  * Representation of a 256bit unsigned int, stored internally as a big-endian byte array.
  */
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
-	public static final int MERKLE_VERSION = 1;
-	public static final int SERIALIZED_SIZE = 32;
+	public static final int NON_ITERABLE_VERSION = 1;
+	public static final int ITERABLE_VERSION = 2;
+
+	public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
+	public static final int ITERABLE_SERIALIZED_SIZE = DataFileCommon.VARIABLE_DATA_SIZE;
+
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7c4802f00979857L;
-	/** this is the raw big-endian data for the unit256 */
+
+	// The raw big-endian data for the uint256 EVM value
 	private byte[] uint256Value;
-	/** if this class is immutable */
+	// Marks if this instance is immutable
 	private boolean isImmutable = false;
 
-	private static final String IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR = "Tried to set value on immutable " +
-			"ContractValue";
+	// The previous key in the doubly-linked list of the owning contract's storage mappings; this is null if this
+	// value belongs to the root mapping in the list
+	private int[] prevUint256Key;
+	// Number of the low-order bytes in prevUint256Key that contain ones
+	private byte prevUint256KeyNonZeroBytes;
+	// The next key in the doubly-linked list of the owning contract's storage mappings; this is null if this value
+	// belongs to the root mapping in the list
+	private int[] nextUint256Key;
+	// Number of the low-order bytes in nextUint256Key that contain ones
+	private byte nextUint256KeyNonZeroBytes;
+
+	private static final String IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR =
+			"Tried to set value on immutable ContractValue";
 
 	public static ContractValue from(final UInt256 value) {
 		return new ContractValue(value.toArray());
@@ -90,6 +113,13 @@ public class ContractValue implements VirtualValue {
 	public ContractValue(byte[] bigEndianValue) {
 		Objects.requireNonNull(bigEndianValue);
 		setValue(bigEndianValue);
+	}
+
+	public ContractValue(final byte[] bigEndianValue, final int[] prevUint256Key, final int[] nextUint256Key) {
+		Objects.requireNonNull(bigEndianValue);
+		setValue(bigEndianValue);
+		setExplicitPrevKey(prevUint256Key);
+		setExplicitNextKey(nextUint256Key);
 	}
 
 	/**
@@ -138,9 +168,11 @@ public class ContractValue implements VirtualValue {
 	 * @param bigEndianUint256Value
 	 * 		a big endian uint256 as byte[32]
 	 */
-	public void setValue(byte[] bigEndianUint256Value) {
+	public void setValue(final byte[] bigEndianUint256Value) {
 		Objects.requireNonNull(bigEndianUint256Value);
-		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		if (isImmutable) {
+			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		}
 		if (bigEndianUint256Value.length != 32) {
 			throw new IllegalArgumentException("Tried to set ContractValue value with array that is not 32 bytes.");
 		}
@@ -156,7 +188,9 @@ public class ContractValue implements VirtualValue {
 	 */
 	public void setValue(BigInteger value) {
 		Objects.requireNonNull(value);
-		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		if (isImmutable) {
+			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		}
 		byte[] bigIntegerBytes = value.toByteArray();
 		bigIntegerBytes[0] &= 0b01111111; // remove sign
 		if (bigIntegerBytes.length == 32) {
@@ -178,7 +212,9 @@ public class ContractValue implements VirtualValue {
 	 * 		long value
 	 */
 	public void setValue(long value) {
-		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		if (isImmutable) {
+			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		}
 		this.uint256Value = new byte[32];
 		this.uint256Value[24] = (byte) (value >>> 56);
 		this.uint256Value[25] = (byte) (value >>> 48);
@@ -191,16 +227,29 @@ public class ContractValue implements VirtualValue {
 	}
 
 	@Override
+	public boolean isImmutable() {
+		return isImmutable;
+	}
+
+	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		ContractValue contractValue = (ContractValue) o;
-		return Arrays.equals(uint256Value, contractValue.uint256Value);
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		final var that = (ContractValue) o;
+		return Arrays.equals(uint256Value, that.uint256Value) &&
+				Arrays.equals(prevUint256Key, that.prevUint256Key) &&
+				Arrays.equals(nextUint256Key, that.nextUint256Key);
 	}
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(uint256Value);
+		var result = Arrays.hashCode(uint256Value);
+		result = 31 * result + Arrays.hashCode(prevUint256Key);
+		return 31 * result + Arrays.hashCode(nextUint256Key);
 	}
 
 	@Override
@@ -212,21 +261,26 @@ public class ContractValue implements VirtualValue {
 		for (int i = 0; i < 32; i++) {
 			sb.append(String.format("%02X ", this.uint256Value[i]).toUpperCase());
 		}
-		sb.append(")}");
+		sb
+				.append("), prevKey=")
+				.append(KeyPackingUtils.readableContractStorageKey(prevUint256Key))
+				.append(", nextKey=")
+				.append(KeyPackingUtils.readableContractStorageKey(nextUint256Key))
+				.append("}");
 		return sb.toString();
 	}
 
 	@Override
 	public ContractValue copy() {
-		// It is immutable anyway
-		return new ContractValue(this.uint256Value);
+		isImmutable = true;
+		return new ContractValue(uint256Value, prevUint256Key, nextUint256Key);
 	}
 
 	@Override
 	public ContractValue asReadOnly() { // is it too expensive to make a copy here?
-		ContractValue immutableValue = copy();
-		immutableValue.isImmutable = true;
-		return immutableValue;
+		final var readOnlyThat = new ContractValue(uint256Value, prevUint256Key, nextUint256Key);
+		readOnlyThat.isImmutable = true;
+		return readOnlyThat;
 	}
 
 	@Override
@@ -235,8 +289,84 @@ public class ContractValue implements VirtualValue {
 	}
 
 	// =================================================================================================================
-	// Serialization Methods
+	// Iteration support methods
 
+	/**
+	 * Given the id of the owning contract (which must be known to the caller), returns the previous key in the
+	 * doubly-linked list of the owning contract's storage mappings; or null if this value is in the root mapping.
+	 *
+	 * @param contractId
+	 * 		the id of the contract to which this value belongs
+	 * @return the key to retrieve the previous mapping in this contract's storage list, null if none exists
+	 */
+	public ContractKey getPrevKeyScopedTo(final long contractId) {
+		return prevUint256Key != null ? new ContractKey(contractId, prevUint256Key) : null;
+	}
+
+	public int[] getExplicitPrevKey() {
+		return prevUint256Key;
+	}
+
+	/**
+	 * Given the id of the owning contract (which must be known to the caller), returns the next key in the
+	 * doubly-linked list of the owning contract's storage mappings; or null if this value is in the last mapping.
+	 *
+	 * @param contractId
+	 * 		the id of the contract to which this value belongs
+	 * @return the key to retrieve the previous mapping in this contract's storage list, null if none exists
+	 */
+	public ContractKey getNextKeyScopedTo(final long contractId) {
+		return nextUint256Key != null ? new ContractKey(contractId, nextUint256Key) : null;
+	}
+
+	public int[] getExplicitNextKey() {
+		return nextUint256Key;
+	}
+
+	/**
+	 * Nulls out this value's memory of a preceding key in the doubly-linked list of the owning
+	 * contract's storage mappings.
+	 */
+	public void markAsRootMapping() {
+		throwIfImmutable("Cannot mark an immutable value as the root mapping");
+		prevUint256Key = null;
+	}
+
+	/**
+	 * Nulls out this value's memory of a following key in the doubly-linked list of the owning
+	 * contract's storage mappings.
+	 */
+	public void markAsLastMapping() {
+		throwIfImmutable("Cannot mark an immutable value as the last mapping");
+		nextUint256Key = null;
+	}
+
+	/**
+	 * Given the 256-bit key of an EVM storage mapping, updates this value to track the implied mapping
+	 * as the previous one in the doubly-linked list of the owning contract's storage mappings.
+	 *
+	 * @param evmKey
+	 * 		the EVM key of the previous mapping in the owning contract's storage
+	 */
+	public void setPrevKey(@NotNull final int[] evmKey) {
+		throwIfImmutable("Cannot set the previous key on an immutable value");
+		setExplicitPrevKey(evmKey);
+	}
+
+	/**
+	 * Given the 256-bit key of an EVM storage mapping, updates this value to track the implied mapping
+	 * as the next one in the doubly-linked list of the owning contract's storage mappings.
+	 *
+	 * @param evmKey
+	 * 		the EVM key of the next mapping in the owning contract's storage
+	 */
+	public void setNextKey(@NotNull final int[] evmKey) {
+		throwIfImmutable("Cannot set the next key on an immutable value");
+		setExplicitNextKey(evmKey);
+	}
+
+	// =================================================================================================================
+	// Serialization Methods
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -244,29 +374,97 @@ public class ContractValue implements VirtualValue {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return ITERABLE_VERSION;
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream outputStream) throws IOException {
-		outputStream.write(this.uint256Value);
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		out.write(uint256Value);
+		KeyPackingUtils.serializePossiblyMissingKey(prevUint256Key, prevUint256KeyNonZeroBytes, out);
+		KeyPackingUtils.serializePossiblyMissingKey(nextUint256Key, nextUint256KeyNonZeroBytes, out);
 	}
 
 	@Override
-	public void serialize(ByteBuffer byteBuffer) throws IOException {
-		byteBuffer.put(this.uint256Value);
+	public void serialize(final ByteBuffer out) throws IOException {
+		out.put(uint256Value);
+		serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
+		serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
-		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
-		int lengthRead = inputStream.read(this.uint256Value);
-		assert lengthRead == SERIALIZED_SIZE;
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		if (isImmutable) {
+			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		}
+		final var lengthRead = in.read(this.uint256Value);
+		assert lengthRead == NON_ITERABLE_SERIALIZED_SIZE;
+
+		if (version == ITERABLE_VERSION) {
+			deserializeKeys(in, SerializableDataInputStream::readByte);
+		}
 	}
 
 	@Override
-	public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-		if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
-		byteBuffer.get(this.uint256Value);
+	public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+		if (isImmutable) {
+			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+		}
+		buffer.get(this.uint256Value);
+
+		if (version == ITERABLE_VERSION) {
+			deserializeKeys(buffer, ByteBuffer::get);
+		}
+	}
+
+	// --- Internal helpers
+	private <D> void deserializeKeys(final D in, final KeyPackingUtils.ByteReaderFunction<D> reader) throws IOException {
+		byte marker = reader.read(in);
+		if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
+			prevUint256KeyNonZeroBytes = marker;
+			prevUint256Key = KeyPackingUtils.deserializeUint256Key(prevUint256KeyNonZeroBytes, in, reader);
+		}
+		marker = reader.read(in);
+		if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
+			nextUint256KeyNonZeroBytes = marker;
+			nextUint256Key = KeyPackingUtils.deserializeUint256Key(nextUint256KeyNonZeroBytes, in, reader);
+		}
+	}
+
+	private void setExplicitPrevKey(final int[] packedEvmKey) {
+		this.prevUint256Key = packedEvmKey;
+		if (packedEvmKey != null) {
+			this.prevUint256KeyNonZeroBytes = computeNonZeroBytes(prevUint256Key);
+		}
+	}
+
+	private void setExplicitNextKey(final int[] packedEvmKey) {
+		this.nextUint256Key = packedEvmKey;
+		if (packedEvmKey != null) {
+			this.nextUint256KeyNonZeroBytes = computeNonZeroBytes(nextUint256Key);
+		}
+	}
+
+	private void serializePossiblyMissingKeyToBuffer(
+			final @Nullable int[] key,
+			final byte nonZeroBytes,
+			final ByteBuffer out
+	) {
+		if (key == null) {
+			out.put(KeyPackingUtils.MISSING_KEY_SENTINEL);
+		} else {
+			out.put(nonZeroBytes);
+			serializePackedBytesToBuffer(key, nonZeroBytes, out);
+		}
+	}
+
+	// --- Only used by unit tests
+	@VisibleForTesting
+	byte getPrevUint256KeyNonZeroBytes() {
+		return prevUint256KeyNonZeroBytes;
+	}
+
+	@VisibleForTesting
+	byte getNextUint256KeyNonZeroBytes() {
+		return nextUint256KeyNonZeroBytes;
 	}
 }

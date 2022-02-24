@@ -20,13 +20,17 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.KeyPackingUtils;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -34,6 +38,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +51,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
@@ -65,7 +73,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
 	static final int RELEASE_0230_VERSION = 10;
-	private static final int CURRENT_VERSION = RELEASE_0230_VERSION;
+	static final int RELEASE_0240_VERSION = 11;
+	private static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -87,9 +96,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
+	// The first key in the doubly-linked list of this contract's storage mappings; null if this
+	// account is not a contract, or a contract with no storage
+	private int[] firstUint256Key;
+	// Number of the low-order bytes in firstUint256Key that contain ones
+	private byte firstUint256KeyNonZeroBytes;
 
-	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
-	// be modified to use MapValueLinkedList in the future
+	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps may
+	// be modified to use MapValueLinkedList in the future if performance concerns dictate
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
@@ -114,7 +128,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int numContractKvPairs,
 			final Map<EntityNum, Long> cryptoAllowances,
 			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances,
+			final int[] firstUint256Key,
+			final byte firstUint256KeyNonZeroBytes
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -132,6 +148,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.nftAllowances = nftAllowances;
+		this.firstUint256Key = firstUint256Key;
+		this.firstUint256KeyNonZeroBytes = firstUint256KeyNonZeroBytes;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -177,10 +195,18 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			nftAllowances = deserializeNftAllowances(in);
 		}
+		if (version >= RELEASE_0240_VERSION && smartContract) {
+			byte marker = in.readByte();
+			if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
+				firstUint256KeyNonZeroBytes = marker;
+				firstUint256Key = KeyPackingUtils.deserializeUint256Key(
+						firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+			}
+		}
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		serdes.writeNullable(key, out, serdes::serializeKey);
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
@@ -196,6 +222,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
 		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+		if (smartContract) {
+			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
+		}
 	}
 
 	/* --- Copyable --- */
@@ -217,7 +246,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numContractKvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				nftAllowances,
+				firstUint256Key,
+				firstUint256KeyNonZeroBytes);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -249,7 +280,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
-				Objects.equals(this.nftAllowances, that.nftAllowances);
+				Objects.equals(this.nftAllowances, that.nftAllowances) &&
+				Arrays.equals(this.firstUint256Key, that.firstUint256Key);
 	}
 
 	@Override
@@ -270,7 +302,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				alias,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				nftAllowances,
+				Arrays.hashCode(firstUint256Key));
 	}
 
 	/* --- Bean --- */
@@ -294,6 +327,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alias", alias.toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
+				.add("firstContractStorageKey", readableContractStorageKey(firstUint256Key))
 				.add("nftAllowances", nftAllowances)
 				.toString();
 	}
@@ -485,6 +519,22 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 
+	public ContractKey getFirstContractStorageKey() {
+		return firstUint256Key == null ? null : new ContractKey(BitPackUtils.numFromCode(number), firstUint256Key);
+	}
+
+	public int[] getFirstUint256Key() {
+		return firstUint256Key;
+	}
+
+	public void setFirstUint256Key(final int[] firstUint256Key) {
+		assertMutable("firstUint256Key");
+		this.firstUint256Key = firstUint256Key;
+		if (firstUint256Key != null) {
+			firstUint256KeyNonZeroBytes = computeNonZeroBytes(firstUint256Key);
+		}
+	}
+
 	private void assertMutable(String proximalField) {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
@@ -524,5 +574,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public void removeFungibleTokenAllowance(final EntityNum tokenNum, final EntityNum spenderNum) {
 		fungibleTokenAllowances.remove(FcTokenAllowanceId.from(tokenNum, spenderNum));
+	}
+
+	@VisibleForTesting
+	byte getFirstUint256KeyNonZeroBytes() {
+		return firstUint256KeyNonZeroBytes;
+	}
+
+	@VisibleForTesting
+	void clearFirstUint256KeyNonZeroBytes() {
+		this.firstUint256KeyNonZeroBytes = 0;
 	}
 }

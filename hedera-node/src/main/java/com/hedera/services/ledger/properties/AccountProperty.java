@@ -249,5 +249,16 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getNftAllowancesUnsafe;
 		}
+	},
+	FIRST_CONTRACT_STORAGE_KEY {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setFirstUint256StorageKey((int[]) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getFirstUint256Key;
+		}
 	}
 }

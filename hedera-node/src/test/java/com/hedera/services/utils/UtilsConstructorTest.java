@@ -55,6 +55,8 @@ import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.virtual.IterableMappingUtils;
+import com.hedera.services.state.virtual.KeyPackingUtils;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
@@ -149,7 +151,9 @@ class UtilsConstructorTest {
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
-			SerializationUtils.class
+			SerializationUtils.class,
+			KeyPackingUtils.class,
+			IterableMappingUtils.class
 	));
 
 	@Test

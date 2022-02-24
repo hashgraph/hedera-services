@@ -26,6 +26,7 @@ import com.hedera.hashgraph.setup.InfrastructureInitializer;
 import com.hedera.hashgraph.setup.InfrastructureManager;
 import com.hedera.hashgraph.setup.KvMutationBatch;
 import com.hedera.hashgraph.setup.StorageInfrastructure;
+import com.hedera.services.state.virtual.IterableMappingUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -83,6 +84,8 @@ public class SizeLimitedStorageBench {
     	initializeInfrastructure();
 
         subject = new SizeLimitedStorage(
+				IterableMappingUtils::addMapping,
+				IterableMappingUtils::removeMapping,
                 mockPropertiesWith(maxContractKvPairs, maxAggregateKvPairs),
                 infrastructure.accounts()::get,
                 infrastructure.storage()::get);

@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
@@ -63,13 +64,18 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 public class SizeLimitedStorage {
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
-	/* Used to get the key/value storage limits */
+	// Used to add to a contract's doubly-linked list of storage mappings
+	private final IterableStorageAdder storageAdder;
+	// Used to removeto a contract's doubly-linked list of storage mappings
+	private final IterableStorageRemover storageRemover;
+	// Used to get the key/value storage limits
 	private final GlobalDynamicProperties dynamicProperties;
-	/* Used to look up the initial key/value counts for the contracts involved in a change set */
+	// Used to look up the initial key/value counts for the contracts involved in a change set
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	/* Used to both read and write key/value pairs throughout the lifecycle of a change set */
+	// Used to both read and write key/value pairs throughout the lifecycle of a change set
 	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
 
+	private final Map<Long, int[]> newFirstKeys = new HashMap<>();
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
@@ -79,11 +85,15 @@ public class SizeLimitedStorage {
 
 	@Inject
 	public SizeLimitedStorage(
+			final IterableStorageAdder storageAdder,
+			final IterableStorageRemover storageRemover,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final Supplier<VirtualMap<ContractKey, ContractValue>> storage
 	) {
 		this.dynamicProperties = dynamicProperties;
+		this.storageRemover = storageRemover;
+		this.storageAdder = storageAdder;
 		this.accounts = accounts;
 		this.storage = storage;
 	}
@@ -114,7 +124,7 @@ public class SizeLimitedStorage {
 	}
 
 	/**
-	 * Records the new key/value counts of any contracts whose storage changed in this session.
+	 * Records the new mapping counts and/or first storage keys of any contracts whose storage changed in this session.
 	 *
 	 * @param accountsLedger the ledger to use to record the new counts
 	 */
@@ -125,6 +135,7 @@ public class SizeLimitedStorage {
 		newUsages.forEach((contractNum, kvPairs) -> {
 			final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
 			accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvPairs.get());
+			accountsLedger.set(id, FIRST_CONTRACT_STORAGE_KEY, newFirstKeys.get(contractNum));
 		});
 	}
 
@@ -170,12 +181,38 @@ public class SizeLimitedStorage {
 		}
 	}
 
+	@FunctionalInterface
+	public interface IterableStorageAdder {
+		ContractKey addMapping(
+				ContractKey key,
+				ContractValue value,
+				ContractKey rootKey,
+				ContractValue rootValue,
+				VirtualMap<ContractKey, ContractValue> storage);
+	}
+
+	@FunctionalInterface
+	public interface IterableStorageRemover {
+		ContractKey removeMapping(
+				ContractKey key,
+				ContractKey rootKey,
+				VirtualMap<ContractKey, ContractValue> storage);
+	}
+
 	private AtomicInteger kvPairsLookup(final Long num) {
 		final var account = accounts.get().get(fromLong(num));
 		if (account == null) {
 			return new AtomicInteger(0);
 		}
 		return new AtomicInteger(account.getNumContractKvPairs());
+	}
+
+	private ContractKey rootKeyLookup(final Long num) {
+		final var account = accounts.get().get(fromLong(num));
+		if (account == null) {
+			throw new AssertionError("Not implemented");
+		}
+		return account.getFirstContractStorageKey();
 	}
 
 	/**
@@ -299,7 +336,16 @@ public class SizeLimitedStorage {
 			return;
 		}
 		final var curStorage = storage.get();
-		removedKeys.forEach((id, zeroedOut) -> zeroedOut.forEach(curStorage::remove));
+		removedKeys.forEach((id, zeroedOut) -> {
+			var rootKey = rootKeyLookup(id);
+			for (final var removedKey : zeroedOut) {
+				rootKey = storageRemover.removeMapping(removedKey, rootKey, curStorage);
+			}
+			if (rootKey == null) {
+				throw new AssertionError("Not implemented");
+			}
+			newFirstKeys.put(id, rootKey.getKey());
+		});
 	}
 
 	static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();

@@ -84,7 +84,7 @@ public class VirtualMapFactory {
 						storageKeySerializer.getSerializedSize(),
 						new ContractKeySupplier(),
 						CURRENT_SERIALIZATION_VERSION,
-						ContractValue.SERIALIZED_SIZE,
+						ContractValue.ITERABLE_SERIALIZED_SIZE,
 						new ContractValueSupplier(),
 						true);
 
