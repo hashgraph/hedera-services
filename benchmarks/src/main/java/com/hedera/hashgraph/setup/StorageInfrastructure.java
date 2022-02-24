@@ -63,6 +63,7 @@ public record StorageInfrastructure(
 	}
 
 	public static StorageInfrastructure from(final String storageLoc) throws IOException {
+		System.out.print("\n- Found saved storage in " + storageLoc + ", loading...");
 		MerkleMap<EntityNum, MerkleAccount> accounts;
 		final var mMapLoc = InfrastructureManager.mMapIn(storageLoc);
 		try (final var mMapIn = new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
@@ -77,6 +78,7 @@ public record StorageInfrastructure(
 		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(path), storageDir)) {
 			storage.deserializeExternal(vMapIn, storageDir, null, 1);
 		}
+		System.out.println("done.");
 
 		return from(accounts, storage);
 	}

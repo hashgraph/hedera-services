@@ -42,6 +42,7 @@ public class InfrastructureInitializer {
 		// Uniform distribution of K/V pairs across contracts
 		final var perContractKvPairs = initNumKvPairs / initNumContracts;
 
+		final var perCreationPrint = initNumContracts / 10;
 		for (int i = 0; i < initNumContracts; i++) {
 			final var contractId = AccountID.newBuilder().setAccountNum(i + 1L).build();
 			for (int j = 0; j < perContractKvPairs; j++) {
@@ -55,6 +56,11 @@ public class InfrastructureInitializer {
 			contract.setSmartContract(true);
 			contract.setNumContractKvPairs(perContractKvPairs);
 			curAccounts.put(EntityNum.fromAccountId(contractId), contract);
+			final var created = i + 1;
+			if (created % perCreationPrint == 0) {
+				System.out.println("  -> " + created + " contracts now created ("
+						+ (created * perContractKvPairs) + " K/V pairs)");
+			}
 		}
 	}
 }
