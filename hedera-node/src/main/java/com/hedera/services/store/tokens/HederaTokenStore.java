@@ -259,7 +259,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 
 				if (validity == OK) {
-					listOfAssociatedTokens.addAll(new HashSet<>(tokenIds));
 					currKey = new EntityNumPair(lastAssociatedToken.value());
 					for (var id : tokenIds) {
 						final var relationship = asTokenRel(aId, id);
@@ -300,9 +299,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						}
 						currKey = newKey;
 					}
+					accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 				}
 			}
-			accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 			return validity;
 		});
 	}

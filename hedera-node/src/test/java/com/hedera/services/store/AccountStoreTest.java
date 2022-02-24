@@ -65,6 +65,8 @@ class AccountStoreTest {
 	private BackingStore<AccountID, MerkleAccount> accounts;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private TypedTokenStore tokenStore;
 
 	private AccountStore subject;
 
@@ -156,7 +158,7 @@ class AccountStoreTest {
 		final var model = subject.loadAccount(miscId);
 
 		// when:
-		model.associateWith(List.of(aThirdToken), Integer.MAX_VALUE, false);
+		model.associateWith(List.of(aThirdToken), tokenStore, false, false);
 		// and:
 		subject.commitAccount(model);
 

@@ -185,7 +185,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
+		final var copy = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
+		copy.setNextKey(new EntityNumPair(nextKey));
+		copy.setPrevKey(new EntityNumPair(prevKey));
+		return copy;
 	}
 
 	@Override

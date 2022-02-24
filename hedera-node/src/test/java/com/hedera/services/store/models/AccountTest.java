@@ -186,7 +186,7 @@ class AccountTest {
 
 		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(alreadyAssocToken), 100, false),
+				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false),
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 	}
 
@@ -198,7 +198,7 @@ class AccountTest {
 
 		// when:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3, false),
+				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, false, false),
 				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 	}
 
@@ -211,7 +211,7 @@ class AccountTest {
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, false);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.stream().map(Id::toString).collect(joining(", ")));
@@ -277,7 +277,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken), 10, true),
+				() -> subject.associateWith(List.of(firstNewToken), tokenStore, true, true),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
@@ -287,7 +287,7 @@ class AccountTest {
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
-		subject.associateWith(List.of(firstNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken), tokenStore, true, false);
 
 		assertEquals(maxAutoAssociations, subject.getAlreadyUsedAutomaticAssociations());
 	}

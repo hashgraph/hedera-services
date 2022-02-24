@@ -53,7 +53,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAuto
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static java.util.stream.Collectors.joining;
 
@@ -167,23 +166,40 @@ public class Account {
 		this.lastAssociatedToken = lastAssociatedToken;
 	}
 
-	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
-		final var alreadyAssociated = associatedTokenIds.size();
-		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
-		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-
+	public List<TokenRelationship> associateWith(
+			List<Token> tokens,
+			TypedTokenStore tokenStore,
+			boolean isAutomaticAssociation,
+			boolean shouldEnableRelationship) {
 		final Set<Id> uniqueIds = new HashSet<>();
+		List<TokenRelationship> tokenRelationshipsToPersist = new ArrayList<>();
+		var currKey = lastAssociatedToken.value();
+		TokenRelationship prevRel = currKey == 0 ? null : tokenStore.getLatestTokenRelationship(this);
 		for (var token : tokens) {
 			final var tokenId = token.getId();
 			validateFalse(associatedTokenIds.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-			if (automaticAssociation) {
+			if (isAutomaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
 			uniqueIds.add(tokenId);
-			lastAssociatedToken = EntityNumPair.fromLongs(id.num(), tokenId.num());
-		}
 
+			final var newRel = shouldEnableRelationship ?
+					token.newEnabledRelationship(this) :
+					token.newRelationshipWith(this, false);
+			if (prevRel != null) {
+				final var prevKey = prevRel.getPrevKey();
+				newRel.setPrevKey(prevKey);
+				newRel.setNextKey(currKey);
+				prevRel.setPrevKey(newRel.getKey());
+				tokenRelationshipsToPersist.add(prevRel);
+			}
+			prevRel = newRel;
+			currKey = newRel.getKey();
+		}
+		lastAssociatedToken = new EntityNumPair(currKey);
+		tokenRelationshipsToPersist.add(prevRel);
 		associatedTokenIds.addAll(uniqueIds);
+		return tokenRelationshipsToPersist;
 	}
 
 	/**
@@ -207,37 +223,46 @@ public class Account {
 			// update links
 			// return the touched relationships.
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			dissociation.updateModelRelsSubjectTo(validator);
+			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
+			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
+				decrementUsedAutomaticAssocitions();
+			}
 			final var tokenId = dissociation.dissociatedTokenId();
 			final var key = EntityNumPair.fromLongs(id.num(),tokenId.num());
 			if (lastAssociatedToken.equals(key)) {
 				// removing the latest associated token from the account
 				final var latestRel = tokenStore.getLatestTokenRelationship(this);
 				final var nextKey = new EntityNumPair(latestRel.getNextKey());
-				final var nextRel = tokenStore.loadTokenRelationShip(nextKey.asAccountTokenRel());
-				lastAssociatedToken = new EntityNumPair(nextRel.getKey());
-				nextRel.setPrevKey(latestRel.getPrevKey());
-				latestRel.setNextKey(0L);
 
-				touchedRelationships.add(latestRel);
-				touchedRelationships.add(nextRel);
+				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
+					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
+					final var nextRel = tokenStore.loadTokenRelationShip(this, nextToken);
+					lastAssociatedToken = new EntityNumPair(nextRel.getKey());
+					nextRel.setPrevKey(latestRel.getPrevKey());
+					touchedRelationships.add(nextRel);
+				} else {
+					lastAssociatedToken = new EntityNumPair(0L);
+				}
 			} else {
-				// get next and prev
-				final var dissociatingRel = tokenStore.loadTokenRelationShip(key.asAccountTokenRel());
+				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
+				final var dissociatingRel = tokenStore.loadTokenRelationShip(this, dissociation.dissociatingToken());
 				final var prevKey = new EntityNumPair(dissociatingRel.getPrevKey());
-				final var prevRel = tokenStore.loadTokenRelationShip(prevKey.asAccountTokenRel());
+				final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+						Id.fromGrpcToken(prevKey.asAccountTokenRel().getRight()));
+				final var prevRel = tokenStore.loadTokenRelationShip(this, prevToken);
+				// nextKey can be 0.
 				final var nextKey = new EntityNumPair(dissociatingRel.getNextKey());
-				final var nextRel = tokenStore.loadTokenRelationShip(nextKey.asAccountTokenRel());
-				nextRel.setPrevKey(prevKey.value());
+				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
+					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
+					final var nextRel = tokenStore.loadTokenRelationShip(this, nextToken);
+					nextRel.setPrevKey(prevKey.value());
+					touchedRelationships.add(nextRel);
+				}
 				prevRel.setNextKey(nextKey.value());
-
 				touchedRelationships.add(prevRel);
-				touchedRelationships.add(nextRel);
-			}
-
-			dissociation.updateModelRelsSubjectTo(validator);
-			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
-			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
-				decrementUsedAutomaticAssocitions();
 			}
 		}
 		associatedTokenIds.removeAll(dissociatedTokenIds);
@@ -292,6 +317,7 @@ public class Account {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
+				.add("lastAssociatedToken", lastAssociatedToken)
 				.toString();
 	}
 

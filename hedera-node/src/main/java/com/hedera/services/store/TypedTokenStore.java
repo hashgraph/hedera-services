@@ -211,11 +211,7 @@ public class TypedTokenStore {
 	}
 
 	public MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
-		return getMerkleTokenRelationship(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
-	}
-
-	public MerkleTokenRelStatus getMerkleTokenRelationship(Pair<AccountID, TokenID> key) {
-		return tokenRels.getImmutableRef(key);
+		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 
 	private TokenRelationship buildTokenRelationship(
@@ -245,6 +241,7 @@ public class TypedTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
+		mutableTokenRel.setKey(new EntityNumPair(modelRel.getKey()));
 		mutableTokenRel.setNextKey(new EntityNumPair(modelRel.getNextKey()));
 		mutableTokenRel.setPrevKey(new EntityNumPair(modelRel.getPrevKey()));
 		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
@@ -550,12 +547,13 @@ public class TypedTokenStore {
 	}
 
 	public TokenRelationship getLatestTokenRelationship(final Account account) {
-		return loadTokenRelationShip(account.getLastAssociatedToken().asAccountTokenRel());
+		var latestTokenId = Id.fromGrpcToken(account.getLastAssociatedToken().asAccountTokenRel().getRight());
+		return loadTokenRelationShip(account, loadPossiblyDeletedOrAutoRemovedToken(latestTokenId));
 	}
 
-	public TokenRelationship loadTokenRelationShip(final Pair<AccountID, TokenID> key) {
-		final var merkleTokenRel = getMerkleTokenRelationship(key);
-		return buildTokenRelationship(null, null, merkleTokenRel);
+	public TokenRelationship loadTokenRelationShip(Account account, Token token) {
+		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
+		return buildTokenRelationship(token, account, merkleTokenRel);
 	}
 
 	@FunctionalInterface

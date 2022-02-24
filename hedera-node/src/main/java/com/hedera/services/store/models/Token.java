@@ -356,6 +356,7 @@ public class Token {
 		final var rel = new TokenRelationship(this, account);
 		rel.setKycGranted(true);
 		rel.setFrozen(false);
+		rel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()).value());
 		return rel;
 	}
 

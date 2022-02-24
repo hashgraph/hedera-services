@@ -77,7 +77,7 @@ class AssociateLogicTest {
 
 		subject.associate(accountId, tokenIds);
 
-		verify(modelAccount).associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		verify(modelAccount).associateWith(tokens, tokenStore, false, false);
 		verify(accountStore).commitAccount(modelAccount);
 		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel));
 		verify(tokenStore).commitTokenRelationships(List.of(secondModelTokenRel));

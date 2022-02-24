@@ -21,6 +21,7 @@ package com.hedera.services.txns.token.process;
  */
 
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -60,6 +61,8 @@ class NewRelsTest {
 	private TokenRelationship treasuryRel;
 	@Mock
 	private TokenRelationship collectorRel;
+	@Mock
+	private TypedTokenStore tokenStore;
 
 	@Test
 	void associatesAsExpected() {
@@ -77,11 +80,11 @@ class NewRelsTest {
 		given(provisionalToken.newEnabledRelationship(treasury)).willReturn(treasuryRel);
 		given(provisionalToken.newEnabledRelationship(collector)).willReturn(collectorRel);
 
-		final var ans = NewRels.listFrom(provisionalToken, MAX_PER_ACCOUNT);
+		final var ans = NewRels.listFrom(provisionalToken, tokenStore);
 
 		assertEquals(List.of(treasuryRel, collectorRel), ans);
-		verify(treasury).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
-		verify(collector).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
+		verify(treasury).associateWith(List.of(provisionalToken), tokenStore, false, true);
+		verify(collector).associateWith(List.of(provisionalToken), tokenStore, false, true);
 		verify(provisionalToken, times(1)).newEnabledRelationship(collector);
 	}
 }

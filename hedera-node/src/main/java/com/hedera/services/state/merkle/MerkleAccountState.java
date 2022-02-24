@@ -222,6 +222,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				fungibleTokenAllowances,
 				nftAllowances);
 		copied.setNftsOwned(nftsOwned);
+		copied.setLastAssociatedToken(lastAssociatedToken);
 		return copied;
 	}
 
