@@ -299,7 +299,7 @@ public class SizeLimitedStorage {
 			return;
 		}
 		final var curStorage = storage.get();
-		removedKeys.forEach((id, zeroedOut) -> zeroedOut.forEach(curStorage::remove));
+		removedKeys.forEach((id, zeroedOut) -> zeroedOut.forEach(key -> curStorage.put(key, ZERO_VALUE)));
 	}
 
 	static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();

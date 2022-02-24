@@ -33,6 +33,8 @@ import java.util.function.Supplier;
 import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
+	private static final VirtualBlobValue EMPTY_BLOB = new VirtualBlobValue(new byte[0]);
+
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
 	public static final int LEGACY_BLOB_CODE_INDEX = 3;
@@ -78,7 +80,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 */
 	@Override
 	public byte[] remove(Object path) {
-		blobSupplier.get().remove(at(path));
+		blobSupplier.get().put(at(path), EMPTY_BLOB);
 		return null;
 	}
 
