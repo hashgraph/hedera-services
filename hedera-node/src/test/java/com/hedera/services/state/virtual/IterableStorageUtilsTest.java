@@ -11,9 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
 import static com.hedera.services.state.virtual.IterableStorageUtils.removeMapping;
-import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
+import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -143,7 +142,7 @@ class IterableStorageUtilsTest {
 		assertEquals(rootKey, nextValue.getPrevKeyScopedTo(contractNum));
 		assertEquals(nextKey, rootValue.getNextKeyScopedTo(contractNum));
 
-		verify(storage).put(targetKey, ZERO_VALUE);
+		verify(storage).remove(targetKey);
 	}
 
 	@Test
@@ -158,7 +157,7 @@ class IterableStorageUtilsTest {
 		assertEquals(rootKey, newRoot);
 		assertNull(rootValue.getNextKeyScopedTo(contractNum));
 
-		verify(storage).put(targetKey, ZERO_VALUE);
+		verify(storage).remove(targetKey);
 	}
 
 	@Test
@@ -169,7 +168,7 @@ class IterableStorageUtilsTest {
 
 		assertNull(newRoot);
 
-		verify(storage).put(rootKey, ZERO_VALUE);
+		verify(storage).remove(rootKey);
 	}
 
 	private static final long contractNum = 1234;

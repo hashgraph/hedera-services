@@ -84,7 +84,8 @@ class SizeLimitedStorageTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new SizeLimitedStorage(storageUpserter, storageRemover, dynamicProperties, () -> accounts, () -> storage);
+		subject = new SizeLimitedStorage(storageUpserter, storageRemover, dynamicProperties, () -> accounts,
+				() -> storage);
 	}
 
 	@Test
@@ -176,7 +177,7 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void validatesSingleContractStorage() {
-		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(firstAccount, firstKvPairs);
 		given(dynamicProperties.maxIndividualContractKvPairs()).willReturn(firstKvPairs + 1);
 		given(dynamicProperties.maxAggregateContractKvPairs()).willReturn(Long.MAX_VALUE);
 
@@ -189,8 +190,8 @@ class SizeLimitedStorageTest {
 	@Test
 	void validatesMaxContractStorage() {
 		final var maxKvPairs = (long) firstKvPairs + nextKvPairs;
-		givenAccount(firstAccount, firstKvPairs, firstRootKey);
-		givenAccount(nextAccount, nextKvPairs, nextRootKey);
+		givenAccount(firstAccount, firstKvPairs);
+		givenAccount(nextAccount, nextKvPairs);
 		given(storage.size()).willReturn(maxKvPairs);
 		given(storage.containsKey(firstAKey)).willReturn(false);
 		given(storage.containsKey(firstBKey)).willReturn(false);
@@ -207,7 +208,7 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void updatesAreBufferedAndReturned() {
-		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(firstAccount, firstKvPairs);
 
 		subject.putStorage(firstAccount, aLiteralKey, aLiteralValue);
 
@@ -250,7 +251,7 @@ class SizeLimitedStorageTest {
 
 	@Test
 	void removedKeysAreRespected() {
-		givenAccount(firstAccount, firstKvPairs, firstRootKey);
+		givenAccount(firstAccount, firstKvPairs);
 		givenContainedStorage(firstAKey, aValue);
 
 		assertEquals(aLiteralValue, subject.getStorage(firstAccount, aLiteralKey));
@@ -399,10 +400,25 @@ class SizeLimitedStorageTest {
 
 	/* --- Internal helpers --- */
 	private void givenAccount(final AccountID id, final int initialKvPairs, final ContractKey firstKey) {
+		givenAccountInternal(id, initialKvPairs, firstKey, true);
+	}
+
+	private void givenAccount(final AccountID id, final int initialKvPairs) {
+		givenAccountInternal(id, initialKvPairs, null, false);
+	}
+
+	private void givenAccountInternal(
+			final AccountID id,
+			final int initialKvPairs,
+			final ContractKey firstKey,
+			final boolean mockFirstKey
+	) {
 		final var key = EntityNum.fromAccountId(id);
 		final var account = mock(MerkleAccount.class);
 		given(account.getNumContractKvPairs()).willReturn(initialKvPairs);
-		given(account.getFirstContractStorageKey()).willReturn(firstKey);
+		if (mockFirstKey) {
+			given(account.getFirstContractStorageKey()).willReturn(firstKey);
+		}
 		given(accounts.get(key)).willReturn(account);
 	}
 
