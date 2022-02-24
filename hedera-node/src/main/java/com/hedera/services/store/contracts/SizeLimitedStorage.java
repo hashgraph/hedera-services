@@ -27,6 +27,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -49,7 +50,6 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
-import static com.hedera.services.state.virtual.IterableStorageUtils.joinedStorageMappings;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
@@ -90,6 +90,8 @@ public class SizeLimitedStorage {
 
 	private long totalKvPairs;
 
+	private boolean touched5 = false;
+
 	@Inject
 	public SizeLimitedStorage(
 			final IterableStorageUpserter storageUpserter,
@@ -116,6 +118,7 @@ public class SizeLimitedStorage {
 		newFirstKeys.clear();
 		/* We will update this count as changes are buffered throughout the session. */
 		totalKvPairs = storage.get().size();
+		touched5 = false;
 	}
 
 	/**
@@ -130,6 +133,11 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
+		if (touched5) {
+			final var firstKey = accounts.get().get(EntityNum.fromLong(5L)).getFirstContractStorageKey();
+			System.out.println("0.0.5 storage is now " +
+					IterableStorageUtils.joinedStorageMappings(firstKey, storage.get()));
+		}
 	}
 
 	/**
@@ -191,6 +199,10 @@ public class SizeLimitedStorage {
 		final var contractValue = virtualValueFrom(value);
 		final var kvCountImpact = incorporateKvImpact(
 				contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
+		if (id.getAccountNum() == 5L) {
+			touched5 = true;
+			System.out.println("Putting " + contractKey + " -> " + contractValue + " has impact " + kvCountImpact);
+		}
 		if (kvCountImpact != 0) {
 			newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).getAndAdd(kvCountImpact);
 			totalKvPairs += kvCountImpact;
@@ -338,11 +350,35 @@ public class SizeLimitedStorage {
 		validateTrue(
 				totalKvPairs <= dynamicProperties.maxAggregateContractKvPairs(),
 				MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
-		final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
-		newUsages.forEach((id, newKvPairs) ->
-				validateTrue(
-						newKvPairs.get() <= perContractMax,
-						MAX_CONTRACT_STORAGE_EXCEEDED));
+		try {
+			final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
+			newUsages.forEach((id, newKvPairs) ->
+					validateTrue(
+							newKvPairs.get() <= perContractMax,
+							MAX_CONTRACT_STORAGE_EXCEEDED));
+		} catch (Exception e) {
+			/*
+		newUsages.clear();
+		updatedKeys.clear();
+		removedKeys.clear();
+		newMappings.clear();
+		newFirstKeys.clear();
+			 */
+			System.out.println(newUsages);
+			for (final var entry : newUsages.entrySet()) {
+				if (entry.getValue().get() > 100) {
+					final var num = entry.getKey();
+					System.out.println(" -> 0.0." + num + " is the violator");
+					System.out.println(IterableStorageUtils.joinedStorageMappings(
+							firstKeyLookup(num), storage.get()));
+				}
+			}
+			System.out.println(updatedKeys);
+			System.out.println(removedKeys);
+			System.out.println(newMappings);
+			System.out.println(newFirstKeys);
+			throw e;
+		}
 	}
 
 	private void commitPendingUpdates() {
@@ -373,6 +409,12 @@ public class SizeLimitedStorage {
 				firstKey = storageRemover.removeMapping(removedKey, firstKey, curStorage);
 			}
 			newFirstKeys.put(id, firstKey);
+			if (id == 5L) {
+				final var updated = updatedKeys.get(5L);
+				System.out.println("Removed(?) " + zeroedOut.size()
+						+ " keys and added(?) " + (updated != null ? updated.size() : 0)
+						+ " keys from 0.0.5 -> " + newUsages.get(5L).get() + " new usage count");
+			}
 		});
 	}
 

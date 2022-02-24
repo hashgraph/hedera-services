@@ -37,12 +37,17 @@ public class EvmKeyValueSource {
 	private static final UInt256[] keys = new UInt256[NUM_KEYS];
 	private static final SplittableRandom r = new SplittableRandom(ENTROPY_SEED);
 
-
 	static {
 		final var keyBytes = new byte[32];
+		final var mockId = AccountID.newBuilder()
+				.setAccountNum(1)
+				.build();
 		for (int i = 0; i < NUM_KEYS; i++) {
 			r.nextBytes(keyBytes);
 			keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));
+//			if (i < 100) {
+//				System.out.println(ContractKey.from(mockId, keys[i]));
+//			}
 		}
 	}
 
@@ -69,7 +74,7 @@ public class EvmKeyValueSource {
 
 	public static UInt256 uniqueKey(final int n) {
 		if (n < NUM_KEYS) {
-			return keys[n % NUM_KEYS];
+			return keys[n];
 		} else {
 			final var baseKey = keys[n % NUM_KEYS];
 			final var keyBytes = new byte[32];

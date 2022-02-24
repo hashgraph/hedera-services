@@ -9,9 +9,9 @@ package com.hedera.hashgraph.setup;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
@@ -57,12 +58,22 @@ public record StorageInfrastructure(
 		final AtomicReference<VirtualMap<ContractKey, ContractValue>> storageRef = new AtomicReference<>(storage);
 		final AtomicReference<MerkleMap<EntityNum, MerkleAccount>> accountsRef = new AtomicReference<>(accounts);
 		final var backingAccounts = new BackingAccounts(accountsRef::get);
+		backingAccounts.rebuildFromSources();
 		final var ledger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
+
+		final var id = AccountID.newBuilder()
+				.setAccountNum(5)
+				.build();
+		System.out.println("Initial 0.0.5 K/V count is " + ledger.get(id, AccountProperty.NUM_CONTRACT_KV_PAIRS));
+		final var firstKey = accounts.get(EntityNum.fromAccountId(id)).getFirstContractStorageKey();
+		System.out.println("Initial storage is " + IterableStorageUtils.joinedStorageMappings(firstKey, storage));
+		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		return new StorageInfrastructure(accountsRef, storageRef, ledger);
 	}
 
 	public static StorageInfrastructure from(final String storageLoc) throws IOException {
+		System.out.print("\n- Found saved storage in " + storageLoc + ", loading...");
 		MerkleMap<EntityNum, MerkleAccount> accounts;
 		final var mMapLoc = InfrastructureManager.mMapIn(storageLoc);
 		try (final var mMapIn = new MerkleDataInputStream(Files.newInputStream(Paths.get(mMapLoc)))) {
@@ -77,7 +88,7 @@ public record StorageInfrastructure(
 		try (final var vMapIn = new MerkleDataInputStream(Files.newInputStream(path), storageDir)) {
 			storage.deserializeExternal(vMapIn, storageDir, null, 1);
 		}
-
+		System.out.println("done.");
 		return from(accounts, storage);
 	}
 
