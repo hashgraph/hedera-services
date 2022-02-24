@@ -38,10 +38,10 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
+	private static final String CONTRACT = "CreateTrivial";
 
 	public static void main(String... args) {
 		new ContractCallLocalSuite().runSuiteSync();
@@ -68,7 +69,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						impureCallFails(),
 						insufficientFeeFails(),
 						lowBalanceFails(),
-						vanillaSuccess(),
+						vanillaSuccess()
 				}
 		);
 	}
@@ -76,13 +77,13 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaSuccess() {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
+						contractCall(CONTRACT, "create").gas(785_000)
 				).then(
 						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+						contractCallLocal(CONTRACT, "getIndirect")
 								.has(resultWith().resultThruAbi(
 										ContractResources.GET_CHILD_RESULT_ABI,
 										isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))
@@ -92,11 +93,11 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec impureCallFails() {
 		return defaultHapiSpec("ImpureCallFails")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when().then(
 						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCallLocal(CONTRACT, "create")
 								.nodePayment(1_234_567)
 								.hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION)
 				);
@@ -105,12 +106,12 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec deletedContract() {
 		return defaultHapiSpec("InvalidDeletedContract")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractDelete("parentDelegate")
+						contractDelete(CONTRACT)
 				).then(
-						contractCallLocal("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCallLocal(CONTRACT, "create")
 								.nodePayment(1_234_567)
 								.hasAnswerOnlyPrecheck(CONTRACT_DELETED)
 				);
@@ -132,43 +133,41 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec insufficientFeeFails() {
-		final long ADEQUATE_QUERY_PAYMENT = 500_000L;
+		final long adequateQueryPayment = 500_000L;
 
 		return defaultHapiSpec("InsufficientFee")
 				.given(
 						cryptoCreate("payer"),
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate")
-								.bytecode("parentDelegateBytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
+						contractCall(CONTRACT, "create").gas(785_000)
 				).then(
 						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
-								.nodePayment(ADEQUATE_QUERY_PAYMENT)
+						contractCallLocal(CONTRACT, "getIndirect")
+								.nodePayment(adequateQueryPayment)
 								.fee(0L)
 								.payingWith("payer")
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
 	}
 
 	private HapiApiSpec lowBalanceFails() {
-		final long ADEQUATE_QUERY_PAYMENT = 500_000_000L;
+		final long adequateQueryPayment = 500_000_000L;
 
 		return defaultHapiSpec("LowBalanceFails")
 				.given(
-						fileCreate("parentDelegateBytecode")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
-						cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
+						cryptoCreate("payer"),
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT),
+						cryptoCreate("payer").balance(adequateQueryPayment)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(785_000)
+						contractCall(CONTRACT, "create").gas(785_000)
 				).then(
 						sleepFor(3_000L),
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+						contractCallLocal(CONTRACT, "getIndirect")
 								.logged()
 								.payingWith("payer")
-								.nodePayment(ADEQUATE_QUERY_PAYMENT)
+								.nodePayment(adequateQueryPayment)
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountBalance("payer").logged(),
 						sleepFor(1_000L),

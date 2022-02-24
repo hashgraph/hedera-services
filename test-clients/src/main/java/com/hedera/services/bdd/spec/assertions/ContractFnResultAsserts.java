@@ -51,6 +51,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return new ContractFnResultAsserts();
 	}
 
+	//  TODO: If refactor approved: refactor this method to depend on the Utils.getABIFor() logic in order to achieve
+	//   complete decoupling from the ContractResources file
 	public ContractFnResultAsserts resultThruAbi(
 			String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		registerProvider((spec, o) -> {

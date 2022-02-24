@@ -28,14 +28,25 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static java.lang.System.arraycopy;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class Utils {
+
+	public static final String RESOURCE_PATH = "src/main/resource/contract/newstructure/%1$s/%1$s";
+
 
 	public static ByteString eventSignatureOf(String event) {
 		return ByteString.copyFrom(Hash.keccak256(
@@ -73,4 +84,35 @@ public class Utils {
 			return ByteString.EMPTY;
 		}
 	}
+
+	public static String getABIFor(final FunctionType type, final String functionName, String contractName) {
+		final var path = getResourcePath(contractName, ".json");
+		var ABI = EMPTY;
+		try (final var input = new FileInputStream(path)) {
+			final var array = new JSONArray(new JSONTokener(input));
+			ABI = IntStream
+					.range(0, array.length())
+					.mapToObj(array::getJSONObject)
+					.filter(object -> type == CONSTRUCTOR
+							? object.getString("type").equals(type.toString().toLowerCase())
+							: object.getString("type").equals(type.toString().toLowerCase()) && object.getString("name").equals(functionName))
+					.map(JSONObject::toString)
+					.findFirst()
+					.orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
+		} catch (IOException e) {
+			e.getStackTrace();
+		}
+		return ABI;
+	}
+
+	public static String getResourcePath(final String resourceName, final String extension) {
+		final var path = String.format(RESOURCE_PATH + extension, resourceName);
+		final var file = new File(path);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
+		}
+		return path;
+	}
+
+	public enum FunctionType {CONSTRUCTOR, FUNCTION}
 }
