@@ -33,6 +33,20 @@ contract NestedTransferringContract {
         nestedContract1.transferToAddress(receiver3, _amount/2);
         nestedContract2.transferToAddress(receiver3, _amount/2);
     }
+
+    function transferToContractFromDifferentAddresses(uint256 _amount) public payable {
+        nestedContract1.transferToCaller(_amount);
+        nestedContract2.transferToCaller(_amount);
+    }
+
+    function transferToCallerFromDifferentAddresses(uint256 _amount) public payable {
+        (bool success1, bytes memory result1) = address(nestedContract1).delegatecall(abi.encodeWithSignature("transferToCaller(uint256)", _amount));
+        (bool success2, bytes memory result2) = address(nestedContract2).delegatecall(abi.encodeWithSignature("transferToCaller(uint256)", _amount));
+
+        if (!success1 || !success2) {
+            revert("Delegate transfer call failed!");
+        }
+    }
 }
 
 contract NestedContract1 {
@@ -44,6 +58,10 @@ contract NestedContract1 {
     function transferToAddress(address payable _address, uint256 _amount) public payable {
         _address.transfer(_amount);
     }
+
+    function transferToCaller(uint256 _amount) public payable {
+        msg.sender.transfer(_amount);
+    }
 }
 
 contract NestedContract2 {
@@ -54,5 +72,9 @@ contract NestedContract2 {
 
     function transferToAddress(address payable _address, uint256 _amount) public payable {
         _address.transfer(_amount);
+    }
+
+    function transferToCaller(uint256 _amount) public payable {
+        msg.sender.transfer(_amount);
     }
 }

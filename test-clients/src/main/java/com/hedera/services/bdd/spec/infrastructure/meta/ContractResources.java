@@ -811,6 +811,8 @@ public class ContractResources {
 	public static final String TRANSFER_NEGATIVE_AMOUNT = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"_address\"," +
 			"\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferToAddressNegativeAmount\",\"outputs\": []," +
 			"\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_TO_CALLER = "{\"constant\": false,\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_amount\"," +
+			"\"type\": \"uint256\"}],\"name\": \"transferToCaller\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
 
 	public static final String NESTED_TRANSFERRING_CONTRACT_CONSTRUCTOR = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_nestedContract1\"," +
 			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"_nestedContract2\",\"type\": \"address\"}],\"payable\": true,\"stateMutability\": \"payable\"," +
@@ -820,6 +822,10 @@ public class ContractResources {
 	public static final String TRANSFER_FROM_AND_TO_DIFFERENT_ADDRESSES = "{\"constant\": false,\"inputs\": [{\"internalType\": \"address payable\",\"name\": \"receiver1\",\"type\": \"address\"}," +
 			"{\"internalType\": \"address payable\",\"name\": \"receiver2\",\"type\": \"address\"},{\"internalType\": \"address payable\",\"name\": \"receiver3\",\"type\": \"address\"},{\"internalType\": \"uint256\"," +
 			"\"name\": \"_amount\",\"type\": \"uint256\"}],\"name\": \"transferFromAndToDifferentAddresses\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_TO_CONTRACT_FROM_DIFFERENT_ADDRESSES = "{\"constant\": false,\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
+			"\"name\": \"transferToContractFromDifferentAddresses\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"}";
+	public static final String TRANSFER_TO_CALLER_FROM_DIFFERENT_ADDRESSES = "{\"constant\": false,\"inputs\": [{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
+			"\"name\": \"transferToCallerFromDifferentAddresses\",\"outputs\": [],\"payable\": true,\"stateMutability\": \"payable\",\"type\": \"function\"},";
 
 	public static final String PARENT_CHILD_TRANSFER_TRANSFER_TO_CHILD_ABI = "{\"constant\": false,\"inputs\": " +
 			"[{\"internalType\": \"uint256\",\"name\": \"_amount\",\"type\": \"uint256\"}]," +
