@@ -86,7 +86,7 @@ public class VirtualMapFactory {
 						CURRENT_SERIALIZATION_VERSION,
 						ContractValue.ITERABLE_SERIALIZED_SIZE,
 						new ContractValueSupplier(),
-						true);
+						false);
 
 		final JasperDbBuilder<ContractKey, ContractValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
 		dsBuilder

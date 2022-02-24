@@ -56,7 +56,6 @@ import java.util.TreeMap;
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -195,6 +194,7 @@ class MerkleAccountStateTest {
 	void getterWorksForNullStorageKey() {
 		subject.setFirstUint256Key(null);
 		assertNull(subject.getFirstContractStorageKey());
+		assertEquals(0, subject.getFirstUint256KeyNonZeroBytes());
 	}
 
 	@Test
@@ -208,8 +208,6 @@ class MerkleAccountStateTest {
 	void settingFirstKeyUpdatesNonZeroBytes() {
 		subject.setFirstUint256Key(otherExplicitFirstKey);
 		assertEquals(otherNumNonZeroBytesInFirst, subject.getFirstUint256KeyNonZeroBytes());
-
-		assertDoesNotThrow(() -> subject.setFirstUint256Key(null));
 	}
 
 	@Test
@@ -517,7 +515,6 @@ class MerkleAccountStateTest {
 		final var dos = new SerializableDataOutputStream(baos);
 		subject.setSmartContract(false);
 		subject.setFirstUint256Key(null);
-		subject.clearFirstUint256KeyNonZeroBytes();
 		subject.serialize(dos);
 		dos.flush();
 		final var bytes = baos.toByteArray();

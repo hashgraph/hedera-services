@@ -51,7 +51,6 @@ public class VirtualBlobValue implements VirtualValue {
 		this.data = data;
 	}
 
-
 	public VirtualBlobValue(final VirtualBlobValue that) {
 		this.data = that.data;
 	}
@@ -115,10 +114,14 @@ public class VirtualBlobValue implements VirtualValue {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null || getClass() != obj.getClass()) return false;
-		VirtualBlobValue simpContractValue = (VirtualBlobValue) obj;
-		return Arrays.equals(data, simpContractValue.data);
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		final var that = (VirtualBlobValue) obj;
+		return Arrays.equals(data, that.data);
 	}
 
 	@Override

@@ -532,6 +532,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.firstUint256Key = firstUint256Key;
 		if (firstUint256Key != null) {
 			firstUint256KeyNonZeroBytes = computeNonZeroBytes(firstUint256Key);
+		} else {
+			firstUint256KeyNonZeroBytes = 0;
 		}
 	}
 
@@ -579,10 +581,5 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	@VisibleForTesting
 	byte getFirstUint256KeyNonZeroBytes() {
 		return firstUint256KeyNonZeroBytes;
-	}
-
-	@VisibleForTesting
-	void clearFirstUint256KeyNonZeroBytes() {
-		this.firstUint256KeyNonZeroBytes = 0;
 	}
 }

@@ -26,6 +26,8 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
+import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
+
 public class InfrastructureInitializer {
 	private final int initNumContracts;
 	private final int initNumKvPairs;
@@ -44,16 +46,21 @@ public class InfrastructureInitializer {
 
 		for (int i = 0; i < initNumContracts; i++) {
 			final var contractId = AccountID.newBuilder().setAccountNum(i + 1L).build();
+			ContractKey firstKey = null;
+			ContractValue firstValue = null;
 			for (int j = 0; j < perContractKvPairs; j++) {
 				final var evmKey = EvmKeyValueSource.uniqueKey(j);
 				final var vmKey = ContractKey.from(contractId, evmKey);
 				final var vmValue = ContractValue.from(evmKey);
-				curStorage.put(vmKey, vmValue);
+				firstKey = upsertMapping(vmKey, vmValue, firstKey, firstValue, curStorage);
+				firstValue = vmValue;
 			}
 
 			final var contract = new MerkleAccount();
 			contract.setSmartContract(true);
 			contract.setNumContractKvPairs(perContractKvPairs);
+			assert firstKey != null;
+			contract.setFirstUint256StorageKey(firstKey.getKey());
 			curAccounts.put(EntityNum.fromAccountId(contractId), contract);
 		}
 	}

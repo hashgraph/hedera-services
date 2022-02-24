@@ -1,6 +1,7 @@
 package com.hedera.services.state.virtual;
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
@@ -8,9 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.state.virtual.IterableMappingUtils.addMapping;
-import static com.hedera.services.state.virtual.IterableMappingUtils.removeMapping;
+import java.util.List;
+
+import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
+import static com.hedera.services.state.virtual.IterableStorageUtils.removeMapping;
 import static com.hedera.services.store.contracts.SizeLimitedStorage.ZERO_VALUE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -19,7 +23,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class IterableMappingUtilsTest {
+class IterableStorageUtilsTest {
 	@Mock
 	private VirtualMap<ContractKey, ContractValue> storage;
 
@@ -28,8 +32,43 @@ class IterableMappingUtilsTest {
 	private final ContractValue targetValue = new ContractValue(targetEvmValue.toArray());
 
 	@Test
+	void canListStorageValues() {
+		given(storage.get(rootKey)).willReturn(rootValue);
+		rootValue.setNextKey(targetKey.getKey());
+		given(storage.get(targetKey)).willReturn(targetValue);
+		targetValue.setNextKey(nextKey.getKey());
+		given(storage.get(nextKey)).willReturn(nextValue);
+
+		final var expected = "[" + String.join(", ", List.of(
+				rootKey + " -> " + CommonUtils.hex(rootValue.getValue()),
+				targetKey + " -> " + CommonUtils.hex(targetValue.getValue()),
+				nextKey + " -> " + CommonUtils.hex(nextValue.getValue())
+		)) + "]";
+
+		assertEquals(expected, IterableStorageUtils.joinedStorageMappings(rootKey, storage));
+	}
+
+	@Test
+	void canListNoStorageValues() {
+		assertEquals("[]", IterableStorageUtils.joinedStorageMappings(null, storage));
+	}
+
+	@Test
+	void canUpdateExistingMapping() {
+		given(storage.getForModify(targetKey)).willReturn(targetValue);
+
+		final var newRoot = upsertMapping(
+				targetKey, nextValue,
+				rootKey, null,
+				storage);
+
+		assertSame(rootKey, newRoot);
+		assertArrayEquals(nextValue.getValue(), targetValue.getValue());
+	}
+
+	@Test
 	void canInsertToEmptyList() {
-		final var newRoot = addMapping(
+		final var newRoot = upsertMapping(
 				targetKey, targetValue,
 				null, null,
 				storage);
@@ -41,9 +80,10 @@ class IterableMappingUtilsTest {
 
 	@Test
 	void canInsertWithUnknownRootValue() {
+		given(storage.getForModify(targetKey)).willReturn(null);
 		given(storage.getForModify(rootKey)).willReturn(rootValue);
 
-		final var newRoot = addMapping(
+		final var newRoot = upsertMapping(
 				targetKey, targetValue,
 				rootKey, null,
 				storage);
@@ -58,7 +98,7 @@ class IterableMappingUtilsTest {
 
 	@Test
 	void canInsertWithPrefetchedValue() {
-		final var newRoot = addMapping(
+		final var newRoot = upsertMapping(
 				targetKey, targetValue,
 				rootKey, rootValue,
 				storage);
@@ -137,13 +177,13 @@ class IterableMappingUtilsTest {
 	private static final UInt256 targetEvmKey = UInt256.fromHexString("0xaabbcc");
 	private static final UInt256 rootEvmKey = UInt256.fromHexString("0xbbccdd");
 	private static final UInt256 nextEvmKey = UInt256.fromHexString("0xffeedd");
-	private static final ContractKey targetKey = ContractKey.from(contractId, targetEvmKey);
 	private static final ContractKey rootKey = ContractKey.from(contractId, rootEvmKey);
+	private static final ContractKey targetKey = ContractKey.from(contractId, targetEvmKey);
 	private static final ContractKey nextKey = ContractKey.from(contractId, nextEvmKey);
-	private static final UInt256 targetEvmValue =
-			UInt256.fromHexString("0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
 	private static final UInt256 rootEvmValue =
 			UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+	private static final UInt256 targetEvmValue =
+			UInt256.fromHexString("0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
 	private static final UInt256 nextEvmValue =
 			UInt256.fromHexString("0x210aeca1542b62a2a60345a122326fc24ba6bc15424002f6362f13160ef3e563");
 }
