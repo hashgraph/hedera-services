@@ -89,7 +89,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
 		final var contractNum = aliases.get(aliasKey);
 		// If we cannot resolve to a mirror address, we return the missing alias and let a
-		// downstream component fail the transaction by returning null from its get() method.
+		// downstream WorldUpdater fail the transaction by returning null from its get() method.
 		// Cf. the address validator provided by ContractsModule#provideAddressValidator().
 		return (contractNum == null) ? addressOrAlias : contractNum.toEvmAddress();
 	}
