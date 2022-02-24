@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
@@ -31,8 +30,8 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
@@ -54,18 +53,16 @@ public class CallCodeOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "callCodeOpChecker";
+		final String CONTRACT = "CallOperationsChecker";
 		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.CALL_OPERATIONS_CHECKER),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
-								.gas(300_000L)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(300_000)
 				).when(
 				).then(
 						contractCall(CONTRACT,
-								ContractResources.CALL_CODE_OP_CHECKER_ABI,
+								"callCode",
 								INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
@@ -73,7 +70,7 @@ public class CallCodeOperationSuite extends HapiApiSuite {
 							String solidityAddress = calculateSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 
 							final var contractCall = contractCall(CONTRACT,
-									ContractResources.CALL_CODE_OP_CHECKER_ABI,
+									"callCode",
 									solidityAddress)
 									.hasKnownStatus(SUCCESS);
 

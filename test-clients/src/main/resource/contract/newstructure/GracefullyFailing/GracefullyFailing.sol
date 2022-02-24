@@ -28,6 +28,5 @@ contract GracefullyFailingContract is HederaTokenService {
 
 interface FakeHederaTokenService {
     function fakeFunction(address sender) external;
-
     function associateTokens(address sender) external returns (int responseCode);
 }

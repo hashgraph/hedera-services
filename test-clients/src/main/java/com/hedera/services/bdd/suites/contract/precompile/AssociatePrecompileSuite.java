@@ -211,14 +211,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "nonSupportedFunction",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("notSupportedFunctionCallTxn")
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
@@ -252,19 +250,17 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newKeyNamed(DELEGATE_KEY)
-														.shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+												newKeyNamed(DELEGATE_KEY).shape(
+														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), invalidAbiArgument
-												)
+														asAddress(accountID.get()), invalidAbiArgument)
 														.payingWith(GENESIS)
 														.via("functionCallWithInvalidArgumentTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
@@ -345,8 +341,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.hasToken(relationshipWith(FROZEN_TOKEN).kyc(KycNotApplicable).freeze(Frozen))
 								.hasToken(relationshipWith(UNFROZEN_TOKEN).kyc(KycNotApplicable).freeze(Unfrozen))
 								.hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
-								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(KycNotApplicable)
-										.freeze(FreezeNotApplicable))
+								.hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN).kyc(
+										KycNotApplicable).freeze(FreezeNotApplicable))
 				);
 	}
 
@@ -374,8 +370,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 												spec,
 												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(INNER_CONTRACT, spec)),
 												contractCall(OUTER_CONTRACT, "associateDissociateContractCall",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("nestedAssociateTxn")
 														.gas(GAS_TO_OFFER)
@@ -385,8 +380,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("nestedAssociateTxn", SUCCESS,
 								recordWith().status(SUCCESS),
-								recordWith().status(SUCCESS)
-						),
+								recordWith().status(SUCCESS)),
 						getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN)
 				);
 	}
@@ -421,16 +415,14 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()),
-														asAddress(secondVanillaTokenID.get())
-												)
+														asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
 														.gas(GAS_TO_OFFER)

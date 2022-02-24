@@ -33,9 +33,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
@@ -57,22 +57,20 @@ public class CallOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "callOpChecker";
+		final String CONTRACT = "CallOperationsChecker";
 		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 		final String ACCOUNT = "account";
 		final int EXPECTED_BALANCE = 10;
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.CALL_OPERATIONS_CHECKER),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
-								.gas(300_000L),
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(300_000),
 						cryptoCreate(ACCOUNT).balance(0L)
 				).when(
 				).then(
 						contractCall(CONTRACT,
-								ContractResources.CALL_OP_CHECKER_ABI,
+								"call",
 								INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
@@ -80,7 +78,7 @@ public class CallOperationSuite extends HapiApiSuite {
 							String solidityAddress = calculateSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 
 							final var contractCall = contractCall(CONTRACT,
-									ContractResources.CALL_OP_CHECKER_ABI,
+									"call",
 									solidityAddress)
 									.sending(EXPECTED_BALANCE);
 
@@ -92,18 +90,18 @@ public class CallOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec callingContract() {
-		final String CONTRACT = "callingContract";
+		final String CONTRACT = "CallingContract";
 		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 		return defaultHapiSpec("CallingContract")
 				.given(
-						fileCreate("callingContractBytecode").path(ContractResources.CALLING_CONTRACT)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractCreate(CONTRACT).bytecode("callingContractBytecode"),
-						contractCall(CONTRACT, ContractResources.CALLING_CONTRACT_SET_VALUE, 35),
-						contractCallLocal("callingContract",
+						contractCall(CONTRACT, "setVar1", 35),
+						contractCallLocal(CONTRACT,
 								ContractResources.CALLING_CONTRACT_VIEW_VAR)
 								.logged(),
-						contractCall(CONTRACT, ContractResources.CALLING_CONTRACT_CALL_CONTRACT,
+						contractCall(CONTRACT, "callContract",
 								INVALID_ADDRESS, 222)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 				).then(

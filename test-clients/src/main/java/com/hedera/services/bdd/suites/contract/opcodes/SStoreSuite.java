@@ -51,6 +51,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -66,7 +68,7 @@ public class SStoreSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 				setupAppProperties(),
 				multipleSStoreOpsSucceed(),
 				benchmarkSingleSetter(),
@@ -102,6 +104,7 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec multipleSStoreOpsSucceed() {
+		final var CONTRACT = "GrowArray";
 		return HapiApiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
 				.given(
 						fileUpdate(APP_PROPERTIES)
@@ -109,8 +112,8 @@ public class SStoreSuite extends HapiApiSuite {
 								.overridingProps(Map.of(
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
-						fileCreate("bigArrayContractFile").path(ContractResources.GROW_ARRAY_BYTECODE_PATH),
-						contractCreate("bigArrayContract").bytecode("bigArrayContractFile")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				)
 				.when(
 						withOpContext((spec, opLog) -> {
@@ -119,7 +122,7 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
 								var subOp1 = contractCall(
-										"bigArrayContract", ContractResources.GROW_ARRAY_GROW_TO, sizeNow)
+										CONTRACT, "growTo", sizeNow)
 										.gas(MAX_CONTRACT_GAS)
 										.logged();
 								subOps.add(subOp1);
@@ -134,7 +137,7 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int i = 0; i < numberOfIterations; i++) {
 								var subOp1 = contractCall(
-										"bigArrayContract", ContractResources.GROW_ARRAY_CHANGE_ARRAY,
+										CONTRACT, "changeArray",
 										ThreadLocalRandom.current().nextInt(1000))
 										.logged();
 								subOps.add(subOp1);
@@ -145,6 +148,7 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec childStorage() {
+		final var CONTRACT = "ChildStorage";
 		// Successfully exceeds deprecated max contract storage of 1 KB
 		return defaultHapiSpec("ChildStorage")
 				.given(
@@ -153,8 +157,8 @@ public class SStoreSuite extends HapiApiSuite {
 								.overridingProps(Map.of(
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
 						withOpContext((spec, opLog) -> {
 							int almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
@@ -162,37 +166,38 @@ public class SStoreSuite extends HapiApiSuite {
 
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
 								var subOp1 = contractCall(
-										"childStorage", ContractResources.GROW_CHILD_ABI, 0, kbPerStep, 17).gas(
+										CONTRACT, "growChild", 0, kbPerStep, 17).gas(
 										MAX_CONTRACT_GAS);
 								var subOp2 = contractCall(
-										"childStorage", ContractResources.GROW_CHILD_ABI, 1, kbPerStep, 19).gas(
+										CONTRACT, "growChild", 1, kbPerStep, 19).gas(
 										MAX_CONTRACT_GAS);
 								CustomSpecAssert.allRunFor(spec, subOp1, subOp2);
 							}
 						})
 				).then(flattened(
 						valuesMatch(19, 17, 19),
-						contractCall("childStorage", ContractResources.SET_ZERO_READ_ONE_ABI, 23),
+						contractCall(CONTRACT, "setZeroReadOne", 23),
 						valuesMatch(23, 23, 19),
-						contractCall("childStorage", ContractResources.SET_BOTH_ABI, 29),
+						contractCall(CONTRACT, "setBoth", 29),
 						valuesMatch(29, 29, 29)
 				));
 	}
 
 	private HapiSpecOperation[] valuesMatch(long parent, long child0, long child1) {
-		return new HapiSpecOperation[] {
-				contractCallLocal("childStorage", ContractResources.GET_CHILD_VALUE_ABI, 0)
+		final var CONTRACT = "ChildStorage";
+		return new HapiSpecOperation[]{
+				contractCallLocal(CONTRACT, ContractResources.GET_CHILD_VALUE_ABI, 0)
 						.has(resultWith().resultThruAbi(
-								ContractResources.GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(child0) }))),
-				contractCallLocal("childStorage", ContractResources.GET_CHILD_VALUE_ABI, 1)
+						ContractResources.GET_CHILD_VALUE_ABI,
+						isLiteralResult(new Object[]{BigInteger.valueOf(child0)}))),
+				contractCallLocal(CONTRACT, ContractResources.GET_CHILD_VALUE_ABI, 1)
 						.has(resultWith().resultThruAbi(
-								ContractResources.GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(child1) }))),
-				contractCallLocal("childStorage", ContractResources.GET_MY_VALUE_ABI)
+						ContractResources.GET_CHILD_VALUE_ABI,
+						isLiteralResult(new Object[]{BigInteger.valueOf(child1)}))),
+				contractCallLocal(CONTRACT, ContractResources.GET_MY_VALUE_ABI)
 						.has(resultWith().resultThruAbi(
-								ContractResources.GET_MY_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(parent) }))),
+						ContractResources.GET_MY_VALUE_ABI,
+						isLiteralResult(new Object[]{BigInteger.valueOf(parent)}))),
 		};
 	}
 
@@ -228,7 +233,7 @@ public class SStoreSuite extends HapiApiSuite {
 												.resultThruAbi(
 														ContractResources.BENCHMARK_GET_COUNTER,
 														ContractFnResultAsserts.isLiteralResult(
-																new Object[] { BigInteger.valueOf(1L) }
+																new Object[]{BigInteger.valueOf(1L)}
 														)
 												)
 								)
@@ -236,18 +241,17 @@ public class SStoreSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec temporarySStoreRefundTest() {
+		final var CONTRACT = "TemporarySStoreRefund";
 		return defaultHapiSpec("TemporarySStoreRefundTest")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("bytecode").path(ContractResources.TEMPORARY_SSTORE_REFUND_CONTRACT),
-						contractCreate("sStoreRefundContract").bytecode("bytecode")
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
 						contractCall(
-								"sStoreRefundContract",
-								ContractResources.TEMPORARY_SSTORE_HOLD_TEMPORARY_ABI, 10).via("tempHoldTx"),
+								CONTRACT, "holdTemporary", 10).via("tempHoldTx"),
 						contractCall(
-								"sStoreRefundContract",
-								ContractResources.TEMPORARY_SSTORE_HOLD_PERMANENTLY_ABI, 10).via("permHoldTx")
+								CONTRACT, "holdPermanently", 10).via("permHoldTx")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var subop01 = getTxnRecord("tempHoldTx")
@@ -275,3 +279,40 @@ public class SStoreSuite extends HapiApiSuite {
 		return log;
 	}
 }
+
+/**
+ * HapiApiSpec childStorage() {
+ * final var CONTRACT = "ChildStorage";
+ * // Successfully exceeds deprecated max contract storage of 1 KB
+ * return defaultHapiSpec("ChildStorage")
+ * .given(
+ * fileUpdate(APP_PROPERTIES)
+ * .payingWith(ADDRESS_BOOK_CONTROL)
+ * .overridingProps(Map.of(
+ * "contracts.maxGas", "" + MAX_CONTRACT_GAS
+ * )),
+ * newFileCreate(CONTRACT),
+ * newContractCreate(CONTRACT)
+ * ).when(
+ * withOpContext((spec, opLog) -> {
+ * int almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
+ * long kbPerStep = 16;
+ * <p>
+ * for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
+ * var subOp1 = contractCall(
+ * CONTRACT, "growChild", 0, kbPerStep, 17).gas(
+ * MAX_CONTRACT_GAS);
+ * var subOp2 = contractCall(
+ * CONTRACT, "growChild", 1, kbPerStep, 19).gas(
+ * MAX_CONTRACT_GAS);
+ * CustomSpecAssert.allRunFor(spec, subOp1, subOp2);
+ * }* 						})
+ * ).then(flattened(
+ * valuesMatch(19, 17, 19),
+ * contractCall(CONTRACT, "setZeroReadOne", 23),
+ * valuesMatch(23, 23, 19),
+ * contractCall(CONTRACT, "setBoth", 29),
+ * valuesMatch(29, 29, 29)
+ * ));
+ * }
+ */

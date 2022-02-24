@@ -37,8 +37,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
@@ -59,21 +59,19 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "extCodeCopyOpChecker";
+		final String CONTRACT = "ExtCodeOperationsChecker";
 		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 		ByteString EMPTY_BYTECODE = ByteString.EMPTY;
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.EXT_CODE_OPERATIONS_CHECKER_CONTRACT),
-						contractCreate("extCodeCopyOpChecker")
-								.bytecode("bytecode")
-								.gas(300_000L)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).gas(300_000L)
 				).when(
 				)
 				.then(
 						contractCall(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
+								"codeCopyOf",
 								INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						contractCallLocal(CONTRACT,
@@ -87,7 +85,7 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
 							String contractAddress = calculateSolidityAddress((int) contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
 
 							final var call = contractCall(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
+									"codeCopyOf",
 									accountSolidityAddress)
 									.via("callRecord");
 							final var callRecord = getTxnRecord("callRecord");
