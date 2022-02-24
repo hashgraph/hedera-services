@@ -139,26 +139,16 @@ abstract class EvmTxProcessor {
 	 * Executes the {@link MessageFrame} of the EVM transaction. Returns the result as {@link
 	 * TransactionProcessingResult}
 	 *
-	 * @param sender
-	 * 		The origin {@link Account} that initiates the transaction
-	 * @param receiver
-	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
-	 * @param gasPrice
-	 * 		GasPrice to use for gas calculations
-	 * @param gasLimit
-	 * 		Externally provided gas limit
-	 * @param value
-	 * 		Evm transaction value (HBars)
-	 * @param payload
-	 * 		Transaction payload. For Create transactions, the bytecode + constructor arguments
-	 * @param contractCreation
-	 * 		Whether or not this is a contract creation transaction
-	 * @param consensusTime
-	 * 		Current consensus time
-	 * @param isStatic
-	 * 		Whether or not the execution is static
-	 * @param expiry
-	 * 		In the case of Create transactions, the expiry of the top-level contract being created
+	 * @param sender           The origin {@link Account} that initiates the transaction
+	 * @param receiver         Receiving {@link Address}. For Create transactions, the newly created Contract address
+	 * @param gasPrice         GasPrice to use for gas calculations
+	 * @param gasLimit         Externally provided gas limit
+	 * @param value            Evm transaction value (HBars)
+	 * @param payload          Transaction payload. For Create transactions, the bytecode + constructor arguments
+	 * @param contractCreation Whether or not this is a contract creation transaction
+	 * @param consensusTime    Current consensus time
+	 * @param isStatic         Whether or not the execution is static
+	 * @param expiry           In the case of Create transactions, the expiry of the top-level contract being created
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(
@@ -247,22 +237,24 @@ abstract class EvmTxProcessor {
 
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
-			
-			stateChanges = updater.getStorageChanges();
 
-			// record storage read/write access
-			for (UpdateTrackingLedgerAccount<? extends Account> uta :
-					(Collection<UpdateTrackingLedgerAccount<? extends Account>>) updater.getTouchedAccounts()) {
-				final var storageUpdates = uta.getUpdatedStorage().entrySet();
-				if (!storageUpdates.isEmpty()) {
-					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
-					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
-						UInt256 key = entry.getKey();
-						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
-						UInt256 updatedStorageValue = uta.getStorageValue(key);
-						accountChanges.put(key,
-								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+			stateChanges = updater.getStorageChanges();
+			if (dynamicProperties.shouldEnableTraceability()) {
+				// record storage read/write access
+
+				for (UpdateTrackingLedgerAccount<? extends Account> uta :
+						(Collection<UpdateTrackingLedgerAccount<? extends Account>>) updater.getTouchedAccounts()) {
+					final var storageUpdates = uta.getUpdatedStorage().entrySet();
+					if (!storageUpdates.isEmpty()) {
+						Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+								stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+						for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
+							UInt256 key = entry.getKey();
+							UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
+							UInt256 updatedStorageValue = uta.getStorageValue(key);
+							accountChanges.put(key,
+									new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+						}
 					}
 				}
 			}
@@ -280,7 +272,8 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getOutputData(),
 					initialFrame.getRecipientAddress(),
-					stateChanges);
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
@@ -288,7 +281,8 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
-					stateChanges);
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		}
 	}
 

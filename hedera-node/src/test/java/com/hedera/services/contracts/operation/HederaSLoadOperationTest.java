@@ -20,6 +20,7 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaWorldState;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -73,10 +74,13 @@ class HederaSLoadOperationTest {
 	@Mock
 	Bytes valueBytesMock;
 
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+
 	@BeforeEach
 	void setUp() {
 		givenValidContext(keyBytesMock, valueBytesMock);
-		subject = new HederaSLoadOperation(gasCalculator);
+		subject = new HederaSLoadOperation(gasCalculator, dynamicProperties);
 	}
 
 	@Test
@@ -84,6 +88,7 @@ class HederaSLoadOperationTest {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
+		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
@@ -104,6 +109,7 @@ class HederaSLoadOperationTest {
 	void executesProperlyWithWarmSuccess() {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 
@@ -146,6 +152,7 @@ class HederaSLoadOperationTest {
 	void executeWithOverFlowException() {
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
+		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
 		var frameStack = new ArrayDeque<MessageFrame>();
 		frameStack.add(messageFrame);
 

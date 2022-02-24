@@ -128,7 +128,7 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/, properties.shouldEnableTraceability());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
 				txnCtx.consensusTime()))
 				.willReturn(results);
@@ -164,7 +164,7 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), null /*//FIXME*/, properties.shouldEnableTraceability());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);

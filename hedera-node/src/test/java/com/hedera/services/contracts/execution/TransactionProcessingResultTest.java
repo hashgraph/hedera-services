@@ -141,7 +141,8 @@ class TransactionProcessingResultTest {
 				1234L,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				contractStateChanges);
+				contractStateChanges,
+				true);
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -184,7 +185,7 @@ class TransactionProcessingResultTest {
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
 		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,
-				Optional.of(exception),Map.of());
+				Optional.of(exception),Map.of(), true);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
@@ -202,7 +203,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				true);
 
 		assertEquals(GAS_PRICE, result.getGasPrice());
 	}
@@ -216,7 +218,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				true);
 
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 	}
@@ -230,7 +233,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				true);
 
 		assertEquals(GAS_USAGE, result.getGasUsed());
 	}
@@ -244,7 +248,8 @@ class TransactionProcessingResultTest {
 				GAS_PRICE,
 				Bytes.EMPTY,
 				recipient.getId().asEvmAddress(),
-				Map.of());
+				Map.of(),
+				true);
 
 		assertTrue(result.isSuccessful());
 	}

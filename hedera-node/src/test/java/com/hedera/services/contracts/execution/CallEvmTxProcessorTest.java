@@ -182,6 +182,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecutionPopulatesStorageChanges() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(true);
 		givenSenderWithBalance(350_000L);
 		final var contractAddress = "0xffff";
 		final var slot = 1L;
@@ -209,6 +210,21 @@ class CallEvmTxProcessorTest {
 				contractStateChange.getStorageChanges(0).getValueRead());
 		assertEquals(BytesValue.of(ByteString.copyFrom(Bytes.wrap(UInt256.valueOf(newSlotValue)).trimLeadingZeros().toArrayUnsafe())),
 				contractStateChange.getStorageChanges(0).getValueWritten());
+	}
+
+	@Test
+	void assertSuccessExecutionWithDisabledTraceabilityDoNotPopulatesStorageChanges() {
+		givenValidMock();
+		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(globalDynamicProperties.shouldEnableTraceability()).willReturn(false);
+		givenSenderWithBalance(350_000L);
+
+		final var result = callEvmTxProcessor.execute(
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+
+		assertTrue(result.isSuccessful());
+		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+		assertEquals(0, result.toGrpc().getStateChangesCount());
 	}
 
 	@Test

@@ -73,6 +73,7 @@ public class TransactionProcessingResult {
 	private final Optional<Address> recipient;
 	private final Optional<Bytes> revertReason;
 	private final Optional<ExceptionalHaltReason> haltReason;
+	private final boolean enableTraceability;
 
 	private List<ContractID> createdContracts = new ArrayList<>();
 	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
@@ -83,7 +84,8 @@ public class TransactionProcessingResult {
 			final long gasPrice,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
 				new ArrayList<>(),
@@ -94,7 +96,8 @@ public class TransactionProcessingResult {
 				Optional.empty(),
 				revertReason,
 				haltReason,
-				stateChanges);
+				stateChanges,
+				enableTraceability);
 	}
 
 	public static TransactionProcessingResult successful(
@@ -104,7 +107,8 @@ public class TransactionProcessingResult {
 			final long gasPrice,
 			final Bytes output,
 			final Address recipient,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
@@ -115,7 +119,8 @@ public class TransactionProcessingResult {
 				Optional.of(recipient),
 				Optional.empty(),
 				Optional.empty(),
-				stateChanges);
+				stateChanges,
+				enableTraceability);
 	}
 
 	public TransactionProcessingResult(
@@ -128,7 +133,8 @@ public class TransactionProcessingResult {
 			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		this.logs = logs;
 		this.output = output;
 		this.status = status;
@@ -139,14 +145,14 @@ public class TransactionProcessingResult {
 		this.haltReason = haltReason;
 		this.revertReason = revertReason;
 		this.stateChanges = stateChanges;
+		this.enableTraceability = enableTraceability;
 	}
 
 	/**
 	 * Adds a list of created contracts to be externalised as part of the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 *
-	 * @param createdContracts
-	 * 		the list of contractIDs created
+	 * @param createdContracts the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
@@ -223,23 +229,24 @@ public class TransactionProcessingResult {
 		/* Populate Created Contract IDs */
 		contractResultBuilder.addAllCreatedContractIDs(createdContracts);
 
-		/* Populate stateChanges */
-		stateChanges.forEach((address, states) -> {
-			ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractIdFromEvmAddress(address.toArray()));
-			states.forEach((slot, changePair) -> {
-				StorageChange.Builder stateChange = StorageChange.newBuilder()
-						.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
-						.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
-				Bytes changePairRight = changePair.getRight();
-				if (changePairRight != null) {
-					stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
-				}
-				contractChanges.addStorageChanges(stateChange.build());
+		if (enableTraceability) {
+			/* Populate stateChanges */
+			stateChanges.forEach((address, states) -> {
+				ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
+						EntityIdUtils.contractIdFromEvmAddress(address.toArray()));
+				states.forEach((slot, changePair) -> {
+					StorageChange.Builder stateChange = StorageChange.newBuilder()
+							.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+							.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
+					Bytes changePairRight = changePair.getRight();
+					if (changePairRight != null) {
+						stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
+					}
+					contractChanges.addStorageChanges(stateChange.build());
+				});
+				contractResultBuilder.addStateChanges(contractChanges.build());
 			});
-			contractResultBuilder.addStateChanges(contractChanges.build());
-		});
-
+		}
 		return contractResultBuilder;
 	}
 

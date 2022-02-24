@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,9 +51,10 @@ public class HederaSLoadOperation extends AbstractOperation {
 
 	private final OperationResult warmSuccess;
 	private final OperationResult coldSuccess;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public HederaSLoadOperation(final GasCalculator gasCalculator) {
+	public HederaSLoadOperation(final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
 		super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
 		final Gas baseCost = gasCalculator.getSloadOperationGasCost();
 		warmCost = Optional.of(baseCost.plus(gasCalculator.getWarmStorageReadCost()));
@@ -60,6 +62,7 @@ public class HederaSLoadOperation extends AbstractOperation {
 
 		warmSuccess = new OperationResult(warmCost, Optional.empty());
 		coldSuccess = new OperationResult(coldCost, Optional.empty());
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -75,7 +78,9 @@ public class HederaSLoadOperation extends AbstractOperation {
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
 				UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-				HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
+				if (dynamicProperties.shouldEnableTraceability()) {
+					HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
+				}
 
 				frame.pushStackItem(storageValue);
 				return slotIsWarm ? warmSuccess : coldSuccess;

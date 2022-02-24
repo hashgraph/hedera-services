@@ -252,7 +252,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -328,7 +329,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -383,7 +385,8 @@ class ContractCreateTransitionLogicTest {
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
-				124L, Optional.empty(), Optional.empty(), null /*//FIXME*/);
+				124L, Optional.empty(), Optional.empty(), null /*//FIXME*/,
+				properties.shouldEnableTraceability());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -423,7 +426,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/);
+						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();

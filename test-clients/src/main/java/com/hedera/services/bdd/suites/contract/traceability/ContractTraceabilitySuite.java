@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -130,7 +131,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(11),
 														formattedAssertionValue(0))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -171,7 +173,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(99),
 														formattedAssertionValue(143))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -213,7 +216,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(11),
 														formattedAssertionValue(0))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -246,7 +250,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(4))
 										)
 
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -290,7 +295,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1),
 														formattedAssertionValue(1))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -333,7 +339,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1),
 														formattedAssertionValue(1))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -376,7 +383,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(12),
 														formattedAssertionValue(524))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -408,7 +416,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(2),
 														formattedAssertionValue(524))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -450,7 +459,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -496,7 +506,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1),
 														formattedAssertionValue(1))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -536,7 +547,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1),
 														formattedAssertionValue(0))
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -545,6 +557,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 									  final HapiContractCreate contractB,
 									  final HapiContractCreate contractC) {
 		return new HapiSpecOperation[]{
+				UtilVerbs.overriding("contracts.enableTraceability", "true"),
 				cryptoCreate("account").balance(10 * ONE_MILLION_HBARS),
 				fileCreate("bytecode").payingWith("account"),
 				updateLargeFile("account", "bytecode",
