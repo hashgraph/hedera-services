@@ -24,7 +24,6 @@ import com.google.protobuf.BoolValue;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -77,8 +76,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
@@ -94,7 +91,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore, allowanceChecks,
+		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, allowanceChecks,
 				dynamicProperties);
 	}
 
@@ -180,7 +177,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(owner);
 		given(owner.getTotalAllowances()).willReturn(101);
-		given(owner.getId()).willReturn(ownerAcccount.getId());
 
 		givenValidTxnCtx();
 

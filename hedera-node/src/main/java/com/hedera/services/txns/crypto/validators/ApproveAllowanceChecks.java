@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -48,7 +47,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -94,14 +92,9 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var amount = allowance.getAmount();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
-			if (owner.equals(Id.MISSING_ID)) {
-				owner = payerAccount.getId();
-			} else {
-				try {
-					accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
 
 			var validity = validateAmount(amount);
@@ -138,16 +131,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final Account ownerAccount;
-			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-				ownerAccount = payerAccount;
-			} else {
-				try {
-					ownerAccount = accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 
 			if (!token.isFungibleCommon()) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -188,16 +176,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final Account ownerAccount;
-			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-				ownerAccount = payerAccount;
-			} else {
-				try {
-					ownerAccount = accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;

@@ -76,7 +76,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -283,7 +282,6 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsIfOwnerSameAsSpender() {
 		setUpForTest();
-		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().
 				setSpender(ownerId1).setOwner(ownerId1).setAmount(10L).build();
@@ -427,7 +425,6 @@ class ApproveAllowanceChecksTest {
 		setUpForTest();
 		getValidTxnCtx();
 
-		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);

@@ -100,7 +100,7 @@ class TokenRelationshipTest {
 		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id[shard=1, realm=0, " +
 				"num=4321]," +
 				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}}, " +
+				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null}, " +
 				"token=Token{id=Id[shard=0, realm=0, num=1234], type=null, " +
 				"deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
 				"freezeKey=<N/A>," +

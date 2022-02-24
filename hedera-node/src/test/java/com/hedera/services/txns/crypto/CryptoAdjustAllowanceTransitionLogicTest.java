@@ -25,7 +25,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -77,8 +76,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private AdjustAllowanceChecks adjustAllowanceChecks;
@@ -96,7 +93,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore,
+		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, accountStore,
 				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker);
 	}
 
@@ -212,7 +209,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 		Account owner = mock(Account.class);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(owner);
-		given(owner.getId()).willReturn(ownerAcccount.getId());
 		given(owner.getTotalAllowances()).willReturn(101);
 
 		givenValidTxnCtx();
@@ -225,7 +221,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
-		verify(sideEffectsTracker).reset();
 		verify(accountStore, never()).commitAccount(ownerAcccount);
 	}
 

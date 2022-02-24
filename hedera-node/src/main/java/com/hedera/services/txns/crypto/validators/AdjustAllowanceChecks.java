@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -30,12 +29,14 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -51,7 +52,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -84,13 +84,13 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		if (cryptoAllowancesList.isEmpty()) {
 			return OK;
 		}
-		final var cryptoKeys = cryptoAllowancesList
-				.stream()
-				.map(allowance -> buildEntityNumPairFrom(
-						allowance.getOwner(),
-						allowance.getSpender(),
-						payerAccount.getId().asEntityNum()))
-				.toList();
+		final List<EntityNumPair> cryptoKeys = new ArrayList<>();
+		for (var allowance : cryptoAllowancesList) {
+			cryptoKeys.add(buildEntityNumPairFrom(
+					allowance.getOwner(),
+					allowance.getSpender(),
+					payerAccount.getId().asEntityNum()));
+		}
 		if (hasRepeatedSpender(cryptoKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
@@ -99,16 +99,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			final Account ownerAccount;
-			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-				ownerAccount = payerAccount;
-			} else {
-				try {
-					ownerAccount = accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 			final var existingAllowances = ownerAccount.getCryptoAllowances();
 			final var key = spender.asEntityNum();
 			final var existingAmount = existingAllowances.containsKey(key) ? existingAllowances.get(key) : 0;
@@ -132,10 +127,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		if (tokenAllowancesList.isEmpty()) {
 			return OK;
 		}
-		final var tokenKeys = tokenAllowancesList
-				.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
-				.toList();
+		final List<Pair<EntityNum, FcTokenAllowanceId>> tokenKeys = new ArrayList<>();
+		for (var allowance : tokenAllowancesList) {
+			tokenKeys.add(
+					buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+		}
 		if (hasRepeatedId(tokenKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
@@ -146,16 +142,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final Account ownerAccount;
-			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-				ownerAccount = payerAccount;
-			} else {
-				try {
-					ownerAccount = accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 			final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
 
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
@@ -185,9 +176,10 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			return OK;
 		}
 
-		final var nftKeys = nftAllowancesList.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
-				.toList();
+		final List<Pair<EntityNum, FcTokenAllowanceId>> nftKeys = new ArrayList<>();
+		for (var allowance : nftAllowancesList) {
+			nftKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+		}
 		if (hasRepeatedId(nftKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
@@ -200,16 +192,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 
-			final Account ownerAccount;
-			if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-				ownerAccount = payerAccount;
-			} else {
-				try {
-					ownerAccount = accountStore.loadAccount(owner);
-				} catch (InvalidTransactionException ex) {
-					return INVALID_ALLOWANCE_OWNER_ID;
-				}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 
 			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
 			final var existingAllowances = ownerAccount.getNftAllowances();

@@ -20,6 +20,8 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -27,11 +29,13 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -169,5 +173,17 @@ public interface AllowanceChecks {
 
 	default boolean emptyAllowances(final int totalAllowances) {
 		return totalAllowances == 0;
+	}
+
+	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount, AccountStore accountStore) {
+		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
+			return Pair.of(payerAccount, OK);
+		} else {
+			try {
+				return Pair.of(accountStore.loadAccount(owner), OK);
+			} catch (InvalidTransactionException ex) {
+				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
+			}
+		}
 	}
 }
