@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import static java.lang.Long.parseLong;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
-	private static final VirtualBlobValue EMPTY_BLOB = new VirtualBlobValue(new byte[0]);
+	public static final VirtualBlobValue EMPTY_BLOB = new VirtualBlobValue(new byte[0]);
 
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
