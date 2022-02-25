@@ -26,6 +26,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -190,6 +191,7 @@ class PrefetchProcessorTest {
         await().atMost(10, TimeUnit.SECONDS).until(() -> rejected.size() > 0);
     }
 
+	@Disabled
     @Test
     void submitEmptyTransitionLogic() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());

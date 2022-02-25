@@ -20,16 +20,12 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -53,9 +49,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
@@ -71,7 +67,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
     }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 callsERC20ContractInteractions()
         );

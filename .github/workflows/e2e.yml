@@ -1,0 +1,31 @@
+name: E2E Tests
+
+on: [push]
+
+jobs:
+  Run-E2E-Tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        packages: ['contract.opcodes,contract.openzeppelin',
+                   'contract.precompile,contract.records',
+                   'contract.hapi']
+    steps:
+      - uses: actions/checkout@v2 # checkout current branch
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build docker images # build the image for hedera-node
+        run: bash compose-build.sh
+      - name: Start network # start 3 node network
+        run: docker compose up -d
+      - name: Healthcheck for Hedera node # wait until node is ready to serve requests
+        working-directory: github-actions-utils
+        run: bash healthcheck.sh
+      - name: Run E2E Suites # run selected e2e suites
+        working-directory: github-actions-utils
+        run: bash run-e2e-tests.sh ${{matrix.packages}}

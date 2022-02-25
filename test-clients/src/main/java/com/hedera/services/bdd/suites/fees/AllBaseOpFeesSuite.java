@@ -77,7 +77,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(List.of(new HapiApiSpec[] {
 						baseNftFreezeUnfreezeChargedAsExpected(),
 						baseCommonFreezeUnfreezeChargedAsExpected(),
