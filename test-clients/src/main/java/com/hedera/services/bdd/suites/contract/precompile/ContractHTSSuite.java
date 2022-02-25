@@ -723,7 +723,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.via("distributeTx"));
 								})
 				).then(
-						getTxnRecord("distributeTx").andAllChildRecords().logged(),
+						getTxnRecord("distributeTx")
+								.andAllChildRecords()
+								.logged()
+								.hasPriority(recordWith().transfers(including(
+										tinyBarsFromTo(CONTRACT, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
