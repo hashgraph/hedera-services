@@ -87,10 +87,11 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	private Function<TestAccountProperty, Object> extantProps;
 	@Mock
 	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
-	final private SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
 	@BeforeEach
 	private void setup() {
@@ -100,11 +101,16 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(liveSideEffects));
+				new ChangeSummaryManager<>());
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor();
+		accountsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager,
-				new TestAccountCommitInterceptor(new SideEffectsTracker()));
+				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager);
+		final var testAccountCommitInterceptor = new TestAccountCommitInterceptor();
+		testAccountCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		subject.setCommitInterceptor(testAccountCommitInterceptor);
 	}
 
 	@Test

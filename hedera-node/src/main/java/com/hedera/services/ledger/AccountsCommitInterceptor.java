@@ -5,19 +5,20 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 
-@Singleton
 public class AccountsCommitInterceptor implements
 		CommitInterceptor<AccountID, MerkleAccount, AccountProperty> {
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
-	private final SideEffectsTracker sideEffectsTracker;
+	private SideEffectsTracker sideEffectsTracker;
 
-	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+	public AccountsCommitInterceptor() {
+	}
+
+	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
@@ -29,12 +30,6 @@ public class AccountsCommitInterceptor implements
 	@Override
 	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
 		long sum = 0;
-
-		/*We need to reset the hbarChanges currently tracked in the sideEffectsTracker
-		since we have stacked approach for committing the accumulated changes during a transaction.
-		We need to track the hbarChanges accumulated at the last final commit of the given transaction, otherwise we
-		duplicate changes at each new nested commit.*/
-		sideEffectsTracker.clearNetHbarChanges();
 
 		for (final var changeToCommit : changesToCommit) {
 			final var account = changeToCommit.id();

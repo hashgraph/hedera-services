@@ -20,14 +20,17 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockLedgerWorldUpdater
 		extends AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
 
-	public MockLedgerWorldUpdater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
-		super(world, trackingLedgers);
+
+	public MockLedgerWorldUpdater(final HederaWorldState world, final WorldLedgers trackingLedgers,
+								  final SideEffectsTracker sideEffectsTracker) {
+		super(world, trackingLedgers, sideEffectsTracker);
 	}
 
 	@Override
@@ -42,6 +45,6 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped());
+		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(sideEffectsTracker), sideEffectsTracker);
 	}
 }

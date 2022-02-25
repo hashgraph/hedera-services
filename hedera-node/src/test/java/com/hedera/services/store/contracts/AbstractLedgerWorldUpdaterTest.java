@@ -22,9 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -107,6 +105,12 @@ class AbstractLedgerWorldUpdaterTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	@Mock
+	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -115,7 +119,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		subject = new MockLedgerWorldUpdater(worldState, ledgers);
+		subject = new MockLedgerWorldUpdater(worldState, ledgers, sideEffectsTracker);
 	}
 
 	@Test
@@ -400,7 +404,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
-		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null));
+		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null), sideEffectsTracker);
 
 		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}
@@ -410,26 +414,22 @@ class AbstractLedgerWorldUpdaterTest {
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>(),
-				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
-				new ChangeSummaryManager<>(),
-				new TokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>(),
-				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
@@ -454,6 +454,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nfts();
+		trackingNfts.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);
@@ -464,6 +465,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownTokenRels() {
 		final var trackingRels = ledgers.tokenRels();
+		trackingRels.setCommitInterceptor(tokenRelsCommitInterceptor);
 		trackingRels.create(aaRel);
 		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
 		trackingRels.create(abRel);

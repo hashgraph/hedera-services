@@ -60,6 +60,12 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
+	@Mock
+	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	@Mock
+	private AccountsCommitInterceptor accountsCommitInterceptor;
+	@Mock
+	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
 
 	final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
@@ -71,8 +77,8 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(liveSideEffects));
+				new ChangeSummaryManager<>());
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
@@ -81,15 +87,15 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>(),
-				new UniqueTokensCommitInterceptor(liveSideEffects));
+				new ChangeSummaryManager<>());
+		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>(),
-				new TokenRelsCommitInterceptor(liveSideEffects));
+				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
 		final var viewManager = new UniqueTokenViewsManager(
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAccountOwnerships,

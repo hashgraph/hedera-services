@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -68,12 +69,14 @@ class HederaStackedWorldStateUpdaterTest {
 	private HederaMutableWorldState worldState;
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
+		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, sideEffectsTracker);
 	}
 
 	@Test

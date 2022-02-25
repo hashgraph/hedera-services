@@ -83,6 +83,8 @@ class WorldLedgersTest {
 	private ContractAliases aliases;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private WorldLedgers subject;
 
@@ -180,26 +182,22 @@ class WorldLedgersTest {
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>(),
-				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var liveAccounts = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var liveNfts = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>(),
-				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var liveTokens = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
-				new ChangeSummaryManager<>(),
-				new TokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var liveAliases = new AliasManager();
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
@@ -213,11 +211,11 @@ class WorldLedgersTest {
 		assertFalse(nullNfts.areMutable());
 		assertFalse(nullTokens.areMutable());
 
-		final var wrappedUnusable = nullAccounts.wrapped();
+		final var wrappedUnusable = nullAccounts.wrapped(sideEffectsTracker);
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
 		assertFalse(wrappedUnusable.areMutable());
 
-		final var wrappedSource = source.wrapped();
+		final var wrappedSource = source.wrapped(sideEffectsTracker);
 
 		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
 		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());

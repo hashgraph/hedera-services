@@ -111,6 +111,8 @@ class TransferLogicTest {
 	private UniqueTokenViewsManager tokenViewsManager;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private AccountsCommitInterceptor accountsCommitInterceptor;
 
 	private TransferLogic subject;
 
@@ -118,7 +120,7 @@ class TransferLogicTest {
 	void setUp() {
 		final var backingAccounts = new HashMapBackingAccounts();
 		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
+				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
 				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
@@ -274,6 +276,7 @@ class TransferLogicTest {
 	}
 
 	private void setUpAccountWithAllowances() {
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		accountsLedger.begin();
 		accountsLedger.create(owner);
 		accountsLedger.set(owner, AccountProperty.CRYPTO_ALLOWANCES, cryptoAllowances);

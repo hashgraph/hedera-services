@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -87,6 +88,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	private final W world;
 	private final WorldLedgers trackingLedgers;
+	protected SideEffectsTracker sideEffectsTracker;
 
 	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
 	private AccountRecordsHistorian recordsHistorian = null;
@@ -96,10 +98,12 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected AbstractLedgerWorldUpdater(
 			final W world,
-			final WorldLedgers trackingLedgers
+			final WorldLedgers trackingLedgers,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.world = world;
 		this.trackingLedgers = trackingLedgers;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	/**
@@ -212,6 +216,14 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		}
 	}
 
+	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
+		this.sideEffectsTracker = sideEffectsTracker;
+	}
+
+	public SideEffectsTracker getSideEffectsTracker() {
+		return sideEffectsTracker;
+	}
+
 	public void manageInProgressRecord(
 			final AccountRecordsHistorian recordsHistorian,
 			final ExpirableTxnRecord.Builder recordSoFar,
@@ -225,7 +237,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {
-		final var wrappedLedgers = trackingLedgers.wrapped();
+		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
 		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
 		return wrappedLedgers;
 	}

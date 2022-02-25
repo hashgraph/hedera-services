@@ -121,6 +121,12 @@ class LedgerBalanceChangesTest {
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
+	@Mock
+	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	@Mock
+	private AccountsCommitInterceptor accountsCommitInterceptor;
+	@Mock
+	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
 
 	private HederaLedger subject;
 
@@ -128,15 +134,16 @@ class LedgerBalanceChangesTest {
 	void setUp() throws ConstructableRegistryException {
 		MockitoAnnotations.initMocks(this);
 		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>(), new AccountsCommitInterceptor(new SideEffectsTracker()));
+				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		tokenRelsLedger = new TransactionalLedger<>(
-				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>(),
-				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
+				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
-				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>(),
-				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
+				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
 
 		backingTokens.put(tokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));

@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.contract.queries;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -65,6 +66,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 	private final NodeLocalProperties nodeProperties;
 	private final SmartContractFeeBuilder usageEstimator;
 	private final CallLocalEvmTxProcessor evmTxProcessor;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public ContractCallLocalResourceUsage(
@@ -75,7 +77,8 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			final CallLocalEvmTxProcessor evmTxProcessor,
 			final EntityIdSource ids,
 			final OptionValidator validator,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.accountStore = accountStore;
 		this.evmTxProcessor = evmTxProcessor;
@@ -85,6 +88,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 		this.properties = properties;
 		this.nodeProperties = nodeProperties;
 		this.usageEstimator = usageEstimator;
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -116,7 +120,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 			} else {
 				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, properties);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
-				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, sideEffectsTracker);
 				evmTxProcessor.setWorldState(worldState);
 
 				response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager);

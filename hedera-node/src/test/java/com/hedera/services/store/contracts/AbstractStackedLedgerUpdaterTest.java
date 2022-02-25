@@ -74,6 +74,8 @@ class AbstractStackedLedgerUpdaterTest {
 	private ContractAliases aliases;
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
@@ -85,7 +87,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
+		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(sideEffectsTracker), sideEffectsTracker);
 
 		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
 	}
@@ -203,26 +205,22 @@ class AbstractStackedLedgerUpdaterTest {
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
-				new ChangeSummaryManager<>(),
-				new TokenRelsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
-				new ChangeSummaryManager<>(),
-				new AccountsCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				new HashMapBackingNfts(),
-				new ChangeSummaryManager<>(),
-				new UniqueTokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				new HashMapBackingTokens(),
-				new ChangeSummaryManager<>(),
-				new TokensCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();

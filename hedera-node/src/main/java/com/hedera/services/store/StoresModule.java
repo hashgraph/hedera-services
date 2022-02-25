@@ -86,77 +86,53 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
-	static AccountsCommitInterceptor bindAccountsCommitInterceptor(
-			SideEffectsTracker sideEffectsTracker
-	) {
-		return new AccountsCommitInterceptor(sideEffectsTracker);
-	}
-
-	@Provides
-	@Singleton
-	static UniqueTokensCommitInterceptor bindUniqueTokenCommitInterceptor(
-			SideEffectsTracker sideEffectsTracker
-	) {
-		return new UniqueTokensCommitInterceptor(sideEffectsTracker);
-	}
-
-	@Provides
-	@Singleton
-	static TokensCommitInterceptor bindTokenCommitInterceptor(
-			SideEffectsTracker sideEffectsTracker
-	) {
-		return new TokensCommitInterceptor(sideEffectsTracker);
-	}
-
-	@Provides
-	@Singleton
-	static TokenRelsCommitInterceptor bindTokenRelsCommitInterceptor(
-			SideEffectsTracker sideEffectsTracker
-	) {
-		return new TokenRelsCommitInterceptor(sideEffectsTracker);
-	}
-
-	@Provides
-	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			BackingStore<NftId, MerkleUniqueToken> backingNfts,
-			UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor
+			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
-				new ChangeSummaryManager<>(),
-				uniqueTokensCommitInterceptor);
+				new ChangeSummaryManager<>());
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor();
+		uniqueTokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		return uniqueTokensLedger;
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-			BackingStore<TokenID, MerkleToken> backingTokens,
-			TokensCommitInterceptor tokensCommitInterceptor
+			final BackingStore<TokenID, MerkleToken> backingTokens,
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
-				new ChangeSummaryManager<>(),
-				tokensCommitInterceptor);
+				new ChangeSummaryManager<>());
+		final var tokensCommitInterceptor = new TokensCommitInterceptor();
+		tokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		tokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+		return tokensLedger;
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
-			TokenRelsCommitInterceptor tokenRelsCommitInterceptor
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
 				backingTokenRels,
-				new ChangeSummaryManager<>(),
-				tokenRelsCommitInterceptor);
+				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor();
+		tokenRelsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
 		return tokenRelsLedger;
 	}
 
@@ -164,14 +140,17 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final AccountsCommitInterceptor accountsCommitInterceptor
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
-				new ChangeSummaryManager<>(),
-				accountsCommitInterceptor);
+				new ChangeSummaryManager<>());
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor();
+		accountsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+		return accountsLedger;
 	}
 
 	@Provides

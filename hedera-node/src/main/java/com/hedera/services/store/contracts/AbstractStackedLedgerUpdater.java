@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -41,9 +42,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
 	protected AbstractStackedLedgerUpdater(
 			final AbstractLedgerWorldUpdater<W, A> world,
-			final WorldLedgers trackingLedgers
-	) {
-		super(world, trackingLedgers);
+			final WorldLedgers trackingLedgers,
+			final SideEffectsTracker sideEffectsTracker
+			) {
+		super(world, trackingLedgers, sideEffectsTracker);
 	}
 
 	/**

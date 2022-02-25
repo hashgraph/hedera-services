@@ -21,6 +21,7 @@ package com.hedera.services.queries.contract;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -107,13 +108,15 @@ class ContractCallLocalAnswerTest {
 	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalAnswer(
-				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
+				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor, sideEffectsTracker);
 	}
 
 	@Test

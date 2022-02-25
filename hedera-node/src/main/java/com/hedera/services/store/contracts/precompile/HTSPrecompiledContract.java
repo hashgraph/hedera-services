@@ -198,6 +198,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final Provider<FeeCalculator> feeCalculator;
 	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
+	private SideEffectsTracker sideEffectsTracker;
 	private final PrecompilePricingUtils precompilePricingUtils;
 
 	@Inject
@@ -342,6 +343,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@SuppressWarnings("rawtypes")
 	protected Bytes computeInternal(final MessageFrame frame) {
 		final var updater = (AbstractLedgerWorldUpdater) frame.getWorldUpdater();
+		this.sideEffectsTracker = sideEffectsFactory.get();
+		updater.setSideEffectsTracker(sideEffectsTracker);
 		final var ledgers = updater.wrappedTrackingLedgers();
 
 		Bytes result;
@@ -505,15 +508,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var sideEffects = sideEffectsFactory.get();
 			final var accountStore = createAccountStore(ledgers);
-			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
+			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffectsTracker);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var associateLogic = associateLogicFactory.newAssociateLogic(
 					tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
 		}
 
 		@Override
@@ -554,15 +556,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var sideEffects = sideEffectsFactory.get();
 			final var accountStore = createAccountStore(ledgers);
-			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffects);
+			final var tokenStore = createTokenStore(ledgers, accountStore, sideEffectsTracker);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
 					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
 		}
 
 		@Override
@@ -609,9 +610,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var sideEffects = sideEffectsFactory.get();
 			final var scopedAccountStore = createAccountStore(ledgers);
-			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffectsTracker);
 			final var mintLogic = mintLogicFactory.newMintLogic(validator, scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
@@ -622,7 +622,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
 		}
 
 		@Override
@@ -697,11 +697,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(assessmentStatus == OK, assessmentStatus);
 			var changes = impliedTransfers.getAllBalanceChanges();
 
-			final var sideEffects = sideEffectsFactory.get();
 			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
 					ids,
 					validator,
-					sideEffects,
+					sideEffectsTracker,
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
@@ -709,7 +708,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var transferLogic = transferLogicFactory.newLogic(
 					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
-					sideEffects,
+					sideEffectsTracker,
 					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
 					validator,
@@ -743,7 +742,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			transferLogic.doZeroSum(changes);
 
 			return creator.createSuccessfulSyntheticRecord(
-					impliedTransfers.getAssessedCustomFees(), sideEffects, EMPTY_MEMO);
+					impliedTransfers.getAssessedCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 		}
 
 		private void extrapolateDetailsFromSyntheticTxn() {
@@ -862,9 +861,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var sideEffects = sideEffectsFactory.get();
 			final var scopedAccountStore = createAccountStore(ledgers);
-			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffects);
+			final var scopedTokenStore = createTokenStore(ledgers, scopedAccountStore, sideEffectsTracker);
 			final var burnLogic = burnLogicFactory.newBurnLogic(scopedTokenStore, scopedAccountStore);
 
 			/* --- Execute the transaction and capture its results --- */
@@ -874,7 +872,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
 		}
 
 		@Override

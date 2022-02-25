@@ -20,12 +20,10 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapTestAccounts;
-import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.TestAccountCommitInterceptor;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,8 +66,7 @@ class LedgerImplBackingStoreTest {
 				TestAccountProperty.class,
 				TestAccount::new,
 				backingTestAccounts,
-				new ChangeSummaryManager<>(),
-				new TestAccountCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 	}
 
 	@Test
@@ -313,8 +310,7 @@ class LedgerImplBackingStoreTest {
 				TestAccountProperty.class,
 				TestAccount::new,
 				ledger,
-				new ChangeSummaryManager<>(),
-				new TestAccountCommitInterceptor(new SideEffectsTracker()));
+				new ChangeSummaryManager<>());
 	}
 
 	private void givenMockSubject() {

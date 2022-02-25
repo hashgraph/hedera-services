@@ -83,14 +83,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private boolean isInTransaction = false;
 	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
-	private final CommitInterceptor<K, A, P> commitInterceptor;
+	private CommitInterceptor<K, A, P> commitInterceptor;
 
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
 			BackingStore<K, A> entities,
-			ChangeSummaryManager<A, P> changeManager,
-			CommitInterceptor<K, A, P> commitInterceptor
+			ChangeSummaryManager<A, P> changeManager
 	) {
 		this.entities = entities;
 		this.allProps = propertyType.getEnumConstants();
@@ -98,13 +97,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.propertyType = propertyType;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
-		this.commitInterceptor = commitInterceptor;
 
 		if (entities instanceof TransactionalLedger) {
 			this.entitiesLedger = (TransactionalLedger<K, P, A>) entities;
 		} else {
 			this.entitiesLedger = null;
 		}
+	}
+
+	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
 	}
 
 	/**
@@ -122,15 +124,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
 			final TransactionalLedger<K, P, A> sourceLedger
-	) {
+			) {
 		Objects.requireNonNull(sourceLedger);
 
 		final var wrapper = new TransactionalLedger<>(
 				sourceLedger.getPropertyType(),
 				sourceLedger.getNewEntity(),
 				sourceLedger,
-				sourceLedger.getChangeManager(),
-				sourceLedger.getCommitInterceptor());
+				sourceLedger.getChangeManager());
 		wrapper.begin();
 		return wrapper;
 	}

@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -71,7 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -93,6 +93,8 @@ class HederaWorldStateTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -105,7 +107,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian, sideEffectsTracker);
 	}
 
 	@Test
@@ -407,7 +409,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void failsFastIfDeletionsHappenOnStaticWorld() {
-		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
+		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess), sideEffectsTracker);
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
@@ -604,7 +606,7 @@ class HederaWorldStateTest {
 	}
 
 	private void givenNonNullWorldLedgers() {
-		given(worldLedgers.wrapped()).willReturn(worldLedgers);
+		given(worldLedgers.wrapped(sideEffectsTracker)).willReturn(worldLedgers);
 		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
 	}
 }
