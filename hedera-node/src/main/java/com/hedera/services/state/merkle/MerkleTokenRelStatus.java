@@ -37,7 +37,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
-	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+	static final int RELEASE_0240_VERSION = 4;
+	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
@@ -102,6 +103,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
 		}
+		if (version >= RELEASE_0240_VERSION) {
+			nextKey = in.readLong();
+			prevKey = in.readLong();
+		}
 	}
 
 	@Override
@@ -111,6 +116,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		out.writeBoolean(kycGranted);
 		out.writeBoolean(automaticAssociation);
 		out.writeLong(numbers);
+		out.writeLong(nextKey);
+		out.writeLong(prevKey);
 	}
 
 	/* --- Object --- */
@@ -128,7 +135,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				&& this.frozen == that.frozen
 				&& this.kycGranted == that.kycGranted
 				&& this.numbers == that.numbers
-				&& this.automaticAssociation == that.automaticAssociation;
+				&& this.automaticAssociation == that.automaticAssociation
+				&& this.nextKey == that.nextKey
+				&& this.prevKey == that.prevKey;
 	}
 
 	@Override
@@ -199,6 +208,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.add("hasKycGranted", kycGranted)
 				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
 				.add("isAutomaticAssociation", automaticAssociation)
+				.add("nextKey", nextKey + " <-> " + asRelationshipLiteral(nextKey))
+				.add("prevKey", prevKey + " <-> " + asRelationshipLiteral(prevKey))
 				.toString();
 	}
 
@@ -228,60 +239,4 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	public void setNextKey(@NotNull final EntityNumPair nextKey) {
 		this.nextKey = nextKey.value();
 	}
-//
-//	/* --- MapValueListNode --- */
-//	@Override
-//	public EntityNumPair prevKey() {
-//		return keys[PREV_INDEX];
-//	}
-//
-//	@Override
-//	public EntityNumPair nextKey() {
-//		return keys[NEXT_INDEX];
-//	}
-//
-//	@Override
-//	public void setPrevKey(@Nullable final EntityNumPair prevKey) {
-//		keys[PREV_INDEX] = prevKey;
-//	}
-//
-//	@Override
-//	public void setNextKey(@Nullable final EntityNumPair nextKey) {
-//		keys[NEXT_INDEX] = nextKey;
-//	}
-//
-//	@Override
-//	public void serializeValueTo(final SerializableDataOutputStream out) throws IOException {
-//		out.writeSerializableList(Arrays.asList(keys), true, true);
-//		serialize(out);
-//	}
-//
-//	@Override
-//	public void deserializeValueFrom(final SerializableDataInputStream in, final int version) throws IOException {
-//		final List<EntityNumPair> wrappedKeys = in.readSerializableList(3);
-//		keys = orderedKeys(wrappedKeys.get(0), wrappedKeys.get(1), wrappedKeys.get(2));
-//		deserialize(in, version);
-//	}
-//
-//	@Override
-//	public MerkleTokenRelStatus newValueCopyOf(final MerkleTokenRelStatus that) {
-//		final var copy = new MerkleTokenRelStatus(
-//				that.getBalance(),
-//				that.isFrozen(),
-//				that.isKycGranted(),
-//				that.isAutomaticAssociation(),
-//				that.numbers);
-//		copy.setKeys(that.getKeys());
-//		return copy;
-//	}
-//
-//	@Override
-//	public MerkleTokenRelStatus self() {
-//		return this;
-//	}
-//
-//	/* --- Internal helpers -- */
-//	private EntityNumPair[] orderedKeys(EntityNumPair... k123) {
-//		return k123;
-//	}
 }

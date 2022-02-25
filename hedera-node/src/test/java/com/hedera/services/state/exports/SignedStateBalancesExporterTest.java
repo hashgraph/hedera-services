@@ -138,6 +138,9 @@ class SignedStateBalancesExporterTest {
 	void setUp() throws ConstructableRegistryException {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+		final var secondNonNodeDelTokenAssociationKey = fromAccountTokenRel(secondNonNode, theDeletedToken);
+		final var secondNonNodeTokenAssociationKey = fromAccountTokenRel(secondNonNode, theToken);
+
 
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
 		anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
@@ -146,6 +149,7 @@ class SignedStateBalancesExporterTest {
 				.balance(secondNonNodeAccountBalance)
 				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
+		secondNonNodeAccount.setLastAssociatedToken(secondNonNodeTokenAssociationKey);
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
@@ -161,12 +165,16 @@ class SignedStateBalancesExporterTest {
 		tokens.put(fromTokenId(theToken), token);
 		tokens.put(fromTokenId(theDeletedToken), deletedToken);
 
-		tokenRels.put(
-				fromAccountTokenRel(secondNonNode, theToken),
-				new MerkleTokenRelStatus(secondNonNodeTokenBalance, false, true, false));
-		tokenRels.put(
-				fromAccountTokenRel(secondNonNode, theDeletedToken),
-				new MerkleTokenRelStatus(secondNonNodeDeletedTokenBalance, false, true, false));
+		final var secondNonNodeTokenAssociation = new MerkleTokenRelStatus(secondNonNodeTokenBalance, false, true, false);
+		secondNonNodeTokenAssociation.setKey(secondNonNodeTokenAssociationKey);
+
+		final var secondNonNodeDelTokenAssociation = new MerkleTokenRelStatus(secondNonNodeDeletedTokenBalance, false, true, false);
+		secondNonNodeDelTokenAssociation.setKey(secondNonNodeDelTokenAssociationKey);
+		secondNonNodeDelTokenAssociation.setPrevKey(secondNonNodeTokenAssociationKey);
+		secondNonNodeTokenAssociation.setNextKey(secondNonNodeDelTokenAssociationKey);
+
+		tokenRels.put( secondNonNodeTokenAssociationKey, secondNonNodeTokenAssociation);
+		tokenRels.put( secondNonNodeDelTokenAssociationKey, secondNonNodeDelTokenAssociation);
 
 		assurance = mock(DirectoryAssurance.class);
 

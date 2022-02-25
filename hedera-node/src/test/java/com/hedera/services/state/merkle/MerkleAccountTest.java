@@ -30,6 +30,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
@@ -76,6 +77,7 @@ class MerkleAccountTest {
 	private static final long otherExpiry = 7_234_567L;
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
+	private static final EntityNumPair lastAssociationKey =  EntityNumPair.fromLongs(123, 456);
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
@@ -119,6 +121,7 @@ class MerkleAccountTest {
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				nftAllowances);
+		state.setLastAssociatedToken(lastAssociationKey.value());
 
 		subject = new MerkleAccount(List.of(state, payerRecords));
 		subject.setNftsOwned(2L);
@@ -161,7 +164,7 @@ class MerkleAccountTest {
 	@Test
 	void merkleMethodsWork() {
 		assertEquals(
-				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
+				MerkleAccount.ChildIndices.NUM_0240_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -200,6 +203,7 @@ class MerkleAccountTest {
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
 		assertEquals(state.getNftAllowances().entrySet(), subject.getNftAllowances().entrySet());
+		assertEquals(state.getLastAssociatedToken(), subject.getLastAssociatedToken().value());
 	}
 
 	@Test
@@ -235,6 +239,7 @@ class MerkleAccountTest {
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
 		subject.setNftAllowances(nftAllowances);
+		subject.setLastAssociatedToken(lastAssociationKey);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -254,6 +259,7 @@ class MerkleAccountTest {
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
 		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
 		verify(delegate).setNftAllowances(nftAllowances);
+		verify(delegate).setLastAssociatedToken(lastAssociationKey.value());
 	}
 
 	@Test

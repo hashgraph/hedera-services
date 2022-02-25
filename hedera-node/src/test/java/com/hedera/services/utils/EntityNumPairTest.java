@@ -103,6 +103,7 @@ class EntityNumPairTest {
 		final var modelRel = new TokenRelationship(
 				new Token(new Id(0, 0, 2)),
 				new Account(new Id(0, 0, 1)));
+		modelRel.setKey(expected.value());
 
 		final var actual = EntityNumPair.fromModelRel(modelRel);
 

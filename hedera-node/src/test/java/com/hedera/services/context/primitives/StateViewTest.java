@@ -81,6 +81,7 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,6 +159,8 @@ class StateViewTest {
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
+	private final EntityNumPair tokenAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum());
+	private final EntityNumPair nftAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), nftTokenId.getTokenNum());
 	private final byte[] cidAddress = asEvmAddress(0, 0, cid.getContractNum());
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
@@ -187,8 +190,11 @@ class StateViewTest {
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
+	private MerkleTokenRelStatus tokenAccountRel;
+	private MerkleTokenRelStatus nftAccountRel;
 
 	private MerkleToken token;
+	private MerkleToken nft;
 	private MerkleSchedule schedule;
 	private MerkleAccount contract;
 	private MerkleAccount tokenAccount;
@@ -237,6 +243,7 @@ class StateViewTest {
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
+		tokenAccount.setLastAssociatedToken(tokenAssociationId);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -256,32 +263,31 @@ class StateViewTest {
 
 		topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
 
+		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
+		tokenAccountRel.setKey(tokenAssociationId);
+		tokenAccountRel.setNextKey(nftAssociationId);
+
+		nftAccountRel = new MerkleTokenRelStatus(2L, false, true, false);
+		tokenAccountRel.setKey(nftAssociationId);
+		tokenAccountRel.setPrevKey(tokenAssociationId);
+
 		tokenRels = new MerkleMap<>();
-		tokenRels.put(
-				EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum()),
-				new MerkleTokenRelStatus(123L, false, true, true));
+		tokenRels.put(tokenAssociationId, tokenAccountRel);
+		tokenRels.put(nftAssociationId, nftAccountRel);
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
-				new EntityId(0, 0, 3));
-		token.setMemo(tokenMemo);
-		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
-		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
-		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
-		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
-		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
-		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
-		token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
-		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
-		token.setExpiry(expiry);
-		token.setAutoRenewPeriod(autoRenewPeriod);
-		token.setDeleted(true);
-		token.setPaused(true);
+				EntityId.fromGrpcTokenId(tokenId));
+		setUpToken(token);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
-		token.setSupplyType(TokenSupplyType.FINITE);
-		token.setFeeScheduleFrom(grpcCustomFees);
+
+		nft = new MerkleToken(Long.MAX_VALUE, 100, 1,
+				"UnfrozenToken", "UnfrozenTokenName", true, true,
+				EntityId.fromGrpcTokenId(nftTokenId));
+		setUpToken(nft);
+		nft.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		scheduleStore = mock(ScheduleStore.class);
 		final var scheduleMemo = "For what but eye and ear";
@@ -341,6 +347,24 @@ class StateViewTest {
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
+	}
+
+	private void setUpToken(final MerkleToken token) throws DecoderException {
+		token.setMemo(tokenMemo);
+		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
+		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
+		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
+		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
+		token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
+		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
+		token.setExpiry(expiry);
+		token.setAutoRenewPeriod(autoRenewPeriod);
+		token.setDeleted(true);
+		token.setPaused(true);
+		token.setSupplyType(TokenSupplyType.FINITE);
+		token.setFeeScheduleFrom(grpcCustomFees);
 	}
 
 	@AfterEach
@@ -618,8 +642,10 @@ class StateViewTest {
 	void getTokenRelationship() {
 		final var targetId = EntityNum.fromAccountId(tokenAccountId);
 		given(tokenStore.get(tokenId)).willReturn(token);
+		given(tokenStore.get(nftTokenId)).willReturn(token);
 		given(contracts.get(targetId)).willReturn(tokenAccount);
 		given(tokenStore.exists(tokenId)).willReturn(true);
+		given(tokenStore.exists(nftTokenId)).willReturn(true);
 
 		List<TokenRelationship> expectedRels = List.of(
 				TokenRelationship.newBuilder()
@@ -629,6 +655,15 @@ class StateViewTest {
 						.setKycStatus(TokenKycStatus.Granted)
 						.setFreezeStatus(TokenFreezeStatus.Unfrozen)
 						.setAutomaticAssociation(true)
+						.setDecimals(1)
+						.build(),
+				TokenRelationship.newBuilder()
+						.setTokenId(nftTokenId)
+						.setSymbol("UnfrozenToken")
+						.setBalance(2L)
+						.setKycStatus(TokenKycStatus.Granted)
+						.setFreezeStatus(TokenFreezeStatus.Unfrozen)
+						.setAutomaticAssociation(false)
 						.setDecimals(1)
 						.build());
 

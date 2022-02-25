@@ -57,7 +57,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	private static final int RELEASE_090_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	private static final int RELEASE_0240_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
@@ -77,8 +78,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public static final class ChildIndices {
 		private static final int STATE = 0;
 		private static final int RELEASE_090_RECORDS = 1;
-		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
+		static final int NUM_0240_CHILDREN = 2;
 
 		private ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
@@ -91,7 +92,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -114,7 +115,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_090_CHILDREN;
+		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -178,18 +179,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
-	// tokens() should not return MerkleAccountTokens anymore. But should give us a list of tokenIds from a
-	// BaseMapValueLinkedList<EntityNumPair, MerkleTokenRelNode, MerkleTokenRelStatus>
-
-//	public MerkleAccountTokens tokens() {
-//		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
-//	}
-//
-//	public void setTokens(final MerkleAccountTokens tokens) {
-//		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
-//		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
-//	}
-
 	/* ----  Bean  ---- */
 
 	public long getNftsOwned() {
@@ -230,12 +219,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public EntityNumPair getLastAssociatedToken() {
-		return state().getLastAssociatedToken();
+		return new EntityNumPair(state().getLastAssociatedToken());
 	}
 
 	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
 		throwIfImmutable("Cannot change this account's lastAssociatedToken if it is immutable");
-		state().setLastAssociatedToken(lastAssociatedToken);
+		state().setLastAssociatedToken(lastAssociatedToken.value());
 	}
 
 	public long getBalance() {

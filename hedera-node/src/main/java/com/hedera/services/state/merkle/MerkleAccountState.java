@@ -28,7 +28,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -48,7 +47,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAuto
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
@@ -67,7 +66,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
 	static final int RELEASE_0230_VERSION = 10;
-	private static final int CURRENT_VERSION = RELEASE_0230_VERSION;
+	static final int RELEASE_0240_VERSION = 11;
+	private static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -89,7 +89,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
-	private EntityNumPair lastAssociatedToken = MISSING_NUM_PAIR;
+	private long lastAssociatedToken;
 
 	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
 	// be modified to use MapValueLinkedList in the future
@@ -180,6 +180,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			nftAllowances = deserializeNftAllowances(in);
 		}
+		if (version >= RELEASE_0240_VERSION) {
+			lastAssociatedToken = in.readLong();
+		}
 	}
 
 	@Override
@@ -199,6 +202,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
 		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+		out.writeLong(lastAssociatedToken);
 	}
 
 	/* --- Copyable --- */
@@ -253,7 +257,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
-				Objects.equals(this.nftAllowances, that.nftAllowances);
+				Objects.equals(this.nftAllowances, that.nftAllowances) &&
+				this.lastAssociatedToken == that.lastAssociatedToken;
 	}
 
 	@Override
@@ -274,7 +279,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				alias,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				nftAllowances,
+				lastAssociatedToken);
 	}
 
 	/* --- Bean --- */
@@ -299,6 +305,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
+				.add("lastAssociation", lastAssociatedToken + "<->" + asRelationshipLiteral(lastAssociatedToken))
 				.toString();
 	}
 
@@ -408,11 +415,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.nftsOwned = nftsOwned;
 	}
 
-	public EntityNumPair getLastAssociatedToken() {
+	public long getLastAssociatedToken() {
 		return lastAssociatedToken;
 	}
 
-	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
+	public void setLastAssociatedToken(final long lastAssociatedToken) {
 		assertMutable("lastAssociatedToken");
 		this.lastAssociatedToken = lastAssociatedToken;
 	}

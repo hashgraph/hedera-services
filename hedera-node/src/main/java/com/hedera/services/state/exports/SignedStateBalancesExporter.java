@@ -235,15 +235,14 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	private void addTokenBalances(
-			AccountID id,
-			MerkleAccount account,
-			SingleAccountBalances.Builder sabBuilder,
-			MerkleMap<EntityNum, MerkleToken> tokens,
-			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
+			final AccountID id,
+			final MerkleAccount account,
+			final SingleAccountBalances.Builder sabBuilder,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		var associatedTokens = getAssociatedTokens(tokenAssociations, account);
-		for (TokenID tokenId : associatedTokens) {
-			var token = tokens.get(fromTokenId(tokenId));
+		for (final var tokenId : getAssociatedTokens(tokenAssociations, account)) {
+			final var token = tokens.get(fromTokenId(tokenId));
 			if (token != null) {
 				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
 				sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
