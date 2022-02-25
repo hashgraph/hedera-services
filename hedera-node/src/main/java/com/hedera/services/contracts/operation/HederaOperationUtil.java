@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -41,7 +40,6 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import javax.inject.Inject;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
