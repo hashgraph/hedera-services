@@ -67,7 +67,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile()
 		);

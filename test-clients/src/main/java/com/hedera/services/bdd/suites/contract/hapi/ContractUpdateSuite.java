@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.contract.hapi;
 
 /*-
  * ‌
@@ -70,7 +70,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						updateWithBothMemoSettersWorks(),
 						updatingExpiryWorks(),

@@ -146,7 +146,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
 				HSCS_KEY_1(),
 				HSCS_KEY_2(),

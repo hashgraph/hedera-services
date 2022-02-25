@@ -55,7 +55,7 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 	private static final AtomicInteger fileNumber = new AtomicInteger(0);
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runCreateFiles()
 		);

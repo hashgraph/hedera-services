@@ -176,7 +176,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		switch (action) {
 			case DOWNLOAD:
 				return List.of(downloadTargetAsHumanFriendly());

@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -76,6 +77,7 @@ class ExpandHandleSpanTest {
 		assertThrows(InvalidProtocolBufferException.class, ()  -> subject.accessorFor(invalidTxn));
 	}
 
+	@Disabled
 	@Test
 	void expandsOnTracking() throws InvalidProtocolBufferException {
 		// when:
