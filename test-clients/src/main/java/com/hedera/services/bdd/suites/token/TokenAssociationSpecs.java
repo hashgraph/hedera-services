@@ -100,16 +100,16 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
-						dissociateHasExpectedSemantics(),
-						associatedContractsMustHaveAdminKeys(),
-						expiredAndDeletedTokensStillAppearInContractInfo(),
-						dissociationFromExpiredTokensAsExpected(),
-						accountInfoQueriesAsExpected(),
-						handlesUseOfDefaultTokenId(),
-						contractInfoQueriesAsExpected(),
-						dissociateHasExpectedSemanticsForDeletedTokens(),
-						dissociateHasExpectedSemanticsForDissociatedContracts(),
-						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+//						dissociateHasExpectedSemantics(),
+//						associatedContractsMustHaveAdminKeys(),
+//						expiredAndDeletedTokensStillAppearInContractInfo(),
+//						dissociationFromExpiredTokensAsExpected(),
+//						accountInfoQueriesAsExpected(),
+//						handlesUseOfDefaultTokenId(),
+//						contractInfoQueriesAsExpected(),
+//						dissociateHasExpectedSemanticsForDeletedTokens(),
+//						dissociateHasExpectedSemanticsForDissociatedContracts(),
+//						canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
 				}
 		);
 	}
@@ -547,7 +547,17 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 										relationshipWith(VANILLA_TOKEN)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
-								.logged()
+								.logged(),
+						cryptoCreate("test"),
+						tokenAssociate("test", KNOWABLE_TOKEN),
+						tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+						tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
+						tokenAssociate("test", VANILLA_TOKEN),
+						getAccountInfo("test").logged(),
+						tokenDissociate("test", VANILLA_TOKEN),
+						getAccountInfo("test").logged(),
+						tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
+						getAccountInfo("test").logged()
 				);
 	}
 
