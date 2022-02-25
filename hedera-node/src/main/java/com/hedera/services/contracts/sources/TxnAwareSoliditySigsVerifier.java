@@ -82,6 +82,11 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		final var entityNum = simpleId.asEntityNum();
 		final var account = accounts.get().get(entityNum);
 		validateTrue(account != null, INVALID_ACCOUNT_ID);
+
+		if (accountAddress.equals(activeContract)) {
+			return true;
+		}
+
 		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract, aliases);
 	}
 
