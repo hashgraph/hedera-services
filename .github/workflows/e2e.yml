@@ -1,6 +1,11 @@
 name: E2E Tests
 
-on: [push]
+on:
+  pull_request:
+    branches: [ master, release/** ]
+  push:
+    branches: [ master, release/** ]
+    tags: [ v* ]
 
 jobs:
   Run-E2E-Tests:
