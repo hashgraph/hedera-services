@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -73,11 +74,13 @@ class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
-	private final Id id = new Id(1, 2, 3);
+	private final Id tokenId = new Id(1, 2, 3);
 	private final Id treasuryId = new Id(0, 0, 0);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
+	private final EntityNumPair treasuryAssociationKey = EntityNumPair.fromLongs(treasuryId.num(), tokenId.num());
+	private final EntityNumPair nonTreasuryAssociationKey = EntityNumPair.fromLongs(nonTreasuryId.num(), tokenId.num());
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
@@ -85,14 +88,16 @@ class TokenTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new Token(id);
+		subject = new Token(tokenId);
 		subject.initTotalSupply(initialSupply);
 		subject.setTreasury(treasuryAccount);
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		treasuryRel.setAutomaticAssociation(true);
+		treasuryRel.setKey(treasuryAssociationKey.value());
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+		nonTreasuryRel.setKey(nonTreasuryAssociationKey.value());
 	}
 
 	@Test
@@ -168,7 +173,7 @@ class TokenTest {
 						.build())
 				.build();
 
-		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+		subject = Token.fromGrpcOpAndMeta(tokenId, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
 
 		assertEquals("bitcoin", subject.getName());
 		assertEquals(123L, subject.getExpiry());
@@ -188,6 +193,7 @@ class TokenTest {
 		assertNotNull(rel);
 		assertFalse(rel.isFrozen());
 		assertTrue(rel.isKycGranted());
+		assertEquals(treasuryAssociationKey.value(), rel.getKey());
 	}
 
 	@Test
@@ -466,8 +472,6 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 
 		final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
-		final var owner = nonTreasuryAccount.getId();
-		final var uniqueToken = new UniqueToken(id, 1L, owner);
 		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
 
 		final var ownershipTracker = mock(OwnershipTracker.class);
@@ -602,10 +606,10 @@ class TokenTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Token{id=Id[shard=1, realm=2, num=3], type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id[shard=0, realm=0, num=0], expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
+				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances={}, " +
-				"fungibleTokenAllowances={}, nftAllowances={}}, autoRenewAccount=null, " +
+				"fungibleTokenAllowances={}, nftAllowances={}, lastAssociatedToken=null}, autoRenewAccount=null, " +
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
 				"pauseKey=<N/A>, paused=false}";
 

@@ -551,11 +551,6 @@ public class TypedTokenStore {
 		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
 	}
 
-//	public TokenRelationship loadTokenRelationShip(Account account, Token token) {
-//		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
-//		return buildTokenRelationship(token, account, merkleTokenRel);
-//	}
-
 	@FunctionalInterface
 	public interface LegacyTreasuryAdder {
 		void perform(final AccountID aId, final TokenID tId);

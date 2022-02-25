@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ class TokenRelationshipTest {
 	private final long balance = 1_234L;
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+	private final EntityNumPair key = new EntityNumPair(1234566);
+	private final EntityNumPair nextKey = new EntityNumPair(1234567);
+	private final EntityNumPair prevKey = new EntityNumPair(1234565);
 
 	private Token token;
 	private Account account;
@@ -54,9 +58,13 @@ class TokenRelationshipTest {
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
+		account.setLastAssociatedToken(key);
 
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
+		subject.setKey(key.value());
+		subject.setNextKey(nextKey.value());
+		subject.setPrevKey(prevKey.value());
 	}
 
 	@Test
@@ -97,15 +105,14 @@ class TokenRelationshipTest {
 	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id[shard=1, realm=0, " +
-				"num=4321]," +
+		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321," +
 				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}}, " +
-				"token=Token{id=Id[shard=0, realm=0, num=1234], type=null, " +
-				"deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>," +
-				" frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}, " +
-				"balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=false}";
+				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}, " +
+				"lastAssociatedToken=PermHashLong(0, 1234566)}, " +
+				"token=Token{id=0.0.1234, type=null, deleted=false, autoRemoved=false, treasury=null, " +
+				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
+				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false, " +
+				"kycGranted=false, isAutomaticAssociation=false, key=1234566, nextKey=1234567, prevKey=1234565}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -237,6 +244,9 @@ class TokenRelationshipTest {
 	void testHashCode() {
 		var rel = new TokenRelationship(token, account);
 		rel.initBalance(balance);
+		rel.setPrevKey(prevKey.value());
+		rel.setKey(key.value());
+		rel.setNextKey(nextKey.value());
 		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 

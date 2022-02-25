@@ -241,7 +241,26 @@ public class TokenRelationship {
 		collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || !obj.getClass().equals(TokenRelationship.class)) {
+			return false;
+		}
+
+		final var that = (TokenRelationship) obj;
+		return new EqualsBuilder()
+				.append(notYetPersisted, that.notYetPersisted)
+				.append(account, that.account)
+				.append(balance, that.balance)
+				.append(balanceChange, that.balanceChange)
+				.append(frozen, that.frozen)
+				.append(kycGranted, that.kycGranted)
+				.append(automaticAssociation, that.automaticAssociation)
+				.append(key, that.key)
+				.append(nextKey, that.nextKey)
+				.append(prevKey, that.prevKey)
+				.isEquals();
 	}
 
 	@Override
@@ -260,6 +279,9 @@ public class TokenRelationship {
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)
 				.add("isAutomaticAssociation", automaticAssociation)
+				.add("key", key)
+				.add("nextKey", nextKey)
+				.add("prevKey", prevKey)
 				.toString();
 	}
 }

@@ -144,12 +144,25 @@ class TypedTokenStoreTest {
 		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
+	@Test
+	void loadsExpectedLatestRelationShipFromAccountsLastAssociatedToken() {
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+		givenToken(merkleTokenId, merkleToken);
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
+		miscAccount.setLastAssociatedToken(miscTokenRelId);
+
+		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
+
+		assertEquals(miscTokenRel, actualTokenRel);
+	}
+
 	/* --- Token relationship saving --- */
 	@Test
 	void persistsExtantTokenRelAsExpected() {
 		// setup:
 		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted, automaticAssociation);
-
+		expectedReplacementTokenRel.setKey(miscTokenRelId);
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
 
@@ -196,10 +209,10 @@ class TypedTokenStoreTest {
 	void persistsNewTokenRelAsExpected() {
 		// setup:
 		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
-
+		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
-
+		newTokenRel.setKey(miscTokenRelId.value());
 		// when:
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
@@ -565,11 +578,17 @@ class TypedTokenStoreTest {
 
 	private void setupTokenRel() {
 		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+		miscTokenMerkleRel.setKey(miscTokenRelId);
+		miscTokenMerkleRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenMerkleRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
+		miscTokenRel.setKey(miscTokenRelId.value());
+		miscTokenRel.setPrevKey(0L);
+		miscTokenRel.setNextKey(0L);
 	}
 
 	private final long expiry = 1_234_567L;
