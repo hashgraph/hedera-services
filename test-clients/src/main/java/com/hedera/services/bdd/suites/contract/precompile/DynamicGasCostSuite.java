@@ -51,9 +51,12 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
@@ -63,10 +66,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_GET_BYTECODE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OUTER_CREATOR_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
@@ -76,6 +78,8 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_MINT_NFT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
@@ -90,6 +94,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CREATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_BUILD_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.START_CHAIN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -184,14 +189,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						canUseAliasesInPrecompilesAndContractKeys(),
+//						inlineCreateCanFailSafely(),
+//						inlineCreate2CanFailSafely(),
+						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}
@@ -209,6 +215,48 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				tokensTransferDynamicGasCostPrecompile(),
 				nftsTransferDynamicGasCostPrecompile()
 		);
+	}
+
+	private HapiApiSpec allLogOpcodesResolveExpectedContractId() {
+		final var tcValue = 1_234L;
+		final var creation = "creation";
+		final var initcode = "initcode";
+		final var outerCreator = "outerCreator";
+
+		final AtomicLong outerCreatorNum = new AtomicLong();
+		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+		final byte[] msg = new byte[] { (byte) 0xAB };
+		final var noisyTxn = "noisyTxn";
+
+		return defaultHapiSpec("AllLogOpcodesResolveExpectedContractId")
+				.given(
+						fileCreate(initcode).path(OUTER_CREATOR_PATH),
+						contractCreate(outerCreator)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.via(creation)
+								.exposingNumTo(outerCreatorNum::set)
+				).when(
+						contractCall(outerCreator, START_CHAIN_ABI, msg)
+								.gas(4_000_000)
+								.via(noisyTxn)
+				).then(
+						sourcing(() -> {
+							final var idOfFirstThreeLogs = "0.0." + (outerCreatorNum.get() + 1);
+							final var idOfLastTwoLogs = "0.0." + (outerCreatorNum.get() + 2);
+							return getTxnRecord(noisyTxn)
+									.andAllChildRecords()
+									.hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfLastTwoLogs),
+													logWith().contract(idOfLastTwoLogs)
+											)))).logged();
+						})
+				);
 	}
 
 	private HapiApiSpec inlineCreate2CanFailSafely() {
@@ -747,6 +795,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
 								.via(innerCreation2)),
+						sourcing(() -> {
+							final var emitterId = literalIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get());
+							return getTxnRecord(innerCreation2)
+									.hasPriority(recordWith()
+											.contractCallResult(
+													resultWith()
+															.contract(emitterId)
+															.logs(inOrder(logWith().contract(emitterId)))))
+									.andAllChildRecords().logged();
+						}),
 						captureOneChildCreate2MetaFor(
 								"Test contract create2'd via mirror address",
 								innerCreation2, tcMirrorAddr1, tcAliasAddr1),

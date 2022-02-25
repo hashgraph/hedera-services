@@ -28,12 +28,15 @@ contract SaltingCreatorFactory {
 contract SaltingCreator {
     uint public primal_foo;
 
+    event Creation(uint v);
+
     constructor(uint _primal_foo) payable {
         primal_foo = _primal_foo; 
     }
 
     function createSaltedTestContract(bytes32 salt) public {
         new TestContract{salt: salt}(address(this), primal_foo);
+        emit Creation(primal_foo);
     }
 }
 

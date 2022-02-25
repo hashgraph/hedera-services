@@ -65,10 +65,9 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
- * instantiation
- * Provides
- * a base{@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, OptionalLong)}
- * method that handles the end-to-end execution of a EVM transaction
+ * instantiation. Provides a base
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, OptionalLong, Address)}
+ * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
 	private static final int MAX_STACK_SIZE = 1024;
@@ -134,7 +133,7 @@ abstract class EvmTxProcessor {
 	 * @param sender
 	 * 		The origin {@link Account} that initiates the transaction
 	 * @param receiver
-	 * 		Receiving {@link Address}. For Create transactions, the newly created Contract address
+	 * 		the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the newly created address
 	 * @param gasPrice
 	 * 		GasPrice to use for gas calculations
 	 * @param gasLimit
@@ -151,6 +150,8 @@ abstract class EvmTxProcessor {
 	 * 		Whether or not the execution is static
 	 * @param expiry
 	 * 		In the case of Create transactions, the expiry of the top-level contract being created
+	 * @param mirrorReceiver
+	 * 		the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
 	 */
 	protected TransactionProcessingResult execute(
@@ -163,7 +164,8 @@ abstract class EvmTxProcessor {
 			final boolean contractCreation,
 			final Instant consensusTime,
 			final boolean isStatic,
-			final OptionalLong expiry
+			final OptionalLong expiry,
+			final Address mirrorReceiver
 	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
 		final Wei upfrontCost = gasCost.add(value);
@@ -248,7 +250,7 @@ abstract class EvmTxProcessor {
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getOutputData(),
-					initialFrame.getRecipientAddress());
+					mirrorReceiver);
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),

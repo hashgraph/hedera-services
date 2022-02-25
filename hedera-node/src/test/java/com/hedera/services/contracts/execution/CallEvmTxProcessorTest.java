@@ -115,6 +115,7 @@ class CallEvmTxProcessorTest {
 	void assertSuccessExecution() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
