@@ -508,9 +508,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		cryptoAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getCryptoAdjustmentsCount(),
 				"expected cryptoAllowanceCount was : " + n + " but is : " + actualRecord.getCryptoAdjustmentsCount()));
 		for (var expectedCryptoAllowance : expectedCryptoAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedCryptoAllowance.owner);
-			final var spenderId = spec.registry().getAccountID(expectedCryptoAllowance.spender);
-			final var allowance = expectedCryptoAllowance.allowance;
+			final var ownerId = spec.registry().getAccountID(expectedCryptoAllowance.owner());
+			final var spenderId = spec.registry().getAccountID(expectedCryptoAllowance.spender());
+			final var allowance = expectedCryptoAllowance.allowance();
 			boolean found = false;
 			for (var actualAllowance : actualRecord.getCryptoAdjustmentsList()) {
 				if (
@@ -527,10 +527,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		tokenAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getTokenAdjustmentsCount(),
 				"expected tokenAllowanceCount was : " + n + " but is : " + actualRecord.getTokenAdjustmentsCount()));
 		for (var expectedTokenAllowance : expectedTokenAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedTokenAllowance.owner);
-			final var tokenId = spec.registry().getTokenID(expectedTokenAllowance.token);
-			final var spenderId = spec.registry().getAccountID(expectedTokenAllowance.spender);
-			final var allowance = expectedTokenAllowance.allowance;
+			final var ownerId = spec.registry().getAccountID(expectedTokenAllowance.owner());
+			final var tokenId = spec.registry().getTokenID(expectedTokenAllowance.token());
+			final var spenderId = spec.registry().getAccountID(expectedTokenAllowance.spender());
+			final var allowance = expectedTokenAllowance.allowance();
 			boolean found = false;
 			for (var actualAllowance : actualRecord.getTokenAdjustmentsList()) {
 				if (
@@ -549,18 +549,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				"expected nftAllowanceCount was : " + n + " but is : " + actualRecord.getNftAdjustmentsCount()));
 
 		for (var expectedNftAllowance : expectedNftAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner);
-			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token);
-			final var spenderId = spec.registry().getAccountID(expectedNftAllowance.spender);
-			final var isApproveForAll = BoolValue.of(expectedNftAllowance.isApproveForAll);
-			final var serialNums = expectedNftAllowance.serialNums;
+			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner());
+			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token());
+			final var spenderId = spec.registry().getAccountID(expectedNftAllowance.spender());
+			final var isApprovedForAll = BoolValue.of(expectedNftAllowance.isApproveForAll());
+			final var serialNums = expectedNftAllowance.serialNums();
 			boolean found = false;
 			for (var actualAllowance : actualRecord.getNftAdjustmentsList()) {
 				if (
 						actualAllowance.getOwner().equals(ownerId) &&
 						actualAllowance.getTokenId().equals(tokenId) &&
 						actualAllowance.getSpender().equals(spenderId) &&
-						(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(isApproveForAll)) &&
+						(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(isApprovedForAll)) &&
 						actualAllowance.getSerialNumbersList().equals(serialNums)
 				) {
 					found = true;
@@ -568,7 +568,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 			assertTrue(found, "Couldn't find nft allowance with ->" +
 					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId +
-					" isApproveForAll : " + isApproveForAll + " serialNums : " + serialNums);
+					" isApprovedForAll : " + isApprovedForAll + " serialNums : " + serialNums);
 		}
 	}
 

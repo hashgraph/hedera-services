@@ -21,6 +21,9 @@ package com.hedera.services.usage.crypto;
  */
 
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
@@ -32,6 +35,37 @@ import java.util.Set;
 public class CryptoContextUtils {
 	private CryptoContextUtils() {
 		throw new UnsupportedOperationException("Utility class");
+	}
+
+	public static Map<Long, Long> convertToCryptoMapFromGranted(final List<GrantedCryptoAllowance> allowances) {
+		Map<Long, Long> allowanceMap = new HashMap<>();
+		for (var a : allowances) {
+			allowanceMap.put(a.getSpender().getAccountNum(), a.getAmount());
+		}
+		return allowanceMap;
+	}
+
+	public static Map<ExtantCryptoContext.AllowanceMapKey, Long> convertToTokenMapFromGranted(
+			final List<GrantedTokenAllowance> allowances) {
+		Map<ExtantCryptoContext.AllowanceMapKey, Long> allowanceMap = new HashMap<>();
+		for (var a : allowances) {
+			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+					a.getSpender().getAccountNum()), a.getAmount());
+		}
+		return allowanceMap;
+	}
+
+	public static Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> convertToNftMapFromGranted(
+			final List<GrantedNftAllowance> allowances) {
+		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> allowanceMap =
+				new HashMap<>();
+		for (var a : allowances) {
+			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+							a.getSpender().getAccountNum()),
+					new ExtantCryptoContext.AllowanceMapValue(a.getApprovedForAll(),
+							a.getSerialNumbersList()));
+		}
+		return allowanceMap;
 	}
 
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {
