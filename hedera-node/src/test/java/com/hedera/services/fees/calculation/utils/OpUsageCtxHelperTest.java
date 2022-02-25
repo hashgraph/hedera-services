@@ -20,7 +20,6 @@ package com.hedera.services.fees.calculation.utils;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
@@ -38,15 +37,15 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -195,10 +194,10 @@ class OpUsageCtxHelperTest {
 		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
 		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
 		given(mockInfo.hasProxyAccountID()).willReturn(true);
-		given(mockInfo.getCryptoAllowancesList()).willReturn(List.of(cryptoAllowance));
-		given(mockInfo.getTokenAllowancesList()).willReturn(List.of(tokenAllowance));
-		given(mockInfo.getNftAllowancesList()).willReturn(List.of(nftAllowance));
-		given(mockInfo.getNftAllowancesList()).willReturn(List.of(NftAllowance.newBuilder()
+		given(mockInfo.getGrantedCryptoAllowancesList()).willReturn(List.of(cryptoAllowance));
+		given(mockInfo.getGrantedTokenAllowancesList()).willReturn(List.of(tokenAllowance));
+		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(nftAllowance));
+		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(GrantedNftAllowance.newBuilder()
 				.setTokenId(IdUtils.asToken("0.0.1000"))
 				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
 
@@ -407,10 +406,10 @@ class OpUsageCtxHelperTest {
 	private static final TokenID token1 = asToken("0.0.100");
 	private static final TokenID token2 = asToken("0.0.200");
 	private static final AccountID ownerId = asAccount("0.0.5000");
-	private final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).setOwner(ownerId).build();
-	private final TokenAllowance tokenAllowance = TokenAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).setTokenId(token1).setOwner(ownerId).build();
-	private final NftAllowance nftAllowance = NftAllowance.newBuilder().setSpender(spender1).setOwner(ownerId)
-			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+	private final GrantedCryptoAllowance cryptoAllowance = GrantedCryptoAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).build();
+	private final GrantedTokenAllowance tokenAllowance = GrantedTokenAllowance.newBuilder().setSpender(spender1).setAmount(
+			10L).setTokenId(token1).build();
+	private final GrantedNftAllowance nftAllowance = GrantedNftAllowance.newBuilder().setSpender(spender1)
+			.setTokenId(token2).setApprovedForAll(false).addAllSerialNumbers(List.of(1L, 10L)).build();
 }
