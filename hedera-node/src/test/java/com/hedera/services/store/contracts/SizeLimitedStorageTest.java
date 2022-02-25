@@ -101,9 +101,9 @@ class SizeLimitedStorageTest {
 		subject.validateAndCommit();
 		subject.recordNewKvUsageTo(accountsLedger);
 
-		inOrder.verify(storage).remove(firstAKey);
-		inOrder.verify(storage).remove(firstBKey);
-		inOrder.verify(storage).remove(nextAKey);
+		inOrder.verify(storage).put(firstAKey, ZERO_VALUE);
+		inOrder.verify(storage).put(firstBKey, ZERO_VALUE);
+		inOrder.verify(storage).put(nextAKey, ZERO_VALUE);
 		// and:
 		inOrder.verify(accountsLedger).set(firstAccount, NUM_CONTRACT_KV_PAIRS, firstKvPairs - 2);
 		inOrder.verify(accountsLedger).set(nextAccount, NUM_CONTRACT_KV_PAIRS, nextKvPairs - 1);
