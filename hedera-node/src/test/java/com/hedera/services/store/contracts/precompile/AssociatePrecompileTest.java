@@ -246,7 +246,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -293,7 +293,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
@@ -333,7 +333,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -377,7 +377,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -422,7 +422,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
