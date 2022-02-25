@@ -159,9 +159,11 @@ class ExpiringCreationsTest {
 				sideEffectsTracker,
 				EMPTY_MEMO);
 
+		final var createdId = EntityId.fromGrpcContractId(id);
 		assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
-		assertEquals(EntityId.fromGrpcContractId(id), record.getReceiptBuilder().getContractId());
+		assertEquals(createdId, record.getReceiptBuilder().getContractId());
 		final var createFnResult = record.getContractCreateResult();
+		assertEquals(createdId, createFnResult.getContractId());
 		assertArrayEquals(addr.toArrayUnsafe(), createFnResult.getEvmAddress());
 	}
 
