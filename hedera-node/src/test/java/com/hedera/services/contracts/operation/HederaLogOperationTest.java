@@ -120,6 +120,7 @@ class HederaLogOperationTest {
 
 		given(frame.getWorldUpdater()).willReturn(updater);
 		given(updater.aliases()).willReturn(aliases);
+		given(aliases.isMirror(mirrorAddress)).willReturn(true);
 		given(aliases.resolveForEvm(nonMirrorAddress)).willReturn(mirrorAddress);
 
 		final var adequateGas = reqGas.plus(Gas.of(1));
