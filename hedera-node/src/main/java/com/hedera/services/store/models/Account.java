@@ -229,8 +229,8 @@ public class Account {
 				decrementUsedAutomaticAssocitions();
 			}
 			final var tokenId = dissociation.dissociatedTokenId();
-			final var key = EntityNumPair.fromLongs(id.num(),tokenId.num());
-			if (lastAssociatedToken.equals(key)) {
+			final var associationKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
+			if (lastAssociatedToken.equals(associationKey)) {
 				// removing the latest associated token from the account
 				final var latestRel = tokenStore.getLatestTokenRelationship(this);
 				final var nextKey = new EntityNumPair(latestRel.getNextKey());
@@ -238,7 +238,7 @@ public class Account {
 				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
 					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-					final var nextRel = tokenStore.loadTokenRelationShip(this, nextToken);
+					final var nextRel = tokenStore.loadTokenRelationship(nextToken, this);
 					lastAssociatedToken = new EntityNumPair(nextRel.getKey());
 					nextRel.setPrevKey(latestRel.getPrevKey());
 					touchedRelationships.add(nextRel);
@@ -247,17 +247,17 @@ public class Account {
 				}
 			} else {
 				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
-				final var dissociatingRel = tokenStore.loadTokenRelationShip(this, dissociation.dissociatingToken());
+				final var dissociatingRel = tokenStore.loadTokenRelationship(dissociation.dissociatingToken(), this);
 				final var prevKey = new EntityNumPair(dissociatingRel.getPrevKey());
 				final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 						Id.fromGrpcToken(prevKey.asAccountTokenRel().getRight()));
-				final var prevRel = tokenStore.loadTokenRelationShip(this, prevToken);
+				final var prevRel = tokenStore.loadTokenRelationship(prevToken, this);
 				// nextKey can be 0.
 				final var nextKey = new EntityNumPair(dissociatingRel.getNextKey());
 				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
 					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-					final var nextRel = tokenStore.loadTokenRelationShip(this, nextToken);
+					final var nextRel = tokenStore.loadTokenRelationship(nextToken, this);
 					nextRel.setPrevKey(prevKey.value());
 					touchedRelationships.add(nextRel);
 				}

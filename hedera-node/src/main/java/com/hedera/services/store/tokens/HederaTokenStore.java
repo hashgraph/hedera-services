@@ -292,9 +292,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 							tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
 							tokenRelsLedger.set(relationship, KEY, newKey);
 						} else {
-							final var old_prevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
+							final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
 							tokenRelsLedger.set(currKey.asAccountTokenRel(), PREV_KEY, newKey);
-							tokenRelsLedger.set(relationship, PREV_KEY, old_prevKey);
+							tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
 							tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
 						}
 						currKey = newKey;

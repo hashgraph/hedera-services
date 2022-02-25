@@ -31,7 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-final public class NewRels {
+public final class NewRels {
 	public static List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore) {
 		final var treasury = provisionalToken.getTreasury();
 		final Set<Id> associatedSoFar = new HashSet<>();

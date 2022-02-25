@@ -548,13 +548,13 @@ public class TypedTokenStore {
 
 	public TokenRelationship getLatestTokenRelationship(final Account account) {
 		var latestTokenId = Id.fromGrpcToken(account.getLastAssociatedToken().asAccountTokenRel().getRight());
-		return loadTokenRelationShip(account, loadPossiblyDeletedOrAutoRemovedToken(latestTokenId));
+		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
 	}
 
-	public TokenRelationship loadTokenRelationShip(Account account, Token token) {
-		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
-		return buildTokenRelationship(token, account, merkleTokenRel);
-	}
+//	public TokenRelationship loadTokenRelationShip(Account account, Token token) {
+//		final var merkleTokenRel = getMerkleTokenRelationship(token, account);
+//		return buildTokenRelationship(token, account, merkleTokenRel);
+//	}
 
 	@FunctionalInterface
 	public interface LegacyTreasuryAdder {

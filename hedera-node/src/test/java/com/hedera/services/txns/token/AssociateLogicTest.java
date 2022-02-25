@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -55,13 +54,12 @@ class AssociateLogicTest {
 	@Mock private Token secondModelToken;
 	@Mock private TokenRelationship firstModelTokenRel;
 	@Mock private TokenRelationship secondModelTokenRel;
-	@Mock private GlobalDynamicProperties dynamicProperties;
 
 	private AssociateLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		subject = new AssociateLogic(tokenStore, accountStore);
 	}
 
 	@Test
