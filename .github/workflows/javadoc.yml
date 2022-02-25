@@ -18,5 +18,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+      - name: Build Project
+        run: ./mvnw clean install -DskipTests
       - name: Generate javadocs
-        run: ./mvnw clean install javadoc:javadoc -DskipTests
+        run: ./mvnw javadoc:javadoc
