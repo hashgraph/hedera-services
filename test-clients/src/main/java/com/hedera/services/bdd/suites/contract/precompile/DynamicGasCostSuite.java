@@ -189,14 +189,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
-//						canDeleteViaAlias(),
-//						priorityAddressIsCreate2ForStaticHapiCalls(),
-//						priorityAddressIsCreate2ForInternalMessages(),
-//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-//						canUseAliasesInPrecompilesAndContractKeys(),
-//						inlineCreateCanFailSafely(),
-//						inlineCreate2CanFailSafely(),
+						create2FactoryWorksAsExpected(),
+						canDeleteViaAlias(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						canUseAliasesInPrecompilesAndContractKeys(),
+						inlineCreateCanFailSafely(),
+						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
@@ -218,14 +218,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec allLogOpcodesResolveExpectedContractId() {
-		final var tcValue = 1_234L;
 		final var creation = "creation";
 		final var initcode = "initcode";
 		final var outerCreator = "outerCreator";
 
 		final AtomicLong outerCreatorNum = new AtomicLong();
-		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
-		final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 		final byte[] msg = new byte[] { (byte) 0xAB };
 		final var noisyTxn = "noisyTxn";
 
