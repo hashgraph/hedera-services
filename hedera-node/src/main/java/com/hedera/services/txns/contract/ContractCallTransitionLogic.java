@@ -103,6 +103,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
 
+		System.out.println("=============== CALL ==================");
+		System.out.println("= params -> " + CommonUtils.hex(op.getFunctionParameters().toByteArray()));
+
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(
 				sender,

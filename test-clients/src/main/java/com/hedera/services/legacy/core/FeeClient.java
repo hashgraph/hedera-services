@@ -21,19 +21,14 @@ package com.hedera.services.legacy.core;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hederahashgraph.fee.FeeBuilder;
-import com.hederahashgraph.fee.SigValueObj;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,7 +42,7 @@ import java.util.Map;
 public class FeeClient {
 	private static int FEE_DIVISOR_TOTINYBARS = 12000;
 	private static ExchangeRate exchangeRate = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
-	private static Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = null;
+	private static Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = new HashMap<>();
 
 	private static final Logger log = LogManager.getLogger(FeeClient.class);
 
@@ -110,35 +105,38 @@ public class FeeClient {
 	}
 
 	public static long getFeeByID(HederaFunctionality hederaFunctionality) {
-		FeeBuilder crBuilder = new FeeBuilder();
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(hederaFunctionality);
-		FeeData feeMatrices = crBuilder.getCostForQueryByIDOnly();
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		FeeBuilder crBuilder = new FeeBuilder();
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(hederaFunctionality);
+//		FeeData feeMatrices = crBuilder.getCostForQueryByIDOnly();
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 10 * 100_000_000L;
 	}
 
 
 	public static long getCreateAccountFee(Transaction transaction, int payerAcctSigCount)
 			throws Exception {
-		CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.CryptoCreate);
-		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-		int signatureSize = FeeBuilder.getSignatureSize(transaction);
-		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-				signatureSize);
-		FeeData feeMatrices = crBuilder.getCryptoCreateTxFeeMatrices(txBody, sigValueObj);
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.CryptoCreate);
+//		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+//		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
+//		int signatureSize = FeeBuilder.getSignatureSize(transaction);
+//		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
+//				signatureSize);
+//		FeeData feeMatrices = crBuilder.getCryptoCreateTxFeeMatrices(txBody, sigValueObj);
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 10 * 100_000_000L;
 	}
 
 
 	public static long getCostForGettingTxRecord() {
-		CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-		FeeData feeMatrices = crBuilder.getCostTransactionRecordQueryFeeMatrices();
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.TransactionGetRecord);
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
+//		FeeData feeMatrices = crBuilder.getCostTransactionRecordQueryFeeMatrices();
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.TransactionGetRecord);
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 10 * 100_000_000L;
 	}
 
 	public static long getCostForGettingAccountInfo() {
@@ -150,40 +148,43 @@ public class FeeClient {
 	}
 
 	public static long getCostContractCallLocalFee(int funcParamSize) {
-		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
-		FeeData feeMatrices = crBuilder.getCostContractCallLocalFeeMatrices(funcParamSize);
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCallLocal);
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
+//		FeeData feeMatrices = crBuilder.getCostContractCallLocalFeeMatrices(funcParamSize);
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCallLocal);
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 10 * 100_000_000L;
 	}
 
 	public static long getCostContractCallFee(Transaction transaction, int payerAcctSigCount)
 			throws Exception {
-		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
-		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-		int signatureSize = FeeBuilder.getSignatureSize(transaction);
-		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-				signatureSize);
-		FeeData feeMatrices = crBuilder.getContractCallTxFeeMatrices(txBody, sigValueObj);
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCall);
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
+//		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+//		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
+//		int signatureSize = FeeBuilder.getSignatureSize(transaction);
+//		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
+//				signatureSize);
+//		FeeData feeMatrices = crBuilder.getContractCallTxFeeMatrices(txBody, sigValueObj);
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCall);
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 100 * 100_000_000L;
 	}
 
 
 	public static long getContractCreateFee(Transaction transaction, int payerAcctSigCount)
 			throws Exception {
-		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
-		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-		int signatureSize = FeeBuilder.getSignatureSize(transaction);
-		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-				signatureSize);
-		FeeData feeMatrices = crBuilder.getContractCreateTxFeeMatrices(txBody, sigValueObj);
-		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
-		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCreate);
-		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+//		SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
+//		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+//		int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
+//		int signatureSize = FeeBuilder.getSignatureSize(transaction);
+//		SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
+//				signatureSize);
+//		FeeData feeMatrices = crBuilder.getContractCreateTxFeeMatrices(txBody, sigValueObj);
+//		Map<HederaFunctionality, Map<SubType, FeeData>> feeSchMap = getFeeScheduleMap();
+//		Map<SubType, FeeData> feeData = feeSchMap.get(HederaFunctionality.ContractCreate);
+//		return crBuilder.getTotalFeeforRequest(feeData.get(SubType.DEFAULT), feeMatrices, exchangeRate);
+		return 100 * 100_000_000L;
 	}
 
 	public static long getMaxFee() {

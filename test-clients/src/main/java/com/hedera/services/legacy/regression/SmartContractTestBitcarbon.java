@@ -80,9 +80,12 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 	private final Logger log = LogManager.getLogger(SmartContractTestBitcarbon.class);
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
-	public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
-	public static final String JURISDICTIONS_BIN = ContractResources.JURISDICTIONS_BYTECODE_PATH;
-	public static final String MINTERS_BIN = ContractResources.MINTERS_BYTECODE_PATH;
+//	public static final String ADDRESS_BOOK_BIN = ContractResources.ADDRESS_BOOK_BYTECODE_PATH;
+	public static final String ADDRESS_BOOK_BIN = "contract/bytecodes/AddressBook.bin";
+//	public static final String JURISDICTIONS_BIN = ContractResources.JURISDICTIONS_BYTECODE_PATH;
+	public static final String JURISDICTIONS_BIN = "contract/bytecodes/Jurisdictions.bin";
+//	public static final String MINTERS_BIN = ContractResources.MINTERS_BYTECODE_PATH;
+	public static final String MINTERS_BIN = "contract/bytecodes/Minters.bin";
 
 	private static AccountID nodeAccount;
 	private static long node_account_number;
@@ -203,7 +206,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 				.getCreateContractRequestSigMap(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
 						payerAccount.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
 						nodeAccount.getShardNum(), 100l, timestamp,
-						transactionDuration, true, "", 8_500, contractFile, dataToPass, 0,
+						transactionDuration, true, "", 4_000_000, contractFile, dataToPass, 0,
 						contractAutoRenew, accountKeyPairs.get(payerAccount), "", null);
 
 		TransactionResponse response = stub.createContract(createContractRequest);
@@ -383,7 +386,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		Transaction callContractRequest = TestHelper
 				.getContractCallRequestSigMap(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
 						payerAccount.getShardNum(), node_account_number, 0l, 0l, 100l, timestamp,
-						transactionDuration, 250000, contractToCall, dataBstr, 0,
+						transactionDuration, 4_000_000, contractToCall, dataBstr, 0,
 						accountKeyPairs.get(payerAccount));
 
 		TransactionResponse response = stub.contractCallMethod(callContractRequest);
@@ -553,7 +556,8 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		channel.shutdown();
 
 		KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
-		AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, TestHelper.getCryptoMaxFee() * 10);
+		final var initialBalance = 1_000_000L * 100_000_000L;
+		AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, initialBalance);
 		Assertions.assertNotNull(crAccount);
 		Assertions.assertNotEquals(0, crAccount.getAccountNum());
 		log.info("Account created successfully: " + crAccount);

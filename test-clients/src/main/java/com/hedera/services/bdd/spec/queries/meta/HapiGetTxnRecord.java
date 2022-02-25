@@ -47,10 +47,12 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.solidity.Abi;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
@@ -125,6 +127,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Integer> tokenAllowanceCount = Optional.empty();
 	private Optional<Integer> nftAllowanceCount = Optional.empty();
 
+	private Consumer<List<?>> eventDataObserver;
+	private Predicate<Abi.Event> eventMatcher;
+	private String contractResultAbi = null;
+
 	private record ExpectedChildInfo(String aliasingKey) {}
 	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
 	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {}
@@ -152,6 +158,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
 		this.observer = Optional.of(observer);
+		return this;
+	}
+
+	public HapiGetTxnRecord exposingFilteredCallResultVia(
+			final String abi,
+			final Predicate<Abi.Event> eventMatcher,
+			final Consumer<List<?>> dataObserver
+	) {
+		this.contractResultAbi = abi;
+		this.eventMatcher = eventMatcher;
+		this.eventDataObserver = dataObserver;
+
 		return this;
 	}
 
@@ -427,6 +445,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
+
 		final var txRecord = response.getTransactionGetRecord();
 		final var actualRecord = txRecord.getTransactionRecord();
 		assertCorrectRecord(spec, actualRecord);
@@ -696,6 +715,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		if (contractResultAbi != null) {
+			exposeRequestedEventsFrom(record);
+		}
 		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
@@ -737,6 +759,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		if (saveTxnRecordToRegistry.isPresent()) {
 			spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), record);
+		}
+	}
+
+	private void exposeRequestedEventsFrom(final TransactionRecord record) {
+		final var abi = Abi.fromJson(contractResultAbi);
+		final var matcher = abi.findEvent(eventMatcher);
+		final var logs = record.getContractCallResult().getLogInfoList();
+		for (final var log : logs) {
+			final var data = log.getData().toByteArray();
+			final var topics = new byte[log.getTopicCount()][];
+			for (int i = 0, n = log.getTopicCount(); i < n; i++) {
+				topics[i] = log.getTopic(i).toByteArray();
+			}
+			final var decodedLog = matcher.decode(data, topics);
+			eventDataObserver.accept(decodedLog);
 		}
 	}
 

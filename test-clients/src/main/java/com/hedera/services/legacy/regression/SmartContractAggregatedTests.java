@@ -41,6 +41,10 @@ public class SmartContractAggregatedTests {
 	private static int numberOfReps = 1;
 
 	public static void main(String[] args) throws Exception {
+		args = new String[3];
+		args[0] = "localhost";
+		args[1] = "3";
+		args[2] = "1";
 
 		if (args.length < 3) {
 			System.out.println("Must provide all four arguments to this application.");
