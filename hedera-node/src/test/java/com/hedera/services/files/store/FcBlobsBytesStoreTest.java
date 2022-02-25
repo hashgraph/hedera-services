@@ -72,9 +72,9 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	void delegatesRemoveOfMissing() {
-		given(pathedBlobs.remove(subject.at(dataPath))).willReturn(null);
-
 		assertNull(subject.remove(dataPath));
+
+		verify(pathedBlobs).put(subject.at(dataPath), new VirtualBlobValue(new byte[0]));
 	}
 
 	@Test
