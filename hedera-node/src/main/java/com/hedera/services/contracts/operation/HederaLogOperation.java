@@ -53,7 +53,7 @@ public class HederaLogOperation extends AbstractOperation {
 		var address = aliases.resolveForEvm(addressOrAlias);
 		if (!aliases.isMirror(address)) {
 			address = UNRESOLVABLE_ADDRESS_STANDIN;
-			log.warn("Could not resolve logger address " + addressOrAlias);
+			log.warn("Could not resolve logger address {}", addressOrAlias);
 		}
 
 		final Bytes data = frame.readMemory(dataLocation, numBytes);
