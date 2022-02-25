@@ -307,4 +307,11 @@ public interface HapiPropertySource {
 						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
 				)).build();
 	}
+
+	static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
+		return HapiPropertySource.asContractString(ContractID.newBuilder()
+				.setContractNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build());
+	}
 }
