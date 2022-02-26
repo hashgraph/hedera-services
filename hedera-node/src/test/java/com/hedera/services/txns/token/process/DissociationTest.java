@@ -208,6 +208,8 @@ class DissociationTest {
 		subject.addUpdatedModelRelsTo(accum);
 
 		assertEquals(2, accum.size());
+		assertEquals(token, subject.dissociatingToken());
+		assertEquals(account, subject.dissociatingAccount());
 		assertEquals(dissociatingAccountRel.getBalanceChange(), -balance);
 		assertSame(dissociatingAccountRel, accum.get(0));
 		assertTrue(dissociatingAccountRel.isDestroyed());

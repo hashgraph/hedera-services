@@ -56,7 +56,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
 
-	private static final int RELEASE_090_VERSION = 3;
 	private static final int RELEASE_0240_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
@@ -172,11 +171,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public FCQueue<ExpirableTxnRecord> records() {
 		return getChild(ChildIndices.RELEASE_090_RECORDS);
-	}
-
-	public void setRecords(final FCQueue<ExpirableTxnRecord> payerRecords) {
-		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
 	/* ----  Bean  ---- */

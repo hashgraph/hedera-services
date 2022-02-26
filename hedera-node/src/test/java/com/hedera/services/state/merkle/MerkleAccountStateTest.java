@@ -765,6 +765,25 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	void equalsWorksForLastAssociatedToken() {
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				kvPairs,
+				cryptoAllowances,
+				fungibleTokenAllowances,
+				nftAllowances);
+		subject.setLastAssociatedToken(associationKey.value()-1);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
 	void equalsWorksForAllowances() {
 		final EntityNum spenderNum = EntityNum.fromLong(100L);
 		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
