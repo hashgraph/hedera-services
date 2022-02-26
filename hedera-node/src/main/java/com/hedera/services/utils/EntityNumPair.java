@@ -90,4 +90,18 @@ public record EntityNumPair(long value) {
 				+ ", "
 				+ BitPackUtils.unsignedLowOrder32From(value) + ")";
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || EntityNumPair.class != o.getClass()) {
+			return false;
+		}
+
+		var that = (EntityNumPair) o;
+
+		return this.value == that.value;
+	}
 }

@@ -51,15 +51,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		setupWithMockLedger();
 	}
 
-//	@Test
-//	void delegatesToSetTokens() {
-//		final var tokens = new MerkleAccountTokens();
-//
-//		subject.setAssociatedTokens(genesis, tokens);
-//
-//		verify(accountsLedger).set(genesis, TOKENS, tokens);
-//	}
-
 	@Test
 	void getsTokenBalance() {
 		final var balance = subject.getTokenBalance(misc, frozenId);

@@ -287,14 +287,6 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
-	public EntityNumPair getLatestAssociatedToken(final AccountID aId) {
-		return (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
-	}
-
-	public void setLatestAssociatedToken(final AccountID aId, final EntityNumPair key) {
-		accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, key);
-	}
-
 	public long getTokenBalance(AccountID aId, TokenID tId) {
 		var relationship = asTokenRel(aId, tId);
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
@@ -305,16 +297,12 @@ public class HederaLedger {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
 
-		final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
+		var currKey = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = new EntityNumPair(lastAssociatedToken.value());
-		// if this lastAssociatedToken == 0 then this is account has No token associations currently
-		if (!lastAssociatedToken.equals(MISSING_NUM_PAIR)) {
-			// get All the tokenIds associated by traversing the linkedList
-			while (!currKey.equals(MISSING_NUM_PAIR)) {
-				listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
-				currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
-			}
+		// get All the tokenIds associated by traversing the linkedList
+		while (!currKey.equals(MISSING_NUM_PAIR)) {
+			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
+			currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
 		}
 
 		for (TokenID tId : listOfAssociatedTokens) {

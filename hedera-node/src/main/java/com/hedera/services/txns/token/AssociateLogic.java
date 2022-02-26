@@ -49,7 +49,7 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		var modifiedTokenRelationships = account.associateWith(tokens, tokenStore, false, false);
+		var modifiedTokenRelationships = account.associateWith(tokens, tokenStore, false, true);
 
 		accountStore.commitAccount(account);
 		tokenStore.commitTokenRelationships(modifiedTokenRelationships);

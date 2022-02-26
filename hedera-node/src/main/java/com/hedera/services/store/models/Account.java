@@ -302,7 +302,7 @@ public class Account {
 	@Override
 	public String toString() {
 		final var assocTokenRepr = Optional.ofNullable(associatedTokenIds)
-				.map(tIds -> tIds.stream().map(Id::toString).collect(joining(", ")))
+				.map(tIds -> String.format("[%s]", tIds.stream().map(Id::toString).collect(joining(", "))))
 				.orElse("<N/A>");
 		return MoreObjects.toStringHelper(Account.class)
 				.add("id", id)

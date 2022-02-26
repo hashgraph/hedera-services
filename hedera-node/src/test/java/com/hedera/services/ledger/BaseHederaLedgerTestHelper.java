@@ -45,6 +45,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -67,8 +68,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -185,10 +188,14 @@ public class BaseHederaLedgerTestHelper {
 		when(accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).thenReturn(5);
 		when(accountsLedger.exists(id)).thenReturn(true);
 		// and:
+		var tokenAssociationKey = EntityNumPair.MISSING_NUM_PAIR;
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
 			var relationship = BackingTokenRels.asTokenRel(id, tId);
 			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
+			when(tokenRelsLedger.get(relationship, NEXT_KEY)).thenReturn(tokenAssociationKey);
+			tokenAssociationKey = EntityNumPair.fromLongs(id.getAccountNum(), tId.getTokenNum());
+			when(accountsLedger.get(id, LAST_ASSOCIATED_TOKEN)).thenReturn(tokenAssociationKey);
 		}
 	}
 

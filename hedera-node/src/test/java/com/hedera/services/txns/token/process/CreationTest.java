@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -79,6 +80,8 @@ class CreationTest {
 	private FcCustomFee customFee;
 	@Mock
 	private TokenRelationship newRel;
+	@Mock
+	private TokenRelationship oldRel;
 	@Mock
 	private FcTokenAssociation autoAssociation;
 	@Mock
@@ -170,10 +173,32 @@ class CreationTest {
 	void mintsInitialSupplyIfSet() {
 		givenSubjectWithEverything();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+		given(treasury.getLastAssociatedToken()).willReturn(EntityNumPair.MISSING_NUM_PAIR);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(newRel));
+		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
+
+		subject.setProvisionalId(provisionalId);
+		subject.setProvisionalToken(provisionalToken);
+		subject.setTreasury(treasury);
+		subject.setAutoRenew(autoRenew);
+
+		subject.doProvisionallyWith(now, modelFactory, listing);
+
+		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
+		verify(customFee).nullOutCollector();
+		verify(provisionalToken).mint(newRel, initialSupply, true);
+	}
+
+	@Test
+	void mintsInitialSupplyIfSetWithExistingAssociations() {
+		givenSubjectWithEverything();
+
+		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+		given(treasury.getLastAssociatedToken()).willReturn(new EntityNumPair(12345));
+		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
+		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(oldRel, newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -192,8 +217,8 @@ class CreationTest {
 	void doesntMintInitialSupplyIfNotSet() {
 		givenSubjectWithEverythingExceptInitialSupply();
 
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccount);
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
+		given(treasury.getLastAssociatedToken()).willReturn(new EntityNumPair(12345));
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
 		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(newRel));
 

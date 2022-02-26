@@ -68,8 +68,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LI
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class GetAccountBalanceAnswerTest {
 	private final String accountIdLit = "0.0.12345";
@@ -276,6 +278,9 @@ class GetAccountBalanceAnswerTest {
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
 		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
+		final var mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -299,12 +304,15 @@ class GetAccountBalanceAnswerTest {
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
 		assertEquals(wellKnownId.toGrpcAccountId(), response.getCryptogetAccountBalance().getAccountID());
+		mockedStatic.close();
 	}
 
 	@Test
 	void answersWithAccountBalance() {
 		AccountID id = asAccount(accountIdLit);
-
+		final var mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(id)
@@ -330,13 +338,16 @@ class GetAccountBalanceAnswerTest {
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
 		assertEquals(id, response.getCryptogetAccountBalance().getAccountID());
+		mockedStatic.close();
 	}
 
 	@Test
 	void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
 		// setup:
 		ContractID id = asContract(accountIdLit);
-
+		final var mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setContractID(id)
@@ -362,6 +373,7 @@ class GetAccountBalanceAnswerTest {
 		assertEquals(OK, status);
 		assertEquals(balance, answer);
 		assertEquals(asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
+		mockedStatic.close();
 	}
 
 	@Test

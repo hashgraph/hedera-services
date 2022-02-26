@@ -217,7 +217,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
 		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
-		assertEquals(newAlreadyUsedAutoAssociations, LAST_ASSOCIATED_TOKEN.getter().apply(account));
+		assertEquals(newLastAssociatedToken, LAST_ASSOCIATED_TOKEN.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

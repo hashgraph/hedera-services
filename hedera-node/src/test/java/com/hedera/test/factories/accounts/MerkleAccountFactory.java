@@ -26,7 +26,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -60,7 +59,6 @@ public class MerkleAccountFactory {
 	private Optional<Integer> maxAutoAssociations = Optional.empty();
 	private Optional<ByteString> alias = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
-	private Set<Id> assocTokens = new HashSet<>();
 	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
@@ -84,13 +82,6 @@ public class MerkleAccountFactory {
 		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
 		maxAutoAssociations.ifPresent(value::setMaxAutomaticAssociations);
 		alreadyUsedAutoAssociations.ifPresent(value::setAlreadyUsedAutomaticAssociations);
-//		var tokens = new MerkleAccountTokens();
-//		if (useNewStyleTokenIds) {
-//			tokens.associate(assocTokens);
-//		} else {
-//			tokens.associateAll(associatedTokens);
-//		}
-//		value.setTokens(tokens);
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);
@@ -126,12 +117,6 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory alias(final ByteString bytes) {
 		alias = Optional.of(bytes);
-		return this;
-	}
-
-	public MerkleAccountFactory assocTokens(final Id... tokens) {
-		useNewStyleTokenIds = true;
-		assocTokens.addAll(List.of(tokens));
 		return this;
 	}
 

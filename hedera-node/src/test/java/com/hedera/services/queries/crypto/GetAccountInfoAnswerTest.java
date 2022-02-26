@@ -134,24 +134,38 @@ class GetAccountInfoAnswerTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		tokenRels = new MerkleMap<>();
-		tokenRels.put(
-				fromAccountTokenRel(payerId, firstToken),
-				new MerkleTokenRelStatus(firstBalance, true, true, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, secondToken),
-				new MerkleTokenRelStatus(secondBalance, false, false, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, thirdToken),
-				new MerkleTokenRelStatus(thirdBalance, true, true, false));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, fourthToken),
-				new MerkleTokenRelStatus(fourthBalance, false, false, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, missingToken),
-				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
-//		var tokens = new MerkleAccountTokens();
-//		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
+		final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);
+		final var firstRelKey = fromAccountTokenRel(payerId, firstToken);
+		firstRel.setKey(firstRelKey);
+		final var secondRel = new MerkleTokenRelStatus(secondBalance, false, false, true);
+		final var secondRelKey = fromAccountTokenRel(payerId, secondToken);
+		secondRel.setKey(secondRelKey);
+		final var thirdRel = new MerkleTokenRelStatus(thirdBalance, true, true, false);
+		final var thirdRelKey = fromAccountTokenRel(payerId, thirdToken);
+		thirdRel.setKey(thirdRelKey);
+		final var fourthRel = new MerkleTokenRelStatus(fourthBalance, false, false, true);
+		final var fourthRelKey = fromAccountTokenRel(payerId, fourthToken);
+		fourthRel.setKey(fourthRelKey);
+		final var missingRel = new MerkleTokenRelStatus(missingBalance, false, false, false);
+		final var missingRelKey = fromAccountTokenRel(payerId, missingToken);
+		missingRel.setKey(missingRelKey);
+
+		firstRel.setNextKey(secondRelKey);
+		secondRel.setNextKey(thirdRelKey);
+		secondRel.setPrevKey(firstRelKey);
+		thirdRel.setPrevKey(secondRelKey);
+		thirdRel.setNextKey(fourthRelKey);
+		fourthRel.setPrevKey(thirdRelKey);
+		fourthRel.setNextKey(missingRelKey);
+		missingRel.setPrevKey(fourthRelKey);
+
+		tokenRels.put(firstRelKey, firstRel);
+		tokenRels.put(secondRelKey, secondRel);
+		tokenRels.put(thirdRelKey, thirdRel);
+		tokenRels.put(fourthRelKey, fourthRel);
+		tokenRels.put(missingRelKey, missingRel);
+
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
@@ -177,7 +191,7 @@ class GetAccountInfoAnswerTest {
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.nftAllowances(nftAllowances)
 				.get();
-//		payerAccount.setTokens(tokens);
+		payerAccount.setLastAssociatedToken(firstRelKey);
 
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
