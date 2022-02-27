@@ -38,7 +38,6 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -101,10 +100,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var sender = accountStore.loadAccount(senderId);
 		final var receiver = accountStore.loadContract(contractId);
 		final var callData = !op.getFunctionParameters().isEmpty()
-				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
-
-		System.out.println("=============== CALL ==================");
-		System.out.println("= params -> " + CommonUtils.hex(op.getFunctionParameters().toByteArray()));
+				? Bytes.wrap(op.getFunctionParameters().toByteArray())
+				: Bytes.EMPTY;
 
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(

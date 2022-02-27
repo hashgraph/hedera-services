@@ -663,10 +663,6 @@ public class ContractResources {
 			"{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}],\"name\":\"add\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String MINT_ISVALID_ABI = "{\"constant\":true," +
-			"\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String MINT_SEVEN_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +

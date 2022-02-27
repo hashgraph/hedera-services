@@ -203,12 +203,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		byte[] bytecode = hfs.cat(bytecodeSrc);
 		validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
 
-		System.out.println("=============== CREATION ==================");
-		String contractByteCodeString = new String(bytecode);
+		var contractByteCodeString = new String(bytecode);
 		if (!op.getConstructorParameters().isEmpty()) {
-			final var constructorParamsHexString = CommonUtils.hex(
-					op.getConstructorParameters().toByteArray());
-			System.out.println("= constructor params -> " + constructorParamsHexString);
+			final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
 			contractByteCodeString += constructorParamsHexString;
 		}
 		try {
