@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.queries.meta;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -29,7 +30,6 @@ import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
@@ -77,6 +77,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -130,6 +131,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Consumer<List<?>> eventDataObserver;
 	private Predicate<Abi.Event> eventMatcher;
 	private String contractResultAbi = null;
+
+	public static ByteString sha384HashOf(Transaction transaction) {
+		if (transaction.getSignedTransactionBytes().isEmpty()) {
+			return ByteString.copyFrom(noThrowSha384HashOf(transaction.toByteArray()));
+		}
+
+		return ByteString.copyFrom(noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
+	}
 
 	private record ExpectedChildInfo(String aliasingKey) {}
 	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
@@ -399,7 +408,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertTransactionHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
-		assertArrayEquals(CommonUtils.sha384HashOf(transaction).toByteArray(),
+		assertArrayEquals(sha384HashOf(transaction).toByteArray(),
 				actualRecord.getTransactionHash().toByteArray(),
 				"Bad transaction hash!");
 	}
@@ -423,9 +432,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					out.writeLong(actualRecord.getConsensusTimestamp().getSeconds());
 					out.writeInt(actualRecord.getConsensusTimestamp().getNanos());
 					out.writeLong(actualRecord.getReceipt().getTopicSequenceNumber());
-					out.writeObject(CommonUtils.noThrowSha384HashOf(lastMessagedSubmitted.get()));
+					out.writeObject(noThrowSha384HashOf(lastMessagedSubmitted.get()));
 					out.flush();
-					var expectedRunningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
+					var expectedRunningHash = noThrowSha384HashOf(boas.toByteArray());
 					var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
 					assertArrayEquals(expectedRunningHash,
 							actualRunningHash.toByteArray(),

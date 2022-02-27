@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -113,7 +114,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -199,13 +199,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate(addressContract)
 								.bytecode(addressInitcode)
 								.exposingNumTo(num -> addressBookMirror.set(
-										calculateSolidityAddress(0, 0, num))),
+										asHexedSolidityAddress(0, 0, num))),
 						sourcing(() -> createLargeFile(
 								DEFAULT_PAYER, jurisdictionInitcode, literalInitcodeFor("Jurisdictions"))),
 						contractCreate(jurisdictionContract)
 								.bytecode(jurisdictionInitcode)
 								.exposingNumTo(num -> jurisdictionMirror.set(
-										calculateSolidityAddress(0, 0, num)))
+										asHexedSolidityAddress(0, 0, num)))
 								.withExplicitParams(() -> explicitJurisdictionConsParams),
 						sourcing(() -> createLargeFile(
 								DEFAULT_PAYER, mintersInitcode,

@@ -23,14 +23,12 @@ package com.hedera.services.bdd.suites.freeze;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.regression.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -43,17 +41,10 @@ public class FreezeSuite extends HapiApiSuite {
 
 	private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
 	private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
-	private static String zipFile = "Archive.zip";
 
-	private int startHour;
-	private int startMin;
-	private int endHour;
-	private int endMin;
 	private static String uploadPath = "updateSettings";
-	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
 	public static void main(String... args) {
-
 		if (args.length > 0) {
 			uploadPath = args[0];
 		}
@@ -67,28 +58,14 @@ public class FreezeSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				uploadNewFile()
-		);
+		return List.of(uploadNewFile());
 	}
 
 	private HapiApiSpec uploadNewFile() {
 		String uploadFile = UPDATE_NEW_FILE;
-		generateFreezeTime(1);
 		if (uploadPath != null) {
 			log.info("Creating zip file from " + uploadPath);
+			String zipFile = "Archive.zip";
 			createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
 			uploadFile = zipFile;
 		}
@@ -103,6 +80,8 @@ public class FreezeSuite extends HapiApiSuite {
 		}
 		final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);
 
+		// mnemonic for file 0.0.150
+		String fileIDString = "UPDATE_FEATURE";
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(fileIDString).path(uploadFile)
@@ -114,15 +93,5 @@ public class FreezeSuite extends HapiApiSuite {
 								.startingIn(60).seconds()
 				).then(
 				);
-	}
-
-	private void generateFreezeTime(int freezeDurationMinutes) {
-		long freezeStartTimeMillis = System.currentTimeMillis() + 60000l;
-		int[] startHourMin = Utilities.getUTCHourMinFromMillis(freezeStartTimeMillis);
-		startHour = startHourMin[0];
-		startMin = startHourMin[1];
-		endMin = startMin + freezeDurationMinutes;
-		endHour = (startHour + endMin / 60) % 24;
-		endMin = endMin % 60;
 	}
 }

@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,7 +100,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts solidityId(String cid) {
 		registerProvider((spec, o) -> {
 			AccountID id = spec.registry().getAccountID(cid);
-			String solidityId = calculateSolidityAddress(0, id.getRealmNum(), id.getAccountNum());
+			final var solidityId = HapiPropertySource.asHexedSolidityAddress(id);
 			assertEquals(solidityId,
 					((AccountInfo) o).getContractAccountID(),
 					"Bad Solidity contract Id!");

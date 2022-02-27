@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -45,7 +46,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class ExtCodeSizeOperationSuite extends HapiApiSuite {
@@ -86,8 +86,8 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							AccountID accountID = spec.registry().getAccountID(DEFAULT_PAYER);
 							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String accountSolidityAddress = calculateSolidityAddress((int) accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
-							String contractAddress = calculateSolidityAddress((int) contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
+							String accountSolidityAddress = asHexedSolidityAddress(accountID);
+							String contractAddress = asHexedSolidityAddress(contractID);
 
 							final var call = contractCall(CONTRACT,
 									ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
