@@ -20,7 +20,6 @@ package com.hedera.services;
  * ‍
  */
 
-import com.google.common.primitives.Ints;
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.grpc.GrpcStarter;
@@ -40,7 +39,6 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -143,12 +141,6 @@ class ServicesMainTest {
 	void throwsErrorOnMissingApp() {
 		// expect:
 		Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, edonId));
-	}
-
-	@Test
-	void name() {
-		System.out.println(CommonUtils.hex("ny".getBytes()));
-		System.out.println(CommonUtils.hex(Ints.toByteArray(825)));
 	}
 
 	@Test
